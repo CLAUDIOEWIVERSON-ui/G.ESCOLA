@@ -123,8 +123,8 @@ export const translations = {
       bulkDestinationClassDesc: "* Se selecionada, todos os alunos colados sem Turma ID serão vinculados a esta turma.",
       bulkPasteLabel: "Cole a lista de nomes ou CSV",
       importCsvFile: "Importar Arquivo .CSV",
-      bulkNameRequired: "Somente o Nome é obrigatório.",
-      bulkAutoGenerateInfo: "O sistema gerará valores automáticos se Email/Matrícula forem omitidos.",
+      bulkNameRequired: "Somente o Nome e Graduação são obrigatórios.",
+      bulkAutoGenerateInfo: "O sistema gerará Matrícula e Email se forem omitidos. Se a Graduação for omitida, será usado 'Aluno'.",
     },
     classes: {
       title: "Gerenciamento de Turmas",
@@ -354,8 +354,8 @@ export const translations = {
       bulkDestinationClassDesc: "* If selected, all students without a Class ID will be linked to this class.",
       bulkPasteLabel: "Paste name list or CSV",
       importCsvFile: "Import .CSV File",
-      bulkNameRequired: "Only Name is required.",
-      bulkAutoGenerateInfo: "The system will generate automatic values if Email/Registration are omitted.",
+      bulkNameRequired: "Only Name and Rank are required.",
+      bulkAutoGenerateInfo: "The system will generate Registration and Email if omitted. If Rank is omitted, 'Student' will be used.",
     },
     subjects: {
       title: "Subjects",

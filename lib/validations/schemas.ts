@@ -21,16 +21,16 @@ export const turmaSchema = z.object({
 });
 
 export const alunoSchema = z.object({
-  nome: z.string().min(3),
+  nome: z.string().min(3, "Nome completo é obrigatório"),
   email: z.string().email("E-mail inválido").optional().nullable(),
   data_nascimento: z.string().optional().nullable(),
   turma_id: z.string().uuid().optional().nullable(),
-  matricula: z.string().min(3),
-  status: z.enum(['ativo', 'inativo', 'transferido']),
+  matricula: z.string().optional().nullable(),
+  status: z.enum(['ativo', 'inativo', 'transferido']).default('ativo'),
   nif: z.string().optional().nullable(),
   rg: z.string().optional().nullable(),
   om: z.string().optional().nullable(),
-  posto_graduacao: z.string().optional().nullable(),
+  posto_graduacao: z.string().min(1, "Graduação é obrigatória"),
   ano_admissao: z.number().int().optional().nullable(),
   telefone: z.string().optional().nullable(),
   whatsapp: z.string().optional().nullable(),

@@ -141,18 +141,24 @@ export default function AlunosPage() {
     setSaving(true);
 
     try {
+      // Generate matricula if missing as it's NOT NULL in DB
+      let matricula = currentAluno.matricula;
+      if (!matricula || matricula.length < 2) {
+        matricula = `MAT${new Date().getFullYear()}${Math.floor(100000 + Math.random() * 899999)}`;
+      }
+
       const dataToSave: any = {
         nome: currentAluno.nome,
-        matricula: currentAluno.matricula,
+        matricula: matricula,
         status: currentAluno.status || 'ativo'
       };
 
       if (currentAluno.email) dataToSave.email = currentAluno.email;
       if (currentAluno.turma_id && currentAluno.turma_id.length > 5) dataToSave.turma_id = currentAluno.turma_id;
+      if (currentAluno.posto_graduacao) dataToSave.posto_graduacao = currentAluno.posto_graduacao;
       if (currentAluno.nif) dataToSave.nif = currentAluno.nif;
       if (currentAluno.rg) dataToSave.rg = currentAluno.rg;
       if (currentAluno.om) dataToSave.om = currentAluno.om;
-      if (currentAluno.posto_graduacao) dataToSave.posto_graduacao = currentAluno.posto_graduacao;
       if (currentAluno.telefone) dataToSave.telefone = currentAluno.telefone;
       if (currentAluno.whatsapp) dataToSave.whatsapp = currentAluno.whatsapp;
       if (currentAluno.foto_url) dataToSave.foto_url = currentAluno.foto_url;
@@ -273,7 +279,12 @@ export default function AlunosPage() {
         if (nif) studentData.nif = nif;
         if (rg) studentData.rg = rg;
         if (om) studentData.om = om;
-        if (posto_graduacao) studentData.posto_graduacao = posto_graduacao;
+        
+        // If rank is missing in bulk, use a default to avoid empty values for mandatory field
+        studentData.posto_graduacao = (posto_graduacao && posto_graduacao.length > 0) 
+          ? posto_graduacao 
+          : (language === 'pt' ? 'Aluno' : 'Student');
+          
         if (telefone) studentData.telefone = telefone;
         if (whatsapp) studentData.whatsapp = whatsapp;
 
@@ -538,14 +549,14 @@ export default function AlunosPage() {
             <div className="flex-1 space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                  {t.students.name}
+                  {t.students.name} <span className="text-red-500">*</span>
                 </label>
                 <input
                   required
                   type="text"
                   value={currentAluno?.nome || ''}
                   onChange={(e) => setCurrentAluno({ ...currentAluno, nome: e.target.value })}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm"
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm border-l-4 border-l-blue-500"
                   placeholder="Ex: João Silva"
                 />
               </div>
@@ -555,7 +566,6 @@ export default function AlunosPage() {
                     {t.students.registration}
                   </label>
                   <input
-                    required
                     type="text"
                     value={currentAluno?.matricula || ''}
                     onChange={(e) => setCurrentAluno({ ...currentAluno, matricula: e.target.value })}
@@ -617,13 +627,14 @@ export default function AlunosPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
              <div>
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                {t.students.rank}
+                {t.students.rank} <span className="text-red-500">*</span>
               </label>
               <input
+                required
                 type="text"
                 value={currentAluno?.posto_graduacao || ''}
                 onChange={(e) => setCurrentAluno({ ...currentAluno, posto_graduacao: e.target.value })}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm border-l-4 border-l-blue-500"
                 placeholder="Ex: 2º Sargento"
               />
             </div>
@@ -652,7 +663,6 @@ export default function AlunosPage() {
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
                 <input
-                  required
                   type="email"
                   value={currentAluno?.email || ''}
                   onChange={(e) => setCurrentAluno({ ...currentAluno, email: e.target.value })}
