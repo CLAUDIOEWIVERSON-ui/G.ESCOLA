@@ -219,7 +219,7 @@ export default function TurmasPage() {
     try {
       const { error } = await supabase
         .from('alunos')
-        .update({ deleted_at: new Date().toISOString() })
+        .delete()
         .eq('id', id);
         
       if (error) throw error;
@@ -241,9 +241,8 @@ export default function TurmasPage() {
     try {
       const { error } = await supabase
         .from('alunos')
-        .update({ deleted_at: new Date().toISOString() })
-        .eq('turma_id', viewingTurma.id)
-        .is('deleted_at', null);
+        .delete()
+        .eq('turma_id', viewingTurma.id);
         
       if (error) throw error;
       
