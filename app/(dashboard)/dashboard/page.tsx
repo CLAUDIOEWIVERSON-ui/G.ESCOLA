@@ -77,7 +77,7 @@ export default function DashboardPage() {
                   </div>
                 ) : (
                   <span className="text-[10px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded uppercase">
-                    stable
+                    {t.dashboard.stable}
                   </span>
                 )}
               </div>
@@ -101,8 +101,8 @@ export default function DashboardPage() {
                   <BookOpen size={14} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-900 truncate">Course &quot;AI Foundations&quot; updated by admin</p>
-                  <p className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">2 hours ago</p>
+                  <p className="text-sm font-medium text-slate-900 truncate">{t.dashboard.activityUpdate}</p>
+                  <p className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">2 {t.dashboard.hoursAgo}</p>
                 </div>
               </div>
             ))}
@@ -113,7 +113,7 @@ export default function DashboardPage() {
            <div className="absolute -right-8 -top-8 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl"></div>
            <div className="relative z-10 flex-1">
              <GraduationCap size={40} className="mb-4 text-blue-500 opacity-80" />
-             <h2 className="text-xl font-bold mb-2">{t.dashboard.schoolStatus}: Active</h2>
+             <h2 className="text-xl font-bold mb-2">{t.dashboard.schoolStatus}: {t.dashboard.active}</h2>
              <p className="text-slate-400 text-sm leading-relaxed mb-6">{t.dashboard.schoolStatusDesc}</p>
            </div>
            <div className="relative z-10 pt-4 border-t border-slate-800">

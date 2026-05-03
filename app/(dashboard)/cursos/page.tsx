@@ -12,12 +12,15 @@ import {
   Trash2, 
   X,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  FileText,
+  Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import Modal from '@/components/Modal';
 
 type Curso = z.infer<typeof cursoSchema> & { id: string };
 
@@ -26,6 +29,9 @@ export default function CursosPage() {
   const [cursos, setCursos] = useState<Curso[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
+  const [bulkData, setBulkData] = useState('');
+  const [saving, setSaving] = useState(false);
   const [editingCurso, setEditingCurso] = useState<Curso | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -92,6 +98,46 @@ export default function CursosPage() {
     }
   };
 
+  const handleBulkSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+
+    try {
+      // Flexible CSV parsing: Nome, Código, Descrição
+      const lines = bulkData.split('\n').filter(line => line.trim());
+      const coursesToInsert = lines.map(line => {
+        const parts = line.split(',').map(s => s.trim());
+        const [nome, codigo, descricao] = parts;
+        
+        if (!nome) return null;
+
+        return {
+          nome,
+          codigo: codigo || nome.substring(0, 3).toUpperCase() + Math.floor(100 + Math.random() * 899),
+          descricao: descricao || '',
+          ano_inicio: new Date().getFullYear(),
+          ativo: true
+        };
+      }).filter(Boolean);
+
+      if (coursesToInsert.length === 0) {
+        throw new Error(t.common.parseError);
+      }
+
+      const { error } = await supabase.from('cursos').insert(coursesToInsert);
+      if (error) throw error;
+
+      await fetchCursos();
+      setIsBulkModalOpen(false);
+      setBulkData('');
+      alert(t.common.importSuccess);
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const filteredCursos = cursos.filter(c => 
     c.nome.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -103,14 +149,23 @@ export default function CursosPage() {
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{t.courses.title}</h1>
           <p className="text-slate-500 text-sm">Visualize e gerencie os cursos oferecidos pela instituição.</p>
         </div>
-        <button 
-          id="add-course-btn"
-          onClick={() => { reset(); setEditingCurso(null); setModalOpen(true); }}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-all shadow-sm shadow-blue-100"
-        >
-          <Plus size={18} />
-          {t.courses.add}
-        </button>
+        <div className="flex gap-2">
+          <button 
+            onClick={() => setIsBulkModalOpen(true)}
+            className="flex items-center gap-2 bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-all shadow-sm"
+          >
+            <FileText size={18} />
+            {t.common.bulkAdd}
+          </button>
+          <button 
+            id="add-course-btn"
+            onClick={() => { reset(); setEditingCurso(null); setModalOpen(true); }}
+            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-all shadow-sm shadow-blue-100"
+          >
+            <Plus size={18} />
+            {t.courses.add}
+          </button>
+        </div>
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -276,6 +331,49 @@ export default function CursosPage() {
           </div>
         )}
       </AnimatePresence>
+
+      <Modal
+        isOpen={isBulkModalOpen}
+        onClose={() => setIsBulkModalOpen(false)}
+        title={t.common.bulkAdd}
+      >
+        <form onSubmit={handleBulkSave} className="space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+              Dados (CSV: Nome, Código, Descrição)
+            </label>
+            <textarea
+              required
+              rows={8}
+              value={bulkData}
+              onChange={(e) => setBulkData(e.target.value)}
+              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm font-mono"
+              placeholder="Ex: Engenharia, ENG101, Curso de base\nAdministração, ADM, Gestão\nDireito"
+            />
+            <p className="mt-2 text-[10px] text-slate-400 italic">
+              * Separe os campos por vírgula. Somente o Nome é obrigatório. Se o código for omitido, será gerado automaticamente.
+            </p>
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <button
+              type="button"
+              onClick={() => setIsBulkModalOpen(false)}
+              className="flex-1 px-4 py-2.5 border border-slate-200 text-slate-600 rounded-lg font-bold text-sm hover:bg-slate-50 transition-all"
+            >
+              {t.common.cancel}
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg font-bold text-sm hover:bg-blue-700 transition-all shadow-md shadow-blue-100 flex items-center justify-center gap-2 disabled:opacity-70"
+            >
+              {saving ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle2 size={18} />}
+              {t.common.import}
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }
