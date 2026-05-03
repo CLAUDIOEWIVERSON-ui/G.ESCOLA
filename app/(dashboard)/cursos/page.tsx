@@ -71,16 +71,23 @@ export default function CursosPage() {
 
   const onSubmit = async (data: z.infer<typeof cursoSchema>) => {
     try {
+      // Clean date fields - convert empty strings to null
+      const cleanedData = {
+        ...data,
+        data_inicio: data.data_inicio || null,
+        data_fim: data.data_fim || null
+      };
+
       if (editingCurso) {
         const { error } = await supabase
           .from('cursos')
-          .update(data)
+          .update(cleanedData)
           .eq('id', editingCurso.id);
         if (error) throw error;
       } else {
         const { error } = await supabase
           .from('cursos')
-          .insert([data]);
+          .insert([cleanedData]);
         if (error) throw error;
       }
       reset();

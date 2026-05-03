@@ -264,13 +264,13 @@ export default function AlunosPage() {
 
         // Try to detect if this line is JUST a name or structured data
         // If it doesn't contain the separator, treat it as just a name
-        let nome, email, matricula, turma_id, nif, rg, om, posto_graduacao, ano_admissao, telefone, whatsapp;
+        let nome, email, matricula, turma_id, nif, rg, om, posto_graduacao, ano_admissao, telefone, whatsapp, data_nascimento;
         
         if (!line.includes(separator)) {
           nome = lineTrimmed;
         } else {
           const parts = line.split(separator).map(s => s.trim());
-          [nome, email, matricula, turma_id, nif, rg, om, posto_graduacao, ano_admissao, telefone, whatsapp] = parts;
+          [nome, email, matricula, turma_id, nif, rg, om, posto_graduacao, ano_admissao, telefone, whatsapp, data_nascimento] = parts;
         }
         
         // Limit base string to avoid huge strings
@@ -308,6 +308,7 @@ export default function AlunosPage() {
         if (posto_graduacao) studentData.posto_graduacao = posto_graduacao;
         if (telefone) studentData.telefone = telefone;
         if (whatsapp) studentData.whatsapp = whatsapp;
+        if (data_nascimento && data_nascimento.length >= 8) studentData.data_nascimento = data_nascimento;
 
         // Only add ano_admissao if it's a valid number
         const parsedAno = parseInt(ano_admissao || '');

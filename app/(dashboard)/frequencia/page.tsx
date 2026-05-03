@@ -133,6 +133,10 @@ export default function FrequenciaPage() {
 
   const handleSaveAttendance = async () => {
     if (!selectedTurma) return;
+    if (!selectedDate) {
+      alert(language === 'pt' ? 'Por favor, selecione uma data válida.' : 'Please select a valid date.');
+      return;
+    }
     setSaving(true);
     try {
       const recordsToUpsert = Object.entries(attendanceRecords).map(([alunoId, data]) => ({
