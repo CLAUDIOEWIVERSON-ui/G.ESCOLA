@@ -32,7 +32,7 @@ import Modal from '@/components/Modal';
 import Image from 'next/image';
 
 export default function AlunosPage() {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const [alunos, setAlunos] = useState<any[]>([]);
   const [turmas, setTurmas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -130,7 +130,7 @@ export default function AlunosPage() {
       setCurrentAluno({ ...currentAluno, foto_url: publicUrl });
     } catch (err: any) {
       console.error('Photo upload error:', err);
-      alert('Erro no upload: ' + (err.message || 'Verifique sua conexão e configurações do bucket no Supabase.'));
+      alert(t.common.uploadError + ': ' + (err.message || ''));
     } finally {
       setSaving(false);
     }
@@ -141,21 +141,26 @@ export default function AlunosPage() {
     setSaving(true);
 
     try {
-      const dataToSave = {
+      const dataToSave: any = {
         nome: currentAluno.nome,
-        email: currentAluno.email || null,
         matricula: currentAluno.matricula,
-        turma_id: (currentAluno.turma_id && currentAluno.turma_id.length > 5) ? currentAluno.turma_id : null,
-        status: currentAluno.status || 'ativo',
-        nif: currentAluno.nif || '',
-        rg: currentAluno.rg || '',
-        om: currentAluno.om || '',
-        posto_graduacao: currentAluno.posto_graduacao || '',
-        ano_admissao: currentAluno.ano_admissao ? parseInt(currentAluno.ano_admissao.toString()) : new Date().getFullYear(),
-        telefone: currentAluno.telefone || '',
-        whatsapp: currentAluno.whatsapp || '',
-        foto_url: currentAluno.foto_url || ''
+        status: currentAluno.status || 'ativo'
       };
+
+      if (currentAluno.email) dataToSave.email = currentAluno.email;
+      if (currentAluno.turma_id && currentAluno.turma_id.length > 5) dataToSave.turma_id = currentAluno.turma_id;
+      if (currentAluno.nif) dataToSave.nif = currentAluno.nif;
+      if (currentAluno.rg) dataToSave.rg = currentAluno.rg;
+      if (currentAluno.om) dataToSave.om = currentAluno.om;
+      if (currentAluno.posto_graduacao) dataToSave.posto_graduacao = currentAluno.posto_graduacao;
+      if (currentAluno.telefone) dataToSave.telefone = currentAluno.telefone;
+      if (currentAluno.whatsapp) dataToSave.whatsapp = currentAluno.whatsapp;
+      if (currentAluno.foto_url) dataToSave.foto_url = currentAluno.foto_url;
+      
+      const parsedAno = currentAluno.ano_admissao ? parseInt(currentAluno.ano_admissao.toString()) : NaN;
+      if (!isNaN(parsedAno)) {
+        dataToSave.ano_admissao = parsedAno;
+      }
 
       if (currentAluno.id) {
         const { error } = await supabase
@@ -174,7 +179,7 @@ export default function AlunosPage() {
       setIsModalOpen(false);
     } catch (err: any) {
       console.error('Save error:', err);
-      alert('Erro ao salvar: ' + (err.message || 'Erro desconhecido. Verifique os dados.'));
+      alert(t.common.saveError + ': ' + (err.message || ''));
     } finally {
       setSaving(false);
     }
@@ -202,6 +207,7 @@ export default function AlunosPage() {
 
   const handleBulkSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!bulkData.trim()) return;
     setSaving(true);
 
     try {
@@ -209,28 +215,44 @@ export default function AlunosPage() {
       if (rawLines.length === 0) throw new Error(t.common.parseError);
 
       const firstLine = rawLines[0];
-      const separator = firstLine.includes(';') ? ';' : ',';
+      let separator = ',';
+      if (firstLine.includes('\t')) separator = '\t';
+      else if (firstLine.includes(';')) separator = ';';
 
       const dataLines = skipHeader ? rawLines.slice(1) : rawLines;
       const results: { success: any[], errors: string[] } = { success: [], errors: [] };
 
       const studentsToInsert = dataLines.map((line, index) => {
-        const parts = line.split(separator).map(s => s.trim());
-        // Standard index mapping: Nome, Email, Matricula, ID_Turma, NIF, RG, OM, Posto, Ano, Fone, Zap
-        const [nome, email, matricula, turma_id, nif, rg, om, posto_graduacao, ano_admissao, telefone, whatsapp] = parts;
+        const lineTrimmed = line.trim();
+        if (!lineTrimmed) return null;
+
+        // Try to detect if this line is JUST a name or structured data
+        // If it doesn't contain the separator, treat it as just a name
+        let nome, email, matricula, turma_id, nif, rg, om, posto_graduacao, ano_admissao, telefone, whatsapp;
         
-        if (!nome) {
-          results.errors.push(`Linha ${index + (skipHeader ? 2 : 1)}: Nome não encontrado.`);
+        if (!line.includes(separator)) {
+          nome = lineTrimmed;
+        } else {
+          const parts = line.split(separator).map(s => s.trim());
+          [nome, email, matricula, turma_id, nif, rg, om, posto_graduacao, ano_admissao, telefone, whatsapp] = parts;
+        }
+        
+        const cleanNome = (nome || '').trim().replace(/['"]/g, '');
+        if (!cleanNome) {
+          results.errors.push(`Linha ${index + (skipHeader ? 2 : 1)}: ${language === 'pt' ? 'Nome é obrigatório' : 'Name is required'}.`);
           return null;
         }
 
-        const cleanNome = nome.replace(/['"]/g, '');
-        const fallbackEmail = `${cleanNome.toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 15)}${Math.floor(100 + Math.random() * 899)}@escola.com`;
-        const fallbackMatricula = `MAT${new Date().getFullYear()}${Math.floor(10000 + Math.random() * 89999)}`;
+        // Limit email string to avoid huge strings if something goes wrong
+        const baseEmail = cleanNome.toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 15);
+        // Add random to both to minimize collisions in large batches
+        const randSuffix = Math.floor(1000 + Math.random() * 8999);
+        const fallbackEmail = `${baseEmail}${randSuffix}@escola.com`;
+        const fallbackMatricula = `MAT${new Date().getFullYear()}${Math.floor(100000 + Math.random() * 899999)}`;
 
         // Enhanced ID detection
         let finalTurmaId = selectedTurmaForBulk || null;
-        if (turma_id) {
+        if (turma_id && turma_id.length > 0) {
           if (turma_id.length > 20) { // Likely UUID
             finalTurmaId = turma_id;
           } else {
@@ -240,34 +262,67 @@ export default function AlunosPage() {
           }
         }
 
-        return {
+        const studentData: any = {
           nome: cleanNome,
           email: (email && email.includes('@')) ? email.replace(/['"]/g, '') : fallbackEmail,
           matricula: (matricula && matricula.length > 2) ? matricula.replace(/['"]/g, '') : fallbackMatricula,
           turma_id: finalTurmaId, 
-          nif: nif || '',
-          rg: rg || '',
-          om: om || '',
-          posto_graduacao: posto_graduacao || '',
-          ano_admissao: parseInt(ano_admissao) || new Date().getFullYear(),
-          telefone: telefone || '',
-          whatsapp: whatsapp || '',
           status: 'ativo'
         };
+
+        if (nif) studentData.nif = nif;
+        if (rg) studentData.rg = rg;
+        if (om) studentData.om = om;
+        if (posto_graduacao) studentData.posto_graduacao = posto_graduacao;
+        if (telefone) studentData.telefone = telefone;
+        if (whatsapp) studentData.whatsapp = whatsapp;
+
+        // Only add ano_admissao if it's a valid number to avoid schema mismatch errors
+        const parsedAno = parseInt(ano_admissao || '');
+        if (!isNaN(parsedAno)) {
+          studentData.ano_admissao = parsedAno;
+        }
+
+        return studentData;
       }).filter(Boolean) as any[];
 
       if (studentsToInsert.length === 0) {
         throw new Error(results.errors.length > 0 ? results.errors.join('\n') : t.common.parseError);
       }
 
-      const { data, error } = await supabase.from('alunos').upsert(studentsToInsert, { 
-        onConflict: 'matricula',
-        ignoreDuplicates: false 
-      }).select();
+      console.log('Inserting students:', studentsToInsert);
+
+      // Use insert instead of upsert to see if it's more stable for multiple unique constraints
+      const { data, error } = await supabase
+        .from('alunos')
+        .insert(studentsToInsert)
+        .select();
       
       if (error) {
-        console.error('Supabase Upsert Error:', error);
-        throw new Error(error.message || 'Erro na comunicação com o banco de dados.');
+        console.error('Full Supabase Error Object:', JSON.stringify(error, null, 2));
+        console.error('Supabase Insert Error Details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        
+        // Special handling for common errors
+        const errorMsg = error.message || 'Unknown Supabase error';
+        const errorDetails = error.details || '';
+        const errorCode = error.code || '';
+        
+        if (errorCode === '23505') {
+          throw new Error(`${language === 'pt' ? 'Conflito de duplicidade' : 'Duplicity conflict'}: ${errorDetails || (language === 'pt' ? 'Matrícula ou E-mail já existente.' : 'Registration or Email already exists.')}`);
+        }
+        
+        if (errorCode === 'PGRST204' || errorMsg.includes('column')) {
+           throw new Error(language === 'pt' 
+             ? `Coluna ausente no Banco de Dados: "${errorMsg.split("'")[1] || 'ano_admissao'}". Por favor, execute o SQL do arquivo supabase_schema.sql.` 
+             : `Missing column in Database: "${errorMsg.split("'")[1] || 'ano_admissao'}". Please run the SQL from supabase_schema.sql.`);
+        }
+        
+        throw new Error(`${errorMsg}${errorDetails ? ': ' + errorDetails : ''} (Code: ${errorCode})`);
       }
 
       await refreshAlunos();
@@ -275,10 +330,10 @@ export default function AlunosPage() {
       setBulkData('');
       
       const successCount = data?.length || 0;
-      alert(`Sucesso! ${successCount} alunos processados.${results.errors.length > 0 ? '\n\nErros detectados:\n' + results.errors.join('\n') : ''}`);
+      alert(t.common.processedSuccess.replace('{count}', successCount.toString()) + (results.errors.length > 0 ? `\n\n${t.common.detectedErrors}\n` + results.errors.join('\n') : ''));
     } catch (err: any) {
-      console.error('Import error:', err);
-      alert('Erro na importação: ' + (err.message || 'Verifique o formato dos dados e se as turmas existem.'));
+      console.error('Import error details:', err);
+      alert(t.common.importErrorMsg + ': ' + (err.message || ''));
     } finally {
       setSaving(false);
     }
@@ -477,7 +532,7 @@ export default function AlunosPage() {
                   className="absolute inset-0 opacity-0 cursor-pointer" 
                 />
               </div>
-              <p className="text-[10px] text-slate-400 font-medium italic">Format 3x4 recommended</p>
+              <p className="text-[10px] text-slate-400 font-medium italic">{language === 'pt' ? 'Formato 3x4 recomendado' : '3x4 format recommended'}</p>
             </div>
 
             <div className="flex-1 space-y-4">
@@ -699,26 +754,26 @@ export default function AlunosPage() {
         <form onSubmit={handleBulkSave} className="space-y-4">
           <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 mb-4">
             <label className="block text-xs font-bold text-blue-700 uppercase tracking-wider mb-2">
-              Turma de Destino (Opcional)
+              {t.students.bulkDestinationClass}
             </label>
             <select
               value={selectedTurmaForBulk}
               onChange={(e) => setSelectedTurmaForBulk(e.target.value)}
               className="w-full px-4 py-2 bg-white border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm appearance-none"
             >
-              <option value="">Nenhuma (ou especificada no texto)</option>
+              <option value="">{t.students.noneOrSpecific}</option>
               {turmas.map(turma => (
                 <option key={turma.id} value={turma.id}>{turma.nome}</option>
               ))}
             </select>
             <p className="text-[10px] text-blue-600 mt-2 italic">
-              * Se selecionada, todos os alunos colados sem Turma ID serão vinculados a esta turma.
+              {t.students.bulkDestinationClassDesc}
             </p>
           </div>
 
           <div className="flex items-center justify-between mb-2">
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
-              Cole a lista de nomes ou CSV
+              {t.students.bulkPasteLabel}
             </label>
             <div className="relative">
               <input
@@ -732,7 +787,7 @@ export default function AlunosPage() {
                 className="flex items-center gap-1.5 text-[10px] font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-md uppercase hover:bg-blue-100 transition-colors"
               >
                 <Plus size={12} />
-                Importar Arquivo .CSV
+                {t.students.importCsvFile}
               </button>
             </div>
           </div>
@@ -743,8 +798,14 @@ export default function AlunosPage() {
               value={bulkData}
               onChange={(e) => setBulkData(e.target.value)}
               className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm font-mono"
-              placeholder={`Exemplo (Nomes um por linha):\nJoão Silva\nMaria Oliveira\n\nOu CSV:\nJoão Silva, joao@email.com, MAT001`}
+              placeholder={t.common.csvPlaceholder}
             />
+            
+            {bulkData.trim() && (
+              <div className="mt-2 text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded inline-block">
+                {bulkData.split(/\r?\n/).filter(l => l.trim()).length} {language === 'pt' ? 'registros detectados' : 'records detected'}
+              </div>
+            )}
             
             <div className="mt-3 flex items-center justify-between">
               <label className="flex items-center gap-2 cursor-pointer group">
@@ -764,14 +825,14 @@ export default function AlunosPage() {
                 onClick={() => setBulkData('')}
                 className="text-[10px] font-bold text-slate-400 uppercase hover:text-red-500 transition-colors"
               >
-                Limpar Campo
+                {t.common.clearField}
               </button>
             </div>
 
             <p className="mt-4 text-[10px] text-slate-400 italic leading-relaxed">
-              * Suporta separadores por vírgula (,) ou ponto-e-vírgula (;).<br/>
-              * Somente o <strong>Nome</strong> é obrigatório.<br/>
-              * O sistema gerará valores automáticos se Email/Matrícula forem omitidos.
+              * {t.courses.bulkFormatInfo}<br/>
+              * {t.students.bulkNameRequired}<br/>
+              * {t.students.bulkAutoGenerateInfo}
             </p>
           </div>
 

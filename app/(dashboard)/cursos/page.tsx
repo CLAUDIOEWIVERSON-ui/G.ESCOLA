@@ -25,7 +25,7 @@ import Modal from '@/components/Modal';
 type Curso = z.infer<typeof cursoSchema> & { id: string };
 
 export default function CursosPage() {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const [cursos, setCursos] = useState<Curso[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -93,7 +93,7 @@ export default function CursosPage() {
   };
 
   const deleteCurso = async (id: string) => {
-    if (confirm("Tem certeza que deseja excluir este curso?")) {
+    if (confirm(t.common.deleteConfirm)) {
       const { error } = await supabase
         .from('cursos')
         .update({ deleted_at: new Date().toISOString() })
@@ -152,9 +152,9 @@ export default function CursosPage() {
       setBulkData('');
       
       const successCount = data?.length || 0;
-      alert(`Sucesso! ${successCount} cursos importados.${results.errors.length > 0 ? '\n\nErros:\n' + results.errors.join('\n') : ''}`);
+      alert(t.common.successCount.replace('{count}', successCount.toString()) + (results.errors.length > 0 ? '\n\nErros:\n' + results.errors.join('\n') : ''));
     } catch (err: any) {
-      alert('Erro na importação: ' + (err.message || 'Verifique o formato dos dados.'));
+      alert(t.common.importError + ': ' + (err.message || t.common.parseError));
     } finally {
       setSaving(false);
     }
@@ -169,7 +169,7 @@ export default function CursosPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{t.courses.title}</h1>
-          <p className="text-slate-500 text-sm">Visualize e gerencie os cursos oferecidos pela instituição.</p>
+          <p className="text-slate-500 text-sm">{language === 'pt' ? 'Visualize e gerencie os cursos oferecidos pela instituição.' : 'View and manage the courses offered by the institution.'}</p>
         </div>
         <div className="flex gap-2">
           <button 
@@ -221,7 +221,7 @@ export default function CursosPage() {
                 </tr>
               ) : filteredCursos.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-6 py-8 text-center text-slate-500">Nenhum curso encontrado.</td>
+                  <td colSpan={4} className="px-6 py-8 text-center text-slate-500">{t.common.noneFound}</td>
                 </tr>
               ) : filteredCursos.map((curso) => (
                 <tr key={curso.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors group">
@@ -229,7 +229,7 @@ export default function CursosPage() {
                     <div className="flex items-center gap-2">
                        <div className="font-semibold text-slate-900">{curso.nome}</div>
                        {curso.internacional && (
-                         <span className="px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 text-[8px] font-bold uppercase tracking-widest border border-purple-200">Exterior</span>
+                         <span className="px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 text-[8px] font-bold uppercase tracking-widest border border-purple-200">{language === 'pt' ? 'Exterior' : 'Abroad'}</span>
                        )}
                     </div>
                     <div className="text-xs text-slate-500 truncate max-w-[200px]">
@@ -241,11 +241,11 @@ export default function CursosPage() {
                   <td className="px-6 py-4">
                     {curso.ativo ? (
                       <span className="px-2.5 py-1 text-[10px] font-bold uppercase rounded bg-green-100 text-green-700 ring-1 ring-inset ring-green-600/20">
-                        Ativo
+                        {t.students.active}
                       </span>
                     ) : (
                       <span className="px-2.5 py-1 text-[10px] font-bold uppercase rounded bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-600/10">
-                        Inativo
+                        {t.students.inactive}
                       </span>
                     )}
                   </td>
@@ -311,12 +311,12 @@ export default function CursosPage() {
 
                 <div className="space-y-1">
                   <label className="text-sm font-semibold text-slate-700">{t.courses.description}</label>
-                  <textarea
-                    {...register('descricao')}
-                    rows={2}
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
-                    placeholder="Descrição breve do curso..."
-                  />
+            <textarea
+              {...register('descricao')}
+              rows={2}
+              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
+              placeholder={language === 'pt' ? "Descrição breve do curso..." : "Brief description of the course..."}
+            />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -337,7 +337,7 @@ export default function CursosPage() {
                         {...register('ativo')}
                         className="w-4 h-4 rounded text-slate-900 focus:ring-slate-900"
                       />
-                      <span className="text-sm font-bold text-slate-700 group-hover:text-slate-900 transition-colors">Ativo</span>
+                      <span className="text-sm font-bold text-slate-700 group-hover:text-slate-900 transition-colors">{t.students.active}</span>
                     </label>
                   </div>
                 </div>
@@ -411,7 +411,7 @@ export default function CursosPage() {
         <form onSubmit={handleBulkSave} className="space-y-4">
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-              Dados (CSV: Nome, Código, Descrição)
+              {t.common.bulkAdd} (CSV: {t.courses.name}, {t.subjects.code}, {t.courses.description})
             </label>
             <textarea
               required
@@ -431,7 +431,7 @@ export default function CursosPage() {
                   className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                 />
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-wider group-hover:text-blue-600 transition-colors">
-                  Pular primeira linha (Cabeçalho)
+                  {t.common.skipHeader}
                 </span>
               </label>
               
@@ -440,13 +440,13 @@ export default function CursosPage() {
                 onClick={() => setBulkData('')}
                 className="text-[10px] font-bold text-slate-400 uppercase hover:text-red-500 transition-colors"
               >
-                Limpar Campo
+                {t.common.clearField}
               </button>
             </div>
 
             <p className="mt-4 text-[10px] text-slate-400 italic">
-              * Suporta separadores por vírgula (,) ou ponto-e-vírgula (;).<br/>
-              * Somente o <strong>Nome</strong> é obrigatório. Se o código for omitido, será gerado automaticamente.
+              * {language === 'pt' ? 'Suporta separadores por vírgula (,) ou ponto-e-vírgula (;).' : 'Supports comma (,) or semicolon (;) separators.'}<br/>
+              * {language === 'pt' ? 'Somente o Nome é obrigatório. Se o código for omitido, será gerado automaticamente.' : 'Only Name is required. If the code is omitted, it will be automatically generated.'}
             </p>
           </div>
 

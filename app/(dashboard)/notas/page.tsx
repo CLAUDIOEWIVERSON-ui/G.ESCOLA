@@ -19,7 +19,7 @@ import { cn } from '@/lib/utils';
 import Modal from '@/components/Modal';
 
 export default function NotasPage() {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const [notas, setNotas] = useState<any[]>([]);
   const [alunos, setAlunos] = useState<any[]>([]);
   const [disciplinas, setDisciplinas] = useState<any[]>([]);
@@ -209,13 +209,13 @@ export default function NotasPage() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="text-xs font-semibold text-slate-500 border-b border-slate-100 uppercase tracking-wider">
-                <th className="px-6 py-4 font-semibold italic">Estudante</th>
-                <th className="px-6 py-4 font-semibold italic">Disciplina</th>
-                <th className="px-6 py-4 font-semibold italic text-center w-20">N1</th>
-                <th className="px-6 py-4 font-semibold italic text-center w-20">N2</th>
-                <th className="px-6 py-4 font-semibold italic text-center w-20">Média</th>
-                <th className="px-6 py-4 font-semibold italic text-center w-24">Freq. %</th>
-                <th className="px-6 py-4 font-semibold italic w-32">Status</th>
+                <th className="px-6 py-4 font-semibold italic">{t.reportCard.student}</th>
+                <th className="px-6 py-4 font-semibold italic">{t.subjects.name}</th>
+                <th className="px-6 py-4 font-semibold italic text-center w-20">{language === 'pt' ? 'N1' : 'G1'}</th>
+                <th className="px-6 py-4 font-semibold italic text-center w-20">{language === 'pt' ? 'N2' : 'G2'}</th>
+                <th className="px-6 py-4 font-semibold italic text-center w-20">{t.reportCard.average}</th>
+                <th className="px-6 py-4 font-semibold italic text-center w-24">{t.grades.frequency} %</th>
+                <th className="px-6 py-4 font-semibold italic w-32">{t.reportCard.status}</th>
                 <th className="px-6 py-4 font-semibold italic text-right w-24">{t.common.actions}</th>
               </tr>
             </thead>

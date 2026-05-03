@@ -190,9 +190,9 @@ export default function TurmasPage() {
                   <div className="flex items-center gap-1">
                     <Clock size={14} className="text-slate-300" />
                     <span className="capitalize">
-                      {turma.periodo === 'manhã' ? t.classes.morning : 
-                       turma.periodo === 'tarde' ? t.classes.afternoon : 
-                       turma.periodo === 'noite' ? t.classes.night : turma.periodo}
+                      {turma.periodo === 'manhã' ? t.common.morning : 
+                       turma.periodo === 'tarde' ? t.common.afternoon : 
+                       turma.periodo === 'noite' ? t.common.night : turma.periodo}
                     </span>
                   </div>
                 </div>
@@ -280,9 +280,9 @@ export default function TurmasPage() {
                 onChange={(e) => setCurrentTurma({ ...currentTurma, periodo: e.target.value })}
                 className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm appearance-none"
               >
-                <option value="manhã">{t.classes.morning}</option>
-                <option value="tarde">{t.classes.afternoon}</option>
-                <option value="noite">{t.classes.night}</option>
+                <option value="manhã">{t.common.morning}</option>
+                <option value="tarde">{t.common.afternoon}</option>
+                <option value="noite">{t.common.night}</option>
               </select>
             </div>
           </div>

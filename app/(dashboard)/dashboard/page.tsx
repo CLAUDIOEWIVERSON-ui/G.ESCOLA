@@ -136,10 +136,10 @@ export default function DashboardPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {alunosExterior.length === 0 ? (
+                  {alunosExterior.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="px-6 py-10 text-center text-slate-400 italic text-sm">
-                      Nenhum aluno no exterior encontrado.
+                      {t.common.noInternationalStudents}
                     </td>
                   </tr>
                 ) : (

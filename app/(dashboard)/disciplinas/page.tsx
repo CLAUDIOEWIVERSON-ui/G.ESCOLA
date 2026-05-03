@@ -209,7 +209,7 @@ export default function DisciplinasPage() {
               value={currentDisciplina?.nome || ''}
               onChange={(e) => setCurrentDisciplina({ ...currentDisciplina, nome: e.target.value })}
               className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm"
-              placeholder="Ex: Algoritmos e Programação"
+              placeholder={t.subjects.name}
             />
           </div>
 

@@ -32,22 +32,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { t } = useI18n();
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [userInitials, setUserInitials] = useState('AD');
 
   useEffect(() => {
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        router.push('/login');
+      } else {
+        const email = session.user.email || '';
+        const namePart = email.split('@')[0];
+        setUserInitials(namePart.slice(0, 2).toUpperCase());
+        setLoading(false);
+      }
+    };
+
+    checkUser();
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!session && event === 'SIGNED_OUT') {
         router.push('/login');
       } else if (session) {
+        const email = session.user.email || '';
+        const namePart = email.split('@')[0];
+        setUserInitials(namePart.slice(0, 2).toUpperCase());
         setLoading(false);
-      } else {
-        // Initial check if no session
-        supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
-          if (!initialSession) {
-            router.push('/login');
-          } else {
-            setLoading(false);
-          }
-        });
       }
     });
 
@@ -96,7 +105,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <nav id="sidebar-nav" className="flex-1 px-4 py-6 space-y-4 overflow-y-auto">
             <div>
               <div className={cn("text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 px-3", !sidebarOpen && "opacity-0 invisible h-0")}>
-                Management
+                {t.auth.management}
               </div>
               <div className="space-y-1">
                 {navItems.slice(0, 4).map((item) => {
@@ -124,7 +133,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             <div>
               <div className={cn("text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 px-3", !sidebarOpen && "opacity-0 invisible h-0")}>
-                Academic
+                {t.auth.academic}
               </div>
               <div className="space-y-1">
                 {navItems.slice(4).map((item) => {
@@ -153,12 +162,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           <div className="p-4 border-t border-slate-800">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs border border-slate-600 text-white">
-                JD
+              <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs border border-slate-600 text-white font-bold">
+                {userInitials}
               </div>
               <div className={cn("flex-1 overflow-hidden transition-opacity", !sidebarOpen && "opacity-0 w-0 invisible")}>
-                <p className="text-sm font-medium text-white truncate">Administrator</p>
-                <p className="text-xs text-slate-500">SGE System</p>
+                <p className="text-sm font-medium text-white truncate">{t.auth.adminRole}</p>
+                <p className="text-xs text-slate-500">{t.auth.systemName}</p>
               </div>
             </div>
             <button
@@ -187,9 +196,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </button>
             <div className="flex flex-col">
               <h1 className="text-lg font-bold text-slate-800 leading-none">
-                {pathname === '/dashboard' ? t.dashboard.title : pathname.replace('/', '').charAt(0).toUpperCase() + pathname.replace('/', '').slice(1)}
+                {navItems.find(item => item.path === pathname)?.name || t.dashboard.title}
               </h1>
-              <p className="text-[10px] text-slate-500 mt-1 uppercase tracking-wider font-semibold">Term 2024.1 • Global Management</p>
+              <p className="text-[10px] text-slate-500 mt-1 uppercase tracking-wider font-semibold">{t.auth.term}</p>
             </div>
           </div>
           <div className="flex items-center gap-6">
@@ -205,7 +214,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
             <LanguageToggle />
             <button className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 transition-colors shadow-sm shadow-blue-200">
-              New Report
+              {t.auth.newReport}
             </button>
           </div>
         </header>

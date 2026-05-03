@@ -211,7 +211,7 @@ export default function FrequenciaPage() {
               }}
               className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-sm appearance-none"
             >
-              <option value="">Todos os Cursos</option>
+              <option value="">{t.attendance.allCourses}</option>
               {cursos.map(curso => (
                 <option key={curso.id} value={curso.id}>{curso.nome}</option>
               ))}
@@ -226,7 +226,7 @@ export default function FrequenciaPage() {
               onChange={(e) => setSelectedTurma(e.target.value)}
               className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-sm appearance-none"
             >
-              <option value="">Selecione a Turma</option>
+              <option value="">{t.attendance.selectClass}</option>
               {filteredTurmas.map(turma => (
                 <option key={turma.id} value={turma.id}>{turma.nome}</option>
               ))}
@@ -235,7 +235,7 @@ export default function FrequenciaPage() {
           {view === 'record' ? (
             <div>
               <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">
-                Data
+                {t.attendance.date}
               </label>
               <input
                 type="date"
@@ -247,7 +247,7 @@ export default function FrequenciaPage() {
           ) : (
             <div>
               <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">
-                Mês / Ano
+                {t.attendance.monthYear}
               </label>
               <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5">
                 <button onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} className="p-1 hover:bg-white rounded transition-colors text-slate-500">
@@ -268,7 +268,7 @@ export default function FrequenciaPage() {
             className="flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-bold hover:bg-blue-700 transition-all shadow-md shadow-blue-100 disabled:opacity-50 h-[38px]"
           >
             {loading ? <Loader2 size={18} className="animate-spin" /> : <Search size={18} />}
-            Atualizar
+            {t.attendance.update}
           </button>
         </div>
       </div>
@@ -301,7 +301,7 @@ export default function FrequenciaPage() {
             <div className="divide-y divide-slate-100">
               {students.length === 0 ? (
                 <div className="py-20 text-center text-slate-400 italic text-sm">
-                  Selecione uma turma para registrar a frequência.
+                  {t.attendance.selectClassMsg}
                 </div>
               ) : (
                 students.map((student) => (
@@ -335,7 +335,7 @@ export default function FrequenciaPage() {
                   className="flex items-center gap-2 bg-blue-600 text-white px-8 py-2.5 rounded-xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-70"
                 >
                   {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-                  Salvar Chamada
+                  {t.attendance.saveCall}
                 </button>
               </div>
             )}
@@ -369,7 +369,7 @@ export default function FrequenciaPage() {
                   {students.length === 0 ? (
                     <tr>
                       <td colSpan={daysInMonth.length + 1} className="py-20 text-center text-slate-400 text-sm">
-                        Selecione uma turma para visualizar o mapa.
+                        {t.attendance.selectClassViewMap}
                       </td>
                     </tr>
                   ) : (

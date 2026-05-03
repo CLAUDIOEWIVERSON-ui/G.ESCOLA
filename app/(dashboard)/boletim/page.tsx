@@ -58,7 +58,7 @@ export default function BoletimPage() {
 
   const handleSearch = async () => {
     if (!selectedTurma || !selectedDisciplina) {
-      alert('Selecione Turma e Disciplina para gerar o boletim.');
+      alert(t.common.selectRequired);
       return;
     }
 
@@ -252,7 +252,7 @@ export default function BoletimPage() {
         <div className="lg:col-span-3">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden min-h-[400px]">
              <div className="p-4 border-b border-slate-100 bg-slate-50/30 flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-widest px-2">Resultado Final</span>
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-widest px-2">{t.common.finalResult}</span>
                 <div className="flex gap-2">
                    <button className="p-1.5 hover:bg-slate-100 rounded text-slate-400 transition-colors">
                       <Download size={16} />

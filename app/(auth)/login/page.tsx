@@ -34,15 +34,31 @@ export default function LoginPage() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       } else {
-        const { error } = await supabase.auth.signUp({ 
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ 
           email, 
           password,
           options: {
-            data: { role: 'admin' } // Initial user is admin for testing
+            data: { role: 'admin' } // Metadata for initial user
           }
         });
-        if (error) throw error;
-        setError("Account created! Check your email to verify (if enabled) or log in.");
+
+        if (signUpError) throw signUpError;
+        
+        if (signUpData?.user) {
+          // Create profile record
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .upsert({
+              id: signUpData.user.id,
+              role: 'admin',
+              full_name: email.split('@')[0],
+              created_at: new Date().toISOString()
+            });
+            
+          if (profileError) console.error('Profile creation error:', profileError);
+        }
+
+        setError(t.auth.accountCreated);
         setIsLogin(true);
         setLoading(false);
         return;
@@ -90,7 +106,7 @@ export default function LoginPage() {
         <div className="flex flex-col items-center mb-8">
           <Logo className="mb-4" />
           <h1 className="text-xl font-bold text-slate-800 tracking-tight">{t.auth.welcome}</h1>
-          <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1">EduStream • School Management</p>
+          <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1">{t.auth.systemName}</p>
         </div>
 
         <form id="auth-form" onSubmit={handleAuth} className="space-y-4">
@@ -119,7 +135,7 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition-all"
-                placeholder="name@school.com"
+                placeholder={t.auth.emailPlaceholder}
               />
             </div>
           </div>
@@ -163,7 +179,7 @@ export default function LoginPage() {
               <span className="w-full border-t border-slate-200"></span>
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white px-2 text-slate-400 font-bold tracking-wider">Ou continuar com</span>
+              <span className="bg-white px-2 text-slate-400 font-bold tracking-wider">{t.auth.orContinueWith}</span>
             </div>
           </div>
 

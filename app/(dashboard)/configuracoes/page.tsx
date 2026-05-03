@@ -97,8 +97,8 @@ export default function ConfiguracoesPage() {
                 <Trophy size={20} />
              </div>
              <div>
-                <h2 className="font-bold text-slate-800">Médias Acadêmicas</h2>
-                <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Critérios de Avaliação</p>
+                <h2 className="font-bold text-slate-800">{t.settings.academicAverages}</h2>
+                <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">{t.settings.evaluationCriteria}</p>
              </div>
           </div>
 
@@ -115,7 +115,7 @@ export default function ConfiguracoesPage() {
                  />
                  <Target size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               </div>
-              <p className="text-[10px] text-slate-400 mt-1 italic">Média necessária para aprovação direta.</p>
+              <p className="text-[10px] text-slate-400 mt-1 italic">{t.settings.passingGradeDesc}</p>
             </div>
 
             <div>
@@ -132,7 +132,7 @@ export default function ConfiguracoesPage() {
                     <Loader2 size={16} />
                  </div>
               </div>
-              <p className="text-[10px] text-slate-400 mt-1 italic">Média mínima para ter direito à recuperação.</p>
+              <p className="text-[10px] text-slate-400 mt-1 italic">{t.settings.recoveryGradeDesc}</p>
             </div>
           </div>
         </div>
@@ -143,8 +143,8 @@ export default function ConfiguracoesPage() {
                 <Percent size={20} />
              </div>
              <div>
-                <h2 className="font-bold text-slate-800">Parâmetros Gerais</h2>
-                <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Frequência e Tempo</p>
+                <h2 className="font-bold text-slate-800">{t.settings.generalParameters}</h2>
+                <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">{t.settings.frequencyTime}</p>
              </div>
           </div>
 
@@ -160,7 +160,7 @@ export default function ConfiguracoesPage() {
                  />
                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">%</span>
               </div>
-              <p className="text-[10px] text-slate-400 mt-1 italic">Percentual mínimo de presença para aprovação.</p>
+              <p className="text-[10px] text-slate-400 mt-1 italic">{t.settings.minFrequencyDesc}</p>
             </div>
 
             <div>
@@ -174,7 +174,7 @@ export default function ConfiguracoesPage() {
                  />
                  <Calendar size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               </div>
-              <p className="text-[10px] text-slate-400 mt-1 italic">Ano letivo vigente para filtros e registros.</p>
+              <p className="text-[10px] text-slate-400 mt-1 italic">{t.settings.currentYearDesc}</p>
             </div>
           </div>
         </div>
@@ -187,7 +187,7 @@ export default function ConfiguracoesPage() {
           className="flex items-center gap-2 bg-slate-900 text-white px-8 py-3 rounded-xl font-bold shadow-xl shadow-slate-200 hover:bg-slate-800 transition-all active:scale-95 disabled:opacity-70 group"
         >
           {saving ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} className="group-hover:translate-x-0.5 transition-transform" />}
-          Salvar Alterações
+          {t.settings.saveChanges}
         </button>
       </div>
     </div>
