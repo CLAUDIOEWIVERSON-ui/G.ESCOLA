@@ -18,6 +18,7 @@ export const turmaSchema = z.object({
   periodo: z.enum(['manhã', 'tarde', 'noite']),
   capacidade_max: z.number().int().min(1).max(100),
   ativa: z.boolean(),
+  instrutor: z.string().optional().nullable(),
 });
 
 export const alunoSchema = z.object({

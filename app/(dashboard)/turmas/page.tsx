@@ -53,7 +53,7 @@ export default function TurmasPage() {
   const refreshData = () => fetchTurmas(true);
 
   const handleOpenModal = (turma: any = null) => {
-    setCurrentTurma(turma || { nome: '', curso_id: '', ano: new Date().getFullYear(), periodo: 'manhã', capacidade_max: 40 });
+    setCurrentTurma(turma || { nome: '', curso_id: '', ano: new Date().getFullYear(), periodo: 'manhã', capacidade_max: 40, instrutor: '' });
     setIsModalOpen(true);
   };
 
@@ -70,7 +70,8 @@ export default function TurmasPage() {
             curso_id: currentTurma.curso_id,
             ano: currentTurma.ano,
             periodo: currentTurma.periodo,
-            capacidade_max: currentTurma.capacidade_max
+            capacidade_max: currentTurma.capacidade_max,
+            instrutor: currentTurma.instrutor
           })
           .eq('id', currentTurma.id);
         if (error) throw error;
@@ -83,7 +84,8 @@ export default function TurmasPage() {
               curso_id: currentTurma.curso_id,
               ano: currentTurma.ano,
               periodo: currentTurma.periodo,
-              capacidade_max: currentTurma.capacidade_max
+              capacidade_max: currentTurma.capacidade_max,
+              instrutor: currentTurma.instrutor
             }
           ]);
         if (error) throw error;
@@ -179,7 +181,14 @@ export default function TurmasPage() {
               </div>
               
               <h3 className="font-bold text-slate-800 text-lg mb-0.5 truncate">{turma.nome}</h3>
-              <p className="text-[10px] text-blue-600 font-bold uppercase tracking-wider mb-4 truncate">{turma.curso?.nome}</p>
+              <p className="text-[10px] text-blue-600 font-bold uppercase tracking-wider mb-2 truncate">{turma.curso?.nome}</p>
+              
+              {turma.instrutor && (
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-4 truncate flex items-center gap-1">
+                   <div className="w-1 h-1 bg-slate-300 rounded-full" />
+                   {t.classes.instructor}: {turma.instrutor}
+                </p>
+              )}
               
               <div className="space-y-4">
                 <div className="flex items-center gap-3 text-xs text-slate-500 font-medium">
@@ -237,6 +246,19 @@ export default function TurmasPage() {
               onChange={(e) => setCurrentTurma({ ...currentTurma, nome: e.target.value })}
               className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm"
               placeholder="Ex: Turma A"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+              {t.classes.instructor}
+            </label>
+            <input
+              type="text"
+              value={currentTurma?.instrutor || ''}
+              onChange={(e) => setCurrentTurma({ ...currentTurma, instrutor: e.target.value })}
+              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm"
+              placeholder="Ex: Cel Silva"
             />
           </div>
 
