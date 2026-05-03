@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { LanguageToggle } from '@/components/LanguageToggle';
+import { Logo } from '@/components/Logo';
 import { 
   LayoutDashboard, 
   BookOpen, 
@@ -13,6 +14,9 @@ import {
   GraduationCap, 
   Library, 
   FileCheck, 
+  FileText,
+  CalendarDays,
+  Settings,
   LogOut,
   ChevronRight,
   Menu,
@@ -30,15 +34,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!session && event === 'SIGNED_OUT') {
         router.push('/login');
-      } else {
+      } else if (session) {
         setLoading(false);
+      } else {
+        // Initial check if no session
+        supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+          if (!initialSession) {
+            router.push('/login');
+          } else {
+            setLoading(false);
+          }
+        });
       }
-    };
-    checkAuth();
+    });
+
+    return () => subscription.unsubscribe();
   }, [router]);
 
   const handleLogout = async () => {
@@ -53,6 +66,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: t.nav.students, icon: Users, path: '/alunos' },
     { name: t.nav.subjects, icon: GraduationCap, path: '/disciplinas' },
     { name: t.nav.grades, icon: FileCheck, path: '/notas' },
+    { name: t.nav.reportCard, icon: FileText, path: '/boletim' },
+    { name: t.nav.attendance, icon: CalendarDays, path: '/frequencia' },
+    { name: t.nav.settings, icon: Settings, path: '/configuracoes' },
   ];
 
   if (loading) {
@@ -73,13 +89,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         )}
       >
         <div className="flex flex-col h-full">
-          <div className="p-6 flex items-center gap-3 border-b border-slate-800">
-            <div className="min-w-8 h-8 bg-blue-500 rounded flex items-center justify-center text-white font-bold shrink-0">
-              ES
-            </div>
-            <span className={cn("font-semibold text-white tracking-tight transition-opacity whitespace-nowrap", !sidebarOpen && "opacity-0")}>
-              EduStream Admin
-            </span>
+          <div className="p-5 flex items-center border-b border-slate-800 h-16">
+            <Logo collapsed={!sidebarOpen} />
           </div>
 
           <nav id="sidebar-nav" className="flex-1 px-4 py-6 space-y-4 overflow-y-auto">
@@ -199,14 +210,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        <main className="flex-1 p-8 overflow-y-auto">
-          <AnimatePresence mode="wait">
+        <main className="flex-1 p-8 overflow-y-auto overflow-x-hidden">
+          <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={pathname}
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
+              exit={{ opacity: 0, y: -5 }}
+              transition={{ duration: 0.12, ease: [0.23, 1, 0.32, 1] }}
             >
               {children}
             </motion.div>

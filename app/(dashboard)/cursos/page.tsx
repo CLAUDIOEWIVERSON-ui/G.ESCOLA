@@ -30,6 +30,7 @@ export default function CursosPage() {
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
+  const [skipHeader, setSkipHeader] = useState(false);
   const [bulkData, setBulkData] = useState('');
   const [saving, setSaving] = useState(false);
   const [editingCurso, setEditingCurso] = useState<Curso | null>(null);
@@ -41,7 +42,11 @@ export default function CursosPage() {
       nome: '',
       descricao: '',
       ano_inicio: new Date().getFullYear(),
-      ativo: true
+      ativo: true,
+      internacional: false,
+      localizacao: '',
+      data_inicio: '',
+      data_fim: ''
     }
   });
 
@@ -103,13 +108,24 @@ export default function CursosPage() {
     setSaving(true);
 
     try {
-      // Flexible CSV parsing: Nome, Código, Descrição
-      const lines = bulkData.split('\n').filter(line => line.trim());
-      const coursesToInsert = lines.map(line => {
-        const parts = line.split(',').map(s => s.trim());
+      // Robust multi-format parsing
+      const rawLines = bulkData.split(/\r?\n/).filter(line => line.trim());
+      if (rawLines.length === 0) throw new Error(t.common.parseError);
+
+      const firstLine = rawLines[0];
+      const separator = firstLine.includes(';') ? ';' : ',';
+
+      const dataLines = skipHeader ? rawLines.slice(1) : rawLines;
+      const results: { success: any[], errors: string[] } = { success: [], errors: [] };
+
+      const coursesToInsert = dataLines.map((line, index) => {
+        const parts = line.split(separator).map(s => s.trim());
         const [nome, codigo, descricao] = parts;
         
-        if (!nome) return null;
+        if (!nome) {
+          results.errors.push(`Linha ${index + (skipHeader ? 2 : 1)}: Nome não encontrado.`);
+          return null;
+        }
 
         return {
           nome,
@@ -118,21 +134,27 @@ export default function CursosPage() {
           ano_inicio: new Date().getFullYear(),
           ativo: true
         };
-      }).filter(Boolean);
+      }).filter(Boolean) as any[];
 
       if (coursesToInsert.length === 0) {
-        throw new Error(t.common.parseError);
+        throw new Error(results.errors.length > 0 ? results.errors.join('\n') : t.common.parseError);
       }
 
-      const { error } = await supabase.from('cursos').insert(coursesToInsert);
+      const { data, error } = await supabase.from('cursos').upsert(coursesToInsert, {
+        onConflict: 'nome',
+        ignoreDuplicates: false
+      }).select();
+      
       if (error) throw error;
 
       await fetchCursos();
       setIsBulkModalOpen(false);
       setBulkData('');
-      alert(t.common.importSuccess);
+      
+      const successCount = data?.length || 0;
+      alert(`Sucesso! ${successCount} cursos importados.${results.errors.length > 0 ? '\n\nErros:\n' + results.errors.join('\n') : ''}`);
     } catch (err: any) {
-      alert(err.message);
+      alert('Erro na importação: ' + (err.message || 'Verifique o formato dos dados.'));
     } finally {
       setSaving(false);
     }
@@ -204,8 +226,16 @@ export default function CursosPage() {
               ) : filteredCursos.map((curso) => (
                 <tr key={curso.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors group">
                   <td className="px-6 py-4">
-                    <div className="font-semibold text-slate-900">{curso.nome}</div>
-                    <div className="text-xs text-slate-500 truncate max-w-[200px]">{curso.descricao}</div>
+                    <div className="flex items-center gap-2">
+                       <div className="font-semibold text-slate-900">{curso.nome}</div>
+                       {curso.internacional && (
+                         <span className="px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 text-[8px] font-bold uppercase tracking-widest border border-purple-200">Exterior</span>
+                       )}
+                    </div>
+                    <div className="text-xs text-slate-500 truncate max-w-[200px]">
+                       {curso.localizacao && <span className="text-slate-900 font-bold mr-1">[{curso.localizacao}]</span>}
+                       {curso.descricao}
+                    </div>
                   </td>
                   <td className="px-6 py-4 text-sm text-slate-600">{curso.ano_inicio}</td>
                   <td className="px-6 py-4">
@@ -283,10 +313,61 @@ export default function CursosPage() {
                   <label className="text-sm font-semibold text-slate-700">{t.courses.description}</label>
                   <textarea
                     {...register('descricao')}
-                    rows={3}
+                    rows={2}
                     className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
                     placeholder="Descrição breve do curso..."
                   />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1 flex flex-col justify-center pt-2">
+                    <label className="flex items-center gap-3 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        {...register('internacional')}
+                        className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500"
+                      />
+                      <span className="text-sm font-bold text-slate-700 group-hover:text-purple-600 transition-colors">{t.dashboard.internationalCourses}</span>
+                    </label>
+                  </div>
+                  <div className="space-y-1 flex flex-col justify-center pt-2">
+                    <label className="flex items-center gap-3 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        {...register('ativo')}
+                        className="w-4 h-4 rounded text-slate-900 focus:ring-slate-900"
+                      />
+                      <span className="text-sm font-bold text-slate-700 group-hover:text-slate-900 transition-colors">Ativo</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-sm font-semibold text-slate-700">{t.dashboard.location}</label>
+                  <input
+                    {...register('localizacao')}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
+                    placeholder="Ex: Portugal, Angola, Brasília..."
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                   <div className="space-y-1">
+                    <label className="text-sm font-semibold text-slate-700">{t.dashboard.courseStart}</label>
+                    <input
+                      type="date"
+                      {...register('data_inicio')}
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-sm font-semibold text-slate-700">{t.dashboard.courseEnd}</label>
+                    <input
+                      type="date"
+                      {...register('data_fim')}
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
+                    />
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -298,16 +379,6 @@ export default function CursosPage() {
                       className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
                     />
                     {errors.ano_inicio && <p className="text-xs text-red-500 mt-1">{errors.ano_inicio.message}</p>}
-                  </div>
-                  <div className="space-y-1 flex flex-col justify-center pt-6">
-                    <label className="flex items-center gap-3 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        {...register('ativo')}
-                        className="w-4 h-4 rounded text-slate-900 focus:ring-slate-900"
-                      />
-                      <span className="text-sm font-semibold text-slate-700">Ativo</span>
-                    </label>
                   </div>
                 </div>
 
@@ -348,10 +419,34 @@ export default function CursosPage() {
               value={bulkData}
               onChange={(e) => setBulkData(e.target.value)}
               className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm font-mono"
-              placeholder="Ex: Engenharia, ENG101, Curso de base\nAdministração, ADM, Gestão\nDireito"
+              placeholder="Ex: Engenharia, ENG101, Curso de base&#10;Administração, ADM, Gestão&#10;Direito"
             />
-            <p className="mt-2 text-[10px] text-slate-400 italic">
-              * Separe os campos por vírgula. Somente o Nome é obrigatório. Se o código for omitido, será gerado automaticamente.
+            
+            <div className="mt-3 flex items-center justify-between">
+              <label className="flex items-center gap-2 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={skipHeader}
+                  onChange={(e) => setSkipHeader(e.target.checked)}
+                  className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider group-hover:text-blue-600 transition-colors">
+                  Pular primeira linha (Cabeçalho)
+                </span>
+              </label>
+              
+              <button
+                type="button"
+                onClick={() => setBulkData('')}
+                className="text-[10px] font-bold text-slate-400 uppercase hover:text-red-500 transition-colors"
+              >
+                Limpar Campo
+              </button>
+            </div>
+
+            <p className="mt-4 text-[10px] text-slate-400 italic">
+              * Suporta separadores por vírgula (,) ou ponto-e-vírgula (;).<br/>
+              * Somente o <strong>Nome</strong> é obrigatório. Se o código for omitido, será gerado automaticamente.
             </p>
           </div>
 

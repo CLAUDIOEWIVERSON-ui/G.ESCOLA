@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/LanguageContext';
-import { Plus, Search, Layers, Calendar, Clock, MapPin, Pencil, Trash2, Loader2, CheckCircle2 } from 'lucide-react';
+import { Plus, Search, Layers, Calendar, Clock, MapPin, Pencil, Trash2, Loader2, CheckCircle2, RefreshCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import Modal from '@/components/Modal';
@@ -13,48 +13,44 @@ export default function TurmasPage() {
   const [turmas, setTurmas] = useState<any[]>([]);
   const [cursos, setCursos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentTurma, setCurrentTurma] = useState<any>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      
-      // Fetch Turmas
-      const { data: turmasData } = await supabase
-        .from('turmas')
-        .select('*, curso:cursos(nome)')
-        .is('deleted_at', null)
-        .order('nome');
-        
-      if (turmasData) setTurmas(turmasData);
-
-      // Fetch Cursos
-      const { data: cursosData } = await supabase
-        .from('cursos')
-        .select('id, nome')
-        .is('deleted_at', null)
-        .order('nome');
-        
-      if (cursosData) setCursos(cursosData);
-      
-      setLoading(false);
-    };
-
-    fetchData();
+  const fetchCursos = useCallback(async () => {
+    const { data } = await supabase
+      .from('cursos')
+      .select('id, nome')
+      .is('deleted_at', null)
+      .order('nome');
+    if (data) setCursos(data);
   }, []);
 
-  const refreshData = async () => {
-    const { data: turmasData } = await supabase
+  const fetchTurmas = useCallback(async (isRefresh = false) => {
+    if (!isRefresh) setLoading(true);
+    else setRefreshing(true);
+
+    const { data } = await supabase
       .from('turmas')
       .select('*, curso:cursos(nome)')
       .is('deleted_at', null)
       .order('nome');
       
-    if (turmasData) setTurmas(turmasData);
-  };
+    if (data) setTurmas(data);
+    setLoading(false);
+    setRefreshing(false);
+  }, []);
+
+  useEffect(() => {
+    const init = async () => {
+      await Promise.all([fetchTurmas(), fetchCursos()]);
+    };
+    init();
+  }, [fetchTurmas, fetchCursos]);
+
+  const refreshData = () => fetchTurmas(true);
 
   const handleOpenModal = (turma: any = null) => {
     setCurrentTurma(turma || { nome: '', curso_id: '', ano: new Date().getFullYear(), periodo: 'manhã', capacidade_max: 40 });
@@ -128,13 +124,21 @@ export default function TurmasPage() {
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{t.classes.title}</h1>
           <p className="text-slate-500 text-sm italic mt-1">{t.classes.subtitle}</p>
         </div>
-        <button 
-          onClick={() => handleOpenModal()}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-all shadow-sm shadow-blue-100"
-        >
-          <Plus size={18} />
-          {t.classes.add}
-        </button>
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={refreshData}
+            className="p-2 text-slate-500 hover:text-blue-600 transition-colors"
+          >
+            <RefreshCcw size={18} className={refreshing ? "animate-spin" : ""} />
+          </button>
+          <button 
+            onClick={() => handleOpenModal()}
+            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-all shadow-sm shadow-blue-100"
+          >
+            <Plus size={18} />
+            {t.classes.add}
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { 
@@ -24,57 +24,42 @@ import {
   Calendar,
   Building,
   CreditCard,
+  RefreshCcw,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import Modal from '@/components/Modal';
+import Image from 'next/image';
 
 export default function AlunosPage() {
   const { t } = useI18n();
   const [alunos, setAlunos] = useState<any[]>([]);
   const [turmas, setTurmas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
+  const [skipHeader, setSkipHeader] = useState(false);
   const [bulkData, setBulkData] = useState('');
   const [currentAluno, setCurrentAluno] = useState<any>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
-  useEffect(() => {
-    const fetchInitialData = async () => {
-      setLoading(true);
-      
-      // Fetch Alunos
-      const { data: alunosData } = await supabase
-        .from('alunos')
-        .select(`
-          *,
-          turma:turmas(id, nome, curso:cursos(nome))
-        `)
-        .is('deleted_at', null)
-        .order('nome');
-        
-      if (alunosData) setAlunos(alunosData);
-
-      // Fetch Turmas for the dropdown
-      const { data: turmasData } = await supabase
-        .from('turmas')
-        .select('id, nome')
-        .is('deleted_at', null)
-        .order('nome');
-        
-      if (turmasData) setTurmas(turmasData);
-      
-      setLoading(false);
-    };
-
-    fetchInitialData();
+  const fetchTurmas = useCallback(async () => {
+    const { data } = await supabase
+      .from('turmas')
+      .select('id, nome')
+      .is('deleted_at', null)
+      .order('nome');
+    if (data) setTurmas(data);
   }, []);
 
-  const refreshAlunos = async () => {
-    // Re-use logic for manual refresh if needed
-    const { data: alunosData } = await supabase
+  const fetchAlunos = useCallback(async (isRefresh = false) => {
+    if (!isRefresh) setLoading(true);
+    else setRefreshing(true);
+
+    const { data } = await supabase
       .from('alunos')
       .select(`
         *,
@@ -83,8 +68,19 @@ export default function AlunosPage() {
       .is('deleted_at', null)
       .order('nome');
       
-    if (alunosData) setAlunos(alunosData);
-  };
+    if (data) setAlunos(data);
+    setLoading(false);
+    setRefreshing(false);
+  }, []);
+
+  useEffect(() => {
+    const init = async () => {
+      await Promise.all([fetchAlunos(), fetchTurmas()]);
+    };
+    init();
+  }, [fetchAlunos, fetchTurmas]);
+
+  const refreshAlunos = () => fetchAlunos(true);
 
   const handleOpenModal = (aluno: any = null) => {
     setCurrentAluno(aluno || { 
@@ -112,14 +108,19 @@ export default function AlunosPage() {
     setSaving(true);
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random()}.${fileExt}`;
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 11)}.${fileExt}`;
       const filePath = `alunos/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('escola')
         .upload(filePath, file);
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        if (uploadError.message.includes('bucket not found')) {
+          throw new Error('O bucket "escola" não foi encontrado no Supabase Storage. Crie o bucket "escola" com acesso público para habilitar o upload de fotos.');
+        }
+        throw uploadError;
+      }
 
       const { data: { publicUrl } } = supabase.storage
         .from('escola')
@@ -127,7 +128,8 @@ export default function AlunosPage() {
 
       setCurrentAluno({ ...currentAluno, foto_url: publicUrl });
     } catch (err: any) {
-      alert('Upload error: ' + err.message);
+      console.error('Photo upload error:', err);
+      alert('Erro no upload: ' + (err.message || 'Verifique sua conexão e configurações do bucket no Supabase.'));
     } finally {
       setSaving(false);
     }
@@ -140,18 +142,18 @@ export default function AlunosPage() {
     try {
       const dataToSave = {
         nome: currentAluno.nome,
-        email: currentAluno.email,
+        email: currentAluno.email || null,
         matricula: currentAluno.matricula,
-        turma_id: currentAluno.turma_id || null,
-        status: currentAluno.status,
-        nif: currentAluno.nif,
-        rg: currentAluno.rg,
-        om: currentAluno.om,
-        posto_graduacao: currentAluno.posto_graduacao,
-        ano_admissao: currentAluno.ano_admissao,
-        telefone: currentAluno.telefone,
-        whatsapp: currentAluno.whatsapp,
-        foto_url: currentAluno.foto_url
+        turma_id: (currentAluno.turma_id && currentAluno.turma_id.length > 5) ? currentAluno.turma_id : null,
+        status: currentAluno.status || 'ativo',
+        nif: currentAluno.nif || '',
+        rg: currentAluno.rg || '',
+        om: currentAluno.om || '',
+        posto_graduacao: currentAluno.posto_graduacao || '',
+        ano_admissao: currentAluno.ano_admissao ? parseInt(currentAluno.ano_admissao.toString()) : new Date().getFullYear(),
+        telefone: currentAluno.telefone || '',
+        whatsapp: currentAluno.whatsapp || '',
+        foto_url: currentAluno.foto_url || ''
       };
 
       if (currentAluno.id) {
@@ -170,7 +172,8 @@ export default function AlunosPage() {
       await refreshAlunos();
       setIsModalOpen(false);
     } catch (err: any) {
-      alert(err.message);
+      console.error('Save error:', err);
+      alert('Erro ao salvar: ' + (err.message || 'Erro desconhecido. Verifique os dados.'));
     } finally {
       setSaving(false);
     }
@@ -189,6 +192,7 @@ export default function AlunosPage() {
       if (error) throw error;
       await refreshAlunos();
     } catch (err: any) {
+      console.error('Delete error:', err);
       alert(err.message);
     } finally {
       setDeleting(null);
@@ -200,19 +204,46 @@ export default function AlunosPage() {
     setSaving(true);
 
     try {
-      // Flexible CSV parsing: Nome, Email, Matrícula, Turma_ID, NIF, RG, OM, Posto/Graduação, Ano Admissão, Telefone, WhatsApp
-      const lines = bulkData.split('\n').filter(line => line.trim());
-      const studentsToInsert = lines.map(line => {
-        const parts = line.split(',').map(s => s.trim());
+      const rawLines = bulkData.split(/\r?\n/).filter(line => line.trim());
+      if (rawLines.length === 0) throw new Error(t.common.parseError);
+
+      const firstLine = rawLines[0];
+      const separator = firstLine.includes(';') ? ';' : ',';
+
+      const dataLines = skipHeader ? rawLines.slice(1) : rawLines;
+      const results: { success: any[], errors: string[] } = { success: [], errors: [] };
+
+      const studentsToInsert = dataLines.map((line, index) => {
+        const parts = line.split(separator).map(s => s.trim());
+        // Standard index mapping: Nome, Email, Matricula, ID_Turma, NIF, RG, OM, Posto, Ano, Fone, Zap
         const [nome, email, matricula, turma_id, nif, rg, om, posto_graduacao, ano_admissao, telefone, whatsapp] = parts;
         
-        if (!nome) return null;
+        if (!nome) {
+          results.errors.push(`Linha ${index + (skipHeader ? 2 : 1)}: Nome não encontrado.`);
+          return null;
+        }
+
+        const cleanNome = nome.replace(/['"]/g, '');
+        const fallbackEmail = `${cleanNome.toLowerCase().replace(/[^a-z0-9]/g, '')}${Math.floor(100 + Math.random() * 899)}@escola.com`;
+        const fallbackMatricula = `MAT${new Date().getFullYear()}${Math.floor(10000 + Math.random() * 89999)}`;
+
+        // Enhanced ID detection: if turma_id is provided but doesn't look like a UUID, we try to match by name
+        let finalTurmaId = null;
+        if (turma_id) {
+          if (turma_id.length > 20) { // Likely UUID
+            finalTurmaId = turma_id;
+          } else {
+             // Search in fetched turmas by name
+             const found = turmas.find(t => t.nome.toLowerCase() === turma_id.toLowerCase());
+             if (found) finalTurmaId = found.id;
+          }
+        }
 
         return {
-          nome,
-          email: email || `${nome.toLowerCase().split(' ')[0]}.${Math.floor(Math.random() * 1000)}@escola.com`,
-          matricula: matricula || `MAT${new Date().getFullYear()}${Math.floor(1000 + Math.random() * 8999)}`,
-          turma_id: turma_id || null,
+          nome: cleanNome,
+          email: (email && email.includes('@')) ? email.replace(/['"]/g, '') : fallbackEmail,
+          matricula: (matricula && matricula.length > 2) ? matricula.replace(/['"]/g, '') : fallbackMatricula,
+          turma_id: finalTurmaId, 
           nif: nif || '',
           rg: rg || '',
           om: om || '',
@@ -222,24 +253,46 @@ export default function AlunosPage() {
           whatsapp: whatsapp || '',
           status: 'ativo'
         };
-      }).filter(Boolean);
+      }).filter(Boolean) as any[];
 
       if (studentsToInsert.length === 0) {
-        throw new Error(t.common.parseError);
+        throw new Error(results.errors.length > 0 ? results.errors.join('\n') : t.common.parseError);
       }
 
-      const { error } = await supabase.from('alunos').insert(studentsToInsert);
-      if (error) throw error;
+      const { data, error } = await supabase.from('alunos').upsert(studentsToInsert, { 
+        onConflict: 'matricula',
+        ignoreDuplicates: false 
+      }).select();
+      
+      if (error) {
+        console.error('Supabase Upsert Error:', error);
+        throw new Error(error.message || 'Erro na comunicação com o banco de dados.');
+      }
 
       await refreshAlunos();
       setIsBulkModalOpen(false);
       setBulkData('');
-      alert(t.common.importSuccess);
+      
+      const successCount = data?.length || 0;
+      alert(`Sucesso! ${successCount} alunos processados.${results.errors.length > 0 ? '\n\nErros detectados:\n' + results.errors.join('\n') : ''}`);
     } catch (err: any) {
-      alert(err.message);
+      console.error('Import error:', err);
+      alert('Erro na importação: ' + (err.message || 'Verifique o formato dos dados e se as turmas existem.'));
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleBulkFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      setBulkData(text);
+    };
+    reader.readAsText(file);
   };
 
   return (
@@ -250,6 +303,12 @@ export default function AlunosPage() {
           <p className="text-slate-500 text-sm italic">{t.students.subtitle}</p>
         </div>
         <div className="flex gap-2">
+          <button 
+            onClick={refreshAlunos}
+            className="p-2 text-slate-500 hover:text-blue-600 transition-colors"
+          >
+            <RefreshCcw size={18} className={refreshing ? "animate-spin" : ""} />
+          </button>
           <button 
             onClick={() => setIsBulkModalOpen(true)}
             className="flex items-center gap-2 bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-all shadow-sm"
@@ -287,11 +346,18 @@ export default function AlunosPage() {
             <div className="absolute top-0 left-0 w-1 h-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
             
             <div className="flex justify-between items-start mb-4">
-              <div className="relative group/avatar">
+              <div className="relative group/avatar w-12 h-16 overflow-hidden rounded-lg border border-slate-100 shadow-sm">
                 {aluno.foto_url ? (
-                  <img src={aluno.foto_url} alt={aluno.nome} className="w-12 h-16 object-cover rounded-lg border border-slate-100 shadow-sm" />
+                  <Image 
+                    src={aluno.foto_url} 
+                    alt={aluno.nome} 
+                    fill 
+                    className="object-cover"
+                    sizes="48px"
+                    referrerPolicy="no-referrer"
+                  />
                 ) : (
-                  <div className="w-12 h-16 bg-slate-50 rounded-lg flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors border border-slate-100 italic text-[10px] uppercase font-bold">
+                  <div className="w-full h-full bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors italic text-[10px] uppercase font-bold">
                     3x4
                   </div>
                 )}
@@ -389,7 +455,14 @@ export default function AlunosPage() {
             <div className="flex-shrink-0 flex flex-col items-center gap-3">
               <div className="relative group cursor-pointer w-32 h-40 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 hover:border-blue-400 hover:text-blue-500 transition-all overflow-hidden">
                 {currentAluno?.foto_url ? (
-                  <img src={currentAluno.foto_url} alt="3x4 Preview" className="w-full h-full object-cover" />
+                  <Image 
+                    src={currentAluno.foto_url} 
+                    alt="3x4 Preview" 
+                    fill 
+                    className="object-cover" 
+                    sizes="128px"
+                    referrerPolicy="no-referrer"
+                  />
                 ) : (
                   <>
                     <Camera size={32} strokeWidth={1.5} />
@@ -623,10 +696,27 @@ export default function AlunosPage() {
         title={t.common.bulkAdd}
       >
         <form onSubmit={handleBulkSave} className="space-y-4">
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-              Dados (CSV: Nome, Email, Matrícula, ID Turma, NIF, RG, OM, Posto, Ano, Fone, Zap)
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
+              Dados (CSV: Nome, Email, ...)
             </label>
+            <div className="relative">
+              <input
+                type="file"
+                accept=".csv,.txt"
+                onChange={handleBulkFileChange}
+                className="absolute inset-0 opacity-0 cursor-pointer"
+              />
+              <button
+                type="button"
+                className="flex items-center gap-1.5 text-[10px] font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-md uppercase hover:bg-blue-100 transition-colors"
+              >
+                <Plus size={12} />
+                Importar Arquivo .CSV
+              </button>
+            </div>
+          </div>
+          <div>
             <textarea
               required
               rows={8}
@@ -635,8 +725,33 @@ export default function AlunosPage() {
               className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm font-mono"
               placeholder="Ex: João Silva, joao@email.com, MAT2024001, f47ac10b..., 123.456.789-00, 1.234.567-8, 1º Btl, Sgt, 2020, 11999999999, 11999999999"
             />
-            <p className="mt-2 text-[10px] text-slate-400 italic">
-              * Separe os campos por vírgula. Somente o Nome é obrigatório. O sistema gerará valores automáticos para outros campos cruciais (Email/Matrícula) se deixados em branco.
+            
+            <div className="mt-3 flex items-center justify-between">
+              <label className="flex items-center gap-2 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={skipHeader}
+                  onChange={(e) => setSkipHeader(e.target.checked)}
+                  className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider group-hover:text-blue-600 transition-colors">
+                  Pular primeira linha (Cabeçalho)
+                </span>
+              </label>
+              
+              <button
+                type="button"
+                onClick={() => setBulkData('')}
+                className="text-[10px] font-bold text-slate-400 uppercase hover:text-red-500 transition-colors"
+              >
+                Limpar Campo
+              </button>
+            </div>
+
+            <p className="mt-4 text-[10px] text-slate-400 italic leading-relaxed">
+              * Suporta separadores por vírgula (,) ou ponto-e-vírgula (;).<br/>
+              * Somente o <strong>Nome</strong> é obrigatório.<br/>
+              * O sistema gerará valores automáticos se Email/Matrícula forem omitidos.
             </p>
           </div>
 

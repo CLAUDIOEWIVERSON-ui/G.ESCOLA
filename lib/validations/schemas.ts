@@ -5,6 +5,10 @@ export const cursoSchema = z.object({
   descricao: z.string().optional().nullable(),
   ano_inicio: z.number().int().min(1900).max(2100),
   ativo: z.boolean(),
+  internacional: z.boolean(),
+  localizacao: z.string().optional().nullable(),
+  data_inicio: z.string().optional().nullable(),
+  data_fim: z.string().optional().nullable(),
 });
 
 export const turmaSchema = z.object({

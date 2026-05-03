@@ -20,6 +20,10 @@ CREATE TABLE IF NOT EXISTS public.cursos (
   descricao TEXT,
   ano_inicio INTEGER,
   ativo BOOLEAN DEFAULT TRUE,
+  internacional BOOLEAN DEFAULT FALSE,
+  localizacao TEXT,
+  data_inicio DATE,
+  data_fim DATE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   deleted_at TIMESTAMPTZ
 );
@@ -46,6 +50,14 @@ CREATE TABLE IF NOT EXISTS public.alunos (
   data_nascimento DATE,
   turma_id UUID REFERENCES public.turmas(id),
   matricula TEXT UNIQUE NOT NULL,
+  nif TEXT,
+  rg TEXT,
+  om TEXT,
+  posto_graduacao TEXT,
+  ano_admissao INTEGER,
+  telefone TEXT,
+  whatsapp TEXT,
+  foto_url TEXT,
   status aluno_status_enum DEFAULT 'ativo',
   created_at TIMESTAMPTZ DEFAULT NOW(),
   deleted_at TIMESTAMPTZ
@@ -137,3 +149,41 @@ CREATE POLICY "Admins have full access" ON public.alunos FOR ALL USING (auth.rol
 CREATE POLICY "Admins have full access" ON public.disciplinas FOR ALL USING (auth.role() = 'authenticated');
 CREATE POLICY "Admins have full access" ON public.notas FOR ALL USING (auth.role() = 'authenticated');
 CREATE POLICY "Users can view their own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
+
+-- 10. Frequência
+CREATE TABLE IF NOT EXISTS public.frequencia (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  aluno_id UUID REFERENCES public.alunos(id) NOT NULL,
+  turma_id UUID REFERENCES public.turmas(id) NOT NULL,
+  disciplina_id UUID REFERENCES public.disciplinas(id),
+  data DATE NOT NULL DEFAULT CURRENT_DATE,
+  presente BOOLEAN DEFAULT TRUE,
+  observacao TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(aluno_id, turma_id, data)
+);
+
+-- 11. Configurações da Escola
+CREATE TABLE IF NOT EXISTS public.configuracoes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  media_aprovacao DECIMAL(4,2) DEFAULT 7.0,
+  media_recuperacao DECIMAL(4,2) DEFAULT 5.0,
+  frequencia_minima INTEGER DEFAULT 75,
+  ano_letivo_atual INTEGER DEFAULT 2024,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Inserir configuração inicial se não existir
+INSERT INTO public.configuracoes (media_aprovacao, media_recuperacao, frequencia_minima, ano_letivo_atual)
+SELECT 7.0, 5.0, 75, 2024
+WHERE NOT EXISTS (SELECT 1 FROM public.configuracoes);
+
+CREATE INDEX idx_frequencia_turma_data ON public.frequencia(turma_id, data);
+
+ALTER TABLE public.frequencia ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Admins have full access" ON public.frequencia FOR ALL USING (auth.role() = 'authenticated');
+
+ALTER TABLE public.configuracoes ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Admins have full access" ON public.configuracoes FOR ALL USING (auth.role() = 'authenticated');
+CREATE POLICY "Public read access" ON public.configuracoes FOR SELECT USING (true);

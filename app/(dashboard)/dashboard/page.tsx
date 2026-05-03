@@ -18,41 +18,71 @@ export default function DashboardPage() {
   const { t } = useI18n();
   const [stats, setStats] = useState({
     alunos: 0,
-    cursos: 0,
-    turmas: 0,
+    cursosInternacionais: 0,
+    cursosNacionais: 0,
     media: 0
   });
+  const [alunosExterior, setAlunosExterior] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchStats = async () => {
-      const [
-        { count: alunos },
-        { count: cursos },
-        { count: turmas },
-        { data: notas }
-      ] = await Promise.all([
-        supabase.from('alunos').select('*', { count: 'exact', head: true }),
-        supabase.from('cursos').select('*', { count: 'exact', head: true }),
-        supabase.from('turmas').select('*', { count: 'exact', head: true }),
-        supabase.from('notas').select('nota_final')
-      ]);
+    const fetchDashboardData = async () => {
+      setLoading(true);
+      try {
+        const [
+          { count: totalAlunos },
+          { data: cursosInternacionais },
+          { data: cursosNacionais },
+          { data: notas },
+          { data: listAlunosExterior }
+        ] = await Promise.all([
+          supabase.from('alunos').select('*', { count: 'exact', head: true }).is('deleted_at', null),
+          supabase.from('cursos').select('id', { count: 'exact' }).eq('internacional', true).is('deleted_at', null),
+          supabase.from('cursos').select('id', { count: 'exact' }).eq('internacional', false).is('deleted_at', null),
+          supabase.from('notas').select('nota_final'),
+          supabase.from('alunos')
+            .select(`
+              id,
+              nome,
+              turma:turmas(
+                nome,
+                curso:cursos(
+                  nome,
+                  internacional,
+                  localizacao,
+                  data_inicio,
+                  data_fim
+                )
+              )
+            `)
+            .is('deleted_at', null)
+        ]);
 
-      const avg = notas?.length ? notas.reduce((acc, n) => acc + (n.nota_final || 0), 0) / notas.length : 0;
+        const avg = notas?.length ? notas.reduce((acc, n) => acc + (n.nota_final || 0), 0) / notas.length : 0;
+        
+        // Filter students that are actually in international courses
+        const filteredAlunosExterior = listAlunosExterior?.filter(a => (a.turma as any)?.curso?.internacional) || [];
 
-      setStats({
-        alunos: alunos || 0,
-        cursos: cursos || 0,
-        turmas: turmas || 0,
-        media: avg
-      });
+        setStats({
+          alunos: totalAlunos || 0,
+          cursosInternacionais: cursosInternacionais?.length || 0,
+          cursosNacionais: cursosNacionais?.length || 0,
+          media: avg
+        });
+        setAlunosExterior(filteredAlunosExterior);
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
     };
-    fetchStats();
+    fetchDashboardData();
   }, []);
 
   const statCards = [
     { name: t.dashboard.totalStudents, value: stats.alunos, icon: Users, color: 'bg-blue-500' },
-    { name: t.dashboard.totalCourses, value: stats.cursos, icon: BookOpen, color: 'bg-indigo-500' },
-    { name: t.dashboard.activeClasses, value: stats.turmas, icon: Library, color: 'bg-emerald-500' },
+    { name: t.dashboard.internationalCourses, value: stats.cursosInternacionais, icon: BookOpen, color: 'bg-purple-600' },
+    { name: t.dashboard.nationalCourses, value: stats.cursosNacionais, icon: Library, color: 'bg-emerald-600' },
     { name: t.dashboard.avgGrades, value: stats.media.toFixed(1), icon: TrendingUp, color: 'bg-amber-500' },
   ];
 
@@ -87,44 +117,61 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col overflow-hidden">
+        <div className="lg:col-span-3 bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col overflow-hidden">
           <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
             <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
-              <Clock size={16} className="text-slate-400" />
-              {t.dashboard.recentActivity}
+              <Users size={16} className="text-slate-400" />
+              {t.dashboard.studentsAbroad}
             </h3>
           </div>
-          <div className="divide-y divide-slate-50">
-            {[1, 2, 3, 4].map((_, i) => (
-              <div key={i} className="p-4 hover:bg-slate-50 transition-colors flex items-center gap-4">
-                <div className="w-8 h-8 bg-slate-100 rounded flex items-center justify-center text-slate-500 shrink-0">
-                  <BookOpen size={14} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-900 truncate">{t.dashboard.activityUpdate}</p>
-                  <p className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">2 {t.dashboard.hoursAgo}</p>
-                </div>
-              </div>
-            ))}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="text-[10px] font-bold text-slate-400 border-b border-slate-100 uppercase tracking-wider">
+                  <th className="px-6 py-4">{t.reportCard.student}</th>
+                  <th className="px-6 py-4">{t.nav.courses}</th>
+                  <th className="px-6 py-4 text-center">{t.dashboard.location}</th>
+                  <th className="px-6 py-4 text-center">{t.dashboard.courseStart}</th>
+                  <th className="px-6 py-4 text-center">{t.dashboard.courseEnd}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {alunosExterior.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-10 text-center text-slate-400 italic text-sm">
+                      Nenhum aluno no exterior encontrado.
+                    </td>
+                  </tr>
+                ) : (
+                  alunosExterior.map((aluno) => {
+                    const curso = (aluno.turma as any)?.curso;
+                    return (
+                      <tr key={aluno.id} className="hover:bg-slate-50 transition-colors group">
+                        <td className="px-6 py-4">
+                          <div className="text-sm font-bold text-slate-800">{aluno.nome}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-slate-600 font-medium">{curso?.nome}</div>
+                          <div className="text-[10px] text-slate-400 uppercase font-bold tracking-tight">{(aluno.turma as any)?.nome}</div>
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <span className="text-xs font-semibold text-slate-600 bg-slate-100 px-2 py-1 rounded">
+                            {curso?.localizacao || '-'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-center text-xs text-slate-500 font-mono">
+                          {curso?.data_inicio ? new Date(curso.data_inicio).toLocaleDateString() : '-'}
+                        </td>
+                        <td className="px-6 py-4 text-center text-xs text-slate-500 font-mono">
+                          {curso?.data_fim ? new Date(curso.data_fim).toLocaleDateString() : '-'}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
           </div>
-        </div>
-
-        <div className="bg-slate-900 text-white p-6 rounded-xl shadow-lg relative overflow-hidden flex flex-col h-full border border-slate-800">
-           <div className="absolute -right-8 -top-8 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl"></div>
-           <div className="relative z-10 flex-1">
-             <GraduationCap size={40} className="mb-4 text-blue-500 opacity-80" />
-             <h2 className="text-xl font-bold mb-2">{t.dashboard.schoolStatus}: {t.dashboard.active}</h2>
-             <p className="text-slate-400 text-sm leading-relaxed mb-6">{t.dashboard.schoolStatusDesc}</p>
-           </div>
-           <div className="relative z-10 pt-4 border-t border-slate-800">
-              <div className="flex items-center justify-between text-xs font-bold text-slate-500 uppercase mb-2">
-                <span>{t.dashboard.sync}</span>
-                <span className="text-blue-400">98% Success</span>
-              </div>
-              <div className="h-1 bg-slate-800 rounded-full overflow-hidden">
-                <div className="bg-blue-600 h-full w-[98%]"></div>
-              </div>
-           </div>
         </div>
       </div>
     </div>

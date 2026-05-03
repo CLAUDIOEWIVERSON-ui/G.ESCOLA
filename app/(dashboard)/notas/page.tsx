@@ -29,11 +29,16 @@ export default function NotasPage() {
   const [currentNota, setCurrentNota] = useState<any>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [settings, setSettings] = useState({ media_aprovacao: 6, media_recuperacao: 4, frequencia_minima: 75 });
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       
+      // Fetch Config
+      const { data: configData } = await supabase.from('configuracoes').select('*').single();
+      if (configData) setSettings(configData);
+
       // Fetch Notas
       const { data: notasData } = await supabase
         .from('notas')
@@ -81,13 +86,17 @@ export default function NotasPage() {
 
   const getStatus = (final: number | null, freq: number | null) => {
     if (final === null || freq === null) return { label: t.grades.pending, className: 'bg-slate-100 text-slate-700 ring-slate-600/20' };
-    if (final >= 6 && freq >= 75) return { 
+    if (final >= settings.media_aprovacao && freq >= settings.frequencia_minima) return { 
       label: t.grades.approved, 
       className: 'bg-green-100 text-green-700 ring-green-600/20' 
     };
-    if (freq < 75) return { 
+    if (freq < settings.frequencia_minima) return { 
       label: t.grades.lowFrequency, 
       className: 'bg-orange-100 text-orange-700 ring-orange-600/20' 
+    };
+    if (final >= settings.media_recuperacao) return {
+      label: t.grades.retake,
+      className: 'bg-yellow-100 text-yellow-700 ring-yellow-600/20 font-bold'
     };
     return { 
       label: t.grades.reproved, 
@@ -230,7 +239,7 @@ export default function NotasPage() {
                     <td className="px-6 py-4 text-center font-mono text-sm">{nota.nota1?.toFixed(1) || '-'}</td>
                     <td className="px-6 py-4 text-center font-mono text-sm">{nota.nota2?.toFixed(1) || '-'}</td>
                     <td className="px-6 py-4 text-center">
-                      <span className={cn("font-bold font-mono text-sm", (nota.nota_final || 0) >= 6 ? "text-blue-600" : "text-red-600")}>
+                      <span className={cn("font-bold font-mono text-sm", (nota.nota_final || 0) >= settings.media_aprovacao ? "text-blue-600" : (nota.nota_final || 0) >= settings.media_recuperacao ? "text-yellow-600" : "text-red-600")}>
                         {nota.nota_final?.toFixed(1) || '-'}
                       </span>
                     </td>
