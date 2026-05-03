@@ -31,6 +31,17 @@ export default function TurmasPage() {
   const [alunosInTurma, setAlunosInTurma] = useState<any[]>([]);
   const [currentAluno, setCurrentAluno] = useState<any>(null);
   const [loadingAlunos, setLoadingAlunos] = useState(false);
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
 
   const fetchCursos = useCallback(async () => {
     const { data } = await supabase
@@ -213,46 +224,60 @@ export default function TurmasPage() {
   };
 
   const handleDeleteStudent = async (id: string) => {
-    if (!confirm(t.common.delete + '?')) return;
-    setDeletingStudent(id);
-    
-    try {
-      const { error } = await supabase
-        .from('alunos')
-        .delete()
-        .eq('id', id);
+    setConfirmConfig({
+      isOpen: true,
+      title: t.common.delete,
+      message: t.common.delete + '?',
+      onConfirm: async () => {
+        setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+        setDeletingStudent(id);
         
-      if (error) throw error;
-      
-      setAlunosInTurma(alunosInTurma.filter(a => a.id !== id));
-      refreshData(); // Refresh class count
-    } catch (err: any) {
-      alert(err.message);
-    } finally {
-      setDeletingStudent(null);
-    }
+        try {
+          const { error } = await supabase
+            .from('alunos')
+            .delete()
+            .eq('id', id);
+            
+          if (error) throw error;
+          
+          setAlunosInTurma(alunosInTurma.filter(a => a.id !== id));
+          refreshData(); // Refresh class count
+        } catch (err: any) {
+          alert(err.message);
+        } finally {
+          setDeletingStudent(null);
+        }
+      }
+    });
   };
 
   const handleDeleteAllStudents = async () => {
     if (!viewingTurma || alunosInTurma.length === 0) return;
-    if (!confirm(t.common.deleteAllConfirm)) return;
     
-    setDeletingAll(true);
-    try {
-      const { error } = await supabase
-        .from('alunos')
-        .delete()
-        .eq('turma_id', viewingTurma.id);
-        
-      if (error) throw error;
-      
-      setAlunosInTurma([]);
-      refreshData();
-    } catch (err: any) {
-      alert(err.message);
-    } finally {
-      setDeletingAll(false);
-    }
+    setConfirmConfig({
+      isOpen: true,
+      title: t.common.deleteAll,
+      message: t.common.deleteAllConfirm,
+      onConfirm: async () => {
+        setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+        setDeletingAll(true);
+        try {
+          const { error } = await supabase
+            .from('alunos')
+            .delete()
+            .eq('turma_id', viewingTurma.id);
+            
+          if (error) throw error;
+          
+          setAlunosInTurma([]);
+          refreshData();
+        } catch (err: any) {
+          alert(err.message);
+        } finally {
+          setDeletingAll(false);
+        }
+      }
+    });
   };
 
   const handleBulkSave = async (e: React.FormEvent) => {
@@ -389,22 +414,29 @@ export default function TurmasPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm(t.common.delete + '?')) return;
-    setDeleting(id);
-    
-    try {
-      const { error } = await supabase
-        .from('turmas')
-        .update({ deleted_at: new Date().toISOString() })
-        .eq('id', id);
+    setConfirmConfig({
+      isOpen: true,
+      title: t.common.delete,
+      message: t.common.delete + '?',
+      onConfirm: async () => {
+        setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+        setDeleting(id);
         
-      if (error) throw error;
-      await refreshData();
-    } catch (err: any) {
-      alert(err.message);
-    } finally {
-      setDeleting(null);
-    }
+        try {
+          const { error } = await supabase
+            .from('turmas')
+            .update({ deleted_at: new Date().toISOString() })
+            .eq('id', id);
+            
+          if (error) throw error;
+          await refreshData();
+        } catch (err: any) {
+          alert(err.message);
+        } finally {
+          setDeleting(null);
+        }
+      }
+    });
   };
 
   return (
@@ -948,6 +980,29 @@ export default function TurmasPage() {
             </button>
           </div>
         </form>
+      </Modal>
+      <Modal
+        isOpen={confirmConfig.isOpen}
+        onClose={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
+        title={confirmConfig.title}
+      >
+        <div className="space-y-6">
+          <p className="text-slate-600 text-sm">{confirmConfig.message}</p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
+              className="flex-1 px-4 py-2.5 border border-slate-200 text-slate-600 rounded-lg font-bold text-sm hover:bg-slate-50 transition-all"
+            >
+              {t.common.cancel}
+            </button>
+            <button
+              onClick={confirmConfig.onConfirm}
+              className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg font-bold text-sm hover:bg-red-700 transition-all shadow-md shadow-red-100"
+            >
+              {t.common.delete}
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   );
