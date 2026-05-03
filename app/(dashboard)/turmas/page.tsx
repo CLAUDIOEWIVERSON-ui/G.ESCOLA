@@ -445,8 +445,8 @@ export default function TurmasPage() {
                 </div>
               </div>
               
-              <h3 className="font-bold text-slate-800 text-lg mb-0.5 truncate">{turma.nome}</h3>
-              <p className="text-[10px] text-blue-600 font-bold uppercase tracking-wider mb-2 truncate">{turma.curso?.nome}</p>
+              <p className="text-[10px] text-blue-600 font-bold uppercase tracking-wider mb-0.5 truncate">{turma.curso?.nome}</p>
+              <h3 className="font-bold text-slate-800 text-lg mb-2 truncate">{turma.nome}</h3>
               
               {turma.instrutor && (
                 <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-4 truncate flex items-center gap-1">
