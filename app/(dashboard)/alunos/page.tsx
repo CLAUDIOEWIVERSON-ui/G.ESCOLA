@@ -39,6 +39,7 @@ export default function AlunosPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
+  const [selectedTurmaForBulk, setSelectedTurmaForBulk] = useState('');
   const [skipHeader, setSkipHeader] = useState(false);
   const [bulkData, setBulkData] = useState('');
   const [currentAluno, setCurrentAluno] = useState<any>(null);
@@ -224,11 +225,11 @@ export default function AlunosPage() {
         }
 
         const cleanNome = nome.replace(/['"]/g, '');
-        const fallbackEmail = `${cleanNome.toLowerCase().replace(/[^a-z0-9]/g, '')}${Math.floor(100 + Math.random() * 899)}@escola.com`;
+        const fallbackEmail = `${cleanNome.toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 15)}${Math.floor(100 + Math.random() * 899)}@escola.com`;
         const fallbackMatricula = `MAT${new Date().getFullYear()}${Math.floor(10000 + Math.random() * 89999)}`;
 
-        // Enhanced ID detection: if turma_id is provided but doesn't look like a UUID, we try to match by name
-        let finalTurmaId = null;
+        // Enhanced ID detection
+        let finalTurmaId = selectedTurmaForBulk || null;
         if (turma_id) {
           if (turma_id.length > 20) { // Likely UUID
             finalTurmaId = turma_id;
@@ -696,9 +697,28 @@ export default function AlunosPage() {
         title={t.common.bulkAdd}
       >
         <form onSubmit={handleBulkSave} className="space-y-4">
+          <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 mb-4">
+            <label className="block text-xs font-bold text-blue-700 uppercase tracking-wider mb-2">
+              Turma de Destino (Opcional)
+            </label>
+            <select
+              value={selectedTurmaForBulk}
+              onChange={(e) => setSelectedTurmaForBulk(e.target.value)}
+              className="w-full px-4 py-2 bg-white border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm appearance-none"
+            >
+              <option value="">Nenhuma (ou especificada no texto)</option>
+              {turmas.map(turma => (
+                <option key={turma.id} value={turma.id}>{turma.nome}</option>
+              ))}
+            </select>
+            <p className="text-[10px] text-blue-600 mt-2 italic">
+              * Se selecionada, todos os alunos colados sem Turma ID serão vinculados a esta turma.
+            </p>
+          </div>
+
           <div className="flex items-center justify-between mb-2">
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
-              Dados (CSV: Nome, Email, ...)
+              Cole a lista de nomes ou CSV
             </label>
             <div className="relative">
               <input
@@ -719,11 +739,11 @@ export default function AlunosPage() {
           <div>
             <textarea
               required
-              rows={8}
+              rows={10}
               value={bulkData}
               onChange={(e) => setBulkData(e.target.value)}
               className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm font-mono"
-              placeholder="Ex: João Silva, joao@email.com, MAT2024001, f47ac10b..., 123.456.789-00, 1.234.567-8, 1º Btl, Sgt, 2020, 11999999999, 11999999999"
+              placeholder={`Exemplo (Nomes um por linha):\nJoão Silva\nMaria Oliveira\n\nOu CSV:\nJoão Silva, joao@email.com, MAT001`}
             />
             
             <div className="mt-3 flex items-center justify-between">
