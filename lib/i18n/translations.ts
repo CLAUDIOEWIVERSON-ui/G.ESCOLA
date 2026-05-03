@@ -5,6 +5,7 @@ export const translations = {
       cancel: "Cancelar",
       edit: "Editar",
       delete: "Excluir",
+      close: "Fechar",
       actions: "Ações",
       loading: "Carregando...",
       search: "Buscar",
@@ -139,6 +140,8 @@ export const translations = {
       morning: "Manhã",
       afternoon: "Tarde",
       night: "Noite",
+      viewStudents: "Ver Alunos",
+      noStudents: "Nenhum aluno matriculado nesta turma.",
     },
     subjects: {
       title: "Disciplinas",
@@ -223,6 +226,7 @@ export const translations = {
       cancel: "Cancel",
       edit: "Edit",
       delete: "Delete",
+      close: "Close",
       actions: "Actions",
       loading: "Loading...",
       search: "Search",
@@ -330,6 +334,8 @@ export const translations = {
       morning: "Morning",
       afternoon: "Afternoon",
       night: "Night",
+      viewStudents: "View Students",
+      noStudents: "No students enrolled in this class.",
     },
     students: {
       title: "Student Management",

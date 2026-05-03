@@ -72,7 +72,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: t.nav.dashboard, icon: LayoutDashboard, path: '/dashboard' },
     { name: t.nav.courses, icon: BookOpen, path: '/cursos' },
     { name: t.nav.classes, icon: Library, path: '/turmas' },
-    { name: t.nav.students, icon: Users, path: '/alunos' },
     { name: t.nav.subjects, icon: GraduationCap, path: '/disciplinas' },
     { name: t.nav.grades, icon: FileCheck, path: '/notas' },
     { name: t.nav.reportCard, icon: FileText, path: '/boletim' },
