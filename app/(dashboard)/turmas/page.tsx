@@ -21,6 +21,7 @@ export default function TurmasPage() {
   const [savingStudent, setSavingStudent] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [deletingStudent, setDeletingStudent] = useState<string | null>(null);
+  const [deletingAll, setDeletingAll] = useState(false);
   const [isStudentsModalOpen, setIsStudentsModalOpen] = useState(false);
   const [isStudentFormOpen, setIsStudentFormOpen] = useState(false);
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
@@ -232,6 +233,29 @@ export default function TurmasPage() {
     }
   };
 
+  const handleDeleteAllStudents = async () => {
+    if (!viewingTurma || alunosInTurma.length === 0) return;
+    if (!confirm(t.common.deleteAllConfirm)) return;
+    
+    setDeletingAll(true);
+    try {
+      const { error } = await supabase
+        .from('alunos')
+        .update({ deleted_at: new Date().toISOString() })
+        .eq('turma_id', viewingTurma.id)
+        .is('deleted_at', null);
+        
+      if (error) throw error;
+      
+      setAlunosInTurma([]);
+      refreshData();
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setDeletingAll(false);
+    }
+  };
+
   const handleBulkSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!bulkData.trim() || !viewingTurma) return;
@@ -408,96 +432,85 @@ export default function TurmasPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="flex flex-col gap-3">
         {loading ? (
-          <div className="col-span-full py-12 flex justify-center">
+          <div className="py-12 flex justify-center">
              <div className="animate-spin rounded-full h-8 w-8 border-2 border-slate-200 border-t-blue-600"></div>
           </div>
         ) : turmas.map((turma, i) => (
           <motion.div 
             key={turma.id}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
             transition={{ delay: i * 0.05 }}
-            className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden group shadow-sm hover:shadow-md transition-all"
+            onClick={() => handleViewStudents(turma)}
+            className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden group hover:shadow-md hover:border-blue-200 transition-all cursor-pointer flex flex-col md:flex-row md:items-center justify-between gap-4"
           >
-            <div className="absolute top-0 right-0 w-16 h-16 bg-slate-50 rotate-45 translate-x-8 -translate-y-8 group-hover:bg-blue-50 transition-colors"></div>
-            
-            <div className="relative z-10">
-              <div className="flex justify-between items-start mb-4">
-                <div className="w-10 h-10 bg-slate-50 text-slate-400 rounded-lg flex items-center justify-center group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
-                  <Layers size={20} />
-                </div>
-                <div className="flex gap-1">
-                  <button 
-                    onClick={() => handleOpenModal(turma)}
-                    className="p-1.5 hover:bg-blue-50 hover:text-blue-600 rounded-lg text-slate-400 transition-colors"
-                  >
-                    <Pencil size={14} />
-                  </button>
-                  <button 
-                    disabled={deleting === turma.id}
-                    onClick={() => handleDelete(turma.id)}
-                    className="p-1.5 hover:bg-red-50 hover:text-red-600 rounded-lg text-slate-400 transition-colors disabled:opacity-50"
-                  >
-                    {deleting === turma.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-                  </button>
-                </div>
+            <div className="flex items-center gap-4 flex-1 min-w-0">
+              <div className="w-12 h-12 bg-slate-50 text-slate-400 rounded-xl flex items-center justify-center group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors shrink-0">
+                <Layers size={24} />
               </div>
-              
-              <p className="text-[10px] text-blue-600 font-bold uppercase tracking-wider mb-0.5 truncate">{turma.curso?.nome}</p>
-              <h3 className="font-bold text-slate-800 text-lg mb-2 truncate">{turma.nome}</h3>
-              
-              {turma.instrutor && (
-                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-4 truncate flex items-center gap-1">
-                   <div className="w-1 h-1 bg-slate-300 rounded-full" />
-                   {t.classes.instructor}: {turma.instrutor}
-                </p>
-              )}
-              
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 text-xs text-slate-500 font-medium">
-                  <div className="flex items-center gap-1">
-                    <Calendar size={14} className="text-slate-300" />
-                    <span>{turma.ano}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Clock size={14} className="text-slate-300" />
-                    <span className="capitalize">
-                      {turma.periodo === 'manhã' ? t.common.morning : 
-                       turma.periodo === 'tarde' ? t.common.afternoon : 
-                       turma.periodo === 'noite' ? t.common.night : turma.periodo}
-                    </span>
-                  </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-col">
+                  <p className="text-[10px] text-blue-600 font-bold uppercase tracking-wider mb-0.5 truncate leading-none">{turma.curso?.nome}</p>
+                  <h3 className="font-bold text-slate-800 text-lg truncate leading-tight">{turma.nome}</h3>
                 </div>
                 
-                <div className="space-y-2 pt-2">
-                  <div className="flex justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wide">
-                    <span>{t.classes.capacity}</span>
-                    <span className="text-slate-600">{turma.alunos_matriculados} / {turma.capacidade_max}</span>
-                  </div>
-                  <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-blue-500 transition-all duration-700 ease-out" 
-                      style={{ width: `${(turma.alunos_matriculados / turma.capacidade_max) * 100}%` }}
-                    />
-                  </div>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2">
+                  {turma.instrutor && (
+                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                      <div className="w-1.5 h-1.5 bg-blue-400 rounded-full" />
+                      {t.classes.instructor}: {turma.instrutor}
+                    </span>
+                  )}
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                    <Calendar size={12} className="text-slate-300" />
+                    {turma.ano}
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1.5 capitalize">
+                    <Clock size={12} className="text-slate-300" />
+                    {turma.periodo === 'manhã' ? t.common.morning : 
+                     turma.periodo === 'tarde' ? t.common.afternoon : 
+                     turma.periodo === 'noite' ? t.common.night : turma.periodo}
+                  </span>
                 </div>
               </div>
             </div>
-            
-            <div className="mt-6 pt-4 border-t border-slate-50 flex items-center justify-between">
-              <button 
-                onClick={() => handleViewStudents(turma)}
-                className="text-xs font-bold text-slate-800 hover:text-blue-600 transition-colors flex items-center gap-1"
-              >
-                {t.classes.viewStudents}
-              </button>
+
+            <div className="md:w-64 shrink-0 flex flex-col gap-2">
+              <div className="flex justify-between items-end text-[10px] font-bold uppercase tracking-wide">
+                <span className="text-slate-400">{t.classes.capacity}</span>
+                <span className="text-slate-700 bg-slate-100 px-2 py-0.5 rounded">{turma.alunos_matriculados} / {turma.capacidade_max}</span>
+              </div>
+              <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-blue-500 transition-all duration-700 ease-out" 
+                  style={{ width: `${Math.min(100, (turma.alunos_matriculados / (turma.capacidade_max || 1)) * 100)}%` }}
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0 border-t md:border-t-0 md:border-l border-slate-100 pt-3 md:pt-0 md:pl-4" onClick={(e) => e.stopPropagation()}>
               <button 
                 onClick={() => handleOpenModal(turma)}
-                className="text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors"
+                className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors flex items-center gap-2 text-xs font-bold"
+                title={t.common.edit}
               >
-                {t.common.edit}
+                <div className="p-1.5 bg-blue-50 rounded group-hover:bg-blue-100 transition-colors">
+                  <Pencil size={14} />
+                </div>
+                <span className="hidden xl:inline">{t.common.edit}</span>
+              </button>
+              <button 
+                disabled={deleting === turma.id}
+                onClick={() => handleDelete(turma.id)}
+                className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors flex items-center gap-2 text-xs font-bold disabled:opacity-50"
+                title={t.common.delete}
+              >
+                <div className="p-1.5 bg-red-50 rounded group-hover:bg-red-100 transition-colors">
+                  {deleting === turma.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                </div>
+                <span className="hidden xl:inline">{t.common.delete}</span>
               </button>
             </div>
           </motion.div>
@@ -698,13 +711,23 @@ export default function TurmasPage() {
             </div>
           )}
         </div>
-        <div className="mt-6">
+        <div className="mt-6 flex gap-3">
           <button
             onClick={() => setIsStudentsModalOpen(false)}
-            className="w-full px-4 py-2.5 bg-slate-100 text-slate-600 rounded-lg font-bold text-sm hover:bg-slate-200 transition-all flex items-center justify-center gap-2"
+            className="flex-1 px-4 py-2.5 bg-slate-100 text-slate-600 rounded-lg font-bold text-sm hover:bg-slate-200 transition-all flex items-center justify-center gap-2"
           >
             {t.common.close}
           </button>
+          {alunosInTurma.length > 0 && (
+            <button
+              disabled={deletingAll}
+              onClick={handleDeleteAllStudents}
+              className="flex-1 px-4 py-2.5 bg-red-50 text-red-600 rounded-lg font-bold text-sm hover:bg-red-100 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {deletingAll ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+              {t.common.deleteAll}
+            </button>
+          )}
         </div>
       </Modal>
 
