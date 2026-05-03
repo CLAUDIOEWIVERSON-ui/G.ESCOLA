@@ -1,0 +1,6 @@
+{
+  "name": "SGE - Sistema de Gestão Escolar",
+  "description": "Plataforma completa para gerenciamento de cursos, turmas, alunos e notas com suporte multi-idioma e autenticação segura.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
