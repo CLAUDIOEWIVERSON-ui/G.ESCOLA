@@ -141,6 +141,10 @@ export default function AlunosPage() {
     setSaving(true);
 
     try {
+      if (!currentAluno.nome || currentAluno.nome.trim().length < 2) {
+        throw new Error(language === 'pt' ? 'Nome é obrigatório (mínimo 3 caracteres)' : 'Name is required (min 3 characters)');
+      }
+
       // Generate matricula if missing as it's NOT NULL in DB
       let matricula = currentAluno.matricula;
       if (!matricula || matricula.length < 2) {
@@ -153,7 +157,8 @@ export default function AlunosPage() {
         status: currentAluno.status || 'ativo'
       };
 
-      if (currentAluno.email) dataToSave.email = currentAluno.email;
+      // Only attach optional fields if they have values to avoid PGRST204 if columns are missing
+      if (currentAluno.email && currentAluno.email.includes('@')) dataToSave.email = currentAluno.email;
       if (currentAluno.turma_id && currentAluno.turma_id.length > 5) dataToSave.turma_id = currentAluno.turma_id;
       if (currentAluno.posto_graduacao) dataToSave.posto_graduacao = currentAluno.posto_graduacao;
       if (currentAluno.nif) dataToSave.nif = currentAluno.nif;
@@ -164,28 +169,53 @@ export default function AlunosPage() {
       if (currentAluno.foto_url) dataToSave.foto_url = currentAluno.foto_url;
       
       const parsedAno = currentAluno.ano_admissao ? parseInt(currentAluno.ano_admissao.toString()) : NaN;
-      if (!isNaN(parsedAno)) {
-        dataToSave.ano_admissao = parsedAno;
-      }
+      if (!isNaN(parsedAno)) dataToSave.ano_admissao = parsedAno;
 
+      let saveError;
       if (currentAluno.id) {
         const { error } = await supabase
           .from('alunos')
           .update(dataToSave)
           .eq('id', currentAluno.id);
-        if (error) throw error;
+        saveError = error;
       } else {
         const { error } = await supabase
           .from('alunos')
           .insert([dataToSave]);
-        if (error) throw error;
+        saveError = error;
+      }
+
+      if (saveError) {
+        console.error('Supabase error result details:', {
+          message: saveError.message,
+          code: saveError.code,
+          details: saveError.details,
+          hint: saveError.hint
+        });
+        
+        throw saveError;
       }
 
       await refreshAlunos();
       setIsModalOpen(false);
     } catch (err: any) {
-      console.error('Save error:', err);
-      alert(t.common.saveError + ': ' + (err.message || ''));
+      console.error('Save error occurred:', err);
+      
+      const errorMsg = err.message || 'Unknown error';
+      const errorDetails = err.details || '';
+      const errorCode = err.code || '';
+
+      if (errorCode === 'PGRST204' || errorMsg.toLowerCase().includes('column')) {
+        const columnMatch = errorMsg.match(/'([^']+)'/);
+        const colName = columnMatch ? columnMatch[1] : 'unknown';
+        alert(language === 'pt' 
+          ? `Erro de Banco de Dados: A coluna "${colName}" não existe na tabela 'alunos'. O administrador precisa atualizar o banco de dados.` 
+          : `Database Error: Column "${colName}" does not exist in 'alunos' table. Administrator needs to update the database.`);
+      } else if (errorCode === '23505') {
+        alert(language === 'pt' ? 'Erro: Já existe um aluno com esta Matrícula ou E-mail.' : 'Error: A student already exists with this Registration or Email.');
+      } else {
+        alert(t.common.saveError + ': ' + errorMsg + (errorDetails ? ' - ' + errorDetails : ''));
+      }
     } finally {
       setSaving(false);
     }
@@ -243,17 +273,13 @@ export default function AlunosPage() {
           [nome, email, matricula, turma_id, nif, rg, om, posto_graduacao, ano_admissao, telefone, whatsapp] = parts;
         }
         
+        // Limit base string to avoid huge strings
         const cleanNome = (nome || '').trim().replace(/['"]/g, '');
         if (!cleanNome) {
           results.errors.push(`Linha ${index + (skipHeader ? 2 : 1)}: ${language === 'pt' ? 'Nome é obrigatório' : 'Name is required'}.`);
           return null;
         }
 
-        // Limit email string to avoid huge strings if something goes wrong
-        const baseEmail = cleanNome.toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 15);
-        // Add random to both to minimize collisions in large batches
-        const randSuffix = Math.floor(1000 + Math.random() * 8999);
-        const fallbackEmail = `${baseEmail}${randSuffix}@escola.com`;
         const fallbackMatricula = `MAT${new Date().getFullYear()}${Math.floor(100000 + Math.random() * 899999)}`;
 
         // Enhanced ID detection
@@ -270,29 +296,22 @@ export default function AlunosPage() {
 
         const studentData: any = {
           nome: cleanNome,
-          email: (email && email.includes('@')) ? email.replace(/['"]/g, '') : fallbackEmail,
           matricula: (matricula && matricula.length > 2) ? matricula.replace(/['"]/g, '') : fallbackMatricula,
-          turma_id: finalTurmaId, 
           status: 'ativo'
         };
 
+        if (email && email.includes('@')) studentData.email = email.replace(/['"]/g, '');
+        if (finalTurmaId) studentData.turma_id = finalTurmaId;
         if (nif) studentData.nif = nif;
         if (rg) studentData.rg = rg;
         if (om) studentData.om = om;
-        
-        // If rank is missing in bulk, use a default to avoid empty values for mandatory field
-        studentData.posto_graduacao = (posto_graduacao && posto_graduacao.length > 0) 
-          ? posto_graduacao 
-          : (language === 'pt' ? 'Aluno' : 'Student');
-          
+        if (posto_graduacao) studentData.posto_graduacao = posto_graduacao;
         if (telefone) studentData.telefone = telefone;
         if (whatsapp) studentData.whatsapp = whatsapp;
 
-        // Only add ano_admissao if it's a valid number to avoid schema mismatch errors
+        // Only add ano_admissao if it's a valid number
         const parsedAno = parseInt(ano_admissao || '');
-        if (!isNaN(parsedAno)) {
-          studentData.ano_admissao = parsedAno;
-        }
+        if (!isNaN(parsedAno)) studentData.ano_admissao = parsedAno;
 
         return studentData;
       }).filter(Boolean) as any[];
@@ -327,10 +346,12 @@ export default function AlunosPage() {
           throw new Error(`${language === 'pt' ? 'Conflito de duplicidade' : 'Duplicity conflict'}: ${errorDetails || (language === 'pt' ? 'Matrícula ou E-mail já existente.' : 'Registration or Email already exists.')}`);
         }
         
-        if (errorCode === 'PGRST204' || errorMsg.includes('column')) {
+        if (errorCode === 'PGRST204' || errorMsg.toLowerCase().includes('column')) {
+           const columnMatch = errorMsg.match(/'([^']+)'/);
+           const colName = columnMatch ? columnMatch[1] : 'ano_admissao';
            throw new Error(language === 'pt' 
-             ? `Coluna ausente no Banco de Dados: "${errorMsg.split("'")[1] || 'ano_admissao'}". Por favor, execute o SQL do arquivo supabase_schema.sql.` 
-             : `Missing column in Database: "${errorMsg.split("'")[1] || 'ano_admissao'}". Please run the SQL from supabase_schema.sql.`);
+             ? `Coluna ausente no Banco de Dados: "${colName}". Por favor, execute o SQL do arquivo supabase_schema.sql.` 
+             : `Missing column in Database: "${colName}". Please run the SQL from supabase_schema.sql.`);
         }
         
         throw new Error(`${errorMsg}${errorDetails ? ': ' + errorDetails : ''} (Code: ${errorCode})`);
@@ -627,14 +648,13 @@ export default function AlunosPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
              <div>
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                {t.students.rank} <span className="text-red-500">*</span>
+                {t.students.rank}
               </label>
               <input
-                required
                 type="text"
                 value={currentAluno?.posto_graduacao || ''}
                 onChange={(e) => setCurrentAluno({ ...currentAluno, posto_graduacao: e.target.value })}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm border-l-4 border-l-blue-500"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm"
                 placeholder="Ex: 2º Sargento"
               />
             </div>

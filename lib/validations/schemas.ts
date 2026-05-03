@@ -30,7 +30,7 @@ export const alunoSchema = z.object({
   nif: z.string().optional().nullable(),
   rg: z.string().optional().nullable(),
   om: z.string().optional().nullable(),
-  posto_graduacao: z.string().min(1, "Graduação é obrigatória"),
+  posto_graduacao: z.string().optional().nullable(),
   ano_admissao: z.number().int().optional().nullable(),
   telefone: z.string().optional().nullable(),
   whatsapp: z.string().optional().nullable(),
