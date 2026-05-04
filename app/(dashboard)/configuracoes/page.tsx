@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/LanguageContext';
+import { useUser } from '@/lib/auth/UserContext';
 import { 
   Settings, 
   Save, 
@@ -17,6 +18,7 @@ import { cn } from '@/lib/utils';
 
 export default function ConfiguracoesPage() {
   const { t } = useI18n();
+  const { isAdmin, isGuest } = useUser();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [config, setConfig] = useState<any>({
@@ -53,6 +55,7 @@ export default function ConfiguracoesPage() {
   }, []);
 
   const handleSave = async () => {
+    if (isGuest) return;
     setSaving(true);
     try {
       const { error } = await supabase
@@ -181,14 +184,16 @@ export default function ConfiguracoesPage() {
       </div>
 
       <div className="flex justify-end pt-4">
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="flex items-center gap-2 bg-slate-900 text-white px-8 py-3 rounded-xl font-bold shadow-xl shadow-slate-200 hover:bg-slate-800 transition-all active:scale-95 disabled:opacity-70 group"
-        >
-          {saving ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} className="group-hover:translate-x-0.5 transition-transform" />}
-          {t.settings.saveChanges}
-        </button>
+        {!isGuest && (
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex items-center gap-2 bg-slate-900 text-white px-8 py-3 rounded-xl font-bold shadow-xl shadow-slate-200 hover:bg-slate-800 transition-all active:scale-95 disabled:opacity-70 group"
+          >
+            {saving ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} className="group-hover:translate-x-0.5 transition-transform" />}
+            {t.settings.saveChanges}
+          </button>
+        )}
       </div>
     </div>
   );

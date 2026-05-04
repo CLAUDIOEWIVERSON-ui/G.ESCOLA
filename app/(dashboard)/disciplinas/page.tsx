@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/LanguageContext';
+import { useUser } from '@/lib/auth/UserContext';
 import { Plus, GraduationCap, Clock, Code, Pencil, Trash2, Loader2, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
@@ -10,6 +11,7 @@ import Modal from '@/components/Modal';
 
 export default function DisciplinasPage() {
   const { t } = useI18n();
+  const { isAdmin, isGuest } = useUser();
   const [disciplinas, setDisciplinas] = useState<any[]>([]);
   const [cursos, setCursos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,6 +59,7 @@ export default function DisciplinasPage() {
   };
 
   const handleOpenModal = (disciplina: any = null) => {
+    if (isGuest) return;
     setCurrentDisciplina(disciplina || { nome: '', codigo: '', carga_horaria: 60, curso_id: '' });
     setIsModalOpen(true);
   };
@@ -101,6 +104,7 @@ export default function DisciplinasPage() {
   };
 
   const handleDelete = async (id: string) => {
+    if (isGuest) return;
     if (!confirm(t.common.delete + '?')) return;
     setDeleting(id);
     
@@ -126,13 +130,15 @@ export default function DisciplinasPage() {
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{t.subjects.title}</h1>
           <p className="text-slate-500 text-sm italic mt-1">{t.subjects.subtitle}</p>
         </div>
-        <button 
-          onClick={() => handleOpenModal()}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-all shadow-sm shadow-blue-100"
-        >
-          <Plus size={18} />
-          {t.subjects.add}
-        </button>
+        {!isGuest && (
+          <button 
+            onClick={() => handleOpenModal()}
+            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-all shadow-sm shadow-blue-100"
+          >
+            <Plus size={18} />
+            {t.subjects.add}
+          </button>
+        )}
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
@@ -171,21 +177,23 @@ export default function DisciplinasPage() {
                    </div>
                 </td>
                 <td className="px-6 py-4 text-right">
-                  <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button 
-                      onClick={() => handleOpenModal(d)}
-                      className="p-1.5 hover:bg-blue-50 hover:text-blue-600 rounded-lg text-slate-400 transition-colors"
-                    >
-                      <Pencil size={14} />
-                    </button>
-                    <button 
-                      disabled={deleting === d.id}
-                      onClick={() => handleDelete(d.id)}
-                      className="p-1.5 hover:bg-red-50 hover:text-red-600 rounded-lg text-slate-400 transition-colors disabled:opacity-50"
-                    >
-                      {deleting === d.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-                    </button>
-                  </div>
+                  {!isGuest && (
+                    <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button 
+                        onClick={() => handleOpenModal(d)}
+                        className="p-1.5 hover:bg-blue-50 hover:text-blue-600 rounded-lg text-slate-400 transition-colors"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      <button 
+                        disabled={deleting === d.id}
+                        onClick={() => handleDelete(d.id)}
+                        className="p-1.5 hover:bg-red-50 hover:text-red-600 rounded-lg text-slate-400 transition-colors disabled:opacity-50"
+                      >
+                        {deleting === d.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                      </button>
+                    </div>
+                  )}
                 </td>
               </tr>
             ))}

@@ -220,6 +220,23 @@ export const translations = {
       minFrequencyDesc: "Percentual mínimo de presença para aprovação.",
       currentYearDesc: "Ano letivo vigente para filtros e registros.",
       saveChanges: "Salvar Alterações",
+    },
+    users: {
+      title: "Gerenciamento de Usuários",
+      subtitle: "Controle de acesso e perfis de usuários do sistema.",
+      add: "Novo Usuário",
+      name: "Nome Completo",
+      email: "E-mail",
+      role: "Função",
+      status: "Status",
+      password: "Senha (Opcional se editar)",
+      admin: "Administrador",
+      guest: "Convidado (Somente Leitura)",
+      active: "Ativo",
+      inactive: "Inativo",
+      noUsers: "Nenhum usuário encontrado.",
+      onlyAdminCanManage: "Somente administradores podem gerenciar usuários.",
+      readOnlyWarning: "Você está em modo de leitura. Alterações não são permitidas.",
     }
   },
   en: {
@@ -444,6 +461,23 @@ export const translations = {
       minFrequencyDesc: "Minimum attendance percentage for approval.",
       currentYearDesc: "Current school year for filters and records.",
       saveChanges: "Save Changes",
+    },
+    users: {
+      title: "User Management",
+      subtitle: "Access control and system user profiles.",
+      add: "New User",
+      name: "Full Name",
+      email: "Email",
+      role: "Role",
+      status: "Status",
+      password: "Password (Optional if editing)",
+      admin: "Administrator",
+      guest: "Guest (Read Only)",
+      active: "Active",
+      inactive: "Inactive",
+      noUsers: "No users found.",
+      onlyAdminCanManage: "Only administrators can manage users.",
+      readOnlyWarning: "You are in read-only mode. Changes are not allowed.",
     }
   }
 };

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/LanguageContext';
+import { useUser } from '@/lib/auth/UserContext';
 import { 
   FileText, 
   Search, 
@@ -20,6 +21,7 @@ import Modal from '@/components/Modal';
 
 export default function NotasPage() {
   const { t, language } = useI18n();
+  const { isAdmin, isGuest } = useUser();
   const [notas, setNotas] = useState<any[]>([]);
   const [alunos, setAlunos] = useState<any[]>([]);
   const [disciplinas, setDisciplinas] = useState<any[]>([]);
@@ -105,6 +107,7 @@ export default function NotasPage() {
   };
 
   const handleOpenModal = (nota: any = null) => {
+    if (isGuest) return;
     setCurrentNota(nota || { 
       aluno_id: '', 
       disciplina_id: '', 
@@ -155,6 +158,7 @@ export default function NotasPage() {
   };
 
   const handleDelete = async (id: string) => {
+    if (isGuest) return;
     if (!confirm(t.common.delete + '?')) return;
     setDeleting(id);
     
@@ -180,15 +184,17 @@ export default function NotasPage() {
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{t.grades.title}</h1>
           <p className="text-slate-500 text-sm">{t.grades.subtitle}</p>
         </div>
-        <div className="flex gap-2">
-          <button 
-            onClick={() => handleOpenModal()}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-all shadow-sm shadow-blue-100"
-          >
-            <Plus size={18} />
-            {t.grades.postGrades}
-          </button>
-        </div>
+        {!isGuest && (
+          <div className="flex gap-2">
+            <button 
+              onClick={() => handleOpenModal()}
+              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-all shadow-sm shadow-blue-100"
+            >
+              <Plus size={18} />
+              {t.grades.postGrades}
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -250,21 +256,23 @@ export default function NotasPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button 
-                          onClick={() => handleOpenModal(nota)}
-                          className="p-1.5 hover:bg-blue-50 hover:text-blue-600 rounded-lg text-slate-400 transition-colors"
-                        >
-                          <Pencil size={14} />
-                        </button>
-                        <button 
-                          disabled={deleting === nota.id}
-                          onClick={() => handleDelete(nota.id)}
-                          className="p-1.5 hover:bg-red-50 hover:text-red-600 rounded-lg text-slate-400 transition-colors disabled:opacity-50"
-                        >
-                          {deleting === nota.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-                        </button>
-                      </div>
+                      {!isGuest && (
+                        <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button 
+                            onClick={() => handleOpenModal(nota)}
+                            className="p-1.5 hover:bg-blue-50 hover:text-blue-600 rounded-lg text-slate-400 transition-colors"
+                          >
+                            <Pencil size={14} />
+                          </button>
+                          <button 
+                            disabled={deleting === nota.id}
+                            onClick={() => handleDelete(nota.id)}
+                            className="p-1.5 hover:bg-red-50 hover:text-red-600 rounded-lg text-slate-400 transition-colors disabled:opacity-50"
+                          >
+                            {deleting === nota.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                          </button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 );

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/LanguageContext';
+import { useUser } from '@/lib/auth/UserContext';
 import { Plus, Search, Layers, Calendar, Clock, MapPin, Pencil, Trash2, Loader2, CheckCircle2, RefreshCcw, Users, Mail, Phone, Shield, Building, CreditCard, Camera, MessageCircle, XCircle, FileText } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
@@ -11,6 +12,7 @@ import Image from 'next/image';
 
 export default function TurmasPage() {
   const { t, language } = useI18n();
+  const { isAdmin, isGuest } = useUser();
   const [turmas, setTurmas] = useState<any[]>([]);
   const [cursos, setCursos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -77,6 +79,7 @@ export default function TurmasPage() {
   const refreshData = () => fetchTurmas(true);
 
   const handleOpenModal = (turma: any = null) => {
+    if (isGuest) return;
     setCurrentTurma(turma || { nome: '', curso_id: '', ano: new Date().getFullYear(), periodo: 'manhã', capacidade_max: 40, instrutor: '' });
     setIsModalOpen(true);
   };
@@ -107,6 +110,7 @@ export default function TurmasPage() {
   };
 
   const handleOpenStudentModal = (aluno: any = null) => {
+    if (isGuest) return;
     setCurrentAluno(aluno || { 
       nome: '', 
       email: '', 
@@ -453,13 +457,15 @@ export default function TurmasPage() {
           >
             <RefreshCcw size={18} className={refreshing ? "animate-spin" : ""} />
           </button>
-          <button 
-            onClick={() => handleOpenModal()}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-all shadow-sm shadow-blue-100"
-          >
-            <Plus size={18} />
-            {t.classes.add}
-          </button>
+          {!isGuest && (
+            <button 
+              onClick={() => handleOpenModal()}
+              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-all shadow-sm shadow-blue-100"
+            >
+              <Plus size={18} />
+              {t.classes.add}
+            </button>
+          )}
         </div>
       </div>
 
@@ -522,27 +528,31 @@ export default function TurmasPage() {
             </div>
 
             <div className="flex items-center gap-2 shrink-0 border-t md:border-t-0 md:border-l border-slate-100 pt-3 md:pt-0 md:pl-4" onClick={(e) => e.stopPropagation()}>
-              <button 
-                onClick={() => handleOpenModal(turma)}
-                className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors flex items-center gap-2 text-xs font-bold"
-                title={t.common.edit}
-              >
-                <div className="p-1.5 bg-blue-50 rounded group-hover:bg-blue-100 transition-colors">
-                  <Pencil size={14} />
-                </div>
-                <span className="hidden xl:inline">{t.common.edit}</span>
-              </button>
-              <button 
-                disabled={deleting === turma.id}
-                onClick={() => handleDelete(turma.id)}
-                className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors flex items-center gap-2 text-xs font-bold disabled:opacity-50"
-                title={t.common.delete}
-              >
-                <div className="p-1.5 bg-red-50 rounded group-hover:bg-red-100 transition-colors">
-                  {deleting === turma.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-                </div>
-                <span className="hidden xl:inline">{t.common.delete}</span>
-              </button>
+              {!isGuest && (
+                <>
+                  <button 
+                    onClick={() => handleOpenModal(turma)}
+                    className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors flex items-center gap-2 text-xs font-bold"
+                    title={t.common.edit}
+                  >
+                    <div className="p-1.5 bg-blue-50 rounded group-hover:bg-blue-100 transition-colors">
+                      <Pencil size={14} />
+                    </div>
+                    <span className="hidden xl:inline">{t.common.edit}</span>
+                  </button>
+                  <button 
+                    disabled={deleting === turma.id}
+                    onClick={() => handleDelete(turma.id)}
+                    className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors flex items-center gap-2 text-xs font-bold disabled:opacity-50"
+                    title={t.common.delete}
+                  >
+                    <div className="p-1.5 bg-red-50 rounded group-hover:bg-red-100 transition-colors">
+                      {deleting === turma.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                    </div>
+                    <span className="hidden xl:inline">{t.common.delete}</span>
+                  </button>
+                </>
+              )}
             </div>
           </motion.div>
         ))}
@@ -671,20 +681,24 @@ export default function TurmasPage() {
             {alunosInTurma.length} {language === 'pt' ? 'alunos matriculados' : 'students enrolled'}
           </p>
           <div className="flex gap-2">
-            <button
-              onClick={() => setIsBulkModalOpen(true)}
-              className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg hover:bg-slate-200 transition-all"
-            >
-              <FileText size={14} />
-              {t.common.bulkAdd}
-            </button>
-            <button
-              onClick={() => handleOpenStudentModal()}
-              className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-all"
-            >
-              <Plus size={14} />
-              {t.students.add}
-            </button>
+            {!isGuest && (
+              <>
+                <button
+                  onClick={() => setIsBulkModalOpen(true)}
+                  className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg hover:bg-slate-200 transition-all"
+                >
+                  <FileText size={14} />
+                  {t.common.bulkAdd}
+                </button>
+                <button
+                  onClick={() => handleOpenStudentModal()}
+                  className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-all"
+                >
+                  <Plus size={14} />
+                  {t.students.add}
+                </button>
+              </>
+            )}
           </div>
         </div>
 
@@ -717,21 +731,23 @@ export default function TurmasPage() {
                     )}>
                       {aluno.status === 'ativo' ? t.students.active : t.students.inactive}
                     </div>
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button 
-                        onClick={() => handleOpenStudentModal(aluno)}
-                        className="p-1.5 hover:bg-blue-100 text-blue-600 rounded"
-                      >
-                        <Pencil size={12} />
-                      </button>
-                      <button 
-                        disabled={deletingStudent === aluno.id}
-                        onClick={() => handleDeleteStudent(aluno.id)}
-                        className="p-1.5 hover:bg-red-100 text-red-600 rounded disabled:opacity-50"
-                      >
-                        {deletingStudent === aluno.id ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
-                      </button>
-                    </div>
+                    {!isGuest && (
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button 
+                          onClick={() => handleOpenStudentModal(aluno)}
+                          className="p-1.5 hover:bg-blue-100 text-blue-600 rounded"
+                        >
+                          <Pencil size={12} />
+                        </button>
+                        <button 
+                          disabled={deletingStudent === aluno.id}
+                          onClick={() => handleDeleteStudent(aluno.id)}
+                          className="p-1.5 hover:bg-red-100 text-red-600 rounded disabled:opacity-50"
+                        >
+                          {deletingStudent === aluno.id ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -749,7 +765,7 @@ export default function TurmasPage() {
           >
             {t.common.close}
           </button>
-          {alunosInTurma.length > 0 && (
+          {!isGuest && alunosInTurma.length > 0 && (
             <button
               disabled={deletingAll}
               onClick={handleDeleteAllStudents}

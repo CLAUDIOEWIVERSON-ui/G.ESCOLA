@@ -26,47 +26,27 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 
+import { useUser } from '@/lib/auth/UserContext';
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { t } = useI18n();
-  const [loading, setLoading] = useState(true);
+  const { profile, isAdmin, isGuest, loading: authLoading } = useUser();
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [userInitials, setUserInitials] = useState('AD');
-
-  useEffect(() => {
-    const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        router.push('/login');
-      } else {
-        const email = session.user.email || '';
-        const namePart = email.split('@')[0];
-        setUserInitials(namePart.slice(0, 2).toUpperCase());
-        setLoading(false);
-      }
-    };
-
-    checkUser();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!session && event === 'SIGNED_OUT') {
-        router.push('/login');
-      } else if (session) {
-        const email = session.user.email || '';
-        const namePart = email.split('@')[0];
-        setUserInitials(namePart.slice(0, 2).toUpperCase());
-        setLoading(false);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [router]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push('/login');
   };
+
+  if (authLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-white">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
+      </div>
+    );
+  }
 
   const navItems = [
     { name: t.nav.dashboard, icon: LayoutDashboard, path: '/dashboard' },
@@ -76,16 +56,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: t.nav.grades, icon: FileCheck, path: '/notas' },
     { name: t.nav.reportCard, icon: FileText, path: '/boletim' },
     { name: t.nav.attendance, icon: CalendarDays, path: '/frequencia' },
+    ...(isAdmin ? [{ name: t.users.title, icon: Users, path: '/usuarios' }] : []),
     { name: t.nav.settings, icon: Settings, path: '/configuracoes' },
   ];
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-white">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
-      </div>
-    );
-  }
+  const userInitials = profile?.full_name ? profile.full_name.slice(0, 2).toUpperCase() : 'US';
 
   return (
     <div className="flex min-h-screen bg-slate-50 font-sans text-slate-900">
@@ -165,8 +140,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 {userInitials}
               </div>
               <div className={cn("flex-1 overflow-hidden transition-opacity", !sidebarOpen && "opacity-0 w-0 invisible")}>
-                <p className="text-sm font-medium text-white truncate">{t.auth.adminRole}</p>
-                <p className="text-xs text-slate-500">{t.auth.systemName}</p>
+                <p className="text-sm font-medium text-white truncate">{profile?.role === 'admin' ? t.users.admin : t.users.guest}</p>
+                <p className="text-xs text-slate-500 truncate">{profile?.full_name || profile?.id.slice(0, 8)}</p>
               </div>
             </div>
             <button
@@ -197,7 +172,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <h1 className="text-lg font-bold text-slate-800 leading-none">
                 {navItems.find(item => item.path === pathname)?.name || t.dashboard.title}
               </h1>
-              <p className="text-[10px] text-slate-500 mt-1 uppercase tracking-wider font-semibold">{t.auth.term}</p>
+              <div className="flex items-center gap-2 mt-1">
+                <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">{t.auth.term}</p>
+                {isGuest && (
+                  <span className="text-[8px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-bold uppercase tracking-widest border border-amber-200">
+                    {t.users.readOnlyWarning}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-6">

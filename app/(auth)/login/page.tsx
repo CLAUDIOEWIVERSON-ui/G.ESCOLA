@@ -166,8 +166,8 @@ export default function LoginPage() {
               <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
             ) : (
               <>
-                {isLogin ? <LogIn size={16} /> : <UserPlus size={16} />}
-                {isLogin ? t.auth.login : t.auth.register}
+                <LogIn size={16} />
+                {t.auth.login}
               </>
             )}
           </button>
@@ -208,15 +208,6 @@ export default function LoginPage() {
               <path d="M1 1h22v22H1z" fill="none" />
             </svg>
             Google
-          </button>
-        </div>
-
-        <div className="mt-8 text-center">
-          <button
-            onClick={() => setIsLogin(!isLogin)}
-            className="text-xs text-slate-500 hover:text-slate-800 font-bold uppercase tracking-wider transition-colors"
-          >
-            {isLogin ? t.auth.noAccount : t.auth.hasAccount}
           </button>
         </div>
       </motion.div>

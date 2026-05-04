@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/LanguageContext';
+import { useUser } from '@/lib/auth/UserContext';
 import { cursoSchema } from '@/lib/validations/schemas';
 import { 
   Plus, 
@@ -26,6 +27,7 @@ type Curso = z.infer<typeof cursoSchema> & { id: string };
 
 export default function CursosPage() {
   const { t, language } = useI18n();
+  const { isAdmin, isGuest } = useUser();
   const [cursos, setCursos] = useState<Curso[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -70,6 +72,7 @@ export default function CursosPage() {
   }, []);
 
   const onSubmit = async (data: z.infer<typeof cursoSchema>) => {
+    if (isGuest) return;
     try {
       // Clean date fields - convert empty strings to null
       const cleanedData = {
@@ -100,6 +103,7 @@ export default function CursosPage() {
   };
 
   const deleteCurso = async (id: string) => {
+    if (isGuest) return;
     if (confirm(t.common.deleteConfirm)) {
       const { error } = await supabase
         .from('cursos')
@@ -112,6 +116,7 @@ export default function CursosPage() {
 
   const handleBulkSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isGuest) return;
     setSaving(true);
 
     try {
@@ -178,23 +183,25 @@ export default function CursosPage() {
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{t.courses.title}</h1>
           <p className="text-slate-500 text-sm">{language === 'pt' ? 'Visualize e gerencie os cursos oferecidos pela instituição.' : 'View and manage the courses offered by the institution.'}</p>
         </div>
-        <div className="flex gap-2">
-          <button 
-            onClick={() => setIsBulkModalOpen(true)}
-            className="flex items-center gap-2 bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-all shadow-sm"
-          >
-            <FileText size={18} />
-            {t.common.bulkAdd}
-          </button>
-          <button 
-            id="add-course-btn"
-            onClick={() => { reset(); setEditingCurso(null); setModalOpen(true); }}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-all shadow-sm shadow-blue-100"
-          >
-            <Plus size={18} />
-            {t.courses.add}
-          </button>
-        </div>
+        {!isGuest && (
+          <div className="flex gap-2">
+            <button 
+              onClick={() => setIsBulkModalOpen(true)}
+              className="flex items-center gap-2 bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-all shadow-sm"
+            >
+              <FileText size={18} />
+              {t.common.bulkAdd}
+            </button>
+            <button 
+              id="add-course-btn"
+              onClick={() => { reset(); setEditingCurso(null); setModalOpen(true); }}
+              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-all shadow-sm shadow-blue-100"
+            >
+              <Plus size={18} />
+              {t.courses.add}
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -257,20 +264,22 @@ export default function CursosPage() {
                     )}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button 
-                        onClick={() => { setEditingCurso(curso); reset(curso); setModalOpen(true); }}
-                        className="p-2 hover:bg-white hover:shadow-sm rounded-lg text-slate-400 hover:text-indigo-600 transition-all"
-                      >
-                        <Edit2 size={16} />
-                      </button>
-                      <button 
-                        onClick={() => deleteCurso(curso.id)}
-                        className="p-2 hover:bg-white hover:shadow-sm rounded-lg text-slate-400 hover:text-red-600 transition-all"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
+                    {!isGuest && (
+                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button 
+                          onClick={() => { setEditingCurso(curso); reset(curso); setModalOpen(true); }}
+                          className="p-2 hover:bg-white hover:shadow-sm rounded-lg text-slate-400 hover:text-indigo-600 transition-all"
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        <button 
+                          onClick={() => deleteCurso(curso.id)}
+                          className="p-2 hover:bg-white hover:shadow-sm rounded-lg text-slate-400 hover:text-red-600 transition-all"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))}
