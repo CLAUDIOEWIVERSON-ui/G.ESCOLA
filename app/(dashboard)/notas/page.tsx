@@ -113,14 +113,23 @@ export default function NotasPage() {
       const entries = Object.values(bulkNotas);
       if (entries.length === 0) return;
 
-      const { error } = await supabase
-        .from('notas')
-        .upsert(entries.map(e => ({
+      const dataToUpsert = entries.map(e => {
+        const cleaned: any = {
           ...e,
           disciplina_id: selectedDisciplina,
           turma_id: selectedTurma,
           ano_letivo: e.ano_letivo || new Date().getFullYear()
-        })));
+        };
+        // Remove null/undefined ID to avoid constraint violations on new records
+        if (!cleaned.id) delete cleaned.id;
+        return cleaned;
+      });
+
+      const { error } = await supabase
+        .from('notas')
+        .upsert(dataToUpsert, { 
+          onConflict: 'aluno_id,disciplina_id,turma_id' 
+        });
 
       if (error) throw error;
       alert(t.attendance.saveSuccess); // Reusing translation
