@@ -21,7 +21,8 @@ import Modal from '@/components/Modal';
 
 export default function NotasPage() {
   const { t, language } = useI18n();
-  const { isAdmin, isGuest } = useUser();
+  const { isAdmin, isAluno } = useUser();
+  const isGuest = isAluno;
   const [notas, setNotas] = useState<any[]>([]);
   const [alunos, setAlunos] = useState<any[]>([]);
   const [disciplinas, setDisciplinas] = useState<any[]>([]);

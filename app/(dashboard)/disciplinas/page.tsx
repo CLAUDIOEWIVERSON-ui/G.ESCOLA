@@ -11,7 +11,8 @@ import Modal from '@/components/Modal';
 
 export default function DisciplinasPage() {
   const { t } = useI18n();
-  const { isAdmin, isGuest } = useUser();
+  const { isAdmin, isAluno } = useUser();
+  const isGuest = isAluno;
   const [disciplinas, setDisciplinas] = useState<any[]>([]);
   const [cursos, setCursos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);

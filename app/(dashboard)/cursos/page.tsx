@@ -27,7 +27,8 @@ type Curso = z.infer<typeof cursoSchema> & { id: string };
 
 export default function CursosPage() {
   const { t, language } = useI18n();
-  const { isAdmin, isGuest } = useUser();
+  const { isAdmin, isAluno } = useUser();
+  const isGuest = isAluno;
   const [cursos, setCursos] = useState<Curso[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -43,12 +44,11 @@ export default function CursosPage() {
     defaultValues: {
       nome: '',
       descricao: '',
-      ano_inicio: new Date().getFullYear(),
+      duracao: 1,
+      duracao_unidade: 'ano',
       ativo: true,
       internacional: false,
       localizacao: '',
-      data_inicio: '',
-      data_fim: ''
     }
   });
 
@@ -59,7 +59,15 @@ export default function CursosPage() {
       .select('*')
       .is('deleted_at', null)
       .order('nome');
-    if (data) setCursos(data);
+    if (data) {
+      // Map database field to our logic field
+      const mappedData = data.map(item => ({
+        ...item,
+        duracao: item.ano_inicio || 1,
+        duracao_unidade: (item.codigo || 'ano') as any
+      }));
+      setCursos(mappedData);
+    }
     if (showLoading) setLoading(false);
   };
 
@@ -74,11 +82,15 @@ export default function CursosPage() {
   const onSubmit = async (data: z.infer<typeof cursoSchema>) => {
     if (isGuest) return;
     try {
-      // Clean date fields - convert empty strings to null
+      // Map our logic field back to database field
       const cleanedData = {
-        ...data,
-        data_inicio: data.data_inicio || null,
-        data_fim: data.data_fim || null
+        nome: data.nome,
+        descricao: data.descricao,
+        ano_inicio: data.duracao, // stores value
+        codigo: data.duracao_unidade, // stores unit
+        localizacao: data.localizacao,
+        internacional: data.internacional,
+        ativo: data.ativo
       };
 
       if (editingCurso) {
@@ -141,9 +153,9 @@ export default function CursosPage() {
 
         return {
           nome,
-          codigo: codigo || nome.substring(0, 3).toUpperCase() + Math.floor(100 + Math.random() * 899),
+          codigo: 'ano', // default duration unit
           descricao: descricao || '',
-          ano_inicio: new Date().getFullYear(),
+          ano_inicio: 1, // default duration value
           ativo: true
         };
       }).filter(Boolean) as any[];
@@ -223,8 +235,8 @@ export default function CursosPage() {
             <thead>
               <tr className="text-xs font-semibold text-slate-500 border-b border-slate-100 uppercase tracking-wider">
                 <th className="px-6 py-4 font-semibold">{t.courses.name}</th>
-                <th className="px-6 py-4 font-semibold">{t.courses.startYear}</th>
-                <th className="px-6 py-4 font-semibold">{t.courses.status}</th>
+                <th className="px-6 py-4 font-semibold">{t.courses.duration}</th>
+                <th className="px-6 py-4 font-semibold">{t.courses.location}</th>
                 <th className="px-6 py-4 font-semibold text-right">{t.common.actions}</th>
               </tr>
             </thead>
@@ -251,15 +263,21 @@ export default function CursosPage() {
                        {curso.descricao}
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-sm text-slate-600">{curso.ano_inicio}</td>
+                  <td className="px-6 py-4 text-sm text-slate-600">
+                    {curso.duracao} {
+                      curso.duracao === 1 
+                        ? (curso.duracao_unidade === 'dia' ? t.courses.day : curso.duracao_unidade === 'semana' ? t.courses.week : curso.duracao_unidade === 'mes' ? t.courses.month : t.courses.year)
+                        : (curso.duracao_unidade === 'dia' ? t.courses.days : curso.duracao_unidade === 'semana' ? t.courses.weeks : curso.duracao_unidade === 'mes' ? t.courses.months : t.courses.years)
+                    }
+                  </td>
                   <td className="px-6 py-4">
-                    {curso.ativo ? (
-                      <span className="px-2.5 py-1 text-[10px] font-bold uppercase rounded bg-green-100 text-green-700 ring-1 ring-inset ring-green-600/20">
-                        {t.students.active}
+                    {curso.internacional ? (
+                      <span className="px-2.5 py-1 text-[10px] font-bold uppercase rounded bg-purple-100 text-purple-700 ring-1 ring-inset ring-purple-600/20">
+                        {t.courses.international}
                       </span>
                     ) : (
-                      <span className="px-2.5 py-1 text-[10px] font-bold uppercase rounded bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-600/10">
-                        {t.students.inactive}
+                      <span className="px-2.5 py-1 text-[10px] font-bold uppercase rounded bg-blue-100 text-blue-700 ring-1 ring-inset ring-blue-600/10">
+                        {t.courses.national}
                       </span>
                     )}
                   </td>
@@ -336,30 +354,42 @@ export default function CursosPage() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1 flex flex-col justify-center pt-2">
-                    <label className="flex items-center gap-3 cursor-pointer group">
-                      <input
-                        type="checkbox"
-                        {...register('internacional')}
-                        className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500"
-                      />
-                      <span className="text-sm font-bold text-slate-700 group-hover:text-purple-600 transition-colors">{t.dashboard.internationalCourses}</span>
-                    </label>
+                  <div className="space-y-1">
+                    <label className="text-sm font-semibold text-slate-700">{t.courses.durationValue}</label>
+                    <input
+                      type="number"
+                      {...register('duracao', { valueAsNumber: true })}
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
+                    />
+                    {errors.duracao && <p className="text-xs text-red-500 mt-1">{errors.duracao.message}</p>}
                   </div>
-                  <div className="space-y-1 flex flex-col justify-center pt-2">
-                    <label className="flex items-center gap-3 cursor-pointer group">
-                      <input
-                        type="checkbox"
-                        {...register('ativo')}
-                        className="w-4 h-4 rounded text-slate-900 focus:ring-slate-900"
-                      />
-                      <span className="text-sm font-bold text-slate-700 group-hover:text-slate-900 transition-colors">{t.students.active}</span>
-                    </label>
+                  <div className="space-y-1">
+                    <label className="text-sm font-semibold text-slate-700">{t.courses.durationUnit}</label>
+                    <select
+                      {...register('duracao_unidade')}
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
+                    >
+                      <option value="dia">{t.courses.days}</option>
+                      <option value="semana">{t.courses.weeks}</option>
+                      <option value="mes">{t.courses.months}</option>
+                      <option value="ano">{t.courses.years}</option>
+                    </select>
                   </div>
                 </div>
 
+                <div className="flex flex-col justify-center pt-2">
+                  <label className="flex items-center gap-3 cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      {...register('internacional')}
+                      className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500"
+                    />
+                    <span className="text-sm font-bold text-slate-700 group-hover:text-purple-600 transition-colors">{t.courses.international}</span>
+                  </label>
+                </div>
+
                 <div className="space-y-1">
-                  <label className="text-sm font-semibold text-slate-700">{t.dashboard.location}</label>
+                  <label className="text-sm font-semibold text-slate-700">{t.courses.location}</label>
                   <input
                     {...register('localizacao')}
                     className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
@@ -367,35 +397,8 @@ export default function CursosPage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                   <div className="space-y-1">
-                    <label className="text-sm font-semibold text-slate-700">{t.dashboard.courseStart}</label>
-                    <input
-                      type="date"
-                      {...register('data_inicio')}
-                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-sm font-semibold text-slate-700">{t.dashboard.courseEnd}</label>
-                    <input
-                      type="date"
-                      {...register('data_fim')}
-                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-sm font-semibold text-slate-700">{t.courses.startYear}</label>
-                    <input
-                      type="number"
-                      {...register('ano_inicio', { valueAsNumber: true })}
-                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
-                    />
-                    {errors.ano_inicio && <p className="text-xs text-red-500 mt-1">{errors.ano_inicio.message}</p>}
-                  </div>
+                <div className="hidden">
+                  <input type="checkbox" {...register('ativo')} />
                 </div>
 
                 <div className="flex gap-3 pt-6">

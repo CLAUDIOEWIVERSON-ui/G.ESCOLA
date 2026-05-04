@@ -30,8 +30,7 @@ export async function GET() {
         id: user.id,
         email: user.email,
         full_name: profile?.full_name || user.user_metadata?.full_name || '',
-        role: profile?.role || 'guest',
-        status: profile?.status || 'ativo',
+        role: profile?.role || user.user_metadata?.role || 'aluno',
         created_at: user.created_at
       };
     });
@@ -47,7 +46,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Supabase Admin not configured. Please set SUPABASE_SERVICE_ROLE_KEY in Secrets.' }, { status: 500 });
   }
   try {
-    const { email, password, full_name, role, status } = await request.json();
+    const { email, password, full_name, role } = await request.json();
 
     // 1. Create auth user
     const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
@@ -71,8 +70,7 @@ export async function POST(request: Request) {
       .upsert({
         id: authUser.user.id,
         full_name: full_name || email.split('@')[0],
-        role: role || 'guest',
-        status: status || 'ativo'
+        role: role || 'aluno'
       }, {
         onConflict: 'id'
       });
@@ -94,7 +92,7 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: 'Supabase Admin not configured. Please set SUPABASE_SERVICE_ROLE_KEY in Secrets.' }, { status: 500 });
   }
   try {
-    const { id, email, password, full_name, role, status } = await request.json();
+    const { id, email, password, full_name, role } = await request.json();
 
     if (!id) {
       return NextResponse.json({ error: 'ID do usuário é obrigatório para atualização.' }, { status: 400 });
@@ -127,8 +125,7 @@ export async function PUT(request: Request) {
       .from('profiles')
       .update({ 
         full_name, 
-        role, 
-        status 
+        role 
       })
       .eq('id', id);
 

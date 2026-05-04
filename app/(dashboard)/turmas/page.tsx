@@ -12,7 +12,8 @@ import Image from 'next/image';
 
 export default function TurmasPage() {
   const { t, language } = useI18n();
-  const { isAdmin, isGuest } = useUser();
+  const { isAdmin, isAluno } = useUser();
+  const isGuest = isAluno;
   const [turmas, setTurmas] = useState<any[]>([]);
   const [cursos, setCursos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);

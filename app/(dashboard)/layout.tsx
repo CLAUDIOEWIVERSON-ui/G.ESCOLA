@@ -32,7 +32,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const pathname = usePathname();
   const { t } = useI18n();
-  const { profile, isAdmin, isGuest, loading: authLoading } = useUser();
+  const { profile, isAdmin, isAluno, isProfessor, loading: authLoading } = useUser();
+  const isGuest = isAluno;
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const handleLogout = async () => {
@@ -140,7 +141,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 {userInitials}
               </div>
               <div className={cn("flex-1 overflow-hidden transition-opacity", !sidebarOpen && "opacity-0 w-0 invisible")}>
-                <p className="text-sm font-medium text-white truncate">{profile?.role === 'admin' ? t.users.admin : t.users.guest}</p>
+                <p className="text-sm font-medium text-white truncate">{profile?.role === 'admin' ? t.users.admin : profile?.role === 'professor' ? t.users.professor : t.users.aluno}</p>
                 <p className="text-xs text-slate-500 truncate">{profile?.full_name || profile?.id.slice(0, 8)}</p>
               </div>
             </div>

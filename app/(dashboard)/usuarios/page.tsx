@@ -63,8 +63,7 @@ export default function UsuariosPage() {
       full_name: '', 
       email: '',
       password: '',
-      role: 'guest', 
-      status: 'ativo'
+      role: 'aluno', 
     });
     setIsModalOpen(true);
   };
@@ -190,7 +189,6 @@ export default function UsuariosPage() {
                 <th className="px-6 py-4">{t.users.name}</th>
                 <th className="px-6 py-4">{t.users.email}</th>
                 <th className="px-6 py-4">{t.users.role}</th>
-                <th className="px-6 py-4">{t.users.status}</th>
                 <th className="px-6 py-4 text-right">{t.common.actions}</th>
               </tr>
             </thead>
@@ -224,18 +222,12 @@ export default function UsuariosPage() {
                     <td className="px-6 py-4">
                       <span className={cn(
                         "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
-                        user.role === 'admin' ? "bg-purple-50 text-purple-700 border border-purple-100" : "bg-blue-50 text-blue-700 border border-blue-100"
+                        user.role === 'admin' ? "bg-purple-50 text-purple-700 border border-purple-100" : 
+                        user.role === 'professor' ? "bg-amber-50 text-amber-700 border border-amber-100" :
+                        "bg-blue-50 text-blue-700 border border-blue-100"
                       )}>
                         {user.role === 'admin' ? <Shield size={12} /> : <User size={12} />}
-                        {user.role === 'admin' ? t.users.admin : t.users.guest}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={cn(
-                        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
-                        user.status === 'ativo' ? "bg-green-50 text-green-700 border border-green-100" : "bg-red-50 text-red-700 border border-red-100"
-                      )}>
-                        {user.status === 'ativo' ? t.users.active : t.users.inactive}
+                        {user.role === 'admin' ? t.users.admin : user.role === 'professor' ? t.users.professor : t.users.aluno}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
@@ -310,29 +302,17 @@ export default function UsuariosPage() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">{t.users.role}</label>
-              <select
-                value={currentUser?.role || 'guest'}
-                onChange={(e) => setCurrentUser({ ...currentUser, role: e.target.value })}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition-all"
-              >
-                <option value="admin">{t.users.admin}</option>
-                <option value="guest">{t.users.guest}</option>
-              </select>
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">{t.users.status}</label>
-              <select
-                value={currentUser?.status || 'ativo'}
-                onChange={(e) => setCurrentUser({ ...currentUser, status: e.target.value })}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition-all"
-              >
-                <option value="ativo">{t.users.active}</option>
-                <option value="inativo">{t.users.inactive}</option>
-              </select>
-            </div>
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">{t.users.role}</label>
+            <select
+              value={currentUser?.role || 'aluno'}
+              onChange={(e) => setCurrentUser({ ...currentUser, role: e.target.value })}
+              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition-all"
+            >
+              <option value="admin">{t.users.admin}</option>
+              <option value="professor">{t.users.professor}</option>
+              <option value="aluno">{t.users.aluno}</option>
+            </select>
           </div>
 
           <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl">

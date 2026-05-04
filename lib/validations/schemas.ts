@@ -3,12 +3,11 @@ import { z } from 'zod';
 export const cursoSchema = z.object({
   nome: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
   descricao: z.string().optional().nullable(),
-  ano_inicio: z.number().int().min(1900).max(2100),
+  duracao: z.number().int().min(1).max(500),
+  duracao_unidade: z.enum(['dia', 'semana', 'mes', 'ano']),
   ativo: z.boolean(),
   internacional: z.boolean(),
   localizacao: z.string().optional().nullable(),
-  data_inicio: z.string().optional().nullable(),
-  data_fim: z.string().optional().nullable(),
 });
 
 export const turmaSchema = z.object({

@@ -3,19 +3,19 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 
-type Role = 'admin' | 'guest';
+type Role = 'admin' | 'professor' | 'aluno';
 
 interface UserProfile {
   id: string;
   role: Role;
   full_name: string | null;
-  status: string;
 }
 
 interface UserContextType {
   profile: UserProfile | null;
   isAdmin: boolean;
-  isGuest: boolean;
+  isProfessor: boolean;
+  isAluno: boolean;
   loading: boolean;
   refreshProfile: () => Promise<void>;
 }
@@ -53,12 +53,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         }
         
         // Fallback to metadata if profile doesn't exist yet
-        const metadataRole = session.user.user_metadata?.role as Role || 'guest';
+        const metadataRole = session.user.user_metadata?.role as Role || 'aluno';
         finalProfile = {
           id: session.user.id,
           role: metadataRole,
-          full_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
-          status: 'ativo'
+          full_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User'
         };
       } else {
         finalProfile = data as UserProfile;
@@ -98,7 +97,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const value = {
     profile,
     isAdmin: profile?.role === 'admin',
-    isGuest: profile?.role === 'guest',
+    isProfessor: profile?.role === 'professor',
+    isAluno: profile?.role === 'aluno',
     loading,
     refreshProfile: fetchProfile
   };

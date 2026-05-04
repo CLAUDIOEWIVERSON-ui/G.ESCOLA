@@ -18,7 +18,8 @@ import { cn } from '@/lib/utils';
 
 export default function ConfiguracoesPage() {
   const { t } = useI18n();
-  const { isAdmin, isGuest } = useUser();
+  const { isAdmin, isAluno } = useUser();
+  const isGuest = isAluno; // For backward compatibility in logic
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [config, setConfig] = useState<any>({
