@@ -8,7 +8,7 @@ export const cursoSchema = z.object({
   ativo: z.boolean(),
   internacional: z.boolean(),
   localizacao: z.string().optional().nullable(),
-  qtd_modulos: z.number().int().min(1).max(12),
+  qtd_modulos: z.number().int().min(1).max(5),
 });
 
 export const turmaSchema = z.object({

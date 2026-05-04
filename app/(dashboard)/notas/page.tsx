@@ -7,7 +7,8 @@ import { useUser } from '@/lib/auth/UserContext';
 import { 
   FileText, 
   Save, 
-  Loader2
+  Loader2,
+  Users
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
@@ -41,13 +42,18 @@ export default function NotasPage() {
       setLoading(true);
       
       const turma = turmas.find(t => t.id === selectedTurma);
+      let modulesCount = 4;
       if (turma?.curso_id) {
         const { data: curso } = await supabase
           .from('cursos')
           .select('qtd_modulos')
           .eq('id', turma.curso_id)
           .single();
-        if (curso) setCourseModules(curso.qtd_modulos || 4);
+        if (curso) {
+          modulesCount = curso.qtd_modulos || 4;
+          // Limit to DB capacity (5 modules)
+          setCourseModules(Math.min(modulesCount, 5));
+        }
       }
 
       // Fetch students in this turma
@@ -60,7 +66,7 @@ export default function NotasPage() {
       
       setTurmaAlunos(students || []);
 
-      // Fetch existing grades for all disciplines in this turma
+      // Fetch existing grades for this turma
       const { data: grades } = await supabase
         .from('notas')
         .select('*')
@@ -124,15 +130,18 @@ export default function NotasPage() {
     fetchDisciplinasForTurma();
   }, [selectedTurma, turmas]);
 
-  const handleBulkChange = (alunoId: string, disciplinaId: string, modulo: number, value: string) => {
+  const handleBulkChange = (alunoId: string, modulo: number, value: string) => {
+    if (disciplinas.length === 0) return;
+    
     const numValue = value === '' ? null : parseFloat(value);
     const field = `nota${modulo}`;
+    const targetDisciplinaId = disciplinas[0].id; // Use first discipline as main container
     
     setBulkNotas(prev => {
       const studentGrades = prev[alunoId] || {};
-      const discGrade = studentGrades[disciplinaId] || { 
+      const discGrade = studentGrades[targetDisciplinaId] || { 
         aluno_id: alunoId, 
-        disciplina_id: disciplinaId, 
+        disciplina_id: targetDisciplinaId, 
         turma_id: selectedTurma, 
         ano_letivo: new Date().getFullYear() 
       };
@@ -141,7 +150,7 @@ export default function NotasPage() {
         ...prev,
         [alunoId]: {
           ...studentGrades,
-          [disciplinaId]: {
+          [targetDisciplinaId]: {
             ...discGrade,
             [field]: numValue
           }
@@ -150,46 +159,51 @@ export default function NotasPage() {
     });
   };
 
-  const saveRow = async (alunoId: string, disciplinaId: string) => {
+  const saveStudent = async (alunoId: string) => {
     if (isGuest) return;
     const studentGrades = bulkNotas[alunoId];
-    if (!studentGrades || !studentGrades[disciplinaId]) return;
+    if (!studentGrades) return;
 
-    const rowKey = `${alunoId}-${disciplinaId}`;
-    setSavingRows(prev => ({ ...prev, [rowKey]: true }));
+    setSavingRows(prev => ({ ...prev, [alunoId]: true }));
     try {
-      const gradeData = { ...studentGrades[disciplinaId] };
-      if (!gradeData.id) delete gradeData.id;
+      const dataToUpsert = Object.values(studentGrades).map(gradeData => {
+        const cleaned = { ...gradeData };
+        if (!cleaned.id) delete cleaned.id;
+        return cleaned;
+      });
+
+      if (dataToUpsert.length === 0) return;
 
       const { error } = await supabase
         .from('notas')
-        .upsert([gradeData], { 
+        .upsert(dataToUpsert, { 
           onConflict: 'aluno_id,disciplina_id,turma_id' 
         });
 
       if (error) throw error;
       
       // Refresh
-      const { data: newGrade } = await supabase
+      const { data: newGrades } = await supabase
         .from('notas')
         .select('*')
         .eq('aluno_id', alunoId)
-        .eq('disciplina_id', disciplinaId)
-        .eq('turma_id', selectedTurma)
-        .single();
+        .eq('turma_id', selectedTurma);
       
-      if (newGrade) {
+      if (newGrades) {
         setBulkNotas(prev => {
           const updated = { ...prev };
-          if (!updated[alunoId]) updated[alunoId] = {};
-          updated[alunoId][disciplinaId] = newGrade;
+          const studentMap: Record<string, any> = {};
+          newGrades.forEach(g => {
+            studentMap[g.disciplina_id] = g;
+          });
+          updated[alunoId] = studentMap;
           return updated;
         });
       }
     } catch (err: any) {
       alert(err.message);
     } finally {
-      setSavingRows(prev => ({ ...prev, [rowKey]: false }));
+      setSavingRows(prev => ({ ...prev, [alunoId]: false }));
     }
   };
 
@@ -270,104 +284,113 @@ export default function NotasPage() {
           <div className="flex justify-center py-20">
             <Loader2 size={32} className="animate-spin text-blue-500" />
           </div>
+        ) : disciplinas.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 text-red-400 bg-red-50/20 rounded-2xl border-2 border-dashed border-red-200">
+            <p className="text-sm font-bold">{t.grades.fillFilters}</p>
+            <p className="text-xs mt-2 opacity-70">O curso selecionado não possui disciplinas cadastradas. Por favor, cadastre ao menos uma disciplina.</p>
+          </div>
         ) : turmaAlunos.length === 0 ? (
           <div className="text-center py-20 text-slate-400 italic">
             {t.grades.noStudentsInTurma}
           </div>
         ) : (
           <div className="space-y-6">
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto pb-6">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">
-                    <th className="px-4 py-3 min-w-[200px]">{t.reportCard.student}</th>
-                    <th className="px-4 py-3 min-w-[150px]">{t.subjects.title}</th>
+                    <th className="px-6 py-4 min-w-[200px] bg-slate-50/50 rounded-tl-2xl">
+                      <div className="flex items-center gap-2">
+                        <Users size={14} className="text-slate-400" />
+                        {t.reportCard.student}
+                      </div>
+                    </th>
                     {Array.from({ length: courseModules }).map((_, i) => (
-                      <th key={i} className="px-2 py-3 text-center">{t.grades.module} {i + 1}</th>
+                      <th key={i} className="px-4 py-4 text-center border-l border-slate-50 bg-slate-50/30">
+                        {t.grades.module} {i + 1}
+                      </th>
                     ))}
-                    <th className="px-4 py-3 text-center bg-slate-50/50 rounded-t-xl">{t.reportCard.average}</th>
-                    <th className="px-4 py-3 text-center">{t.reportCard.status}</th>
-                    <th className="px-4 py-3 text-right"></th>
+                    <th className="px-6 py-4 text-center bg-blue-50/50 text-blue-900 border-l border-slate-100">{t.reportCard.average}</th>
+                    <th className="px-6 py-4 text-center border-l border-slate-100">{t.reportCard.status}</th>
+                    <th className="px-6 py-4 border-l border-slate-100 rounded-tr-2xl"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
                   {turmaAlunos.map((aluno) => {
-                    return disciplinas.map((disciplina, index) => {
-                      const studentGrades = bulkNotas[aluno.id] || {};
-                      const gradeData = studentGrades[disciplina.id] || {};
-                      const rowKey = `${aluno.id}-${disciplina.id}`;
-                      const isSavingRow = savingRows[rowKey];
-                      
-                      const scores = Array.from({ length: courseModules })
-                        .map((_, i) => gradeData[`nota${i + 1}`])
-                        .filter(v => v !== null && v !== undefined);
-                      
-                      const avg = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
-                      const status = getStatus(avg);
+                    const studentGrades = bulkNotas[aluno.id] || {};
+                    const isSavingRow = savingRows[aluno.id];
+                    const firstDiscId = disciplinas[0].id;
+                    const gradeData = studentGrades[firstDiscId] || {};
+                    
+                    // Calculation based on modules
+                    const scores: number[] = [];
+                    for (let i = 1; i <= courseModules; i++) {
+                      const val = gradeData[`nota${i}`];
+                      if (val !== null && val !== undefined) {
+                        scores.push(val);
+                      }
+                    }
+                    
+                    const avg = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
+                    const status = getStatus(avg);
 
-                      return (
-                        <tr key={rowKey} className="hover:bg-slate-50/50 transition-colors group">
-                          {index === 0 ? (
-                            <td className="px-4 py-4 text-sm align-top" rowSpan={disciplinas.length}>
-                              <div className="font-bold text-slate-900">{aluno.nome}</div>
-                              <div className="text-[10px] text-slate-400 font-mono">#{aluno.matricula || aluno.id.slice(0,8)}</div>
+                    return (
+                      <tr key={aluno.id} className="hover:bg-slate-50/30 transition-colors group">
+                        <td className="px-6 py-4">
+                          <div className="font-bold text-slate-900">{aluno.nome}</div>
+                          <div className="text-[10px] text-slate-400 font-mono">#{aluno.matricula || aluno.id.slice(0,8)}</div>
+                        </td>
+                        {Array.from({ length: courseModules }).map((_, i) => {
+                          const m = i + 1;
+                          return (
+                            <td key={m} className="px-2 py-4 text-center border-l border-slate-50/50">
+                              <input
+                                type="number"
+                                step="0.1"
+                                min="0"
+                                max="10"
+                                placeholder="-"
+                                value={gradeData[`nota${m}`] ?? ''}
+                                onChange={(e) => handleBulkChange(aluno.id, m, e.target.value)}
+                                className="w-16 h-10 text-center bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-sm font-bold font-mono transition-all"
+                              />
                             </td>
-                          ) : null}
-                          <td className="px-4 py-4 text-sm font-semibold text-slate-700 capitalize">
-                            {disciplina.nome}
-                          </td>
-                          {Array.from({ length: courseModules }).map((_, i) => {
-                            const m = i + 1;
-                            return (
-                              <td key={m} className="px-1 py-4">
-                                <input
-                                  type="number"
-                                  step="0.1"
-                                  min="0"
-                                  max="10"
-                                  placeholder="-"
-                                  value={gradeData[`nota${m}`] ?? ''}
-                                  onChange={(e) => handleBulkChange(aluno.id, disciplina.id, m, e.target.value)}
-                                  className="w-16 h-10 text-center bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-sm font-bold font-mono transition-all"
-                                />
-                              </td>
-                            );
-                          })}
-                          <td className="px-4 py-4 text-center bg-slate-50/30">
-                            <span className={cn(
-                              "text-base font-black font-mono",
-                              avg === null ? "text-slate-300" :
-                              avg >= settings.media_aprovacao ? "text-green-600" :
-                              avg >= settings.media_recuperacao ? "text-yellow-600" : "text-red-600"
-                            )}>
-                              {avg !== null ? avg.toFixed(1) : '-.-'}
-                            </span>
-                          </td>
-                          <td className="px-4 py-4 text-center">
-                            <span className={cn(
-                              "px-2 py-1 text-[10px] font-black uppercase rounded-md ring-1 ring-inset whitespace-nowrap",
-                              status.className
-                            )}>
-                              {status.label}
-                            </span>
-                          </td>
-                          <td className="px-4 py-4 text-right">
-                            <button
-                              onClick={() => saveRow(aluno.id, disciplina.id)}
-                              disabled={isSavingRow || isGuest}
-                              className={cn(
-                                "p-2 rounded-lg transition-all",
-                                isSavingRow ? "bg-slate-100 text-slate-400" :
-                                "bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white"
-                              )}
-                              title={t.common.save}
-                            >
-                              {isSavingRow ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    });
+                          );
+                        })}
+                        <td className="px-6 py-4 text-center bg-blue-50/10 border-l border-slate-100">
+                          <span className={cn(
+                            "text-base font-black font-mono",
+                            avg === null ? "text-slate-300" :
+                            avg >= settings.media_aprovacao ? "text-green-600" :
+                            avg >= settings.media_recuperacao ? "text-yellow-600" : "text-red-600"
+                          )}>
+                            {avg !== null ? avg.toFixed(1) : '-.-'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-center border-l border-slate-100">
+                          <span className={cn(
+                            "px-3 py-1.5 text-[10px] font-black uppercase rounded-full ring-1 ring-inset inline-block",
+                            status.className
+                          )}>
+                            {status.label}
+                          </span>
+                        </td>
+                        <td className="px-4 py-4 text-right border-l border-slate-100">
+                          <button
+                            onClick={() => saveStudent(aluno.id)}
+                            disabled={isSavingRow || isGuest}
+                            className={cn(
+                              "p-2.5 rounded-xl transition-all",
+                              isSavingRow ? "bg-slate-100 text-slate-400" :
+                              "bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white"
+                            )}
+                            title={t.common.save}
+                          >
+                            {isSavingRow ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                          </button>
+                        </td>
+                      </tr>
+                    );
                   })}
                 </tbody>
               </table>

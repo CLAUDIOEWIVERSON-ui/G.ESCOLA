@@ -82,7 +82,8 @@ export default function CursosPage() {
         return {
           ...item,
           duracao: val || 1,
-          duracao_unidade: (units[unitIdx] || 'ano') as any
+          duracao_unidade: (units[unitIdx] || 'ano') as any,
+          qtd_modulos: item.qtd_modulos || 4
         };
       });
       setCursos(mappedData);
@@ -496,11 +497,11 @@ export default function CursosPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-sm font-semibold text-slate-700">Número de Módulos</label>
+                  <label className="text-sm font-semibold text-slate-700">Número de Módulos (Máx 5)</label>
                   <input
                     type="number"
                     min="1"
-                    max="10"
+                    max="5"
                     {...register('qtd_modulos', { valueAsNumber: true })}
                     className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
                   />
