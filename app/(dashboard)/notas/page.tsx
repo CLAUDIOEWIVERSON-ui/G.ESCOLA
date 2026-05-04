@@ -81,12 +81,8 @@ export default function NotasPage() {
       const { data: alunosData } = await supabase.from('alunos').select('id, nome').is('deleted_at', null).order('nome');
       if (alunosData) setAlunos(alunosData);
 
-      // Fetch Disciplinas
-      const { data: disciplinasData } = await supabase.from('disciplinas').select('id, nome').is('deleted_at', null).order('nome');
-      if (disciplinasData) setDisciplinas(disciplinasData);
-
       // Fetch Turmas
-      const { data: turmasData } = await supabase.from('turmas').select('id, nome').is('deleted_at', null).order('nome');
+      const { data: turmasData } = await supabase.from('turmas').select('id, nome, curso_id').is('deleted_at', null).order('nome');
       if (turmasData) setTurmas(turmasData);
       
       setLoading(false);
@@ -94,6 +90,35 @@ export default function NotasPage() {
 
     fetchData();
   }, []);
+
+  useEffect(() => {
+    const fetchDisciplinasForTurma = async () => {
+      if (!selectedTurma) {
+        setDisciplinas([]);
+        setSelectedDisciplina('');
+        return;
+      }
+      
+      const turma = turmas.find(t => t.id === selectedTurma);
+      if (turma?.curso_id) {
+        const { data: discData } = await supabase
+          .from('disciplinas')
+          .select('id, nome')
+          .eq('curso_id', turma.curso_id)
+          .is('deleted_at', null)
+          .order('nome');
+        if (discData && discData.length > 0) {
+          setDisciplinas(discData);
+          // Auto-select first if none selected or if previously selected is not in this new list
+          if (!selectedDisciplina || !discData.find(d => d.id === selectedDisciplina)) {
+            setSelectedDisciplina(discData[0].id);
+          }
+        }
+      }
+    };
+
+    fetchDisciplinasForTurma();
+  }, [selectedTurma, turmas, selectedDisciplina]);
 
   const handleBulkChange = (alunoId: string, field: string, value: string) => {
     const numValue = value === '' ? null : parseFloat(value);
@@ -178,20 +203,28 @@ export default function NotasPage() {
               {turmas.map(t => <option key={t.id} value={t.id}>{t.nome}</option>)}
             </select>
           </div>
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t.subjects.course}</label>
-            <select
-              value={selectedDisciplina}
-              onChange={(e) => setSelectedDisciplina(e.target.value)}
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-sm font-medium"
-            >
-              <option value="">{t.grades.selectDisciplina}</option>
-              {disciplinas.map(d => <option key={d.id} value={d.id}>{d.nome}</option>)}
-            </select>
-          </div>
+          {selectedDisciplina && disciplinas.length > 0 && (
+            <div className="space-y-2 px-4 py-3 bg-blue-50/50 rounded-xl border border-blue-100 flex items-center justify-between">
+              <div>
+                <label className="block text-[10px] font-bold text-blue-400 uppercase tracking-widest">{t.nav.subjects}</label>
+                <span className="text-sm font-bold text-blue-900">
+                  {disciplinas.find(d => d.id === selectedDisciplina)?.nome}
+                </span>
+              </div>
+              {disciplinas.length > 1 && (
+                 <select
+                    value={selectedDisciplina}
+                    onChange={(e) => setSelectedDisciplina(e.target.value)}
+                    className="text-[10px] font-bold bg-white border border-blue-200 rounded-md px-2 py-1 outline-none text-blue-600"
+                 >
+                    {disciplinas.map(d => <option key={d.id} value={d.id}>{d.nome}</option>)}
+                 </select>
+              )}
+            </div>
+          )}
         </div>
 
-        {!selectedTurma || !selectedDisciplina ? (
+        {!selectedTurma ? (
           <div className="flex flex-col items-center justify-center py-20 text-slate-400 bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-200">
             <FileText size={48} className="mb-4 opacity-20" />
             <p className="text-sm font-medium italic">{t.grades.fillFilters}</p>

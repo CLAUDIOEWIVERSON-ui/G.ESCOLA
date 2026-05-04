@@ -160,6 +160,7 @@ export const translations = {
     subjects: {
       title: "Disciplinas",
       subtitle: "Catálogo de matérias e cargas horárias.",
+      list: "Lista de Disciplinas",
       add: "Nova Disciplina",
       name: "Nome da Disciplina",
       code: "Código",
@@ -420,6 +421,7 @@ export const translations = {
     subjects: {
       title: "Subjects",
       subtitle: "Catalog of subjects and workloads.",
+      list: "Subjects List",
       add: "New Subject",
       name: "Subject Name",
       code: "Code",

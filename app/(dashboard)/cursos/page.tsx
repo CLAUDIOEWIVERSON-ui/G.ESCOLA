@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
@@ -15,7 +15,10 @@ import {
   CheckCircle2,
   AlertCircle,
   FileText,
-  Loader2
+  Loader2,
+  GraduationCap,
+  Clock,
+  BookMarked
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useForm } from 'react-hook-form';
@@ -38,6 +41,14 @@ export default function CursosPage() {
   const [saving, setSaving] = useState(false);
   const [editingCurso, setEditingCurso] = useState<Curso | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Discipline Management State
+  const [manageDisciplinasCurso, setManageDisciplinasCurso] = useState<Curso | null>(null);
+  const [disciplinas, setDisciplinas] = useState<any[]>([]);
+  const [loadingDisciplinas, setLoadingDisciplinas] = useState(false);
+  const [isDisciplinaModalOpen, setIsDisciplinaModalOpen] = useState(false);
+  const [currentDisciplina, setCurrentDisciplina] = useState<any>(null);
+  const [savingDisciplina, setSavingDisciplina] = useState(false);
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<z.infer<typeof cursoSchema>>({
     resolver: zodResolver(cursoSchema),
@@ -133,6 +144,83 @@ export default function CursosPage() {
         .eq('id', id);
       if (error) alert(error.message);
       else fetchCursos();
+    }
+  };
+
+  const fetchDisciplinas = useCallback(async (cursoId: string) => {
+    const { data } = await supabase
+      .from('disciplinas')
+      .select('*')
+      .eq('curso_id', cursoId)
+      .is('deleted_at', null)
+      .order('nome');
+    if (data) setDisciplinas(data);
+    setLoadingDisciplinas(false);
+  }, []);
+
+  useEffect(() => {
+    if (manageDisciplinasCurso) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      fetchDisciplinas(manageDisciplinasCurso.id);
+    }
+  }, [manageDisciplinasCurso, fetchDisciplinas]);
+
+  const handleOpenDisciplinaModal = (disciplina: any = null) => {
+    if (isGuest) return;
+    setCurrentDisciplina(disciplina || { nome: '', codigo: '', carga_horaria: 60, curso_id: manageDisciplinasCurso?.id });
+    setIsDisciplinaModalOpen(true);
+  };
+
+  const handleSaveDisciplina = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!manageDisciplinasCurso) return;
+    setSavingDisciplina(true);
+
+    try {
+      const dataToSave = {
+        nome: currentDisciplina.nome,
+        codigo: currentDisciplina.codigo,
+        carga_horaria: currentDisciplina.carga_horaria,
+        curso_id: manageDisciplinasCurso.id
+      };
+
+      if (currentDisciplina.id) {
+        const { error } = await supabase
+          .from('disciplinas')
+          .update(dataToSave)
+          .eq('id', currentDisciplina.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('disciplinas')
+          .insert([dataToSave]);
+        if (error) throw error;
+      }
+
+      setLoadingDisciplinas(true);
+      await fetchDisciplinas(manageDisciplinasCurso.id);
+      setIsDisciplinaModalOpen(false);
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setSavingDisciplina(false);
+    }
+  };
+
+  const deleteDisciplina = async (id: string) => {
+    if (isGuest || !manageDisciplinasCurso) return;
+    if (confirm(t.common.deleteConfirm)) {
+      setLoadingDisciplinas(true);
+      const { error } = await supabase
+        .from('disciplinas')
+        .update({ deleted_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) {
+        alert(error.message);
+        setLoadingDisciplinas(false);
+      } else {
+        await fetchDisciplinas(manageDisciplinasCurso.id);
+      }
     }
   };
 
@@ -291,22 +379,34 @@ export default function CursosPage() {
                     )}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    {!isGuest && (
-                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button 
-                          onClick={() => { setEditingCurso(curso); reset(curso); setModalOpen(true); }}
-                          className="p-2 hover:bg-white hover:shadow-sm rounded-lg text-slate-400 hover:text-indigo-600 transition-all"
-                        >
-                          <Edit2 size={16} />
-                        </button>
-                        <button 
-                          onClick={() => deleteCurso(curso.id)}
-                          className="p-2 hover:bg-white hover:shadow-sm rounded-lg text-slate-400 hover:text-red-600 transition-all"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    )}
+                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button 
+                        onClick={() => {
+                          setManageDisciplinasCurso(curso);
+                          setLoadingDisciplinas(true);
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-[10px] font-bold uppercase hover:bg-blue-600 hover:text-white transition-all"
+                      >
+                        <BookMarked size={12} />
+                        {t.nav.subjects}
+                      </button>
+                      {!isGuest && (
+                        <>
+                          <button 
+                            onClick={() => { setEditingCurso(curso); reset(curso); setModalOpen(true); }}
+                            className="p-2 hover:bg-white hover:shadow-sm rounded-lg text-slate-400 hover:text-indigo-600 transition-all"
+                          >
+                            <Edit2 size={16} />
+                          </button>
+                          <button 
+                            onClick={() => deleteCurso(curso.id)}
+                            className="p-2 hover:bg-white hover:shadow-sm rounded-lg text-slate-400 hover:text-red-600 transition-all"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -430,6 +530,137 @@ export default function CursosPage() {
           </div>
         )}
       </AnimatePresence>
+
+      <Modal
+        isOpen={!!manageDisciplinasCurso}
+        onClose={() => setManageDisciplinasCurso(null)}
+        title={`${t.nav.subjects}: ${manageDisciplinasCurso?.nome}`}
+      >
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">{t.subjects.list}</div>
+            {!isGuest && (
+              <button 
+                onClick={() => handleOpenDisciplinaModal()}
+                className="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-xs font-bold uppercase transition-colors"
+              >
+                <Plus size={14} />
+                {t.subjects.add}
+              </button>
+            )}
+          </div>
+
+          <div className="max-h-[400px] overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+            {loadingDisciplinas ? (
+              <div className="flex justify-center py-8 text-slate-400">
+                <Loader2 size={24} className="animate-spin" />
+              </div>
+            ) : disciplinas.length === 0 ? (
+              <div className="text-center py-12 text-slate-400 text-sm italic bg-slate-50 rounded-xl border-2 border-dashed border-slate-100">
+                {t.subjects.noSubjects}
+              </div>
+            ) : (
+              disciplinas.map((d) => (
+                <div key={d.id} className="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-xl hover:border-slate-200 hover:shadow-sm transition-all group">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-slate-50 rounded-lg flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
+                      <GraduationCap size={18} />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-slate-800 text-sm">{d.nome}</h4>
+                      <div className="flex items-center gap-3 mt-0.5">
+                        <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">{d.codigo}</span>
+                        <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400 uppercase">
+                          <Clock size={12} className="opacity-50" />
+                          {d.carga_horaria}H
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  {!isGuest && (
+                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button 
+                        onClick={() => handleOpenDisciplinaModal(d)}
+                        className="p-2 hover:bg-blue-50 hover:text-blue-600 rounded-lg text-slate-400 transition-all"
+                      >
+                        <Edit2 size={14} />
+                      </button>
+                      <button 
+                        onClick={() => deleteDisciplina(d.id)}
+                        className="p-2 hover:bg-red-50 hover:text-red-600 rounded-lg text-slate-400 transition-all"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={isDisciplinaModalOpen}
+        onClose={() => setIsDisciplinaModalOpen(false)}
+        title={currentDisciplina?.id ? t.common.edit : t.subjects.add}
+      >
+        <form onSubmit={handleSaveDisciplina} className="space-y-4">
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t.subjects.name}</label>
+            <input
+              required
+              type="text"
+              value={currentDisciplina?.nome || ''}
+              onChange={(e) => setCurrentDisciplina({ ...currentDisciplina, nome: e.target.value })}
+              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors text-sm font-medium"
+              placeholder={t.subjects.name}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t.subjects.code}</label>
+              <input
+                required
+                type="text"
+                value={currentDisciplina?.codigo || ''}
+                onChange={(e) => setCurrentDisciplina({ ...currentDisciplina, codigo: e.target.value })}
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors text-sm font-mono"
+                placeholder="PROG101"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t.subjects.hours}</label>
+              <input
+                required
+                type="number"
+                value={currentDisciplina?.carga_horaria || ''}
+                onChange={(e) => setCurrentDisciplina({ ...currentDisciplina, carga_horaria: parseInt(e.target.value) })}
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors text-sm font-bold"
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-6">
+            <button
+              type="button"
+              onClick={() => setIsDisciplinaModalOpen(false)}
+              className="flex-1 py-2.5 bg-slate-100 text-slate-600 rounded-lg text-sm font-bold hover:bg-slate-200 transition-colors"
+            >
+              {t.common.cancel}
+            </button>
+            <button
+              type="submit"
+              disabled={savingDisciplina}
+              className="flex-1 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 transition-colors shadow-sm shadow-blue-100 flex items-center justify-center gap-2"
+            >
+              {savingDisciplina ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
+              {t.common.save}
+            </button>
+          </div>
+        </form>
+      </Modal>
 
       <Modal
         isOpen={isBulkModalOpen}
