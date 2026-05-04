@@ -96,22 +96,30 @@ export async function PUT(request: Request) {
   try {
     const { id, email, password, full_name, role, status } = await request.json();
 
+    if (!id) {
+      return NextResponse.json({ error: 'ID do usuário é obrigatório para atualização.' }, { status: 400 });
+    }
+
     // 1. Update auth user
     const updateData: any = {};
     if (email) updateData.email = email;
     if (password) updateData.password = password;
-    if (full_name || role) {
-      updateData.user_metadata = { 
-        ...updateData.user_metadata,
-        full_name: full_name,
-        role: role
-      };
-    }
+    
+    // Merge existing metadata if possible or just set new ones
+    updateData.user_metadata = { 
+      full_name: full_name,
+      role: role
+    };
     
     // Auth updates
     if (Object.keys(updateData).length > 0) {
       const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(id, updateData);
-      if (authError) throw authError;
+      if (authError) {
+        if (authError.message.includes('Invalid API key') || authError.message.includes('service_role')) {
+          return NextResponse.json({ error: 'Erro de Configuração: Chave de API Inválida.' }, { status: 401 });
+        }
+        throw authError;
+      }
     }
 
     // 2. Update profile
@@ -128,8 +136,11 @@ export async function PUT(request: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error('Admin API PUT error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('Admin API PUT error detailed:', JSON.stringify(error, null, 2));
+    return NextResponse.json({ 
+      error: error.message || 'Erro desconhecido na atualização do usuário',
+      details: error
+    }, { status: 500 });
   }
 }
 
