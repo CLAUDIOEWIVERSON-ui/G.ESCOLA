@@ -61,11 +61,18 @@ export default function CursosPage() {
       .order('nome');
     if (data) {
       // Map database field to our logic field
-      const mappedData = data.map(item => ({
-        ...item,
-        duracao: item.ano_inicio || 1,
-        duracao_unidade: (item.codigo || 'ano') as any
-      }));
+      const units = ['dia', 'semana', 'mes', 'ano'];
+      const mappedData = data.map(item => {
+        const dbVal = item.ano_inicio || 13; // default 1 year (1 * 10 + 3)
+        const val = Math.floor(dbVal / 10);
+        const unitIdx = dbVal % 10;
+        
+        return {
+          ...item,
+          duracao: val || 1,
+          duracao_unidade: (units[unitIdx] || 'ano') as any
+        };
+      });
       setCursos(mappedData);
     }
     if (showLoading) setLoading(false);
@@ -82,12 +89,15 @@ export default function CursosPage() {
   const onSubmit = async (data: z.infer<typeof cursoSchema>) => {
     if (isGuest) return;
     try {
+      const units = ['dia', 'semana', 'mes', 'ano'];
+      const unitIdx = units.indexOf(data.duracao_unidade);
+      const encodedDuration = (data.duracao * 10) + (unitIdx === -1 ? 3 : unitIdx);
+
       // Map our logic field back to database field
       const cleanedData = {
         nome: data.nome,
         descricao: data.descricao,
-        ano_inicio: data.duracao, // stores value
-        codigo: data.duracao_unidade, // stores unit
+        ano_inicio: encodedDuration, // stores both value and unit encoded
         localizacao: data.localizacao,
         internacional: data.internacional,
         ativo: data.ativo
@@ -153,9 +163,8 @@ export default function CursosPage() {
 
         return {
           nome,
-          codigo: 'ano', // default duration unit
           descricao: descricao || '',
-          ano_inicio: 1, // default duration value
+          ano_inicio: 13, // default duration (1 * 10 + 3 = 1 year)
           ativo: true
         };
       }).filter(Boolean) as any[];

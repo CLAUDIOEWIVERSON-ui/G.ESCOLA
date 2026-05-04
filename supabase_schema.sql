@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 CREATE TABLE IF NOT EXISTS public.cursos (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   nome TEXT UNIQUE NOT NULL,
+  codigo TEXT,
   descricao TEXT,
   ano_inicio INTEGER,
   ativo BOOLEAN DEFAULT TRUE,
@@ -82,6 +83,9 @@ CREATE TABLE IF NOT EXISTS public.notas (
   turma_id UUID REFERENCES public.turmas(id) NOT NULL,
   nota1 NUMERIC(3,1) CHECK (nota1 >= 0 AND nota1 <= 10),
   nota2 NUMERIC(3,1) CHECK (nota2 >= 0 AND nota2 <= 10),
+  nota3 NUMERIC(3,1) CHECK (nota3 >= 0 AND nota3 <= 10),
+  nota4 NUMERIC(3,1) CHECK (nota4 >= 0 AND nota4 <= 10),
+  nota5 NUMERIC(3,1) CHECK (nota5 >= 0 AND nota5 <= 10),
   nota_final NUMERIC(3,1),
   frequencia NUMERIC(4,1) CHECK (frequencia >= 0 AND frequencia <= 100),
   ano_letivo INTEGER NOT NULL,
@@ -93,10 +97,37 @@ CREATE TABLE IF NOT EXISTS public.notas (
 -- Auto calculate nota_final
 CREATE OR REPLACE FUNCTION calculate_nota_final()
 RETURNS TRIGGER AS $$
+DECLARE
+  total NUMERIC := 0;
+  count INTEGER := 0;
 BEGIN
-  IF NEW.nota1 IS NOT NULL AND NEW.nota2 IS NOT NULL THEN
-    NEW.nota_final := (NEW.nota1 + (NEW.nota2 * 2)) / 3;
+  IF NEW.nota1 IS NOT NULL THEN
+    total := total + NEW.nota1;
+    count := count + 1;
   END IF;
+  IF NEW.nota2 IS NOT NULL THEN
+    total := total + NEW.nota2;
+    count := count + 1;
+  END IF;
+  IF NEW.nota3 IS NOT NULL THEN
+    total := total + NEW.nota3;
+    count := count + 1;
+  END IF;
+  IF NEW.nota4 IS NOT NULL THEN
+    total := total + NEW.nota4;
+    count := count + 1;
+  END IF;
+  IF NEW.nota5 IS NOT NULL THEN
+    total := total + NEW.nota5;
+    count := count + 1;
+  END IF;
+
+  IF count > 0 THEN
+    NEW.nota_final := total / count;
+  ELSE
+    NEW.nota_final := NULL;
+  END IF;
+  
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;

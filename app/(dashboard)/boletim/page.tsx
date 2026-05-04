@@ -265,17 +265,19 @@ export default function BoletimPage() {
                  <thead>
                    <tr className="text-[10px] font-bold text-slate-400 border-b border-slate-100 uppercase tracking-wider">
                       <th className="px-6 py-4">{t.reportCard.student}</th>
-                      <th className="px-6 py-4 text-center">N1</th>
-                      <th className="px-6 py-4 text-center">N2</th>
+                      <th className="px-3 py-4 text-center">MOD 1</th>
+                      <th className="px-3 py-4 text-center">MOD 2</th>
+                      <th className="px-3 py-4 text-center">MOD 3</th>
+                      <th className="px-3 py-4 text-center">MOD 4</th>
+                      <th className="px-3 py-4 text-center">MOD 5</th>
                       <th className="px-6 py-4 text-center">{t.reportCard.average}</th>
-                      <th className="px-6 py-4 text-center">Freq. %</th>
                       <th className="px-6 py-4 text-right">{t.reportCard.status}</th>
                    </tr>
                  </thead>
                  <tbody>
                    {boletimData.length === 0 ? (
                      <tr>
-                        <td colSpan={6} className="py-20 text-center">
+                        <td colSpan={8} className="py-20 text-center">
                            <div className="flex flex-col items-center text-slate-300">
                               <FileText size={48} className="mb-4 opacity-20" />
                               <p className="text-sm font-medium">{t.reportCard.noData}</p>
@@ -292,19 +294,15 @@ export default function BoletimPage() {
                              <div className="font-bold text-slate-800">{row.aluno?.nome}</div>
                              <div className="text-[10px] font-mono text-slate-400 tracking-tight">#{row.aluno?.matricula}</div>
                            </td>
-                           <td className="px-6 py-4 text-center font-mono text-sm text-slate-600">
-                              {row.nota1?.toFixed(1) || '-'}
-                           </td>
-                           <td className="px-6 py-4 text-center font-mono text-sm text-slate-600">
-                              {row.nota2?.toFixed(1) || '-'}
-                           </td>
+                           <td className="px-3 py-4 text-center font-mono text-sm text-slate-500">{row.nota1?.toFixed(1) || '-'}</td>
+                           <td className="px-3 py-4 text-center font-mono text-sm text-slate-500">{row.nota2?.toFixed(1) || '-'}</td>
+                           <td className="px-3 py-4 text-center font-mono text-sm text-slate-500">{row.nota3?.toFixed(1) || '-'}</td>
+                           <td className="px-3 py-4 text-center font-mono text-sm text-slate-500">{row.nota4?.toFixed(1) || '-'}</td>
+                           <td className="px-3 py-4 text-center font-mono text-sm text-slate-500">{row.nota5?.toFixed(1) || '-'}</td>
                            <td className="px-6 py-4 text-center">
                               <span className={cn("font-bold font-mono text-sm", (row.nota_final || 0) >= settings.media_aprovacao ? "text-blue-600" : (row.nota_final || 0) >= settings.media_recuperacao ? "text-yellow-600" : "text-red-500")}>
                                 {row.nota_final?.toFixed(1) || '-'}
                               </span>
-                           </td>
-                           <td className="px-6 py-4 text-center font-mono text-sm text-slate-500">
-                              {row.frequencia}%
                            </td>
                            <td className="px-6 py-4 text-right">
                               <div className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ring-1 ring-inset ring-current/20", status.className)}>
