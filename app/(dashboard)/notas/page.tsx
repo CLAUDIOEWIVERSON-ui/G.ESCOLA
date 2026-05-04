@@ -22,9 +22,9 @@ export default function NotasPage() {
   const [turmas, setTurmas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTurma, setSelectedTurma] = useState('');
-  const [selectedDisciplina, setSelectedDisciplina] = useState('');
+  const [courseModules, setCourseModules] = useState(4);
   const [turmaAlunos, setTurmaAlunos] = useState<any[]>([]);
-  const [bulkNotas, setBulkNotas] = useState<Record<string, any>>({});
+  const [bulkNotas, setBulkNotas] = useState<Record<string, Record<string, any>>>({});
   const [saving, setSaving] = useState(false);
   const [savingRows, setSavingRows] = useState<Record<string, boolean>>({});
   const [settings, setSettings] = useState({ media_aprovacao: 6, media_recuperacao: 4, frequencia_minima: 75 });
@@ -34,10 +34,22 @@ export default function NotasPage() {
       if (!selectedTurma) {
         setTurmaAlunos([]);
         setBulkNotas({});
+        setCourseModules(4);
         return;
       }
 
       setLoading(true);
+      
+      const turma = turmas.find(t => t.id === selectedTurma);
+      if (turma?.curso_id) {
+        const { data: curso } = await supabase
+          .from('cursos')
+          .select('qtd_modulos')
+          .eq('id', turma.curso_id)
+          .single();
+        if (curso) setCourseModules(curso.qtd_modulos || 4);
+      }
+
       // Fetch students in this turma
       const { data: students } = await supabase
         .from('alunos')
@@ -48,27 +60,23 @@ export default function NotasPage() {
       
       setTurmaAlunos(students || []);
 
-      if (selectedDisciplina) {
-        // Fetch existing grades
-        const { data: grades } = await supabase
-          .from('notas')
-          .select('*')
-          .eq('turma_id', selectedTurma)
-          .eq('disciplina_id', selectedDisciplina);
-        
-        const gradesMap: Record<string, any> = {};
-        grades?.forEach(g => {
-          gradesMap[g.aluno_id] = g;
-        });
-        setBulkNotas(gradesMap);
-      } else {
-        setBulkNotas({});
-      }
+      // Fetch existing grades for all disciplines in this turma
+      const { data: grades } = await supabase
+        .from('notas')
+        .select('*')
+        .eq('turma_id', selectedTurma);
+      
+      const gradesMap: Record<string, Record<string, any>> = {};
+      grades?.forEach(g => {
+        if (!gradesMap[g.aluno_id]) gradesMap[g.aluno_id] = {};
+        gradesMap[g.aluno_id][g.disciplina_id] = g;
+      });
+      setBulkNotas(gradesMap);
       setLoading(false);
     };
 
     fetchTurmaData();
-  }, [selectedTurma, selectedDisciplina]);
+  }, [selectedTurma, turmas]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -96,7 +104,6 @@ export default function NotasPage() {
     const fetchDisciplinasForTurma = async () => {
       if (!selectedTurma) {
         setDisciplinas([]);
-        setSelectedDisciplina('');
         return;
       }
       
@@ -108,78 +115,81 @@ export default function NotasPage() {
           .eq('curso_id', turma.curso_id)
           .is('deleted_at', null)
           .order('nome');
-        if (discData && discData.length > 0) {
+        if (discData) {
           setDisciplinas(discData);
-          // Auto-select first if none selected or if previously selected is not in this new list
-          if (!selectedDisciplina || !discData.find(d => d.id === selectedDisciplina)) {
-            setSelectedDisciplina(discData[0].id);
-          }
         }
       }
     };
 
     fetchDisciplinasForTurma();
-  }, [selectedTurma, turmas, selectedDisciplina]);
+  }, [selectedTurma, turmas]);
 
-  const handleBulkChange = (alunoId: string, field: string, value: string) => {
+  const handleBulkChange = (alunoId: string, disciplinaId: string, modulo: number, value: string) => {
     const numValue = value === '' ? null : parseFloat(value);
-    setBulkNotas(prev => ({
-      ...prev,
-      [alunoId]: {
-        ...(prev[alunoId] || { aluno_id: alunoId, disciplina_id: selectedDisciplina, turma_id: selectedTurma, ano_letivo: new Date().getFullYear() }),
-        [field]: numValue
-      }
-    }));
+    const field = `nota${modulo}`;
+    
+    setBulkNotas(prev => {
+      const studentGrades = prev[alunoId] || {};
+      const discGrade = studentGrades[disciplinaId] || { 
+        aluno_id: alunoId, 
+        disciplina_id: disciplinaId, 
+        turma_id: selectedTurma, 
+        ano_letivo: new Date().getFullYear() 
+      };
+
+      return {
+        ...prev,
+        [alunoId]: {
+          ...studentGrades,
+          [disciplinaId]: {
+            ...discGrade,
+            [field]: numValue
+          }
+        }
+      };
+    });
   };
 
-  const saveIndividual = async (alunoId: string) => {
+  const saveRow = async (alunoId: string, disciplinaId: string) => {
     if (isGuest) return;
-    const gradeData = bulkNotas[alunoId];
-    if (!gradeData) return;
+    const studentGrades = bulkNotas[alunoId];
+    if (!studentGrades || !studentGrades[disciplinaId]) return;
 
-    setSavingRows(prev => ({ ...prev, [alunoId]: true }));
+    const rowKey = `${alunoId}-${disciplinaId}`;
+    setSavingRows(prev => ({ ...prev, [rowKey]: true }));
     try {
-      const cleaned: any = {
-        ...gradeData,
-        aluno_id: alunoId, // Ensure it's correct
-        disciplina_id: selectedDisciplina,
-        turma_id: selectedTurma,
-        ano_letivo: gradeData.ano_letivo || new Date().getFullYear()
-      };
-      
-      // Safety check: skip if no grades at all
-      const hasGrades = [1, 2, 3, 4, 5].some(m => cleaned[`nota${m}`] !== null && cleaned[`nota${m}`] !== undefined);
-      if (!hasGrades) {
-        // Just delete if previously existed? No, let's just save whatever is there.
-      }
+      const gradeData = { ...studentGrades[disciplinaId] };
+      if (!gradeData.id) delete gradeData.id;
 
-      if (!cleaned.id) delete cleaned.id;
-      
       const { error } = await supabase
         .from('notas')
-        .upsert([cleaned], { 
+        .upsert([gradeData], { 
           onConflict: 'aluno_id,disciplina_id,turma_id' 
         });
 
       if (error) throw error;
       
-      // Refresh to get the ID if it was a new record
+      // Refresh
       const { data: newGrade } = await supabase
         .from('notas')
         .select('*')
         .eq('aluno_id', alunoId)
-        .eq('disciplina_id', selectedDisciplina)
+        .eq('disciplina_id', disciplinaId)
         .eq('turma_id', selectedTurma)
         .single();
       
       if (newGrade) {
-        setBulkNotas(prev => ({ ...prev, [alunoId]: newGrade }));
+        setBulkNotas(prev => {
+          const updated = { ...prev };
+          if (!updated[alunoId]) updated[alunoId] = {};
+          updated[alunoId][disciplinaId] = newGrade;
+          return updated;
+        });
       }
-
     } catch (err: any) {
       alert(err.message);
     } finally {
-      setSavingRows(prev => ({ ...prev, [alunoId]: false }));
+      setSavingRows(prev => ({ ...prev, [rowKey]: false }));
     }
   };
 
@@ -187,30 +197,14 @@ export default function NotasPage() {
     if (isGuest) return;
     setSaving(true);
     try {
-      const entries = Object.values(bulkNotas);
-      if (entries.length === 0) return;
+      const allGrades = Object.values(bulkNotas).flatMap(studentMap => Object.values(studentMap));
+      if (allGrades.length === 0) return;
 
-      const dataToUpsert = entries
-        .filter(e => {
-          // Only save if at least one grade field has something
-          return [1, 2, 3, 4, 5].some(m => e[`nota${m}`] !== null && e[`nota${m}`] !== undefined);
-        })
-        .map(e => {
-          const cleaned: any = {
-            ...e,
-            disciplina_id: selectedDisciplina,
-            turma_id: selectedTurma,
-            ano_letivo: e.ano_letivo || new Date().getFullYear()
-          };
-          // Remove null/undefined ID to avoid constraint violations on new records
-          if (!cleaned.id) delete cleaned.id;
-          return cleaned;
-        });
-
-      if (dataToUpsert.length === 0) {
-        alert(t.grades.fillFilters); // Generic message or "nothing to save"
-        return;
-      }
+      const dataToUpsert = allGrades.map(e => {
+        const cleaned = { ...e };
+        if (!cleaned.id) delete cleaned.id;
+        return cleaned;
+      });
 
       const { error } = await supabase
         .from('notas')
@@ -219,7 +213,7 @@ export default function NotasPage() {
         });
 
       if (error) throw error;
-      alert(t.attendance.saveSuccess); // Reusing translation
+      alert(t.attendance.saveSuccess);
     } catch (err: any) {
       alert(err.message);
     } finally {
@@ -265,25 +259,6 @@ export default function NotasPage() {
               {turmas.map(t => <option key={t.id} value={t.id}>{t.nome}</option>)}
             </select>
           </div>
-          {selectedDisciplina && disciplinas.length > 0 && (
-            <div className="space-y-2 px-4 py-3 bg-blue-50/50 rounded-xl border border-blue-100 flex items-center justify-between">
-              <div>
-                <label className="block text-[10px] font-bold text-blue-400 uppercase tracking-widest">{t.nav.subjects}</label>
-                <span className="text-sm font-bold text-blue-900">
-                  {disciplinas.find(d => d.id === selectedDisciplina)?.nome}
-                </span>
-              </div>
-              {disciplinas.length > 1 && (
-                 <select
-                    value={selectedDisciplina}
-                    onChange={(e) => setSelectedDisciplina(e.target.value)}
-                    className="text-[10px] font-bold bg-white border border-blue-200 rounded-md px-2 py-1 outline-none text-blue-600"
-                 >
-                    {disciplinas.map(d => <option key={d.id} value={d.id}>{d.nome}</option>)}
-                 </select>
-              )}
-            </div>
-          )}
         </div>
 
         {!selectedTurma ? (
@@ -306,11 +281,10 @@ export default function NotasPage() {
                 <thead>
                   <tr className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">
                     <th className="px-4 py-3 min-w-[200px]">{t.reportCard.student}</th>
-                    <th className="px-2 py-3 text-center">{t.grades.module} 1</th>
-                    <th className="px-2 py-3 text-center">{t.grades.module} 2</th>
-                    <th className="px-2 py-3 text-center">{t.grades.module} 3</th>
-                    <th className="px-2 py-3 text-center">{t.grades.module} 4</th>
-                    <th className="px-2 py-3 text-center">{t.grades.module} 5</th>
+                    <th className="px-4 py-3 min-w-[150px]">{t.subjects.title}</th>
+                    {Array.from({ length: courseModules }).map((_, i) => (
+                      <th key={i} className="px-2 py-3 text-center">{t.grades.module} {i + 1}</th>
+                    ))}
                     <th className="px-4 py-3 text-center bg-slate-50/50 rounded-t-xl">{t.reportCard.average}</th>
                     <th className="px-4 py-3 text-center">{t.reportCard.status}</th>
                     <th className="px-4 py-3 text-right"></th>
@@ -318,73 +292,82 @@ export default function NotasPage() {
                 </thead>
                 <tbody className="divide-y divide-slate-50">
                   {turmaAlunos.map((aluno) => {
-                    const gradeData = bulkNotas[aluno.id] || {};
-                    const isSavingRow = savingRows[aluno.id];
-                    const scores = [
-                      gradeData.nota1,
-                      gradeData.nota2,
-                      gradeData.nota3,
-                      gradeData.nota4,
-                      gradeData.nota5
-                    ].filter(v => v !== null && v !== undefined);
-                    
-                    const avg = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
-                    const status = getStatus(avg);
+                    return disciplinas.map((disciplina, index) => {
+                      const studentGrades = bulkNotas[aluno.id] || {};
+                      const gradeData = studentGrades[disciplina.id] || {};
+                      const rowKey = `${aluno.id}-${disciplina.id}`;
+                      const isSavingRow = savingRows[rowKey];
+                      
+                      const scores = Array.from({ length: courseModules })
+                        .map((_, i) => gradeData[`nota${i + 1}`])
+                        .filter(v => v !== null && v !== undefined);
+                      
+                      const avg = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
+                      const status = getStatus(avg);
 
-                    return (
-                      <tr key={aluno.id} className="hover:bg-slate-50/50 transition-colors group">
-                        <td className="px-4 py-4 text-sm">
-                          <div className="font-bold text-slate-700">{aluno.nome}</div>
-                          <div className="text-[10px] text-slate-400 font-mono">#{aluno.matricula || aluno.id.slice(0,8)}</div>
-                        </td>
-                        {[1, 2, 3, 4, 5].map(m => (
-                          <td key={m} className="px-1 py-4">
-                            <input
-                              type="number"
-                              step="0.1"
-                              min="0"
-                              max="10"
-                              placeholder="-"
-                              value={gradeData[`nota${m}`] ?? ''}
-                              onChange={(e) => handleBulkChange(aluno.id, `nota${m}`, e.target.value)}
-                              className="w-16 h-10 text-center bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-sm font-bold font-mono transition-all"
-                            />
+                      return (
+                        <tr key={rowKey} className="hover:bg-slate-50/50 transition-colors group">
+                          {index === 0 ? (
+                            <td className="px-4 py-4 text-sm align-top" rowSpan={disciplinas.length}>
+                              <div className="font-bold text-slate-900">{aluno.nome}</div>
+                              <div className="text-[10px] text-slate-400 font-mono">#{aluno.matricula || aluno.id.slice(0,8)}</div>
+                            </td>
+                          ) : null}
+                          <td className="px-4 py-4 text-sm font-semibold text-slate-700 capitalize">
+                            {disciplina.nome}
                           </td>
-                        ))}
-                        <td className="px-4 py-4 text-center bg-slate-50/30">
-                          <span className={cn(
-                            "text-base font-black font-mono",
-                            avg === null ? "text-slate-300" :
-                            avg >= settings.media_aprovacao ? "text-green-600" :
-                            avg >= settings.media_recuperacao ? "text-yellow-600" : "text-red-600"
-                          )}>
-                            {avg !== null ? avg.toFixed(1) : '-.-'}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4 text-center">
-                          <span className={cn(
-                            "px-2 py-1 text-[10px] font-black uppercase rounded-md ring-1 ring-inset",
-                            status.className
-                          )}>
-                            {status.label}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4 text-right">
-                          <button
-                            onClick={() => saveIndividual(aluno.id)}
-                            disabled={isSavingRow || isGuest}
-                            className={cn(
-                              "p-2 rounded-lg transition-all",
-                              isSavingRow ? "bg-slate-100 text-slate-400" :
-                              "bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white"
-                            )}
-                            title={t.common.save}
-                          >
-                            {isSavingRow ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-                          </button>
-                        </td>
-                      </tr>
-                    );
+                          {Array.from({ length: courseModules }).map((_, i) => {
+                            const m = i + 1;
+                            return (
+                              <td key={m} className="px-1 py-4">
+                                <input
+                                  type="number"
+                                  step="0.1"
+                                  min="0"
+                                  max="10"
+                                  placeholder="-"
+                                  value={gradeData[`nota${m}`] ?? ''}
+                                  onChange={(e) => handleBulkChange(aluno.id, disciplina.id, m, e.target.value)}
+                                  className="w-16 h-10 text-center bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-sm font-bold font-mono transition-all"
+                                />
+                              </td>
+                            );
+                          })}
+                          <td className="px-4 py-4 text-center bg-slate-50/30">
+                            <span className={cn(
+                              "text-base font-black font-mono",
+                              avg === null ? "text-slate-300" :
+                              avg >= settings.media_aprovacao ? "text-green-600" :
+                              avg >= settings.media_recuperacao ? "text-yellow-600" : "text-red-600"
+                            )}>
+                              {avg !== null ? avg.toFixed(1) : '-.-'}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 text-center">
+                            <span className={cn(
+                              "px-2 py-1 text-[10px] font-black uppercase rounded-md ring-1 ring-inset whitespace-nowrap",
+                              status.className
+                            )}>
+                              {status.label}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 text-right">
+                            <button
+                              onClick={() => saveRow(aluno.id, disciplina.id)}
+                              disabled={isSavingRow || isGuest}
+                              className={cn(
+                                "p-2 rounded-lg transition-all",
+                                isSavingRow ? "bg-slate-100 text-slate-400" :
+                                "bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white"
+                              )}
+                              title={t.common.save}
+                            >
+                              {isSavingRow ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    });
                   })}
                 </tbody>
               </table>

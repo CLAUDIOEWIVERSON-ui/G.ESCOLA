@@ -60,6 +60,7 @@ export default function CursosPage() {
       ativo: true,
       internacional: false,
       localizacao: '',
+      qtd_modulos: 4,
     }
   });
 
@@ -111,7 +112,8 @@ export default function CursosPage() {
         ano_inicio: encodedDuration, // stores both value and unit encoded
         localizacao: data.localizacao,
         internacional: data.internacional,
-        ativo: data.ativo
+        ativo: data.ativo,
+        qtd_modulos: data.qtd_modulos
       };
 
       if (editingCurso) {
@@ -361,11 +363,18 @@ export default function CursosPage() {
                     </div>
                   </td>
                   <td className="px-6 py-4 text-sm text-slate-600">
-                    {curso.duracao} {
-                      curso.duracao === 1 
-                        ? (curso.duracao_unidade === 'dia' ? t.courses.day : curso.duracao_unidade === 'semana' ? t.courses.week : curso.duracao_unidade === 'mes' ? t.courses.month : t.courses.year)
-                        : (curso.duracao_unidade === 'dia' ? t.courses.days : curso.duracao_unidade === 'semana' ? t.courses.weeks : curso.duracao_unidade === 'mes' ? t.courses.months : t.courses.years)
-                    }
+                    <div className="flex flex-col">
+                      <span>
+                        {curso.duracao} {
+                          curso.duracao === 1 
+                            ? (curso.duracao_unidade === 'dia' ? t.courses.day : curso.duracao_unidade === 'semana' ? t.courses.week : curso.duracao_unidade === 'mes' ? t.courses.month : t.courses.year)
+                            : (curso.duracao_unidade === 'dia' ? t.courses.days : curso.duracao_unidade === 'semana' ? t.courses.weeks : curso.duracao_unidade === 'mes' ? t.courses.months : t.courses.years)
+                        }
+                      </span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">
+                        {curso.qtd_modulos || 4} {t.grades.module}s
+                      </span>
+                    </div>
                   </td>
                   <td className="px-6 py-4">
                     {curso.internacional ? (
@@ -484,6 +493,18 @@ export default function CursosPage() {
                       <option value="ano">{t.courses.years}</option>
                     </select>
                   </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-sm font-semibold text-slate-700">Número de Módulos</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="10"
+                    {...register('qtd_modulos', { valueAsNumber: true })}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
+                  />
+                  {errors.qtd_modulos && <p className="text-xs text-red-500 mt-1">{errors.qtd_modulos.message}</p>}
                 </div>
 
                 <div className="flex flex-col justify-center pt-2">
