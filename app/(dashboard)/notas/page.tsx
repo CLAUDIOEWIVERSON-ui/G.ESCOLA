@@ -21,41 +21,31 @@ export default function NotasPage() {
   const [alunos, setAlunos] = useState<any[]>([]);
   const [disciplinas, setDisciplinas] = useState<any[]>([]);
   const [turmas, setTurmas] = useState<any[]>([]);
+  const [cursos, setCursos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedCurso, setSelectedCurso] = useState('');
   const [selectedTurma, setSelectedTurma] = useState('');
-  const [courseModules, setCourseModules] = useState(4);
   const [turmaAlunos, setTurmaAlunos] = useState<any[]>([]);
   const [bulkNotas, setBulkNotas] = useState<Record<string, Record<string, any>>>({});
   const [saving, setSaving] = useState(false);
   const [savingRows, setSavingRows] = useState<Record<string, boolean>>({});
   const [settings, setSettings] = useState({ media_aprovacao: 6, media_recuperacao: 4, frequencia_minima: 75 });
 
+  // Derive effective modules
+  const selectedTurmaObj = turmas.find(t => t.id === selectedTurma);
+  const selectedCursoObj = cursos.find(c => c.id === (selectedCurso || selectedTurmaObj?.curso_id));
+  const effectiveModules = Math.min(selectedCursoObj?.qtd_modulos || 4, 5);
+
   useEffect(() => {
     const fetchTurmaData = async () => {
       if (!selectedTurma) {
         setTurmaAlunos([]);
         setBulkNotas({});
-        setCourseModules(4);
         return;
       }
 
       setLoading(true);
       
-      const turma = turmas.find(t => t.id === selectedTurma);
-      let modulesCount = 4;
-      if (turma?.curso_id) {
-        const { data: curso } = await supabase
-          .from('cursos')
-          .select('qtd_modulos')
-          .eq('id', turma.curso_id)
-          .single();
-        if (curso) {
-          modulesCount = curso.qtd_modulos || 4;
-          // Limit to DB capacity (5 modules)
-          setCourseModules(Math.min(modulesCount, 5));
-        }
-      }
-
       // Fetch students in this turma
       const { data: students } = await supabase
         .from('alunos')
@@ -82,7 +72,7 @@ export default function NotasPage() {
     };
 
     fetchTurmaData();
-  }, [selectedTurma, turmas]);
+  }, [selectedTurma]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -96,6 +86,10 @@ export default function NotasPage() {
       const { data: alunosData } = await supabase.from('alunos').select('id, nome').is('deleted_at', null).order('nome');
       if (alunosData) setAlunos(alunosData);
 
+      // Fetch Cursos
+      const { data: cursosData } = await supabase.from('cursos').select('*').is('deleted_at', null).order('nome');
+      if (cursosData) setCursos(cursosData);
+
       // Fetch Turmas
       const { data: turmasData } = await supabase.from('turmas').select('id, nome, curso_id').is('deleted_at', null).order('nome');
       if (turmasData) setTurmas(turmasData);
@@ -108,27 +102,26 @@ export default function NotasPage() {
 
   useEffect(() => {
     const fetchDisciplinasForTurma = async () => {
-      if (!selectedTurma) {
+      const currentCursoId = selectedCurso || turmas.find(t => t.id === selectedTurma)?.curso_id;
+      
+      if (!currentCursoId) {
         setDisciplinas([]);
         return;
       }
       
-      const turma = turmas.find(t => t.id === selectedTurma);
-      if (turma?.curso_id) {
-        const { data: discData } = await supabase
-          .from('disciplinas')
-          .select('id, nome')
-          .eq('curso_id', turma.curso_id)
-          .is('deleted_at', null)
-          .order('nome');
-        if (discData) {
-          setDisciplinas(discData);
-        }
+      const { data: discData } = await supabase
+        .from('disciplinas')
+        .select('id, nome')
+        .eq('curso_id', currentCursoId)
+        .is('deleted_at', null)
+        .order('nome');
+      if (discData) {
+        setDisciplinas(discData);
       }
     };
 
     fetchDisciplinasForTurma();
-  }, [selectedTurma, turmas]);
+  }, [selectedTurma, selectedCurso, turmas]);
 
   const handleBulkChange = (alunoId: string, modulo: number, value: string) => {
     if (disciplinas.length === 0) return;
@@ -263,14 +256,32 @@ export default function NotasPage() {
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div className="space-y-2">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t.attendance.course}</label>
+            <select
+              value={selectedCurso}
+              onChange={(e) => {
+                setSelectedCurso(e.target.value);
+                setSelectedTurma('');
+              }}
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-sm font-medium"
+            >
+              <option value="">{t.courses.selectCourse}</option>
+              {cursos.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+            </select>
+          </div>
+
+          <div className="space-y-2">
             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t.attendance.selectClass}</label>
             <select
               value={selectedTurma}
               onChange={(e) => setSelectedTurma(e.target.value)}
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-sm font-medium"
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-sm font-medium disabled:opacity-50"
+              disabled={!selectedCurso}
             >
               <option value="">{t.grades.selectTurma}</option>
-              {turmas.map(t => <option key={t.id} value={t.id}>{t.nome}</option>)}
+              {turmas
+                .filter(t => !selectedCurso || t.curso_id === selectedCurso)
+                .map(t => <option key={t.id} value={t.id}>{t.nome}</option>)}
             </select>
           </div>
         </div>
@@ -305,7 +316,7 @@ export default function NotasPage() {
                         {t.reportCard.student}
                       </div>
                     </th>
-                    {Array.from({ length: courseModules }).map((_, i) => (
+                    {Array.from({ length: effectiveModules }).map((_, i) => (
                       <th key={i} className="px-4 py-4 text-center border-l border-slate-50 bg-slate-50/30">
                         {t.grades.module} {i + 1}
                       </th>
@@ -324,7 +335,7 @@ export default function NotasPage() {
                     
                     // Calculation based on modules
                     const scores: number[] = [];
-                    for (let i = 1; i <= courseModules; i++) {
+                    for (let i = 1; i <= effectiveModules; i++) {
                       const val = gradeData[`nota${i}`];
                       if (val !== null && val !== undefined) {
                         scores.push(val);
@@ -340,7 +351,7 @@ export default function NotasPage() {
                           <div className="font-bold text-slate-900">{aluno.nome}</div>
                           <div className="text-[10px] text-slate-400 font-mono">#{aluno.matricula || aluno.id.slice(0,8)}</div>
                         </td>
-                        {Array.from({ length: courseModules }).map((_, i) => {
+                        {Array.from({ length: effectiveModules }).map((_, i) => {
                           const m = i + 1;
                           return (
                             <td key={m} className="px-2 py-4 text-center border-l border-slate-50/50">
