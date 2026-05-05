@@ -335,6 +335,7 @@ export default function CursosPage() {
             <thead>
               <tr className="text-xs font-semibold text-slate-500 border-b border-slate-100 uppercase tracking-wider">
                 <th className="px-6 py-4 font-semibold">{t.courses.name}</th>
+                <th className="px-6 py-4 font-semibold text-center">{t.nav.subjects}</th>
                 <th className="px-6 py-4 font-semibold">{t.courses.duration}</th>
                 <th className="px-6 py-4 font-semibold">{t.courses.location}</th>
                 <th className="px-6 py-4 font-semibold text-right">{t.common.actions}</th>
@@ -343,11 +344,11 @@ export default function CursosPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={4} className="px-6 py-8 text-center text-slate-500">{t.common.loading}</td>
+                  <td colSpan={5} className="px-6 py-8 text-center text-slate-500">{t.common.loading}</td>
                 </tr>
               ) : filteredCursos.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-6 py-8 text-center text-slate-500">{t.common.noneFound}</td>
+                  <td colSpan={5} className="px-6 py-8 text-center text-slate-500">{t.common.noneFound}</td>
                 </tr>
               ) : filteredCursos.map((curso) => (
                 <tr key={curso.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors group">
@@ -362,6 +363,18 @@ export default function CursosPage() {
                        {curso.localizacao && <span className="text-slate-900 font-bold mr-1">[{curso.localizacao}]</span>}
                        {curso.descricao}
                     </div>
+                  </td>
+                  <td className="px-6 py-4 text-center">
+                    <button 
+                      onClick={() => {
+                        setManageDisciplinasCurso(curso);
+                        setLoadingDisciplinas(true);
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-[10px] font-bold uppercase hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all shadow-sm"
+                    >
+                      <BookMarked size={12} />
+                      {t.nav.subjects}
+                    </button>
                   </td>
                   <td className="px-6 py-4 text-sm text-slate-600">
                     <div className="flex flex-col">
@@ -389,28 +402,18 @@ export default function CursosPage() {
                     )}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button 
-                        onClick={() => {
-                          setManageDisciplinasCurso(curso);
-                          setLoadingDisciplinas(true);
-                        }}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-[10px] font-bold uppercase hover:bg-blue-600 hover:text-white transition-all"
-                      >
-                        <BookMarked size={12} />
-                        {t.nav.subjects}
-                      </button>
+                    <div className="flex items-center justify-end gap-1">
                       {!isGuest && (
                         <>
                           <button 
                             onClick={() => { setEditingCurso(curso); reset(curso); setModalOpen(true); }}
-                            className="p-2 hover:bg-white hover:shadow-sm rounded-lg text-slate-400 hover:text-indigo-600 transition-all"
+                            className="p-2 bg-white border border-slate-100 shadow-sm rounded-lg text-slate-400 hover:text-indigo-600 hover:border-indigo-100 transition-all"
                           >
                             <Edit2 size={16} />
                           </button>
                           <button 
                             onClick={() => deleteCurso(curso.id)}
-                            className="p-2 hover:bg-white hover:shadow-sm rounded-lg text-slate-400 hover:text-red-600 transition-all"
+                            className="p-2 bg-white border border-slate-100 shadow-sm rounded-lg text-slate-400 hover:text-red-600 hover:border-red-100 transition-all"
                           >
                             <Trash2 size={16} />
                           </button>
@@ -600,16 +603,16 @@ export default function CursosPage() {
                     </div>
                   </div>
                   {!isGuest && (
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex gap-1">
                       <button 
                         onClick={() => handleOpenDisciplinaModal(d)}
-                        className="p-2 hover:bg-blue-50 hover:text-blue-600 rounded-lg text-slate-400 transition-all"
+                        className="p-2 bg-slate-50 border border-slate-100 hover:bg-blue-50 hover:text-blue-600 rounded-lg text-slate-400 transition-all shadow-sm"
                       >
                         <Edit2 size={14} />
                       </button>
                       <button 
                         onClick={() => deleteDisciplina(d.id)}
-                        className="p-2 hover:bg-red-50 hover:text-red-600 rounded-lg text-slate-400 transition-all"
+                        className="p-2 bg-slate-50 border border-slate-100 hover:bg-red-50 hover:text-red-600 rounded-lg text-slate-400 transition-all shadow-sm"
                       >
                         <Trash2 size={14} />
                       </button>
