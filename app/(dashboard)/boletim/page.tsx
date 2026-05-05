@@ -30,6 +30,7 @@ export default function BoletimPage() {
   const [selectedTurma, setSelectedTurma] = useState('');
   const [selectedDisciplina, setSelectedDisciplina] = useState('');
   const [selectedAno, setSelectedAno] = useState<string>('');
+  const [courseModules, setCourseModules] = useState(4);
   
   const [boletimData, setBoletimData] = useState<any[]>([]);
   const [classStats, setClassStats] = useState({ avg: 0, total: 0 });
@@ -37,7 +38,7 @@ export default function BoletimPage() {
 
   useEffect(() => {
     const fetchFilters = async () => {
-      const { data: cursosData } = await supabase.from('cursos').select('id, nome').is('deleted_at', null).order('nome');
+      const { data: cursosData } = await supabase.from('cursos').select('id, nome, qtd_modulos').is('deleted_at', null).order('nome');
       if (cursosData) setCursos(cursosData);
 
       const { data: turmasData } = await supabase.from('turmas').select('id, nome, curso_id, ano').is('deleted_at', null).order('nome');
@@ -64,6 +65,16 @@ export default function BoletimPage() {
 
     setLoading(true);
     try {
+      // Find course modules count
+      const turma = turmas.find(t => t.id === selectedTurma);
+      const cursoId = turma?.curso_id;
+      if (cursoId) {
+        const curso = cursos.find(c => c.id === cursoId);
+        if (curso) {
+          setCourseModules(Math.min(curso.qtd_modulos || 4, 5));
+        }
+      }
+
       let query = supabase
         .from('notas')
         .select(`
@@ -265,11 +276,9 @@ export default function BoletimPage() {
                  <thead>
                    <tr className="text-[10px] font-bold text-slate-400 border-b border-slate-100 uppercase tracking-wider">
                       <th className="px-6 py-4">{t.reportCard.student}</th>
-                      <th className="px-3 py-4 text-center">MOD 1</th>
-                      <th className="px-3 py-4 text-center">MOD 2</th>
-                      <th className="px-3 py-4 text-center">MOD 3</th>
-                      <th className="px-3 py-4 text-center">MOD 4</th>
-                      <th className="px-3 py-4 text-center">MOD 5</th>
+                      {Array.from({ length: courseModules }).map((_, i) => (
+                        <th key={i} className="px-3 py-4 text-center">MOD {i + 1}</th>
+                      ))}
                       <th className="px-6 py-4 text-center">{t.reportCard.average}</th>
                       <th className="px-6 py-4 text-right">{t.reportCard.status}</th>
                    </tr>
@@ -277,7 +286,7 @@ export default function BoletimPage() {
                  <tbody>
                    {boletimData.length === 0 ? (
                      <tr>
-                        <td colSpan={8} className="py-20 text-center">
+                        <td colSpan={3 + courseModules} className="py-20 text-center">
                            <div className="flex flex-col items-center text-slate-300">
                               <FileText size={48} className="mb-4 opacity-20" />
                               <p className="text-sm font-medium">{t.reportCard.noData}</p>
@@ -294,11 +303,14 @@ export default function BoletimPage() {
                              <div className="font-bold text-slate-800">{row.aluno?.nome}</div>
                              <div className="text-[10px] font-mono text-slate-400 tracking-tight">#{row.aluno?.matricula}</div>
                            </td>
-                           <td className="px-3 py-4 text-center font-mono text-sm text-slate-500">{row.nota1?.toFixed(1) || '-'}</td>
-                           <td className="px-3 py-4 text-center font-mono text-sm text-slate-500">{row.nota2?.toFixed(1) || '-'}</td>
-                           <td className="px-3 py-4 text-center font-mono text-sm text-slate-500">{row.nota3?.toFixed(1) || '-'}</td>
-                           <td className="px-3 py-4 text-center font-mono text-sm text-slate-500">{row.nota4?.toFixed(1) || '-'}</td>
-                           <td className="px-3 py-4 text-center font-mono text-sm text-slate-500">{row.nota5?.toFixed(1) || '-'}</td>
+                           {Array.from({ length: courseModules }).map((_, i) => {
+                             const notaValue = (row as any)[`nota${i + 1}`];
+                             return (
+                               <td key={i} className="px-3 py-4 text-center font-mono text-sm text-slate-500">
+                                 {notaValue !== null && notaValue !== undefined ? Number(notaValue).toFixed(1) : '-'}
+                               </td>
+                             );
+                           })}
                            <td className="px-6 py-4 text-center">
                               <span className={cn("font-bold font-mono text-sm", (row.nota_final || 0) >= settings.media_aprovacao ? "text-blue-600" : (row.nota_final || 0) >= settings.media_recuperacao ? "text-yellow-600" : "text-red-500")}>
                                 {row.nota_final?.toFixed(1) || '-'}

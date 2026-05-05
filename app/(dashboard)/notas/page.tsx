@@ -33,12 +33,13 @@ export default function NotasPage() {
 
   // Derive effective modules
   const selectedTurmaObj = turmas.find(t => t.id === selectedTurma);
-  const selectedCursoObj = cursos.find(c => c.id === (selectedCurso || selectedTurmaObj?.curso_id));
+  const currentCursoId = selectedCurso || selectedTurmaObj?.curso_id;
+  const selectedCursoObj = cursos.find(c => c.id === currentCursoId);
   const effectiveModules = Math.min(selectedCursoObj?.qtd_modulos || 4, 5);
 
   useEffect(() => {
     const fetchTurmaData = async () => {
-      if (!selectedTurma) {
+      if (!selectedTurma && !selectedCurso) {
         setTurmaAlunos([]);
         setBulkNotas({});
         return;
@@ -46,33 +47,56 @@ export default function NotasPage() {
 
       setLoading(true);
       
-      // Fetch students in this turma
-      const { data: students } = await supabase
-        .from('alunos')
-        .select('*')
-        .eq('turma_id', selectedTurma)
-        .is('deleted_at', null)
-        .order('nome');
-      
-      setTurmaAlunos(students || []);
+      try {
+        let studentsFetch = supabase.from('alunos').select('*').is('deleted_at', null).order('nome');
+        
+        if (selectedTurma) {
+          studentsFetch = studentsFetch.eq('turma_id', selectedTurma);
+        } else if (selectedCurso) {
+          // Join with turmas to get students of this course
+          const { data: turmaIds } = await supabase.from('turmas').select('id').eq('curso_id', selectedCurso).is('deleted_at', null);
+          const ids = turmaIds?.map(t => t.id) || [];
+          if (ids.length > 0) {
+            studentsFetch = studentsFetch.in('turma_id', ids);
+          } else {
+            setTurmaAlunos([]);
+            setLoading(false);
+            return;
+          }
+        }
+        
+        const { data: students } = await studentsFetch;
+        setTurmaAlunos(students || []);
 
-      // Fetch existing grades for this turma
-      const { data: grades } = await supabase
-        .from('notas')
-        .select('*')
-        .eq('turma_id', selectedTurma);
-      
-      const gradesMap: Record<string, Record<string, any>> = {};
-      grades?.forEach(g => {
-        if (!gradesMap[g.aluno_id]) gradesMap[g.aluno_id] = {};
-        gradesMap[g.aluno_id][g.disciplina_id] = g;
-      });
-      setBulkNotas(gradesMap);
-      setLoading(false);
+        // Fetch existing grades
+        let gradesFetch = supabase.from('notas').select('*');
+        if (selectedTurma) {
+          gradesFetch = gradesFetch.eq('turma_id', selectedTurma);
+        } else if (selectedCurso) {
+          const { data: turmaIds } = await supabase.from('turmas').select('id').eq('curso_id', selectedCurso).is('deleted_at', null);
+          const ids = turmaIds?.map(t => t.id) || [];
+          if (ids.length > 0) {
+            gradesFetch = gradesFetch.in('turma_id', ids);
+          }
+        }
+
+        const { data: grades } = await gradesFetch;
+        
+        const gradesMap: Record<string, Record<string, any>> = {};
+        grades?.forEach(g => {
+          if (!gradesMap[g.aluno_id]) gradesMap[g.aluno_id] = {};
+          gradesMap[g.aluno_id][g.disciplina_id] = g;
+        });
+        setBulkNotas(gradesMap);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchTurmaData();
-  }, [selectedTurma]);
+  }, [selectedTurma, selectedCurso, turmas]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -102,8 +126,6 @@ export default function NotasPage() {
 
   useEffect(() => {
     const fetchDisciplinasForTurma = async () => {
-      const currentCursoId = selectedCurso || turmas.find(t => t.id === selectedTurma)?.curso_id;
-      
       if (!currentCursoId) {
         setDisciplinas([]);
         return;
@@ -121,7 +143,7 @@ export default function NotasPage() {
     };
 
     fetchDisciplinasForTurma();
-  }, [selectedTurma, selectedCurso, turmas]);
+  }, [currentCursoId]);
 
   const handleBulkChange = (alunoId: string, modulo: number, value: string) => {
     if (disciplinas.length === 0) return;
@@ -130,12 +152,15 @@ export default function NotasPage() {
     const field = `nota${modulo}`;
     const targetDisciplinaId = disciplinas[0].id; // Use first discipline as main container
     
+    const aluno = turmaAlunos.find(a => a.id === alunoId);
+    if (!aluno) return;
+
     setBulkNotas(prev => {
       const studentGrades = prev[alunoId] || {};
       const discGrade = studentGrades[targetDisciplinaId] || { 
         aluno_id: alunoId, 
         disciplina_id: targetDisciplinaId, 
-        turma_id: selectedTurma, 
+        turma_id: aluno.turma_id, // Use actual student turma
         ano_letivo: new Date().getFullYear() 
       };
 
@@ -274,9 +299,15 @@ export default function NotasPage() {
             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t.attendance.selectClass}</label>
             <select
               value={selectedTurma}
-              onChange={(e) => setSelectedTurma(e.target.value)}
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-sm font-medium disabled:opacity-50"
-              disabled={!selectedCurso}
+              onChange={(e) => {
+                const turmaId = e.target.value;
+                setSelectedTurma(turmaId);
+                if (turmaId) {
+                  const turma = turmas.find(t => t.id === turmaId);
+                  if (turma?.curso_id) setSelectedCurso(turma.curso_id);
+                }
+              }}
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-sm font-medium"
             >
               <option value="">{t.grades.selectTurma}</option>
               {turmas
@@ -286,7 +317,7 @@ export default function NotasPage() {
           </div>
         </div>
 
-        {!selectedTurma ? (
+        {!selectedTurma && !selectedCurso ? (
           <div className="flex flex-col items-center justify-center py-20 text-slate-400 bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-200">
             <FileText size={48} className="mb-4 opacity-20" />
             <p className="text-sm font-medium italic">{t.grades.fillFilters}</p>
