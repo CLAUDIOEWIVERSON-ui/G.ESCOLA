@@ -31,7 +31,7 @@ import { useUser } from '@/lib/auth/UserContext';
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const { profile, isAdmin, isAluno, isProfessor, loading: authLoading } = useUser();
   const isGuest = isAluno;
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -56,6 +56,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: t.nav.grades, icon: FileCheck, path: '/notas' },
     { name: t.nav.reportCard, icon: FileText, path: '/boletim' },
     { name: t.nav.attendance, icon: CalendarDays, path: '/frequencia' },
+    { name: language === 'pt' ? 'Certificados' : 'Certificates', icon: GraduationCap, path: '/certificados' },
     ...(isAdmin ? [{ name: t.users.title, icon: Users, path: '/usuarios' }] : []),
     { name: t.nav.settings, icon: Settings, path: '/configuracoes' },
   ];

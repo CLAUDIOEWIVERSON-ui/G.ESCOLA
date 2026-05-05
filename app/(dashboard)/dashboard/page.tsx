@@ -83,12 +83,11 @@ export default function DashboardPage() {
     { name: t.dashboard.totalStudents, value: stats.alunos, icon: Users, color: 'bg-blue-500' },
     { name: t.dashboard.internationalCourses, value: stats.cursosInternacionais, icon: BookOpen, color: 'bg-purple-600' },
     { name: t.dashboard.nationalCourses, value: stats.cursosNacionais, icon: Library, color: 'bg-emerald-600' },
-    { name: t.dashboard.avgGrades, value: stats.media.toFixed(1), icon: TrendingUp, color: 'bg-amber-500' },
   ];
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {statCards.map((card, i) => (
           <motion.div
             key={card.name}

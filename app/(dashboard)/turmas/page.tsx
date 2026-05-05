@@ -176,13 +176,15 @@ export default function TurmasPage() {
         nome: currentAluno.nome,
         matricula: matricula,
         turma_id: viewingTurma?.id,
-        status: currentAluno.status || 'ativo'
       };
 
       if (currentAluno.email && currentAluno.email.includes('@')) dataToSave.email = currentAluno.email;
       if (currentAluno.posto_graduacao) dataToSave.posto_graduacao = currentAluno.posto_graduacao;
       if (currentAluno.nif) dataToSave.nif = currentAluno.nif;
       if (currentAluno.rg) dataToSave.rg = currentAluno.rg;
+      if (currentAluno.titulo_eleitor) dataToSave.titulo_eleitor = currentAluno.titulo_eleitor;
+      if (currentAluno.nome_pai) dataToSave.nome_pai = currentAluno.nome_pai;
+      if (currentAluno.nome_mae) dataToSave.nome_mae = currentAluno.nome_mae;
       if (currentAluno.om) dataToSave.om = currentAluno.om;
       if (currentAluno.telefone) dataToSave.telefone = currentAluno.telefone;
       if (currentAluno.whatsapp) dataToSave.whatsapp = currentAluno.whatsapp;
@@ -878,24 +880,36 @@ export default function TurmasPage() {
                     placeholder="Auto"
                   />
                 </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
-                    {t.students.status}
-                  </label>
-                  <select
-                    value={currentAluno?.status || 'ativo'}
-                    onChange={(e) => setCurrentAluno({ ...currentAluno, status: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded text-sm"
-                  >
-                    <option value="ativo">{t.students.active}</option>
-                    <option value="inativo">{t.students.inactive}</option>
-                  </select>
-                </div>
               </div>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                {t.students.nome_pai}
+              </label>
+              <input
+                type="text"
+                value={currentAluno?.nome_pai || ''}
+                onChange={(e) => setCurrentAluno({ ...currentAluno, nome_pai: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                {t.students.nome_mae}
+              </label>
+              <input
+                type="text"
+                value={currentAluno?.nome_mae || ''}
+                onChange={(e) => setCurrentAluno({ ...currentAluno, nome_mae: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded text-sm"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">{t.students.nif}</label>
               <input
@@ -911,6 +925,17 @@ export default function TurmasPage() {
                 type="text"
                 value={currentAluno?.rg || ''}
                 onChange={(e) => setCurrentAluno({ ...currentAluno, rg: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                {t.students.titulo_eleitor}
+              </label>
+              <input
+                type="text"
+                value={currentAluno?.titulo_eleitor || ''}
+                onChange={(e) => setCurrentAluno({ ...currentAluno, titulo_eleitor: e.target.value })}
                 className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded text-sm"
               />
             </div>

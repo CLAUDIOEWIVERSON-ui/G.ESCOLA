@@ -60,12 +60,29 @@ CREATE TABLE IF NOT EXISTS public.alunos (
   telefone TEXT,
   whatsapp TEXT,
   foto_url TEXT,
-  status aluno_status_enum DEFAULT 'ativo',
+  status TEXT DEFAULT 'ativo',
+  nome_pai TEXT,
+  nome_mae TEXT,
+  titulo_eleitor TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   deleted_at TIMESTAMPTZ
 );
 
--- 6. Disciplinas
+-- 6. Certificados
+CREATE TABLE IF NOT EXISTS public.certificados (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  aluno_id UUID REFERENCES public.alunos(id),
+  turma_id UUID REFERENCES public.turmas(id),
+  curso_id UUID REFERENCES public.cursos(id),
+  tipo TEXT CHECK (tipo IN ('certificado', 'diploma')),
+  template_data JSONB DEFAULT '{}'::jsonb,
+  url TEXT,
+  data_emissao TIMESTAMPTZ DEFAULT NOW(),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  deleted_at TIMESTAMPTZ
+);
+
+-- 7. Disciplinas
 CREATE TABLE IF NOT EXISTS public.disciplinas (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   nome TEXT NOT NULL,
@@ -173,6 +190,7 @@ ALTER TABLE public.turmas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.alunos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.disciplinas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.certificados ENABLE ROW LEVEL SECURITY;
 
 -- Simple policies (Admins can do everything)
 -- In a real scenario, you'd check roles in JWT claims or join with profiles table
@@ -181,6 +199,7 @@ CREATE POLICY "Admins have full access" ON public.turmas FOR ALL USING (auth.rol
 CREATE POLICY "Admins have full access" ON public.alunos FOR ALL USING (auth.role() = 'authenticated');
 CREATE POLICY "Admins have full access" ON public.disciplinas FOR ALL USING (auth.role() = 'authenticated');
 CREATE POLICY "Admins have full access" ON public.notas FOR ALL USING (auth.role() = 'authenticated');
+CREATE POLICY "Admins have full access" ON public.certificados FOR ALL USING (auth.role() = 'authenticated');
 CREATE POLICY "Users can view their own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
 
 -- 10. Frequência
