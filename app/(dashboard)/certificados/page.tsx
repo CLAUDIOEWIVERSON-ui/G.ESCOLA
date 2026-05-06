@@ -20,7 +20,8 @@ import {
   Layout,
   Palette,
   FileText,
-  FileCheck
+  FileCheck,
+  Camera
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
@@ -62,34 +63,6 @@ export default function CertificadosPage() {
     bgImageUrl: '',
   });
 
-  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setLogoUploading(true);
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `logo-${Date.now()}.${fileExt}`;
-      const filePath = `config/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('escola')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('escola')
-        .getPublicUrl(filePath);
-
-      setTemplate({ ...template, logoUrl: publicUrl });
-    } catch (err: any) {
-      alert('Erro no upload do logo: ' + (err.message || ''));
-    } finally {
-      setLogoUploading(false);
-    }
-  };
-
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -128,6 +101,34 @@ export default function CertificadosPage() {
     };
     fetchAlunos();
   }, [selectedTurma]);
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setLogoUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `logo-${Date.now()}.${fileExt}`;
+      const filePath = `config/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('escola')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('escola')
+        .getPublicUrl(filePath);
+
+      setTemplate({ ...template, logoUrl: publicUrl });
+    } catch (err: any) {
+      alert('Erro no upload do logo: ' + (err.message || ''));
+    } finally {
+      setLogoUploading(false);
+    }
+  };
 
   const handleOpenDesigner = (aluno: any) => {
     setSelectedAluno(aluno);

@@ -200,7 +200,14 @@ CREATE POLICY "Admins have full access" ON public.alunos FOR ALL USING (auth.rol
 CREATE POLICY "Admins have full access" ON public.disciplinas FOR ALL USING (auth.role() = 'authenticated');
 CREATE POLICY "Admins have full access" ON public.notas FOR ALL USING (auth.role() = 'authenticated');
 CREATE POLICY "Admins have full access" ON public.certificados FOR ALL USING (auth.role() = 'authenticated');
-CREATE POLICY "Users can view their own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
+
+-- Profiles policies
+CREATE POLICY "Users can view their own profile" ON public.profiles FOR SELECT USING (
+  auth.uid() = id OR (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'))
+);
+CREATE POLICY "Admins can manage all profiles" ON public.profiles FOR ALL USING (
+  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
+);
 
 -- 10. Frequência
 CREATE TABLE IF NOT EXISTS public.frequencia (

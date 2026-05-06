@@ -93,10 +93,7 @@ export default function TurmasPage() {
     try {
       const { data, error } = await supabase
         .from('alunos')
-        .select(`
-          id, nome, matricula, email, status, posto_graduacao, 
-          nif, rg, om, ano_admissao, telefone, whatsapp, foto_url
-        `)
+        .select('*')
         .eq('turma_id', turma.id)
         .is('deleted_at', null)
         .order('nome');
@@ -212,10 +209,7 @@ export default function TurmasPage() {
       // Refresh list
       const { data } = await supabase
         .from('alunos')
-        .select(`
-          id, nome, matricula, email, status, posto_graduacao, 
-          nif, rg, om, ano_admissao, telefone, whatsapp, foto_url
-        `)
+        .select('*')
         .eq('turma_id', viewingTurma?.id)
         .is('deleted_at', null)
         .order('nome');
@@ -355,10 +349,7 @@ export default function TurmasPage() {
       // Refresh list
       const { data: newData } = await supabase
         .from('alunos')
-        .select(`
-          id, nome, matricula, email, status, posto_graduacao, 
-          nif, rg, om, ano_admissao, telefone, whatsapp, foto_url
-        `)
+        .select('*')
         .eq('turma_id', viewingTurma.id)
         .is('deleted_at', null)
         .order('nome');
@@ -728,12 +719,6 @@ export default function TurmasPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className={cn(
-                      "px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider",
-                      aluno.status === 'ativo' ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-                    )}>
-                      {aluno.status === 'ativo' ? t.students.active : t.students.inactive}
-                    </div>
                     {!isGuest && (
                       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button 
