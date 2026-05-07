@@ -25,6 +25,7 @@ export const translations = {
       skipHeader: "Pular primeira linha (Cabeçalho)",
       clearField: "Limpar Campo",
       noneFound: "Nenhum registro encontrado.",
+      confirm: "Confirmar",
       deleteConfirm: "Tem certeza que deseja excluir este registro?",
       uploadError: "Erro no upload. Verifique as configurações do bucket.",
       saveError: "Erro ao salvar. Verifique os dados e tente novamente.",
@@ -227,6 +228,9 @@ export const translations = {
       selectClassMsg: "Selecione uma turma para registrar a frequência.",
       saveCall: "Salvar Chamada",
       selectClassViewMap: "Selecione uma turma para visualizar o mapa.",
+      allDisciplines: "Todas Disciplinas",
+      noRecord: "Sem Registro",
+      clickDayToEdit: "* Clique no dia para editar o registro",
     },
     settings: {
       title: "Configurações do Sistema",

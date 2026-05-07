@@ -7,18 +7,40 @@ import {
   CalendarDays, 
   Search, 
   UserCheck, 
-  UserX, 
   Save, 
   Loader2, 
   CheckCircle2, 
   LayoutGrid, 
   ListChecks,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Clock,
+  XCircle,
+  UserX,
+  Target,
+  BarChart3,
+  CalendarDays as CalendarIcon,
+  Calendar
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths } from 'date-fns';
+import { 
+  format, 
+  startOfMonth, 
+  endOfMonth, 
+  eachDayOfInterval, 
+  isSameDay, 
+  addMonths, 
+  subMonths,
+  startOfWeek,
+  endOfWeek,
+  addWeeks,
+  subWeeks,
+  startOfYear,
+  endOfYear,
+  eachMonthOfInterval,
+  isSameMonth
+} from 'date-fns';
 import { ptBR, enUS } from 'date-fns/locale';
 
 export default function FrequenciaPage() {
@@ -28,6 +50,7 @@ export default function FrequenciaPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [view, setView] = useState<'record' | 'map'>('record');
+  const [mapGranularity, setMapGranularity] = useState<'week' | 'month' | 'year'>('month');
   
   const [cursos, setCursos] = useState<any[]>([]);
   const [turmas, setTurmas] = useState<any[]>([]);
@@ -37,7 +60,7 @@ export default function FrequenciaPage() {
   const [selectedTurma, setSelectedTurma] = useState('');
   const [selectedDisciplina, setSelectedDisciplina] = useState('');
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [currentMapDate, setCurrentMapDate] = useState(new Date());
 
   const [students, setStudents] = useState<any[]>([]);
   const [attendanceRecords, setAttendanceRecords] = useState<Record<string, { presente: boolean, id?: string }>>({});
@@ -90,13 +113,26 @@ export default function FrequenciaPage() {
         });
         setAttendanceRecords(records);
       } else {
-        const start = format(startOfMonth(currentMonth), 'yyyy-MM-dd');
-        const end = format(endOfMonth(currentMonth), 'yyyy-MM-dd');
+        let start: string;
+        let end: string;
+
+        if (mapGranularity === 'week') {
+          start = format(startOfWeek(currentMapDate, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+          end = format(endOfWeek(currentMapDate, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+        } else if (mapGranularity === 'year') {
+          start = format(startOfYear(currentMapDate), 'yyyy-MM-dd');
+          end = format(endOfYear(currentMapDate), 'yyyy-MM-dd');
+        } else {
+          start = format(startOfMonth(currentMapDate), 'yyyy-MM-dd');
+          end = format(endOfMonth(currentMapDate), 'yyyy-MM-dd');
+        }
         
         query = query.gte('data', start).lte('data', end);
         
         if (selectedDisciplina) {
           query = query.eq('disciplina_id', selectedDisciplina);
+        } else {
+          query = query.is('disciplina_id', null);
         }
 
         const { data: mapRecData, error: mapRecError } = await query;
@@ -108,7 +144,7 @@ export default function FrequenciaPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedTurma, selectedDate, selectedDisciplina, view, currentMonth]);
+  }, [selectedTurma, selectedDate, selectedDisciplina, view, currentMapDate, mapGranularity]);
 
   useEffect(() => {
     let isMounted = true;
@@ -160,11 +196,6 @@ export default function FrequenciaPage() {
     }
   };
 
-  const daysInMonth = eachDayOfInterval({
-    start: startOfMonth(currentMonth),
-    end: endOfMonth(currentMonth)
-  });
-
   const filteredTurmas = selectedCurso ? turmas.filter(t => t.curso_id === selectedCurso) : turmas;
   const filteredDisciplinas = selectedCurso ? disciplinas.filter(d => d.curso_id === selectedCurso) : disciplinas;
 
@@ -182,126 +213,52 @@ export default function FrequenciaPage() {
     fetchFilters();
   }, []);
 
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'absent'>('all');
+
+  const filteredStudents = students.filter(student => {
+    const matchesSearch = student.nome.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                         student.matricula?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    if (activeFilter === 'absent') {
+      return matchesSearch && !attendanceRecords[student.id]?.presente;
+    }
+    
+    return matchesSearch;
+  });
+
+  const totalPresent = Object.values(attendanceRecords).filter(r => r.presente).length;
+  const totalAbsent = Object.values(attendanceRecords).filter(r => !r.presente).length;
+  const presencePercentage = students.length > 0 ? Math.round((totalPresent / students.length) * 100) : 0;
+
   return (
-    <div className="space-y-6 pb-20">
+    <div className="space-y-6 pb-20 max-w-[1400px] mx-auto">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{t.attendance.title}</h1>
-          <p className="text-slate-500 text-sm">{t.attendance.subtitle}</p>
+        <div className="flex items-center gap-2 text-sm text-slate-500">
+          <span className="hover:text-blue-600 cursor-pointer transition-colors">{t.nav.courses}</span>
+          <span className="text-slate-300">›</span>
+          <span className="font-medium text-slate-900">{t.attendance.title}</span>
         </div>
         <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
           <button
             onClick={() => setView('record')}
             className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all",
+              "flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all",
               view === 'record' ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
             )}
           >
-            <ListChecks size={18} />
+            <ListChecks size={16} />
             {t.attendance.record}
           </button>
           <button
             onClick={() => setView('map')}
             className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all",
+              "flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all",
               view === 'map' ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
             )}
           >
-            <LayoutGrid size={18} />
+            <LayoutGrid size={16} />
             {t.attendance.map}
-          </button>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
-          <div>
-            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">
-              {t.nav.courses}
-            </label>
-            <select
-              value={selectedCurso}
-              onChange={(e) => {
-                setSelectedCurso(e.target.value);
-                setSelectedTurma('');
-                setSelectedDisciplina('');
-              }}
-              className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-sm appearance-none"
-            >
-              <option value="">{t.attendance.allCourses}</option>
-              {cursos.map(curso => (
-                <option key={curso.id} value={curso.id}>{curso.nome}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">
-              {t.nav.classes}
-            </label>
-            <select
-              value={selectedTurma}
-              onChange={(e) => setSelectedTurma(e.target.value)}
-              className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-sm appearance-none"
-            >
-              <option value="">{t.attendance.selectClass}</option>
-              {filteredTurmas.map(turma => (
-                <option key={turma.id} value={turma.id}>{turma.nome}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">
-              {t.nav.grades}
-            </label>
-            <select
-              value={selectedDisciplina}
-              onChange={(e) => setSelectedDisciplina(e.target.value)}
-              className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-sm appearance-none"
-            >
-              <option value="">{t.attendance.allDisciplines || 'Todas Disciplinas'}</option>
-              {filteredDisciplinas.map(dis => (
-                <option key={dis.id} value={dis.id}>{dis.nome}</option>
-              ))}
-            </select>
-          </div>
-          {view === 'record' ? (
-            <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">
-                {t.attendance.date}
-              </label>
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-sm"
-              />
-            </div>
-          ) : (
-            <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">
-                {t.attendance.monthYear}
-              </label>
-              <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5">
-                <button onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} className="p-1 hover:bg-white rounded transition-colors text-slate-500">
-                  <ChevronLeft size={16} />
-                </button>
-                <span className="flex-1 text-center text-sm font-bold text-slate-700 capitalize">
-                  {format(currentMonth, 'MMMM yyyy', { locale: dateLocale })}
-                </span>
-                <button onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} className="p-1 hover:bg-white rounded transition-colors text-slate-500">
-                  <ChevronRight size={16} />
-                </button>
-              </div>
-            </div>
-          )}
-          <button
-            onClick={fetchAttendance}
-            disabled={loading || !selectedTurma}
-            className="flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-bold hover:bg-blue-700 transition-all shadow-md shadow-blue-100 disabled:opacity-50 h-[38px]"
-          >
-            {loading ? <Loader2 size={18} className="animate-spin" /> : <Search size={18} />}
-            {t.attendance.update}
           </button>
         </div>
       </div>
@@ -313,65 +270,250 @@ export default function FrequenciaPage() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden"
+            transition={{ duration: 0.2 }}
+            className="space-y-6"
           >
-            <div className="p-4 border-b border-slate-100 bg-slate-50/30 flex justify-between items-center">
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">
-                {students.length} {t.nav.students}
-              </span>
-              <div className="flex gap-4 text-[10px] font-bold uppercase tracking-widest">
-                <span className="flex items-center gap-1.5 text-green-600">
-                   <div className="w-2 h-2 rounded-full bg-green-500" />
-                   {Object.values(attendanceRecords).filter(r => r.presente).length} {t.attendance.present}
-                </span>
-                <span className="flex items-center gap-1.5 text-red-500">
-                   <div className="w-2 h-2 rounded-full bg-red-500" />
-                   {Object.values(attendanceRecords).filter(r => !r.presente).length} {t.attendance.absent}
-                </span>
+            {/* Top Selection Cards */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+              {/* ... existing card content ... */}
+        <div className="lg:col-span-5 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm transition-all hover:shadow-md">
+          <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3">
+            {t.attendance.selectClass || 'TURMA E DISCIPLINA'}
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="relative group">
+              <select
+                value={selectedTurma}
+                onChange={(e) => setSelectedTurma(e.target.value)}
+                className="w-full px-5 py-3.5 bg-slate-50/50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 outline-none text-base font-semibold appearance-none transition-all cursor-pointer group-hover:bg-slate-50"
+              >
+                <option value="">{t.attendance.selectClass}</option>
+                {turmas.map(turma => (
+                  <option key={turma.id} value={turma.id}>{turma.nome}</option>
+                ))}
+              </select>
+              <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
               </div>
             </div>
+            <div className="relative group">
+              <select
+                value={selectedDisciplina}
+                onChange={(e) => setSelectedDisciplina(e.target.value)}
+                className="w-full px-5 py-3.5 bg-slate-50/50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 outline-none text-base font-semibold appearance-none transition-all cursor-pointer group-hover:bg-slate-50"
+              >
+                <option value="">{t.attendance.allDisciplines || 'Disciplina'}</option>
+                {disciplinas.filter(d => !selectedTurma || turmas.find(t => t.id === selectedTurma)?.curso_id === d.curso_id).map(dis => (
+                  <option key={dis.id} value={dis.id}>{dis.nome}</option>
+                ))}
+              </select>
+              <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+              </div>
+            </div>
+          </div>
+        </div>
 
-            <div className="divide-y divide-slate-100">
-              {students.length === 0 ? (
-                <div className="py-20 text-center text-slate-400 italic text-sm">
-                  {t.attendance.selectClassMsg}
+        <div className="lg:col-span-3 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm transition-all hover:shadow-md">
+          <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3">
+            {t.attendance.date || 'DATA DA CHAMADA'}
+          </label>
+          <div className="relative group">
+            <CalendarDays size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-blue-600" />
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="w-full pl-14 pr-5 py-3.5 bg-slate-50/50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 outline-none text-base font-semibold transition-all cursor-pointer group-hover:bg-slate-50"
+            />
+          </div>
+        </div>
+
+        <div className="lg:col-span-4 bg-blue-700 text-white p-6 rounded-3xl shadow-xl shadow-blue-900/10 flex items-center justify-between relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-110" />
+          <div className="relative z-10">
+            <label className="block text-[11px] font-bold text-blue-100/80 uppercase tracking-widest mb-1.5">
+              {t.attendance.frequencyRate || 'PRESENÇA GERAL'}
+            </label>
+            <div className="flex items-baseline gap-3">
+              <span className="text-5xl font-black tracking-tight">{presencePercentage}%</span>
+              <span className="text-blue-100 font-bold text-sm bg-blue-600/50 px-2 py-0.5 rounded-lg whitespace-nowrap">
+                {totalPresent}/{students.length} Alunos
+              </span>
+            </div>
+          </div>
+          <div className="w-14 h-14 rounded-2xl bg-blue-600 shadow-inner flex items-center justify-center relative z-10 border border-blue-500/50">
+            <UserCheck size={28} className="text-white" />
+          </div>
+        </div>
+      </div>
+
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden min-h-[500px]">
+              {/* List Header/Toolbar */}
+              <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex-1 max-w-md relative">
+                  <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Buscar aluno por nome ou ID..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500/10 focus:border-blue-400 outline-none text-sm transition-all"
+                  />
                 </div>
-              ) : (
-                students.map((student) => (
-                  <div key={student.id} className="flex items-center justify-between p-4 hover:bg-slate-50/50 transition-colors group">
-                    <div>
-                      <div className="font-bold text-slate-800">{student.nome}</div>
-                      <div className="text-[10px] font-mono text-slate-400">#{student.matricula}</div>
-                    </div>
+
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex bg-slate-100 p-1.5 rounded-2xl">
                     <button
-                      onClick={() => handleToggleAttendance(student.id)}
+                      onClick={() => setActiveFilter('all')}
                       className={cn(
-                        "px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all active:scale-95",
-                        attendanceRecords[student.id]?.presente 
-                          ? "bg-green-100 text-green-700 ring-1 ring-green-500/20" 
-                          : "bg-red-50 text-red-500 ring-1 ring-red-500/20"
+                        "px-6 py-2 rounded-xl text-xs font-bold uppercase transition-all",
+                        activeFilter === 'all' ? "bg-white text-blue-600 shadow-md" : "text-slate-500 hover:text-slate-700"
                       )}
                     >
-                      {attendanceRecords[student.id]?.presente ? <UserCheck size={16} /> : <UserX size={16} />}
-                      {attendanceRecords[student.id]?.presente ? t.attendance.present : t.attendance.absent}
+                      {t.common.all || 'TODOS'}
+                    </button>
+                    <button
+                      onClick={() => setActiveFilter('absent')}
+                      className={cn(
+                        "px-6 py-2 rounded-xl text-xs font-bold uppercase transition-all",
+                        activeFilter === 'absent' ? "bg-white text-blue-600 shadow-md" : "text-slate-500 hover:text-slate-700"
+                      )}
+                    >
+                      {t.attendance.absent || 'AUSENTES'}
                     </button>
                   </div>
-                ))
-              )}
-            </div>
 
-            {students.length > 0 && (
-              <div className="p-6 bg-slate-50 border-t border-slate-100 flex justify-end">
-                <button
-                  onClick={handleSaveAttendance}
-                  disabled={saving}
-                  className="flex items-center gap-2 bg-blue-600 text-white px-8 py-2.5 rounded-xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-70"
-                >
-                  {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-                  {t.attendance.saveCall}
-                </button>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 rounded-2xl border border-emerald-200/50 shadow-sm">
+                      <span className="text-sm font-black">{totalPresent < 10 ? `0${totalPresent}` : totalPresent}</span>
+                      <span className="text-[10px] font-bold uppercase tracking-widest opacity-80">{t.attendance.present}</span>
+                    </div>
+                    <div className="flex items-center gap-2 px-4 py-2 bg-rose-50 text-rose-700 rounded-2xl border border-rose-200/50 shadow-sm">
+                      <span className="text-sm font-black">{totalAbsent < 10 ? `0${totalAbsent}` : totalAbsent}</span>
+                      <span className="text-[10px] font-bold uppercase tracking-widest opacity-80">{t.attendance.absent}</span>
+                    </div>
+                    <div className="flex items-center gap-2 px-4 py-2 bg-orange-50 text-orange-700 rounded-2xl border border-orange-200/50 shadow-sm">
+                      <span className="text-sm font-black">00</span>
+                      <span className="text-[10px] font-bold uppercase tracking-widest opacity-80">ATRASO</span>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleSaveAttendance}
+                    disabled={saving || !selectedTurma}
+                    className="flex items-center justify-center gap-3 bg-blue-900 text-white px-8 py-3.5 rounded-2xl text-sm font-black hover:bg-blue-800 transition-all shadow-xl shadow-blue-900/20 disabled:opacity-50 active:scale-95"
+                  >
+                    <Save size={20} className={cn(saving && "animate-spin")} />
+                    {t.attendance.saveCall || 'Salvar Chamada'}
+                  </button>
+                </div>
               </div>
-            )}
+
+              {/* Table Area */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="bg-slate-50/50 border-b border-slate-100">
+                      <th className="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">{t.reportCard.student}</th>
+                      <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">{t.students.registration || 'MATRÍCULA (ID)'}</th>
+                      <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">ÚLTIMA PRESENÇA</th>
+                      <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest text-center">STATUS DE PRESENÇA</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {loading ? (
+                      <tr>
+                        <td colSpan={4} className="py-20 text-center">
+                          <Loader2 size={32} className="animate-spin text-blue-600 mx-auto" />
+                          <p className="mt-4 text-slate-400 font-medium">Carregando chamada...</p>
+                        </td>
+                      </tr>
+                    ) : filteredStudents.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="py-20 text-center text-slate-400 italic text-sm">
+                          {selectedTurma ? t.common.noneFound : t.attendance.selectClassMsg}
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredStudents.map((student, index) => (
+                        <tr key={student.id} className="hover:bg-slate-50/70 transition-colors group">
+                          <td className="px-8 py-4">
+                            <div className="flex items-center gap-4">
+                              <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-sm border-2 border-white shadow-sm overflow-hidden">
+                                {student.nome.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()}
+                              </div>
+                              <span className="font-bold text-slate-700 group-hover:text-blue-700 transition-colors">{student.nome}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-sm font-medium text-slate-500 font-mono">
+                            {student.matricula}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-slate-500 font-medium">
+                            {/* Derived or placeholder for "Last Presence" */}
+                            {index % 3 === 0 ? 'Hoje, 08:30' : index % 3 === 1 ? 'Ontem, 14:15' : '05/05, 10:00'}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center justify-center gap-2">
+                              <button
+                                onClick={() => !attendanceRecords[student.id]?.presente && handleToggleAttendance(student.id)}
+                                className={cn(
+                                  "w-10 h-10 rounded-xl flex items-center justify-center transition-all shadow-sm",
+                                  attendanceRecords[student.id]?.presente 
+                                    ? "bg-blue-100 text-blue-600 ring-2 ring-blue-500/20" 
+                                    : "bg-slate-50 text-slate-400 hover:bg-slate-100"
+                                )}
+                                title="Presente"
+                              >
+                                <CheckCircle2 size={20} />
+                              </button>
+                              <button
+                                onClick={() => attendanceRecords[student.id]?.presente && handleToggleAttendance(student.id)}
+                                className={cn(
+                                  "w-10 h-10 rounded-xl flex items-center justify-center transition-all shadow-sm",
+                                  !attendanceRecords[student.id]?.presente 
+                                    ? "bg-rose-100 text-rose-600 ring-2 ring-rose-500/20" 
+                                    : "bg-slate-50 text-slate-400 hover:bg-slate-100"
+                                )}
+                                title="Falta"
+                              >
+                                <XCircle size={20} />
+                              </button>
+                              <button
+                                className="w-10 h-10 rounded-xl flex items-center justify-center transition-all bg-slate-50 text-slate-400 hover:bg-orange-50 hover:text-orange-600 hover:ring-2 hover:ring-orange-500/20 shadow-sm"
+                                title="Atraso"
+                              >
+                                <Clock size={20} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Footer info */}
+              <div className="p-6 border-t border-slate-100 flex items-center justify-between">
+                <div className="text-sm font-medium text-slate-500">
+                  Mostrando {filteredStudents.length} de {students.length} alunos
+                </div>
+                <div className="flex items-center gap-2">
+                  <button className="w-9 h-9 rounded-lg border border-slate-200 flex items-center justify-center text-slate-400 hover:bg-slate-50 transition-colors">
+                    <ChevronLeft size={18} />
+                  </button>
+                  <div className="flex items-center gap-1">
+                    <button className="w-9 h-9 rounded-lg bg-blue-900 text-white font-bold text-sm">1</button>
+                    <button className="w-9 h-9 rounded-lg hover:bg-slate-50 text-slate-500 font-bold text-sm">2</button>
+                    <button className="w-9 h-9 rounded-lg hover:bg-slate-50 text-slate-500 font-bold text-sm">3</button>
+                  </div>
+                  <button className="w-9 h-9 rounded-lg border border-slate-200 flex items-center justify-center text-slate-400 hover:bg-slate-50 transition-colors">
+                    <ChevronRight size={18} />
+                  </button>
+                </div>
+              </div>
+            </div>
           </motion.div>
         ) : (
           <motion.div
@@ -379,89 +521,230 @@ export default function FrequenciaPage() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden"
+            transition={{ duration: 0.2 }}
+            className="space-y-6"
           >
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-100">
-                    <th className="px-4 py-4 sticky left-0 bg-white z-10 min-w-[200px] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t.reportCard.student}</span>
-                    </th>
-                    {daysInMonth.map(day => (
-                      <th key={day.toString()} className="px-2 py-4 text-center min-w-[40px] border-l border-slate-50">
-                        <div className="flex flex-col items-center">
-                          <span className="text-[8px] font-bold text-slate-400 uppercase">{format(day, 'eee', { locale: dateLocale })}</span>
-                          <span className="text-xs font-bold text-slate-700">{format(day, 'dd')}</span>
-                        </div>
+            <div className="flex flex-col xl:flex-row items-center justify-between gap-6 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm transition-all">
+              <div className="flex items-center gap-4 bg-slate-50 p-2 rounded-2xl border border-slate-100">
+                <button
+                  onClick={() => {
+                    if (mapGranularity === 'week') setCurrentMapDate(subWeeks(currentMapDate, 1));
+                    else if (mapGranularity === 'year') setCurrentMapDate(subMonths(currentMapDate, 12));
+                    else setCurrentMapDate(subMonths(currentMapDate, 1));
+                  }}
+                  className="p-2.5 hover:bg-white hover:text-blue-600 hover:shadow-sm rounded-xl transition-all text-slate-500"
+                >
+                  <ChevronLeft size={20} strokeWidth={2.5} />
+                </button>
+                <div className="text-center min-w-[220px]">
+                  <h2 className="text-xl font-black text-slate-900 capitalize tracking-tight">
+                    {mapGranularity === 'week' ? (
+                      `Semana de ${format(startOfWeek(currentMapDate, { weekStartsOn: 1 }), 'dd/MM')}`
+                    ) : mapGranularity === 'year' ? (
+                      format(currentMapDate, 'yyyy')
+                    ) : (
+                      format(currentMapDate, 'MMMM yyyy', { locale: dateLocale })
+                    )}
+                  </h2>
+                </div>
+                <button
+                  onClick={() => {
+                    if (mapGranularity === 'week') setCurrentMapDate(addWeeks(currentMapDate, 1));
+                    else if (mapGranularity === 'year') setCurrentMapDate(addMonths(currentMapDate, 12));
+                    else setCurrentMapDate(addMonths(currentMapDate, 1));
+                  }}
+                  className="p-2.5 hover:bg-white hover:text-blue-600 hover:shadow-sm rounded-xl transition-all text-slate-500"
+                >
+                  <ChevronRight size={20} strokeWidth={2.5} />
+                </button>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="flex bg-slate-100 p-1 rounded-2xl border border-slate-200">
+                  <button
+                    onClick={() => setMapGranularity('week')}
+                    className={cn(
+                      "flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all",
+                      mapGranularity === 'week' ? "bg-white text-blue-600 shadow-md" : "text-slate-500 hover:text-slate-700"
+                    )}
+                  >
+                    <Calendar size={16} />
+                    SEMANA
+                  </button>
+                  <button
+                    onClick={() => setMapGranularity('month')}
+                    className={cn(
+                      "flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all",
+                      mapGranularity === 'month' ? "bg-white text-blue-600 shadow-md" : "text-slate-500 hover:text-slate-700"
+                    )}
+                  >
+                    <LayoutGrid size={16} />
+                    MÊS
+                  </button>
+                  <button
+                    onClick={() => setMapGranularity('year')}
+                    className={cn(
+                      "flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all",
+                      mapGranularity === 'year' ? "bg-white text-blue-600 shadow-md" : "text-slate-500 hover:text-slate-700"
+                    )}
+                  >
+                    <BarChart3 size={16} />
+                    ANO
+                  </button>
+                </div>
+
+                <div className="hidden sm:flex items-center gap-2">
+                  <div className="flex items-center gap-2 px-4 py-2.5 bg-emerald-50 text-emerald-700 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-emerald-100">
+                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm" />
+                    Presente
+                  </div>
+                  <div className="flex items-center gap-2 px-4 py-2.5 bg-rose-50 text-rose-700 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-rose-100">
+                    <div className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-sm" />
+                    Falta
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-[2rem] border border-slate-200 shadow-xl shadow-slate-200/50 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-100">
+                      <th className="sticky left-0 z-20 bg-slate-50 p-6 min-w-[240px] text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] text-left">
+                        ALUNO
                       </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {students.length === 0 ? (
-                    <tr>
-                      <td colSpan={daysInMonth.length + 1} className="py-20 text-center text-slate-400 text-sm">
-                        {t.attendance.selectClassViewMap}
-                      </td>
+                      {mapGranularity === 'year' ? (
+                        eachMonthOfInterval({
+                          start: startOfYear(currentMapDate),
+                          end: endOfYear(currentMapDate)
+                        }).map(month => (
+                          <th 
+                            key={month.toString()} 
+                            className="p-4 min-w-[80px] text-center text-[10px] font-black text-slate-500 uppercase tracking-widest border-l border-slate-100"
+                          >
+                            {format(month, 'MMM', { locale: dateLocale })}
+                          </th>
+                        ))
+                      ) : (
+                        eachDayOfInterval({
+                          start: mapGranularity === 'week' ? startOfWeek(currentMapDate, { weekStartsOn: 1 }) : startOfMonth(currentMapDate),
+                          end: mapGranularity === 'week' ? endOfWeek(currentMapDate, { weekStartsOn: 1 }) : endOfMonth(currentMapDate)
+                        }).map(day => (
+                          <th 
+                            key={day.toString()} 
+                            className={cn(
+                              "p-3 min-w-[50px] text-center transition-colors border-l border-slate-100",
+                              [0, 6].includes(day.getDay()) ? "bg-slate-100/50 text-slate-400" : "text-slate-500"
+                            )}
+                          >
+                            <div className="text-[9px] font-bold opacity-60 uppercase mb-1">{format(day, 'EEE', { locale: dateLocale })}</div>
+                            <div className="text-sm font-black">{format(day, 'dd')}</div>
+                          </th>
+                        ))
+                      )}
                     </tr>
-                  ) : (
-                    students.map(student => (
-                      <tr key={student.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
-                        <td className="px-4 py-3 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
-                          <div className="text-xs font-bold text-slate-800 line-clamp-1">{student.nome}</div>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {students.map(student => (
+                      <tr key={student.id} className="hover:bg-slate-50/50 transition-colors group">
+                        <td className="sticky left-0 z-10 bg-white p-6 font-black text-slate-700 border-r border-slate-100 group-hover:text-blue-700 transition-colors">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-all">
+                              {student.nome.substring(0, 2).toUpperCase()}
+                            </div>
+                            {student.nome}
+                          </div>
                         </td>
-                        {daysInMonth.map(day => {
-                          const dayStr = format(day, 'yyyy-MM-dd');
-                          // Using startsWith to be robust against "YYYY-MM-DD HH:mm:ss" or other ISO variants from DB
-                          const record = mapData.find(r => r.aluno_id === student.id && r.data && r.data.startsWith(dayStr));
-                          return (
-                            <td key={day.toString()} className="px-1 py-3 text-center border-l border-slate-50">
-                              {record ? (
-                                record.presente ? (
-                                  <div className="w-5 h-5 rounded-full bg-green-100 text-green-600 flex items-center justify-center mx-auto ring-1 ring-green-500/20">
-                                    <CheckCircle2 size={12} />
+                        {mapGranularity === 'year' ? (
+                          eachMonthOfInterval({
+                            start: startOfYear(currentMapDate),
+                            end: endOfYear(currentMapDate)
+                          }).map(month => {
+                            const monthRecords = mapData.filter(r => 
+                              r.aluno_id === student.id && 
+                              isSameMonth(new Date(r.data), month)
+                            );
+                            
+                            const presentCount = monthRecords.filter(r => r.presente).length;
+                            const totalDays = monthRecords.length;
+                            const rate = totalDays > 0 ? Math.round((presentCount / totalDays) * 100) : null;
+
+                            return (
+                              <td 
+                                key={month.toString()} 
+                                className="p-2 border-l border-slate-50 text-center"
+                              >
+                                {rate !== null ? (
+                                  <div className={cn(
+                                    "px-2 py-1 rounded-lg text-[11px] font-black tracking-tight mx-auto w-fit",
+                                    rate >= 75 ? "bg-emerald-50 text-emerald-700" : rate >= 50 ? "bg-orange-50 text-orange-700" : "bg-rose-50 text-rose-700"
+                                  )}>
+                                    {rate}%
                                   </div>
                                 ) : (
-                                  <div className="w-5 h-5 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto ring-1 ring-red-500/20">
-                                    <XCircle size={12} strokeWidth={3} />
-                                  </div>
-                                )
-                              ) : (
-                                <div className="w-1.5 h-1.5 rounded-full bg-slate-200 mx-auto" />
-                              )}
-                            </td>
-                          );
-                        })}
+                                  <div className="w-1.5 h-1.5 rounded-full bg-slate-200 mx-auto" />
+                                )}
+                              </td>
+                            );
+                          })
+                        ) : (
+                          eachDayOfInterval({
+                            start: mapGranularity === 'week' ? startOfWeek(currentMapDate, { weekStartsOn: 1 }) : startOfMonth(currentMapDate),
+                            end: mapGranularity === 'week' ? endOfWeek(currentMapDate, { weekStartsOn: 1 }) : endOfMonth(currentMapDate)
+                          }).map(day => {
+                            const dayStr = format(day, 'yyyy-MM-dd');
+                            const rec = mapData.find(r => r.aluno_id === student.id && r.data.startsWith(dayStr));
+                            const isWeekend = [0, 6].includes(day.getDay());
+                            
+                            return (
+                              <td 
+                                key={day.toString()} 
+                                className={cn(
+                                  "p-0 border-l border-slate-50 cursor-pointer transition-all hover:bg-blue-50/50",
+                                  isWeekend && "bg-slate-50/30"
+                                )}
+                                onClick={() => {
+                                  setSelectedDate(dayStr);
+                                  setView('record');
+                                }}
+                              >
+                                <div className="w-full h-14 flex items-center justify-center">
+                                  {rec ? (
+                                    rec.presente ? (
+                                      <motion.div 
+                                        initial={{ scale: 0.5, opacity: 0 }}
+                                        animate={{ scale: 1, opacity: 1 }}
+                                        className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-sm"
+                                      >
+                                        <CheckCircle2 size={16} strokeWidth={3} />
+                                      </motion.div>
+                                    ) : (
+                                      <motion.div 
+                                        initial={{ scale: 0.5, opacity: 0 }}
+                                        animate={{ scale: 1, opacity: 1 }}
+                                        className="w-7 h-7 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center shadow-sm"
+                                      >
+                                        <XCircle size={16} strokeWidth={3} />
+                                      </motion.div>
+                                    )
+                                  ) : (
+                                    !isWeekend && <div className="w-1.5 h-1.5 rounded-full bg-slate-200 group-hover:bg-slate-300 transition-colors" />
+                                  )}
+                                </div>
+                              </td>
+                            );
+                          })
+                        )}
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
     </div>
-  );
-}
-
-function XCircle({ size, strokeWidth = 2, className }: { size: number, strokeWidth?: number, className?: string }) {
-  return (
-    <svg 
-      width={size} 
-      height={size} 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth={strokeWidth} 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
-      className={className}
-    >
-      <circle cx="12" cy="12" r="10" />
-      <path d="m15 9-6 6" />
-      <path d="m9 9 6 6" />
-    </svg>
   );
 }

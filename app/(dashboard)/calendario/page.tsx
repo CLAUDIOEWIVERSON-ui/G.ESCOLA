@@ -107,8 +107,7 @@ export default function CalendarPage() {
     if (isGuest) return;
 
     // Ensure we send a valid timestamp to Postgres
-    // formData.data is "YYYY-MM-DD". We append a default time to make it a full timestamp.
-    const timestamp = `${formData.data}T12:00:00Z`;
+    const timestamp = new Date(`${formData.data}T12:00:00`).toISOString();
 
     try {
       if (editingEvent) {
@@ -155,6 +154,7 @@ export default function CalendarPage() {
 
   const handleDelete = async (id: string) => {
     if (isGuest) return;
+    setLoading(true);
     try {
       const { error } = await supabase
         .from('eventos')
@@ -163,10 +163,12 @@ export default function CalendarPage() {
       if (error) throw error;
       showStatus('success', t.calendar.eventDeleted);
       setEventToDelete(null);
-      fetchEventos();
+      await fetchEventos();
     } catch (error: any) {
       console.error('Error deleting event:', error);
       showStatus('error', error.message || 'Erro ao excluir evento');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -316,7 +318,10 @@ export default function CalendarPage() {
                             <>
                               <button 
                                 type="button"
-                                onClick={() => openEditModal(evento)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openEditModal(evento);
+                                }}
                                 className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                 title={t.common.edit}
                               >
@@ -324,7 +329,10 @@ export default function CalendarPage() {
                               </button>
                               <button 
                                 type="button"
-                                onClick={() => setEventToDelete(evento.id)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEventToDelete(evento.id);
+                                }}
                                 className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                 title={t.common.delete}
                               >
