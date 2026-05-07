@@ -43,22 +43,13 @@ export default function FrequenciaPage() {
   const [attendanceRecords, setAttendanceRecords] = useState<Record<string, { presente: boolean, id?: string }>>({});
   const [mapData, setMapData] = useState<any[]>([]);
 
-  useEffect(() => {
-    const fetchFilters = async () => {
-      const { data: cursosData } = await supabase.from('cursos').select('id, nome').is('deleted_at', null).order('nome');
-      if (cursosData) setCursos(cursosData);
-
-      const { data: turmasData } = await supabase.from('turmas').select('id, nome, curso_id').is('deleted_at', null).order('nome');
-      if (turmasData) setTurmas(turmasData);
-
-      const { data: disciplinasData } = await supabase.from('disciplinas').select('id, nome, curso_id').is('deleted_at', null).order('nome');
-      if (disciplinasData) setDisciplinas(disciplinasData);
-    };
-    fetchFilters();
-  }, []);
-
   const fetchAttendance = useCallback(async () => {
-    if (!selectedTurma) return;
+    if (!selectedTurma) {
+      setStudents([]);
+      setAttendanceRecords({});
+      setMapData([]);
+      return;
+    }
     setLoading(true);
     
     try {
@@ -73,56 +64,60 @@ export default function FrequenciaPage() {
       if (alunoError) throw alunoError;
       setStudents(alunoData || []);
 
-      if (view === 'record') {
-        const { data: recData, error: recError } = await supabase
-          .from('frequencia')
-          .select('*')
-          .eq('turma_id', selectedTurma)
-          .eq('data', selectedDate);
+      let query = supabase
+        .from('frequencia')
+        .select('*')
+        .eq('turma_id', selectedTurma);
 
+      if (view === 'record') {
+        query = query.eq('data', selectedDate);
+        
+        if (selectedDisciplina) {
+          query = query.eq('disciplina_id', selectedDisciplina);
+        } else {
+          query = query.is('disciplina_id', null);
+        }
+
+        const { data: recData, error: recError } = await query;
         if (recError) throw recError;
 
         const records: Record<string, { presente: boolean, id?: string }> = {};
-        // Initialize with "present" for everyone if no records exist
         alunoData?.forEach(a => {
           records[a.id] = { presente: true };
         });
-        // Override with database records
         recData?.forEach(r => {
           records[r.aluno_id] = { presente: r.presente, id: r.id };
         });
         setAttendanceRecords(records);
       } else {
-        // Map View: Fetch all records for the month
         const start = format(startOfMonth(currentMonth), 'yyyy-MM-dd');
         const end = format(endOfMonth(currentMonth), 'yyyy-MM-dd');
         
-        const { data: mapRecData, error: mapRecError } = await supabase
-          .from('frequencia')
-          .select('*')
-          .eq('turma_id', selectedTurma)
-          .gte('data', start)
-          .lte('data', end);
+        query = query.gte('data', start).lte('data', end);
+        
+        if (selectedDisciplina) {
+          query = query.eq('disciplina_id', selectedDisciplina);
+        }
 
+        const { data: mapRecData, error: mapRecError } = await query;
         if (mapRecError) throw mapRecError;
         setMapData(mapRecData || []);
       }
     } catch (err: any) {
-      alert(err.message);
+      console.error('Error fetching attendance:', err);
     } finally {
       setLoading(false);
     }
-  }, [selectedTurma, selectedDate, view, currentMonth]);
+  }, [selectedTurma, selectedDate, selectedDisciplina, view, currentMonth]);
 
   useEffect(() => {
-    let active = true;
-    if (selectedTurma && active) {
-      setTimeout(() => {
-        if (active) fetchAttendance();
-      }, 0);
-    }
-    return () => { active = false; };
-  }, [selectedTurma, fetchAttendance]);
+    let isMounted = true;
+    const loadData = async () => {
+      if (isMounted) await fetchAttendance();
+    };
+    loadData();
+    return () => { isMounted = false; };
+  }, [fetchAttendance]);
 
   const handleToggleAttendance = (alunoId: string) => {
     setAttendanceRecords(prev => ({
@@ -139,18 +134,21 @@ export default function FrequenciaPage() {
     }
     setSaving(true);
     try {
-      const recordsToUpsert = Object.entries(attendanceRecords).map(([alunoId, data]) => ({
-        id: data.id,
-        aluno_id: alunoId,
-        turma_id: selectedTurma,
-        disciplina_id: selectedDisciplina || null,
-        data: selectedDate,
-        presente: data.presente
-      }));
+      const recordsToUpsert = Object.entries(attendanceRecords).map(([alunoId, data]) => {
+        const record: any = {
+          aluno_id: alunoId,
+          turma_id: selectedTurma,
+          disciplina_id: selectedDisciplina || null,
+          data: selectedDate,
+          presente: data.presente
+        };
+        if (data.id) record.id = data.id;
+        return record;
+      });
 
       const { error } = await supabase
         .from('frequencia')
-        .upsert(recordsToUpsert, { onConflict: 'aluno_id, turma_id, data' });
+        .upsert(recordsToUpsert, { onConflict: 'aluno_id, turma_id, disciplina_id, data' });
 
       if (error) throw error;
       alert(t.attendance.saveSuccess);
@@ -168,6 +166,21 @@ export default function FrequenciaPage() {
   });
 
   const filteredTurmas = selectedCurso ? turmas.filter(t => t.curso_id === selectedCurso) : turmas;
+  const filteredDisciplinas = selectedCurso ? disciplinas.filter(d => d.curso_id === selectedCurso) : disciplinas;
+
+  useEffect(() => {
+    const fetchFilters = async () => {
+      const { data: cursosData } = await supabase.from('cursos').select('id, nome').is('deleted_at', null).order('nome');
+      if (cursosData) setCursos(cursosData);
+
+      const { data: turmasData } = await supabase.from('turmas').select('id, nome, curso_id').is('deleted_at', null).order('nome');
+      if (turmasData) setTurmas(turmasData);
+
+      const { data: disciplinasData } = await supabase.from('disciplinas').select('id, nome, curso_id').is('deleted_at', null).order('nome');
+      if (disciplinasData) setDisciplinas(disciplinasData);
+    };
+    fetchFilters();
+  }, []);
 
   return (
     <div className="space-y-6 pb-20">
@@ -202,7 +215,7 @@ export default function FrequenciaPage() {
 
       {/* Filters */}
       <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
           <div>
             <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">
               {t.nav.courses}
@@ -212,6 +225,7 @@ export default function FrequenciaPage() {
               onChange={(e) => {
                 setSelectedCurso(e.target.value);
                 setSelectedTurma('');
+                setSelectedDisciplina('');
               }}
               className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-sm appearance-none"
             >
@@ -233,6 +247,21 @@ export default function FrequenciaPage() {
               <option value="">{t.attendance.selectClass}</option>
               {filteredTurmas.map(turma => (
                 <option key={turma.id} value={turma.id}>{turma.nome}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">
+              {t.nav.grades}
+            </label>
+            <select
+              value={selectedDisciplina}
+              onChange={(e) => setSelectedDisciplina(e.target.value)}
+              className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-sm appearance-none"
+            >
+              <option value="">{t.attendance.allDisciplines || 'Todas Disciplinas'}</option>
+              {filteredDisciplinas.map(dis => (
+                <option key={dis.id} value={dis.id}>{dis.nome}</option>
               ))}
             </select>
           </div>
@@ -383,7 +412,9 @@ export default function FrequenciaPage() {
                           <div className="text-xs font-bold text-slate-800 line-clamp-1">{student.nome}</div>
                         </td>
                         {daysInMonth.map(day => {
-                          const record = mapData.find(r => r.aluno_id === student.id && isSameDay(new Date(r.data + 'T12:00:00'), day));
+                          const dayStr = format(day, 'yyyy-MM-dd');
+                          // Using startsWith to be robust against "YYYY-MM-DD HH:mm:ss" or other ISO variants from DB
+                          const record = mapData.find(r => r.aluno_id === student.id && r.data && r.data.startsWith(dayStr));
                           return (
                             <td key={day.toString()} className="px-1 py-3 text-center border-l border-slate-50">
                               {record ? (

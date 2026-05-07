@@ -220,7 +220,7 @@ CREATE TABLE IF NOT EXISTS public.frequencia (
   observacao TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(aluno_id, turma_id, data)
+  UNIQUE(aluno_id, turma_id, disciplina_id, data)
 );
 
 -- 11. Configurações da Escola
