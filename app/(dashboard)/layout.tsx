@@ -5,7 +5,6 @@ import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/LanguageContext';
-import { LanguageToggle } from '@/components/LanguageToggle';
 import { Logo } from '@/components/Logo';
 import { 
   LayoutDashboard, 
@@ -27,6 +26,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 
 import { useUser } from '@/lib/auth/UserContext';
+
+import { ProximityAlert } from '@/components/ProximityAlert';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -56,6 +57,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: t.nav.grades, icon: FileCheck, path: '/notas' },
     { name: t.nav.reportCard, icon: FileText, path: '/boletim' },
     { name: t.nav.attendance, icon: CalendarDays, path: '/frequencia' },
+    { name: t.calendar.title, icon: CalendarDays, path: '/calendario' },
     { name: language === 'pt' ? 'Certificados' : 'Certificates', icon: GraduationCap, path: '/certificados' },
     ...(isAdmin ? [{ name: t.users.title, icon: Users, path: '/usuarios' }] : []),
     { name: t.nav.settings, icon: Settings, path: '/configuracoes' },
@@ -194,10 +196,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                  />
                </div>
             </div>
-            <LanguageToggle />
-            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 transition-colors shadow-sm shadow-blue-200">
-              {t.auth.newReport}
-            </button>
+            {/* Language toggle removed as per user request */}
           </div>
         </header>
 
@@ -214,6 +213,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </motion.div>
           </AnimatePresence>
         </main>
+        <ProximityAlert />
       </div>
     </div>
   );

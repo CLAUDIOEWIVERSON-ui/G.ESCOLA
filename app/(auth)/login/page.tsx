@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/LanguageContext';
-import { LanguageToggle } from '@/components/LanguageToggle';
 import { Logo } from '@/components/Logo';
 import { LogIn, UserPlus, Mail, Lock, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -94,10 +93,6 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4 font-sans text-slate-900">
-      <div className="absolute top-8 right-8">
-        <LanguageToggle />
-      </div>
-
       <motion.div 
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
