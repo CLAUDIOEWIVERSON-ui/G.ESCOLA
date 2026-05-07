@@ -46,6 +46,13 @@ export default function CalendarPage() {
     cor: 'bg-blue-600'
   });
 
+  const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
+  const showStatus = (type: 'success' | 'error', text: string) => {
+    setStatusMessage({ type, text });
+    setTimeout(() => setStatusMessage(null), 5000);
+  };
+
   const fetchEventos = async () => {
     try {
       const { data, error } = await supabase
@@ -60,8 +67,8 @@ export default function CalendarPage() {
         throw error;
       }
       setEventos(data || []);
-    } catch (error) {
-      console.error('Error fetching events:', JSON.stringify(error, null, 2) === '{}' ? error : JSON.stringify(error, null, 2));
+    } catch (error: any) {
+      console.error('Error fetching events:', error);
     }
   };
 
@@ -84,8 +91,8 @@ export default function CalendarPage() {
           throw error;
         }
         if (isMounted) setEventos(data || []);
-      } catch (error) {
-        console.error('Error fetching events:', JSON.stringify(error, null, 2) === '{}' ? error : JSON.stringify(error, null, 2));
+      } catch (error: any) {
+        console.error('Error fetching events:', error);
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -99,6 +106,10 @@ export default function CalendarPage() {
     e.preventDefault();
     if (isGuest) return;
 
+    // Ensure we send a valid timestamp to Postgres
+    // formData.data is "YYYY-MM-DD". We append a default time to make it a full timestamp.
+    const timestamp = `${formData.data}T12:00:00Z`;
+
     try {
       if (editingEvent) {
         const { error } = await supabase
@@ -106,21 +117,23 @@ export default function CalendarPage() {
           .update({
             titulo: formData.titulo,
             descricao: formData.descricao,
-            data: formData.data,
+            data: timestamp,
             cor: formData.cor
           })
           .eq('id', editingEvent.id);
         if (error) throw error;
+        showStatus('success', t.calendar.eventUpdated);
       } else {
         const { error } = await supabase
           .from('eventos')
           .insert([{
             titulo: formData.titulo,
             descricao: formData.descricao,
-            data: formData.data,
+            data: timestamp,
             cor: formData.cor
           }]);
         if (error) throw error;
+        showStatus('success', t.calendar.eventAdded);
       }
 
       setIsModalOpen(false);
@@ -132,22 +145,28 @@ export default function CalendarPage() {
         cor: 'bg-blue-600'
       });
       fetchEventos();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving event:', error);
+      showStatus('error', error.message || 'Erro ao salvar evento');
     }
   };
 
+  const [eventToDelete, setEventToDelete] = useState<string | null>(null);
+
   const handleDelete = async (id: string) => {
-    if (!confirm(t.common.deleteConfirm) || isGuest) return;
+    if (isGuest) return;
     try {
       const { error } = await supabase
         .from('eventos')
         .delete()
         .eq('id', id);
       if (error) throw error;
+      showStatus('success', t.calendar.eventDeleted);
+      setEventToDelete(null);
       fetchEventos();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting event:', error);
+      showStatus('error', error.message || 'Erro ao excluir evento');
     }
   };
 
@@ -156,7 +175,7 @@ export default function CalendarPage() {
     setFormData({
       titulo: evento.titulo,
       descricao: evento.descricao,
-      data: evento.data,
+      data: evento.data.split('T')[0],
       cor: evento.cor
     });
     setIsModalOpen(true);
@@ -202,6 +221,23 @@ export default function CalendarPage() {
           </button>
         )}
       </div>
+
+      <AnimatePresence>
+        {statusMessage && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className={cn(
+              "p-3 rounded-lg text-sm font-medium flex items-center gap-2 mb-4 shadow-sm",
+              statusMessage.type === 'success' ? "bg-emerald-50 text-emerald-700 border border-emerald-100" : "bg-rose-50 text-rose-700 border border-rose-100"
+            )}
+          >
+            {statusMessage.type === 'success' ? <CheckCircle2 size={16} /> : <AlertTriangle size={16} />}
+            {statusMessage.text}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-4">
         <div className="relative mb-6">
@@ -258,19 +294,44 @@ export default function CalendarPage() {
                         </div>
                       </div>
                       {!isGuest && (
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button 
-                            onClick={() => openEditModal(evento)}
-                            className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
-                          >
-                            <Edit2 size={14} />
-                          </button>
-                          <button 
-                            onClick={() => handleDelete(evento.id)}
-                            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
-                          >
-                            <Trash2 size={14} />
-                          </button>
+                        <div className="flex items-center gap-1">
+                          {eventToDelete === evento.id ? (
+                            <div className="flex items-center gap-1 bg-rose-50 p-1 rounded-lg border border-rose-100">
+                              <button 
+                                type="button"
+                                onClick={() => handleDelete(evento.id)}
+                                className="p-1 px-2 text-[10px] font-bold text-rose-600 hover:bg-rose-100 rounded"
+                              >
+                                {t.common.confirm || 'Sim'}
+                              </button>
+                              <button 
+                                type="button"
+                                onClick={() => setEventToDelete(null)}
+                                className="p-1 px-2 text-[10px] font-bold text-slate-500 hover:bg-slate-100 rounded"
+                              >
+                                {t.common.cancel || 'Não'}
+                              </button>
+                            </div>
+                          ) : (
+                            <>
+                              <button 
+                                type="button"
+                                onClick={() => openEditModal(evento)}
+                                className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                title={t.common.edit}
+                              >
+                                <Edit2 size={14} />
+                              </button>
+                              <button 
+                                type="button"
+                                onClick={() => setEventToDelete(evento.id)}
+                                className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                title={t.common.delete}
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </>
+                          )}
                         </div>
                       )}
                     </div>
