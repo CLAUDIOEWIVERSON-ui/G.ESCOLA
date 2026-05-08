@@ -75,16 +75,16 @@ export default function DashboardPage() {
 
         // Filter students in international courses
         const filteredAlunosExterior = alunosData?.filter(a => {
-          const turmaData = Array.isArray(a.turmas) ? a.turmas[0] : (a as any).turma || (a as any).turmas;
+          const turmaData = Array.isArray((a as any).turma) ? (a as any).turma[0] : (a as any).turma;
           if (!turmaData) return false;
-          const cursoData = Array.isArray(turmaData.cursos) ? turmaData.cursos[0] : (turmaData as any).curso || (turmaData as any).cursos;
+          const cursoData = Array.isArray(turmaData.curso) ? turmaData.curso[0] : turmaData.curso;
           return !!cursoData?.internacional;
         }) || [];
 
         // Filter courses that have at least one turma
         const filteredCursos = cursosAtivosData?.filter(c => 
           turmasData?.some(t => {
-            const courseData = Array.isArray(t.cursos) ? t.cursos[0] : (t as any).curso || (t as any).cursos;
+            const courseData = Array.isArray((t as any).curso) ? (t as any).curso[0] : (t as any).curso;
             return courseData?.id === c.id;
           })
         ) || [];
@@ -106,7 +106,6 @@ export default function DashboardPage() {
   }, []);
 
   const statCards = [
-    { name: t.dashboard.totalStudents, value: stats.totalAlunos, icon: Users, color: 'bg-indigo-600' },
     { name: t.dashboard.activeClasses, value: stats.turmasAtivas, icon: Library, color: 'bg-emerald-600' },
     { name: t.dashboard.activeNationalCourses, value: stats.cursosNacionaisAtivos, icon: BookOpen, color: 'bg-blue-600' },
     { name: t.dashboard.studentsAbroad, value: alunosExterior.length, icon: GraduationCap, color: 'bg-purple-600' },
@@ -114,7 +113,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {statCards.map((card, i) => (
           <motion.div
             key={card.name}
@@ -165,7 +164,7 @@ export default function DashboardPage() {
                   </tr>
                 ) : (
                   turmasAndamento.slice(0, 5).map((turma) => {
-                    const curso = Array.isArray(turma.cursos) ? turma.cursos[0] : (turma as any).curso || (turma as any).cursos;
+                    const curso = Array.isArray((turma as any).curso) ? (turma as any).curso[0] : (turma as any).curso;
                     return (
                       <tr key={turma.id} className="hover:bg-slate-50 transition-colors">
                         <td className="px-6 py-4 font-bold text-slate-800">{turma.nome}</td>
@@ -205,8 +204,8 @@ export default function DashboardPage() {
                   </tr>
                 ) : (
                   alunosExterior.slice(0, 10).map((aluno) => {
-                    const turmaData = Array.isArray(aluno.turmas) ? aluno.turmas[0] : aluno.turma || aluno.turmas;
-                    const curso = Array.isArray(turmaData?.cursos) ? turmaData.cursos[0] : turmaData?.curso || turmaData?.cursos;
+                    const turmaData = Array.isArray((aluno as any).turma) ? (aluno as any).turma[0] : (aluno as any).turma;
+                    const curso = Array.isArray(turmaData?.curso) ? turmaData.curso[0] : turmaData?.curso;
                     return (
                       <tr key={aluno.id} className="hover:bg-slate-50 transition-colors">
                         <td className="px-6 py-4">
