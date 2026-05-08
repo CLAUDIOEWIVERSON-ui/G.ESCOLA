@@ -10,7 +10,6 @@ import {
   LayoutDashboard, 
   BookOpen, 
   Users, 
-  GraduationCap, 
   Library, 
   FileCheck, 
   FileText,
@@ -58,7 +57,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: t.nav.reportCard, icon: FileText, path: '/boletim' },
     { name: t.nav.attendance, icon: CalendarDays, path: '/frequencia' },
     { name: t.calendar.title, icon: CalendarDays, path: '/calendario' },
-    { name: language === 'pt' ? 'Certificados' : 'Certificates', icon: GraduationCap, path: '/certificados' },
     ...(isAdmin ? [{ name: t.users.title, icon: Users, path: '/usuarios' }] : []),
     { name: t.nav.settings, icon: Settings, path: '/configuracoes' },
   ];
