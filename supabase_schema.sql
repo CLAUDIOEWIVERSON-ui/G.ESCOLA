@@ -2,6 +2,7 @@
 
 -- 1. Enums
 CREATE TYPE periodo_enum AS ENUM ('manhã', 'tarde', 'noite');
+CREATE TYPE turma_status_enum AS ENUM ('ativa', 'concluída', 'cancelada');
 CREATE TYPE aluno_status_enum AS ENUM ('ativo', 'inativo', 'transferido');
 CREATE TYPE user_role_enum AS ENUM ('admin', 'professor', 'aluno');
 
@@ -39,6 +40,7 @@ CREATE TABLE IF NOT EXISTS public.turmas (
   periodo periodo_enum NOT NULL,
   capacidade_max INTEGER DEFAULT 40,
   alunos_matriculados INTEGER DEFAULT 0,
+  status turma_status_enum DEFAULT 'ativa',
   ativa BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   deleted_at TIMESTAMPTZ

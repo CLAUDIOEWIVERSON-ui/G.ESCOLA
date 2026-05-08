@@ -30,8 +30,19 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   const fetchProfile = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
+      if (sessionError) {
+        // If there's a session error typical of a bad refresh token, clear it
+        if (sessionError.message.includes('Refresh Token Not Found') || sessionError.message.includes('refresh_token_not_found')) {
+          await supabase.auth.signOut();
+          setProfile(null);
+          setLoading(false);
+          return;
+        }
+        throw sessionError;
+      }
+
       if (!session) {
         setProfile(null);
         setLoading(false);

@@ -162,6 +162,10 @@ export const translations = {
       night: "Noite",
       viewStudents: "Ver Alunos",
       noStudents: "Nenhum aluno matriculado nesta turma.",
+      status: "Status",
+      active: "Ativa",
+      completed: "Concluída",
+      cancelled: "Cancelada",
     },
     subjects: {
       title: "Disciplinas",

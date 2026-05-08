@@ -17,7 +17,7 @@ export const turmaSchema = z.object({
   ano: z.number().int().min(2020),
   periodo: z.enum(['manhã', 'tarde', 'noite']),
   capacidade_max: z.number().int().min(1).max(100),
-  ativa: z.boolean(),
+  status: z.enum(['ativa', 'concluída', 'cancelada']),
   instrutor: z.string().optional().nullable(),
 });
 

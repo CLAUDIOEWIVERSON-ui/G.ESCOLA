@@ -81,7 +81,7 @@ export default function TurmasPage() {
 
   const handleOpenModal = (turma: any = null) => {
     if (isGuest) return;
-    setCurrentTurma(turma || { nome: '', curso_id: '', ano: new Date().getFullYear(), periodo: 'manhã', capacidade_max: 40, instrutor: '' });
+    setCurrentTurma(turma || { nome: '', curso_id: '', ano: new Date().getFullYear(), periodo: 'manhã', capacidade_max: 40, instrutor: '', status: 'ativa' });
     setIsModalOpen(true);
   };
 
@@ -382,7 +382,9 @@ export default function TurmasPage() {
             ano: currentTurma.ano,
             periodo: currentTurma.periodo,
             capacidade_max: currentTurma.capacidade_max,
-            instrutor: currentTurma.instrutor
+            instrutor: currentTurma.instrutor,
+            status: currentTurma.status || 'ativa',
+            ativa: currentTurma.status === 'ativa'
           })
           .eq('id', currentTurma.id);
         if (error) throw error;
@@ -396,7 +398,9 @@ export default function TurmasPage() {
               ano: currentTurma.ano,
               periodo: currentTurma.periodo,
               capacidade_max: currentTurma.capacidade_max,
-              instrutor: currentTurma.instrutor
+              instrutor: currentTurma.instrutor,
+              status: currentTurma.status || 'ativa',
+              ativa: (currentTurma.status || 'ativa') === 'ativa'
             }
           ]);
         if (error) throw error;
@@ -503,6 +507,15 @@ export default function TurmasPage() {
                     {turma.periodo === 'manhã' ? t.common.morning : 
                      turma.periodo === 'tarde' ? t.common.afternoon : 
                      turma.periodo === 'noite' ? t.common.night : turma.periodo}
+                  </span>
+                  <span className={cn(
+                    "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full",
+                    turma.status === 'concluída' ? "bg-emerald-100 text-emerald-700" :
+                    turma.status === 'cancelada' ? "bg-red-100 text-red-700" :
+                    "bg-blue-100 text-blue-700"
+                  )}>
+                    {turma.status === 'concluída' ? t.classes.completed : 
+                     turma.status === 'cancelada' ? t.classes.cancelled : t.classes.active}
                   </span>
                 </div>
               </div>
@@ -632,17 +645,34 @@ export default function TurmasPage() {
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-              {t.classes.capacity}
-            </label>
-            <input
-              required
-              type="number"
-              value={currentTurma?.capacidade_max || ''}
-              onChange={(e) => setCurrentTurma({ ...currentTurma, capacidade_max: parseInt(e.target.value) })}
-              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                {t.classes.capacity}
+              </label>
+              <input
+                required
+                type="number"
+                value={currentTurma?.capacidade_max || ''}
+                onChange={(e) => setCurrentTurma({ ...currentTurma, capacidade_max: parseInt(e.target.value) })}
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                {t.classes.status}
+              </label>
+              <select
+                required
+                value={currentTurma?.status || 'ativa'}
+                onChange={(e) => setCurrentTurma({ ...currentTurma, status: e.target.value })}
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm appearance-none"
+              >
+                <option value="ativa">{t.classes.active}</option>
+                <option value="concluída">{t.classes.completed}</option>
+                <option value="cancelada">{t.classes.cancelled}</option>
+              </select>
+            </div>
           </div>
 
           <div className="flex gap-3 pt-4">

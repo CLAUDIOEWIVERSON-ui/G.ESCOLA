@@ -9,10 +9,18 @@ export default function HomePage() {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        router.push('/dashboard');
-      } else {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        if (session) {
+          router.push('/dashboard');
+        } else {
+          router.push('/login');
+        }
+      } catch (err) {
+        console.error('Auth check error:', err);
+        // Clear session on error to avoid refresh token issues
+        await supabase.auth.signOut();
         router.push('/login');
       }
     };

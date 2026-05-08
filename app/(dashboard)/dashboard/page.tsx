@@ -91,10 +91,10 @@ export default function DashboardPage() {
 
         setStats({
           totalAlunos: totalAlunos || 0,
-          turmasAtivas: turmasData?.length || 0,
+          turmasAtivas: turmasData?.filter(t => (t as any).status === 'ativa' || (t as any).ativa === true).length || 0,
           cursosNacionaisAtivos: filteredCursos.length || 0,
         });
-        setTurmasAndamento(turmasData || []);
+        setTurmasAndamento(turmasData?.filter(t => (t as any).status === 'ativa' || (t as any).ativa === true) || []);
         setAlunosExterior(filteredAlunosExterior);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
