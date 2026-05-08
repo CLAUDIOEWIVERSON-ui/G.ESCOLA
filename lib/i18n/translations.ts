@@ -75,7 +75,7 @@ export const translations = {
       activityUpdate: "Curso atualizado pelo administrador",
       internationalCourses: "Cursos no Exterior",
       nationalCourses: "Cursos Nacionais",
-      activeNationalCourses: "Cursos Nacionais Ativos",
+      activeNationalCourses: "Turmas Ativas (Nacional)",
       studentsAbroad: "Alunos no Exterior",
       location: "Localização",
       courseStart: "Início",

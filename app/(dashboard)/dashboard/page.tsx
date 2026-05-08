@@ -91,10 +91,18 @@ export default function DashboardPage() {
 
         setStats({
           totalAlunos: totalAlunos || 0,
-          turmasAtivas: turmasData?.filter(t => (t as any).status === 'ativa' || (t as any).ativa === true).length || 0,
+          turmasAtivas: turmasData?.filter(t => {
+            const isActive = (t as any).status === 'ativa' || (t as any).ativa === true;
+            const curso = Array.isArray((t as any).curso) ? (t as any).curso[0] : (t as any).curso;
+            return isActive && curso?.internacional === false;
+          }).length || 0,
           cursosNacionaisAtivos: filteredCursos.length || 0,
         });
-        setTurmasAndamento(turmasData?.filter(t => (t as any).status === 'ativa' || (t as any).ativa === true) || []);
+        setTurmasAndamento(turmasData?.filter(t => {
+          const isActive = (t as any).status === 'ativa' || (t as any).ativa === true;
+          const curso = Array.isArray((t as any).curso) ? (t as any).curso[0] : (t as any).curso;
+          return isActive && curso?.internacional === false;
+        }) || []);
         setAlunosExterior(filteredAlunosExterior);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
@@ -106,14 +114,13 @@ export default function DashboardPage() {
   }, []);
 
   const statCards = [
-    { name: t.dashboard.activeClasses, value: stats.turmasAtivas, icon: Library, color: 'bg-emerald-600' },
-    { name: t.dashboard.activeNationalCourses, value: stats.cursosNacionaisAtivos, icon: BookOpen, color: 'bg-blue-600' },
+    { name: t.dashboard.activeNationalCourses, value: stats.turmasAtivas, icon: BookOpen, color: 'bg-blue-600' },
     { name: t.dashboard.studentsAbroad, value: alunosExterior.length, icon: GraduationCap, color: 'bg-purple-600' },
   ];
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
         {statCards.map((card, i) => (
           <motion.div
             key={card.name}
