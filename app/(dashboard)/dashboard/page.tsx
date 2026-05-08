@@ -74,13 +74,18 @@ export default function DashboardPage() {
         ]);
 
         // Filter students in international courses
-        const filteredAlunosExterior = alunosData?.filter(a => (a.turma as any)?.curso?.internacional) || [];
+        const filteredAlunosExterior = alunosData?.filter(a => {
+          const turmaData = Array.isArray(a.turma) ? a.turma[0] : a.turma;
+          if (!turmaData) return false;
+          const cursoData = Array.isArray(turmaData.curso) ? turmaData.curso[0] : turmaData.curso;
+          return cursoData?.internacional === true;
+        }) || [];
 
         // Filter courses that have at least one turma
         const filteredCursos = cursosAtivosData?.filter(c => 
           turmasData?.some(t => {
-            const course = (t as any).curso;
-            return course?.id === c.id;
+            const courseData = Array.isArray(t.curso) ? t.curso[0] : t.curso;
+            return courseData?.id === c.id;
           })
         ) || [];
 
@@ -159,13 +164,16 @@ export default function DashboardPage() {
                     </td>
                   </tr>
                 ) : (
-                  turmasAndamento.slice(0, 5).map((turma) => (
-                    <tr key={turma.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="px-6 py-4 font-bold text-slate-800">{turma.nome}</td>
-                      <td className="px-6 py-4 text-slate-600">{(turma.curso as any)?.nome || '-'}</td>
-                      <td className="px-6 py-4 text-center text-slate-500 font-mono text-xs">{turma.ano_letivo}</td>
-                    </tr>
-                  ))
+                  turmasAndamento.slice(0, 5).map((turma) => {
+                    const curso = Array.isArray(turma.curso) ? turma.curso[0] : turma.curso;
+                    return (
+                      <tr key={turma.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="px-6 py-4 font-bold text-slate-800">{turma.nome}</td>
+                        <td className="px-6 py-4 text-slate-600">{curso?.nome || '-'}</td>
+                        <td className="px-6 py-4 text-center text-slate-500 font-mono text-xs">{turma.ano_letivo}</td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -197,7 +205,8 @@ export default function DashboardPage() {
                   </tr>
                 ) : (
                   alunosExterior.slice(0, 5).map((aluno) => {
-                    const curso = (aluno.turma as any)?.curso;
+                    const turmaData = Array.isArray(aluno.turma) ? aluno.turma[0] : aluno.turma;
+                    const curso = Array.isArray(turmaData?.curso) ? turmaData.curso[0] : turmaData?.curso;
                     return (
                       <tr key={aluno.id} className="hover:bg-slate-50 transition-colors">
                         <td className="px-6 py-4">
