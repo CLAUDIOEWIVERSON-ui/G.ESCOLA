@@ -166,6 +166,8 @@ export const translations = {
       active: "Ativa",
       completed: "Concluída",
       cancelled: "Cancelada",
+      startDate: "Início",
+      endDate: "Fim",
     },
     subjects: {
       title: "Disciplinas",
@@ -212,6 +214,15 @@ export const translations = {
       print: "Imprimir Boletim",
       noData: "Selecione os filtros acima para visualizar o boletim.",
       overallAverage: "Média Geral da Turma",
+    },
+    cartao: {
+      title: "Crachá de Identificação",
+      issue: "Emitir Crachá",
+      print: "Imprimir Crachá",
+      download: "Baixar PDF",
+      validity: "Validade",
+      course: "Curso",
+      student: "Identificação do Aluno",
     },
     attendance: {
       title: "Controle de Frequência",

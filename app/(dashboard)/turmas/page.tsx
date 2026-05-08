@@ -4,11 +4,15 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
-import { Plus, Search, Layers, Calendar, Clock, MapPin, Pencil, Trash2, Loader2, CheckCircle2, RefreshCcw, Users, Mail, Phone, Shield, Building, CreditCard, Camera, MessageCircle, XCircle, FileText } from 'lucide-react';
+import { Plus, Search, Layers, Calendar, Clock, MapPin, Pencil, Trash2, Loader2, CheckCircle2, RefreshCcw, Users, Mail, Phone, Shield, Building, CreditCard, Camera, MessageCircle, XCircle, FileText, Download, Printer } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import Modal from '@/components/Modal';
 import Image from 'next/image';
+import { format } from 'date-fns';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
+import { useRef } from 'react';
 
 export default function TurmasPage() {
   const { t, language } = useI18n();
@@ -27,6 +31,9 @@ export default function TurmasPage() {
   const [deletingAll, setDeletingAll] = useState(false);
   const [isStudentsModalOpen, setIsStudentsModalOpen] = useState(false);
   const [isStudentFormOpen, setIsStudentFormOpen] = useState(false);
+  const [isCardModalOpen, setIsCardModalOpen] = useState(false);
+  const [viewingCardAluno, setViewingCardAluno] = useState<any>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [bulkData, setBulkData] = useState('');
   const [skipHeader, setSkipHeader] = useState(false);
@@ -81,7 +88,17 @@ export default function TurmasPage() {
 
   const handleOpenModal = (turma: any = null) => {
     if (isGuest) return;
-    setCurrentTurma(turma || { nome: '', curso_id: '', ano: new Date().getFullYear(), periodo: 'manhã', capacidade_max: 40, instrutor: '', status: 'ativa' });
+    setCurrentTurma(turma || { 
+      nome: '', 
+      curso_id: '', 
+      ano: new Date().getFullYear(), 
+      periodo: 'manhã', 
+      capacidade_max: 40, 
+      instrutor: '', 
+      status: 'ativa',
+      data_inicio: '',
+      data_fim: ''
+    });
     setIsModalOpen(true);
   };
 
@@ -125,6 +142,40 @@ export default function TurmasPage() {
       foto_url: ''
     });
     setIsStudentFormOpen(true);
+  };
+
+  const handleViewCard = (aluno: any) => {
+    setViewingCardAluno(aluno);
+    setIsCardModalOpen(true);
+  };
+
+  const handleDownloadCard = async () => {
+    if (!cardRef.current) return;
+    
+    try {
+      const canvas = await html2canvas(cardRef.current, {
+        scale: 3,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff'
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: [85.6, 54] // Standard ID card size CR80
+      });
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, 54, 85.6);
+      pdf.save(`cracha_${viewingCardAluno?.nome.toLowerCase().replace(/\s+/g, '_')}.pdf`);
+    } catch (err) {
+      console.error('Error generating card:', err);
+    }
+  };
+
+  const handlePrintCard = () => {
+    window.print();
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -384,7 +435,9 @@ export default function TurmasPage() {
             capacidade_max: currentTurma.capacidade_max,
             instrutor: currentTurma.instrutor,
             status: currentTurma.status || 'ativa',
-            ativa: currentTurma.status === 'ativa'
+            ativa: currentTurma.status === 'ativa',
+            data_inicio: currentTurma.data_inicio || null,
+            data_fim: currentTurma.data_fim || null
           })
           .eq('id', currentTurma.id);
         if (error) throw error;
@@ -400,7 +453,9 @@ export default function TurmasPage() {
               capacidade_max: currentTurma.capacidade_max,
               instrutor: currentTurma.instrutor,
               status: currentTurma.status || 'ativa',
-              ativa: (currentTurma.status || 'ativa') === 'ativa'
+              ativa: (currentTurma.status || 'ativa') === 'ativa',
+              data_inicio: currentTurma.data_inicio || null,
+              data_fim: currentTurma.data_fim || null
             }
           ]);
         if (error) throw error;
@@ -675,6 +730,31 @@ export default function TurmasPage() {
             </div>
           </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                {t.classes.startDate}
+              </label>
+              <input
+                type="date"
+                value={currentTurma?.data_inicio || ''}
+                onChange={(e) => setCurrentTurma({ ...currentTurma, data_inicio: e.target.value })}
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                {t.classes.endDate}
+              </label>
+              <input
+                type="date"
+                value={currentTurma?.data_fim || ''}
+                onChange={(e) => setCurrentTurma({ ...currentTurma, data_fim: e.target.value })}
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm"
+              />
+            </div>
+          </div>
+
           <div className="flex gap-3 pt-4">
             <button
               type="button"
@@ -748,25 +828,32 @@ export default function TurmasPage() {
                       <div className="text-[10px] text-slate-500 font-medium">{aluno.posto_graduacao || ''} • {aluno.matricula}</div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {!isGuest && (
-                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button 
-                          onClick={() => handleOpenStudentModal(aluno)}
-                          className="p-1.5 hover:bg-blue-100 text-blue-600 rounded"
-                        >
-                          <Pencil size={12} />
-                        </button>
-                        <button 
-                          disabled={deletingStudent === aluno.id}
-                          onClick={() => handleDeleteStudent(aluno.id)}
-                          className="p-1.5 hover:bg-red-100 text-red-600 rounded disabled:opacity-50"
-                        >
-                          {deletingStudent === aluno.id ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={() => handleViewCard(aluno)}
+                        className="p-1.5 hover:bg-blue-50 text-blue-600 rounded flex items-center gap-1 transition-colors"
+                        title={t.cartao.issue}
+                      >
+                        <CreditCard size={14} />
+                      </button>
+                      {!isGuest && (
+                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button 
+                            onClick={() => handleOpenStudentModal(aluno)}
+                            className="p-1.5 hover:bg-blue-100 text-blue-600 rounded"
+                          >
+                            <Pencil size={12} />
+                          </button>
+                          <button 
+                            disabled={deletingStudent === aluno.id}
+                            onClick={() => handleDeleteStudent(aluno.id)}
+                            className="p-1.5 hover:bg-red-100 text-red-600 rounded disabled:opacity-50"
+                          >
+                            {deletingStudent === aluno.id ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
+                          </button>
+                        </div>
+                      )}
+                    </div>
                 </div>
               ))}
             </div>
@@ -1038,6 +1125,112 @@ export default function TurmasPage() {
           </div>
         </form>
       </Modal>
+
+      <Modal
+        isOpen={isCardModalOpen}
+        onClose={() => setIsCardModalOpen(false)}
+        title={t.cartao.title}
+      >
+        <div className="flex flex-col items-center gap-6 py-4">
+          <div className="print:hidden flex flex-col items-center gap-4">
+            <div 
+              ref={cardRef}
+              className="w-[320px] h-[500px] bg-white border border-slate-200 rounded-[20px] shadow-2xl relative overflow-hidden flex flex-col items-center font-sans mt-2"
+            >
+              <div className="w-full h-32 bg-slate-900 flex flex-col items-center justify-center p-4 relative">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/20 rounded-full -mr-16 -mt-16 blur-3xl" />
+                <div className="z-10 flex flex-col items-center">
+                  <div className="w-10 h-10 border-2 border-white/20 rounded-full flex items-center justify-center mb-2">
+                    <Shield className="text-white" size={20} />
+                  </div>
+                  <h4 className="text-white text-[12px] font-black uppercase tracking-[0.2em]">{t.auth.systemName}</h4>
+                  <p className="text-blue-400 text-[8px] font-bold uppercase tracking-widest mt-1">{t.cartao.student}</p>
+                </div>
+              </div>
+
+              <div className="mt-8 mb-6 relative">
+                <div className="w-32 h-40 bg-slate-100 rounded-xl border-4 border-white shadow-lg overflow-hidden relative">
+                  {viewingCardAluno?.foto_url ? (
+                    <Image 
+                      src={viewingCardAluno.foto_url} 
+                      alt={viewingCardAluno.nome} 
+                      fill 
+                      className="object-cover" 
+                      sizes="128px"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-slate-300">
+                      <Users size={48} strokeWidth={1} />
+                    </div>
+                  )}
+                </div>
+                <div className="absolute -bottom-2 -right-2 bg-blue-600 text-white p-1.5 rounded-lg shadow-lg border-2 border-white">
+                  <CheckCircle2 size={16} />
+                </div>
+              </div>
+
+              <div className="text-center px-6 w-full flex-1">
+                <h2 className="text-xl font-black text-slate-900 leading-tight mb-1 uppercase tracking-tight">
+                  {viewingCardAluno?.nome}
+                </h2>
+                <p className="text-blue-600 font-bold text-sm uppercase mb-4 tracking-wider">
+                  {viewingCardAluno?.posto_graduacao || t.users.aluno}
+                </p>
+
+                <div className="space-y-4 border-t border-slate-100 pt-4">
+                  <div className="flex flex-col items-center">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">{t.cartao.course}</span>
+                    <span className="text-xs font-bold text-slate-700 uppercase max-w-[240px] truncate">{viewingTurma?.curso?.nome}</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex flex-col items-center">
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">{t.students.registration}</span>
+                      <span className="text-xs font-mono font-bold text-slate-800">{viewingCardAluno?.matricula}</span>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">{t.cartao.validity}</span>
+                      <span className="text-xs font-bold text-slate-800">
+                        {viewingTurma?.data_inicio ? format(new Date(viewingTurma.data_inicio), 'yyyy') : ''}
+                        {viewingTurma?.data_fim ? ` - ${format(new Date(viewingTurma.data_fim), 'yyyy')}` : ''}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="w-full bg-slate-50 p-4 border-t border-slate-100 flex items-center justify-between mt-auto">
+                <div className="flex flex-col">
+                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">{t.nav.classes}</span>
+                  <span className="text-[10px] font-bold text-slate-700 leading-none">{viewingTurma?.nome}</span>
+                </div>
+                <div className="w-10 h-10 bg-white border border-slate-200 rounded flex items-center justify-center p-1">
+                  <div className="w-full h-full bg-slate-900 rounded-[2px]" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-3 w-full">
+            <button
+              onClick={handlePrintCard}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-slate-100 text-slate-700 rounded-xl font-bold text-sm hover:bg-slate-200 transition-all border border-slate-200"
+            >
+              <Printer size={18} />
+              {t.cartao.print}
+            </button>
+            <button
+              onClick={handleDownloadCard}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition-all shadow-lg shadow-blue-100"
+            >
+              <Download size={18} />
+              {t.cartao.download}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
       <Modal
         isOpen={confirmConfig.isOpen}
         onClose={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}

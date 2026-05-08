@@ -40,6 +40,8 @@ export default function DashboardPage() {
               turma:turmas(
                 nome,
                 ano,
+                data_inicio,
+                data_fim,
                 curso:cursos(
                   nome,
                   internacional,
@@ -148,7 +150,7 @@ export default function DashboardPage() {
                         <div className="text-[10px] text-slate-400 uppercase font-bold">{curso?.localizacao || '-'}</div>
                       </td>
                       <td className="px-6 py-4 text-center text-slate-500 font-mono text-xs">
-                        {curso?.data_inicio ? new Date(curso.data_inicio).getFullYear() : '-'} / {curso?.data_fim ? new Date(curso.data_fim).getFullYear() : '-'}
+                        {turmaData?.data_inicio ? new Date(turmaData.data_inicio).getFullYear() : (curso?.data_inicio ? new Date(curso.data_inicio).getFullYear() : '-')} / {turmaData?.data_fim ? new Date(turmaData.data_fim).getFullYear() : (curso?.data_fim ? new Date(curso.data_fim).getFullYear() : '-')}
                       </td>
                     </tr>
                   );

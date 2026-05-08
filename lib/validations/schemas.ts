@@ -19,6 +19,8 @@ export const turmaSchema = z.object({
   capacidade_max: z.number().int().min(1).max(100),
   status: z.enum(['ativa', 'concluída', 'cancelada']),
   instrutor: z.string().optional().nullable(),
+  data_inicio: z.string().optional().nullable(),
+  data_fim: z.string().optional().nullable(),
 });
 
 export const alunoSchema = z.object({

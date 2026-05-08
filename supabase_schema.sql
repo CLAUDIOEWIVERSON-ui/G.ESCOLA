@@ -42,6 +42,8 @@ CREATE TABLE IF NOT EXISTS public.turmas (
   alunos_matriculados INTEGER DEFAULT 0,
   status turma_status_enum DEFAULT 'ativa',
   ativa BOOLEAN DEFAULT TRUE,
+  data_inicio DATE,
+  data_fim DATE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   deleted_at TIMESTAMPTZ
 );

@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
 
 export default function BoletimPage() {
   const { t } = useI18n();
@@ -146,7 +147,15 @@ export default function BoletimPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{t.reportCard.title}</h1>
-          <p className="text-slate-500 text-sm">{t.reportCard.subtitle}</p>
+          <p className="text-slate-500 text-sm">
+            {t.reportCard.subtitle}
+            {selectedTurma && turmas.find(t => t.id === selectedTurma)?.data_inicio && (
+              <span className="ml-2 px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-[10px] font-bold uppercase tracking-widest border border-blue-100">
+                {format(new Date(turmas.find(t => t.id === selectedTurma).data_inicio), 'dd/MM/yyyy')} 
+                {turmas.find(t => t.id === selectedTurma).data_fim ? ` - ${format(new Date(turmas.find(t => t.id === selectedTurma).data_fim), 'dd/MM/yyyy')}` : ''}
+              </span>
+            )}
+          </p>
         </div>
         <div className="flex gap-2">
           <button 
