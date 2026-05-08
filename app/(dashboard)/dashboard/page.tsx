@@ -56,6 +56,8 @@ export default function DashboardPage() {
             .select(`
               id,
               nome,
+              posto_graduacao,
+              om,
               turma:turmas(
                 nome,
                 ano_letivo,
@@ -99,12 +101,15 @@ export default function DashboardPage() {
   }, []);
 
   const statCards = [
-    { name: t.dashboard.activeNationalCourses, value: stats.cursosNacionaisAtivos, icon: BookOpen, color: 'bg-indigo-600' },
+    { name: t.dashboard.totalStudents, value: stats.totalAlunos, icon: Users, color: 'bg-indigo-600' },
+    { name: t.dashboard.activeClasses, value: stats.turmasAtivas, icon: Library, color: 'bg-emerald-600' },
+    { name: t.dashboard.activeNationalCourses, value: stats.cursosNacionaisAtivos, icon: BookOpen, color: 'bg-blue-600' },
+    { name: t.dashboard.studentsAbroad, value: alunosExterior.length, icon: GraduationCap, color: 'bg-purple-600' },
   ];
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {statCards.map((card, i) => (
           <motion.div
             key={card.name}
@@ -113,14 +118,17 @@ export default function DashboardPage() {
             transition={{ delay: i * 0.1 }}
             className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm"
           >
+            <div className="flex items-center justify-between mb-4">
+              <div className={`p-2 rounded-lg ${card.color} text-white`}>
+                <card.icon size={20} />
+              </div>
+              <span className="text-[10px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded uppercase">
+                {t.dashboard.stable}
+              </span>
+            </div>
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">{card.name}</p>
             <div className="flex items-end justify-between">
               <span className="text-3xl font-bold text-slate-800">{card.value}</span>
-              <div className="flex flex-col items-end">
-                <span className="text-[10px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded uppercase">
-                  {t.dashboard.stable}
-                </span>
-              </div>
             </div>
           </motion.div>
         ))}
@@ -168,7 +176,7 @@ export default function DashboardPage() {
           <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
             <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
               <Users size={16} className="text-slate-400" />
-              Alunos no Exterior
+              {t.dashboard.studentsAbroad}
             </h3>
           </div>
           <div className="overflow-x-auto">
@@ -192,7 +200,14 @@ export default function DashboardPage() {
                     const curso = (aluno.turma as any)?.curso;
                     return (
                       <tr key={aluno.id} className="hover:bg-slate-50 transition-colors">
-                        <td className="px-6 py-4 font-bold text-slate-800">{aluno.nome}</td>
+                        <td className="px-6 py-4">
+                          <div className="font-bold text-slate-800">
+                            {aluno.posto_graduacao ? `${aluno.posto_graduacao} ` : ''}{aluno.nome}
+                          </div>
+                          <div className="text-[10px] text-slate-400 font-mono uppercase">
+                            {aluno.om || '-'}
+                          </div>
+                        </td>
                         <td className="px-6 py-4">
                           <div className="text-slate-600">{curso?.nome || '-'}</div>
                           <div className="text-[10px] text-slate-400 uppercase font-bold">{curso?.localizacao || '-'}</div>
