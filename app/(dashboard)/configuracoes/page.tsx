@@ -40,7 +40,7 @@ export default function ConfiguracoesPage() {
         if (error) {
           // PGRST116 is "no rows returned". Other errors might mean the table doesn't exist yet.
           if (error.code !== 'PGRST116') {
-            console.warn('Note: Configuration table might be missing or inaccessible. Please run migrations. error code:', error.code, error.message);
+            console.warn('Note: Configuration table might be missing or inaccessible. Using defaults.', error);
           }
           return;
         }

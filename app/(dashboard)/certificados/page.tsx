@@ -21,13 +21,7 @@ import {
   Palette,
   FileText,
   FileCheck,
-  Camera,
-  AlignCenter,
-  AlignLeft,
-  AlignRight,
-  Bold,
-  Italic,
-  Settings2
+  Camera
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
@@ -67,28 +61,7 @@ export default function CertificadosPage() {
     textColor: '#1e293b',
     logoUrl: '',
     bgImageUrl: '',
-    watermarkUrl: '',
-    stampUrl: '',
-    frameUrl: '',
-    fontFamily: 'font-serif',
-    titleFontSize: '48px',
-    bodyFontSize: '16px',
-    textAlign: 'center',
-    borderWidth: '16px',
-    showRulers: true,
-    isBold: false,
-    isItalic: false,
   });
-
-  const fonts = [
-    { name: 'Cinzel (Clássico)', value: 'font-cinzel' },
-    { name: 'Playfair (Elegante)', value: 'font-playfair' },
-    { name: 'Montserrat (Moderno)', value: 'font-montserrat' },
-    { name: 'Script (Caligrafia)', value: 'font-script' },
-    { name: 'Serif (Padrão)', value: 'font-serif' },
-  ];
-
-  const fontSizes = ['12px', '14px', '16px', '18px', '20px', '24px', '32px', '48px', '64px'];
 
   useEffect(() => {
     const fetchData = async () => {
@@ -129,23 +102,15 @@ export default function CertificadosPage() {
     fetchAlunos();
   }, [selectedTurma]);
 
-  const handleAssetUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'bg' | 'watermark' | 'stamp' | 'frame') => {
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const loaders = {
-      logo: setLogoUploading,
-      bg: (v: boolean) => setLogoUploading(v), // Reusing logo loading state for simplicity or could add more
-      watermark: (v: boolean) => setLogoUploading(v),
-      stamp: (v: boolean) => setLogoUploading(v),
-      frame: (v: boolean) => setLogoUploading(v),
-    };
-
-    loaders[type](true);
+    setLogoUploading(true);
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `${type}-${Date.now()}.${fileExt}`;
-      const filePath = `certificates/${fileName}`;
+      const fileName = `logo-${Date.now()}.${fileExt}`;
+      const filePath = `config/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('escola')
@@ -157,23 +122,13 @@ export default function CertificadosPage() {
         .from('escola')
         .getPublicUrl(filePath);
 
-      const fieldMap = {
-        logo: 'logoUrl',
-        bg: 'bgImageUrl',
-        watermark: 'watermarkUrl',
-        stamp: 'stampUrl',
-        frame: 'frameUrl',
-      };
-
-      setTemplate({ ...template, [fieldMap[type]]: publicUrl });
+      setTemplate({ ...template, logoUrl: publicUrl });
     } catch (err: any) {
-      alert(`Erro no upload: ${err.message || ''}`);
+      alert('Erro no upload do logo: ' + (err.message || ''));
     } finally {
-      loaders[type](false);
+      setLogoUploading(false);
     }
   };
-
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => handleAssetUpload(e, 'logo');
 
   const handleOpenDesigner = (aluno: any) => {
     setSelectedAluno(aluno);
@@ -420,371 +375,167 @@ export default function CertificadosPage() {
         onClose={() => setIsDesignModalOpen(false)}
         title={language === 'pt' ? 'Editor Profissional de Certificado' : 'Professional Certificate Editor'}
       >
-        <div className="flex flex-col xl:flex-row gap-6 max-h-[90vh]">
-          {/* Advanced Toolbox */}
-          <div className="w-full xl:w-96 space-y-6 overflow-y-auto pr-2 custom-scrollbar xl:border-r border-slate-100 p-1">
-            <div className="space-y-6">
-               {/* Text Formatting Section */}
-               <div className="space-y-4">
-                  <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
-                    <Type size={14} className="text-blue-600" />
-                    <h4 className="text-[11px] font-black text-slate-700 uppercase tracking-widest">Tipografia & Texto</h4>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Fonte</label>
-                      <select 
-                        value={template.fontFamily}
-                        onChange={(e) => setTemplate({...template, fontFamily: e.target.value})}
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-bold outline-none focus:ring-2 focus:ring-blue-500/10"
-                      >
-                        {fonts.map(f => <option key={f.value} value={f.value}>{f.name}</option>)}
-                      </select>
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Tam. Título</label>
-                      <select 
-                        value={template.titleFontSize}
-                        onChange={(e) => setTemplate({...template, titleFontSize: e.target.value})}
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-bold outline-none focus:ring-2 focus:ring-blue-500/10"
-                      >
-                        {fontSizes.map(s => <option key={s} value={s}>{s}</option>)}
-                      </select>
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Tam. Corpo</label>
-                      <select 
-                        value={template.bodyFontSize}
-                        onChange={(e) => setTemplate({...template, bodyFontSize: e.target.value})}
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-bold outline-none focus:ring-2 focus:ring-blue-500/10"
-                      >
-                        {fontSizes.map(s => <option key={s} value={s}>{s}</option>)}
-                      </select>
-                    </div>
-                  </div>
+        <div className="flex flex-col lg:flex-row gap-6 max-h-[85vh]">
+          {/* Controls */}
+          <div className="w-full lg:w-80 space-y-6 overflow-y-auto pr-2 custom-scrollbar lg:border-r border-slate-100">
+            <div className="space-y-4">
+               <div>
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                    <Type size={12} className="text-blue-500" />
+                    {language === 'pt' ? 'Título' : 'Title'}
+                  </label>
+                  <input 
+                    type="text" 
+                    value={template.titleField}
+                    onChange={(e) => setTemplate({...template, titleField: e.target.value})}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500/10 outline-none"
+                  />
+               </div>
 
-                  <div className="flex items-center gap-2">
-                    <div className="flex bg-slate-100 p-1 rounded-lg">
-                      <button 
-                        onClick={() => setTemplate({...template, textAlign: 'left'})}
-                        className={cn("p-1.5 rounded transition-all", template.textAlign === 'left' ? "bg-white text-blue-600 shadow-sm" : "text-slate-400 hover:text-slate-600")}
-                      >
-                        <AlignLeft size={14} />
-                      </button>
-                      <button 
-                        onClick={() => setTemplate({...template, textAlign: 'center'})}
-                        className={cn("p-1.5 rounded transition-all", template.textAlign === 'center' ? "bg-white text-blue-600 shadow-sm" : "text-slate-400 hover:text-slate-600")}
-                      >
-                        <AlignCenter size={14} />
-                      </button>
-                      <button 
-                        onClick={() => setTemplate({...template, textAlign: 'right'})}
-                        className={cn("p-1.5 rounded transition-all", template.textAlign === 'right' ? "bg-white text-blue-600 shadow-sm" : "text-slate-400 hover:text-slate-600")}
-                      >
-                        <AlignRight size={14} />
-                      </button>
-                    </div>
-                    <div className="w-px h-4 bg-slate-200 mx-1" />
-                    <div className="flex bg-slate-100 p-1 rounded-lg">
-                      <button 
-                        onClick={() => setTemplate({...template, isBold: !template.isBold})}
-                        className={cn("p-1.5 rounded transition-all", template.isBold ? "bg-white text-blue-600 shadow-sm" : "text-slate-400 hover:text-slate-600")}
-                      >
-                        <Bold size={14} />
-                      </button>
-                      <button 
-                        onClick={() => setTemplate({...template, isItalic: !template.isItalic})}
-                        className={cn("p-1.5 rounded transition-all", template.isItalic ? "bg-white text-blue-600 shadow-sm" : "text-slate-400 hover:text-slate-600")}
-                      >
-                        <Italic size={14} />
-                      </button>
-                    </div>
-                  </div>
+               <div>
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                    <FileText size={12} className="text-blue-500" />
+                    {language === 'pt' ? 'Texto do Corpo' : 'Body Text'}
+                  </label>
+                  <textarea 
+                    rows={4}
+                    value={template.bodyText}
+                    onChange={(e) => setTemplate({...template, bodyText: e.target.value})}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[10px] focus:ring-2 focus:ring-blue-500/10 outline-none leading-relaxed"
+                  />
+                  <p className="text-[8px] text-slate-400 mt-1 italic font-medium">Use: {'{NOME}'}, {'{CURSO}'}, {'{DATA_INICIO}'}, {'{DATA_FIM}'}</p>
+               </div>
 
+               <div className="grid grid-cols-2 gap-3">
                   <div>
-                     <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5 block">Título do Documento</label>
-                     <input 
-                       type="text" 
-                       value={template.titleField}
-                       onChange={(e) => setTemplate({...template, titleField: e.target.value})}
-                       className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium focus:ring-2 focus:ring-blue-500/10 outline-none"
-                     />
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                      <Palette size={12} className="text-blue-500" />
+                      {language === 'pt' ? 'Fundo' : 'Background'}
+                    </label>
+                    <input 
+                      type="color" 
+                      value={template.backgroundColor}
+                      onChange={(e) => setTemplate({...template, backgroundColor: e.target.value})}
+                      className="w-full h-8 p-0 border-0 bg-transparent cursor-pointer"
+                    />
                   </div>
-
                   <div>
-                     <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1.5 block">Corpo do Texto</label>
-                     <textarea 
-                       rows={4}
-                       value={template.bodyText}
-                       onChange={(e) => setTemplate({...template, bodyText: e.target.value})}
-                       className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[10px] font-medium focus:ring-2 focus:ring-blue-500/10 outline-none leading-relaxed min-h-[100px]"
-                     />
-                     <div className="flex flex-wrap gap-1.5 mt-1.5">
-                       {['{NOME}', '{CURSO}', '{DATA_INICIO}', '{DATA_FIM}'].map(tag => (
-                         <button 
-                           key={tag}
-                           onClick={() => setTemplate({...template, bodyText: template.bodyText + ' ' + tag})}
-                           className="px-1.5 py-0.5 bg-slate-100 text-[8px] font-bold text-slate-500 rounded border border-slate-200 hover:bg-white hover:text-blue-600 transition-colors"
-                         >
-                           {tag}
-                         </button>
-                       ))}
-                     </div>
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                      <Palette size={12} className="text-blue-500" />
+                      {language === 'pt' ? 'Borda' : 'Border'}
+                    </label>
+                    <input 
+                      type="color" 
+                      value={template.borderColor}
+                      onChange={(e) => setTemplate({...template, borderColor: e.target.value})}
+                      className="w-full h-8 p-0 border-0 bg-transparent cursor-pointer"
+                    />
                   </div>
                </div>
 
-               {/* Design Section */}
-               <div className="space-y-4">
-                  <div className="flex items-center gap-2 border-b border-slate-100 pb-2 text-amber-600">
-                    <Palette size={14} />
-                    <h4 className="text-[11px] font-black text-slate-700 uppercase tracking-widest">Estética & Layout</h4>
+               <div className="flex flex-col gap-2 pt-4">
+                  <div className="relative">
+                    <button className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-800 text-white rounded-xl text-xs font-bold hover:bg-slate-900 transition-all shadow-lg shadow-slate-200 disabled:opacity-50">
+                      {logoUploading ? <Loader2 size={14} className="animate-spin" /> : <ImageIcon size={14} />}
+                      {language === 'pt' ? 'Mudar Logotipo' : 'Change Logo'}
+                    </button>
+                    <input type="file" accept="image/*" onChange={handleLogoUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
                   </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Fundo</label>
-                      <div className="flex items-center gap-2">
-                        <input type="color" value={template.backgroundColor} onChange={(e) => setTemplate({...template, backgroundColor: e.target.value})} className="h-8 w-full rounded cursor-pointer border-0 p-0" />
-                        <span className="text-[10px] font-mono text-slate-400 uppercase">{template.backgroundColor}</span>
-                      </div>
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1">Borda</label>
-                      <div className="flex items-center gap-2">
-                        <input type="color" value={template.borderColor} onChange={(e) => setTemplate({...template, borderColor: e.target.value})} className="h-8 w-full rounded cursor-pointer border-0 p-0" />
-                        <span className="text-[10px] font-mono text-slate-400 uppercase">{template.borderColor}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="relative group">
-                      <button className="w-full flex flex-col items-center justify-center gap-2 p-4 bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl hover:bg-white hover:border-blue-400 hover:text-blue-600 transition-all text-slate-500 group">
-                        {logoUploading ? <Loader2 size={16} className="animate-spin" /> : <Camera size={16} />}
-                        <span className="text-[9px] font-black uppercase tracking-widest">Carimbo</span>
-                      </button>
-                      <input type="file" accept="image/*" onChange={(e) => handleAssetUpload(e, 'stamp')} className="absolute inset-0 opacity-0 cursor-pointer" />
-                    </div>
-                    <div className="relative group">
-                      <button className="w-full flex flex-col items-center justify-center gap-2 p-4 bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl hover:bg-white hover:border-blue-400 hover:text-blue-600 transition-all text-slate-500">
-                        {logoUploading ? <Loader2 size={16} className="animate-spin" /> : <FileCheck size={16} />}
-                        <span className="text-[9px] font-black uppercase tracking-widest">M. D&apos;água</span>
-                      </button>
-                      <input type="file" accept="image/*" onChange={(e) => handleAssetUpload(e, 'watermark')} className="absolute inset-0 opacity-0 cursor-pointer" />
-                    </div>
-                    <div className="relative group">
-                      <button className="w-full flex flex-col items-center justify-center gap-2 p-4 bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl hover:bg-white hover:border-blue-400 hover:text-blue-600 transition-all text-slate-500 group">
-                        {logoUploading ? <Loader2 size={16} className="animate-spin" /> : <Settings2 size={16} />}
-                        <span className="text-[9px] font-black uppercase tracking-widest">Moldura</span>
-                      </button>
-                      <input type="file" accept="image/*" onChange={(e) => handleAssetUpload(e, 'frame')} className="absolute inset-0 opacity-0 cursor-pointer" />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="relative group">
-                      <button className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-blue-600 text-white rounded-2xl text-xs font-black shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95">
-                        <Upload size={16} />
-                        UPLOAD TEMPLATE PP (PPTX)
-                      </button>
-                      <input type="file" accept="image/*" onChange={(e) => handleAssetUpload(e, 'bg')} className="absolute inset-0 opacity-0 cursor-pointer" />
-                    </div>
-                    <p className="text-[8px] text-slate-400 text-center italic font-medium px-4">Ideal para certificados prontos exportados do Power Point.</p>
-                  </div>
-               </div>
-
-               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Layout size={14} className="text-slate-400" />
-                    <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Réguas & Guias</span>
-                  </div>
-                  <button 
-                    onClick={() => setTemplate({...template, showRulers: !template.showRulers})}
-                    className={cn(
-                      "w-10 h-5 rounded-full transition-all relative",
-                      template.showRulers ? "bg-blue-600" : "bg-slate-300"
-                    )}
-                  >
-                    <div className={cn(
-                      "absolute top-1 w-3 h-3 bg-white rounded-full transition-all",
-                      template.showRulers ? "right-1" : "left-1"
-                    )} />
+                  <button className="flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 text-slate-600 border border-slate-200 rounded-xl text-xs font-bold hover:bg-slate-200 transition-all">
+                    <Upload size={14} />
+                    {language === 'pt' ? 'Subir Fundo' : 'Upload Background'}
                   </button>
                </div>
             </div>
           </div>
 
-          {/* Canvas Wrapper */}
+          {/* Preview */}
           <div className="flex-1 flex flex-col gap-6">
-             <div className="bg-slate-900/5 p-4 sm:p-12 rounded-[2.5rem] border-2 border-dashed border-slate-200 flex items-center justify-center overflow-auto min-h-[500px] relative scrollbar-hide">
-                {/* Certificate Stage */}
+             <div className="bg-slate-900/5 p-8 rounded-2xl border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden min-h-[400px]">
+                {/* Certificate Template */}
                 <div 
                   ref={certificateRef}
                   style={{ 
                     backgroundColor: template.backgroundColor, 
                     borderColor: template.borderColor,
-                    color: template.textColor,
-                    borderWidth: template.bgImageUrl ? '0' : template.borderWidth,
-                    backgroundImage: template.bgImageUrl ? `url(${template.bgImageUrl})` : 'none',
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
+                    color: template.textColor
                   }}
-                  className={cn(
-                    "w-[1123px] h-[794px] min-w-[1123px] min-h-[794px] border-solid shadow-2xl relative p-20 flex flex-col items-center justify-between text-center transition-all duration-500 overflow-hidden",
-                    template.fontFamily
-                  )}
+                  className="w-[842px] h-[595px] border-[16px] shadow-2xl relative p-16 flex flex-col items-center justify-between text-center select-none"
                 >
-                  {/* Grid Rulers */}
-                  <AnimatePresence>
-                    {template.showRulers && (
-                      <motion.div 
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="absolute inset-0 pointer-events-none z-50 opacity-10"
-                        style={{
-                          backgroundImage: 'linear-gradient(to right, #ccc 1px, transparent 1px), linear-gradient(to bottom, #ccc 1px, transparent 1px)',
-                          backgroundSize: '20px 20px'
-                        }}
-                      />
-                    )}
-                  </AnimatePresence>
-
-                  {/* Frame/Moldura */}
-                  {template.frameUrl && (
-                    <div className="absolute inset-0 pointer-events-none z-40">
-                      <img src={template.frameUrl} alt="Frame" className="w-full h-full object-fill" referrerPolicy="no-referrer" />
-                    </div>
-                  )}
-
-                  {/* Watermark */}
-                  {template.watermarkUrl && (
-                    <div className="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none z-0">
-                      <img src={template.watermarkUrl} alt="Watermark" className="w-[60%] h-[60%] object-contain grayscale" referrerPolicy="no-referrer" />
-                    </div>
-                  )}
-
-                  {/* Stamp (Floating Image) */}
-                  {template.stampUrl && (
-                    <div className="absolute bottom-20 right-20 z-10 animate-bounce cursor-move">
-                      <img src={template.stampUrl} alt="Stamp" className="w-32 h-32 object-contain rotate-12 drop-shadow-lg" referrerPolicy="no-referrer" />
-                    </div>
-                  )}
+                  {/* Decorative Border */}
+                  <div className="absolute inset-2 border-2 border-slate-200/50 pointer-events-none" />
                   
-                  {/* Header Content */}
-                  <div className="relative z-10 w-full flex flex-col items-center gap-6">
+                  {/* Header/Logo Placeholder */}
+                  <div className="flex flex-col items-center">
                     {template.logoUrl ? (
-                      <div className="w-32 h-32 relative mb-2">
-                        <img src={template.logoUrl} alt="Logo" className="object-contain w-full h-full drop-shadow-sm" referrerPolicy="no-referrer" />
+                      <div className="w-24 h-24 relative mb-4">
+                        <img src={template.logoUrl} alt="Logo" className="object-contain w-full h-full" referrerPolicy="no-referrer" />
                       </div>
                     ) : (
-                      <div className="w-28 h-28 bg-white/80 rounded-full flex items-center justify-center border-4 border-slate-50 mb-2 shadow-inner">
-                        <GraduationCap size={48} className="text-blue-500" />
+                      <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center border-4 border-slate-50 mb-4 shadow-inner">
+                        <GraduationCap size={40} className="text-slate-300" />
                       </div>
                     )}
-                    
-                    <div className="space-y-4">
-                      <h1 
-                        className="font-black tracking-[0.25em] leading-tight"
-                        style={{ fontSize: template.titleFontSize }}
-                      >
-                        {template.titleField}
-                      </h1>
-                      <div className="h-1.5 w-64 bg-slate-900 mx-auto rounded-full" />
-                    </div>
+                    <h1 className="text-3xl font-serif font-black tracking-[0.2em] mb-2">{template.titleField}</h1>
+                    <div className="h-1 w-48 bg-slate-800 rounded-full" />
                   </div>
 
-                  {/* Main Body */}
-                  <div className="relative z-10 max-w-4xl space-y-12">
-                     <div className="space-y-4">
-                        <p className="text-xl font-medium italic opacity-60">Certificamos solenemente que para os devidos fins que</p>
-                        <h2 className="text-6xl font-black tracking-tight border-b-4 border-slate-900 inline-block px-12 py-3 mx-auto">
-                          {selectedAluno?.nome.toUpperCase() || 'NOME DO ALUNO'}
-                        </h2>
-                     </div>
-                     <p 
-                       className="leading-[1.8] px-20 opacity-80"
-                       style={{ 
-                         fontSize: template.bodyFontSize,
-                         textAlign: template.textAlign as any,
-                         fontWeight: template.isBold ? 'bold' : 'normal',
-                         fontStyle: template.isItalic ? 'italic' : 'normal'
-                       }}
-                     >
+                  {/* Body */}
+                  <div className="max-w-2xl space-y-8">
+                     <p className="text-lg font-serif italic text-slate-500">Este documento certifica que</p>
+                     <p className="text-5xl font-serif font-black tracking-widest border-b-2 border-slate-800 inline-block px-8 py-2">
+                       {selectedAluno?.nome.toUpperCase()}
+                     </p>
+                     <p className="text-base font-serif leading-relaxed px-12 text-slate-600 line-clamp-3">
                        {selectedAluno ? getProcessedText(template.bodyText, selectedAluno) : template.bodyText}
                      </p>
                   </div>
 
                   {/* Signatures */}
-                  <div className="relative z-10 grid grid-cols-2 gap-40 w-full px-32 mb-10">
-                     <div className="flex flex-col items-center gap-3">
-                        <div className="w-full border-t-2 border-slate-900" />
-                        <span className="text-[11px] font-black uppercase tracking-[0.2em] opacity-60">
-                          {template.signature1}
-                        </span>
+                  <div className="grid grid-cols-2 gap-32 w-full px-24">
+                     <div className="flex flex-col items-center">
+                        <div className="w-full border-t border-slate-800 mb-2" />
+                        <p className="text-[10px] font-bold uppercase tracking-wider">{template.signature1}</p>
                      </div>
-                     <div className="flex flex-col items-center gap-3">
-                        <div className="w-full border-t-2 border-slate-900" />
-                        <span className="text-[11px] font-black uppercase tracking-[0.2em] opacity-60">
-                          {template.signature2}
-                        </span>
+                     <div className="flex flex-col items-center">
+                        <div className="w-full border-t border-slate-800 mb-2" />
+                        <p className="text-[10px] font-bold uppercase tracking-wider">{template.signature2}</p>
+                     </div>
+                  </div>
+
+                  {/* Footer Decoration */}
+                  <div className="absolute bottom-16 right-16">
+                     <div className="w-20 h-20 border-8 border-amber-400 opacity-20 rotate-45 flex items-center justify-center">
+                        <div className="w-full h-full border-2 border-amber-400" />
                      </div>
                   </div>
                 </div>
              </div>
 
-             <div className="flex flex-col sm:flex-row gap-4 p-2">
+             <div className="flex gap-4">
                 <button
                   type="button"
                   disabled={generating}
                   onClick={() => setIsDesignModalOpen(false)}
-                  className="flex-1 px-8 py-4 border border-slate-200 text-slate-500 rounded-[2rem] font-black text-xs uppercase tracking-widest hover:bg-slate-50 hover:text-slate-800 transition-all active:scale-95 flex items-center justify-center gap-2"
+                  className="flex-1 px-6 py-3 border border-slate-200 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-50 transition-all active:scale-[0.98]"
                 >
-                  DESDESCARTAR ALTERAÇÕES
+                  {t.common.cancel}
                 </button>
-                <div className="flex-1 flex gap-2">
-                  <button
-                    type="button"
-                    disabled={generating}
-                    onClick={() => {
-                        setTemplate({
-                            ...template,
-                            logoUrl: '',
-                            bgImageUrl: '',
-                            watermarkUrl: '',
-                            stampUrl: '',
-                            frameUrl: '',
-                        })
-                    }}
-                    className="p-4 bg-slate-100 text-slate-600 rounded-[2rem] hover:bg-slate-200 transition-all font-black text-[10px]"
-                    title="Resetar Layout"
-                  >
-                    RESET
-                  </button>
-                  <button
-                    type="button"
-                    disabled={generating}
-                    onClick={downloadPDF}
-                    className="flex-[4] px-8 py-4 bg-blue-900 text-white rounded-[2rem] font-black text-xs uppercase tracking-widest hover:bg-blue-800 transition-all shadow-xl shadow-blue-900/20 active:scale-95 flex items-center justify-center gap-3"
-                  >
-                    {generating ? <Loader2 size={20} className="animate-spin" /> : <FileDown size={20} />}
-                    EMITIR & BAIXAR CERTIFICADO PDF
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  disabled={generating}
+                  onClick={downloadPDF}
+                  className="flex-[2] px-6 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 active:scale-[0.98] flex items-center justify-center gap-2"
+                >
+                  {generating ? <Loader2 size={18} className="animate-spin" /> : <FileDown size={18} />}
+                  {language === 'pt' ? 'Gerar e baixar PDF Profissional' : 'Generate & Download Professional PDF'}
+                </button>
              </div>
           </div>
         </div>
       </Modal>
 
       <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Montserrat:wght@300;400;700;900&family=Petit+Formal+Script&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&display=swap');
-
-        .font-script { font-family: 'Petit Formal Script', cursive; }
-        .font-cinzel { font-family: 'Cinzel', serif; }
-        .font-montserrat { font-family: 'Montserrat', sans-serif; }
-        .font-playfair { font-family: 'Playfair Display', serif; }
-
         .custom-scrollbar::-webkit-scrollbar {
           width: 4px;
         }
@@ -797,14 +548,6 @@ export default function CertificadosPage() {
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
           background: #cbd5e1;
-        }
-
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-        .scrollbar-hide {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
         }
       `}</style>
     </div>
