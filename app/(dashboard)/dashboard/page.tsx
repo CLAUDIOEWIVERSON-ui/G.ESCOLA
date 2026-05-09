@@ -17,8 +17,6 @@ export default function DashboardPage() {
   const [stats, setStats] = useState({
     turmasInternacionais: 0,
     alunosExterior: 0,
-    totalAlunos: 0,
-    totalTurmas: 0,
   });
   const [alunosExterior, setAlunosExterior] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,19 +27,11 @@ export default function DashboardPage() {
       try {
         const [
           { count: turmasIntCount },
-          { count: totalAlunosCount },
-          { count: totalTurmasCount },
           { data: alunosExteriorData }
         ] = await Promise.all([
           supabase.from('turmas')
             .select('*', { count: 'exact', head: true })
             .eq('internacional', true)
-            .is('deleted_at', null),
-          supabase.from('alunos')
-            .select('*', { count: 'exact', head: true })
-            .is('deleted_at', null),
-          supabase.from('turmas')
-            .select('*', { count: 'exact', head: true })
             .is('deleted_at', null),
           supabase.from('alunos')
             .select(`
@@ -69,8 +59,6 @@ export default function DashboardPage() {
         setStats({
           turmasInternacionais: turmasIntCount || 0,
           alunosExterior: alunosExteriorData?.length || 0,
-          totalAlunos: totalAlunosCount || 0,
-          totalTurmas: totalTurmasCount || 0,
         });
         setAlunosExterior(alunosExteriorData || []);
       } catch (error) {
@@ -83,15 +71,13 @@ export default function DashboardPage() {
   }, []);
 
   const statCards = [
-    { name: t.dashboard.totalStudents, value: stats.totalAlunos, icon: Users, color: 'bg-blue-600' },
-    { name: t.dashboard.activeClasses, value: stats.totalTurmas, icon: Layers, color: 'bg-slate-700' },
     { name: t.dashboard.activeClassesIntl, value: stats.turmasInternacionais, icon: BookOpen, color: 'bg-emerald-600' },
     { name: t.dashboard.studentsAbroad, value: stats.alunosExterior, icon: GraduationCap, color: 'bg-purple-600' },
   ];
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         {statCards.map((card, i) => (
           <motion.div
             key={card.name}

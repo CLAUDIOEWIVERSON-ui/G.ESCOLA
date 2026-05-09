@@ -7,6 +7,7 @@ export const cursoSchema = z.object({
   duracao_unidade: z.enum(['dia', 'semana', 'mes', 'ano']),
   ativo: z.boolean(),
   qtd_modulos: z.number().int().min(1).max(5),
+  categoria: z.enum(['Expedito', 'Especial', 'Carreira']).optional().nullable(),
 });
 
 export const turmaSchema = z.object({

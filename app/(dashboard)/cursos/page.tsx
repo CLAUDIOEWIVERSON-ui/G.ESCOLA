@@ -59,6 +59,7 @@ export default function CursosPage() {
       duracao_unidade: 'ano',
       ativo: true,
       qtd_modulos: 4,
+      categoria: null,
     }
   });
 
@@ -110,7 +111,8 @@ export default function CursosPage() {
         descricao: data.descricao,
         ano_inicio: encodedDuration, // stores both value and unit encoded
         ativo: data.ativo,
-        qtd_modulos: data.qtd_modulos
+        qtd_modulos: data.qtd_modulos,
+        categoria: data.categoria
       };
 
       if (editingCurso) {
@@ -350,6 +352,11 @@ export default function CursosPage() {
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
                        <div className="font-semibold text-slate-900">{curso.nome}</div>
+                      {curso.categoria && (
+                        <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-bold uppercase rounded-md border border-blue-100">
+                          {curso.categoria}
+                        </span>
+                      )}
                     </div>
                     <div className="text-xs text-slate-500 truncate max-w-[200px]">
                        {curso.descricao}
@@ -493,6 +500,19 @@ export default function CursosPage() {
 
                 <div className="hidden">
                   <input type="checkbox" {...register('ativo')} />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-sm font-semibold text-slate-700">{t.courses.category}</label>
+                  <select
+                    {...register('categoria')}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
+                  >
+                    <option value="">Selecione uma categoria</option>
+                    <option value="Expedito">{t.courses.categoryExpedito}</option>
+                    <option value="Especial">{t.courses.categoryEspecial}</option>
+                    <option value="Carreira">{t.courses.categoryCarreira}</option>
+                  </select>
                 </div>
 
                 <div className="flex gap-3 pt-6">
