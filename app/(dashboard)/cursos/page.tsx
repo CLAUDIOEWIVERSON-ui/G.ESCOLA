@@ -58,8 +58,6 @@ export default function CursosPage() {
       duracao: 1,
       duracao_unidade: 'ano',
       ativo: true,
-      internacional: false,
-      localizacao: '',
       qtd_modulos: 4,
     }
   });
@@ -111,8 +109,6 @@ export default function CursosPage() {
         nome: data.nome,
         descricao: data.descricao,
         ano_inicio: encodedDuration, // stores both value and unit encoded
-        localizacao: data.localizacao,
-        internacional: data.internacional,
         ativo: data.ativo,
         qtd_modulos: data.qtd_modulos
       };
@@ -337,30 +333,25 @@ export default function CursosPage() {
                 <th className="px-6 py-4 font-semibold">{t.courses.name}</th>
                 <th className="px-6 py-4 font-semibold text-center">{t.nav.subjects}</th>
                 <th className="px-6 py-4 font-semibold">{t.courses.duration}</th>
-                <th className="px-6 py-4 font-semibold">{t.courses.location}</th>
                 <th className="px-6 py-4 font-semibold text-right">{t.common.actions}</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-slate-500">{t.common.loading}</td>
+                  <td colSpan={4} className="px-6 py-8 text-center text-slate-500">{t.common.loading}</td>
                 </tr>
               ) : filteredCursos.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-slate-500">{t.common.noneFound}</td>
+                  <td colSpan={4} className="px-6 py-8 text-center text-slate-500">{t.common.noneFound}</td>
                 </tr>
               ) : filteredCursos.map((curso) => (
                 <tr key={curso.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors group">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
                        <div className="font-semibold text-slate-900">{curso.nome}</div>
-                       {curso.internacional && (
-                         <span className="px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 text-[8px] font-bold uppercase tracking-widest border border-purple-200">{language === 'pt' ? 'Exterior' : 'Abroad'}</span>
-                       )}
                     </div>
                     <div className="text-xs text-slate-500 truncate max-w-[200px]">
-                       {curso.localizacao && <span className="text-slate-900 font-bold mr-1">[{curso.localizacao}]</span>}
                        {curso.descricao}
                     </div>
                   </td>
@@ -389,17 +380,6 @@ export default function CursosPage() {
                         {curso.qtd_modulos || 4} {t.grades.module}s
                       </span>
                     </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    {curso.internacional ? (
-                      <span className="px-2.5 py-1 text-[10px] font-bold uppercase rounded bg-purple-100 text-purple-700 ring-1 ring-inset ring-purple-600/20">
-                        {t.courses.international}
-                      </span>
-                    ) : (
-                      <span className="px-2.5 py-1 text-[10px] font-bold uppercase rounded bg-blue-100 text-blue-700 ring-1 ring-inset ring-blue-600/10">
-                        {t.courses.national}
-                      </span>
-                    )}
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-1">
@@ -509,26 +489,6 @@ export default function CursosPage() {
                     className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
                   />
                   {errors.qtd_modulos && <p className="text-xs text-red-500 mt-1">{errors.qtd_modulos.message}</p>}
-                </div>
-
-                <div className="flex flex-col justify-center pt-2">
-                  <label className="flex items-center gap-3 cursor-pointer group">
-                    <input
-                      type="checkbox"
-                      {...register('internacional')}
-                      className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500"
-                    />
-                    <span className="text-sm font-bold text-slate-700 group-hover:text-purple-600 transition-colors">{t.courses.international}</span>
-                  </label>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-sm font-semibold text-slate-700">{t.courses.location}</label>
-                  <input
-                    {...register('localizacao')}
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
-                    placeholder="Ex: Portugal, Angola, Brasília..."
-                  />
                 </div>
 
                 <div className="hidden">

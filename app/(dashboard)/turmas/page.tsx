@@ -97,7 +97,9 @@ export default function TurmasPage() {
       instrutor: '', 
       status: 'ativa',
       data_inicio: '',
-      data_fim: ''
+      data_fim: '',
+      internacional: false,
+      localizacao: ''
     });
     setIsModalOpen(true);
   };
@@ -424,47 +426,45 @@ export default function TurmasPage() {
     setSaving(true);
 
     try {
+      if (!currentTurma.curso_id) {
+        throw new Error(language === 'pt' ? 'Por favor, selecione um curso.' : 'Please select a course.');
+      }
+
+      const payload = {
+        nome: currentTurma.nome || '',
+        curso_id: currentTurma.curso_id,
+        ano: currentTurma.ano || new Date().getFullYear(),
+        periodo: currentTurma.periodo || 'manhã',
+        capacidade_max: currentTurma.capacidade_max || 40,
+        instrutor: currentTurma.instrutor || '',
+        status: currentTurma.status || 'ativa',
+        ativa: (currentTurma.status || 'ativa') === 'ativa',
+        data_inicio: typeof currentTurma.data_inicio === 'string' ? currentTurma.data_inicio.trim() || null : null,
+        data_fim: typeof currentTurma.data_fim === 'string' ? currentTurma.data_fim.trim() || null : null,
+        internacional: currentTurma.internacional || false,
+        localizacao: currentTurma.localizacao || ''
+      };
+
       if (currentTurma.id) {
         const { error } = await supabase
           .from('turmas')
-          .update({
-            nome: currentTurma.nome,
-            curso_id: currentTurma.curso_id,
-            ano: currentTurma.ano,
-            periodo: currentTurma.periodo,
-            capacidade_max: currentTurma.capacidade_max,
-            instrutor: currentTurma.instrutor,
-            status: currentTurma.status || 'ativa',
-            ativa: currentTurma.status === 'ativa',
-            data_inicio: currentTurma.data_inicio || null,
-            data_fim: currentTurma.data_fim || null
-          })
+          .update(payload)
           .eq('id', currentTurma.id);
-        if (error) throw error;
+        if (error) throw new Error(error.message + (error.details ? ` (${error.details})` : ''));
       } else {
         const { error } = await supabase
           .from('turmas')
-          .insert([
-            {
-              nome: currentTurma.nome,
-              curso_id: currentTurma.curso_id,
-              ano: currentTurma.ano,
-              periodo: currentTurma.periodo,
-              capacidade_max: currentTurma.capacidade_max,
-              instrutor: currentTurma.instrutor,
-              status: currentTurma.status || 'ativa',
-              ativa: (currentTurma.status || 'ativa') === 'ativa',
-              data_inicio: currentTurma.data_inicio || null,
-              data_fim: currentTurma.data_fim || null
-            }
-          ]);
-        if (error) throw error;
+          .insert([payload]);
+        if (error) throw new Error(error.message + (error.details ? ` (${error.details})` : ''));
       }
 
       await refreshData();
       setIsModalOpen(false);
     } catch (err: any) {
-      alert(err.message);
+      console.error('Error saving class (full error):', err);
+      // Construct a better error message showing detail, hint or message
+      const errorMsg = err.message || err.details || err.hint || (typeof err === 'object' ? JSON.stringify(err) : String(err));
+      alert(language === 'pt' ? `Erro ao salvar: ${errorMsg}` : `Error saving: ${errorMsg}`);
     } finally {
       setSaving(false);
     }
@@ -547,6 +547,17 @@ export default function TurmasPage() {
                 </div>
                 
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2">
+                  {turma.internacional && (
+                    <span className="px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 text-[8px] font-bold uppercase tracking-widest border border-purple-200">
+                      {t.courses.international}
+                    </span>
+                  )}
+                  {turma.localizacao && (
+                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                      <MapPin size={12} className="text-slate-400" />
+                      {turma.localizacao}
+                    </span>
+                  )}
                   {turma.instrutor && (
                     <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
                       <div className="w-1.5 h-1.5 bg-blue-400 rounded-full" />
@@ -679,7 +690,10 @@ export default function TurmasPage() {
                 required
                 type="number"
                 value={currentTurma?.ano || ''}
-                onChange={(e) => setCurrentTurma({ ...currentTurma, ano: parseInt(e.target.value) })}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value);
+                  setCurrentTurma({ ...currentTurma, ano: isNaN(val) ? new Date().getFullYear() : val });
+                }}
                 className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm"
               />
             </div>
@@ -709,7 +723,10 @@ export default function TurmasPage() {
                 required
                 type="number"
                 value={currentTurma?.capacidade_max || ''}
-                onChange={(e) => setCurrentTurma({ ...currentTurma, capacidade_max: parseInt(e.target.value) })}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value);
+                  setCurrentTurma({ ...currentTurma, capacidade_max: isNaN(val) ? 40 : val });
+                }}
                 className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm"
               />
             </div>
@@ -751,6 +768,33 @@ export default function TurmasPage() {
                 value={currentTurma?.data_fim || ''}
                 onChange={(e) => setCurrentTurma({ ...currentTurma, data_fim: e.target.value })}
                 className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-4 pt-2">
+            <label className="flex items-center gap-3 cursor-pointer group">
+              <input
+                type="checkbox"
+                checked={currentTurma?.internacional || false}
+                onChange={(e) => setCurrentTurma({ ...currentTurma, internacional: e.target.checked })}
+                className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 border-slate-300"
+              />
+              <span className="text-sm font-bold text-slate-700 group-hover:text-purple-600 transition-colors uppercase tracking-wider">
+                {t.courses.international}
+              </span>
+            </label>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                {t.courses.location}
+              </label>
+              <input
+                type="text"
+                value={currentTurma?.localizacao || ''}
+                onChange={(e) => setCurrentTurma({ ...currentTurma, localizacao: e.target.value })}
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm"
+                placeholder="Ex: Portugal, Luanda, Brasília..."
               />
             </div>
           </div>

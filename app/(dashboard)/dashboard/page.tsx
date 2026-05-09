@@ -6,15 +6,19 @@ import { useI18n } from '@/lib/i18n/LanguageContext';
 import { 
   Users, 
   BookOpen, 
-  GraduationCap
+  GraduationCap,
+  Layers
 } from 'lucide-react';
 import { motion } from 'motion/react';
+import Image from 'next/image';
 
 export default function DashboardPage() {
   const { t } = useI18n();
   const [stats, setStats] = useState({
-    cursosInternacionais: 0,
+    turmasInternacionais: 0,
     alunosExterior: 0,
+    totalAlunos: 0,
+    totalTurmas: 0,
   });
   const [alunosExterior, setAlunosExterior] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,12 +28,20 @@ export default function DashboardPage() {
       setLoading(true);
       try {
         const [
-          { count: cursosIntCount },
-          { data: alunosData }
+          { count: turmasIntCount },
+          { count: totalAlunosCount },
+          { count: totalTurmasCount },
+          { data: alunosExteriorData }
         ] = await Promise.all([
-          supabase.from('cursos')
+          supabase.from('turmas')
             .select('*', { count: 'exact', head: true })
             .eq('internacional', true)
+            .is('deleted_at', null),
+          supabase.from('alunos')
+            .select('*', { count: 'exact', head: true })
+            .is('deleted_at', null),
+          supabase.from('turmas')
+            .select('*', { count: 'exact', head: true })
             .is('deleted_at', null),
           supabase.from('alunos')
             .select(`
@@ -37,36 +49,30 @@ export default function DashboardPage() {
               nome,
               posto_graduacao,
               om,
-              turma:turmas(
+              foto_url,
+              turma:turmas!inner(
                 nome,
                 ano,
                 data_inicio,
                 data_fim,
+                internacional,
+                localizacao,
                 curso:cursos(
-                  nome,
-                  internacional,
-                  localizacao,
-                  data_inicio,
-                  data_fim
+                  nome
                 )
               )
             `)
+            .eq('turma.internacional', true)
             .is('deleted_at', null)
         ]);
 
-        // Filter students in international courses
-        const filteredAlunosExterior = alunosData?.filter(a => {
-          const turmaData = Array.isArray((a as any).turma) ? (a as any).turma[0] : (a as any).turma;
-          if (!turmaData) return false;
-          const cursoData = Array.isArray(turmaData.curso) ? turmaData.curso[0] : turmaData.curso;
-          return !!cursoData?.internacional;
-        }) || [];
-
         setStats({
-          cursosInternacionais: cursosIntCount || 0,
-          alunosExterior: filteredAlunosExterior.length,
+          turmasInternacionais: turmasIntCount || 0,
+          alunosExterior: alunosExteriorData?.length || 0,
+          totalAlunos: totalAlunosCount || 0,
+          totalTurmas: totalTurmasCount || 0,
         });
-        setAlunosExterior(filteredAlunosExterior);
+        setAlunosExterior(alunosExteriorData || []);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
       } finally {
@@ -77,13 +83,15 @@ export default function DashboardPage() {
   }, []);
 
   const statCards = [
-    { name: t.dashboard.internationalCourses, value: stats.cursosInternacionais, icon: BookOpen, color: 'bg-emerald-600' },
+    { name: t.dashboard.totalStudents, value: stats.totalAlunos, icon: Users, color: 'bg-blue-600' },
+    { name: t.dashboard.activeClasses, value: stats.totalTurmas, icon: Layers, color: 'bg-slate-700' },
+    { name: t.dashboard.activeClassesIntl, value: stats.turmasInternacionais, icon: BookOpen, color: 'bg-emerald-600' },
     { name: t.dashboard.studentsAbroad, value: stats.alunosExterior, icon: GraduationCap, color: 'bg-purple-600' },
   ];
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {statCards.map((card, i) => (
           <motion.div
             key={card.name}
@@ -120,8 +128,8 @@ export default function DashboardPage() {
             <thead>
               <tr className="text-[10px] font-bold text-slate-400 border-b border-slate-100 uppercase tracking-wider">
                 <th className="px-6 py-4">{t.students.name}</th>
-                <th className="px-6 py-4">Curso / Local</th>
-                <th className="px-6 py-4 text-center">Início / Fim</th>
+                <th className="px-6 py-4">{t.dashboard.courseLocation}</th>
+                <th className="px-6 py-4 text-center">{t.dashboard.startEnd}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50 text-sm">
@@ -138,19 +146,39 @@ export default function DashboardPage() {
                   return (
                     <tr key={aluno.id} className="hover:bg-slate-50 transition-colors">
                       <td className="px-6 py-4">
-                        <div className="font-bold text-slate-800">
-                          {aluno.posto_graduacao ? `${aluno.posto_graduacao} ` : ''}{aluno.nome}
-                        </div>
-                        <div className="text-[10px] text-slate-400 font-mono uppercase">
-                          {aluno.om || '-'}
+                        <div className="flex items-center gap-3">
+                          {aluno.foto_url ? (
+                            <div className="w-8 h-8 rounded-full overflow-hidden border border-slate-200 shrink-0">
+                              <Image 
+                                src={aluno.foto_url} 
+                                alt={aluno.nome} 
+                                width={32} 
+                                height={32} 
+                                className="object-cover" 
+                                referrerPolicy="no-referrer" 
+                              />
+                            </div>
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 shrink-0">
+                              <Users size={14} />
+                            </div>
+                          )}
+                          <div>
+                            <div className="font-bold text-slate-800">
+                              {aluno.posto_graduacao ? `${aluno.posto_graduacao} ` : ''}{aluno.nome}
+                            </div>
+                            <div className="text-[10px] text-slate-400 font-mono uppercase">
+                              {aluno.om || '-'}
+                            </div>
+                          </div>
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="text-slate-600">{curso?.nome || '-'}</div>
-                        <div className="text-[10px] text-slate-400 uppercase font-bold">{curso?.localizacao || '-'}</div>
+                        <div className="text-[10px] text-slate-400 uppercase font-bold">{turmaData?.localizacao || '-'}</div>
                       </td>
                       <td className="px-6 py-4 text-center text-slate-500 font-mono text-xs">
-                        {turmaData?.data_inicio ? new Date(turmaData.data_inicio).getFullYear() : (curso?.data_inicio ? new Date(curso.data_inicio).getFullYear() : '-')} / {turmaData?.data_fim ? new Date(turmaData.data_fim).getFullYear() : (curso?.data_fim ? new Date(curso.data_fim).getFullYear() : '-')}
+                        {turmaData?.data_inicio ? new Date(turmaData.data_inicio).getFullYear() : '-'} / {turmaData?.data_fim ? new Date(turmaData.data_fim).getFullYear() : '-'}
                       </td>
                     </tr>
                   );
