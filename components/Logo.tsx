@@ -13,33 +13,33 @@ export function Logo({ className, collapsed = false }: { className?: string, col
           animate={{ scale: 1, opacity: 1 }}
           className="relative w-full h-full"
         >
-          {/* The Shield (Escudo) */}
+          {/* The Flag Rectangle */}
           <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-md">
-            {/* Shield Outline (Gold/Bronze) */}
-            <path 
-              d="M10 20 C 10 10, 90 10, 90 20 C 90 50, 90 60, 50 90 C 10 60, 10 50, 10 20 Z" 
+            {/* Rectangular Flag Background */}
+            <rect 
+              x="5" y="25" width="90" height="50" rx="4"
               fill="#009b3a" 
               stroke="#D4AF37" 
-              strokeWidth="4"
+              strokeWidth="3"
             />
             
-            {/* Brazilian Flag Elements inside the shield */}
+            {/* Brazilian Flag Elements inside the rectangle */}
             {/* Yellow Diamond */}
-            <path d="M50 25 L 82 45 L 50 65 L 18 45 Z" fill="#fedd00" />
+            <path d="M50 32 L 85 50 L 50 68 L 15 50 Z" fill="#fedd00" />
             
             {/* Blue Circle */}
-            <circle cx="50" cy="45" r="14" fill="#002776" />
+            <circle cx="50" cy="50" r="10" fill="#002776" />
             
             {/* White Band */}
             <path 
-              d="M37 48 Q 50 42 63 48" 
+              d="M42 52 Q 50 48 58 52" 
               fill="none" 
               stroke="white" 
-              strokeWidth="2" 
+              strokeWidth="1.5" 
               strokeLinecap="round"
             />
 
-            {/* The Quill (Pena) - Crossing the shield */}
+            {/* The Quill (Pena) - Adjusted for the rectangular flag */}
             <motion.path 
               initial={{ pathLength: 0 }}
               animate={{ pathLength: 1 }}
@@ -47,7 +47,7 @@ export function Logo({ className, collapsed = false }: { className?: string, col
               d="M75 15 C 70 30, 60 70, 45 85 L 42 88" 
               fill="none" 
               stroke="#B8860B" 
-              strokeWidth="5" 
+              strokeWidth="4" 
               strokeLinecap="round"
             />
             {/* Feather details */}
@@ -58,8 +58,8 @@ export function Logo({ className, collapsed = false }: { className?: string, col
             />
 
             {/* The Inkwell (Tinteiro) - At the base */}
-            <rect x="48" y="75" width="20" height="15" rx="3" fill="#B8860B" stroke="#8B4513" strokeWidth="1" />
-            <rect x="52" y="78" width="12" height="9" rx="1" fill="#1a1a1a" />
+            <rect x="48" y="78" width="20" height="12" rx="2" fill="#B8860B" stroke="#8B4513" strokeWidth="1" />
+            <rect x="52" y="80" width="12" height="7" rx="1" fill="#1a1a1a" />
           </svg>
         </motion.div>
       </div>
