@@ -71,10 +71,10 @@ export function Logo({ className, collapsed = false }: { className?: string, col
           className="flex flex-col"
         >
           <span className="font-bold text-white tracking-tight leading-none text-lg">
-            EduStream
+            SISTEMA DE
           </span>
           <span className="text-[10px] font-bold text-yellow-400 uppercase tracking-widest mt-0.5">
-            Sistema de Gestão
+            GESTÃO ESCOLAR
           </span>
         </motion.div>
       )}

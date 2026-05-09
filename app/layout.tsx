@@ -4,7 +4,7 @@ import { LanguageProvider } from '@/lib/i18n/LanguageContext';
 import { UserProvider } from '@/lib/auth/UserContext';
 
 export const metadata: Metadata = {
-  title: 'SGE - Sistema de Gestão Escolar',
+  title: 'SISTEMA DE GESTÃO ESCOLAR',
   description: 'Sistema completo de gerenciamento escolar',
 };
 
