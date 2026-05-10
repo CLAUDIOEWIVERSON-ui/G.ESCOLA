@@ -113,6 +113,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <div className="space-y-1">
                 {navItems.slice(4).map((item) => {
                   const isActive = pathname === item.path;
+                  const isCalendario = item.path === '/calendario';
                   return (
                     <Link 
                       key={item.path} 
@@ -125,7 +126,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       )}
                     >
                       <item.icon size={18} className={cn("shrink-0 opacity-75", isActive ? "text-white" : "text-slate-400 group-hover:text-white")} />
-                      <span className={cn("text-sm transition-opacity whitespace-nowrap", !sidebarOpen && "opacity-0 invisible w-0")}>
+                      <span className={cn(
+                        "text-sm transition-opacity whitespace-nowrap px-2 py-0.5 rounded",
+                        !sidebarOpen && "opacity-0 invisible w-0",
+                        isCalendario && "bg-[#dfe0e7] text-[#518aff] drop-shadow-[0_0_8px_rgba(81,138,255,0.6)] font-bold uppercase border border-[#518aff]/30"
+                      )}>
                         {item.name}
                       </span>
                     </Link>
