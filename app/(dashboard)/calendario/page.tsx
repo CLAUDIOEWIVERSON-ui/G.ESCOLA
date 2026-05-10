@@ -201,7 +201,7 @@ export default function CalendarPage() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-800">{t.calendar.title}</h2>
+          <h2 className="text-xl font-bold text-blue-600 drop-shadow-[0_0_10px_rgba(37,99,235,0.5)] uppercase tracking-tight">{t.calendar.title}</h2>
           <p className="text-sm text-slate-500">{t.calendar.subtitle}</p>
         </div>
         {!isGuest && (
