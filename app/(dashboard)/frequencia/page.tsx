@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/LanguageContext';
+import { useUser } from '@/lib/auth/UserContext';
 import { 
   CalendarDays, 
   Search, 
@@ -20,7 +21,8 @@ import {
   Target,
   BarChart3,
   CalendarDays as CalendarIcon,
-  Calendar
+  Calendar,
+  ShieldAlert
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
@@ -45,6 +47,8 @@ import { ptBR, enUS } from 'date-fns/locale';
 
 export default function FrequenciaPage() {
   const { t, language } = useI18n();
+  const { isAdmin } = useUser();
+  const isReadOnly = !isAdmin;
   const dateLocale = language === 'pt' ? ptBR : enUS;
 
   const [loading, setLoading] = useState(false);
@@ -156,6 +160,7 @@ export default function FrequenciaPage() {
   }, [fetchAttendance]);
 
   const handleToggleAttendance = (alunoId: string) => {
+    if (isReadOnly) return;
     setAttendanceRecords(prev => ({
       ...prev,
       [alunoId]: { ...prev[alunoId], presente: !prev[alunoId].presente }
@@ -163,7 +168,7 @@ export default function FrequenciaPage() {
   };
 
   const handleSaveAttendance = async () => {
-    if (!selectedTurma) return;
+    if (!selectedTurma || isReadOnly) return;
     if (!selectedDate) {
       alert(language === 'pt' ? 'Por favor, selecione uma data válida.' : 'Please select a valid date.');
       return;
@@ -399,14 +404,16 @@ export default function FrequenciaPage() {
                     </div>
                   </div>
 
-                  <button
-                    onClick={handleSaveAttendance}
-                    disabled={saving || !selectedTurma}
-                    className="flex items-center justify-center gap-3 bg-blue-900 text-white px-8 py-3.5 rounded-2xl text-sm font-black hover:bg-blue-800 transition-all shadow-xl shadow-blue-900/20 disabled:opacity-50 active:scale-95"
-                  >
-                    <Save size={20} className={cn(saving && "animate-spin")} />
-                    {t.attendance.saveCall || 'Salvar Chamada'}
-                  </button>
+                  {!isReadOnly && (
+                    <button
+                      onClick={handleSaveAttendance}
+                      disabled={saving || !selectedTurma}
+                      className="flex items-center justify-center gap-3 bg-blue-900 text-white px-8 py-3.5 rounded-2xl text-sm font-black hover:bg-blue-800 transition-all shadow-xl shadow-blue-900/20 disabled:opacity-50 active:scale-95"
+                    >
+                      <Save size={20} className={cn(saving && "animate-spin")} />
+                      {t.attendance.saveCall || 'Salvar Chamada'}
+                    </button>
+                  )}
                 </div>
               </div>
 

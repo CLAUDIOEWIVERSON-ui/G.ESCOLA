@@ -30,8 +30,8 @@ interface Evento {
 
 export default function CalendarPage() {
   const { t } = useI18n();
-  const { isAdmin, isAluno } = useUser();
-  const isGuest = isAluno;
+  const { isAdmin } = useUser();
+  const isReadOnly = !isAdmin;
   
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [loading, setLoading] = useState(true);
@@ -104,7 +104,7 @@ export default function CalendarPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isGuest) return;
+    if (isReadOnly) return;
 
     // Ensure we send a valid timestamp to Postgres
     const timestamp = new Date(`${formData.data}T12:00:00`).toISOString();
@@ -153,7 +153,7 @@ export default function CalendarPage() {
   const [eventToDelete, setEventToDelete] = useState<string | null>(null);
 
   const handleDelete = async (id: string) => {
-    if (isGuest) return;
+    if (isReadOnly) return;
     setLoading(true);
     try {
       const { error } = await supabase
@@ -204,7 +204,7 @@ export default function CalendarPage() {
           <h2 className="text-xl font-bold text-blue-600 drop-shadow-[0_0_10px_rgba(37,99,235,0.5)] uppercase tracking-tight">{t.calendar.title}</h2>
           <p className="text-sm text-slate-500">{t.calendar.subtitle}</p>
         </div>
-        {!isGuest && (
+        {!isReadOnly && (
           <button 
             onClick={() => {
               setEditingEvent(null);
@@ -295,7 +295,7 @@ export default function CalendarPage() {
                           </span>
                         </div>
                       </div>
-                      {!isGuest && (
+                      {!isReadOnly && (
                         <div className="flex items-center gap-1">
                           {eventToDelete === evento.id ? (
                             <div className="flex items-center gap-1 bg-rose-50 p-1 rounded-lg border border-rose-100">

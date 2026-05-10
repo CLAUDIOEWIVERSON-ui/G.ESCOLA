@@ -15,8 +15,8 @@ import { cn } from '@/lib/utils';
 
 export default function NotasPage() {
   const { t, language } = useI18n();
-  const { isAdmin, isAluno } = useUser();
-  const isGuest = isAluno;
+  const { isAdmin } = useUser();
+  const isReadOnly = !isAdmin;
   const [notas, setNotas] = useState<any[]>([]);
   const [alunos, setAlunos] = useState<any[]>([]);
   const [disciplinas, setDisciplinas] = useState<any[]>([]);
@@ -178,7 +178,7 @@ export default function NotasPage() {
   };
 
   const saveStudent = async (alunoId: string) => {
-    if (isGuest) return;
+    if (isReadOnly) return;
     const studentGrades = bulkNotas[alunoId];
     if (!studentGrades) return;
 
@@ -226,7 +226,7 @@ export default function NotasPage() {
   };
 
   const saveAll = async () => {
-    if (isGuest) return;
+    if (isReadOnly) return;
     setSaving(true);
     try {
       const allGrades = Object.values(bulkNotas).flatMap(studentMap => Object.values(studentMap));
@@ -420,7 +420,7 @@ export default function NotasPage() {
                         <td className="px-4 py-4 text-right border-l border-slate-100">
                           <button
                             onClick={() => saveStudent(aluno.id)}
-                            disabled={isSavingRow || isGuest}
+                            disabled={isSavingRow || isReadOnly}
                             className={cn(
                               "p-2.5 rounded-xl transition-all",
                               isSavingRow ? "bg-slate-100 text-slate-400" :
@@ -439,14 +439,16 @@ export default function NotasPage() {
             </div>
 
             <div className="flex justify-end pt-6 border-t border-slate-100">
-              <button
-                onClick={saveAll}
-                disabled={saving || isGuest}
-                className="flex items-center gap-2 px-8 py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 disabled:opacity-50"
-              >
-                {saving ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} />}
-                {t.grades.saveAll}
-              </button>
+              {!isReadOnly && (
+                <button
+                  onClick={saveAll}
+                  disabled={saving}
+                  className="flex items-center gap-2 px-8 py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 disabled:opacity-50"
+                >
+                  {saving ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} />}
+                  {t.grades.saveAll}
+                </button>
+              )}
             </div>
           </div>
         )}

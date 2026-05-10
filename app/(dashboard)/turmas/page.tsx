@@ -16,8 +16,8 @@ import { useRef } from 'react';
 
 export default function TurmasPage() {
   const { t, language } = useI18n();
-  const { isAdmin, isAluno } = useUser();
-  const isGuest = isAluno;
+  const { isAdmin } = useUser();
+  const isReadOnly = !isAdmin;
   const [turmas, setTurmas] = useState<any[]>([]);
   const [cursos, setCursos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -87,7 +87,7 @@ export default function TurmasPage() {
   const refreshData = () => fetchTurmas(true);
 
   const handleOpenModal = (turma: any = null) => {
-    if (isGuest) return;
+    if (isReadOnly) return;
     setCurrentTurma(turma || { 
       nome: '', 
       curso_id: '', 
@@ -127,7 +127,7 @@ export default function TurmasPage() {
   };
 
   const handleOpenStudentModal = (aluno: any = null) => {
-    if (isGuest) return;
+    if (isReadOnly) return;
     setCurrentAluno(aluno || { 
       nome: '', 
       email: '', 
@@ -210,6 +210,7 @@ export default function TurmasPage() {
 
   const handleSaveStudent = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isReadOnly) return;
     setSavingStudent(true);
 
     try {
@@ -278,6 +279,7 @@ export default function TurmasPage() {
   };
 
   const handleDeleteStudent = async (id: string) => {
+    if (isReadOnly) return;
     setConfirmConfig({
       isOpen: true,
       title: t.common.delete,
@@ -306,7 +308,7 @@ export default function TurmasPage() {
   };
 
   const handleDeleteAllStudents = async () => {
-    if (!viewingTurma || alunosInTurma.length === 0) return;
+    if (!viewingTurma || alunosInTurma.length === 0 || isReadOnly) return;
     
     setConfirmConfig({
       isOpen: true,
@@ -336,7 +338,7 @@ export default function TurmasPage() {
 
   const handleBulkSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!bulkData.trim() || !viewingTurma) return;
+    if (!bulkData.trim() || !viewingTurma || isReadOnly) return;
     setSavingStudent(true);
 
     try {
@@ -423,6 +425,7 @@ export default function TurmasPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isReadOnly) return;
     setSaving(true);
 
     try {
@@ -471,6 +474,7 @@ export default function TurmasPage() {
   };
 
   const handleDelete = async (id: string) => {
+    if (isReadOnly) return;
     setConfirmConfig({
       isOpen: true,
       title: t.common.delete,
@@ -510,7 +514,7 @@ export default function TurmasPage() {
           >
             <RefreshCcw size={18} className={refreshing ? "animate-spin" : ""} />
           </button>
-          {!isGuest && (
+          {!isReadOnly && (
             <button 
               onClick={() => handleOpenModal()}
               className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-all shadow-sm shadow-blue-100"
@@ -601,7 +605,7 @@ export default function TurmasPage() {
             </div>
 
             <div className="flex items-center gap-2 shrink-0 border-t md:border-t-0 md:border-l border-slate-100 pt-3 md:pt-0 md:pl-4" onClick={(e) => e.stopPropagation()}>
-              {!isGuest && (
+              {!isReadOnly && (
                 <>
                   <button 
                     onClick={() => handleOpenModal(turma)}
@@ -829,7 +833,7 @@ export default function TurmasPage() {
             {alunosInTurma.length} {language === 'pt' ? 'alunos matriculados' : 'students enrolled'}
           </p>
           <div className="flex gap-2">
-            {!isGuest && (
+            {!isReadOnly && (
               <>
                 <button
                   onClick={() => setIsBulkModalOpen(true)}
@@ -880,7 +884,7 @@ export default function TurmasPage() {
                       >
                         <CreditCard size={14} />
                       </button>
-                      {!isGuest && (
+                      {!isReadOnly && (
                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button 
                             onClick={() => handleOpenStudentModal(aluno)}
@@ -914,7 +918,7 @@ export default function TurmasPage() {
           >
             {t.common.close}
           </button>
-          {!isGuest && alunosInTurma.length > 0 && (
+          {!isReadOnly && alunosInTurma.length > 0 && (
             <button
               disabled={deletingAll}
               onClick={handleDeleteAllStudents}

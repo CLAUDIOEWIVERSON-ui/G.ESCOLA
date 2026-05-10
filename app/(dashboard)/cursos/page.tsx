@@ -30,8 +30,8 @@ type Curso = z.infer<typeof cursoSchema> & { id: string };
 
 export default function CursosPage() {
   const { t, language } = useI18n();
-  const { isAdmin, isAluno } = useUser();
-  const isGuest = isAluno;
+  const { isAdmin } = useUser();
+  const isReadOnly = !isAdmin;
   const [cursos, setCursos] = useState<Curso[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -99,7 +99,7 @@ export default function CursosPage() {
   }, []);
 
   const onSubmit = async (data: z.infer<typeof cursoSchema>) => {
-    if (isGuest) return;
+    if (isReadOnly) return;
     try {
       const units = ['dia', 'semana', 'mes', 'ano'];
       const unitIdx = units.indexOf(data.duracao_unidade);
@@ -137,7 +137,7 @@ export default function CursosPage() {
   };
 
   const deleteCurso = async (id: string) => {
-    if (isGuest) return;
+    if (isReadOnly) return;
     if (confirm(t.common.deleteConfirm)) {
       const { error } = await supabase
         .from('cursos')
@@ -167,14 +167,14 @@ export default function CursosPage() {
   }, [manageDisciplinasCurso, fetchDisciplinas]);
 
   const handleOpenDisciplinaModal = (disciplina: any = null) => {
-    if (isGuest) return;
+    if (isReadOnly) return;
     setCurrentDisciplina(disciplina || { nome: '', codigo: '', carga_horaria: 60, curso_id: manageDisciplinasCurso?.id });
     setIsDisciplinaModalOpen(true);
   };
 
   const handleSaveDisciplina = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!manageDisciplinasCurso) return;
+    if (!manageDisciplinasCurso || isReadOnly) return;
     setSavingDisciplina(true);
 
     try {
@@ -209,7 +209,7 @@ export default function CursosPage() {
   };
 
   const deleteDisciplina = async (id: string) => {
-    if (isGuest || !manageDisciplinasCurso) return;
+    if (isReadOnly || !manageDisciplinasCurso) return;
     if (confirm(t.common.deleteConfirm)) {
       setLoadingDisciplinas(true);
       const { error } = await supabase
@@ -227,7 +227,7 @@ export default function CursosPage() {
 
   const handleBulkSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isGuest) return;
+    if (isReadOnly) return;
     setSaving(true);
 
     try {
@@ -293,7 +293,7 @@ export default function CursosPage() {
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{t.courses.title}</h1>
           <p className="text-slate-500 text-sm">{language === 'pt' ? 'Visualize e gerencie os cursos oferecidos pela instituição.' : 'View and manage the courses offered by the institution.'}</p>
         </div>
-        {!isGuest && (
+        {!isReadOnly && (
           <div className="flex gap-2">
             <button 
               onClick={() => setIsBulkModalOpen(true)}
@@ -390,7 +390,7 @@ export default function CursosPage() {
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-1">
-                      {!isGuest && (
+                      {!isReadOnly && (
                         <>
                           <button 
                             onClick={() => { setEditingCurso(curso); reset(curso); setModalOpen(true); }}
@@ -544,7 +544,7 @@ export default function CursosPage() {
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">{t.subjects.list}</div>
-            {!isGuest && (
+            {!isReadOnly && (
               <button 
                 onClick={() => handleOpenDisciplinaModal()}
                 className="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-xs font-bold uppercase transition-colors"
@@ -582,7 +582,7 @@ export default function CursosPage() {
                       </div>
                     </div>
                   </div>
-                  {!isGuest && (
+                  {!isReadOnly && (
                     <div className="flex gap-1">
                       <button 
                         onClick={() => handleOpenDisciplinaModal(d)}

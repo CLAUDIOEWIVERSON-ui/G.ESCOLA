@@ -33,7 +33,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const { t, language } = useI18n();
   const { profile, isAdmin, isAluno, isProfessor, loading: authLoading } = useUser();
-  const isGuest = isAluno;
+  const isReadOnly = !isAdmin;
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const handleLogout = async () => {
@@ -183,8 +183,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </h1>
               <div className="flex items-center gap-2 mt-1">
                 <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">{t.auth.term}</p>
-                {isGuest && (
-                  <span className="text-[8px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-bold uppercase tracking-widest border border-amber-200">
+                {isReadOnly && (
+                  <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-bold uppercase tracking-widest border border-amber-200 flex items-center gap-1 shadow-sm">
+                    <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse" />
                     {t.users.readOnlyWarning}
                   </span>
                 )}

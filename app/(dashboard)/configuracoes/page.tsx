@@ -18,8 +18,8 @@ import { cn } from '@/lib/utils';
 
 export default function ConfiguracoesPage() {
   const { t } = useI18n();
-  const { isAdmin, isAluno } = useUser();
-  const isGuest = isAluno; // For backward compatibility in logic
+  const { isAdmin } = useUser();
+  const isReadOnly = !isAdmin;
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [config, setConfig] = useState<any>({
@@ -56,7 +56,7 @@ export default function ConfiguracoesPage() {
   }, []);
 
   const handleSave = async () => {
-    if (isGuest) return;
+    if (isReadOnly) return;
     setSaving(true);
     try {
       const { error } = await supabase
@@ -171,7 +171,7 @@ export default function ConfiguracoesPage() {
       </div>
 
       <div className="flex justify-end pt-4">
-        {!isGuest && (
+        {!isReadOnly && (
           <button
             onClick={handleSave}
             disabled={saving}
