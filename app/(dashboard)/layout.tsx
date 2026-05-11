@@ -25,8 +25,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 
 import { useUser } from '@/lib/auth/UserContext';
-
 import { ProximityAlert } from '@/components/ProximityAlert';
+import { EventMarquee } from '@/components/EventMarquee';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -169,6 +169,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
+        <EventMarquee />
         <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 sticky top-0 z-40">
           <div className="flex items-center gap-6">
             <button 
