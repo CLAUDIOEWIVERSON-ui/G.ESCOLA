@@ -572,11 +572,6 @@ export default function TurmasPage() {
                   <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
                     <Calendar size={12} className="text-slate-300" />
                     {turma.ano}
-                    {turma.data_inicio && (
-                      <span className="text-slate-300 ml-1">
-                        ({turma.data_inicio.split('-').reverse().join('/')} - {turma.data_fim ? turma.data_fim.split('-').reverse().join('/') : '...'})
-                      </span>
-                    )}
                   </span>
                   <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1.5 capitalize">
                     <Clock size={12} className="text-slate-300" />

@@ -38,7 +38,6 @@ export const translations = {
       morning: "Manhã",
       afternoon: "Tarde",
       night: "Noite",
-      refresh: "Atualizar",
     },
     auth: {
       login: "Entrar",

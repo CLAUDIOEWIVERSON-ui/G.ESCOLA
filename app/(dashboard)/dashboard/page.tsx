@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { 
@@ -8,8 +8,7 @@ import {
   BookOpen, 
   GraduationCap,
   Layers,
-  X,
-  RefreshCcw
+  X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import Image from 'next/image';
@@ -22,65 +21,56 @@ export default function DashboardPage() {
   });
   const [alunosExterior, setAlunosExterior] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [expandedPhoto, setExpandedPhoto] = useState<{url: string, name: string} | null>(null);
 
-  const fetchDashboardData = useCallback(async (isManual = false) => {
-    if (isManual) setRefreshing(true);
-    
-    try {
-      const [
-        { count: turmasIntCount },
-        { data: alunosExteriorData }
-      ] = await Promise.all([
-        supabase.from('turmas')
-          .select('*', { count: 'exact', head: true })
-          .eq('internacional', true)
-          .is('deleted_at', null),
-        supabase.from('alunos')
-          .select(`
-            id,
-            nome,
-            posto_graduacao,
-            om,
-            foto_url,
-            turma:turmas!inner(
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      setLoading(true);
+      try {
+        const [
+          { count: turmasIntCount },
+          { data: alunosExteriorData }
+        ] = await Promise.all([
+          supabase.from('turmas')
+            .select('*', { count: 'exact', head: true })
+            .eq('internacional', true)
+            .is('deleted_at', null),
+          supabase.from('alunos')
+            .select(`
               id,
               nome,
-              ano,
-              data_inicio,
-              data_fim,
-              internacional,
-              localizacao,
-              deleted_at,
-              curso:cursos(
-                id,
-                nome
+              posto_graduacao,
+              om,
+              foto_url,
+              turma:turmas!inner(
+                nome,
+                ano,
+                data_inicio,
+                data_fim,
+                internacional,
+                localizacao,
+                curso:cursos(
+                  nome
+                )
               )
-            )
-          `)
-          .eq('turma.internacional', true)
-          .is('deleted_at', null)
-          .is('turma.deleted_at', null)
-      ]);
+            `)
+            .eq('turma.internacional', true)
+            .is('deleted_at', null)
+        ]);
 
-      setStats({
-        turmasInternacionais: turmasIntCount || 0,
-        alunosExterior: alunosExteriorData?.length || 0,
-      });
-      setAlunosExterior(alunosExteriorData || []);
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
+        setStats({
+          turmasInternacionais: turmasIntCount || 0,
+          alunosExterior: alunosExteriorData?.length || 0,
+        });
+        setAlunosExterior(alunosExteriorData || []);
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDashboardData();
   }, []);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchDashboardData(false);
-  }, [fetchDashboardData]);
 
   const statCards = [
     { name: t.dashboard.activeClassesIntl, value: stats.turmasInternacionais, icon: BookOpen, color: 'bg-emerald-600' },
@@ -120,14 +110,6 @@ export default function DashboardPage() {
             <Users size={16} className="text-slate-400" />
             {t.dashboard.studentsAbroad}
           </h3>
-          <button 
-            onClick={() => fetchDashboardData(true)}
-            disabled={loading || refreshing}
-            className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all disabled:opacity-50"
-            title={t.common.refresh}
-          >
-            <RefreshCcw size={16} className={refreshing ? "animate-spin" : ""} />
-          </button>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -187,30 +169,11 @@ export default function DashboardPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-slate-700 font-medium leading-tight">{curso?.nome || '-'}</div>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-[10px] text-blue-600 bg-blue-50 px-1.5 py-0 rounded font-black uppercase tracking-tighter border border-blue-100">
-                            {turmaData?.nome || '-'}
-                          </span>
-                          <div className="text-[10px] text-slate-400 uppercase font-bold flex items-center gap-1">
-                            <Layers size={10} className="text-slate-300" />
-                            {turmaData?.localizacao || '-'}
-                          </div>
-                        </div>
+                        <div className="text-slate-600">{curso?.nome || '-'}</div>
+                        <div className="text-[10px] text-slate-400 uppercase font-bold">{turmaData?.localizacao || '-'}</div>
                       </td>
-                      <td className="px-6 py-4 text-center">
-                        <div className="flex flex-col items-center">
-                          <div className="text-[9px] text-blue-500 font-black uppercase tracking-widest mb-1">
-                            ANO {turmaData?.ano || '-'}
-                          </div>
-                          <div className="text-slate-600 font-mono text-[11px] font-bold">
-                            {turmaData?.data_inicio ? turmaData.data_inicio.split('-').reverse().join('/') : '-'}
-                          </div>
-                          <div className="w-px h-2 bg-slate-200 my-0.5" />
-                          <div className="text-slate-400 font-mono text-[11px]">
-                            {turmaData?.data_fim ? turmaData.data_fim.split('-').reverse().join('/') : '-'}
-                          </div>
-                        </div>
+                      <td className="px-6 py-4 text-center text-slate-500 font-mono text-xs">
+                        {turmaData?.data_inicio ? new Date(turmaData.data_inicio).getFullYear() : '-'} / {turmaData?.data_fim ? new Date(turmaData.data_fim).getFullYear() : '-'}
                       </td>
                     </tr>
                   );
