@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
-import { Plus, Search, Layers, Calendar, Clock, MapPin, Pencil, Trash2, Loader2, CheckCircle2, RefreshCcw, Users, Mail, Phone, Shield, Building, CreditCard, Camera, MessageCircle, XCircle, FileText, Download, Printer } from 'lucide-react';
+import { Plus, Search, Layers, Calendar, Clock, MapPin, Pencil, Trash2, Loader2, CheckCircle2, RefreshCcw, Users, Mail, Phone, Shield, Building, CreditCard, Camera, MessageCircle, XCircle, FileText, Download, Printer, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import Modal from '@/components/Modal';
@@ -41,6 +41,7 @@ export default function TurmasPage() {
   const [alunosInTurma, setAlunosInTurma] = useState<any[]>([]);
   const [currentAluno, setCurrentAluno] = useState<any>(null);
   const [loadingAlunos, setLoadingAlunos] = useState(false);
+  const [expandedPhoto, setExpandedPhoto] = useState<{url: string, name: string} | null>(null);
   const [confirmConfig, setConfirmConfig] = useState<{
     isOpen: boolean;
     title: string;
@@ -864,9 +865,17 @@ export default function TurmasPage() {
               {alunosInTurma.map((aluno) => (
                 <div key={aluno.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100 group">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-16 bg-slate-200 rounded-lg overflow-hidden relative border border-slate-200 shrink-0 shadow-sm">
+                    <div 
+                      className="w-12 h-16 bg-slate-200 rounded-lg overflow-hidden relative border border-slate-200 shrink-0 shadow-sm hover:scale-110 transition-transform cursor-pointer group"
+                      onClick={() => setExpandedPhoto({ url: aluno.foto_url, name: aluno.nome })}
+                    >
                       {aluno.foto_url ? (
-                        <Image src={aluno.foto_url} alt={aluno.nome} fill className="object-cover" sizes="48px" referrerPolicy="no-referrer" />
+                        <>
+                          <Image src={aluno.foto_url} alt={aluno.nome} fill className="object-cover" sizes="48px" referrerPolicy="no-referrer" />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                            <Layers size={14} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
+                        </>
                       ) : (
                         <div className="flex items-center justify-center h-full text-[10px] font-bold text-slate-400">3x4</div>
                       )}
@@ -1197,16 +1206,24 @@ export default function TurmasPage() {
               </div>
 
               <div className="mt-8 mb-6 relative">
-                <div className="w-[120px] h-[160px] bg-slate-100 rounded-xl border-4 border-white shadow-lg overflow-hidden relative">
+                <div 
+                  className="w-[120px] h-[160px] bg-slate-100 rounded-xl border-4 border-white shadow-lg overflow-hidden relative cursor-pointer hover:scale-105 transition-transform group"
+                  onClick={() => viewingCardAluno?.foto_url && setExpandedPhoto({ url: viewingCardAluno.foto_url, name: viewingCardAluno.nome })}
+                >
                   {viewingCardAluno?.foto_url ? (
-                    <Image 
-                      src={viewingCardAluno.foto_url} 
-                      alt={viewingCardAluno.nome} 
-                      fill 
-                      className="object-cover" 
-                      sizes="120px"
-                      referrerPolicy="no-referrer"
-                    />
+                    <>
+                      <Image 
+                        src={viewingCardAluno.foto_url} 
+                        alt={viewingCardAluno.nome} 
+                        fill 
+                        className="object-cover" 
+                        sizes="120px"
+                        referrerPolicy="no-referrer"
+                      />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                        <Layers size={20} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                    </>
                   ) : (
                     <div className="flex items-center justify-center h-full text-slate-300">
                       <Users size={48} strokeWidth={1} />
@@ -1302,6 +1319,51 @@ export default function TurmasPage() {
           </div>
         </div>
       </Modal>
+
+      <AnimatePresence>
+        {expandedPhoto && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-sm"
+            onClick={() => setExpandedPhoto(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative max-w-full max-h-full flex flex-col items-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                className="absolute -top-12 right-0 p-2 text-white bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+                onClick={() => setExpandedPhoto(null)}
+              >
+                <X size={24} />
+              </button>
+              
+              <div className="bg-white p-2 rounded-2xl shadow-2xl relative">
+                <div className="relative w-[90vw] h-[80vh] sm:w-[500px] sm:h-[667px] rounded-xl overflow-hidden shadow-inner bg-slate-50">
+                  <Image
+                    src={expandedPhoto.url}
+                    alt={expandedPhoto.name}
+                    fill
+                    className="object-contain"
+                    referrerPolicy="no-referrer"
+                    sizes="(max-width: 640px) 90vw, 500px"
+                    priority
+                  />
+                </div>
+                <div className="mt-4 text-center pb-2">
+                  <h4 className="text-xl font-bold text-slate-800">{expandedPhoto.name}</h4>
+                  <p className="text-slate-500 font-mono text-xs uppercase mt-1 tracking-widest border-t border-slate-100 pt-2 mx-4">Foto Identificação 3x4</p>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

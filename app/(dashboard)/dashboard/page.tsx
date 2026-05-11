@@ -7,9 +7,10 @@ import {
   Users, 
   BookOpen, 
   GraduationCap,
-  Layers
+  Layers,
+  X
 } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import Image from 'next/image';
 
 export default function DashboardPage() {
@@ -20,6 +21,7 @@ export default function DashboardPage() {
   });
   const [alunosExterior, setAlunosExterior] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedPhoto, setExpandedPhoto] = useState<{url: string, name: string} | null>(null);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -134,7 +136,10 @@ export default function DashboardPage() {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           {aluno.foto_url ? (
-                            <div className="w-12 h-16 rounded-lg overflow-hidden border border-slate-200 shrink-0 shadow-sm hover:scale-105 transition-transform cursor-pointer relative bg-slate-100">
+                            <div 
+                              className="w-12 h-16 rounded-lg overflow-hidden border border-slate-200 shrink-0 shadow-sm hover:scale-105 transition-transform cursor-pointer relative bg-slate-100 group"
+                              onClick={() => setExpandedPhoto({ url: aluno.foto_url, name: aluno.nome })}
+                            >
                               <Image 
                                 src={aluno.foto_url} 
                                 alt={aluno.nome} 
@@ -143,6 +148,9 @@ export default function DashboardPage() {
                                 referrerPolicy="no-referrer" 
                                 sizes="48px"
                               />
+                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                                <Layers size={14} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                              </div>
                             </div>
                           ) : (
                             <div className="w-12 h-16 rounded-lg bg-slate-100 flex flex-col items-center justify-center text-slate-400 shrink-0 border border-slate-200">
@@ -175,6 +183,51 @@ export default function DashboardPage() {
           </table>
         </div>
       </div>
+
+      <AnimatePresence>
+        {expandedPhoto && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-sm"
+            onClick={() => setExpandedPhoto(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative max-w-full max-h-full flex flex-col items-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                className="absolute -top-12 right-0 p-2 text-white bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+                onClick={() => setExpandedPhoto(null)}
+              >
+                <X size={24} />
+              </button>
+              
+              <div className="bg-white p-2 rounded-2xl shadow-2xl relative">
+                <div className="relative w-[90vw] h-[80vh] sm:w-[500px] sm:h-[667px] rounded-xl overflow-hidden shadow-inner bg-slate-50">
+                  <Image
+                    src={expandedPhoto.url}
+                    alt={expandedPhoto.name}
+                    fill
+                    className="object-contain"
+                    referrerPolicy="no-referrer"
+                    sizes="(max-width: 640px) 90vw, 500px"
+                    priority
+                  />
+                </div>
+                <div className="mt-4 text-center pb-2">
+                  <h4 className="text-xl font-bold text-slate-800">{expandedPhoto.name}</h4>
+                  <p className="text-slate-500 font-mono text-xs uppercase mt-1 tracking-widest border-t border-slate-100 pt-2 mx-4">Foto Identificação 3x4</p>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
