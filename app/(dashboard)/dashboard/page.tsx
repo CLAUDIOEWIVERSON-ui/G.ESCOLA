@@ -200,12 +200,15 @@ export default function DashboardPage() {
                       </td>
                       <td className="px-6 py-4 text-center">
                         <div className="flex flex-col items-center">
+                          <div className="text-[9px] text-blue-500 font-black uppercase tracking-widest mb-1">
+                            ANO {turmaData?.ano || '-'}
+                          </div>
                           <div className="text-slate-600 font-mono text-[11px] font-bold">
-                            {turmaData?.data_inicio ? new Date(turmaData.data_inicio).toLocaleDateString('pt-BR') : '-'}
+                            {turmaData?.data_inicio ? turmaData.data_inicio.split('-').reverse().join('/') : '-'}
                           </div>
                           <div className="w-px h-2 bg-slate-200 my-0.5" />
                           <div className="text-slate-400 font-mono text-[11px]">
-                            {turmaData?.data_fim ? new Date(turmaData.data_fim).toLocaleDateString('pt-BR') : '-'}
+                            {turmaData?.data_fim ? turmaData.data_fim.split('-').reverse().join('/') : '-'}
                           </div>
                         </div>
                       </td>
