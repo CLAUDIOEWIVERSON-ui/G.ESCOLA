@@ -142,6 +142,10 @@ export default function BoletimPage() {
   });
   const filteredDisciplinas = selectedCurso ? disciplinas.filter(d => d.curso_id === selectedCurso) : disciplinas;
 
+  const maxAvgInBoletim = boletimData.length > 0 
+    ? Math.max(...boletimData.map(r => Number(r.nota_final)).filter(n => !isNaN(n)), -1) 
+    : -1;
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -307,9 +311,16 @@ export default function BoletimPage() {
                        const status = getStatus(row.nota_final, row.frequencia);
                        const StatusIcon = status.icon;
                        return (
-                         <tr key={row.id} className="border-b border-slate-50 hover:bg-slate-50/40 transition-colors group">
+                         <tr key={row.id} className={cn("border-b border-slate-50 hover:bg-slate-50/40 transition-colors group", row.nota_final !== null && row.nota_final !== undefined && Number(row.nota_final) === maxAvgInBoletim && maxAvgInBoletim > 0 && "bg-blue-50/50")}>
                            <td className="px-6 py-4">
-                             <div className="font-bold text-slate-800">{row.aluno?.nome}</div>
+                             <div className="flex items-center gap-2">
+                               <div className="font-bold text-slate-800">{row.aluno?.nome}</div>
+                               {row.nota_final !== null && row.nota_final !== undefined && Number(row.nota_final) === maxAvgInBoletim && maxAvgInBoletim > 0 && (
+                                 <span className="flex items-center gap-1 bg-amber-100 text-amber-700 text-[8px] font-black uppercase px-1.5 py-0.5 rounded border border-amber-200">
+                                   ⭐ Melhor Média
+                                 </span>
+                               )}
+                             </div>
                              <div className="text-[10px] font-mono text-slate-400 tracking-tight">#{row.aluno?.matricula}</div>
                            </td>
                            {Array.from({ length: courseModules }).map((_, i) => {

@@ -358,30 +358,58 @@ export default function NotasPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
-                  {turmaAlunos.map((aluno) => {
-                    const studentGrades = bulkNotas[aluno.id] || {};
-                    const isSavingRow = savingRows[aluno.id];
-                    const firstDiscId = disciplinas[0].id;
-                    const gradeData = studentGrades[firstDiscId] || {};
-                    
-                    // Calculation based on modules
-                    const scores: number[] = [];
-                    for (let i = 1; i <= effectiveModules; i++) {
-                      const val = gradeData[`nota${i}`];
-                      if (val !== null && val !== undefined) {
-                        scores.push(val);
-                      }
-                    }
-                    
-                    const avg = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
-                    const status = getStatus(avg);
+                  {(() => {
+                    const maxAvgValue = turmaAlunos.length > 0 
+                      ? Math.max(...turmaAlunos.map(a => {
+                          const sGrades = bulkNotas[a.id] || {};
+                          const fdId = disciplinas[0]?.id;
+                          const gData = sGrades[fdId] || {};
+                          const scs: number[] = [];
+                          for (let i = 1; i <= effectiveModules; i++) {
+                            const v = gData[`nota${i}`];
+                            if (v !== null && v !== undefined) scs.push(v);
+                          }
+                          return scs.length > 0 ? scs.reduce((x, y) => x + y, 0) / scs.length : null;
+                        }).filter((a): a is number => a !== null), -1)
+                      : -1;
 
-                    return (
-                      <tr key={aluno.id} className="hover:bg-slate-50/30 transition-colors group">
-                        <td className="px-6 py-4">
-                          <div className="font-bold text-slate-900">{aluno.nome}</div>
-                          <div className="text-[10px] text-slate-400 font-mono">#{aluno.matricula || aluno.id.slice(0,8)}</div>
-                        </td>
+                    return turmaAlunos.map((aluno) => {
+                      const studentGrades = bulkNotas[aluno.id] || {};
+                      const isSavingRow = savingRows[aluno.id];
+                      const firstDiscId = disciplinas[0].id;
+                      const gradeData = studentGrades[firstDiscId] || {};
+                      
+                      // Calculation based on modules
+                      const scores: number[] = [];
+                      for (let i = 1; i <= effectiveModules; i++) {
+                        const val = gradeData[`nota${i}`];
+                        if (val !== null && val !== undefined) {
+                          scores.push(val);
+                        }
+                      }
+                      
+                      const avg = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
+                      const status = getStatus(avg);
+
+                      return (
+                        <tr 
+                          key={aluno.id} 
+                          className={cn(
+                            "hover:bg-slate-50/30 transition-colors group relative",
+                            avg !== null && avg === maxAvgValue && maxAvgValue > 0 && "bg-blue-50/50"
+                          )}
+                        >
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-2">
+                              <div className="font-bold text-slate-900">{aluno.nome}</div>
+                              {avg !== null && avg === maxAvgValue && maxAvgValue > 0 && (
+                                <span className="flex items-center gap-1 bg-amber-100 text-amber-700 text-[8px] font-black uppercase px-1.5 py-0.5 rounded border border-amber-200">
+                                  ⭐ {language === 'pt' ? 'Melhor Média' : 'TOP AVG'}
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-[10px] text-slate-400 font-mono">#{aluno.matricula || aluno.id.slice(0,8)}</div>
+                          </td>
                         {Array.from({ length: effectiveModules }).map((_, i) => {
                           const m = i + 1;
                           return (
@@ -433,10 +461,11 @@ export default function NotasPage() {
                         </td>
                       </tr>
                     );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                  })
+                })()}
+              </tbody>
+            </table>
+          </div>
 
             <div className="flex justify-end pt-6 border-t border-slate-100">
               {!isReadOnly && (
