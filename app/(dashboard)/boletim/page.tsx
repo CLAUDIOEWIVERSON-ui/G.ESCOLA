@@ -16,6 +16,7 @@ import {
   Users
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 
@@ -80,7 +81,7 @@ export default function BoletimPage() {
         .from('notas')
         .select(`
           *,
-          aluno:alunos(id, nome, matricula)
+          aluno:alunos(id, nome, matricula, foto_url)
         `)
         .eq('turma_id', selectedTurma)
         .eq('disciplina_id', selectedDisciplina);

@@ -864,11 +864,11 @@ export default function TurmasPage() {
               {alunosInTurma.map((aluno) => (
                 <div key={aluno.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100 group">
                   <div className="flex items-center gap-3">
-                    <div className="w-14 h-16 bg-slate-200 rounded-lg overflow-hidden relative border-2 border-white shadow-sm shrink-0">
+                    <div className="w-12 h-16 bg-slate-200 rounded-lg overflow-hidden relative border border-slate-200 shrink-0 shadow-sm">
                       {aluno.foto_url ? (
-                        <Image src={aluno.foto_url} alt={aluno.nome} fill className="object-cover" sizes="56px" referrerPolicy="no-referrer" />
+                        <Image src={aluno.foto_url} alt={aluno.nome} fill className="object-cover" sizes="48px" referrerPolicy="no-referrer" />
                       ) : (
-                        <div className="flex items-center justify-center h-full text-[10px] font-bold text-slate-400 bg-slate-100">3x4</div>
+                        <div className="flex items-center justify-center h-full text-[10px] font-bold text-slate-400">3x4</div>
                       )}
                     </div>
                     <div>
@@ -991,9 +991,9 @@ export default function TurmasPage() {
         <form onSubmit={handleSaveStudent} className="space-y-4 max-h-[75vh] overflow-y-auto px-1">
           <div className="flex flex-col sm:flex-row gap-4 mb-4 pb-4 border-b border-slate-100">
             <div className="flex-shrink-0 flex flex-col items-center gap-2">
-              <div className="relative group cursor-pointer w-32 h-40 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 hover:border-blue-400 hover:text-blue-500 transition-all overflow-hidden text-center p-2 shadow-inner">
+              <div className="relative group cursor-pointer w-36 h-48 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 hover:border-blue-400 hover:text-blue-500 transition-all overflow-hidden text-center p-2 shadow-inner">
                 {currentAluno?.foto_url ? (
-                  <Image src={currentAluno.foto_url} alt="3x4" fill className="object-cover" sizes="128px" referrerPolicy="no-referrer" />
+                  <Image src={currentAluno.foto_url} alt="3x4" fill className="object-cover" sizes="144px" referrerPolicy="no-referrer" />
                 ) : (
                   <>
                     <Camera size={24} strokeWidth={1.5} />
@@ -1197,14 +1197,14 @@ export default function TurmasPage() {
               </div>
 
               <div className="mt-8 mb-6 relative">
-                <div className="w-32 h-40 bg-slate-100 rounded-xl border-4 border-white shadow-lg overflow-hidden relative">
+                <div className="w-[120px] h-[160px] bg-slate-100 rounded-xl border-4 border-white shadow-lg overflow-hidden relative">
                   {viewingCardAluno?.foto_url ? (
                     <Image 
                       src={viewingCardAluno.foto_url} 
                       alt={viewingCardAluno.nome} 
                       fill 
                       className="object-cover" 
-                      sizes="128px"
+                      sizes="120px"
                       referrerPolicy="no-referrer"
                     />
                   ) : (

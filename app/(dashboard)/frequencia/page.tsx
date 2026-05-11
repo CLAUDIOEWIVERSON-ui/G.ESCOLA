@@ -25,6 +25,7 @@ import {
   ShieldAlert
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { 
   format, 
@@ -83,7 +84,7 @@ export default function FrequenciaPage() {
       // Fetch students in the class
       const { data: alunoData, error: alunoError } = await supabase
         .from('alunos')
-        .select('id, nome, matricula')
+        .select('id, nome, matricula, foto_url')
         .eq('turma_id', selectedTurma)
         .is('deleted_at', null)
         .order('nome');
@@ -447,8 +448,19 @@ export default function FrequenciaPage() {
                         <tr key={student.id} className="hover:bg-slate-50/70 transition-colors group">
                           <td className="px-8 py-4">
                             <div className="flex items-center gap-4">
-                              <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-sm border-2 border-white shadow-sm overflow-hidden">
-                                {student.nome.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()}
+                              <div className="w-10 h-[52px] rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-[10px] border border-slate-200 shadow-sm overflow-hidden relative shrink-0">
+                                {student.foto_url ? (
+                                  <Image 
+                                    src={student.foto_url} 
+                                    alt={student.nome} 
+                                    fill 
+                                    className="object-cover" 
+                                    referrerPolicy="no-referrer"
+                                    sizes="40px"
+                                  />
+                                ) : (
+                                  student.nome.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()
+                                )}
                               </div>
                               <span className="font-bold text-slate-700 group-hover:text-blue-700 transition-colors">{student.nome}</span>
                             </div>

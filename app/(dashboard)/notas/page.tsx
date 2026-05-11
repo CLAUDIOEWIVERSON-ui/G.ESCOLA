@@ -11,6 +11,7 @@ import {
   Users
 } from 'lucide-react';
 import { motion } from 'motion/react';
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
 export default function NotasPage() {
@@ -107,7 +108,7 @@ export default function NotasPage() {
       if (configData) setSettings(configData);
 
       // Fetch Alunos
-      const { data: alunosData } = await supabase.from('alunos').select('id, nome').is('deleted_at', null).order('nome');
+      const { data: alunosData } = await supabase.from('alunos').select('id, nome, matricula, foto_url').is('deleted_at', null).order('nome');
       if (alunosData) setAlunos(alunosData);
 
       // Fetch Cursos
@@ -400,15 +401,33 @@ export default function NotasPage() {
                           )}
                         >
                           <td className="px-6 py-4">
-                            <div className="flex items-center gap-2">
-                              <div className="font-bold text-slate-900">{aluno.nome}</div>
-                              {avg !== null && avg === maxAvgValue && maxAvgValue > 0 && (
-                                <span className="flex items-center gap-1 bg-amber-100 text-amber-700 text-[8px] font-black uppercase px-1.5 py-0.5 rounded border border-amber-200">
-                                  ⭐ {language === 'pt' ? 'Melhor Média' : 'TOP AVG'}
-                                </span>
-                              )}
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-11 bg-slate-100 rounded overflow-hidden relative border border-slate-200 shrink-0 shadow-sm flex items-center justify-center">
+                                {aluno.foto_url ? (
+                                  <Image 
+                                    src={aluno.foto_url} 
+                                    alt={aluno.nome} 
+                                    fill 
+                                    className="object-cover" 
+                                    referrerPolicy="no-referrer"
+                                    sizes="32px"
+                                  />
+                                ) : (
+                                  <Users size={12} className="text-slate-300" />
+                                )}
+                              </div>
+                              <div className="flex flex-col">
+                                <div className="flex items-center gap-2">
+                                  <div className="font-bold text-slate-900">{aluno.nome}</div>
+                                  {avg !== null && avg === maxAvgValue && maxAvgValue > 0 && (
+                                    <span className="flex items-center gap-1 bg-amber-100 text-amber-700 text-[8px] font-black uppercase px-1.5 py-0.5 rounded border border-amber-200">
+                                      ⭐ {language === 'pt' ? 'Melhor Média' : 'TOP AVG'}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-[10px] text-slate-400 font-mono">#{aluno.matricula || aluno.id.slice(0,8)}</div>
+                              </div>
                             </div>
-                            <div className="text-[10px] text-slate-400 font-mono">#{aluno.matricula || aluno.id.slice(0,8)}</div>
                           </td>
                         {Array.from({ length: effectiveModules }).map((_, i) => {
                           const m = i + 1;
