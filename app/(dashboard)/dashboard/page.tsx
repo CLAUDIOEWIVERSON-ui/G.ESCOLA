@@ -134,19 +134,19 @@ export default function DashboardPage() {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           {aluno.foto_url ? (
-                            <div className="w-8 h-8 rounded-full overflow-hidden border border-slate-200 shrink-0">
+                            <div className="w-12 h-12 rounded-full overflow-hidden border border-slate-200 shrink-0 shadow-sm hover:scale-110 transition-transform cursor-pointer">
                               <Image 
                                 src={aluno.foto_url} 
                                 alt={aluno.nome} 
-                                width={32} 
-                                height={32} 
+                                width={48} 
+                                height={48} 
                                 className="object-cover" 
                                 referrerPolicy="no-referrer" 
                               />
                             </div>
                           ) : (
-                            <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 shrink-0">
-                              <Users size={14} />
+                            <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 shrink-0 border border-slate-200">
+                              <Users size={20} />
                             </div>
                           )}
                           <div>
