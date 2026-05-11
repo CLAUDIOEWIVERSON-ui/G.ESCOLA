@@ -266,6 +266,7 @@ export default function CursosPage() {
 
   useEffect(() => {
     if (manageTurmasCurso) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchTurmas(manageTurmasCurso.id);
     }
   }, [manageTurmasCurso, fetchTurmas]);
@@ -411,6 +412,7 @@ export default function CursosPage() {
 
       await fetchTurmaStudents(viewingTurmaAlunos.id);
       setIsAddStudentModalOpen(false);
+      // Also refresh the turmas list to update the student count if needed
       if (manageTurmasCurso) fetchTurmas(manageTurmasCurso.id);
     } catch (err: any) {
       alert(err.message);
@@ -1054,7 +1056,7 @@ export default function CursosPage() {
                 {t.classes.noStudents}
               </div>
             ) : (
-              <div className="grid grid-cols-1 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {turmaStudents
                   .filter(s => s.nome.toLowerCase().includes(studentSearchTerm.toLowerCase()) || s.matricula.toLowerCase().includes(studentSearchTerm.toLowerCase()))
                   .map((aluno) => (
@@ -1087,7 +1089,7 @@ export default function CursosPage() {
                         </div>
                       )}
                     </div>
-                  ))}
+                ))}
               </div>
             )}
           </div>

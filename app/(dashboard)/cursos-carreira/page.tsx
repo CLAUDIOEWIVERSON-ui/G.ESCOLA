@@ -983,7 +983,9 @@ export default function CursosCarreiraPage() {
             </button>
           </div>
         </form>
-      <      <Modal
+      </Modal>
+
+      <Modal
         isOpen={!!viewingTurmaAlunos}
         onClose={() => setViewingTurmaAlunos(null)}
         title={`${t.nav.students}: ${viewingTurmaAlunos?.nome}`}
@@ -1022,7 +1024,7 @@ export default function CursosCarreiraPage() {
                 {t.classes.noStudents}
               </div>
             ) : (
-              <div className="grid grid-cols-1 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {turmaStudents
                   .filter(s => s.nome.toLowerCase().includes(studentSearchTerm.toLowerCase()) || s.matricula.toLowerCase().includes(studentSearchTerm.toLowerCase()))
                   .map((aluno) => (
@@ -1055,12 +1057,12 @@ export default function CursosCarreiraPage() {
                         </div>
                       )}
                     </div>
-                  ))}
+                ))}
               </div>
             )}
           </div>
         </div>
-      </Modal> </Modal>
+      </Modal>
 
       <Modal
         isOpen={isAddStudentModalOpen}
