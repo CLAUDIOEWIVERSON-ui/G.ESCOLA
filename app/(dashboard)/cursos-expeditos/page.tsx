@@ -8,12 +8,10 @@ import { cursoSchema } from '@/lib/validations/schemas';
 import { 
   Plus, 
   Search, 
-  MoreHorizontal, 
   Edit2, 
   Trash2, 
   X,
   CheckCircle2,
-  AlertCircle,
   FileText,
   Loader2,
   GraduationCap,
@@ -23,6 +21,7 @@ import {
   User,
   UserPlus,
   Calendar,
+  MapPin,
   Layers,
   Search as SearchIcon,
   Mail,
@@ -36,7 +35,7 @@ import Modal from '@/components/Modal';
 
 type Curso = z.infer<typeof cursoSchema> & { id: string };
 
-export default function CursosPage() {
+export default function CursosExpeditosPage() {
   const { t, language } = useI18n();
   const { isAdmin } = useUser();
   const isReadOnly = !isAdmin;
@@ -84,7 +83,7 @@ export default function CursosPage() {
       duracao_unidade: 'ano',
       ativo: true,
       qtd_modulos: 4,
-      categoria: 'Especial',
+      categoria: 'Expedito',
     }
   });
 
@@ -94,14 +93,13 @@ export default function CursosPage() {
       .from('cursos')
       .select('*')
       .is('deleted_at', null)
-      .not('categoria', 'eq', 'Expedito')
-      .not('categoria', 'eq', 'Carreira')
+      .eq('categoria', 'Expedito')
       .order('nome');
+    
     if (data) {
-      // Map database field to our logic field
       const units = ['dia', 'semana', 'mes', 'ano'];
       const mappedData = data.map(item => {
-        const dbVal = item.ano_inicio || 13; // default 1 year (1 * 10 + 3)
+        const dbVal = item.ano_inicio || 13;
         const val = Math.floor(dbVal / 10);
         const unitIdx = dbVal % 10;
         
@@ -132,14 +130,13 @@ export default function CursosPage() {
       const unitIdx = units.indexOf(data.duracao_unidade);
       const encodedDuration = (data.duracao * 10) + (unitIdx === -1 ? 3 : unitIdx);
 
-      // Map our logic field back to database field
       const cleanedData = {
         nome: data.nome,
         descricao: data.descricao,
-        ano_inicio: encodedDuration, // stores both value and unit encoded
+        ano_inicio: encodedDuration,
         ativo: data.ativo,
         qtd_modulos: data.qtd_modulos,
-        categoria: data.categoria
+        categoria: 'Expedito' // Force category
       };
 
       if (editingCurso) {
@@ -193,65 +190,6 @@ export default function CursosPage() {
     }
   }, [manageDisciplinasCurso, fetchDisciplinas]);
 
-  const handleOpenDisciplinaModal = (disciplina: any = null) => {
-    if (isReadOnly) return;
-    setCurrentDisciplina(disciplina || { nome: '', codigo: '', carga_horaria: 60, curso_id: manageDisciplinasCurso?.id });
-    setIsDisciplinaModalOpen(true);
-  };
-
-  const handleSaveDisciplina = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!manageDisciplinasCurso || isReadOnly) return;
-    setSavingDisciplina(true);
-
-    try {
-      const dataToSave = {
-        nome: currentDisciplina.nome,
-        codigo: currentDisciplina.codigo,
-        carga_horaria: currentDisciplina.carga_horaria,
-        curso_id: manageDisciplinasCurso.id
-      };
-
-      if (currentDisciplina.id) {
-        const { error } = await supabase
-          .from('disciplinas')
-          .update(dataToSave)
-          .eq('id', currentDisciplina.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('disciplinas')
-          .insert([dataToSave]);
-        if (error) throw error;
-      }
-
-      setLoadingDisciplinas(true);
-      await fetchDisciplinas(manageDisciplinasCurso.id);
-      setIsDisciplinaModalOpen(false);
-    } catch (err: any) {
-      alert(err.message);
-    } finally {
-      setSavingDisciplina(false);
-    }
-  };
-
-  const deleteDisciplina = async (id: string) => {
-    if (isReadOnly || !manageDisciplinasCurso) return;
-    if (confirm(t.common.deleteConfirm)) {
-      setLoadingDisciplinas(true);
-      const { error } = await supabase
-        .from('disciplinas')
-        .update({ deleted_at: new Date().toISOString() })
-        .eq('id', id);
-      if (error) {
-        alert(error.message);
-        setLoadingDisciplinas(false);
-      } else {
-        await fetchDisciplinas(manageDisciplinasCurso.id);
-      }
-    }
-  };
-
   // Turmas Logic
   const fetchTurmas = useCallback(async (cursoId: string) => {
     const { data } = await supabase
@@ -266,6 +204,7 @@ export default function CursosPage() {
 
   useEffect(() => {
     if (manageTurmasCurso) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchTurmas(manageTurmasCurso.id);
     }
   }, [manageTurmasCurso, fetchTurmas]);
@@ -437,13 +376,71 @@ export default function CursosPage() {
     }
   };
 
+  const handleOpenDisciplinaModal = (disciplina: any = null) => {
+    if (isReadOnly) return;
+    setCurrentDisciplina(disciplina || { nome: '', codigo: '', carga_horaria: 60, curso_id: manageDisciplinasCurso?.id });
+    setIsDisciplinaModalOpen(true);
+  };
+
+  const handleSaveDisciplina = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!manageDisciplinasCurso || isReadOnly) return;
+    setSavingDisciplina(true);
+
+    try {
+      const dataToSave = {
+        nome: currentDisciplina.nome,
+        codigo: currentDisciplina.codigo,
+        carga_horaria: currentDisciplina.carga_horaria,
+        curso_id: manageDisciplinasCurso.id
+      };
+
+      if (currentDisciplina.id) {
+        const { error } = await supabase
+          .from('disciplinas')
+          .update(dataToSave)
+          .eq('id', currentDisciplina.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('disciplinas')
+          .insert([dataToSave]);
+        if (error) throw error;
+      }
+
+      setLoadingDisciplinas(true);
+      await fetchDisciplinas(manageDisciplinasCurso.id);
+      setIsDisciplinaModalOpen(false);
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setSavingDisciplina(false);
+    }
+  };
+
+  const deleteDisciplina = async (id: string) => {
+    if (isReadOnly || !manageDisciplinasCurso) return;
+    if (confirm(t.common.deleteConfirm)) {
+      setLoadingDisciplinas(true);
+      const { error } = await supabase
+        .from('disciplinas')
+        .update({ deleted_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) {
+        alert(error.message);
+        setLoadingDisciplinas(false);
+      } else {
+        await fetchDisciplinas(manageDisciplinasCurso.id);
+      }
+    }
+  };
+
   const handleBulkSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isReadOnly) return;
     setSaving(true);
 
     try {
-      // Robust multi-format parsing
       const rawLines = bulkData.split(/\r?\n/).filter(line => line.trim());
       if (rawLines.length === 0) throw new Error(t.common.parseError);
 
@@ -465,8 +462,9 @@ export default function CursosPage() {
         return {
           nome,
           descricao: descricao || '',
-          ano_inicio: 13, // default duration (1 * 10 + 3 = 1 year)
-          ativo: true
+          ano_inicio: 13,
+          ativo: true,
+          categoria: 'Expedito'
         };
       }).filter(Boolean) as any[];
 
@@ -486,7 +484,7 @@ export default function CursosPage() {
       setBulkData('');
       
       const successCount = data?.length || 0;
-      alert(t.common.successCount.replace('{count}', successCount.toString()) + (results.errors.length > 0 ? '\n\nErros:\n' + results.errors.join('\n') : ''));
+      alert(t.common.successCount.replace('{count}', successCount.toString()));
     } catch (err: any) {
       alert(t.common.importError + ': ' + (err.message || t.common.parseError));
     } finally {
@@ -502,8 +500,8 @@ export default function CursosPage() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{t.courses.title}</h1>
-          <p className="text-slate-500 text-sm">{language === 'pt' ? 'Visualize e gerencie os cursos oferecidos pela instituição.' : 'View and manage the courses offered by the institution.'}</p>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{t.courses.titleExpedito}</h1>
+          <p className="text-slate-500 text-sm">Visualize e gerencie os cursos da categoria Expedito.</p>
         </div>
         {!isReadOnly && (
           <div className="flex gap-2">
@@ -515,7 +513,6 @@ export default function CursosPage() {
               {t.common.bulkAdd}
             </button>
             <button 
-              id="add-course-btn"
               onClick={() => { reset(); setEditingCurso(null); setModalOpen(true); }}
               className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-all shadow-sm shadow-blue-100"
             >
@@ -541,7 +538,7 @@ export default function CursosPage() {
         </div>
 
         <div className="overflow-x-auto">
-          <table id="courses-table" className="w-full text-left border-collapse">
+          <table className="w-full text-left border-collapse">
             <thead>
               <tr className="text-xs font-semibold text-slate-500 border-b border-slate-100 uppercase tracking-wider">
                 <th className="px-6 py-4 font-semibold">{t.courses.name}</th>
@@ -565,17 +562,12 @@ export default function CursosPage() {
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
                        <div className="font-semibold text-slate-900">{curso.nome}</div>
-                      {curso.categoria && (
-                        <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-bold uppercase rounded-md border border-blue-100">
-                          {curso.categoria}
-                        </span>
-                      )}
                     </div>
                     <div className="text-xs text-slate-500 truncate max-w-[200px]">
                        {curso.descricao}
                     </div>
                   </td>
-                   <td className="px-6 py-4 text-center">
+                  <td className="px-6 py-4 text-center">
                     <button 
                       onClick={() => {
                         setManageDisciplinasCurso(curso);
@@ -609,7 +601,7 @@ export default function CursosPage() {
                         }
                       </span>
                       <span className="text-[10px] font-bold text-slate-400 uppercase">
-                        {curso.qtd_modulos || 4} {t.grades.module}s
+                        {curso.qtd_modulos || 4} Módulos
                       </span>
                     </div>
                   </td>
@@ -666,25 +658,23 @@ export default function CursosPage() {
                 </button>
               </div>
 
-              <form id="course-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 <div className="space-y-1">
                   <label className="text-sm font-semibold text-slate-700">{t.courses.name}</label>
                   <input
                     {...register('nome')}
                     className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
-                    placeholder="Engenharia de Software"
                   />
                   {errors.nome && <p className="text-xs text-red-500 mt-1">{errors.nome.message}</p>}
                 </div>
 
                 <div className="space-y-1">
                   <label className="text-sm font-semibold text-slate-700">{t.courses.description}</label>
-            <textarea
-              {...register('descricao')}
-              rows={2}
-              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
-              placeholder={language === 'pt' ? "Descrição breve do curso..." : "Brief description of the course..."}
-            />
+                  <textarea
+                    {...register('descricao')}
+                    rows={2}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
+                  />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -695,7 +685,6 @@ export default function CursosPage() {
                       {...register('duracao', { valueAsNumber: true })}
                       className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
                     />
-                    {errors.duracao && <p className="text-xs text-red-500 mt-1">{errors.duracao.message}</p>}
                   </div>
                   <div className="space-y-1">
                     <label className="text-sm font-semibold text-slate-700">{t.courses.durationUnit}</label>
@@ -720,24 +709,6 @@ export default function CursosPage() {
                     {...register('qtd_modulos', { valueAsNumber: true })}
                     className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
                   />
-                  {errors.qtd_modulos && <p className="text-xs text-red-500 mt-1">{errors.qtd_modulos.message}</p>}
-                </div>
-
-                <div className="hidden">
-                  <input type="checkbox" {...register('ativo')} />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-sm font-semibold text-slate-700">{t.courses.category}</label>
-                  <select
-                    {...register('categoria')}
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
-                  >
-                    <option value="">Selecione uma categoria</option>
-                    <option value="Expedito">{t.courses.categoryExpedito}</option>
-                    <option value="Especial">{t.courses.categoryEspecial}</option>
-                    <option value="Carreira">{t.courses.categoryCarreira}</option>
-                  </select>
                 </div>
 
                 <div className="flex gap-3 pt-6">
@@ -1054,7 +1025,7 @@ export default function CursosPage() {
                 {t.classes.noStudents}
               </div>
             ) : (
-              <div className="grid grid-cols-1 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {turmaStudents
                   .filter(s => s.nome.toLowerCase().includes(studentSearchTerm.toLowerCase()) || s.matricula.toLowerCase().includes(studentSearchTerm.toLowerCase()))
                   .map((aluno) => (
@@ -1087,7 +1058,7 @@ export default function CursosPage() {
                         </div>
                       )}
                     </div>
-                  ))}
+                ))}
               </div>
             )}
           </div>
@@ -1185,7 +1156,6 @@ export default function CursosPage() {
               value={currentDisciplina?.nome || ''}
               onChange={(e) => setCurrentDisciplina({ ...currentDisciplina, nome: e.target.value })}
               className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors text-sm font-medium"
-              placeholder={t.subjects.name}
             />
           </div>
 
@@ -1198,7 +1168,6 @@ export default function CursosPage() {
                 value={currentDisciplina?.codigo || ''}
                 onChange={(e) => setCurrentDisciplina({ ...currentDisciplina, codigo: e.target.value })}
                 className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors text-sm font-mono"
-                placeholder="PROG101"
               />
             </div>
             <div className="space-y-1">
@@ -1249,7 +1218,6 @@ export default function CursosPage() {
               value={bulkData}
               onChange={(e) => setBulkData(e.target.value)}
               className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm font-mono"
-              placeholder="Ex: Engenharia, ENG101, Curso de base&#10;Administração, ADM, Gestão&#10;Direito"
             />
             
             <div className="mt-3 flex items-center justify-between">
@@ -1264,20 +1232,7 @@ export default function CursosPage() {
                   {t.common.skipHeader}
                 </span>
               </label>
-              
-              <button
-                type="button"
-                onClick={() => setBulkData('')}
-                className="text-[10px] font-bold text-slate-400 uppercase hover:text-red-500 transition-colors"
-              >
-                {t.common.clearField}
-              </button>
             </div>
-
-            <p className="mt-4 text-[10px] text-slate-400 italic">
-              * {language === 'pt' ? 'Suporta separadores por vírgula (,) ou ponto-e-vírgula (;).' : 'Supports comma (,) or semicolon (;) separators.'}<br/>
-              * {language === 'pt' ? 'Somente o Nome é obrigatório. Se o código for omitido, será gerado automaticamente.' : 'Only Name is required. If the code is omitted, it will be automatically generated.'}
-            </p>
           </div>
 
           <div className="flex gap-3 pt-4">

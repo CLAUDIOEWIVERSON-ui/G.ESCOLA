@@ -10,13 +10,17 @@ import {
   LayoutDashboard, 
   BookOpen, 
   Users, 
+  UserPlus,
+  GraduationCap,
   Library, 
   FileCheck, 
   FileText,
   CalendarDays,
   Settings,
+  Shield,
   LogOut,
   ChevronRight,
+  ChevronDown,
   Menu,
   X,
   Search
@@ -35,6 +39,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { profile, isAdmin, isAluno, isProfessor, loading: authLoading } = useUser();
   const isReadOnly = !isAdmin;
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [coursesMenuOpen, setCoursesMenuOpen] = useState(false);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -49,15 +54,28 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     );
   }
 
-  const navItems = [
+  const managementItems = [
     { name: t.nav.dashboard, icon: LayoutDashboard, path: '/dashboard' },
-    { name: t.nav.courses, icon: BookOpen, path: '/cursos' },
-    { name: t.nav.classes, icon: Library, path: '/turmas' },
+    { 
+      name: t.nav.courses, 
+      icon: BookOpen, 
+      path: '/cursos',
+      isDropdown: true,
+      subItems: [
+        { name: t.courses.categoryEspecial, path: '/cursos', icon: BookOpen },
+        { name: t.courses.categoryExpedito, path: '/cursos-expeditos', icon: GraduationCap },
+        { name: t.courses.categoryCarreira, path: '/cursos-carreira', icon: Library },
+      ]
+    },
+    { name: t.nav.classes, icon: Users, path: '/turmas' },
+  ];
+
+  const academicItems = [
     { name: t.nav.grades, icon: FileCheck, path: '/notas' },
     { name: t.nav.reportCard, icon: FileText, path: '/boletim' },
     { name: t.nav.attendance, icon: CalendarDays, path: '/frequencia' },
     { name: t.calendar.title, icon: CalendarDays, path: '/calendario' },
-    ...(isAdmin ? [{ name: t.users.title, icon: Users, path: '/usuarios' }] : []),
+    ...(isAdmin ? [{ name: t.users.title, icon: Shield, path: '/usuarios' }] : []),
     { name: t.nav.settings, icon: Settings, path: '/configuracoes' },
   ];
 
@@ -83,8 +101,64 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 {t.auth.management}
               </div>
               <div className="space-y-1">
-                {navItems.slice(0, 4).map((item) => {
-                  const isActive = pathname === item.path;
+                {managementItems.map((item) => {
+                  const isActive = pathname === item.path || (item.subItems?.some(sub => pathname === sub.path));
+                  
+                  if (item.isDropdown) {
+                    const isOpen = coursesMenuOpen;
+                    return (
+                      <div key={item.name} className="space-y-1">
+                        <button
+                          onClick={() => setCoursesMenuOpen(!isOpen)}
+                          className={cn(
+                            "w-full flex items-center justify-between px-3 py-2 rounded-md transition-all group",
+                            isActive ? "bg-slate-800 text-white" : "hover:bg-slate-800/50 hover:text-white"
+                          )}
+                        >
+                          <div className="flex items-center gap-3">
+                            <item.icon size={18} className={cn("shrink-0 opacity-75", isActive ? "text-white" : "text-slate-400 group-hover:text-white")} />
+                            <span className={cn(
+                              "text-sm transition-opacity whitespace-nowrap",
+                              !sidebarOpen && "opacity-0 invisible w-0"
+                            )}>
+                              {item.name}
+                            </span>
+                          </div>
+                          {sidebarOpen && (
+                            <ChevronDown size={14} className={cn("transition-transform duration-200", isOpen ? "rotate-180" : "")} />
+                          )}
+                        </button>
+                        
+                        <AnimatePresence>
+                          {isOpen && sidebarOpen && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: 'auto', opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              className="overflow-hidden space-y-1 pl-9"
+                            >
+                              {item.subItems?.map((sub) => {
+                                const isSubActive = pathname === sub.path;
+                                return (
+                                  <Link
+                                    key={sub.path}
+                                    href={sub.path}
+                                    className={cn(
+                                      "flex items-center gap-3 px-3 py-1.5 rounded-md transition-all group",
+                                      isSubActive ? "text-blue-400 font-semibold" : "text-slate-400 hover:text-white"
+                                    )}
+                                  >
+                                    <span className="text-xs">{sub.name}</span>
+                                  </Link>
+                                );
+                              })}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    );
+                  }
+
                   return (
                     <Link 
                       key={item.path} 
@@ -115,7 +189,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 {t.auth.academic}
               </div>
               <div className="space-y-1">
-                {navItems.slice(4).map((item) => {
+                {academicItems.map((item) => {
                   const isActive = pathname === item.path;
                   return (
                     <Link 
@@ -180,7 +254,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </button>
             <div className="flex flex-col">
               <h1 className="text-lg font-bold text-slate-800 leading-none">
-                {navItems.find(item => item.path === pathname)?.name || t.dashboard.title}
+                {[...managementItems, ...academicItems].find(item => item.path === pathname)?.name || 
+                 managementItems.flatMap(m => m.subItems || []).find(s => s.path === pathname)?.name ||
+                 t.dashboard.title}
               </h1>
               <div className="flex items-center gap-2 mt-1">
                 <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">{t.auth.term}</p>
