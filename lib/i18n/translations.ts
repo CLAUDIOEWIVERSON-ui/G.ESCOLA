@@ -86,8 +86,6 @@ export const translations = {
     nav: {
       dashboard: "Início",
       courses: "Cursos",
-      coursesExpedito: "Cursos Expedito",
-      coursesCarreira: "Cursos Carreira",
       classes: "Turmas",
       students: "Alunos",
       subjects: "Disciplinas",
@@ -98,9 +96,7 @@ export const translations = {
       settings: "Configurações",
     },
     courses: {
-      title: "Gerenciamento de Cursos Especiais",
-      titleExpedito: "Gerenciamento de Cursos Expedito",
-      titleCarreira: "Gerenciamento de Cursos de Carreira",
+      title: "Gerenciamento de Cursos",
       add: "Novo Curso",
       name: "Nome do Curso",
       description: "Descrição",
@@ -160,7 +156,6 @@ export const translations = {
     classes: {
       title: "Gerenciamento de Turmas",
       subtitle: "Organização de turmas, períodos e capacidades.",
-      list: "Lista de Turmas",
       add: "Nova Turma",
       name: "Nome da Turma",
       year: "Ano Letivo",

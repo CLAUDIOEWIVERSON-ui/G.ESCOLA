@@ -18,15 +18,7 @@ import {
   Loader2,
   GraduationCap,
   Clock,
-  BookMarked,
-  Users,
-  User,
-  UserPlus,
-  Calendar,
-  Layers,
-  Search as SearchIcon,
-  Mail,
-  Smartphone
+  BookMarked
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useForm } from 'react-hook-form';
@@ -58,23 +50,6 @@ export default function CursosPage() {
   const [currentDisciplina, setCurrentDisciplina] = useState<any>(null);
   const [savingDisciplina, setSavingDisciplina] = useState(false);
 
-  // Classes (Turmas) Management State
-  const [manageTurmasCurso, setManageTurmasCurso] = useState<Curso | null>(null);
-  const [turmas, setTurmas] = useState<any[]>([]);
-  const [loadingTurmas, setLoadingTurmas] = useState(false);
-  const [isTurmaModalOpen, setIsTurmaModalOpen] = useState(false);
-  const [currentTurma, setCurrentTurma] = useState<any>(null);
-  const [savingTurma, setSavingTurma] = useState(false);
-
-  // Students Management State (Unified into Turmas)
-  const [viewingTurmaAlunos, setViewingTurmaAlunos] = useState<any | null>(null);
-  const [turmaStudents, setTurmaStudents] = useState<any[]>([]);
-  const [loadingTurmaStudents, setLoadingTurmaStudents] = useState(false);
-  const [isAddStudentModalOpen, setIsAddStudentModalOpen] = useState(false);
-  const [currentStudent, setCurrentStudent] = useState<any>(null);
-  const [savingStudent, setSavingStudent] = useState(false);
-  const [studentSearchTerm, setStudentSearchTerm] = useState('');
-
   const { register, handleSubmit, reset, formState: { errors } } = useForm<z.infer<typeof cursoSchema>>({
     resolver: zodResolver(cursoSchema),
     defaultValues: {
@@ -84,7 +59,7 @@ export default function CursosPage() {
       duracao_unidade: 'ano',
       ativo: true,
       qtd_modulos: 4,
-      categoria: 'Especial',
+      categoria: null,
     }
   });
 
@@ -94,8 +69,6 @@ export default function CursosPage() {
       .from('cursos')
       .select('*')
       .is('deleted_at', null)
-      .not('categoria', 'eq', 'Expedito')
-      .not('categoria', 'eq', 'Carreira')
       .order('nome');
     if (data) {
       // Map database field to our logic field
@@ -252,193 +225,6 @@ export default function CursosPage() {
     }
   };
 
-  // Turmas Logic
-  const fetchTurmas = useCallback(async (cursoId: string) => {
-    const { data } = await supabase
-      .from('turmas')
-      .select('*')
-      .eq('curso_id', cursoId)
-      .is('deleted_at', null)
-      .order('nome');
-    if (data) setTurmas(data);
-    setLoadingTurmas(false);
-  }, []);
-
-  useEffect(() => {
-    if (manageTurmasCurso) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      fetchTurmas(manageTurmasCurso.id);
-    }
-  }, [manageTurmasCurso, fetchTurmas]);
-
-  const handleOpenTurmaModal = (turma: any = null) => {
-    if (isReadOnly) return;
-    setCurrentTurma(turma || { 
-      nome: '', 
-      curso_id: manageTurmasCurso?.id, 
-      ano: new Date().getFullYear(),
-      periodo: 'manhã',
-      status: 'ativa',
-      capacidade_max: 40,
-      instrutor: '',
-      localizacao: ''
-    });
-    setIsTurmaModalOpen(true);
-  };
-
-  const handleSaveTurma = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!manageTurmasCurso || isReadOnly) return;
-    setSavingTurma(true);
-
-    try {
-      const dataToSave = {
-        nome: currentTurma.nome,
-        curso_id: manageTurmasCurso.id,
-        ano: currentTurma.ano,
-        periodo: currentTurma.periodo,
-        status: currentTurma.status,
-        capacidade_max: currentTurma.capacidade_max,
-        instrutor: currentTurma.instrutor,
-        localizacao: currentTurma.localizacao,
-        ativa: currentTurma.status === 'ativa'
-      };
-
-      if (currentTurma.id) {
-        const { error } = await supabase
-          .from('turmas')
-          .update(dataToSave)
-          .eq('id', currentTurma.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('turmas')
-          .insert([dataToSave]);
-        if (error) throw error;
-      }
-
-      setLoadingTurmas(true);
-      await fetchTurmas(manageTurmasCurso.id);
-      setIsTurmaModalOpen(false);
-    } catch (err: any) {
-      alert(err.message);
-    } finally {
-      setSavingTurma(false);
-    }
-  };
-
-  const deleteTurma = async (id: string) => {
-    if (isReadOnly || !manageTurmasCurso) return;
-    if (confirm(t.common.deleteConfirm)) {
-      setLoadingTurmas(true);
-      const { error } = await supabase
-        .from('turmas')
-        .update({ deleted_at: new Date().toISOString() })
-        .eq('id', id);
-      if (error) {
-        alert(error.message);
-        setLoadingTurmas(false);
-      } else {
-        await fetchTurmas(manageTurmasCurso.id);
-      }
-    }
-  };
-
-  // Students Logic (Unified)
-  const fetchTurmaStudents = useCallback(async (turmaId: string) => {
-    setLoadingTurmaStudents(true);
-    try {
-      const { data, error } = await supabase
-        .from('alunos')
-        .select('*')
-        .eq('turma_id', turmaId)
-        .is('deleted_at', null)
-        .order('nome');
-      
-      if (error) throw error;
-      if (data) setTurmaStudents(data);
-    } catch (err) {
-      console.error('Error fetching students:', err);
-    } finally {
-      setLoadingTurmaStudents(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (viewingTurmaAlunos) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      fetchTurmaStudents(viewingTurmaAlunos.id);
-    }
-  }, [viewingTurmaAlunos, fetchTurmaStudents]);
-
-  const handleOpenAddStudentModal = (student: any = null) => {
-    if (isReadOnly) return;
-    setCurrentStudent(student || { 
-      nome: '', 
-      email: '', 
-      matricula: '', 
-      turma_id: viewingTurmaAlunos?.id || '',
-      status: 'ativo'
-    });
-    setIsAddStudentModalOpen(true);
-  };
-
-  const handleSaveStudent = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!viewingTurmaAlunos || isReadOnly) return;
-    setSavingStudent(true);
-
-    try {
-      const dataToSave = {
-        nome: currentStudent.nome,
-        email: currentStudent.email,
-        matricula: currentStudent.matricula,
-        turma_id: viewingTurmaAlunos.id,
-        status: currentStudent.status
-      };
-
-      if (currentStudent.id) {
-        const { error } = await supabase
-          .from('alunos')
-          .update(dataToSave)
-          .eq('id', currentStudent.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('alunos')
-          .insert([dataToSave]);
-        if (error) throw error;
-      }
-
-      await fetchTurmaStudents(viewingTurmaAlunos.id);
-      setIsAddStudentModalOpen(false);
-      // Also refresh the turmas list to update the student count if needed
-      if (manageTurmasCurso) fetchTurmas(manageTurmasCurso.id);
-    } catch (err: any) {
-      alert(err.message);
-    } finally {
-      setSavingStudent(false);
-    }
-  };
-
-  const deleteStudent = async (id: string) => {
-    if (isReadOnly || !viewingTurmaAlunos) return;
-    if (confirm(t.common.deleteConfirm)) {
-      setLoadingTurmaStudents(true);
-      const { error } = await supabase
-        .from('alunos')
-        .update({ deleted_at: new Date().toISOString() })
-        .eq('id', id);
-      if (error) {
-        alert(error.message);
-        setLoadingTurmaStudents(false);
-      } else {
-        await fetchTurmaStudents(viewingTurmaAlunos.id);
-        if (manageTurmasCurso) fetchTurmas(manageTurmasCurso.id);
-      }
-    }
-  };
-
   const handleBulkSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isReadOnly) return;
@@ -548,7 +334,6 @@ export default function CursosPage() {
               <tr className="text-xs font-semibold text-slate-500 border-b border-slate-100 uppercase tracking-wider">
                 <th className="px-6 py-4 font-semibold">{t.courses.name}</th>
                 <th className="px-6 py-4 font-semibold text-center">{t.nav.subjects}</th>
-                <th className="px-6 py-4 font-semibold text-center">{t.nav.classes}</th>
                 <th className="px-6 py-4 font-semibold">{t.courses.duration}</th>
                 <th className="px-6 py-4 font-semibold text-right">{t.common.actions}</th>
               </tr>
@@ -577,7 +362,7 @@ export default function CursosPage() {
                        {curso.descricao}
                     </div>
                   </td>
-                   <td className="px-6 py-4 text-center">
+                  <td className="px-6 py-4 text-center">
                     <button 
                       onClick={() => {
                         setManageDisciplinasCurso(curso);
@@ -587,18 +372,6 @@ export default function CursosPage() {
                     >
                       <BookMarked size={12} />
                       {t.nav.subjects}
-                    </button>
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <button 
-                      onClick={() => {
-                        setManageTurmasCurso(curso);
-                        setLoadingTurmas(true);
-                      }}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-[10px] font-bold uppercase hover:bg-emerald-600 hover:text-white hover:border-emerald-600 transition-all shadow-sm"
-                    >
-                      <Users size={12} />
-                      {t.nav.classes}
                     </button>
                   </td>
                   <td className="px-6 py-4 text-sm text-slate-600">
@@ -830,347 +603,6 @@ export default function CursosPage() {
             )}
           </div>
         </div>
-      </Modal>
-
-      <Modal
-        isOpen={!!manageTurmasCurso}
-        onClose={() => setManageTurmasCurso(null)}
-        title={`${t.nav.classes}: ${manageTurmasCurso?.nome}`}
-      >
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">{t.classes.list}</div>
-            {!isReadOnly && (
-              <button 
-                onClick={() => handleOpenTurmaModal()}
-                className="flex items-center gap-2 text-emerald-600 hover:text-emerald-700 text-xs font-bold uppercase transition-colors"
-              >
-                <Plus size={14} />
-                {t.classes.add}
-              </button>
-            )}
-          </div>
-
-          <div className="max-h-[400px] overflow-y-auto space-y-2 pr-2 custom-scrollbar">
-            {loadingTurmas ? (
-              <div className="flex justify-center py-8 text-slate-400">
-                <Loader2 size={24} className="animate-spin" />
-              </div>
-            ) : turmas.length === 0 ? (
-              <div className="text-center py-12 text-slate-400 text-sm italic bg-slate-50 rounded-xl border-2 border-dashed border-slate-100">
-                Sem turmas cadastradas para este curso.
-              </div>
-            ) : (
-              turmas.map((turma) => (
-                <div key={turma.id} className="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-xl hover:border-slate-200 hover:shadow-sm transition-all group">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-slate-50 rounded-lg flex items-center justify-center text-slate-400 group-hover:bg-emerald-50 group-hover:text-emerald-500 transition-colors">
-                      <Layers size={18} />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-slate-800 text-sm">{turma.nome}</h4>
-                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-0.5">
-                        <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400 uppercase">
-                          <Calendar size={12} className="opacity-50" />
-                          {turma.ano}
-                        </div>
-                        <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400 uppercase">
-                          <Clock size={12} className="opacity-50" />
-                          {turma.periodo}
-                        </div>
-                        {turma.instrutor && (
-                          <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400 uppercase">
-                            <Users size={12} className="opacity-50" />
-                            {turma.instrutor}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex gap-1">
-                    <button 
-                       onClick={() => setViewingTurmaAlunos(turma)}
-                       className="p-2 bg-slate-50 border border-slate-100 hover:bg-amber-50 hover:text-amber-600 rounded-lg text-slate-400 transition-all shadow-sm"
-                       title={t.nav.students}
-                    >
-                       <User size={14} />
-                    </button>
-                    {!isReadOnly && (
-                      <div className="flex gap-1">
-                        <button 
-                          onClick={() => handleOpenTurmaModal(turma)}
-                          className="p-2 bg-slate-50 border border-slate-100 hover:bg-blue-50 hover:text-blue-600 rounded-lg text-slate-400 transition-all shadow-sm"
-                        >
-                          <Edit2 size={14} />
-                        </button>
-                        <button 
-                          onClick={() => deleteTurma(turma.id)}
-                          className="p-2 bg-slate-50 border border-slate-100 hover:bg-red-50 hover:text-red-600 rounded-lg text-slate-400 transition-all shadow-sm"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      </Modal>
-
-      <Modal
-        isOpen={isTurmaModalOpen}
-        onClose={() => setIsTurmaModalOpen(false)}
-        title={currentTurma?.id ? t.common.edit : t.classes.add}
-      >
-        <form onSubmit={handleSaveTurma} className="space-y-4">
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t.classes.name}</label>
-            <input
-              required
-              type="text"
-              value={currentTurma?.nome || ''}
-              onChange={(e) => setCurrentTurma({ ...currentTurma, nome: e.target.value })}
-              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors text-sm font-medium"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t.classes.year}</label>
-              <input
-                required
-                type="number"
-                value={currentTurma?.ano || ''}
-                onChange={(e) => setCurrentTurma({ ...currentTurma, ano: parseInt(e.target.value) })}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors text-sm font-bold"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t.classes.period}</label>
-              <select
-                required
-                value={currentTurma?.periodo || 'manhã'}
-                onChange={(e) => setCurrentTurma({ ...currentTurma, periodo: e.target.value })}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors text-sm font-bold"
-              >
-                <option value="manhã">{t.common.morning}</option>
-                <option value="tarde">{t.common.afternoon}</option>
-                <option value="noite">{t.common.night}</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t.classes.instructor}</label>
-              <input
-                type="text"
-                value={currentTurma?.instrutor || ''}
-                onChange={(e) => setCurrentTurma({ ...currentTurma, instrutor: e.target.value })}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors text-sm font-medium"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t.classes.status}</label>
-              <select
-                required
-                value={currentTurma?.status || 'ativa'}
-                onChange={(e) => setCurrentTurma({ ...currentTurma, status: e.target.value })}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors text-sm font-bold"
-              >
-                <option value="ativa">{t.classes.active}</option>
-                <option value="concluída">{t.classes.completed}</option>
-                <option value="cancelada">{t.classes.cancelled}</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t.courses.location}</label>
-            <input
-              type="text"
-              value={currentTurma?.localizacao || ''}
-              onChange={(e) => setCurrentTurma({ ...currentTurma, localizacao: e.target.value })}
-              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors text-sm font-medium"
-            />
-          </div>
-
-          <div className="flex gap-3 pt-6">
-            <button
-              type="button"
-              onClick={() => setIsTurmaModalOpen(false)}
-              className="flex-1 py-2.5 bg-slate-100 text-slate-600 rounded-lg text-sm font-bold hover:bg-slate-200 transition-colors"
-            >
-              {t.common.cancel}
-            </button>
-            <button
-              type="submit"
-              disabled={savingTurma}
-              className="flex-1 py-2.5 bg-emerald-600 text-white rounded-lg text-sm font-bold hover:bg-emerald-700 transition-colors shadow-sm shadow-emerald-100 flex items-center justify-center gap-2"
-            >
-              {savingTurma ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
-              {t.common.save}
-            </button>
-          </div>
-        </form>
-      </Modal>
-
-      <Modal
-        isOpen={!!viewingTurmaAlunos}
-        onClose={() => setViewingTurmaAlunos(null)}
-        title={`${t.nav.students}: ${viewingTurmaAlunos?.nome}`}
-        size="lg"
-      >
-        <div className="space-y-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="relative flex-1 max-w-sm">
-              <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-              <input
-                type="text"
-                placeholder={t.common.search}
-                value={studentSearchTerm}
-                onChange={(e) => setStudentSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 text-xs transition-all"
-              />
-            </div>
-            {!isReadOnly && (
-              <button 
-                onClick={() => handleOpenAddStudentModal()}
-                className="flex items-center gap-2 bg-amber-600 text-white px-4 py-2 rounded-xl text-xs font-bold uppercase transition-all hover:bg-amber-700 shadow-sm shadow-amber-100"
-              >
-                <UserPlus size={14} />
-                {t.students.add}
-              </button>
-            )}
-          </div>
-
-          <div className="max-h-[500px] overflow-y-auto space-y-2 pr-2 custom-scrollbar">
-            {loadingTurmaStudents ? (
-              <div className="flex justify-center py-12 text-slate-400">
-                <Loader2 size={32} className="animate-spin text-amber-500" />
-              </div>
-            ) : turmaStudents.length === 0 ? (
-              <div className="text-center py-16 text-slate-400 text-sm italic bg-slate-50 rounded-2xl border-2 border-dashed border-slate-100">
-                {t.classes.noStudents}
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {turmaStudents
-                  .filter(s => s.nome.toLowerCase().includes(studentSearchTerm.toLowerCase()) || s.matricula.toLowerCase().includes(studentSearchTerm.toLowerCase()))
-                  .map((aluno) => (
-                    <div key={aluno.id} className="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl hover:border-amber-200 hover:shadow-md hover:shadow-slate-100 transition-all group">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 group-hover:bg-amber-50 group-hover:text-amber-500 transition-colors">
-                          <User size={20} />
-                        </div>
-                        <div className="min-w-0">
-                          <h4 className="font-bold text-slate-800 text-sm truncate">{aluno.nome}</h4>
-                          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
-                            <span className="text-[10px] font-mono text-slate-400 bg-slate-50 px-1.5 rounded uppercase">{aluno.matricula}</span>
-                          </div>
-                        </div>
-                      </div>
-                      {!isReadOnly && (
-                        <div className="flex gap-1">
-                          <button 
-                            onClick={() => handleOpenAddStudentModal(aluno)}
-                            className="p-2 bg-slate-50 text-slate-400 hover:bg-amber-50 hover:text-amber-600 rounded-xl transition-all"
-                          >
-                            <Edit2 size={14} />
-                          </button>
-                          <button 
-                            onClick={() => deleteStudent(aluno.id)}
-                            className="p-2 bg-slate-50 text-slate-400 hover:bg-red-50 hover:text-red-600 rounded-xl transition-all"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </Modal>
-
-      <Modal
-        isOpen={isAddStudentModalOpen}
-        onClose={() => setIsAddStudentModalOpen(false)}
-        title={currentStudent?.id ? t.common.edit : t.students.add}
-      >
-        <form onSubmit={handleSaveStudent} className="space-y-4">
-          <div className="space-y-1">
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">{t.students.name}</label>
-            <input
-              required
-              type="text"
-              value={currentStudent?.nome || ''}
-              onChange={(e) => setCurrentStudent({ ...currentStudent, nome: e.target.value })}
-              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-all text-sm font-medium"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">{t.students.registration}</label>
-              <input
-                required
-                type="text"
-                value={currentStudent?.matricula || ''}
-                onChange={(e) => setCurrentStudent({ ...currentStudent, matricula: e.target.value })}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-all font-mono text-sm"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">{t.nav.classes}</label>
-              <select
-                required
-                value={currentStudent?.turma_id || ''}
-                onChange={(e) => setCurrentStudent({ ...currentStudent, turma_id: e.target.value })}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-all text-sm font-bold"
-              >
-                <option value="">Selecione uma turma</option>
-                {turmas.map(t => (
-                  <option key={t.id} value={t.id}>{t.nome} ({t.ano})</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">{t.students.email}</label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-              <input
-                type="email"
-                value={currentStudent?.email || ''}
-                onChange={(e) => setCurrentStudent({ ...currentStudent, email: e.target.value })}
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-all text-sm"
-              />
-            </div>
-          </div>
-
-          <div className="flex gap-3 pt-6">
-            <button
-              type="button"
-              onClick={() => setIsAddStudentModalOpen(false)}
-              className="flex-1 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-sm font-bold hover:bg-slate-200 transition-colors"
-            >
-              {t.common.cancel}
-            </button>
-            <button
-              type="submit"
-              disabled={savingStudent}
-              className="flex-1 py-2.5 bg-amber-600 text-white rounded-xl text-sm font-bold hover:bg-amber-700 transition-colors shadow-sm shadow-amber-100 flex items-center justify-center gap-2"
-            >
-              {savingStudent ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
-              {t.common.save}
-            </button>
-          </div>
-        </form>
       </Modal>
 
       <Modal
