@@ -11,6 +11,7 @@ export const translations = {
       actions: "Ações",
       loading: "Carregando...",
       search: "Buscar",
+      refresh: "Atualizar",
       logout: "Sair",
       back: "Voltar",
       filters: "Filtros",
@@ -38,7 +39,6 @@ export const translations = {
       morning: "Manhã",
       afternoon: "Tarde",
       night: "Noite",
-      refresh: "Atualizar",
     },
     auth: {
       login: "Entrar",
