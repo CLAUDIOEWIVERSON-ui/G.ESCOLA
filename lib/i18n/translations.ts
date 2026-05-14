@@ -94,6 +94,17 @@ export const translations = {
       year: "Ano",
       attendance: "Frequência",
       settings: "Configurações",
+      mpm: "MPM",
+    },
+    mpm: {
+      title: "Matriz de Planejamento Modular (MPM)",
+      subtitle: "Gestão técnica dos módulos e cargas horárias por curso.",
+      add: "Novo Planejamento",
+      module: "Módulo",
+      theoretical: "T. Teórica",
+      practical: "T. Prática",
+      total: "Total",
+      description: "Objetivos e Metas",
     },
     courses: {
       title: "Gerenciamento de Cursos",
