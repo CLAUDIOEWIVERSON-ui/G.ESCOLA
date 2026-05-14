@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
-import { Plus, Search, Layers, Calendar, Clock, MapPin, Pencil, Trash2, Loader2, CheckCircle2, RefreshCcw, Users, Mail, Phone, Shield, Building, CreditCard, Camera, MessageCircle, XCircle, FileText, Download, Printer, X } from 'lucide-react';
+import { Plus, Search, Layers, Library, Calendar, Clock, MapPin, Pencil, Trash2, Loader2, CheckCircle2, RefreshCcw, Users, Mail, Phone, Shield, Building, CreditCard, Camera, MessageCircle, XCircle, FileText, Download, Printer, X, GraduationCap, School, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import Modal from '@/components/Modal';
@@ -14,8 +15,13 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { useRef } from 'react';
 
-export default function TurmasPage() {
+function TurmasContent() {
   const { t, language } = useI18n();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const categoryParam = searchParams.get('cat');
+  
   const { isAdmin } = useUser();
   const isReadOnly = !isAdmin;
   const [turmas, setTurmas] = useState<any[]>([]);
@@ -42,6 +48,17 @@ export default function TurmasPage() {
   const [currentAluno, setCurrentAluno] = useState<any>(null);
   const [loadingAlunos, setLoadingAlunos] = useState(false);
   const [expandedPhoto, setExpandedPhoto] = useState<{url: string, name: string} | null>(null);
+  
+  const activeCategory = (categoryParam && ['expedito', 'especial', 'carreira'].includes(categoryParam)) 
+    ? (categoryParam as 'expedito' | 'especial' | 'carreira') 
+    : 'expedito';
+
+  const setActiveCategory = (cat: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('cat', cat);
+    router.push(`${pathname}?${params.toString()}`);
+  };
+
   const [confirmConfig, setConfirmConfig] = useState<{
     isOpen: boolean;
     title: string;
@@ -92,6 +109,7 @@ export default function TurmasPage() {
     setCurrentTurma(turma || { 
       nome: '', 
       curso_id: '', 
+      categoria: activeCategory,
       ano: new Date().getFullYear(), 
       periodo: 'manhã', 
       capacidade_max: 40, 
@@ -437,6 +455,7 @@ export default function TurmasPage() {
       const payload = {
         nome: currentTurma.nome || '',
         curso_id: currentTurma.curso_id,
+        categoria: currentTurma.categoria || 'expedito',
         ano: currentTurma.ano || new Date().getFullYear(),
         periodo: currentTurma.periodo || 'manhã',
         capacidade_max: currentTurma.capacidade_max || 40,
@@ -501,24 +520,52 @@ export default function TurmasPage() {
     });
   };
 
+  const filteredTurmas = turmas.filter(t => (t.categoria || 'expedito') === activeCategory);
+
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-end">
+    <div className="space-y-8 pb-20">
+      {/* Header with Stats Overview potentially here */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{t.classes.title}</h1>
-          <p className="text-slate-500 text-sm italic mt-1">{t.classes.subtitle}</p>
+          <div className="flex items-center gap-2 mb-1">
+            <School className="text-blue-600" size={24} />
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">{t.classes.title}</h1>
+          </div>
+          <p className="text-slate-500 text-sm italic font-medium">{t.classes.subtitle}</p>
         </div>
-        <div className="flex items-center gap-2">
+        
+        <div className="flex items-center gap-3">
+          <div className="flex items-center bg-white p-1 rounded-xl shadow-sm border border-slate-200">
+            {(['expedito', 'especial', 'carreira'] as const).map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                className={cn(
+                  "px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
+                  activeCategory === cat 
+                    ? "bg-blue-600 text-white shadow-lg shadow-blue-200" 
+                    : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
+                )}
+              >
+                {t.classes[`category${cat.charAt(0).toUpperCase() + cat.slice(1)}` as keyof typeof t.classes]}
+              </button>
+            ))}
+          </div>
+
+          <div className="h-10 w-[1px] bg-slate-200 mx-1 hidden md:block" />
+
           <button 
             onClick={refreshData}
-            className="p-2 text-slate-500 hover:text-blue-600 transition-colors"
+            className="p-3 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+            title={t.common.refresh}
           >
-            <RefreshCcw size={18} className={refreshing ? "animate-spin" : ""} />
+            <RefreshCcw size={20} className={refreshing ? "animate-spin" : ""} />
           </button>
+
           {!isReadOnly && (
             <button 
               onClick={() => handleOpenModal()}
-              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-all shadow-sm shadow-blue-100"
+              className="flex items-center gap-2 bg-slate-900 text-white px-5 py-3 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-200"
             >
               <Plus size={18} />
               {t.classes.add}
@@ -527,113 +574,169 @@ export default function TurmasPage() {
         </div>
       </div>
 
-      <div className="flex flex-col gap-3">
+      <div className={cn(
+        "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6",
+        loading && "opacity-50 pointer-events-none"
+      )}>
         {loading ? (
-          <div className="py-12 flex justify-center">
-             <div className="animate-spin rounded-full h-8 w-8 border-2 border-slate-200 border-t-blue-600"></div>
-          </div>
-        ) : turmas.map((turma, i) => (
-          <motion.div 
-            key={turma.id}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: i * 0.05 }}
-            onClick={() => handleViewStudents(turma)}
-            className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden group hover:shadow-md hover:border-blue-200 transition-all cursor-pointer flex flex-col md:flex-row md:items-center justify-between gap-4"
-          >
-            <div className="flex items-center gap-4 flex-1 min-w-0">
-              <div className="w-12 h-12 bg-slate-50 text-slate-400 rounded-xl flex items-center justify-center group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors shrink-0">
-                <Layers size={24} />
+          Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="bg-white h-64 rounded-3xl border border-slate-100 animate-pulse flex flex-col p-6 space-y-4">
+              <div className="flex justify-between">
+                <div className="w-12 h-12 bg-slate-100 rounded-2xl" />
+                <div className="w-20 h-6 bg-slate-100 rounded-full" />
               </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-col">
-                  <p className="text-[10px] text-blue-600 font-bold uppercase tracking-wider mb-0.5 truncate leading-none">{turma.curso?.nome}</p>
-                  <h3 className="font-bold text-slate-800 text-lg truncate leading-tight">{turma.nome}</h3>
+              <div className="space-y-2">
+                <div className="w-3/4 h-6 bg-slate-100 rounded" />
+                <div className="w-1/2 h-4 bg-slate-100 rounded" />
+              </div>
+              <div className="mt-auto h-12 bg-slate-50 rounded-2xl" />
+            </div>
+          ))
+        ) : filteredTurmas.length > 0 ? (
+          filteredTurmas.map((turma, i) => (
+            <motion.div 
+              key={turma.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.05, ease: [0.23, 1, 0.32, 1] }}
+              onClick={() => handleViewStudents(turma)}
+              className="bg-white rounded-3xl border border-slate-100 shadow-sm relative overflow-hidden group hover:shadow-xl hover:border-blue-100 hover:-translate-y-1 transition-all cursor-pointer flex flex-col p-6"
+            >
+              {/* Category Indicator Line */}
+              <div className={cn(
+                "absolute top-0 left-0 w-full h-1.5",
+                turma.categoria === 'expedito' ? "bg-blue-500" :
+                turma.categoria === 'especial' ? "bg-purple-500" : "bg-amber-500"
+              )} />
+
+              <div className="flex justify-between items-start mb-6">
+                <div className={cn(
+                  "w-14 h-14 rounded-2xl flex items-center justify-center transition-colors shadow-inner",
+                  turma.categoria === 'expedito' ? "bg-blue-50 text-blue-500" :
+                  turma.categoria === 'especial' ? "bg-purple-50 text-purple-500" : "bg-amber-50 text-amber-500"
+                )}>
+                  {turma.categoria === 'expedito' ? <Layers size={28} /> :
+                   turma.categoria === 'especial' ? <GraduationCap size={28} /> : <Library size={28} />}
                 </div>
                 
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2">
-                  {turma.internacional && (
-                    <span className="px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 text-[8px] font-bold uppercase tracking-widest border border-purple-200">
-                      {t.courses.international}
-                    </span>
-                  )}
-                  {turma.localizacao && (
-                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
-                      <MapPin size={12} className="text-slate-400" />
-                      {turma.localizacao}
-                    </span>
-                  )}
-                  {turma.instrutor && (
-                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-1.5">
-                      <div className="w-1.5 h-1.5 bg-blue-400 rounded-full" />
-                      {t.classes.instructor}: {turma.instrutor}
-                    </span>
-                  )}
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
-                    <Calendar size={12} className="text-slate-300" />
-                    {turma.ano}
-                  </span>
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1.5 capitalize">
-                    <Clock size={12} className="text-slate-300" />
-                    {turma.periodo === 'manhã' ? t.common.morning : 
-                     turma.periodo === 'tarde' ? t.common.afternoon : 
-                     turma.periodo === 'noite' ? t.common.night : turma.periodo}
-                  </span>
+                <div className="flex flex-col items-end gap-2">
                   <span className={cn(
-                    "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full",
-                    turma.status === 'concluída' ? "bg-emerald-100 text-emerald-700" :
-                    turma.status === 'cancelada' ? "bg-red-100 text-red-700" :
-                    "bg-blue-100 text-blue-700"
+                    "text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border",
+                    turma.status === 'concluída' ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
+                    turma.status === 'cancelada' ? "bg-red-50 text-red-600 border-red-100" :
+                    "bg-blue-50 text-blue-600 border-blue-100"
                   )}>
                     {turma.status === 'concluída' ? t.classes.completed : 
                      turma.status === 'cancelada' ? t.classes.cancelled : t.classes.active}
                   </span>
+                  {turma.internacional && (
+                    <span className="flex items-center gap-1.5 text-[8px] font-bold text-purple-600 bg-purple-50 px-2.5 py-1 rounded-md uppercase tracking-wider border border-purple-100">
+                      <MapPin size={10} />
+                      {t.courses.international}
+                    </span>
+                  )}
                 </div>
               </div>
-            </div>
 
-            <div className="md:w-64 shrink-0 flex flex-col gap-2">
-              <div className="flex justify-between items-end text-[10px] font-bold uppercase tracking-wide">
-                <span className="text-slate-400">{t.classes.capacity}</span>
-                <span className="text-slate-700 bg-slate-100 px-2 py-0.5 rounded">{turma.alunos_matriculados} / {turma.capacidade_max}</span>
+              <div className="flex-1 min-w-0 mb-6">
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mb-1 truncate">{turma.curso?.nome}</p>
+                <h3 className="text-xl font-black text-slate-800 tracking-tight leading-tight group-hover:text-blue-600 transition-colors">{turma.nome}</h3>
+                
+                <div className="mt-4 grid grid-cols-2 gap-y-3 gap-x-2">
+                  <div className="flex items-center gap-2 text-slate-500">
+                    <Calendar size={14} className="text-slate-300" />
+                    <span className="text-[10px] font-bold uppercase tracking-wider">{turma.ano}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-slate-500">
+                    <Clock size={14} className="text-slate-300" />
+                    <span className="text-[10px] font-bold uppercase tracking-wider capitalize">
+                      {turma.periodo === 'manhã' ? t.common.morning : 
+                       turma.periodo === 'tarde' ? t.common.afternoon : 
+                       turma.periodo === 'noite' ? t.common.night : turma.periodo}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-slate-500 col-span-2">
+                    <Users size={14} className="text-slate-300" />
+                    <span className="text-[10px] font-bold uppercase tracking-wider">{turma.instrutor || "S/ Instrutor"}</span>
+                  </div>
+                </div>
               </div>
-              <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-blue-500 transition-all duration-700 ease-out" 
-                  style={{ width: `${Math.min(100, (turma.alunos_matriculados / (turma.capacidade_max || 1)) * 100)}%` }}
-                />
-              </div>
-            </div>
 
-            <div className="flex items-center gap-2 shrink-0 border-t md:border-t-0 md:border-l border-slate-100 pt-3 md:pt-0 md:pl-4" onClick={(e) => e.stopPropagation()}>
+              <div className="space-y-4 pt-6 border-t border-slate-50 mt-auto">
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleViewStudents(turma);
+                  }}
+                  className="w-full flex items-center justify-between p-3 rounded-2xl bg-slate-50 group/btn hover:bg-blue-600 transition-all"
+                >
+                  <div className="flex items-center gap-2 text-slate-600 group-hover/btn:text-white transition-colors">
+                    <Users size={16} />
+                    <span className="text-[10px] font-black uppercase tracking-widest">{t.classes.manageStudents}</span>
+                  </div>
+                  <ChevronRight size={14} className="text-slate-300 group-hover/btn:text-white transition-colors" />
+                </button>
+
+                <div className="space-y-2 px-1">
+                  <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest text-slate-400">
+                    <span>{t.classes.capacity}</span>
+                    <span className="text-slate-900">{turma.alunos_matriculados} / {turma.capacidade_max}</span>
+                  </div>
+                  <div className="h-1.5 bg-slate-50 rounded-full overflow-hidden p-0.5 border border-slate-100 shadow-inner">
+                    <div 
+                      className={cn(
+                        "h-full rounded-full transition-all duration-1000 ease-out",
+                        (turma.alunos_matriculados / (turma.capacidade_max || 1)) > 0.9 ? "bg-red-500" : "bg-blue-500"
+                      )}
+                      style={{ width: `${Math.min(100, (turma.alunos_matriculados / (turma.capacidade_max || 1)) * 100)}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Hover Actions Bar */}
               {!isReadOnly && (
-                <>
+                <div 
+                  className="absolute bottom-4 right-4 flex items-center gap-1 opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 pointer-events-none group-hover:pointer-events-auto" 
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <button 
                     onClick={() => handleOpenModal(turma)}
-                    className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors flex items-center gap-2 text-xs font-bold"
+                    className="p-2.5 bg-white text-blue-600 rounded-xl shadow-lg border border-blue-50 hover:bg-blue-600 hover:text-white transition-all transform hover:scale-110"
                     title={t.common.edit}
                   >
-                    <div className="p-1.5 bg-blue-50 rounded group-hover:bg-blue-100 transition-colors">
-                      <Pencil size={14} />
-                    </div>
-                    <span className="hidden xl:inline">{t.common.edit}</span>
+                    <Pencil size={14} strokeWidth={2.5} />
                   </button>
                   <button 
                     disabled={deleting === turma.id}
                     onClick={() => handleDelete(turma.id)}
-                    className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors flex items-center gap-2 text-xs font-bold disabled:opacity-50"
+                    className="p-2.5 bg-white text-red-600 rounded-xl shadow-lg border border-red-50 hover:bg-red-600 hover:text-white transition-all transform hover:scale-110 disabled:opacity-50"
                     title={t.common.delete}
                   >
-                    <div className="p-1.5 bg-red-50 rounded group-hover:bg-red-100 transition-colors">
-                      {deleting === turma.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-                    </div>
-                    <span className="hidden xl:inline">{t.common.delete}</span>
+                    {deleting === turma.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} strokeWidth={2.5} />}
                   </button>
-                </>
+                </div>
               )}
+            </motion.div>
+          ))
+        ) : (
+          <div className="col-span-full py-32 flex flex-col items-center justify-center text-center bg-white rounded-[40px] border border-dashed border-slate-200">
+            <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mb-6 text-slate-200">
+              <Layers size={48} strokeWidth={1} />
             </div>
-          </motion.div>
-        ))}
+            <h3 className="text-2xl font-black text-slate-800 tracking-tight">{t.common.noneFound}</h3>
+            <p className="text-slate-400 text-sm max-w-xs mt-2 font-medium italic">{t.classes.noClassesInCategory}</p>
+            {!isReadOnly && (
+              <button 
+                onClick={() => handleOpenModal()}
+                className="mt-8 flex items-center gap-2 text-blue-600 bg-blue-50 px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-blue-100 transition-all"
+              >
+                <Plus size={18} />
+                {t.classes.add}
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       <Modal
@@ -641,56 +744,62 @@ export default function TurmasPage() {
         onClose={() => setIsModalOpen(false)}
         title={currentTurma?.id ? t.common.edit : t.classes.add}
       >
-        <form onSubmit={handleSave} className="space-y-4">
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-              {t.classes.name}
-            </label>
-            <input
-              required
-              type="text"
-              value={currentTurma?.nome || ''}
-              onChange={(e) => setCurrentTurma({ ...currentTurma, nome: e.target.value })}
-              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm"
-              placeholder="Ex: Turma A"
-            />
-          </div>
+        <form onSubmit={handleSave} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="md:col-span-2">
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{t.classes.name}</label>
+              <input
+                required
+                type="text"
+                value={currentTurma?.nome || ''}
+                onChange={(e) => setCurrentTurma({ ...currentTurma, nome: e.target.value })}
+                className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-sm font-bold text-slate-800 placeholder:text-slate-300 shadow-sm"
+                placeholder="Ex: Turma Alfa 2024"
+              />
+            </div>
 
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-              {t.classes.instructor}
-            </label>
-            <input
-              type="text"
-              value={currentTurma?.instrutor || ''}
-              onChange={(e) => setCurrentTurma({ ...currentTurma, instrutor: e.target.value })}
-              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm"
-              placeholder="Ex: Cel Silva"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-              {t.nav.courses}
-            </label>
-            <select
-              required
-              value={currentTurma?.curso_id || ''}
-              onChange={(e) => setCurrentTurma({ ...currentTurma, curso_id: e.target.value })}
-              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm appearance-none"
-            >
-              <option value="">{t.courses.selectCourse}</option>
-              {cursos.map(curso => (
-                <option key={curso.id} value={curso.id}>{curso.nome}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                {t.classes.year}
-              </label>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{t.classes.category}</label>
+              <select
+                required
+                value={currentTurma?.categoria || 'expedito'}
+                onChange={(e) => setCurrentTurma({ ...currentTurma, categoria: e.target.value })}
+                className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-sm font-bold text-slate-800 appearance-none cursor-pointer shadow-sm"
+              >
+                <option value="expedito">{t.classes.categoryExpedito}</option>
+                <option value="especial">{t.classes.categoryEspecial}</option>
+                <option value="carreira">{t.classes.categoryCarreira}</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{t.classes.instructor}</label>
+              <input
+                type="text"
+                value={currentTurma?.instrutor || ''}
+                onChange={(e) => setCurrentTurma({ ...currentTurma, instrutor: e.target.value })}
+                className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-sm font-bold text-slate-800 placeholder:text-slate-300 shadow-sm"
+                placeholder="Ex: Cel Sobrenome"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{t.nav.courses}</label>
+              <select
+                required
+                value={currentTurma?.curso_id || ''}
+                onChange={(e) => setCurrentTurma({ ...currentTurma, curso_id: e.target.value })}
+                className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-sm font-bold text-slate-800 appearance-none cursor-pointer shadow-sm"
+              >
+                <option value="">{t.courses.selectCourse}</option>
+                {cursos.map(curso => (
+                  <option key={curso.id} value={curso.id}>{curso.nome}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{t.classes.year}</label>
               <input
                 required
                 type="number"
@@ -699,31 +808,26 @@ export default function TurmasPage() {
                   const val = parseInt(e.target.value);
                   setCurrentTurma({ ...currentTurma, ano: isNaN(val) ? new Date().getFullYear() : val });
                 }}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm"
+                className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-sm font-bold text-slate-800 shadow-sm"
               />
             </div>
+            
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                {t.classes.period}
-              </label>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{t.classes.period}</label>
               <select
                 required
                 value={currentTurma?.periodo || 'manhã'}
                 onChange={(e) => setCurrentTurma({ ...currentTurma, periodo: e.target.value })}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm appearance-none"
+                className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-sm font-bold text-slate-800 appearance-none cursor-pointer shadow-sm"
               >
                 <option value="manhã">{t.common.morning}</option>
                 <option value="tarde">{t.common.afternoon}</option>
                 <option value="noite">{t.common.night}</option>
               </select>
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                {t.classes.capacity}
-              </label>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{t.classes.capacity}</label>
               <input
                 required
                 type="number"
@@ -732,90 +836,83 @@ export default function TurmasPage() {
                   const val = parseInt(e.target.value);
                   setCurrentTurma({ ...currentTurma, capacidade_max: isNaN(val) ? 40 : val });
                 }}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm"
+                className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-sm font-bold text-slate-800 shadow-sm"
               />
             </div>
+
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                {t.classes.status}
-              </label>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{t.classes.status}</label>
               <select
                 required
                 value={currentTurma?.status || 'ativa'}
                 onChange={(e) => setCurrentTurma({ ...currentTurma, status: e.target.value })}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm appearance-none"
+                className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-sm font-bold text-slate-800 appearance-none cursor-pointer shadow-sm"
               >
                 <option value="ativa">{t.classes.active}</option>
                 <option value="concluída">{t.classes.completed}</option>
                 <option value="cancelada">{t.classes.cancelled}</option>
               </select>
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                {t.classes.startDate}
-              </label>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{t.classes.startDate}</label>
               <input
                 type="date"
                 value={currentTurma?.data_inicio || ''}
                 onChange={(e) => setCurrentTurma({ ...currentTurma, data_inicio: e.target.value })}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm"
+                className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-sm font-bold text-slate-800 shadow-sm"
               />
             </div>
+
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                {t.classes.endDate}
-              </label>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{t.classes.endDate}</label>
               <input
                 type="date"
                 value={currentTurma?.data_fim || ''}
                 onChange={(e) => setCurrentTurma({ ...currentTurma, data_fim: e.target.value })}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm"
+                className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-sm font-bold text-slate-800 shadow-sm"
               />
             </div>
-          </div>
 
-          <div className="space-y-4 pt-2">
-            <label className="flex items-center gap-3 cursor-pointer group">
-              <input
-                type="checkbox"
-                checked={currentTurma?.internacional || false}
-                onChange={(e) => setCurrentTurma({ ...currentTurma, internacional: e.target.checked })}
-                className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 border-slate-300"
-              />
-              <span className="text-sm font-bold text-slate-700 group-hover:text-purple-600 transition-colors uppercase tracking-wider">
-                {t.courses.international}
-              </span>
-            </label>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                {t.courses.location}
+            <div className="md:col-span-2 space-y-4 pt-4 border-t border-slate-100">
+               <label className="flex items-center gap-4 cursor-pointer group p-4 border border-slate-100 rounded-2xl hover:bg-slate-50 transition-all">
+                <input
+                  type="checkbox"
+                  checked={currentTurma?.internacional || false}
+                  onChange={(e) => setCurrentTurma({ ...currentTurma, internacional: e.target.checked })}
+                  className="w-5 h-5 rounded-lg text-blue-600 focus:ring-blue-500 border-slate-300"
+                />
+                <div className="flex flex-col">
+                  <span className="text-xs font-black text-slate-800 uppercase tracking-widest group-hover:text-blue-600 transition-all">{t.courses.international}</span>
+                  <p className="text-[10px] text-slate-400 font-medium">Turma vinculada a localizações externas</p>
+                </div>
               </label>
-              <input
-                type="text"
-                value={currentTurma?.localizacao || ''}
-                onChange={(e) => setCurrentTurma({ ...currentTurma, localizacao: e.target.value })}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm"
-                placeholder="Ex: Portugal, Luanda, Brasília..."
-              />
+
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{t.courses.location}</label>
+                <input
+                  type="text"
+                  value={currentTurma?.localizacao || ''}
+                  onChange={(e) => setCurrentTurma({ ...currentTurma, localizacao: e.target.value })}
+                  className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-sm font-bold text-slate-800 placeholder:text-slate-300 shadow-sm"
+                  placeholder="Ex: Luanda, Angola"
+                />
+              </div>
             </div>
           </div>
 
-          <div className="flex gap-3 pt-4">
+          <div className="flex gap-4 pt-8">
             <button
               type="button"
               onClick={() => setIsModalOpen(false)}
-              className="flex-1 px-4 py-2.5 border border-slate-200 text-slate-600 rounded-lg font-bold text-sm hover:bg-slate-50 transition-all"
+              className="flex-1 px-5 py-4 border border-slate-200 text-slate-500 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-50 transition-all"
             >
               {t.common.cancel}
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg font-bold text-sm hover:bg-blue-700 transition-all shadow-md shadow-blue-100 flex items-center justify-center gap-2 disabled:opacity-70"
+              className="flex-3 px-5 py-4 bg-blue-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl shadow-blue-100 flex items-center justify-center gap-2 disabled:opacity-70"
             >
               {saving ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle2 size={18} />}
               {t.common.save}
@@ -1365,5 +1462,21 @@ export default function TurmasPage() {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+export default function TurmasPage() {
+  return (
+    <Suspense fallback={
+      <div className="py-24 flex flex-col items-center justify-center">
+        <div className="relative">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-600"></div>
+          <School className="absolute inset-0 m-auto text-blue-600" size={24} />
+        </div>
+        <p className="mt-4 text-slate-500 font-black text-[10px] uppercase tracking-[0.2em] animate-pulse">Carregando Turmas...</p>
+      </div>
+    }>
+      <TurmasContent />
+    </Suspense>
   );
 }

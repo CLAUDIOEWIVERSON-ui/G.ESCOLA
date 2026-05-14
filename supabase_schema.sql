@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS public.turmas (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   curso_id UUID REFERENCES public.cursos(id) NOT NULL,
   nome TEXT NOT NULL,
+  categoria TEXT DEFAULT 'expedito',
   ano INTEGER NOT NULL,
   periodo periodo_enum NOT NULL,
   capacidade_max INTEGER DEFAULT 40,

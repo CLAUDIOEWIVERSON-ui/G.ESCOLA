@@ -52,7 +52,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const navItems = [
     { name: t.nav.dashboard, icon: LayoutDashboard, path: '/dashboard' },
     { name: t.nav.courses, icon: BookOpen, path: '/cursos' },
-    { name: t.nav.classes, icon: Library, path: '/turmas' },
+    { 
+      name: t.nav.classes, 
+      icon: Library, 
+      path: '/turmas',
+      subItems: [
+        { name: t.classes.categoryExpedito, path: '/turmas?cat=expedito' },
+        { name: t.classes.categoryEspecial, path: '/turmas?cat=especial' },
+        { name: t.classes.categoryCarreira, path: '/turmas?cat=carreira' },
+      ]
+    },
     { name: t.nav.grades, icon: FileCheck, path: '/notas' },
     { name: t.nav.reportCard, icon: FileText, path: '/boletim' },
     { name: t.nav.attendance, icon: CalendarDays, path: '/frequencia' },
@@ -83,28 +92,58 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 {t.auth.management}
               </div>
               <div className="space-y-1">
-                {navItems.slice(0, 4).map((item) => {
-                  const isActive = pathname === item.path;
+                {navItems.slice(0, 4).map((item: any) => {
+                  const subItemPaths = item.subItems?.map((s: any) => s.path) || [];
+                  const isAnySubActive = subItemPaths.some((p: string) => pathname + (typeof window !== 'undefined' ? window.location.search : '') === p);
+                  const isParentActive = pathname === item.path || isAnySubActive;
+                  const isExpanded = sidebarOpen && (isParentActive || isAnySubActive);
+
                   return (
-                    <Link 
-                      key={item.path} 
-                      href={item.path}
-                      className={cn(
-                        "flex items-center gap-3 px-3 py-2 rounded-md transition-all group",
-                        isActive 
-                          ? "bg-slate-800 text-white" 
-                          : "hover:bg-slate-800/50 hover:text-white"
+                    <div key={item.path} className="flex flex-col">
+                      <Link 
+                        href={item.path}
+                        className={cn(
+                          "flex items-center gap-3 px-3 py-2 rounded-md transition-all group relative",
+                          isParentActive 
+                            ? "bg-slate-800 text-white" 
+                            : "hover:bg-slate-800/50 hover:text-white"
+                        )}
+                      >
+                        <item.icon size={18} className={cn("shrink-0 opacity-75", isParentActive ? "text-white" : "text-slate-400 group-hover:text-white")} />
+                        <span className={cn(
+                          "text-sm transition-opacity flex-1 whitespace-nowrap px-2 py-0.5 rounded",
+                          !sidebarOpen && "opacity-0 invisible w-0",
+                          isParentActive && "bg-[#dfe0e7] text-[#518aff] drop-shadow-[0_0_8px_rgba(81,138,255,0.6)] font-bold uppercase border border-[#518aff]/30"
+                        )}>
+                          {item.name}
+                        </span>
+                        {item.subItems && sidebarOpen && (
+                          <ChevronRight size={14} className={cn("transition-transform text-slate-500", isExpanded && "rotate-90 text-white")} />
+                        )}
+                      </Link>
+
+                      {item.subItems && isExpanded && (
+                        <div className="ml-9 mt-1 space-y-1 border-l border-slate-700/50">
+                          {item.subItems.map((sub: any) => {
+                            const isSubActive = (pathname + (typeof window !== 'undefined' ? window.location.search : '')) === sub.path;
+                            return (
+                              <Link 
+                                key={sub.path}
+                                href={sub.path}
+                                className={cn(
+                                  "block px-4 py-1.5 text-xs font-medium transition-all border-l -ml-px",
+                                  isSubActive
+                                    ? "text-blue-400 border-blue-400 font-bold" 
+                                    : "text-slate-500 border-transparent hover:text-slate-300 hover:border-slate-600"
+                                )}
+                              >
+                                {sub.name}
+                              </Link>
+                            );
+                          })}
+                        </div>
                       )}
-                    >
-                      <item.icon size={18} className={cn("shrink-0 opacity-75", isActive ? "text-white" : "text-slate-400 group-hover:text-white")} />
-                      <span className={cn(
-                        "text-sm transition-opacity whitespace-nowrap px-2 py-0.5 rounded",
-                        !sidebarOpen && "opacity-0 invisible w-0",
-                        isActive && "bg-[#dfe0e7] text-[#518aff] drop-shadow-[0_0_8px_rgba(81,138,255,0.6)] font-bold uppercase border border-[#518aff]/30"
-                      )}>
-                        {item.name}
-                      </span>
-                    </Link>
+                    </div>
                   );
                 })}
               </div>

@@ -174,6 +174,12 @@ export const translations = {
       cancelled: "Cancelada",
       startDate: "Início",
       endDate: "Fim",
+      category: "Categoria",
+      categoryExpedito: "Expedito",
+      categoryEspecial: "Especial",
+      categoryCarreira: "Carreira",
+      noClassesInCategory: "Nenhuma turma nesta categoria.",
+      manageStudents: "Gerenciar Alunos",
     },
     subjects: {
       title: "Disciplinas",
