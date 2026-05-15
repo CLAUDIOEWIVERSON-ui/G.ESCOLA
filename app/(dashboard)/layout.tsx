@@ -35,7 +35,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { t, language } = useI18n();
   const { profile, isAdmin, isAluno, isProfessor, loading: authLoading } = useUser();
   const isReadOnly = !isAdmin;
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const isDesktop = window.innerWidth >= 1024;
+      setSidebarOpen(isDesktop);
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -75,6 +86,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex min-h-screen bg-slate-50 font-sans text-slate-900">
+      {/* Sidebar Overlay (Mobile only) */}
+      <AnimatePresence>
+        {sidebarOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setSidebarOpen(false)}
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 lg:hidden"
+          />
+        )}
+      </AnimatePresence>
+
       {/* Sidebar */}
       <aside 
         className={cn(
@@ -210,7 +234,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
         <EventMarquee />
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 sticky top-0 z-40">
+        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-40">
           <div className="flex items-center gap-6">
             <button 
               onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -248,7 +272,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        <main className="flex-1 p-8 overflow-y-auto overflow-x-hidden">
+        <main className="flex-1 p-4 lg:p-8 overflow-y-auto overflow-x-hidden pb-24 lg:pb-8">
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={pathname}
@@ -263,6 +287,44 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </main>
         <ProximityAlert />
       </div>
+
+      {/* Bottom Nav for Mobile */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-4 py-2 flex items-center justify-around z-50 h-16 shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
+        {navItems.filter(item => ['/dashboard', '/cursos', '/turmas', '/configuracoes'].includes(item.path)).map((item) => {
+          const isActive = pathname === item.path;
+          return (
+            <Link 
+              key={item.path} 
+              href={item.path}
+              className={cn(
+                "flex flex-col items-center gap-1 p-2 transition-all min-w-[64px]",
+                isActive ? "text-blue-600 scale-110" : "text-slate-400 hover:text-slate-600"
+              )}
+            >
+              <item.icon size={20} className={isActive ? "text-blue-600" : "text-slate-400"} />
+              <span className={cn(
+                "text-[8px] font-black uppercase tracking-widest text-center",
+                isActive ? "text-blue-600" : "text-slate-400"
+              )}>
+                {item.name.split(' ')[0]}
+              </span>
+              {isActive && (
+                <motion.div 
+                  layoutId="bottom-nav-indicator"
+                  className="absolute -bottom-2 w-8 h-1 bg-blue-600 rounded-t-full"
+                />
+              )}
+            </Link>
+          );
+        })}
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="flex flex-col items-center gap-1 p-2 text-slate-400 hover:text-slate-600 min-w-[64px]"
+        >
+          <Menu size={20} />
+          <span className="text-[8px] font-black uppercase tracking-widest">{t.common.menu || 'Menu'}</span>
+        </button>
+      </nav>
     </div>
   );
 }

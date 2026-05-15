@@ -373,21 +373,21 @@ export default function NotasPage() {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">
-                    <th className="px-6 py-4 min-w-[200px] bg-slate-50/50 rounded-tl-2xl">
+                    <th className="px-4 lg:px-6 py-4 min-w-[140px] lg:min-w-[200px] bg-slate-50/50 rounded-tl-2xl">
                       <div className="flex items-center gap-2">
                         <Users size={14} className="text-slate-400" />
                         {t.reportCard.student}
                       </div>
                     </th>
                     {Array.from({ length: effectiveModules }).map((_, i) => (
-                      <th key={i} className="px-4 py-4 text-center border-l border-slate-50 bg-slate-50/30">
+                      <th key={i} className="px-2 lg:px-4 py-4 text-center border-l border-slate-50 bg-slate-50/30">
                         {t.grades.module} {i + 1}
                       </th>
                     ))}
-                    <th className="px-6 py-4 text-center bg-blue-50/50 text-blue-900 border-l border-slate-100">{t.reportCard.average}</th>
-                    <th className="px-6 py-4 text-center border-l border-slate-100">{t.reportCard.status}</th>
-                    <th className="px-6 py-4 text-center border-l border-slate-100">{t.finance?.togglePayment || 'Pgto'}</th>
-                    <th className="px-6 py-4 border-l border-slate-100 rounded-tr-2xl"></th>
+                    <th className="px-3 lg:px-6 py-4 text-center bg-blue-50/50 text-blue-900 border-l border-slate-100">{t.reportCard.average}</th>
+                    <th className="px-3 lg:px-6 py-4 text-center border-l border-slate-100">{t.reportCard.status}</th>
+                    <th className="px-3 lg:px-6 py-4 text-center border-l border-slate-100">Pgto</th>
+                    <th className="px-2 lg:px-6 py-4 border-l border-slate-100 rounded-tr-2xl"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">

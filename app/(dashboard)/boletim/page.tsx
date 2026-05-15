@@ -289,12 +289,12 @@ export default function BoletimPage() {
                <table className="w-full text-left border-collapse">
                  <thead>
                    <tr className="text-[10px] font-bold text-slate-400 border-b border-slate-100 uppercase tracking-wider">
-                      <th className="px-6 py-4">{t.reportCard.student}</th>
+                      <th className="px-4 lg:px-6 py-4">{t.reportCard.student}</th>
                       {Array.from({ length: courseModules }).map((_, i) => (
-                        <th key={i} className="px-3 py-4 text-center">MOD {i + 1}</th>
+                        <th key={i} className="px-1 lg:px-3 py-4 text-center">MOD {i + 1}</th>
                       ))}
-                      <th className="px-6 py-4 text-center">{t.reportCard.average}</th>
-                      <th className="px-6 py-4 text-right">{t.reportCard.status}</th>
+                      <th className="px-2 lg:px-6 py-4 text-center">{t.reportCard.average}</th>
+                      <th className="px-3 lg:px-6 py-4 text-right">{t.reportCard.status}</th>
                    </tr>
                  </thead>
                  <tbody>
@@ -313,9 +313,9 @@ export default function BoletimPage() {
                        const StatusIcon = status.icon;
                        return (
                          <tr key={row.id} className={cn("border-b border-slate-50 hover:bg-slate-50/40 transition-colors group", row.nota_final !== null && row.nota_final !== undefined && Number(row.nota_final) === maxAvgInBoletim && maxAvgInBoletim > 0 && "bg-blue-50/50")}>
-                           <td className="px-6 py-4">
+                           <td className="px-4 lg:px-6 py-4">
                              <div className="flex items-center gap-2">
-                               <div className="font-bold text-slate-800">{row.aluno?.nome}</div>
+                               <div className="font-bold text-slate-800 text-xs lg:text-sm">{row.aluno?.nome}</div>
                                {row.nota_final !== null && row.nota_final !== undefined && Number(row.nota_final) === maxAvgInBoletim && maxAvgInBoletim > 0 && (
                                  <span className="flex items-center gap-1 bg-amber-100 text-amber-700 text-[8px] font-black uppercase px-1.5 py-0.5 rounded border border-amber-200">
                                    ⭐ Melhor Média
