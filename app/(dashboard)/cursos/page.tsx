@@ -148,7 +148,11 @@ export default function CursosPage() {
     }
   };
 
+  const [deletingDisciplinaId, setDeletingDisciplinaId] = useState<string | null>(null);
+  const [confirmDeleteDisciplinaId, setConfirmDeleteDisciplinaId] = useState<string | null>(null);
+
   const fetchDisciplinas = useCallback(async (cursoId: string) => {
+    setLoadingDisciplinas(true);
     const { data } = await supabase
       .from('disciplinas')
       .select('*')
@@ -163,6 +167,8 @@ export default function CursosPage() {
     if (manageDisciplinasCurso) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchDisciplinas(manageDisciplinasCurso.id);
+    } else {
+      setDisciplinas([]);
     }
   }, [manageDisciplinasCurso, fetchDisciplinas]);
 
@@ -198,7 +204,6 @@ export default function CursosPage() {
         if (error) throw error;
       }
 
-      setLoadingDisciplinas(true);
       await fetchDisciplinas(manageDisciplinasCurso.id);
       setIsDisciplinaModalOpen(false);
     } catch (err: any) {
@@ -210,18 +215,22 @@ export default function CursosPage() {
 
   const deleteDisciplina = async (id: string) => {
     if (isReadOnly || !manageDisciplinasCurso) return;
-    if (confirm(t.common.deleteConfirm)) {
-      setLoadingDisciplinas(true);
+    
+    setDeletingDisciplinaId(id);
+    try {
       const { error } = await supabase
         .from('disciplinas')
         .update({ deleted_at: new Date().toISOString() })
         .eq('id', id);
-      if (error) {
-        alert(error.message);
-        setLoadingDisciplinas(false);
-      } else {
-        await fetchDisciplinas(manageDisciplinasCurso.id);
-      }
+      
+      if (error) throw error;
+      
+      await fetchDisciplinas(manageDisciplinasCurso.id);
+      setConfirmDeleteDisciplinaId(null);
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setDeletingDisciplinaId(null);
     }
   };
 
@@ -584,18 +593,40 @@ export default function CursosPage() {
                   </div>
                   {!isReadOnly && (
                     <div className="flex gap-1">
-                      <button 
-                        onClick={() => handleOpenDisciplinaModal(d)}
-                        className="p-2 bg-slate-50 border border-slate-100 hover:bg-blue-50 hover:text-blue-600 rounded-lg text-slate-400 transition-all shadow-sm"
-                      >
-                        <Edit2 size={14} />
-                      </button>
-                      <button 
-                        onClick={() => deleteDisciplina(d.id)}
-                        className="p-2 bg-slate-50 border border-slate-100 hover:bg-red-50 hover:text-red-600 rounded-lg text-slate-400 transition-all shadow-sm"
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                      {!confirmDeleteDisciplinaId || confirmDeleteDisciplinaId !== d.id ? (
+                        <>
+                          <button 
+                            onClick={() => handleOpenDisciplinaModal(d)}
+                            className="p-2 bg-slate-50 border border-slate-100 hover:bg-blue-50 hover:text-blue-600 rounded-lg text-slate-400 transition-all shadow-sm"
+                          >
+                            <Edit2 size={14} />
+                          </button>
+                          <button 
+                            onClick={() => setConfirmDeleteDisciplinaId(d.id)}
+                            className="p-2 bg-slate-50 border border-slate-100 hover:bg-red-50 hover:text-red-600 rounded-lg text-slate-400 transition-all shadow-sm"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </>
+                      ) : (
+                        <div className="flex gap-1 animate-in fade-in zoom-in duration-200">
+                          <button 
+                            onClick={() => setConfirmDeleteDisciplinaId(null)}
+                            disabled={deletingDisciplinaId === d.id}
+                            className="px-2 py-1 bg-slate-100 text-slate-600 rounded-md text-[10px] font-bold uppercase hover:bg-slate-200 transition-all"
+                          >
+                            {t.common.cancel}
+                          </button>
+                          <button 
+                            onClick={() => deleteDisciplina(d.id)}
+                            disabled={deletingDisciplinaId === d.id}
+                            className="px-2 py-1 bg-red-600 text-white rounded-md text-[10px] font-bold uppercase hover:bg-red-700 transition-all flex items-center gap-1"
+                          >
+                            {deletingDisciplinaId === d.id ? <Loader2 size={10} className="animate-spin" /> : <Trash2 size={10} />}
+                            {t.common.confirm}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

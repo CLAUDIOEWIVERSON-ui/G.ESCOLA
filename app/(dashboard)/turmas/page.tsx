@@ -5,7 +5,7 @@ import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
-import { Plus, Search, Layers, Library, Calendar, Clock, MapPin, Pencil, Trash2, Loader2, CheckCircle2, RefreshCcw, Users, Mail, Phone, Shield, Building, CreditCard, Camera, MessageCircle, XCircle, FileText, Download, Printer, X, GraduationCap, School, ChevronRight } from 'lucide-react';
+import { Plus, Search, Layers as LayersIcon, Library, Calendar, Clock, MapPin, Pencil, Trash2, Loader2, CheckCircle2, RefreshCcw, Users, Mail, Phone, Shield, Building, CreditCard, Camera, MessageCircle, XCircle, FileText, Download, Printer, X, GraduationCap, School, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import Modal from '@/components/Modal';
@@ -615,7 +615,7 @@ function TurmasContent() {
                   turma.categoria === 'expedito' ? "bg-blue-50 text-blue-500" :
                   turma.categoria === 'especial' ? "bg-purple-50 text-purple-500" : "bg-amber-50 text-amber-500"
                 )}>
-                  {turma.categoria === 'expedito' ? <Layers size={28} /> :
+                  {turma.categoria === 'expedito' ? <LayersIcon size={28} /> :
                    turma.categoria === 'especial' ? <GraduationCap size={28} /> : <Library size={28} />}
                 </div>
                 
@@ -722,7 +722,7 @@ function TurmasContent() {
         ) : (
           <div className="col-span-full py-32 flex flex-col items-center justify-center text-center bg-white rounded-[40px] border border-dashed border-slate-200">
             <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mb-6 text-slate-200">
-              <Layers size={48} strokeWidth={1} />
+              <LayersIcon size={48} strokeWidth={1} />
             </div>
             <h3 className="text-2xl font-black text-slate-800 tracking-tight">{t.common.noneFound}</h3>
             <p className="text-slate-400 text-sm max-w-xs mt-2 font-medium italic">{t.classes.noClassesInCategory}</p>
@@ -963,14 +963,17 @@ function TurmasContent() {
                 <div key={aluno.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100 group">
                   <div className="flex items-center gap-3">
                     <div 
-                      className="w-12 h-16 bg-slate-200 rounded-lg overflow-hidden relative border border-slate-200 shrink-0 shadow-sm hover:scale-110 transition-transform cursor-pointer group"
-                      onClick={() => setExpandedPhoto({ url: aluno.foto_url, name: aluno.nome })}
+                      className={cn(
+                        "w-12 h-16 bg-slate-200 rounded-lg overflow-hidden relative border border-slate-200 shrink-0 shadow-sm transition-transform group",
+                        aluno.foto_url ? "hover:scale-110 cursor-pointer" : ""
+                      )}
+                      onClick={() => aluno.foto_url && setExpandedPhoto({ url: aluno.foto_url, name: aluno.nome })}
                     >
                       {aluno.foto_url ? (
                         <>
                           <Image src={aluno.foto_url} alt={aluno.nome} fill className="object-cover" sizes="48px" referrerPolicy="no-referrer" />
                           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                            <Layers size={14} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <LayersIcon size={14} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                           </div>
                         </>
                       ) : (
@@ -1304,7 +1307,10 @@ function TurmasContent() {
 
               <div className="mt-8 mb-6 relative">
                 <div 
-                  className="w-[120px] h-[160px] bg-slate-100 rounded-xl border-4 border-white shadow-lg overflow-hidden relative cursor-pointer hover:scale-105 transition-transform group"
+                  className={cn(
+                    "w-[120px] h-[160px] bg-slate-100 rounded-xl border-4 border-white shadow-lg overflow-hidden relative transition-transform group",
+                    viewingCardAluno?.foto_url ? "cursor-pointer hover:scale-105" : ""
+                  )}
                   onClick={() => viewingCardAluno?.foto_url && setExpandedPhoto({ url: viewingCardAluno.foto_url, name: viewingCardAluno.nome })}
                 >
                   {viewingCardAluno?.foto_url ? (
@@ -1318,7 +1324,7 @@ function TurmasContent() {
                         referrerPolicy="no-referrer"
                       />
                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                        <Layers size={20} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <LayersIcon size={20} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
                     </>
                   ) : (
@@ -1442,15 +1448,21 @@ function TurmasContent() {
               
               <div className="bg-white p-2 rounded-2xl shadow-2xl relative">
                 <div className="relative w-[90vw] h-[80vh] sm:w-[500px] sm:h-[667px] rounded-xl overflow-hidden shadow-inner bg-slate-50">
-                  <Image
-                    src={expandedPhoto.url}
-                    alt={expandedPhoto.name}
-                    fill
-                    className="object-contain"
-                    referrerPolicy="no-referrer"
-                    sizes="(max-width: 640px) 90vw, 500px"
-                    priority
-                  />
+                  {expandedPhoto.url ? (
+                    <Image
+                      src={expandedPhoto.url}
+                      alt={expandedPhoto.name}
+                      fill
+                      className="object-contain"
+                      referrerPolicy="no-referrer"
+                      sizes="(max-width: 640px) 90vw, 500px"
+                      priority
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-slate-300">
+                      <LayersIcon size={64} strokeWidth={1} />
+                    </div>
+                  )}
                 </div>
                 <div className="mt-4 text-center pb-2">
                   <h4 className="text-xl font-bold text-slate-800">{expandedPhoto.name}</h4>

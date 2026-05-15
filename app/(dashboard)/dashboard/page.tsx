@@ -7,7 +7,7 @@ import {
   Users, 
   BookOpen, 
   GraduationCap,
-  Layers,
+  Layers as LayersIcon,
   X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -149,7 +149,7 @@ export default function DashboardPage() {
                                 sizes="48px"
                               />
                               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                                <Layers size={14} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <LayersIcon size={14} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                               </div>
                             </div>
                           ) : (

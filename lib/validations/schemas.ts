@@ -59,4 +59,5 @@ export const notaSchema = z.object({
   nota2: z.number().min(0).max(10).optional().nullable(),
   frequencia: z.number().min(0).max(100),
   ano_letivo: z.number().int(),
+  pago: z.boolean().optional().nullable(),
 });

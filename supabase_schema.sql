@@ -113,6 +113,7 @@ CREATE TABLE IF NOT EXISTS public.notas (
   nota5 NUMERIC(3,1) CHECK (nota5 >= 0 AND nota5 <= 10),
   nota_final NUMERIC(3,1),
   frequencia NUMERIC(4,1) CHECK (frequencia >= 0 AND frequencia <= 100),
+  pago BOOLEAN DEFAULT FALSE,
   ano_letivo INTEGER NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(aluno_id, disciplina_id, turma_id)

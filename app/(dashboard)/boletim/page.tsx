@@ -323,6 +323,9 @@ export default function BoletimPage() {
                                )}
                              </div>
                              <div className="text-[10px] font-mono text-slate-400 tracking-tight">#{row.aluno?.matricula}</div>
+                             {row.pago === false && (
+                               <div className="text-[9px] font-black text-red-500 uppercase tracking-widest mt-1">Pendente de Pgto.</div>
+                             )}
                            </td>
                            {Array.from({ length: courseModules }).map((_, i) => {
                              const notaValue = (row as any)[`nota${i + 1}`];

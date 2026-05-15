@@ -8,7 +8,9 @@ import {
   FileText, 
   Save, 
   Loader2,
-  Users
+  Users,
+  CreditCard,
+  Check
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import Image from 'next/image';
@@ -172,6 +174,35 @@ export default function NotasPage() {
           [targetDisciplinaId]: {
             ...discGrade,
             [field]: numValue
+          }
+        }
+      };
+    });
+  };
+
+  const togglePago = (alunoId: string) => {
+    if (disciplinas.length === 0 || isReadOnly) return;
+    const targetDisciplinaId = disciplinas[0].id;
+    const aluno = turmaAlunos.find(a => a.id === alunoId);
+    if (!aluno) return;
+
+    setBulkNotas(prev => {
+      const studentGrades = prev[alunoId] || {};
+      const discGrade = studentGrades[targetDisciplinaId] || { 
+        aluno_id: alunoId, 
+        disciplina_id: targetDisciplinaId, 
+        turma_id: aluno.turma_id,
+        ano_letivo: new Date().getFullYear(),
+        pago: false
+      };
+
+      return {
+        ...prev,
+        [alunoId]: {
+          ...studentGrades,
+          [targetDisciplinaId]: {
+            ...discGrade,
+            pago: !discGrade.pago
           }
         }
       };
@@ -355,6 +386,7 @@ export default function NotasPage() {
                     ))}
                     <th className="px-6 py-4 text-center bg-blue-50/50 text-blue-900 border-l border-slate-100">{t.reportCard.average}</th>
                     <th className="px-6 py-4 text-center border-l border-slate-100">{t.reportCard.status}</th>
+                    <th className="px-6 py-4 text-center border-l border-slate-100">{t.finance?.togglePayment || 'Pgto'}</th>
                     <th className="px-6 py-4 border-l border-slate-100 rounded-tr-2xl"></th>
                   </tr>
                 </thead>
@@ -463,6 +495,21 @@ export default function NotasPage() {
                           )}>
                             {status.label}
                           </span>
+                        </td>
+                        <td className="px-6 py-4 text-center border-l border-slate-100">
+                          <button
+                            onClick={() => togglePago(aluno.id)}
+                            disabled={isReadOnly}
+                            className={cn(
+                              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all border",
+                              gradeData.pago 
+                                ? "bg-green-50 text-green-700 border-green-200 hover:bg-green-100" 
+                                : "bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100 hover:text-slate-700"
+                            )}
+                          >
+                            {gradeData.pago ? <Check size={12} /> : <CreditCard size={12} />}
+                            {gradeData.pago ? t.finance?.paid : t.finance?.pending}
+                          </button>
                         </td>
                         <td className="px-4 py-4 text-right border-l border-slate-100">
                           <button

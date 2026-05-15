@@ -26,6 +26,7 @@ export const translations = {
       clearField: "Limpar Campo",
       noneFound: "Nenhum registro encontrado.",
       confirm: "Confirmar",
+      refresh: "Atualizar",
       deleteConfirm: "Tem certeza que deseja excluir este registro?",
       uploadError: "Erro no upload. Verifique as configurações do bucket.",
       saveError: "Erro ao salvar. Verifique os dados e tente novamente.",
@@ -94,6 +95,17 @@ export const translations = {
       year: "Ano",
       attendance: "Frequência",
       settings: "Configurações",
+      mpm: "MPM",
+    },
+    mpm: {
+      title: "Matriz de Planejamento Modular (MPM)",
+      subtitle: "Gestão técnica dos módulos e cargas horárias por curso.",
+      add: "Novo Planejamento",
+      module: "Módulo",
+      theoretical: "T. Teórica",
+      practical: "T. Prática",
+      total: "Total",
+      description: "Objetivos e Metas",
     },
     courses: {
       title: "Gerenciamento de Cursos",
@@ -312,6 +324,14 @@ export const translations = {
       eventDeleted: "Evento excluído com sucesso!",
       daysRemaining: "{count} dias restantes",
       startsToday: "Começa hoje!",
+    },
+    finance: {
+      title: "Financeiro",
+      paid: "Pago",
+      pending: "Pendente",
+      togglePayment: "Status Pgto",
+      paymentSuccess: "Status de pagamento atualizado!",
+      paySubject: "Pagar Disciplina",
     }
   }
 };
