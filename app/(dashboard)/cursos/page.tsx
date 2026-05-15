@@ -18,13 +18,15 @@ import {
   Loader2,
   GraduationCap,
   Clock,
-  BookMarked
+  BookMarked,
+  BookOpen
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Modal from '@/components/Modal';
+import { cn } from '@/lib/utils';
 
 type Curso = z.infer<typeof cursoSchema> & { id: string };
 
@@ -49,6 +51,15 @@ export default function CursosPage() {
   const [isDisciplinaModalOpen, setIsDisciplinaModalOpen] = useState(false);
   const [currentDisciplina, setCurrentDisciplina] = useState<any>(null);
   const [savingDisciplina, setSavingDisciplina] = useState(false);
+
+  // Materias Modulos State
+  const [manageMateriasDisciplina, setManageMateriasDisciplina] = useState<any | null>(null);
+  const [materiasModulos, setMateriasModulos] = useState<any[]>([]);
+  const [loadingMaterias, setLoadingMaterias] = useState(false);
+  const [isMateriaModalOpen, setIsMateriaModalOpen] = useState(false);
+  const [currentMateria, setCurrentMateria] = useState<any>(null);
+  const [savingMateria, setSavingMateria] = useState(false);
+  const [activeModuloIndex, setActiveModuloIndex] = useState(1);
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<z.infer<typeof cursoSchema>>({
     resolver: zodResolver(cursoSchema),
@@ -231,6 +242,94 @@ export default function CursosPage() {
       alert(err.message);
     } finally {
       setDeletingDisciplinaId(null);
+    }
+  };
+
+  const fetchMaterias = useCallback(async (disciplinaId: string) => {
+    setLoadingMaterias(true);
+    const { data } = await supabase
+      .from('materias_modulos')
+      .select('*')
+      .eq('disciplina_id', disciplinaId)
+      .is('deleted_at', null)
+      .order('modulo_index', { ascending: true })
+      .order('ordem', { ascending: true });
+    if (data) setMateriasModulos(data);
+    setLoadingMaterias(false);
+  }, []);
+
+  useEffect(() => {
+    if (manageMateriasDisciplina) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      fetchMaterias(manageMateriasDisciplina.id);
+    } else {
+      setMateriasModulos([]);
+    }
+  }, [manageMateriasDisciplina, fetchMaterias]);
+
+  const handleOpenMateriaModal = (materia: any = null) => {
+    if (isReadOnly) return;
+    setCurrentMateria(materia || { 
+      nome: '', 
+      descricao: '', 
+      modulo_index: activeModuloIndex, 
+      disciplina_id: manageMateriasDisciplina?.id,
+      ordem: materiasModulos.filter(m => m.modulo_index === activeModuloIndex).length + 1
+    });
+    setIsMateriaModalOpen(true);
+  };
+
+  const handleSaveMateria = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!manageMateriasDisciplina || isReadOnly) return;
+    setSavingMateria(true);
+
+    try {
+      const dataToSave = {
+        nome: currentMateria.nome,
+        descricao: currentMateria.descricao,
+        modulo_index: currentMateria.modulo_index,
+        disciplina_id: manageMateriasDisciplina.id,
+        ordem: currentMateria.ordem
+      };
+
+      if (currentMateria.id) {
+        const { error } = await supabase
+          .from('materias_modulos')
+          .update(dataToSave)
+          .eq('id', currentMateria.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('materias_modulos')
+          .insert([dataToSave]);
+        if (error) throw error;
+      }
+
+      await fetchMaterias(manageMateriasDisciplina.id);
+      setIsMateriaModalOpen(false);
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setSavingMateria(false);
+    }
+  };
+
+  const deleteMateria = async (id: string) => {
+    if (isReadOnly || !manageMateriasDisciplina) return;
+    if (!confirm(t.common.deleteConfirm)) return;
+
+    try {
+      const { error } = await supabase
+        .from('materias_modulos')
+        .update({ deleted_at: new Date().toISOString() })
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      await fetchMaterias(manageMateriasDisciplina.id);
+    } catch (err: any) {
+      alert(err.message);
     }
   };
 
@@ -592,7 +691,14 @@ export default function CursosPage() {
                     </div>
                   </div>
                   {!isReadOnly && (
-                    <div className="flex gap-1">
+                    <div className="flex gap-1 items-center">
+                      <button 
+                        onClick={() => setManageMateriasDisciplina(d)}
+                        className="px-2 py-1.5 bg-slate-50 border border-slate-100 hover:bg-emerald-50 hover:text-emerald-600 rounded-lg text-slate-400 transition-all shadow-sm flex items-center gap-1.5 min-w-[80px] justify-center mr-2"
+                      >
+                        <BookOpen size={14} />
+                        <span className="text-[10px] font-bold uppercase">Tópicos</span>
+                      </button>
                       {!confirmDeleteDisciplinaId || confirmDeleteDisciplinaId !== d.id ? (
                         <>
                           <button 
@@ -692,6 +798,138 @@ export default function CursosPage() {
               className="flex-1 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 transition-colors shadow-sm shadow-blue-100 flex items-center justify-center gap-2"
             >
               {savingDisciplina ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
+              {t.common.save}
+            </button>
+          </div>
+        </form>
+      </Modal>
+      
+      {/* Materias Modulos Management Modal */}
+      <Modal
+        isOpen={!!manageMateriasDisciplina}
+        onClose={() => setManageMateriasDisciplina(null)}
+        title={`${t.subjects.subjectsPerModule}: ${manageMateriasDisciplina?.nome}`}
+      >
+        <div className="space-y-6">
+          <div className="flex bg-slate-100 p-1 rounded-xl gap-1">
+            {Array.from({ length: manageDisciplinasCurso?.qtd_modulos || 4 }).map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setActiveModuloIndex(i + 1)}
+                className={cn(
+                  "flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all",
+                  activeModuloIndex === i + 1 
+                    ? "bg-white text-blue-600 shadow-sm" 
+                    : "text-slate-400 hover:text-slate-600"
+                )}
+              >
+                {t.subjects.module} {i + 1}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+              {t.subjects.module} {activeModuloIndex}
+            </div>
+            {!isReadOnly && (
+              <button 
+                onClick={() => handleOpenMateriaModal()}
+                className="flex items-center gap-2 text-emerald-600 hover:text-emerald-700 text-xs font-bold uppercase transition-colors"
+              >
+                <Plus size={14} />
+                {t.subjects.addSubjectTopic}
+              </button>
+            )}
+          </div>
+
+          <div className="max-h-[350px] overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+            {loadingMaterias ? (
+              <div className="flex justify-center py-8 text-slate-400">
+                <Loader2 size={24} className="animate-spin" />
+              </div>
+            ) : materiasModulos.filter(m => m.modulo_index === activeModuloIndex).length === 0 ? (
+              <div className="text-center py-12 text-slate-400 text-sm italic bg-slate-50 rounded-xl border-2 border-dashed border-slate-100">
+                {t.subjects.noTopics}
+              </div>
+            ) : (
+              materiasModulos
+                .filter(m => m.modulo_index === activeModuloIndex)
+                .map((m) => (
+                  <div key={m.id} className="p-4 bg-white border border-slate-100 rounded-xl hover:border-slate-200 transition-all group">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h4 className="font-bold text-slate-800 text-sm">{m.nome}</h4>
+                        {m.descricao && <p className="text-xs text-slate-500 mt-1 line-clamp-2">{m.descricao}</p>}
+                      </div>
+                      {!isReadOnly && (
+                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button 
+                            onClick={() => handleOpenMateriaModal(m)}
+                            className="p-1.5 text-slate-400 hover:text-blue-600 transition-colors"
+                          >
+                            <Edit2 size={14} />
+                          </button>
+                          <button 
+                            onClick={() => deleteMateria(m.id)}
+                            className="p-1.5 text-slate-400 hover:text-red-600 transition-colors"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))
+            )}
+          </div>
+        </div>
+      </Modal>
+
+      {/* Single Materia Edit/Add Modal */}
+      <Modal
+        isOpen={isMateriaModalOpen}
+        onClose={() => setIsMateriaModalOpen(false)}
+        title={currentMateria?.id ? t.common.edit : t.subjects.addSubjectTopic}
+      >
+        <form onSubmit={handleSaveMateria} className="space-y-4">
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t.subjects.topicName}</label>
+            <input
+              required
+              type="text"
+              value={currentMateria?.nome || ''}
+              onChange={(e) => setCurrentMateria({ ...currentMateria, nome: e.target.value })}
+              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors text-sm font-medium"
+              placeholder="Ex: Introdução à Lógica"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t.subjects.topicDescription}</label>
+            <textarea
+              rows={3}
+              value={currentMateria?.descricao || ''}
+              onChange={(e) => setCurrentMateria({ ...currentMateria, descricao: e.target.value })}
+              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors text-sm"
+              placeholder="Descreva brevemente o conteúdo deste tópico..."
+            />
+          </div>
+
+          <div className="flex gap-3 pt-6">
+            <button
+              type="button"
+              onClick={() => setIsMateriaModalOpen(false)}
+              className="flex-1 py-2.5 bg-slate-100 text-slate-600 rounded-lg text-sm font-bold hover:bg-slate-200 transition-colors"
+            >
+              {t.common.cancel}
+            </button>
+            <button
+              type="submit"
+              disabled={savingMateria}
+              className="flex-1 py-2.5 bg-emerald-600 text-white rounded-lg text-sm font-bold hover:bg-emerald-700 transition-colors shadow-sm shadow-emerald-100 flex items-center justify-center gap-2"
+            >
+              {savingMateria ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
               {t.common.save}
             </button>
           </div>
