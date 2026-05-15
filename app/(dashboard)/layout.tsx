@@ -19,8 +19,7 @@ import {
   ChevronRight,
   Menu,
   X,
-  Search,
-  Layers
+  Search
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
@@ -66,7 +65,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: t.nav.grades, icon: FileCheck, path: '/notas' },
     { name: t.nav.reportCard, icon: FileText, path: '/boletim' },
     { name: t.nav.attendance, icon: CalendarDays, path: '/frequencia' },
-    { name: t.nav.mpm, icon: Layers, path: '/mpm' },
     { name: t.calendar.title, icon: CalendarDays, path: '/calendario' },
     ...(isAdmin ? [{ name: t.users.title, icon: Users, path: '/usuarios' }] : []),
     { name: t.nav.settings, icon: Settings, path: '/configuracoes' },

@@ -15,7 +15,7 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'picsum.photos',
         port: '',
-        pathname: '/**', // This allows any path under the hostname
+        pathname: '/**', 
       },
       {
         protocol: 'https',
@@ -23,6 +23,24 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: '*.supabase.net',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '54321',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'vibrant-storage.supabase.co',
+        port: '',
+        pathname: '/**',
+      }
     ],
   },
   output: 'standalone',
