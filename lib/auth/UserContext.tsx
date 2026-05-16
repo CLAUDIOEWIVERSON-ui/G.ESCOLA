@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 
-type Role = 'admin' | 'professor' | 'aluno';
+type Role = 'admin' | 'instrutor' | 'aluno';
 
 interface UserProfile {
   id: string;
@@ -108,7 +108,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const value = {
     profile,
     isAdmin: profile?.role === 'admin',
-    isInstrutor: profile?.role === 'professor',
+    isInstrutor: profile?.role === 'instrutor',
     isAluno: profile?.role === 'aluno',
     loading,
     refreshProfile: fetchProfile
