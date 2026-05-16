@@ -249,11 +249,11 @@ export default function UsuariosPage() {
                       <span className={cn(
                         "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
                         user.role === 'admin' ? "bg-purple-50 text-purple-700 border border-purple-100" : 
-                        user.role === 'instrutor' ? "bg-amber-50 text-amber-700 border border-amber-100" :
+                        user.role === 'professor' || user.role === 'instrutor' ? "bg-amber-50 text-amber-700 border border-amber-100" :
                         "bg-blue-50 text-blue-700 border border-blue-100"
                       )}>
                         {user.role === 'admin' ? <Shield size={12} /> : <User size={12} />}
-                        {user.role === 'admin' ? t.users.admin : user.role === 'instrutor' ? t.users.instrutor : t.users.aluno}
+                        {user.role === 'admin' ? t.users.admin : (user.role === 'professor' || user.role === 'instrutor') ? t.users.professor : t.users.aluno}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
@@ -337,7 +337,7 @@ export default function UsuariosPage() {
               className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition-all"
             >
               <option value="admin">{t.users.admin}</option>
-              <option value="instrutor">{t.users.instrutor}</option>
+              <option value="professor">{t.users.professor}</option>
               <option value="aluno">{t.users.aluno}</option>
             </select>
           </div>

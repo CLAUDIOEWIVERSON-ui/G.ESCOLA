@@ -4,7 +4,7 @@
 CREATE TYPE periodo_enum AS ENUM ('manhã', 'tarde', 'noite');
 CREATE TYPE turma_status_enum AS ENUM ('ativa', 'concluída', 'cancelada');
 CREATE TYPE aluno_status_enum AS ENUM ('ativo', 'inativo', 'transferido');
-CREATE TYPE user_role_enum AS ENUM ('admin', 'instrutor', 'aluno');
+CREATE TYPE user_role_enum AS ENUM ('admin', 'professor', 'aluno');
 
 -- 2. Profiles (to store user roles linked to Supabase Auth)
 CREATE TABLE IF NOT EXISTS public.profiles (
@@ -265,22 +265,6 @@ CREATE TABLE IF NOT EXISTS public.eventos (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   deleted_at TIMESTAMPTZ
 );
-
--- 13. Widgets
-CREATE TABLE IF NOT EXISTS public.widgets (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name TEXT NOT NULL,
-  type TEXT NOT NULL,
-  config JSONB DEFAULT '{}'::jsonb,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  active BOOLEAN DEFAULT TRUE,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-ALTER TABLE public.widgets ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can manage their own widgets" ON public.widgets FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "Admins can manage all widgets" ON public.widgets FOR ALL USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'));
 
 ALTER TABLE public.eventos ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Public read access" ON public.eventos FOR SELECT USING (true);
