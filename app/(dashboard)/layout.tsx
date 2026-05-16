@@ -20,7 +20,8 @@ import {
   ChevronRight,
   Menu,
   X,
-  Search
+  Search,
+  Calendar
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
@@ -28,6 +29,7 @@ import { cn } from '@/lib/utils';
 import { useUser } from '@/lib/auth/UserContext';
 import { ProximityAlert } from '@/components/ProximityAlert';
 import { EventMarquee } from '@/components/EventMarquee';
+import { SidebarClock } from '@/components/SidebarClock';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -79,7 +81,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: t.nav.attendance, icon: CalendarDays, path: '/frequencia' },
     { name: t.calendar.title, icon: CalendarDays, path: '/calendario' },
     ...(isAdmin ? [{ name: t.users.title, icon: Users, path: '/usuarios' }] : []),
-    { name: t.widgets.title, icon: LayersIcon, path: '/widgets' },
     { name: t.nav.settings, icon: Settings, path: '/configuracoes' },
   ];
 
@@ -103,129 +104,158 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Sidebar */}
       <aside 
         className={cn(
-          "fixed inset-y-0 left-0 z-50 bg-slate-900 text-slate-300 border-r border-slate-800 transition-all duration-300 ease-in-out lg:static lg:translate-x-0 overflow-hidden",
+          "fixed inset-y-0 left-0 z-50 bg-slate-950 text-slate-300 border-r border-white/5 transition-all duration-300 ease-in-out lg:static lg:translate-x-0 overflow-hidden shadow-2xl",
           sidebarOpen ? "w-64" : "w-20 -translate-x-full lg:translate-x-0"
         )}
       >
         <div className="flex flex-col h-full">
-          <div className="p-5 flex items-center border-b border-slate-800 h-16">
+          <div className="p-5 flex items-center border-b border-white/5 h-16 bg-white/[0.02]">
             <Logo collapsed={!sidebarOpen} />
           </div>
 
-          <nav id="sidebar-nav" className="flex-1 px-4 py-6 space-y-4 overflow-y-auto">
-            <div>
-              <div className={cn("text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 px-3", !sidebarOpen && "opacity-0 invisible h-0")}>
-                {t.auth.management}
+          <div className="flex-1 flex flex-col min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar">
+            <nav id="sidebar-nav" className="px-4 py-6 space-y-8">
+              {/* Clock Widget */}
+              <div className="px-2">
+                <SidebarClock collapsed={!sidebarOpen} />
               </div>
-              <div className="space-y-1">
-                {navItems.slice(0, 4).map((item: any) => {
-                  const subItemPaths = item.subItems?.map((s: any) => s.path) || [];
-                  const isAnySubActive = subItemPaths.some((p: string) => pathname + (typeof window !== 'undefined' ? window.location.search : '') === p);
-                  const isParentActive = pathname === item.path || isAnySubActive;
-                  const isExpanded = sidebarOpen && (isParentActive || isAnySubActive);
 
-                  return (
-                    <div key={item.path} className="flex flex-col">
+              <div>
+                <div className={cn("text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4 px-3 flex items-center gap-2", !sidebarOpen && "opacity-0 invisible h-0")}>
+                  <div className="w-1 h-1 rounded-full bg-blue-500" />
+                  {t.auth.management}
+                </div>
+                <div className="space-y-1.5">
+                  {navItems.slice(0, 4).map((item: any) => {
+                    const subItemPaths = item.subItems?.map((s: any) => s.path) || [];
+                    const isAnySubActive = subItemPaths.some((p: string) => pathname + (typeof window !== 'undefined' ? window.location.search : '') === p);
+                    const isParentActive = pathname === item.path || isAnySubActive;
+                    const isExpanded = sidebarOpen && (isParentActive || isAnySubActive);
+
+                    return (
+                      <div key={item.path} className="flex flex-col">
+                        <Link 
+                          href={item.path}
+                          className={cn(
+                            "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group relative overflow-hidden",
+                            isParentActive 
+                              ? "bg-blue-600/10 text-white border border-blue-500/20 shadow-[0_0_15px_rgba(37,99,235,0.1)]" 
+                              : "hover:bg-white/[0.03] text-slate-400 hover:text-white"
+                          )}
+                        >
+                          {isParentActive && (
+                            <motion.div 
+                              layoutId="active-indicator"
+                              className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-r-full"
+                            />
+                          )}
+                          <item.icon size={18} className={cn("shrink-0 transition-transform group-hover:scale-110", isParentActive ? "text-blue-400" : "text-slate-500 group-hover:text-slate-300")} />
+                          <span className={cn(
+                            "text-sm transition-opacity flex-1 whitespace-nowrap font-medium",
+                            !sidebarOpen && "opacity-0 invisible w-0",
+                          )}>
+                            {item.name}
+                          </span>
+                          {item.subItems && sidebarOpen && (
+                            <ChevronRight size={14} className={cn("transition-transform text-slate-600 group-hover:text-slate-400", isExpanded && "rotate-90 text-blue-400")} />
+                          )}
+                        </Link>
+
+                        {item.subItems && isExpanded && (
+                          <div className="ml-9 mt-1 space-y-1 border-l border-white/5 pl-4 py-1">
+                            {item.subItems.map((sub: any) => {
+                              const isSubActive = (pathname + (typeof window !== 'undefined' ? window.location.search : '')) === sub.path;
+                              return (
+                                <Link 
+                                  key={sub.path}
+                                  href={sub.path}
+                                  className={cn(
+                                    "block py-1.5 text-xs font-medium transition-all",
+                                    isSubActive
+                                      ? "text-blue-400 font-bold" 
+                                      : "text-slate-500 hover:text-slate-300"
+                                  )}
+                                >
+                                  {sub.name}
+                                </Link>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <div className={cn("text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4 px-3 flex items-center gap-2", !sidebarOpen && "opacity-0 invisible h-0")}>
+                  <div className="w-1 h-1 rounded-full bg-blue-500" />
+                  {t.auth.academic}
+                </div>
+                <div className="space-y-1.5">
+                  {navItems.slice(4).map((item) => {
+                    const isActive = pathname === item.path;
+                    const isCalendar = item.path === '/calendario';
+                    
+                    return (
                       <Link 
+                        key={item.path} 
                         href={item.path}
                         className={cn(
-                          "flex items-center gap-3 px-3 py-2 rounded-md transition-all group relative",
-                          isParentActive 
-                            ? "bg-slate-800 text-white" 
-                            : "hover:bg-slate-800/50 hover:text-white"
+                          "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group relative overflow-hidden",
+                          isActive 
+                            ? "bg-blue-600/10 text-white border border-blue-500/20 shadow-[0_0_15px_rgba(37,99,235,0.1)]" 
+                            : isCalendar
+                              ? "bg-amber-500/5 text-amber-500/70 hover:bg-amber-500/10 hover:text-amber-400 border border-transparent hover:border-amber-500/20"
+                              : "hover:bg-white/[0.03] text-slate-400 hover:text-white"
                         )}
                       >
-                        <item.icon size={18} className={cn("shrink-0 opacity-75", isParentActive ? "text-white" : "text-slate-400 group-hover:text-white")} />
+                        {isActive && (
+                          <motion.div 
+                            layoutId="active-indicator-academic"
+                            className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-r-full"
+                          />
+                        )}
+                        <item.icon size={18} className={cn(
+                          "shrink-0 transition-transform group-hover:scale-110", 
+                          isActive ? "text-blue-400" : isCalendar ? "text-amber-500" : "text-slate-500 group-hover:text-slate-300"
+                        )} />
                         <span className={cn(
-                          "text-sm transition-opacity flex-1 whitespace-nowrap px-2 py-0.5 rounded",
+                          "text-sm transition-opacity whitespace-nowrap font-medium",
                           !sidebarOpen && "opacity-0 invisible w-0",
-                          isParentActive && "bg-[#dfe0e7] text-[#518aff] drop-shadow-[0_0_8px_rgba(81,138,255,0.6)] font-bold uppercase border border-[#518aff]/30"
                         )}>
                           {item.name}
                         </span>
-                        {item.subItems && sidebarOpen && (
-                          <ChevronRight size={14} className={cn("transition-transform text-slate-500", isExpanded && "rotate-90 text-white")} />
+                        {isCalendar && sidebarOpen && (
+                          <span className="ml-auto flex h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
                         )}
                       </Link>
-
-                      {item.subItems && isExpanded && (
-                        <div className="ml-9 mt-1 space-y-1 border-l border-slate-700/50">
-                          {item.subItems.map((sub: any) => {
-                            const isSubActive = (pathname + (typeof window !== 'undefined' ? window.location.search : '')) === sub.path;
-                            return (
-                              <Link 
-                                key={sub.path}
-                                href={sub.path}
-                                className={cn(
-                                  "block px-4 py-1.5 text-xs font-medium transition-all border-l -ml-px",
-                                  isSubActive
-                                    ? "text-blue-400 border-blue-400 font-bold" 
-                                    : "text-slate-500 border-transparent hover:text-slate-300 hover:border-slate-600"
-                                )}
-                              >
-                                {sub.name}
-                              </Link>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            </nav>
+          </div>
 
-            <div>
-              <div className={cn("text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 px-3", !sidebarOpen && "opacity-0 invisible h-0")}>
-                {t.auth.academic}
-              </div>
-              <div className="space-y-1">
-                {navItems.slice(4).map((item) => {
-                  const isActive = pathname === item.path;
-                  return (
-                    <Link 
-                      key={item.path} 
-                      href={item.path}
-                      className={cn(
-                        "flex items-center gap-3 px-3 py-2 rounded-md transition-all group",
-                        isActive 
-                          ? "bg-slate-800 text-white" 
-                          : "hover:bg-slate-800/50 hover:text-white"
-                      )}
-                    >
-                      <item.icon size={18} className={cn("shrink-0 opacity-75", isActive ? "text-white" : "text-slate-400 group-hover:text-white")} />
-                      <span className={cn(
-                        "text-sm transition-opacity whitespace-nowrap px-2 py-0.5 rounded",
-                        !sidebarOpen && "opacity-0 invisible w-0",
-                        isActive && "bg-[#dfe0e7] text-[#518aff] drop-shadow-[0_0_8px_rgba(81,138,255,0.6)] font-bold uppercase border border-[#518aff]/30"
-                      )}>
-                        {item.name}
-                      </span>
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          </nav>
-
-          <div className="p-4 border-t border-slate-800">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs border border-slate-600 text-white font-bold">
+          <div className="p-4 border-t border-white/5 bg-white/[0.01]">
+            <div className="flex items-center gap-3 mb-4 px-2">
+              <div className="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center text-xs border border-white/10 text-white font-bold transition-transform hover:scale-105 cursor-pointer shadow-lg shadow-black/20">
                 {userInitials}
               </div>
               <div className={cn("flex-1 overflow-hidden transition-opacity", !sidebarOpen && "opacity-0 w-0 invisible")}>
-                <p className="text-sm font-medium text-white truncate">{profile?.role === 'admin' ? t.users.admin : profile?.role === 'instrutor' ? t.users.instrutor : t.users.aluno}</p>
-                <p className="text-xs text-slate-500 truncate">{profile?.full_name || profile?.id.slice(0, 8)}</p>
+                <p className="text-xs font-bold text-white truncate uppercase tracking-tight">{profile?.full_name || profile?.id.slice(0, 8)}</p>
+                <p className="text-[10px] text-slate-500 truncate font-semibold uppercase tracking-wider">{profile?.role === 'admin' ? t.users.admin : profile?.role === 'professor' ? t.users.professor : t.users.aluno}</p>
               </div>
             </div>
             <button
               onClick={handleLogout}
               className={cn(
-                "w-full flex items-center gap-3 px-3 py-2 rounded-md text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition-all group text-sm",
+                "w-full flex items-center gap-3 px-3 py-2 rounded-xl text-slate-500 hover:bg-red-500/10 hover:text-red-400 transition-all group text-xs font-bold uppercase tracking-wider",
                 !sidebarOpen && "justify-center"
               )}
             >
-              <LogOut size={18} className="shrink-0" />
+              <LogOut size={16} className="shrink-0 transition-transform group-hover:-translate-x-1" />
               <span className={cn("transition-opacity whitespace-nowrap", !sidebarOpen && "hidden")}>{t.common.logout}</span>
             </button>
           </div>
