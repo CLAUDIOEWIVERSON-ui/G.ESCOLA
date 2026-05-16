@@ -77,9 +77,8 @@ export default function LoginPage() {
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-sm bg-white rounded-xl shadow-xl shadow-slate-200/50 p-8 border border-slate-200"
       >
-        <div className="flex flex-col items-center mb-8">
-          <Logo className="mb-4" />
-          <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1">{t.auth.systemName}</p>
+        <div className="flex flex-col items-center mb-10">
+          <Logo className="mb-0" dark={true} />
         </div>
 
         <form id="auth-form" onSubmit={handleAuth} className="space-y-4">
