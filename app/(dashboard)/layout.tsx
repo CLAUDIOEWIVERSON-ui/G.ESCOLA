@@ -33,7 +33,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const pathname = usePathname();
   const { t, language } = useI18n();
-  const { profile, isAdmin, isAluno, isProfessor, loading: authLoading } = useUser();
+  const { profile, isAdmin, isAluno, isInstrutor, loading: authLoading } = useUser();
   const isReadOnly = !isAdmin;
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -79,6 +79,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: t.nav.attendance, icon: CalendarDays, path: '/frequencia' },
     { name: t.calendar.title, icon: CalendarDays, path: '/calendario' },
     ...(isAdmin ? [{ name: t.users.title, icon: Users, path: '/usuarios' }] : []),
+    { name: t.widgets.title, icon: LayersIcon, path: '/widgets' },
     { name: t.nav.settings, icon: Settings, path: '/configuracoes' },
   ];
 
@@ -213,7 +214,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 {userInitials}
               </div>
               <div className={cn("flex-1 overflow-hidden transition-opacity", !sidebarOpen && "opacity-0 w-0 invisible")}>
-                <p className="text-sm font-medium text-white truncate">{profile?.role === 'admin' ? t.users.admin : profile?.role === 'professor' ? t.users.professor : t.users.aluno}</p>
+                <p className="text-sm font-medium text-white truncate">{profile?.role === 'admin' ? t.users.admin : profile?.role === 'instrutor' ? t.users.instrutor : t.users.aluno}</p>
                 <p className="text-xs text-slate-500 truncate">{profile?.full_name || profile?.id.slice(0, 8)}</p>
               </div>
             </div>

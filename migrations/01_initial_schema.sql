@@ -15,7 +15,7 @@ EXCEPTION
 END $$;
 
 DO $$ BEGIN
-    CREATE TYPE user_role_enum AS ENUM ('admin', 'professor', 'aluno');
+    CREATE TYPE user_role_enum AS ENUM ('admin', 'instrutor', 'aluno');
 EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;

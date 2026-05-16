@@ -295,7 +295,7 @@ export const translations = {
       status: "Status",
       password: "Senha (Opcional se editar)",
       admin: "Administrador",
-      professor: "Professor",
+      instrutor: "Instrutor",
       aluno: "Aluno",
       active: "Ativo",
       inactive: "Inativo",
@@ -328,6 +328,17 @@ export const translations = {
       togglePayment: "Status Pgto",
       paymentSuccess: "Status de pagamento atualizado!",
       paySubject: "Pagar Disciplina",
+    },
+    widgets: {
+      title: "Widgets",
+      subtitle: "Gerencie seus widgets personalizados.",
+      add: "Novo Widget",
+      name: "Nome do Widget",
+      type: "Tipo",
+      config: "Configuração",
+      noWidgets: "Nenhum widget encontrado.",
+      saveSuccess: "Widget salvo com sucesso!",
+      deleteSuccess: "Widget excluído com sucesso!",
     }
   }
 };
