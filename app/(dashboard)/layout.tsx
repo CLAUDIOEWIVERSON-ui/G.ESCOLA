@@ -109,8 +109,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         )}
       >
         <div className="flex flex-col h-full">
-          <div className="p-5 flex items-center border-b border-white/5 h-16 bg-white/[0.02]">
-            <Logo collapsed={!sidebarOpen} size="md" orientation="horizontal" />
+          <div className={cn(
+            "flex items-center justify-center border-b border-white/5 bg-white/[0.02] transition-all",
+            sidebarOpen ? "p-8 py-12" : "h-20 p-2"
+          )}>
+            <Logo collapsed={!sidebarOpen} size="lg" orientation="vertical" />
           </div>
 
           <div className="flex-1 flex flex-col min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar">
