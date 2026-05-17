@@ -201,7 +201,42 @@ function TurmasContent() {
   };
 
   const handlePrintCard = () => {
-    window.print();
+    const printContent = cardRef.current;
+    if (!printContent) return;
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      window.print();
+      return;
+    }
+
+    const html = `
+      <html>
+        <head>
+          <title>Crachá - ${viewingCardAluno?.nome}</title>
+          <script src="https://cdn.tailwindcss.com"></script>
+          <style>
+            @page { size: 54mm 85.6mm; margin: 0; }
+            body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; }
+            .card-container { width: 54mm; height: 85.6mm; overflow: hidden; position: relative; }
+          </style>
+        </head>
+        <body>
+          <div class="card-container">
+            ${printContent.innerHTML}
+          </div>
+          <script>
+            setTimeout(() => {
+              window.print();
+              window.close();
+            }, 500);
+          </script>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(html);
+    printWindow.document.close();
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1320,26 +1355,35 @@ function TurmasContent() {
         title={t.cartao.title}
       >
         <div className="flex flex-col items-center gap-6 py-4">
-          <div className="print:hidden flex flex-col items-center gap-4">
+          <div className="flex flex-col items-center gap-4">
             <div 
               ref={cardRef}
-              className="w-[320px] h-[500px] bg-white border border-slate-200 rounded-[20px] shadow-2xl relative overflow-hidden flex flex-col items-center font-sans mt-2"
+              className="w-[320px] h-[504px] bg-white border border-slate-200 rounded-[24px] shadow-2xl relative overflow-hidden flex flex-col items-center font-sans mt-2"
+              style={{ printColorAdjust: 'exact', WebkitPrintColorAdjust: 'exact' }}
             >
-              <div className="w-full h-32 bg-slate-900 flex flex-col items-center justify-center p-4 relative">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/20 rounded-full -mr-16 -mt-16 blur-3xl" />
-                <div className="z-10 flex flex-col items-center">
-                  <div className="w-10 h-10 border-2 border-white/20 rounded-full flex items-center justify-center mb-2">
-                    <Shield className="text-white" size={20} />
+              {/* Header Design */}
+              <div className="w-full h-[120px] bg-slate-900 flex flex-col items-center justify-center p-4 relative">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/30 rounded-full -mr-16 -mt-16 blur-2xl" />
+                <div className="absolute bottom-0 left-0 w-24 h-24 bg-blue-500/10 rounded-full -ml-12 -mb-12 blur-xl" />
+                
+                <div className="z-10 flex flex-col items-center text-center">
+                  <div className="w-10 h-10 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl flex items-center justify-center mb-2 shadow-inner">
+                    <Shield className="text-blue-400" size={20} strokeWidth={2.5} />
                   </div>
-                  <h4 className="text-white text-[12px] font-black uppercase tracking-[0.2em]">{t.auth.systemName}</h4>
-                  <p className="text-blue-400 text-[8px] font-bold uppercase tracking-widest mt-1">{t.cartao.student}</p>
+                  <h4 className="text-white text-[10px] font-black uppercase tracking-[0.25em] leading-tight max-w-[200px]">
+                    {t.auth.systemName}
+                  </h4>
+                  <div className="mt-2 px-3 py-0.5 bg-blue-600 rounded-full">
+                    <p className="text-white text-[7px] font-black uppercase tracking-[0.2em]">{t.cartao.student}</p>
+                  </div>
                 </div>
               </div>
 
-              <div className="mt-8 mb-6 relative">
+              {/* Photo Section */}
+              <div className="mt-6 mb-4 relative z-20">
                 <div 
                   className={cn(
-                    "w-[120px] h-[160px] bg-slate-100 rounded-xl border-4 border-white shadow-lg overflow-hidden relative transition-transform group",
+                    "w-[130px] h-[170px] bg-slate-100 rounded-2xl border-[3px] border-white shadow-xl overflow-hidden relative transition-all duration-300 group ring-1 ring-slate-100",
                     viewingCardAluno?.foto_url ? "cursor-pointer hover:scale-105" : ""
                   )}
                   onClick={() => viewingCardAluno?.foto_url && setExpandedPhoto({ url: viewingCardAluno.foto_url, name: viewingCardAluno.nome })}
@@ -1351,65 +1395,91 @@ function TurmasContent() {
                         alt={viewingCardAluno.nome} 
                         fill 
                         className="object-cover" 
-                        sizes="120px"
+                        sizes="130px"
                         referrerPolicy="no-referrer"
+                        priority
                       />
                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                        <LayersIcon size={20} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <LayersIcon size={24} className="text-white opacity-0 group-hover:opacity-100 transition-all scale-75 group-hover:scale-100" />
                       </div>
                     </>
                   ) : (
-                    <Image 
-                      src={viewingCardAluno?.genero === 'feminino' ? femaleAvatar : maleAvatar} 
-                      alt={viewingCardAluno?.nome} 
-                      fill 
-                      className="object-cover opacity-60 grayscale-[0.2]" 
-                      sizes="120px" 
-                    />
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-slate-50">
+                      <Image 
+                        src={viewingCardAluno?.genero === 'feminino' ? femaleAvatar : maleAvatar} 
+                        alt={viewingCardAluno?.nome} 
+                        fill 
+                        className="object-cover opacity-40 grayscale" 
+                        sizes="130px" 
+                      />
+                      <Camera className="text-slate-300 relative z-10" size={32} strokeWidth={1} />
+                    </div>
                   )}
                 </div>
-                <div className="absolute -bottom-2 -right-2 bg-blue-600 text-white p-1.5 rounded-lg shadow-lg border-2 border-white">
-                  <CheckCircle2 size={16} />
+                <div className="absolute -bottom-2 -right-2 bg-emerald-500 text-white p-1.5 rounded-xl shadow-lg border-2 border-white animate-in zoom-in-50 duration-500">
+                  <CheckCircle2 size={16} strokeWidth={3} />
                 </div>
               </div>
 
-              <div className="text-center px-6 w-full flex-1">
-                <h2 className="text-xl font-black text-slate-900 leading-tight mb-1 uppercase tracking-tight">
-                  {viewingCardAluno?.nome}
-                </h2>
-                <p className="text-blue-600 font-bold text-sm uppercase mb-4 tracking-wider">
-                  {viewingCardAluno?.posto_graduacao || t.users.aluno}
-                </p>
+              {/* Information Section */}
+              <div className="text-center px-6 w-full flex-1 flex flex-col items-center justify-center space-y-3">
+                <div>
+                  <h2 className="text-lg font-black text-slate-800 leading-tight uppercase tracking-tight line-clamp-2">
+                    {viewingCardAluno?.nome}
+                  </h2>
+                  <p className="text-blue-600 font-black text-[10px] uppercase mt-0.5 tracking-[0.1em]">
+                    {viewingCardAluno?.posto_graduacao || t.users.aluno}
+                  </p>
+                </div>
 
-                <div className="space-y-4 border-t border-slate-100 pt-4">
+                <div className="w-full border-t border-slate-100 pt-3 space-y-3">
                   <div className="flex flex-col items-center">
-                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">{t.cartao.course}</span>
-                    <span className="text-xs font-bold text-slate-700 uppercase max-w-[240px] truncate">{viewingTurma?.curso?.nome}</span>
+                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">{t.cartao.course}</span>
+                    <span className="text-[10px] font-bold text-slate-700 uppercase leading-tight max-w-[240px] line-clamp-2 text-center">
+                      {viewingTurma?.curso?.nome}
+                    </span>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex flex-col items-center">
-                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">{t.students.registration}</span>
-                      <span className="text-xs font-mono font-bold text-slate-800">{viewingCardAluno?.matricula}</span>
+                  <div className="grid grid-cols-2 gap-2 bg-slate-50/80 rounded-xl p-2 border border-slate-100">
+                    <div className="flex flex-col items-center border-r border-slate-200">
+                      <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest mb-0.5">{t.students.registration}</span>
+                      <span className="text-[10px] font-mono font-black text-slate-800">{viewingCardAluno?.matricula}</span>
                     </div>
                     <div className="flex flex-col items-center">
-                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">{t.cartao.validity}</span>
-                      <span className="text-xs font-bold text-slate-800">
+                      <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest mb-0.5">{t.cartao.validity}</span>
+                      <span className="text-[10px] font-bold text-slate-800">
                         {viewingTurma?.data_inicio ? format(new Date(viewingTurma.data_inicio), 'yyyy') : ''}
-                        {viewingTurma?.data_fim ? ` - ${format(new Date(viewingTurma.data_fim), 'yyyy')}` : ''}
+                        {viewingTurma?.data_fim ? ` - ${format(new Date(viewingTurma.data_fim), 'yyyy')}` : format(new Date(), 'yyyy')}
                       </span>
                     </div>
                   </div>
                 </div>
               </div>
 
+              {/* Footer Section with Barcode */}
               <div className="w-full bg-slate-50 p-4 border-t border-slate-100 flex items-center justify-between mt-auto">
                 <div className="flex flex-col">
-                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">{t.nav.classes}</span>
-                  <span className="text-[10px] font-bold text-slate-700 leading-none">{viewingTurma?.nome}</span>
+                  <span className="text-[7px] font-black text-slate-400 uppercase tracking-[0.15em] leading-none mb-1">{t.nav.classes}</span>
+                  <span className="text-[10px] font-black text-slate-900 leading-none truncate max-w-[150px]">{viewingTurma?.nome}</span>
                 </div>
-                <div className="w-10 h-10 bg-white border border-slate-200 rounded flex items-center justify-center p-1">
-                  <div className="w-full h-full bg-slate-900 rounded-[2px]" />
+                
+                {/* Simulated Barcode */}
+                <div className="flex flex-col items-end gap-1">
+                  <div className="h-6 w-20 flex gap-[1px] items-end px-1 py-0.5 bg-white border border-slate-200 rounded-sm">
+                    {Array.from({ length: 25 }).map((_, i) => (
+                      <div 
+                        key={i} 
+                        className="bg-slate-900" 
+                        style={{ 
+                          width: i % 3 === 0 ? '2px' : '1px', 
+                          height: `${40 + ((i * 13) % 60)}%` 
+                        }} 
+                      />
+                    ))}
+                  </div>
+                  <span className="text-[6px] font-mono text-slate-400 uppercase tracking-tighter">
+                    {viewingCardAluno?.id?.substring(0, 18).toUpperCase() || 'ESCOLAGERAL-2024'}
+                  </span>
                 </div>
               </div>
             </div>
