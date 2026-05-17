@@ -37,7 +37,7 @@ export function SidebarClock({ collapsed }: SidebarClockProps) {
 
   return (
     <div className={cn(
-      "px-4 py-3 bg-slate-800/30 border border-white/5 rounded-xl transition-all duration-300 backdrop-blur-sm",
+      "px-4 py-3 bg-[rgba(30,41,59,0.3)] border border-[rgba(255,255,255,0.05)] rounded-xl transition-all duration-300",
       collapsed ? "p-2 items-center justify-center flex" : "flex flex-col gap-1"
     )}>
       {collapsed ? (

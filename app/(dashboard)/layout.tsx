@@ -116,7 +116,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setSidebarOpen(false)}
-            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 lg:hidden"
+            className="fixed inset-0 bg-[rgba(15,23,42,0.6)] z-40 lg:hidden"
           />
         )}
       </AnimatePresence>

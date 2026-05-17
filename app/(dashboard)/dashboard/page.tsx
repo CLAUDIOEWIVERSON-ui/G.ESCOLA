@@ -190,7 +190,7 @@ export default function DashboardPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[rgba(15,23,42,0.9)]"
             onClick={() => setExpandedPhoto(null)}
           >
             <motion.div
@@ -201,14 +201,14 @@ export default function DashboardPage() {
               onClick={(e) => e.stopPropagation()}
             >
               <button
-                className="absolute -top-12 right-0 p-2 text-white bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+                className="absolute -top-12 right-0 p-2 text-white bg-[rgba(255,255,255,0.1)] hover:bg-[rgba(255,255,255,0.2)] rounded-full transition-colors"
                 onClick={() => setExpandedPhoto(null)}
               >
                 <X size={24} />
               </button>
               
               <div className="bg-white p-2 rounded-2xl shadow-2xl relative">
-                <div className="relative w-[90vw] h-[80vh] sm:w-[500px] sm:h-[667px] rounded-xl overflow-hidden shadow-inner bg-slate-50">
+                <div className="relative w-[90vw] h-[80vh] sm:w-[500px] sm:h-[667px] rounded-xl overflow-hidden bg-slate-50 border border-slate-100">
                   <Image
                     src={expandedPhoto.url}
                     alt={expandedPhoto.name}

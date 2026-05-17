@@ -337,20 +337,20 @@ export default function FrequenciaPage() {
           </div>
         </div>
 
-        <div className="lg:col-span-4 bg-blue-700 text-white p-6 rounded-3xl shadow-xl shadow-blue-900/10 flex items-center justify-between relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-110" />
+        <div className="lg:col-span-4 bg-[#1d4ed8] text-white p-6 rounded-3xl shadow-xl flex items-center justify-between relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-[rgba(255,255,255,0.05)] rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-110" />
           <div className="relative z-10">
-            <label className="block text-[11px] font-bold text-blue-100/80 uppercase tracking-widest mb-1.5">
+            <label className="block text-[11px] font-bold text-[rgba(219,234,254,0.8)] uppercase tracking-widest mb-1.5">
               {t.attendance.frequencyRate || 'PRESENÇA GERAL'}
             </label>
             <div className="flex items-baseline gap-3">
               <span className="text-5xl font-black tracking-tight">{presencePercentage}%</span>
-              <span className="text-blue-100 font-bold text-sm bg-blue-600/50 px-2 py-0.5 rounded-lg whitespace-nowrap">
+              <span className="text-blue-100 font-bold text-sm bg-[rgba(37,99,235,0.5)] px-2 py-0.5 rounded-lg whitespace-nowrap">
                 {totalPresent}/{students.length} Alunos
               </span>
             </div>
           </div>
-          <div className="w-14 h-14 rounded-2xl bg-blue-600 shadow-inner flex items-center justify-center relative z-10 border border-blue-500/50">
+          <div className="w-14 h-14 rounded-2xl bg-[#2563eb] flex items-center justify-center relative z-10 border border-[rgba(59,130,246,0.5)] shadow-sm">
             <UserCheck size={28} className="text-white" />
           </div>
         </div>
