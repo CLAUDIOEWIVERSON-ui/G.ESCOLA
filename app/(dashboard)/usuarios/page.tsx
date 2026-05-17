@@ -309,10 +309,9 @@ export default function UsuariosPage() {
               <input
                 required
                 type="email"
-                disabled={!!currentUser?.id}
                 value={currentUser?.email || ''}
                 onChange={(e) => setCurrentUser({ ...currentUser, email: e.target.value })}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition-all shadow-sm"
               />
             </div>
           </div>

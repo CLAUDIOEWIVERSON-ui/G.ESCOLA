@@ -36,6 +36,7 @@ export default function CalendarPage() {
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [viewingEvent, setViewingEvent] = useState<Evento | null>(null);
   const [editingEvent, setEditingEvent] = useState<Evento | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -183,9 +184,13 @@ export default function CalendarPage() {
     setIsModalOpen(true);
   };
 
+  const openViewModal = (evento: Evento) => {
+    setViewingEvent(evento);
+  };
+
   const filteredEventos = eventos.filter(e => 
     e.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    e.descricao.toLowerCase().includes(searchTerm.toLowerCase())
+    (e.descricao || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const colors = [
@@ -277,7 +282,8 @@ export default function CalendarPage() {
                   key={evento.id}
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="group relative bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all active:scale-[0.98]"
+                  onClick={() => openViewModal(evento)}
+                  className="group relative bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all active:scale-[0.98] cursor-pointer"
                 >
                   <div className={cn("h-2", evento.cor)} />
                   <div className="p-5">
@@ -371,6 +377,94 @@ export default function CalendarPage() {
           )}
         </div>
       </div>
+
+      {/* Modal Visualização */}
+      <AnimatePresence>
+        {viewingEvent && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setViewingEvent(null)}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-md"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden"
+            >
+              <div className={cn("h-3 w-full", viewingEvent.cor)} />
+              
+              <div className="p-8">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className={cn("p-4 rounded-2xl text-white shadow-lg", viewingEvent.cor)}>
+                    <CalendarIcon size={24} />
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-1">
+                      {new Date(viewingEvent.data).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}
+                    </span>
+                    <h3 className="text-2xl font-bold text-slate-800 leading-tight">
+                      {viewingEvent.titulo}
+                    </h3>
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] block mb-3">
+                      {t.calendar.eventDescription || 'Descrição'}
+                    </label>
+                    <div className="bg-slate-50 rounded-xl p-5 border border-slate-100 min-h-[120px]">
+                      <p className="text-slate-600 leading-relaxed whitespace-pre-wrap">
+                        {viewingEvent.descricao || t.common.noneFound}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-6 py-4 px-2 bg-blue-50/50 rounded-xl border border-blue-100/50 hover:bg-blue-50 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-blue-600 shadow-sm border border-blue-100">
+                        <Clock size={18} />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Horário</span>
+                        <span className="text-sm font-bold text-slate-800">
+                          {new Date(viewingEvent.data).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-10 flex gap-3">
+                  <button 
+                    onClick={() => setViewingEvent(null)}
+                    className="flex-1 py-3 bg-slate-100 text-slate-700 rounded-xl text-sm font-bold hover:bg-slate-200 transition-colors"
+                  >
+                    {t.common.close || 'Fechar'}
+                  </button>
+                  {!isReadOnly && (
+                    <button 
+                      onClick={() => {
+                        const evt = viewingEvent;
+                        setViewingEvent(null);
+                        openEditModal(evt);
+                      }}
+                      className="px-6 py-3 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/20 flex items-center gap-2"
+                    >
+                      <Edit2 size={16} />
+                      {t.common.edit}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Modal Cadastro/Edição */}
       <AnimatePresence>

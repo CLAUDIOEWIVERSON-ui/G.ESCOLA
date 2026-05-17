@@ -251,7 +251,7 @@ function TurmasContent() {
         turma_id: viewingTurma?.id,
       };
 
-      if (currentAluno.email && currentAluno.email.includes('@')) dataToSave.email = currentAluno.email;
+      dataToSave.email = (currentAluno.email && currentAluno.email.includes('@')) ? currentAluno.email : null;
       if (currentAluno.posto_graduacao) dataToSave.posto_graduacao = currentAluno.posto_graduacao;
       if (currentAluno.nif) dataToSave.nif = currentAluno.nif;
       if (currentAluno.rg) dataToSave.rg = currentAluno.rg;
