@@ -14,6 +14,8 @@ import { format } from 'date-fns';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { useRef } from 'react';
+import maleAvatar from '@/src/assets/images/avatar_male_1778977230783.png';
+import femaleAvatar from '@/src/assets/images/avatar_female_1778977246051.png';
 
 function TurmasContent() {
   const { t, language } = useI18n();
@@ -153,6 +155,7 @@ function TurmasContent() {
       matricula: '', 
       turma_id: viewingTurma?.id || '', 
       status: 'ativo',
+      genero: 'masculino',
       nif: '',
       rg: '',
       om: '',
@@ -256,6 +259,7 @@ function TurmasContent() {
       if (currentAluno.nome_pai) dataToSave.nome_pai = currentAluno.nome_pai;
       if (currentAluno.nome_mae) dataToSave.nome_mae = currentAluno.nome_mae;
       if (currentAluno.om) dataToSave.om = currentAluno.om;
+      if (currentAluno.genero) dataToSave.genero = currentAluno.genero;
       if (currentAluno.telefone) dataToSave.telefone = currentAluno.telefone;
       if (currentAluno.whatsapp) dataToSave.whatsapp = currentAluno.whatsapp;
       if (currentAluno.foto_url) dataToSave.foto_url = currentAluno.foto_url;
@@ -977,7 +981,13 @@ function TurmasContent() {
                           </div>
                         </>
                       ) : (
-                        <div className="flex items-center justify-center h-full text-[10px] font-bold text-slate-400">3x4</div>
+                        <Image 
+                          src={aluno.genero === 'feminino' ? femaleAvatar : maleAvatar} 
+                          alt={aluno.nome} 
+                          fill 
+                          className="object-cover opacity-50" 
+                          sizes="48px" 
+                        />
                       )}
                     </div>
                     <div>
@@ -1138,6 +1148,19 @@ function TurmasContent() {
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded text-sm"
                     placeholder="Auto"
                   />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    {t.students.gender}
+                  </label>
+                  <select
+                    value={currentAluno?.genero || 'masculino'}
+                    onChange={(e) => setCurrentAluno({ ...currentAluno, genero: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded text-sm outline-none"
+                  >
+                    <option value="masculino">{t.students.male}</option>
+                    <option value="feminino">{t.students.female}</option>
+                  </select>
                 </div>
               </div>
             </div>
@@ -1328,9 +1351,13 @@ function TurmasContent() {
                       </div>
                     </>
                   ) : (
-                    <div className="flex items-center justify-center h-full text-slate-300">
-                      <Users size={48} strokeWidth={1} />
-                    </div>
+                    <Image 
+                      src={viewingCardAluno?.genero === 'feminino' ? femaleAvatar : maleAvatar} 
+                      alt={viewingCardAluno?.nome} 
+                      fill 
+                      className="object-cover opacity-60 grayscale-[0.2]" 
+                      sizes="120px" 
+                    />
                   )}
                 </div>
                 <div className="absolute -bottom-2 -right-2 bg-blue-600 text-white p-1.5 rounded-lg shadow-lg border-2 border-white">

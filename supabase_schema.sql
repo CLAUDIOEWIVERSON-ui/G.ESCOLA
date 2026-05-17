@@ -66,6 +66,7 @@ CREATE TABLE IF NOT EXISTS public.alunos (
   ano_admissao INTEGER,
   telefone TEXT,
   whatsapp TEXT,
+  genero TEXT DEFAULT 'masculino',
   foto_url TEXT,
   status TEXT DEFAULT 'ativo',
   nome_pai TEXT,
