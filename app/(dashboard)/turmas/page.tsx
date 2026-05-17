@@ -5,14 +5,12 @@ import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
-import { Plus, Search, Layers as LayersIcon, Library, Calendar, Clock, MapPin, Pencil, Trash2, Loader2, CheckCircle2, RefreshCcw, Users, Mail, Phone, Shield, Building, CreditCard, Camera, MessageCircle, XCircle, FileText, Download, Printer, X, GraduationCap, School, ChevronRight } from 'lucide-react';
+import { Plus, Search, Layers as LayersIcon, Library, Calendar, Clock, MapPin, Pencil, Trash2, Loader2, CheckCircle2, RefreshCcw, Users, Mail, Phone, Shield, Building, CreditCard, Camera, MessageCircle, XCircle, FileText, Printer, X, GraduationCap, School, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import Modal from '@/components/Modal';
 import Image from 'next/image';
 import { format } from 'date-fns';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
 import { useRef } from 'react';
 import maleAvatar from '@/src/assets/images/avatar_male_1778977230783.png';
 import femaleAvatar from '@/src/assets/images/avatar_female_1778977246051.png';
@@ -173,31 +171,6 @@ function TurmasContent() {
   const handleViewCard = (aluno: any) => {
     setViewingCardAluno(aluno);
     setIsCardModalOpen(true);
-  };
-
-  const handleDownloadCard = async () => {
-    if (!cardRef.current) return;
-    
-    try {
-      const canvas = await html2canvas(cardRef.current, {
-        scale: 3,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff'
-      });
-      
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: [85.6, 54] // Standard ID card size CR80
-      });
-      
-      pdf.addImage(imgData, 'PNG', 0, 0, 54, 85.6);
-      pdf.save(`cracha_${viewingCardAluno?.nome.toLowerCase().replace(/\s+/g, '_')}.pdf`);
-    } catch (err) {
-      console.error('Error generating card:', err);
-    }
   };
 
   const handlePrintCard = () => {
@@ -1488,17 +1461,10 @@ function TurmasContent() {
           <div className="flex gap-3 w-full">
             <button
               onClick={handlePrintCard}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-slate-100 text-slate-700 rounded-xl font-bold text-sm hover:bg-slate-200 transition-all border border-slate-200"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition-all shadow-lg shadow-blue-100"
             >
               <Printer size={18} />
               {t.cartao.print}
-            </button>
-            <button
-              onClick={handleDownloadCard}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition-all shadow-lg shadow-blue-100"
-            >
-              <Download size={18} />
-              {t.cartao.download}
             </button>
           </div>
         </div>
