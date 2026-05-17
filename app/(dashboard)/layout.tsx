@@ -38,6 +38,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { profile, isAdmin, isAluno, isInstrutor, loading: authLoading } = useUser();
   const isReadOnly = !isAdmin;
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
+
+  const toggleSubmenu = (path: string, e: React.MouseEvent) => {
+    if (!sidebarOpen) {
+      setSidebarOpen(true);
+      if (!expandedMenus.includes(path)) {
+        setExpandedMenus([path]);
+      }
+      return;
+    }
+    
+    e.preventDefault();
+    e.stopPropagation();
+    
+    setExpandedMenus(prev => 
+      prev.includes(path) 
+        ? prev.filter(p => p !== path) 
+        : [...prev, path]
+    );
+  };
 
   useEffect(() => {
     const handleResize = () => {
@@ -128,60 +148,102 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <div className="space-y-1.5">
                   {navItems.slice(0, 4).map((item: any) => {
                     const subItemPaths = item.subItems?.map((s: any) => s.path) || [];
-                    const isAnySubActive = subItemPaths.some((p: string) => pathname + (typeof window !== 'undefined' ? window.location.search : '') === p);
+                    const isAnySubActive = subItemPaths.some((p: string) => (pathname + (typeof window !== 'undefined' ? window.location.search : '')) === p);
                     const isParentActive = pathname === item.path || isAnySubActive;
-                    const isExpanded = sidebarOpen && (isParentActive || isAnySubActive);
+                    
+                    // A menu is expanded if its path is in expandedMenus OR if one of its subitems is active
+                    const isExpanded = sidebarOpen && (expandedMenus.includes(item.path) || isAnySubActive);
+                    const hasSubItems = !!item.subItems;
+
+                    const Content = (
+                      <div className={cn(
+                        "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group relative overflow-hidden",
+                        isParentActive 
+                          ? "text-white" 
+                          : "text-slate-400 hover:text-white hover:bg-white/[0.03]",
+                        isExpanded && hasSubItems && "bg-slate-900 rounded-b-none"
+                      )}>
+                        {/* Blue indicator for active OR expanded with subitems */}
+                        {(isParentActive || (isExpanded && hasSubItems)) && (
+                          <motion.div 
+                            layoutId={hasSubItems ? `expanded-indicator-${item.path}` : "active-indicator"}
+                            className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-r-full z-10"
+                          />
+                        )}
+                        
+                        {item.name === t.nav.classes ? (
+                          <div className="shrink-0 w-[18px] flex justify-center text-xs font-bold" style={{ letterSpacing: '-2px' }}>
+                            <span className={cn(isParentActive ? "text-blue-400" : "text-slate-500 group-hover:text-slate-300")}>||\</span>
+                          </div>
+                        ) : (
+                          <item.icon size={18} className={cn("shrink-0 transition-transform group-hover:scale-110", isParentActive ? "text-blue-400" : "text-slate-500 group-hover:text-slate-300")} />
+                        )}
+                        
+                        <span className={cn(
+                          "text-sm transition-opacity flex-1 whitespace-nowrap font-medium",
+                          !sidebarOpen && "opacity-0 invisible w-0",
+                        )}>
+                          {item.name}
+                        </span>
+                        
+                        {hasSubItems && sidebarOpen && (
+                          <ChevronRight 
+                            size={14} 
+                            className={cn(
+                              "transition-transform text-slate-600 group-hover:text-slate-400", 
+                              isExpanded && "rotate-90 text-blue-400"
+                            )} 
+                          />
+                        )}
+                      </div>
+                    );
 
                     return (
-                      <div key={item.path} className="flex flex-col">
-                        <Link 
-                          href={item.path}
-                          className={cn(
-                            "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group relative overflow-hidden",
-                            isParentActive 
-                              ? "bg-blue-600/10 text-white border border-blue-500/20 shadow-[0_0_15px_rgba(37,99,235,0.1)]" 
-                              : "hover:bg-white/[0.03] text-slate-400 hover:text-white"
-                          )}
-                        >
-                          {isParentActive && (
-                            <motion.div 
-                              layoutId="active-indicator"
-                              className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-r-full"
-                            />
-                          )}
-                          <item.icon size={18} className={cn("shrink-0 transition-transform group-hover:scale-110", isParentActive ? "text-blue-400" : "text-slate-500 group-hover:text-slate-300")} />
-                          <span className={cn(
-                            "text-sm transition-opacity flex-1 whitespace-nowrap font-medium",
-                            !sidebarOpen && "opacity-0 invisible w-0",
-                          )}>
-                            {item.name}
-                          </span>
-                          {item.subItems && sidebarOpen && (
-                            <ChevronRight size={14} className={cn("transition-transform text-slate-600 group-hover:text-slate-400", isExpanded && "rotate-90 text-blue-400")} />
-                          )}
-                        </Link>
-
-                        {item.subItems && isExpanded && (
-                          <div className="ml-9 mt-1 space-y-1 border-l border-white/5 pl-4 py-1">
-                            {item.subItems.map((sub: any) => {
-                              const isSubActive = (pathname + (typeof window !== 'undefined' ? window.location.search : '')) === sub.path;
-                              return (
-                                <Link 
-                                  key={sub.path}
-                                  href={sub.path}
-                                  className={cn(
-                                    "block py-1.5 text-xs font-medium transition-all",
-                                    isSubActive
-                                      ? "text-blue-400 font-bold" 
-                                      : "text-slate-500 hover:text-slate-300"
-                                  )}
-                                >
-                                  {sub.name}
-                                </Link>
-                              );
-                            })}
-                          </div>
+                      <div key={item.path} className={cn("flex flex-col rounded-xl overflow-hidden transition-colors", isExpanded && hasSubItems && "bg-slate-900/50")}>
+                        {hasSubItems ? (
+                          <button 
+                            onClick={(e) => toggleSubmenu(item.path, e)}
+                            className="w-full text-left outline-none"
+                          >
+                            {Content}
+                          </button>
+                        ) : (
+                          <Link href={item.path} className="outline-none">
+                            {Content}
+                          </Link>
                         )}
+
+                        <AnimatePresence>
+                          {hasSubItems && isExpanded && (
+                            <motion.div 
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: "auto", opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+                              className="overflow-hidden"
+                            >
+                              <div className="ml-8 my-1 space-y-1 border-l border-white/10 pl-4 py-1">
+                                {item.subItems.map((sub: any) => {
+                                  const isSubActive = (pathname + (typeof window !== 'undefined' ? window.location.search : '')) === sub.path;
+                                  return (
+                                    <Link 
+                                      key={sub.path}
+                                      href={sub.path}
+                                      className={cn(
+                                        "block py-1.5 text-xs font-medium transition-all",
+                                        isSubActive
+                                          ? "text-blue-400 font-bold" 
+                                          : "text-slate-500 hover:text-slate-300"
+                                      )}
+                                    >
+                                      {sub.name}
+                                    </Link>
+                                  );
+                                })}
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
                     );
                   })}
