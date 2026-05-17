@@ -2,6 +2,7 @@ import type {Metadata} from 'next';
 import './globals.css';
 import { LanguageProvider } from '@/lib/i18n/LanguageContext';
 import { UserProvider } from '@/lib/auth/UserContext';
+import { Toaster } from 'sonner';
 
 export const metadata: Metadata = {
   title: 'SISTEMA DE GESTÃO ESCOLAR',
@@ -15,6 +16,7 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
         <LanguageProvider>
           <UserProvider>
             {children}
+            <Toaster position="top-right" richColors closeButton />
           </UserProvider>
         </LanguageProvider>
       </body>

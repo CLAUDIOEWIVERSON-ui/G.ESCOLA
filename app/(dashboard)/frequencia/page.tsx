@@ -27,6 +27,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 import { 
   format, 
   startOfMonth, 
@@ -171,10 +172,11 @@ export default function FrequenciaPage() {
   const handleSaveAttendance = async () => {
     if (!selectedTurma || isReadOnly) return;
     if (!selectedDate) {
-      alert(language === 'pt' ? 'Por favor, selecione uma data válida.' : 'Please select a valid date.');
+      toast.error(language === 'pt' ? 'Por favor, selecione uma data válida.' : 'Please select a valid date.');
       return;
     }
     setSaving(true);
+    const loadingToast = toast.loading(t.common.loading || 'Salvando...');
     try {
       const recordsToUpsert = Object.entries(attendanceRecords).map(([alunoId, data]) => {
         const record: any = {
@@ -193,10 +195,10 @@ export default function FrequenciaPage() {
         .upsert(recordsToUpsert, { onConflict: 'aluno_id, turma_id, disciplina_id, data' });
 
       if (error) throw error;
-      alert(t.attendance.saveSuccess);
+      toast.success(t.attendance.saveSuccess, { id: loadingToast });
       fetchAttendance();
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message, { id: loadingToast });
     } finally {
       setSaving(false);
     }

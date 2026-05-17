@@ -16,6 +16,8 @@ import {
 import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
 
+import { Toaster, toast } from 'sonner';
+
 export default function ConfiguracoesPage() {
   const { t } = useI18n();
   const { isAdmin } = useUser();
@@ -59,6 +61,7 @@ export default function ConfiguracoesPage() {
   const handleSave = async () => {
     if (isReadOnly) return;
     setSaving(true);
+    const loadingToast = toast.loading(t.common.loading || 'Salvando...');
     try {
       const { error } = await supabase
         .from('configuracoes')
@@ -73,9 +76,9 @@ export default function ConfiguracoesPage() {
         });
 
       if (error) throw error;
-      alert(t.settings.saveSuccess);
+      toast.success(t.settings.saveSuccess, { id: loadingToast });
     } catch (err: any) {
-      alert(err.message);
+      toast.error(t.common.saveError || err.message, { id: loadingToast });
     } finally {
       setSaving(false);
     }

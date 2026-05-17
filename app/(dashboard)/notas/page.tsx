@@ -15,6 +15,7 @@ import {
 import { motion } from 'motion/react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 export default function NotasPage() {
   const { t, language } = useI18n();
@@ -250,8 +251,9 @@ export default function NotasPage() {
           return updated;
         });
       }
+      toast.success(language === 'pt' ? 'Média atualizada!' : 'Avg updated!');
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message);
     } finally {
       setSavingRows(prev => ({ ...prev, [alunoId]: false }));
     }
@@ -277,9 +279,9 @@ export default function NotasPage() {
         });
 
       if (error) throw error;
-      alert(t.attendance.saveSuccess);
+      toast.success(t.attendance.saveSuccess);
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message);
     } finally {
       setSaving(false);
     }

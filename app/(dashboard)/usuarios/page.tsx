@@ -9,6 +9,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import Modal from '@/components/Modal';
 
+import { toast } from 'sonner';
+
 export default function UsuariosPage() {
   const { t, language } = useI18n();
   const { isAdmin } = useUser();
@@ -109,9 +111,10 @@ export default function UsuariosPage() {
 
       setIsModalOpen(false);
       fetchUsers();
+      toast.success(language === 'pt' ? 'Usuário salvo com sucesso!' : 'User saved successfully!');
     } catch (err: any) {
       console.error('Save error:', err);
-      alert(language === 'pt' ? `Erro ao salvar: ${err.message}` : `Save error: ${err.message}`);
+      toast.error(language === 'pt' ? `Erro ao salvar: ${err.message}` : `Save error: ${err.message}`);
     } finally {
       setSaving(false);
     }
@@ -128,8 +131,9 @@ export default function UsuariosPage() {
       if (result.error) throw new Error(result.error);
       
       setUsers(users.filter(u => u.id !== id));
+      toast.success(language === 'pt' ? 'Usuário removido!' : 'User removed!');
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message);
     } finally {
       setDeleting(null);
     }

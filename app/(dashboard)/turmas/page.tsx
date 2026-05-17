@@ -17,6 +17,8 @@ import { useRef } from 'react';
 import maleAvatar from '@/src/assets/images/avatar_male_1778977230783.png';
 import femaleAvatar from '@/src/assets/images/avatar_female_1778977246051.png';
 
+import { toast } from 'sonner';
+
 function TurmasContent() {
   const { t, language } = useI18n();
   const searchParams = useSearchParams();
@@ -223,8 +225,9 @@ function TurmasContent() {
         .getPublicUrl(filePath);
 
       setCurrentAluno({ ...currentAluno, foto_url: publicUrl });
+      toast.success(language === 'pt' ? 'Foto carregada!' : 'Photo uploaded!');
     } catch (err: any) {
-      alert(t.common.uploadError + ': ' + (err.message || ''));
+      toast.error(t.common.uploadError + ': ' + (err.message || ''));
     } finally {
       setSavingStudent(false);
     }
@@ -294,8 +297,9 @@ function TurmasContent() {
       if (data) setAlunosInTurma(data);
       setIsStudentFormOpen(false);
       refreshData(); // Refresh class count
+      toast.success(language === 'pt' ? 'Aluno salvo com sucesso!' : 'Student saved successfully!');
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message);
     } finally {
       setSavingStudent(false);
     }
@@ -321,8 +325,9 @@ function TurmasContent() {
           
           setAlunosInTurma(alunosInTurma.filter(a => a.id !== id));
           refreshData(); // Refresh class count
+          toast.success(language === 'pt' ? 'Aluno removido!' : 'Student removed!');
         } catch (err: any) {
-          alert(err.message);
+          toast.error(err.message);
         } finally {
           setDeletingStudent(null);
         }
@@ -350,8 +355,9 @@ function TurmasContent() {
           
           setAlunosInTurma([]);
           refreshData();
+          toast.success(language === 'pt' ? 'Todos os alunos foram removidos!' : 'All students were removed!');
         } catch (err: any) {
-          alert(err.message);
+          toast.error(err.message);
         } finally {
           setDeletingAll(false);
         }
@@ -438,9 +444,9 @@ function TurmasContent() {
       refreshData();
       
       const successCount = data?.length || 0;
-      alert(t.common.processedSuccess.replace('{count}', successCount.toString()));
+      toast.success(t.common.processedSuccess.replace('{count}', successCount.toString()));
     } catch (err: any) {
-      alert(t.common.importErrorMsg + ': ' + (err.message || ''));
+      toast.error(t.common.importErrorMsg + ': ' + (err.message || ''));
     } finally {
       setSavingStudent(false);
     }
@@ -487,11 +493,12 @@ function TurmasContent() {
 
       await refreshData();
       setIsModalOpen(false);
+      toast.success(language === 'pt' ? 'Turma salva com sucesso!' : 'Class saved successfully!');
     } catch (err: any) {
       console.error('Error saving class (full error):', err);
       // Construct a better error message showing detail, hint or message
       const errorMsg = err.message || err.details || err.hint || (typeof err === 'object' ? JSON.stringify(err) : String(err));
-      alert(language === 'pt' ? `Erro ao salvar: ${errorMsg}` : `Error saving: ${errorMsg}`);
+      toast.error(language === 'pt' ? `Erro ao salvar: ${errorMsg}` : `Error saving: ${errorMsg}`);
     } finally {
       setSaving(false);
     }
@@ -515,8 +522,9 @@ function TurmasContent() {
             
           if (error) throw error;
           await refreshData();
+          toast.success(language === 'pt' ? 'Turma removida!' : 'Class removed!');
         } catch (err: any) {
-          alert(err.message);
+          toast.error(err.message);
         } finally {
           setDeleting(null);
         }

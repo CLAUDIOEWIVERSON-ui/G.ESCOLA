@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface Evento {
   id: string;
@@ -46,13 +47,6 @@ export default function CalendarPage() {
     data: new Date().toISOString().split('T')[0],
     cor: 'bg-blue-600'
   });
-
-  const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
-
-  const showStatus = (type: 'success' | 'error', text: string) => {
-    setStatusMessage({ type, text });
-    setTimeout(() => setStatusMessage(null), 5000);
-  };
 
   const fetchEventos = async () => {
     try {
@@ -122,7 +116,7 @@ export default function CalendarPage() {
           })
           .eq('id', editingEvent.id);
         if (error) throw error;
-        showStatus('success', t.calendar.eventUpdated);
+        toast.success(t.calendar.eventUpdated);
       } else {
         const { error } = await supabase
           .from('eventos')
@@ -133,7 +127,7 @@ export default function CalendarPage() {
             cor: formData.cor
           }]);
         if (error) throw error;
-        showStatus('success', t.calendar.eventAdded);
+        toast.success(t.calendar.eventAdded);
       }
 
       setIsModalOpen(false);
@@ -147,7 +141,7 @@ export default function CalendarPage() {
       fetchEventos();
     } catch (error: any) {
       console.error('Error saving event:', error);
-      showStatus('error', error.message || 'Erro ao salvar evento');
+      toast.error(error.message || 'Erro ao salvar evento');
     }
   };
 
@@ -162,12 +156,12 @@ export default function CalendarPage() {
         .delete()
         .eq('id', id);
       if (error) throw error;
-      showStatus('success', t.calendar.eventDeleted);
+      toast.success(t.calendar.eventDeleted);
       setEventToDelete(null);
       await fetchEventos();
     } catch (error: any) {
       console.error('Error deleting event:', error);
-      showStatus('error', error.message || 'Erro ao excluir evento');
+      toast.error(error.message || 'Erro ao excluir evento');
     } finally {
       setLoading(false);
     }
@@ -228,23 +222,6 @@ export default function CalendarPage() {
           </button>
         )}
       </div>
-
-      <AnimatePresence>
-        {statusMessage && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className={cn(
-              "p-3 rounded-lg text-sm font-medium flex items-center gap-2 mb-4 shadow-sm",
-              statusMessage.type === 'success' ? "bg-emerald-50 text-emerald-700 border border-emerald-100" : "bg-rose-50 text-rose-700 border border-rose-100"
-            )}
-          >
-            {statusMessage.type === 'success' ? <CheckCircle2 size={16} /> : <AlertTriangle size={16} />}
-            {statusMessage.text}
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-4">
         <div className="relative mb-6">

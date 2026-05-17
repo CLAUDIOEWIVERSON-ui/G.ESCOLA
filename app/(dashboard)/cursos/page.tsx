@@ -28,6 +28,8 @@ import { z } from 'zod';
 import Modal from '@/components/Modal';
 import { cn } from '@/lib/utils';
 
+import { Toaster, toast } from 'sonner';
+
 type Curso = z.infer<typeof cursoSchema> & { id: string };
 
 export default function CursosPage() {
@@ -142,20 +144,22 @@ export default function CursosPage() {
       setModalOpen(false);
       setEditingCurso(null);
       fetchCursos();
+      toast.success(language === 'pt' ? 'Curso salvo com sucesso!' : 'Course saved successfully!');
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 
   const deleteCurso = async (id: string) => {
     if (isReadOnly) return;
-    if (confirm(t.common.deleteConfirm)) {
-      const { error } = await supabase
-        .from('cursos')
-        .update({ deleted_at: new Date().toISOString() })
-        .eq('id', id);
-      if (error) alert(error.message);
-      else fetchCursos();
+    const { error } = await supabase
+      .from('cursos')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', id);
+    if (error) toast.error(error.message);
+    else {
+      toast.success(language === 'pt' ? 'Curso removido!' : 'Course removed!');
+      fetchCursos();
     }
   };
 
@@ -217,8 +221,9 @@ export default function CursosPage() {
 
       await fetchDisciplinas(manageDisciplinasCurso.id);
       setIsDisciplinaModalOpen(false);
+      toast.success(language === 'pt' ? 'Disciplina salva!' : 'Subject saved!');
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message);
     } finally {
       setSavingDisciplina(false);
     }
@@ -238,8 +243,9 @@ export default function CursosPage() {
       
       await fetchDisciplinas(manageDisciplinasCurso.id);
       setConfirmDeleteDisciplinaId(null);
+      toast.success(language === 'pt' ? 'Disciplina removida!' : 'Subject removed!');
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message);
     } finally {
       setDeletingDisciplinaId(null);
     }
@@ -308,8 +314,9 @@ export default function CursosPage() {
 
       await fetchMaterias(manageMateriasDisciplina.id);
       setIsMateriaModalOpen(false);
+      toast.success(language === 'pt' ? 'Tópico salvo!' : 'Topic saved!');
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message);
     } finally {
       setSavingMateria(false);
     }
@@ -317,7 +324,6 @@ export default function CursosPage() {
 
   const deleteMateria = async (id: string) => {
     if (isReadOnly || !manageMateriasDisciplina) return;
-    if (!confirm(t.common.deleteConfirm)) return;
 
     try {
       const { error } = await supabase
@@ -328,8 +334,9 @@ export default function CursosPage() {
       if (error) throw error;
       
       await fetchMaterias(manageMateriasDisciplina.id);
+      toast.success(language === 'pt' ? 'Tópico removido!' : 'Topic removed!');
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 
@@ -382,9 +389,12 @@ export default function CursosPage() {
       setBulkData('');
       
       const successCount = data?.length || 0;
-      alert(t.common.successCount.replace('{count}', successCount.toString()) + (results.errors.length > 0 ? '\n\nErros:\n' + results.errors.join('\n') : ''));
+      toast.success(t.common.successCount.replace('{count}', successCount.toString()));
+      if (results.errors.length > 0) {
+        toast.error('Alguns erros ocorreram:\n' + results.errors.join('\n'));
+      }
     } catch (err: any) {
-      alert(t.common.importError + ': ' + (err.message || t.common.parseError));
+      toast.error(t.common.importError + ': ' + (err.message || t.common.parseError));
     } finally {
       setSaving(false);
     }
