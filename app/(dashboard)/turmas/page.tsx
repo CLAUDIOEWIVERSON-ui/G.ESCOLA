@@ -5,14 +5,11 @@ import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
-import { Plus, Search, Layers as LayersIcon, Library, Calendar, Clock, MapPin, Pencil, Trash2, Loader2, CheckCircle2, RefreshCcw, Users, Mail, Phone, Shield, Building, CreditCard, Camera, MessageCircle, XCircle, FileText, Printer, X, GraduationCap, School, ChevronRight } from 'lucide-react';
+import { Plus, Search, Layers as LayersIcon, Library, Calendar, Clock, MapPin, Pencil, Trash2, Loader2, CheckCircle2, RefreshCcw, Users, Mail, Phone, Building, Camera, MessageCircle, XCircle, FileText, X, GraduationCap, School, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import Modal from '@/components/Modal';
 import Image from 'next/image';
-import { format } from 'date-fns';
-import { useRef } from 'react';
-import html2canvas from 'html2canvas';
 import maleAvatar from '@/src/assets/images/avatar_male_1778977230783.png';
 import femaleAvatar from '@/src/assets/images/avatar_female_1778977246051.png';
 
@@ -40,9 +37,6 @@ function TurmasContent() {
   const [deletingAll, setDeletingAll] = useState(false);
   const [isStudentsModalOpen, setIsStudentsModalOpen] = useState(false);
   const [isStudentFormOpen, setIsStudentFormOpen] = useState(false);
-  const [isCardModalOpen, setIsCardModalOpen] = useState(false);
-  const [viewingCardAluno, setViewingCardAluno] = useState<any>(null);
-  const cardRef = useRef<HTMLDivElement>(null);
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [bulkData, setBulkData] = useState('');
   const [skipHeader, setSkipHeader] = useState(false);
@@ -51,7 +45,6 @@ function TurmasContent() {
   const [currentAluno, setCurrentAluno] = useState<any>(null);
   const [loadingAlunos, setLoadingAlunos] = useState(false);
   const [expandedPhoto, setExpandedPhoto] = useState<{url: string, name: string} | null>(null);
-  const [printing, setPrinting] = useState(false);
   
   const activeCategory = (categoryParam && ['expedito', 'especial', 'carreira'].includes(categoryParam)) 
     ? (categoryParam as 'expedito' | 'especial' | 'carreira') 
@@ -168,72 +161,6 @@ function TurmasContent() {
       foto_url: ''
     });
     setIsStudentFormOpen(true);
-  };
-
-  const handleViewCard = (aluno: any) => {
-    setViewingCardAluno(aluno);
-    setIsCardModalOpen(true);
-  };
-
-  const handlePrintCard = async () => {
-    if (!cardRef.current || printing) return;
-    
-    setPrinting(true);
-    try {
-      // Create a high-res capture
-      const canvas = await html2canvas(cardRef.current, {
-        scale: 4, // Higher resolution for print
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff'
-      });
-      
-      const imgData = canvas.toDataURL('image/png');
-      const printWindow = window.open('', '_blank');
-      
-      if (!printWindow) {
-        toast.error(language === 'pt' ? 'Por favor, permita popups para imprimir.' : 'Please allow popups to print.');
-        return;
-      }
-
-      printWindow.document.write(`
-        <html>
-          <head>
-            <title>Crachá - ${viewingCardAluno?.nome}</title>
-            <style>
-              @page { 
-                size: 54mm 85.6mm; 
-                margin: 0; 
-              }
-              body { 
-                margin: 0; 
-                padding: 0; 
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                height: 100vh;
-                background-color: white;
-              }
-              img { 
-                width: 54mm;
-                height: 85.6mm;
-                display: block;
-                object-fit: contain;
-              }
-            </style>
-          </head>
-          <body>
-            <img src="${imgData}" onload="window.print(); window.close();" />
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-    } catch (err) {
-      console.error('Error generating card for print:', err);
-      toast.error(language === 'pt' ? 'Erro ao gerar crachá para imprimir.' : 'Error generating card for print.');
-    } finally {
-      setPrinting(false);
-    }
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1036,13 +963,6 @@ function TurmasContent() {
                     </div>
                   </div>
                     <div className="flex items-center gap-2">
-                      <button 
-                        onClick={() => handleViewCard(aluno)}
-                        className="p-1.5 hover:bg-blue-50 text-blue-600 rounded flex items-center gap-1 transition-colors"
-                        title={t.cartao.issue}
-                      >
-                        <CreditCard size={14} />
-                      </button>
                       {!isReadOnly && (
                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button 
@@ -1344,158 +1264,6 @@ function TurmasContent() {
             </button>
           </div>
         </form>
-      </Modal>
-
-      <Modal
-        isOpen={isCardModalOpen}
-        onClose={() => setIsCardModalOpen(false)}
-        title={t.cartao.title}
-      >
-        <div className="flex flex-col items-center gap-6 py-4">
-          <div className="flex flex-col items-center gap-4">
-            <div 
-              ref={cardRef}
-              className="w-[320px] h-[504px] rounded-[24px] relative overflow-hidden flex flex-col items-center font-sans mt-2"
-              style={{ 
-                backgroundColor: '#ffffff', 
-                border: '1px solid #e2e8f0',
-                printColorAdjust: 'exact', 
-                WebkitPrintColorAdjust: 'exact', 
-                boxSizing: 'border-box' 
-              }}
-            >
-              {/* Header Design */}
-              <div className="w-full h-[140px] bg-[#0f172a] flex flex-col items-center justify-center p-4 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-[rgba(37,99,235,0.15)] rounded-full -mr-16 -mt-16" />
-                <div className="absolute bottom-0 left-0 w-24 h-24 bg-[rgba(59,130,246,0.1)] rounded-full -ml-12 -mb-12" />
-                
-                <div className="z-10 flex flex-col items-center text-center">
-                  <div className="w-12 h-12 bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-2xl flex items-center justify-center mb-3">
-                    <Shield className="text-[#60a5fa]" size={24} strokeWidth={2} />
-                  </div>
-                  <h4 className="text-[#ffffff] text-[11px] font-black uppercase tracking-[0.25em] leading-tight max-w-[220px]">
-                    {t.auth.systemName}
-                  </h4>
-                  <div className="mt-3 px-4 py-1 bg-[#2563eb] rounded-full border border-[rgba(96,165,250,0.3)]">
-                    <p className="text-[#ffffff] text-[8px] font-black uppercase tracking-[0.2em]">{t.cartao.student}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Photos Section */}
-              <div className="mt-8 mb-4 relative z-20">
-                <div 
-                  className={cn(
-                    "w-[140px] h-[180px] bg-[#ffffff] rounded-2xl border-[4px] border-[#ffffff] overflow-hidden relative transition-all duration-300 group",
-                    viewingCardAluno?.foto_url ? "cursor-pointer" : ""
-                  )}
-                >
-                  {viewingCardAluno?.foto_url ? (
-                    <Image 
-                      src={viewingCardAluno.foto_url} 
-                      alt={viewingCardAluno.nome} 
-                      fill 
-                      className="object-cover" 
-                      sizes="140px"
-                      referrerPolicy="no-referrer"
-                      priority
-                    />
-                  ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center bg-[#f8fafc]">
-                      <Image 
-                        src={viewingCardAluno?.genero === 'feminino' ? femaleAvatar : maleAvatar} 
-                        alt={viewingCardAluno?.nome} 
-                        fill 
-                        className="object-cover opacity-30 grayscale" 
-                        sizes="140px" 
-                      />
-                      <Camera className="text-[#cbd5e1] relative z-10" size={36} strokeWidth={1} />
-                    </div>
-                  )}
-                </div>
-                <div className="absolute -bottom-3 -right-3 bg-[#10b981] text-[#ffffff] p-2 rounded-2xl border-[3px] border-[#ffffff]">
-                  <CheckCircle2 size={18} strokeWidth={3} />
-                </div>
-              </div>
-
-              {/* Information Section */}
-              <div className="text-center px-8 w-full flex-1 flex flex-col items-center justify-start space-y-4 pt-4 z-10">
-                <div>
-                  <h2 className="text-xl font-black text-[#1e293b] leading-tight uppercase tracking-tight line-clamp-2">
-                    {viewingCardAluno?.nome}
-                  </h2>
-                  <div className="inline-flex items-center gap-1.5 mt-1">
-                    <div className="w-1.5 h-1.5 rounded-full bg-[#3b82f6]" />
-                    <p className="text-[#2563eb] font-bold text-[11px] uppercase tracking-[0.1em]">
-                      {viewingCardAluno?.posto_graduacao || t.users.aluno}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="w-full border-t border-[#f1f5f9] pt-5 space-y-4">
-                  <div className="flex flex-col items-center">
-                    <span className="text-[9px] font-black text-[#94a3b8] uppercase tracking-[0.2em] mb-1.5">{t.cartao.course}</span>
-                    <span className="text-[11px] font-black text-[#334155] uppercase leading-snug px-2">
-                      {viewingTurma?.curso?.nome}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-0 bg-[#f8fafc] rounded-2xl border border-[#f1f5f9] divide-x divide-[#e2e8f0] overflow-hidden">
-                    <div className="flex flex-col items-center py-3">
-                      <span className="text-[7px] font-black text-[#94a3b8] uppercase tracking-widest mb-1">{t.students.registration}</span>
-                      <span className="text-[11px] font-mono font-black text-[#0f172a]">{viewingCardAluno?.matricula}</span>
-                    </div>
-                    <div className="flex flex-col items-center py-3">
-                      <span className="text-[7px] font-black text-[#94a3b8] uppercase tracking-widest mb-1">{t.cartao.validity}</span>
-                      <span className="text-[11px] font-black text-[#0f172a]">
-                        {viewingTurma?.data_inicio ? format(new Date(viewingTurma.data_inicio), 'yyyy') : ''}
-                        {viewingTurma?.data_fim ? ` - ${format(new Date(viewingTurma.data_fim), 'yyyy')}` : format(new Date(), 'yyyy')}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Footer Section with Barcode */}
-              <div className="w-full bg-[#f8fafc] px-6 py-5 border-t border-[#f1f5f9] flex items-center justify-between mt-auto z-10">
-                <div className="flex flex-col">
-                  <span className="text-[7px] font-black text-[#94a3b8] uppercase tracking-[0.2em] leading-none mb-1.5">{t.nav.classes}</span>
-                  <span className="text-[11px] font-black text-[#0f172a] leading-none truncate max-w-[120px]">{viewingTurma?.nome}</span>
-                </div>
-                
-                {/* Simulated Barcode */}
-                <div className="flex flex-col items-end gap-1.5">
-                  <div className="h-7 w-24 flex gap-[1px] items-end px-2 py-1 bg-[#ffffff] border border-[#e2e8f0] rounded">
-                    {Array.from({ length: 30 }).map((_, i) => (
-                      <div 
-                        key={i} 
-                        className="bg-[#0f172a]" 
-                        style={{ 
-                          width: i % 4 === 0 ? '2px' : '1px', 
-                          height: `${50 + ((i * 17) % 50)}%` 
-                        }} 
-                      />
-                    ))}
-                  </div>
-                  <span className="text-[7px] font-mono font-bold text-[#94a3b8] uppercase tracking-tight">
-                    {viewingCardAluno?.id?.substring(0, 15).toUpperCase()}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex gap-3 w-full">
-            <button
-              onClick={handlePrintCard}
-              disabled={printing}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm tracking-tight hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 disabled:opacity-70"
-            >
-              {printing ? <Loader2 size={18} className="animate-spin" /> : <Printer size={18} />}
-              {printing ? (language === 'pt' ? 'Gerando Impressão...' : 'Generating Print...') : t.cartao.print}
-            </button>
-          </div>
-        </div>
       </Modal>
 
       <Modal
