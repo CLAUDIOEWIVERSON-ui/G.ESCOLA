@@ -32,7 +32,7 @@ export default function NotasPage() {
   const [bulkNotas, setBulkNotas] = useState<Record<string, Record<string, any>>>({});
   const [saving, setSaving] = useState(false);
   const [savingRows, setSavingRows] = useState<Record<string, boolean>>({});
-  const [settings, setSettings] = useState({ media_aprovacao: 6, media_recuperacao: 4, frequencia_minima: 75 });
+  const [settings, setSettings] = useState({ media_aprovacao: 7, media_recuperacao: 5, frequencia_minima: 75, nota_maxima: 10 });
 
   // Derive effective modules
   const selectedTurmaObj = turmas.find(t => t.id === selectedTurma);
@@ -469,7 +469,7 @@ export default function NotasPage() {
                                 type="number"
                                 step="0.1"
                                 min="0"
-                                max="10"
+                                max={settings?.nota_maxima || 10}
                                 placeholder="-"
                                 value={gradeData[`nota${m}`] ?? ''}
                                 onChange={(e) => handleBulkChange(aluno.id, m, e.target.value)}

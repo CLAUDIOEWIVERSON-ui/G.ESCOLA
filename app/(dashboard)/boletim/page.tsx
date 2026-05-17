@@ -36,7 +36,7 @@ export default function BoletimPage() {
   
   const [boletimData, setBoletimData] = useState<any[]>([]);
   const [classStats, setClassStats] = useState({ avg: 0, total: 0 });
-  const [settings, setSettings] = useState({ media_aprovacao: 6, media_recuperacao: 4, frequencia_minima: 75 });
+  const [settings, setSettings] = useState({ media_aprovacao: 7, media_recuperacao: 5, frequencia_minima: 75, nota_maxima: 10 });
 
   useEffect(() => {
     const fetchFilters = async () => {

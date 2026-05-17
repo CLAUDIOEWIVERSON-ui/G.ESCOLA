@@ -237,14 +237,15 @@ CREATE TABLE IF NOT EXISTS public.configuracoes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   media_aprovacao DECIMAL(4,2) DEFAULT 7.0,
   media_recuperacao DECIMAL(4,2) DEFAULT 5.0,
+  nota_maxima DECIMAL(4,2) DEFAULT 10.0,
   frequencia_minima INTEGER DEFAULT 75,
   ano_letivo_atual INTEGER DEFAULT 2024,
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Inserir configuração inicial se não existir
-INSERT INTO public.configuracoes (media_aprovacao, media_recuperacao, frequencia_minima, ano_letivo_atual)
-SELECT 7.0, 5.0, 75, 2024
+INSERT INTO public.configuracoes (media_aprovacao, media_recuperacao, nota_maxima, frequencia_minima, ano_letivo_atual)
+SELECT 7.0, 5.0, 10.0, 75, 2024
 WHERE NOT EXISTS (SELECT 1 FROM public.configuracoes);
 
 CREATE INDEX idx_frequencia_turma_data ON public.frequencia(turma_id, data);
