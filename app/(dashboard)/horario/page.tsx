@@ -65,19 +65,29 @@ export default function HorarioPage() {
       return;
     }
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('horarios')
         .select('data')
         .eq('turma_id', turmaId)
-        .single();
+        .maybeSingle(); // Use maybeSingle to avoid error on 0 rows
       
+      if (error) {
+        if (error.message.includes('Could not find the table')) {
+          console.warn('Table "horarios" not found. Need to run migrations.');
+        } else {
+          console.error('Error fetching schedule:', error);
+        }
+        setScheduleData({});
+        return;
+      }
+
       if (data) {
         setScheduleData(data.data || {});
       } else {
         setScheduleData({});
       }
     } catch (err) {
-      console.error('Error fetching schedule:', err);
+      console.error('Unexpected error fetching schedule:', err);
       setScheduleData({});
     }
   }, []);
@@ -103,8 +113,14 @@ export default function HorarioPage() {
         }, { onConflict: 'turma_id' });
 
       if (error) {
-        console.error('Save error:', error);
-        toast.error(language === 'pt' ? 'Erro ao salvar o horário.' : 'Error saving schedule.');
+        console.error('Save error details:', error.message, error.details, error.hint);
+        if (error.message.includes('Could not find the table')) {
+          toast.error(language === 'pt' 
+            ? 'A tabela "horarios" não foi encontrada no banco de dados. Por favor, execute a migração SQL.' 
+            : 'The "horarios" table was not found in the database. Please run the SQL migration.');
+        } else {
+          toast.error(language === 'pt' ? `Erro ao salvar: ${error.message}` : `Error saving: ${error.message}`);
+        }
       } else {
         toast.success(language === 'pt' ? 'Horário salvo com sucesso!' : 'Schedule saved successfully!');
         setIsEditMode(false);
