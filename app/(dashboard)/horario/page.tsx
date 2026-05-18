@@ -194,19 +194,8 @@ export default function HorarioPage() {
     fetchData();
   }, []);
 
-  const handlePrint = async () => {
-    if (!printRef.current) return;
-    setIsPrinting(true);
-    try {
-      const canvas = await html2canvas(printRef.current, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
-      const imgData = canvas.toDataURL('image/png');
-      const win = window.open('', '_blank');
-      if (!win) return;
-      win.document.write(`<html><head><title>Horário</title><style>@page { size: portrait; margin: 10mm; } body { margin: 0; display: flex; justify-content: center; } img { width: 100%; height: auto; }</style></head><body><img src="${imgData}" onload="window.print(); window.close();" /></body></html>`);
-      win.document.close();
-    } finally {
-      setIsPrinting(false);
-    }
+  const handlePrint = () => {
+    window.print();
   };
 
   const updateCell = (slotId: string, dayKey: string, field: string, value: string) => {
@@ -235,8 +224,57 @@ export default function HorarioPage() {
 
   return (
     <div className="space-y-6">
+      <style jsx global>{`
+        @media print {
+          @page { 
+            size: A4 portrait; 
+            margin: 0;
+          }
+          body { 
+            background: white !important;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+          .print-container {
+            width: 100% !important;
+            max-width: none !important;
+            border: none !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+          .print-header {
+            padding: 20px !important;
+            background: #0f172a !important;
+            color: white !important;
+            -webkit-print-color-adjust: exact;
+          }
+          .print-content {
+            padding: 10px !important;
+            background: white !important;
+          }
+          .print-row {
+            break-inside: avoid;
+          }
+          .no-print {
+            display: none !important;
+          }
+          .rounded-3xl, .rounded-2xl, .rounded-\[3rem\], .rounded-\[2.5rem\] {
+            border-radius: 4px !important;
+          }
+           table { 
+            page-break-inside: auto;
+          }
+          tr { 
+            page-break-inside: avoid; 
+            page-break-after: auto;
+          }
+        }
+      `}</style>
+
       {/* Header Panel */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 print:hidden">
         <div>
           <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
             <Calendar className="text-blue-600" size={32} />
@@ -272,7 +310,7 @@ export default function HorarioPage() {
       </div>
 
       {/* Selectors */}
-      <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm grid grid-cols-1 md:grid-cols-2 gap-6 print:hidden">
         <div className="space-y-2">
           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 flex items-center gap-2">
             <BookOpen size={12} /> {t.nav.courses}
@@ -315,10 +353,10 @@ export default function HorarioPage() {
             {/* Elegant Schedule Container */}
             <div 
               ref={printRef}
-              className="w-full max-w-[1200px] bg-white rounded-[3rem] shadow-2xl border border-slate-100 overflow-hidden flex flex-col font-sans mb-10"
+              className="w-full max-w-[1200px] bg-white rounded-[3rem] shadow-2xl border border-slate-100 overflow-hidden flex flex-col font-sans mb-10 print-container"
             >
               {/* Specialized Header */}
-              <div className="bg-slate-900 p-12 text-white relative overflow-hidden">
+              <div className="bg-slate-900 p-12 text-white relative overflow-hidden print-header">
                 <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/10 rounded-full -mr-48 -mt-48 blur-3xl" />
                 <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-600/10 rounded-full -ml-32 -mb-32 blur-3xl" />
                 
@@ -347,7 +385,7 @@ export default function HorarioPage() {
               </div>
 
               {/* Grid Table */}
-              <div className="p-6 bg-slate-50 flex-1">
+              <div className="p-6 bg-slate-50 flex-1 print-content">
                 <div className="bg-white rounded-[2rem] border border-slate-200 overflow-hidden shadow-sm">
                   <table className="w-full border-collapse table-fixed">
                     <thead>
@@ -399,7 +437,7 @@ export default function HorarioPage() {
                         }
 
                         return (
-                          <tr key={slot.id} className="border-b border-slate-100 last:border-b-0">
+                          <tr key={slot.id} className="border-b border-slate-100 last:border-b-0 print-row">
                             <td className="px-4 py-8 text-center border-r border-slate-200 bg-slate-50/20">
                               <div className="text-xs font-black text-slate-800 leading-none">{slot.time}</div>
                             </td>
@@ -506,7 +544,7 @@ export default function HorarioPage() {
               </div>
 
               {/* Footer */}
-              <div className="px-12 py-8 bg-slate-900 flex items-center justify-between">
+              <div className="px-12 py-8 bg-slate-900 flex items-center justify-between print-header">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
                     <Shield size={20} className="text-blue-400" />
