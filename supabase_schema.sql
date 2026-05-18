@@ -14,6 +14,25 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Function to handle new user registration
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (id, full_name, role)
+  VALUES (
+    NEW.id,
+    COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name', ''),
+    COALESCE((NEW.raw_user_meta_data->>'role')::user_role_enum, 'aluno')
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Trigger to call handle_new_user on sign up
+CREATE OR REPLACE TRIGGER on_auth_user_created
+AFTER INSERT ON auth.users
+FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
 -- 3. Cursos
 CREATE TABLE IF NOT EXISTS public.cursos (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -192,33 +211,7 @@ AFTER INSERT OR UPDATE OR DELETE ON public.alunos
 FOR EACH ROW
 EXECUTE FUNCTION update_turma_count();
 
--- 9. RLS (Row Level Security)
-ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.cursos ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.turmas ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.alunos ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.disciplinas ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.notas ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.certificados ENABLE ROW LEVEL SECURITY;
-
--- Simple policies (Admins can do everything)
--- In a real scenario, you'd check roles in JWT claims or join with profiles table
-CREATE POLICY "Admins have full access" ON public.cursos FOR ALL USING (auth.role() = 'authenticated');
-CREATE POLICY "Admins have full access" ON public.turmas FOR ALL USING (auth.role() = 'authenticated');
-CREATE POLICY "Admins have full access" ON public.alunos FOR ALL USING (auth.role() = 'authenticated');
-CREATE POLICY "Admins have full access" ON public.disciplinas FOR ALL USING (auth.role() = 'authenticated');
-CREATE POLICY "Admins have full access" ON public.notas FOR ALL USING (auth.role() = 'authenticated');
-CREATE POLICY "Admins have full access" ON public.certificados FOR ALL USING (auth.role() = 'authenticated');
-
--- Profiles policies
-CREATE POLICY "Users can view their own profile" ON public.profiles FOR SELECT USING (
-  auth.uid() = id OR (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'))
-);
-CREATE POLICY "Admins can manage all profiles" ON public.profiles FOR ALL USING (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
-);
-
--- 10. Frequência
+-- 9. Frequência
 CREATE TABLE IF NOT EXISTS public.frequencia (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   aluno_id UUID REFERENCES public.alunos(id) NOT NULL,
@@ -232,7 +225,9 @@ CREATE TABLE IF NOT EXISTS public.frequencia (
   UNIQUE(aluno_id, turma_id, disciplina_id, data)
 );
 
--- 11. Configurações da Escola
+CREATE INDEX idx_frequencia_turma_data ON public.frequencia(turma_id, data);
+
+-- 10. Configurações da Escola
 CREATE TABLE IF NOT EXISTS public.configuracoes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   media_aprovacao DECIMAL(4,2) DEFAULT 7.0,
@@ -248,16 +243,7 @@ INSERT INTO public.configuracoes (media_aprovacao, media_recuperacao, nota_maxim
 SELECT 7.0, 5.0, 10.0, 75, 2024
 WHERE NOT EXISTS (SELECT 1 FROM public.configuracoes);
 
-CREATE INDEX idx_frequencia_turma_data ON public.frequencia(turma_id, data);
-
-ALTER TABLE public.frequencia ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Admins have full access" ON public.frequencia FOR ALL USING (auth.role() = 'authenticated');
-
-ALTER TABLE public.configuracoes ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Admins have full access" ON public.configuracoes FOR ALL USING (auth.role() = 'authenticated');
-CREATE POLICY "Public read access" ON public.configuracoes FOR SELECT USING (true);
-
--- 12. Eventos
+-- 11. Eventos
 CREATE TABLE IF NOT EXISTS public.eventos (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   titulo TEXT NOT NULL,
@@ -268,7 +254,7 @@ CREATE TABLE IF NOT EXISTS public.eventos (
   deleted_at TIMESTAMPTZ
 );
 
--- 13. Widgets
+-- 12. Widgets
 CREATE TABLE IF NOT EXISTS public.widgets (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
@@ -280,10 +266,127 @@ CREATE TABLE IF NOT EXISTS public.widgets (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-ALTER TABLE public.widgets ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can manage their own widgets" ON public.widgets FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "Admins can manage all widgets" ON public.widgets FOR ALL USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'));
-
+-- 13. RLS (Row Level Security) e Helpers
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.cursos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.turmas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.alunos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.disciplinas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.notas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.certificados ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.frequencia ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.configuracoes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.eventos ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Public read access" ON public.eventos FOR SELECT USING (true);
-CREATE POLICY "Admins have full access" ON public.eventos FOR ALL USING (auth.role() = 'authenticated');
+ALTER TABLE public.widgets ENABLE ROW LEVEL SECURITY;
+
+-- Funções auxiliares para RLS
+CREATE OR REPLACE FUNCTION public.check_is_admin()
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND role = 'admin'
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION public.check_is_instrutor()
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND role IN ('admin', 'instrutor')
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 1. Profiles Policies
+CREATE POLICY "Users can view their own profile or as admin" ON public.profiles FOR SELECT USING (
+  auth.uid() = id OR check_is_admin()
+);
+CREATE POLICY "Users can update their own profile fields" ON public.profiles FOR UPDATE USING (
+  auth.uid() = id
+) WITH CHECK (
+  auth.uid() = id AND (CASE WHEN NOT check_is_admin() THEN role = (SELECT role FROM public.profiles WHERE id = auth.uid()) ELSE TRUE END)
+);
+CREATE POLICY "Admins have full access on profiles" ON public.profiles FOR ALL USING (check_is_admin());
+
+-- 2. Cursos Policies
+CREATE POLICY "Authenticated users can view active cursos" ON public.cursos FOR SELECT USING (
+  auth.role() = 'authenticated' AND (deleted_at IS NULL OR check_is_admin())
+);
+CREATE POLICY "Admins have full access on cursos" ON public.cursos FOR ALL USING (check_is_admin());
+
+-- 3. Turmas Policies
+CREATE POLICY "Authenticated users can view turmas" ON public.turmas FOR SELECT USING (
+  auth.role() = 'authenticated' AND (deleted_at IS NULL OR check_is_admin())
+);
+CREATE POLICY "Admins have full access on turmas" ON public.turmas FOR ALL USING (check_is_admin());
+
+-- 4. Alunos Policies
+CREATE POLICY "Admins and instructors can view all alunos" ON public.alunos FOR SELECT USING (
+  check_is_instrutor()
+);
+CREATE POLICY "Admins have full access on alunos" ON public.alunos FOR ALL USING (check_is_admin());
+
+-- 5. Disciplinas Policies
+CREATE POLICY "Authenticated users can view disciplinas" ON public.disciplinas FOR SELECT USING (
+  auth.role() = 'authenticated'
+);
+CREATE POLICY "Admins have full access on disciplinas" ON public.disciplinas FOR ALL USING (check_is_admin());
+
+-- 6. Notas Policies
+CREATE POLICY "Admins and instructors can view all notas" ON public.notas FOR SELECT USING (
+  check_is_instrutor()
+);
+-- Permite que alunos vejam suas próprias notas (assumindo que o email no perfil bata com o email do aluno)
+CREATE POLICY "Alunos can view their own notas" ON public.notas FOR SELECT USING (
+  EXISTS (
+    SELECT 1 FROM public.alunos a
+    JOIN public.profiles p ON a.email = (SELECT email FROM auth.users WHERE id = auth.uid())
+    WHERE a.id = notas.aluno_id AND auth.uid() = p.id
+  )
+);
+CREATE POLICY "Admins and instructors can manage notas" ON public.notas FOR ALL USING (
+  check_is_instrutor()
+);
+
+-- 7. Frequencia Policies
+CREATE POLICY "Admins and instructors can view all frequencia" ON public.frequencia FOR SELECT USING (
+  check_is_instrutor()
+);
+CREATE POLICY "Alunos can view their own frequencia" ON public.frequencia FOR SELECT USING (
+  EXISTS (
+    SELECT 1 FROM public.alunos a
+    WHERE a.id = frequencia.aluno_id 
+    AND a.email = (SELECT email FROM auth.users WHERE id = auth.uid())
+  )
+);
+CREATE POLICY "Admins and instructors can manage frequencia" ON public.frequencia FOR ALL USING (
+  check_is_instrutor()
+);
+
+-- 8. Certificados Policies
+CREATE POLICY "Admins and instructors can view allificados" ON public.certificados FOR SELECT USING (
+  check_is_instrutor()
+);
+CREATE POLICY "Alunos can view their own certificados" ON public.certificados FOR SELECT USING (
+  EXISTS (
+    SELECT 1 FROM public.alunos a
+    WHERE a.id = certificados.aluno_id 
+    AND a.email = (SELECT email FROM auth.users WHERE id = auth.uid())
+  )
+);
+CREATE POLICY "Admins have full access on certificados" ON public.certificados FOR ALL USING (check_is_admin());
+
+-- 9. Configuracoes Policies
+CREATE POLICY "Public read for configuracoes" ON public.configuracoes FOR SELECT USING (true);
+CREATE POLICY "Admins can manage configuracoes" ON public.configuracoes FOR ALL USING (check_is_admin());
+
+-- 10. Eventos Policies
+CREATE POLICY "Public read for eventos" ON public.eventos FOR SELECT USING (deleted_at IS NULL);
+CREATE POLICY "Admins can manage eventos" ON public.eventos FOR ALL USING (check_is_admin());
+
+-- 11. Widgets Policies
+CREATE POLICY "Users can manage their own widgets" ON public.widgets FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Admins can view all widgets" ON public.widgets FOR SELECT USING (check_is_admin());
