@@ -34,8 +34,14 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       
       if (sessionError) {
         // If there's a session error typical of a bad refresh token, clear it
-        if (sessionError.message.includes('Refresh Token Not Found') || sessionError.message.includes('refresh_token_not_found')) {
-          await supabase.auth.signOut();
+        const errorMsg = sessionError.message.toLowerCase();
+        if (errorMsg.includes('refresh token not found') || 
+            errorMsg.includes('refresh_token_not_found') ||
+            errorMsg.includes('invalid refresh token') ||
+            errorMsg.includes('invalid_grant')) {
+          console.warn('Handling invalid refresh token, signing out...');
+          // Use { scope: 'local' } to ensure it clears even if the server is unreachable or token is invalid
+          await supabase.auth.signOut({ scope: 'local' });
           setProfile(null);
           setLoading(false);
           return;

@@ -11,7 +11,17 @@ export default function HomePage() {
     const checkAuth = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) throw error;
+        if (error) {
+          const msg = error.message.toLowerCase();
+          if (msg.includes('refresh token not found') || 
+              msg.includes('invalid refresh token') ||
+              msg.includes('invalid_grant')) {
+            await supabase.auth.signOut({ scope: 'local' });
+            router.push('/login');
+            return;
+          }
+          throw error;
+        }
         if (session) {
           router.push('/dashboard');
         } else {
