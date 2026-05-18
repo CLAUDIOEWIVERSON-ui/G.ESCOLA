@@ -280,15 +280,6 @@ CREATE TABLE IF NOT EXISTS public.widgets (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 14. Horários
-CREATE TABLE IF NOT EXISTS public.horarios (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  turma_id UUID REFERENCES public.turmas(id) NOT NULL UNIQUE,
-  data JSONB DEFAULT '{}'::jsonb,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
 ALTER TABLE public.widgets ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can manage their own widgets" ON public.widgets FOR ALL USING (auth.uid() = user_id);
 CREATE POLICY "Admins can manage all widgets" ON public.widgets FOR ALL USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'));
@@ -296,7 +287,3 @@ CREATE POLICY "Admins can manage all widgets" ON public.widgets FOR ALL USING (E
 ALTER TABLE public.eventos ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Public read access" ON public.eventos FOR SELECT USING (true);
 CREATE POLICY "Admins have full access" ON public.eventos FOR ALL USING (auth.role() = 'authenticated');
-
-ALTER TABLE public.horarios ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Public read access" ON public.horarios FOR SELECT USING (true);
-CREATE POLICY "Authenticated users can manage horarios" ON public.horarios FOR ALL USING (auth.role() = 'authenticated');
