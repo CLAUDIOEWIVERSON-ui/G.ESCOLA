@@ -32,8 +32,13 @@ export function SidebarClock({ collapsed }: SidebarClockProps) {
   const hours = time.getHours().toString().padStart(2, '0');
   const minutes = time.getMinutes().toString().padStart(2, '0');
   const seconds = time.getSeconds().toString().padStart(2, '0');
-  const day = time.toLocaleDateString('pt-BR', { weekday: 'short' });
-  const date = time.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+  const day = time.toLocaleDateString('pt-BR', { weekday: 'long' });
+  const date = time.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+  
+  // Get timezone name/offset for clarity
+  const timeZoneName = Intl.DateTimeFormat('pt-BR', { timeZoneName: 'short' })
+    .formatToParts(time)
+    .find(part => part.type === 'timeZoneName')?.value || '';
 
   return (
     <div className={cn(
@@ -48,8 +53,8 @@ export function SidebarClock({ collapsed }: SidebarClockProps) {
       ) : (
         <>
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Hora Local</span>
-            <ClockIcon size={12} className="text-blue-400 animate-pulse" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Horário do Sistema</span>
+            <span className="text-[9px] font-bold text-blue-500/80 px-1.5 py-0.5 bg-blue-500/10 rounded uppercase">{timeZoneName}</span>
           </div>
           <div className="flex items-baseline gap-1">
             <span className="text-xl font-bold text-white tabular-nums tracking-tighter">
@@ -59,7 +64,7 @@ export function SidebarClock({ collapsed }: SidebarClockProps) {
               :{seconds}
             </span>
           </div>
-          <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-tight">
+          <p className="text-[9px] font-medium text-slate-400 capitalize">
             {day}, {date}
           </p>
         </>
