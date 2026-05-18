@@ -13,13 +13,16 @@ import {
   Edit3,
   Check,
   Coffee,
-  AlertCircle
+  AlertCircle,
+  User,
+  Book
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { format, startOfWeek, endOfWeek, addDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import html2canvas from 'html2canvas';
+import { toast } from 'sonner';
 
 // Helper to fetch Brazil holidays (Simplified for this version)
 const BRAZIL_HOLIDAYS = [
@@ -40,6 +43,8 @@ export default function HorarioPage() {
   const { t, language } = useI18n();
   const [cursos, setCursos] = useState<any[]>([]);
   const [turmas, setTurmas] = useState<any[]>([]);
+  const [disciplinas, setDisciplinas] = useState<any[]>([]);
+  const [instrutores, setInstrutores] = useState<any[]>([]);
   const [selectedCursoId, setSelectedCursoId] = useState('');
   const [selectedTurmaId, setSelectedTurmaId] = useState('');
   const [isPrinting, setIsPrinting] = useState(false);
@@ -48,11 +53,76 @@ export default function HorarioPage() {
 
   // Editable Schedule State
   const [scheduleData, setScheduleData] = useState<Record<string, any>>({});
+  const [isSaving, setIsSaving] = useState(false);
   
   const selectedTurma = turmas.find(tu => tu.id === selectedTurmaId);
   const selectedCurso = cursos.find(cu => cu.id === selectedCursoId);
 
-  // Calculate current week period
+  // Fetch schedule data when turma changes
+  const fetchSchedule = useMemo(() => async (turmaId: string) => {
+    if (!turmaId) {
+      setScheduleData({});
+      return;
+    }
+    try {
+      const { data } = await supabase
+        .from('horarios')
+        .select('data')
+        .eq('turma_id', turmaId)
+        .single();
+      
+      if (data) {
+        setScheduleData(data.data || {});
+      } else {
+        setScheduleData({});
+      }
+    } catch (err) {
+      console.error('Error fetching schedule:', err);
+      setScheduleData({});
+    }
+  }, []);
+
+  useEffect(() => {
+    const run = async () => {
+      await fetchSchedule(selectedTurmaId);
+    };
+    run();
+  }, [selectedTurmaId, fetchSchedule]);
+
+  async function handleSave() {
+    if (!selectedTurmaId) return;
+    setIsSaving(true);
+    try {
+      // Try to upsert to 'horarios' table
+      const { error } = await supabase
+        .from('horarios')
+        .upsert({ 
+          turma_id: selectedTurmaId, 
+          data: scheduleData,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'turma_id' });
+
+      if (error) {
+        console.error('Save error:', error);
+        toast.error(language === 'pt' ? 'Erro ao salvar o horário.' : 'Error saving schedule.');
+      } else {
+        toast.success(language === 'pt' ? 'Horário salvo com sucesso!' : 'Schedule saved successfully!');
+        setIsEditMode(false);
+      }
+    } catch (err) {
+      console.error('Failed to save schedule:', err);
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  const handleToggleEdit = () => {
+    if (isEditMode) {
+      handleSave();
+    } else {
+      setIsEditMode(true);
+    }
+  };
   const today = new Date();
   const weekStart = startOfWeek(today, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
@@ -116,6 +186,10 @@ export default function HorarioPage() {
       if (c) setCursos(c);
       const { data: tu } = await supabase.from('turmas').select('*').is('deleted_at', null).order('nome');
       if (tu) setTurmas(tu);
+      const { data: d } = await supabase.from('disciplinas').select('*').is('deleted_at', null).order('nome');
+      if (d) setDisciplinas(d);
+      const { data: i } = await supabase.from('profiles').select('*').eq('role', 'instrutor');
+      if (i) setInstrutores(i);
     }
     fetchData();
   }, []);
@@ -146,8 +220,13 @@ export default function HorarioPage() {
   };
 
   const getCellData = (slotId: string, dayKey: string) => {
-    return scheduleData[`${slotId}-${dayKey}`] || { subject: '', room: '' };
+    return scheduleData[`${slotId}-${dayKey}`] || { subjectId: '', instructorId: '', room: '', courseId: '' };
   };
+
+  const filteredDisciplinas = useMemo(() => {
+    if (!selectedCursoId) return disciplinas;
+    return disciplinas.filter(d => d.curso_id === selectedCursoId);
+  }, [disciplinas, selectedCursoId]);
 
   const isHoliday = (date: Date) => {
     const dStr = format(date, 'yyyy-MM-dd');
@@ -168,21 +247,22 @@ export default function HorarioPage() {
         
         <div className="flex items-center gap-3">
           <button
-            onClick={() => setIsEditMode(!isEditMode)}
+            onClick={handleToggleEdit}
+            disabled={isSaving || !selectedTurmaId}
             className={cn(
-              "flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-black uppercase tracking-widest transition-all shadow-lg",
+              "flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-black uppercase tracking-widest transition-all shadow-lg disabled:opacity-50",
               isEditMode 
-                ? "bg-emerald-500 text-white shadow-emerald-100 hover:bg-emerald-600" 
-                : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+                ? "bg-emerald-600 text-white shadow-emerald-200 hover:bg-emerald-700" 
+                : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 shadow-slate-100"
             )}
           >
-            {isEditMode ? <Check size={18} /> : <Edit3 size={18} />}
+            {isSaving ? <Loader2 size={18} className="animate-spin" /> : (isEditMode ? <Check size={18} /> : <Edit3 size={18} />)}
             {isEditMode ? (language === 'pt' ? 'Salvar' : 'Save') : (language === 'pt' ? 'Editar' : 'Edit')}
           </button>
           
           <button 
             onClick={handlePrint}
-            disabled={isPrinting || !selectedTurmaId}
+            disabled={isPrinting || isEditMode || !selectedTurmaId}
             className="flex items-center gap-2 bg-[#0f172a] text-white px-5 py-2.5 rounded-2xl text-sm font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 disabled:opacity-50 disabled:grayscale"
           >
             {isPrinting ? <Loader2 size={18} className="animate-spin" /> : <Printer size={18} />}
@@ -341,17 +421,33 @@ export default function HorarioPage() {
                               return (
                                 <td key={day.key} className="px-3 py-3 border-r border-slate-100 last:border-r-0">
                                   <div className={cn(
-                                    "rounded-2xl p-4 h-full flex flex-col transition-all",
+                                    "rounded-2xl p-4 h-full flex flex-col transition-all min-h-[140px]",
                                     isEditMode ? "bg-white border-2 border-dashed border-blue-200" : "hover:bg-slate-50"
                                   )}>
                                     {isEditMode ? (
                                       <div className="space-y-3">
-                                        <input 
-                                          value={cell.subject || ''}
-                                          onChange={(e) => updateCell(slot.id, day.key, 'subject', e.target.value)}
-                                          placeholder="Disciplina"
-                                          className="w-full text-[11px] font-black text-blue-900 bg-transparent border-none focus:ring-0 p-0 placeholder:text-slate-300"
-                                        />
+                                        <select 
+                                          value={cell.subjectId || ''}
+                                          onChange={(e) => updateCell(slot.id, day.key, 'subjectId', e.target.value)}
+                                          className="w-full text-[10px] font-black text-blue-900 bg-transparent border-none focus:ring-0 p-0 cursor-pointer"
+                                        >
+                                          <option value="">{t.schedule.subject}</option>
+                                          {filteredDisciplinas.map(d => (
+                                            <option key={d.id} value={d.id}>{d.nome}</option>
+                                          ))}
+                                        </select>
+
+                                        <select 
+                                          value={cell.instructorId || ''}
+                                          onChange={(e) => updateCell(slot.id, day.key, 'instructorId', e.target.value)}
+                                          className="w-full text-[10px] font-bold text-slate-600 bg-transparent border-none focus:ring-0 p-0 cursor-pointer"
+                                        >
+                                          <option value="">{t.schedule.instructor}</option>
+                                          {instrutores.map(i => (
+                                            <option key={i.id} value={i.id}>{i.full_name}</option>
+                                          ))}
+                                        </select>
+
                                         <div className="flex items-center gap-1">
                                           <MapPin size={10} className="text-slate-300" />
                                           <input 
@@ -363,16 +459,34 @@ export default function HorarioPage() {
                                         </div>
                                       </div>
                                     ) : (
-                                      cell.subject ? (
-                                        <>
-                                          <div className="text-[11px] font-black text-slate-800 leading-tight mb-auto">
-                                            {cell.subject}
+                                      cell.subjectId ? (
+                                        <div className="space-y-2 flex-1 flex flex-col">
+                                          <div className="space-y-1">
+                                            <div className="flex items-center gap-1.5 text-blue-600">
+                                              <BookOpen size={10} />
+                                              <span className="text-[11px] font-black leading-tight uppercase tracking-tight">
+                                                {disciplinas.find(d => d.id === cell.subjectId)?.nome || 'Disciplina'}
+                                              </span>
+                                            </div>
+                                            <div className="flex items-center gap-1.5 text-slate-500">
+                                              <User size={10} />
+                                              <span className="text-[10px] font-bold">
+                                                {instrutores.find(i => i.id === cell.instructorId)?.full_name || 'Instrutor'}
+                                              </span>
+                                            </div>
                                           </div>
-                                          <div className="flex items-center gap-1.5 text-slate-400 mt-4">
-                                            <MapPin size={10} />
-                                            <span className="text-[9px] font-black uppercase tracking-tight">{cell.room}</span>
+                                          
+                                          <div className="mt-auto pt-2 flex flex-col gap-1 border-t border-slate-100">
+                                            <div className="flex items-center gap-1 text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                                              <Book size={8} />
+                                              <span>{selectedCurso?.nome || 'Curso'}</span>
+                                            </div>
+                                            <div className="flex items-center gap-1.5 text-slate-400">
+                                              <MapPin size={10} />
+                                              <span className="text-[9px] font-black uppercase tracking-tight">{cell.room || 'N/A'}</span>
+                                            </div>
                                           </div>
-                                        </>
+                                        </div>
                                       ) : (
                                         <div className="flex-1 flex items-center justify-center opacity-10">
                                           <Shield size={16} />
