@@ -29,7 +29,7 @@ import { cn } from '@/lib/utils';
 import { useUser } from '@/lib/auth/UserContext';
 import { ProximityAlert } from '@/components/ProximityAlert';
 import { EventMarquee } from '@/components/EventMarquee';
-import { SidebarClock } from '@/components/SidebarClock';
+import { HeaderClock } from '@/components/HeaderClock';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -136,10 +136,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           <div className="flex-1 flex flex-col min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar">
             <nav id="sidebar-nav" className="px-4 py-6 space-y-8">
-              {/* Clock Widget */}
-              <div className="px-2">
-                <SidebarClock collapsed={!sidebarOpen} />
-              </div>
 
               <div>
                 <div className={cn("text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4 px-3 flex items-center gap-2", !sidebarOpen && "opacity-0 invisible h-0")}>
@@ -354,6 +350,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </div>
           <div className="flex items-center gap-6">
+            <HeaderClock />
             <div className="hidden md:flex items-center gap-2">
                <div className="relative">
                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
