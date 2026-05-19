@@ -22,8 +22,8 @@ function TurmasContent() {
   const pathname = usePathname();
   const categoryParam = searchParams.get('cat');
   
-  const { isAdmin } = useUser();
-  const isReadOnly = !isAdmin;
+  const { isAdmin, isInstrutor, isAluno } = useUser();
+  const isReadOnly = isAluno;
   const [turmas, setTurmas] = useState<any[]>([]);
   const [cursos, setCursos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);

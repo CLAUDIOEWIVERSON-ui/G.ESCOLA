@@ -3,18 +3,26 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/LanguageContext';
+import { useUser } from '@/lib/auth/UserContext';
 import { 
   Users, 
   BookOpen, 
   GraduationCap,
   Layers as LayersIcon,
-  X
+  X,
+  FileText,
+  Calendar,
+  CheckCircle2,
+  Clock,
+  LayoutDashboard
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import Image from 'next/image';
+import Link from 'next/link';
 
 export default function DashboardPage() {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
+  const { profile, isAdmin, isInstrutor, isAluno } = useUser();
   const [stats, setStats] = useState({
     turmasInternacionais: 0,
     alunosExterior: 0,
@@ -25,6 +33,11 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const fetchDashboardData = async () => {
+      if (isAluno) {
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       try {
         const [
@@ -70,7 +83,150 @@ export default function DashboardPage() {
       }
     };
     fetchDashboardData();
-  }, []);
+  }, [isAluno]);
+
+  if (isAluno) {
+    const alunoT = {
+      pt: {
+        welcome: "Bem-vindo,",
+        subtitle: "Área do Aluno • Gestão Acadêmica v4.0",
+        myStats: "Minhas Informações",
+        shortcuts: "Acesso Rápido",
+        reportCard: "Meu Boletim",
+        schedule: "Minhas Aulas",
+        profile: "Meu Perfil",
+        grades: "Minhas Notas",
+        status: "Status da Matrícula",
+        active: "Matriculado / Ativo",
+        academicProgress: "Progresso Acadêmico",
+        nextClass: "Próxima Aula",
+        todayClass: "Aula de Hoje às 08:30h"
+      },
+      en: {
+        welcome: "Welcome,",
+        subtitle: "Student Area • Academic Management v4.0",
+        myStats: "My Information",
+        shortcuts: "Quick Access",
+        reportCard: "My Report Card",
+        schedule: "My Classes",
+        profile: "My Profile",
+        grades: "My Grades",
+        status: "Enrollment Status",
+        active: "Enrolled / Active",
+        academicProgress: "Academic Progress",
+        nextClass: "Next Class",
+        todayClass: "Today's Class at 08:30am"
+      }
+    };
+    const cT = language === 'pt' ? alunoT.pt : alunoT.en;
+
+    return (
+      <div className="space-y-8 max-w-5xl mx-auto">
+        <header className="flex flex-col sm:flex-row sm:items-end justify-between border-b border-slate-200 pb-8 transition-all">
+          <motion.div 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+          >
+            <p className="text-xs font-black text-blue-600 uppercase tracking-widest mb-1">{cT.subtitle}</p>
+            <h1 className="text-4xl font-black text-slate-900 tracking-tighter">
+              {cT.welcome} <span className="text-blue-600">{profile?.full_name?.split(' ')[0]}</span>
+            </h1>
+          </motion.div>
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="mt-4 sm:mt-0"
+          >
+            <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 rounded-2xl border border-emerald-100 shadow-sm shadow-emerald-50">
+              <CheckCircle2 size={16} />
+              <span className="text-xs font-bold uppercase tracking-wide">{cT.active}</span>
+            </div>
+          </motion.div>
+        </header>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4"
+          >
+            <Link href="/boletim" className="group">
+              <div className="bg-white p-6 rounded-3xl border border-slate-200 hover:border-blue-400 shadow-sm hover:shadow-xl hover:shadow-blue-50 transition-all h-full flex flex-col justify-between">
+                <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform mb-4">
+                  <FileText size={24} />
+                </div>
+                <div>
+                  <h3 className="font-black text-slate-900 uppercase tracking-tighter text-lg">{cT.reportCard}</h3>
+                  <p className="text-slate-500 text-sm font-medium mt-1">Visualize suas notas e médias.</p>
+                </div>
+              </div>
+            </Link>
+
+            <Link href="/horario" className="group">
+              <div className="bg-white p-6 rounded-3xl border border-slate-200 hover:border-amber-400 shadow-sm hover:shadow-xl hover:shadow-amber-50 transition-all h-full flex flex-col justify-between">
+                <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform mb-4">
+                  <Calendar size={24} />
+                </div>
+                <div>
+                  <h3 className="font-black text-slate-900 uppercase tracking-tighter text-lg">{cT.schedule}</h3>
+                  <p className="text-slate-500 text-sm font-medium mt-1">Detalhe semanal de suas aulas.</p>
+                </div>
+              </div>
+            </Link>
+
+            <Link href="/configuracoes" className="group sm:col-span-2">
+              <div className="bg-white p-6 rounded-3xl border border-slate-200 hover:border-emerald-400 shadow-sm hover:shadow-xl hover:shadow-emerald-50 transition-all flex items-center gap-6">
+                <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center shrink-0">
+                  <GraduationCap size={32} />
+                </div>
+                <div>
+                  <h3 className="font-black text-slate-900 uppercase tracking-tighter text-xl">{cT.profile}</h3>
+                  <p className="text-slate-500 text-sm font-medium mt-1">Gerencie seus dados e senha de acesso.</p>
+                </div>
+              </div>
+            </Link>
+          </motion.div>
+
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="space-y-4"
+          >
+            <div className="bg-slate-950 text-white p-6 rounded-3xl shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-8 opacity-20 rotate-12">
+                <LayoutDashboard size={120} />
+              </div>
+              <div className="relative z-10">
+                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                  <Clock size={12} className="text-blue-500" />
+                  {cT.nextClass}
+                </h4>
+                <p className="text-xl font-bold mb-1">{cT.todayClass}</p>
+                <p className="text-slate-400 text-xs font-medium uppercase tracking-wide">Auditório Principal</p>
+                
+                <div className="mt-8 pt-8 border-t border-white/10">
+                   <div className="flex justify-between items-end mb-2">
+                     <span className="text-[10px] font-bold text-slate-500 uppercase">{cT.academicProgress}</span>
+                     <span className="text-xs font-black text-blue-400">75%</span>
+                   </div>
+                   <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                     <motion.div 
+                       initial={{ width: 0 }}
+                       animate={{ width: "75%" }}
+                       transition={{ delay: 0.5, duration: 1 }}
+                       className="h-full bg-blue-500 rounded-full"
+                     />
+                   </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    );
+  }
 
   const statCards = [
     { name: t.dashboard.activeClassesIntl, value: stats.turmasInternacionais, icon: BookOpen, color: 'bg-emerald-600' },

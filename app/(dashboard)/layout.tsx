@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
@@ -21,7 +21,8 @@ import {
   Menu,
   X,
   Search,
-  Calendar
+  Calendar,
+  Activity
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
@@ -76,6 +77,35 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     router.push('/login');
   };
 
+  const canAccess = useCallback((path: string) => {
+    if (isAdmin) return true;
+    
+    // Public/Shared dashboard is accessible by all
+    if (path === '/dashboard' || path === '/') return true;
+    if (path === '/proibido') return true;
+
+    if (isInstrutor) {
+      // Instructors can't access user management
+      const forbiddenForInstructors = ['/usuarios'];
+      return !forbiddenForInstructors.some(p => path.startsWith(p));
+    }
+
+    if (isAluno) {
+      // Students have very restricted access
+      const allowedForStudents = ['/dashboard', '/boletim', '/horario', '/configuracoes'];
+      return allowedForStudents.some(p => path.startsWith(p));
+    }
+
+    return false;
+  }, [isAdmin, isInstrutor, isAluno]);
+
+  // Route protection
+  useEffect(() => {
+    if (!authLoading && !canAccess(pathname)) {
+      router.push('/proibido');
+    }
+  }, [pathname, authLoading, canAccess, router]);
+
   if (authLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-white">
@@ -98,13 +128,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       ]
     },
     { name: t.nav.grades, icon: FileCheck, path: '/notas' },
-    { name: t.nav.reportCard, icon: FileText, path: '/boletim' },
-    { name: t.schedule.title, icon: Calendar, path: '/horario' },
+    { name: isAluno ? (language === 'pt' ? "Meu Boletim" : "My Report Card") : t.nav.reportCard, icon: FileText, path: '/boletim' },
+    { name: isAluno ? (language === 'pt' ? "Minhas Aulas" : "My Classes") : t.schedule.title, icon: Calendar, path: '/horario' },
     { name: t.nav.attendance, icon: CalendarDays, path: '/frequencia' },
     { name: t.calendar.title, icon: CalendarDays, path: '/calendario' },
-    ...(isAdmin ? [{ name: t.users.title, icon: Users, path: '/usuarios' }] : []),
-    { name: t.nav.settings, icon: Settings, path: '/configuracoes' },
-  ];
+    ...(isAdmin ? [
+      { name: t.users.title, icon: Users, path: '/usuarios' },
+      { name: language === 'pt' ? 'Monitoramento' : 'Monitoring', icon: Activity, path: '/monitoramento' }
+    ] : []),
+    { name: isAluno ? (language === 'pt' ? "Meu Perfil" : "My Profile") : t.nav.settings, icon: Settings, path: '/configuracoes' },
+  ].filter(item => canAccess(item.path));
 
   const userInitials = profile?.full_name ? profile.full_name.slice(0, 2).toUpperCase() : 'US';
 

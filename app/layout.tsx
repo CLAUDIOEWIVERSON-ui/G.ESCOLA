@@ -3,6 +3,7 @@ import './globals.css';
 import { LanguageProvider } from '@/lib/i18n/LanguageContext';
 import { UserProvider } from '@/lib/auth/UserContext';
 import { Toaster } from 'sonner';
+import ActivityTracker from '@/components/ActivityTracker';
 
 export const metadata: Metadata = {
   title: 'SISTEMA DE GESTÃO ESCOLAR',
@@ -16,6 +17,7 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
         <LanguageProvider>
           <UserProvider>
             {children}
+            <ActivityTracker />
             <Toaster position="top-right" richColors closeButton />
           </UserProvider>
         </LanguageProvider>
