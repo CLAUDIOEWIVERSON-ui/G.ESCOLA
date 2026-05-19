@@ -21,8 +21,7 @@ import {
   Menu,
   X,
   Search,
-  Calendar,
-  Activity
+  Calendar
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
@@ -132,10 +131,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: isAluno ? (language === 'pt' ? "Minhas Aulas" : "My Classes") : t.schedule.title, icon: Calendar, path: '/horario' },
     { name: t.nav.attendance, icon: CalendarDays, path: '/frequencia' },
     { name: t.calendar.title, icon: CalendarDays, path: '/calendario' },
-    ...(isAdmin ? [
-      { name: t.users.title, icon: Users, path: '/usuarios' },
-      { name: language === 'pt' ? 'Monitoramento' : 'Monitoring', icon: Activity, path: '/monitoramento' }
-    ] : []),
+    ...(isAdmin ? [{ name: t.users.title, icon: Users, path: '/usuarios' }] : []),
     { name: isAluno ? (language === 'pt' ? "Meu Perfil" : "My Profile") : t.nav.settings, icon: Settings, path: '/configuracoes' },
   ].filter(item => canAccess(item.path));
 

@@ -9,7 +9,6 @@ interface UserProfile {
   id: string;
   role: Role;
   full_name: string | null;
-  email: string | null;
 }
 
 interface UserContextType {
@@ -79,14 +78,10 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         finalProfile = {
           id: session.user.id,
           role: metadataRole,
-          full_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
-          email: session.user.email || null
+          full_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User'
         };
       } else {
-        finalProfile = {
-          ...(data as UserProfile),
-          email: session.user.email || null
-        };
+        finalProfile = data as UserProfile;
       }
 
       // Hardcode perm admin check

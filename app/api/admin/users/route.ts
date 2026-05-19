@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin, isSupabaseAdminConfigured } from '@/lib/supabase/admin';
-import { requireAdmin } from '@/lib/auth/rbac';
+import { getSession } from '@/lib/auth/rbac';
 
 export async function GET() {
-  const { authorized, response } = await requireAdmin();
-  if (!authorized) return response!;
+  const session = await getSession();
+  if (!session || session.profile?.role !== 'admin') {
+    return NextResponse.json({ error: 'Acesso Negado' }, { status: 403 });
+  }
 
   if (!isSupabaseAdminConfigured()) {
     return NextResponse.json({ error: 'Supabase Admin not configured. Please set SUPABASE_SERVICE_ROLE_KEY in Secrets.' }, { status: 500 });
@@ -46,8 +48,10 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const { authorized, response } = await requireAdmin();
-  if (!authorized) return response!;
+  const session = await getSession();
+  if (!session || session.profile?.role !== 'admin') {
+    return NextResponse.json({ error: 'Acesso Negado' }, { status: 403 });
+  }
 
   if (!isSupabaseAdminConfigured()) {
     return NextResponse.json({ error: 'Supabase Admin not configured. Please set SUPABASE_SERVICE_ROLE_KEY in Secrets.' }, { status: 500 });
@@ -95,8 +99,10 @@ export async function POST(request: Request) {
 }
 
 export async function PUT(request: Request) {
-  const { authorized, response } = await requireAdmin();
-  if (!authorized) return response!;
+  const session = await getSession();
+  if (!session || session.profile?.role !== 'admin') {
+    return NextResponse.json({ error: 'Acesso Negado' }, { status: 403 });
+  }
 
   if (!isSupabaseAdminConfigured()) {
     return NextResponse.json({ error: 'Supabase Admin not configured. Please set SUPABASE_SERVICE_ROLE_KEY in Secrets.' }, { status: 500 });
@@ -152,8 +158,10 @@ export async function PUT(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const { authorized, response } = await requireAdmin();
-  if (!authorized) return response!;
+  const session = await getSession();
+  if (!session || session.profile?.role !== 'admin') {
+    return NextResponse.json({ error: 'Acesso Negado' }, { status: 403 });
+  }
 
   if (!isSupabaseAdminConfigured()) {
     return NextResponse.json({ error: 'Supabase Admin not configured. Please set SUPABASE_SERVICE_ROLE_KEY in Secrets.' }, { status: 500 });
