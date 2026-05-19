@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin, isSupabaseAdminConfigured } from '@/lib/supabase/admin';
-import { getSession } from '@/lib/auth/rbac';
+import { requireAdmin } from '@/lib/auth/rbac';
 
 export async function GET() {
-  const session = await getSession();
-  if (!session || session.profile?.role !== 'admin') {
-    return NextResponse.json({ error: 'Acesso Negado' }, { status: 403 });
+  const { authorized, response } = await requireAdmin();
+  if (!authorized) {
+    return response;
   }
 
   if (!isSupabaseAdminConfigured()) {
@@ -48,9 +48,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const session = await getSession();
-  if (!session || session.profile?.role !== 'admin') {
-    return NextResponse.json({ error: 'Acesso Negado' }, { status: 403 });
+  const { authorized, response } = await requireAdmin();
+  if (!authorized) {
+    return response;
   }
 
   if (!isSupabaseAdminConfigured()) {
@@ -99,9 +99,9 @@ export async function POST(request: Request) {
 }
 
 export async function PUT(request: Request) {
-  const session = await getSession();
-  if (!session || session.profile?.role !== 'admin') {
-    return NextResponse.json({ error: 'Acesso Negado' }, { status: 403 });
+  const { authorized, response } = await requireAdmin();
+  if (!authorized) {
+    return response;
   }
 
   if (!isSupabaseAdminConfigured()) {
@@ -158,9 +158,9 @@ export async function PUT(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const session = await getSession();
-  if (!session || session.profile?.role !== 'admin') {
-    return NextResponse.json({ error: 'Acesso Negado' }, { status: 403 });
+  const { authorized, response } = await requireAdmin();
+  if (!authorized) {
+    return response;
   }
 
   if (!isSupabaseAdminConfigured()) {

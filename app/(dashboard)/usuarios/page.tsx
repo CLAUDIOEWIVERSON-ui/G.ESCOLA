@@ -27,7 +27,13 @@ export default function UsuariosPage() {
     setLoading(true);
     try {
       const response = await fetch('/api/admin/users');
-      const data = await response.json();
+      const text = await response.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        throw new Error('Resposta do servidor inválida (esperava JSON).');
+      }
       
       if (data.error && (data.error.includes('not configured') || data.error.includes('Inválida') || data.error.includes('API key'))) {
         setIsConfigured(false);
@@ -84,7 +90,12 @@ export default function UsuariosPage() {
           body: JSON.stringify(currentUser)
         });
         
-        result = await response.json();
+        const text = await response.text();
+        try {
+          result = JSON.parse(text);
+        } catch (e) {
+          result = { error: 'Resposta do servidor inválida (esperava JSON).' };
+        }
       } catch (apiErr) {
         console.error('API Error:', apiErr);
         result = { error: 'API connection failed' };
@@ -127,7 +138,13 @@ export default function UsuariosPage() {
       const response = await fetch(`/api/admin/users?id=${id}`, {
         method: 'DELETE'
       });
-      const result = await response.json();
+      const text = await response.text();
+      let result;
+      try {
+        result = JSON.parse(text);
+      } catch (e) {
+        throw new Error('Resposta do servidor inválida (esperava JSON).');
+      }
       if (result.error) throw new Error(result.error);
       
       setUsers(users.filter(u => u.id !== id));

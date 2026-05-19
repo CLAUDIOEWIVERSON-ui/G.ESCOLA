@@ -32,7 +32,13 @@ export default function WidgetsPage() {
     setLoading(true);
     try {
       const response = await fetch('/api/widgets');
-      const data = await response.json();
+      const text = await response.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        throw new Error('Resposta do servidor inválida (esperava JSON).');
+      }
       if (data.error) throw new Error(data.error);
       setWidgets(data || []);
     } catch (err: any) {
@@ -70,7 +76,13 @@ export default function WidgetsPage() {
         body: JSON.stringify(currentWidget)
       });
       
-      const result = await response.json();
+      const text = await response.text();
+      let result;
+      try {
+        result = JSON.parse(text);
+      } catch (e) {
+        throw new Error('Resposta do servidor inválida (esperava JSON).');
+      }
       if (result.error) throw new Error(result.error);
 
       setIsModalOpen(false);
@@ -90,7 +102,13 @@ export default function WidgetsPage() {
       const response = await fetch(`/api/widgets?id=${id}`, {
         method: 'DELETE'
       });
-      const result = await response.json();
+      const text = await response.text();
+      let result;
+      try {
+        result = JSON.parse(text);
+      } catch (e) {
+        throw new Error('Resposta do servidor inválida (esperava JSON).');
+      }
       if (result.error) throw new Error(result.error);
       
       setWidgets(widgets.filter(w => w.id !== id));

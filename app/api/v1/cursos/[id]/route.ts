@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase/client';
-import { getSession } from '@/lib/auth/rbac';
+import { getSession, requireInstructorOrAdmin } from '@/lib/auth/rbac';
 
 export async function GET(
   request: Request,
@@ -30,9 +30,9 @@ export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await getSession();
-  if (!session || (session.profile?.role !== 'admin' && session.profile?.role !== 'instrutor')) {
-    return NextResponse.json({ error: 'Acesso Negado' }, { status: 403 });
+  const { authorized, response } = await requireInstructorOrAdmin();
+  if (!authorized) {
+    return response;
   }
 
   const { id } = await params;
@@ -55,9 +55,9 @@ export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await getSession();
-  if (!session || (session.profile?.role !== 'admin' && session.profile?.role !== 'instrutor')) {
-    return NextResponse.json({ error: 'Acesso Negado' }, { status: 403 });
+  const { authorized, response } = await requireInstructorOrAdmin();
+  if (!authorized) {
+    return response;
   }
 
   const { id } = await params;
