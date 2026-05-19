@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase/client';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { Logo } from '@/components/Logo';
 import { 
@@ -37,6 +37,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { t, language } = useI18n();
   const { profile, isAdmin, isAluno, isInstrutor, loading: authLoading } = useUser();
   const isReadOnly = !isAdmin;
+  const [isConfigured] = useState(() => isSupabaseConfigured());
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
 
@@ -364,6 +365,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {/* Language toggle removed as per user request */}
           </div>
         </header>
+
+        {!isConfigured && (
+          <div className="bg-red-500 text-white px-8 py-2 text-center text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-3 animate-pulse border-b border-red-600">
+            <span className="flex h-2 w-2 rounded-full bg-white animate-ping" />
+            {language === 'pt' ? 'Supabase não configurado! Verifique os segredos no painel do AI Studio.' : 'Supabase not configured! Check secrets in AI Studio panel.'}
+            <span className="flex h-2 w-2 rounded-full bg-white animate-ping" />
+          </div>
+        )}
 
         <main className="flex-1 p-4 lg:p-8 overflow-y-auto overflow-x-hidden pb-24 lg:pb-8">
           <AnimatePresence mode="wait" initial={false}>

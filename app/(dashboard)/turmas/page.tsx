@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
-import { supabase } from '@/lib/supabase/client';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
 import { Plus, Search, Layers as LayersIcon, Library, Calendar, Clock, MapPin, Pencil, Trash2, Loader2, CheckCircle2, RefreshCcw, Users, Mail, Phone, Building, Camera, MessageCircle, XCircle, FileText, X, GraduationCap, School, ChevronRight, Upload } from 'lucide-react';
@@ -167,6 +167,13 @@ function TurmasContent() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (!isSupabaseConfigured()) {
+      toast.error(language === 'pt' 
+        ? 'Supabase não configurado. Adicione as chaves API nos Segredos do AI Studio.' 
+        : 'Supabase not configured. Add API keys in AI Studio Secrets.');
+      return;
+    }
+
     setSavingStudent(true);
     try {
       const fileExt = file.name.split('.').pop();
@@ -186,7 +193,11 @@ function TurmasContent() {
       setCurrentAluno({ ...currentAluno, foto_url: publicUrl });
       toast.success(language === 'pt' ? 'Foto carregada!' : 'Photo uploaded!');
     } catch (err: any) {
-      toast.error(t.common.uploadError + ': ' + (err.message || ''));
+      const isNetworkError = err.message?.includes('fetch') || err.message?.includes('NetworkError');
+      const message = isNetworkError 
+        ? (language === 'pt' ? 'Erro de rede. Verifique sua conexão ou se as chaves do Supabase estão corretas.' : 'Network error. Check your connection or if Supabase keys are correct.')
+        : (err.message || '');
+      toast.error(t.common.uploadError + ': ' + message);
     } finally {
       setSavingStudent(false);
     }

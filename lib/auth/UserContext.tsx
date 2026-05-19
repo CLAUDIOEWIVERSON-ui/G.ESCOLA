@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase/client';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 
 type Role = 'admin' | 'instrutor' | 'aluno';
 
@@ -29,6 +29,10 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const SUPER_ADMIN_EMAIL = 'claudiomarinha2012@gmail.com';
 
   const fetchProfile = async () => {
+    if (!isSupabaseConfigured()) {
+      setLoading(false);
+      return;
+    }
     try {
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
