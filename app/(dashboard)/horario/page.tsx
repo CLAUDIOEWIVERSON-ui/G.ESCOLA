@@ -17,7 +17,9 @@ import {
   AlertCircle,
   User,
   Book,
-  GraduationCap
+  GraduationCap,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
@@ -130,10 +132,22 @@ export default function HorarioPage() {
       setIsEditMode(true);
     }
   };
-  const today = new Date();
-  const weekStart = startOfWeek(today, { weekStartsOn: 1 });
-  const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
+  const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
+  const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
+  const weekEnd = addDays(weekStart, 4); // Periodo somente de segunda a sexta-feira
   const weekPeriodFormatted = `${format(weekStart, "dd/MM")} a ${format(weekEnd, "dd/MM/yyyy")}`;
+
+  const handlePreviousWeek = () => {
+    setCurrentDate(prev => addDays(prev, -7));
+  };
+
+  const handleNextWeek = () => {
+    setCurrentDate(prev => addDays(prev, 7));
+  };
+
+  const handleCurrentWeek = () => {
+    setCurrentDate(new Date());
+  };
 
   // Generate 50min class + 10min break slots from 08:00 to 16:00
   const slots = useMemo(() => {
@@ -405,11 +419,46 @@ export default function HorarioPage() {
                     </h2>
                   </div>
                   
-                  <div className="flex flex-col md:items-end justify-center">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{t.schedule.period.toUpperCase()}</p>
-                    <div className="bg-white/5 border border-white/10 px-6 py-3 rounded-2xl inline-flex flex-col items-end">
-                      <span className="text-2xl font-black text-white">{weekPeriodFormatted}</span>
-                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{format(today, 'MMMM yyyy', { locale: ptBR })}</span>
+                  <div className="flex flex-col md:items-end justify-center gap-2">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                      {t.schedule.period.toUpperCase()} • Ref. Ano Letivo {selectedTurma?.ano || '2026'}
+                    </p>
+                    
+                    <div className="flex flex-wrap items-center gap-3 justify-end">
+                      {/* Controles de Navegação */}
+                      <div className="flex items-center bg-white/5 border border-white/10 rounded-2xl p-1 shadow-inner print:hidden">
+                        <button
+                          type="button"
+                          onClick={handlePreviousWeek}
+                          className="p-1 px-2 hover:bg-white/10 text-white rounded-xl transition-all hover:scale-105 active:scale-95"
+                          title={language === 'pt' ? 'Semana Anterior' : 'Previous Week'}
+                        >
+                          <ChevronLeft size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleCurrentWeek}
+                          className="px-2.5 py-1 hover:bg-white/10 text-[9px] font-black uppercase text-white rounded-lg transition-all hover:scale-105 active:scale-95 border border-white/5 bg-white/5"
+                        >
+                          {language === 'pt' ? 'Hoje' : 'Today'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleNextWeek}
+                          className="p-1 px-2 hover:bg-white/10 text-white rounded-xl transition-all hover:scale-105 active:scale-95"
+                          title={language === 'pt' ? 'Próxima Semana' : 'Next Week'}
+                        >
+                          <ChevronRight size={16} />
+                        </button>
+                      </div>
+
+                      {/* Caixa de Período */}
+                      <div className="bg-white/5 border border-white/10 px-5 py-2.5 rounded-2xl flex flex-col items-end shadow-lg backdrop-blur-sm">
+                        <span className="text-xl font-black text-white leading-tight">{weekPeriodFormatted}</span>
+                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                          {format(currentDate, 'MMMM yyyy', { locale: ptBR })}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
