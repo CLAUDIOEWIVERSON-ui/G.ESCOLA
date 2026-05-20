@@ -26,7 +26,12 @@ export default function UsuariosPage() {
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/admin/users');
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: HeadersInit = {};
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+      const response = await fetch('/api/admin/users', { headers });
       const text = await response.text();
       let data;
       try {
@@ -84,9 +89,14 @@ export default function UsuariosPage() {
       let result: any = {};
 
       try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const headers: HeadersInit = { 'Content-Type': 'application/json' };
+        if (session?.access_token) {
+          headers['Authorization'] = `Bearer ${session.access_token}`;
+        }
         const response = await fetch('/api/admin/users', {
           method,
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify(currentUser)
         });
         
@@ -135,8 +145,14 @@ export default function UsuariosPage() {
     if (!confirm(t.common.deleteConfirm)) return;
     setDeleting(id);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: HeadersInit = {};
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
       const response = await fetch(`/api/admin/users?id=${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers
       });
       const text = await response.text();
       let result;

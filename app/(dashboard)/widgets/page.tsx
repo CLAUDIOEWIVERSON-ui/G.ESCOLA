@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
 import { Plus, Search, Layers, Trash2, Pencil, Loader2, CheckCircle2, X } from 'lucide-react';
@@ -31,7 +32,12 @@ export default function WidgetsPage() {
   const fetchWidgets = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/widgets');
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: HeadersInit = {};
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+      const response = await fetch('/api/widgets', { headers });
       const text = await response.text();
       let data;
       try {
@@ -70,9 +76,14 @@ export default function WidgetsPage() {
     setSaving(true);
     try {
       const method = currentWidget?.id ? 'PUT' : 'POST';
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
       const response = await fetch('/api/widgets', {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(currentWidget)
       });
       
@@ -99,8 +110,14 @@ export default function WidgetsPage() {
     if (!confirm(t.common.deleteConfirm)) return;
     setDeleting(id);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: HeadersInit = {};
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
       const response = await fetch(`/api/widgets?id=${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers
       });
       const text = await response.text();
       let result;
