@@ -34,8 +34,8 @@ type Curso = z.infer<typeof cursoSchema> & { id: string };
 
 export default function CursosPage() {
   const { t, language } = useI18n();
-  const { isAdmin } = useUser();
-  const isReadOnly = !isAdmin;
+  const { isAdmin, isInstrutor, isAluno } = useUser();
+  const isReadOnly = isAluno;
   const [cursos, setCursos] = useState<Curso[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);

@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase/client';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { Logo } from '@/components/Logo';
 import { 
@@ -21,7 +21,8 @@ import {
   Menu,
   X,
   Search,
-  Calendar
+  Calendar,
+  Activity
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
@@ -37,8 +38,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { t, language } = useI18n();
   const { profile, isAdmin, isAluno, isInstrutor, loading: authLoading } = useUser();
   const isReadOnly = !isAdmin;
+  const [isConfigured] = useState(() => isSupabaseConfigured());
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
+  const [onlineCount, setOnlineCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+
+    const fetchOnlineCount = async () => {
+      try {
+        const res = await fetch('/api/admin/online-users');
+        if (res.ok) {
+          const data = await res.json();
+          setOnlineCount(data.onlineCount);
+        }
+      } catch (err) {
+        console.error('Failed to fetch online users count:', err);
+      }
+    };
+
+    fetchOnlineCount();
+    const interval = setInterval(fetchOnlineCount, 30000); // 30s
+    return () => clearInterval(interval);
+  }, [isAdmin]);
 
   const toggleSubmenu = (path: string, e: React.MouseEvent) => {
     if (!sidebarOpen) {
@@ -70,16 +93,39 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  useEffect(() => {
-    if (!authLoading && !profile) {
-      router.push('/login');
-    }
-  }, [profile, authLoading, router]);
-
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push('/login');
   };
+
+  const canAccess = useCallback((path: string) => {
+    if (isAdmin) return true;
+    
+    // Public/Shared dashboard is accessible by all
+    if (path === '/dashboard' || path === '/') return true;
+    if (path === '/proibido') return true;
+
+    if (isInstrutor) {
+      // Instructors can't access user management
+      const forbiddenForInstructors = ['/usuarios'];
+      return !forbiddenForInstructors.some(p => path.startsWith(p));
+    }
+
+    if (isAluno) {
+      // Students have very restricted access
+      const allowedForStudents = ['/dashboard', '/boletim', '/horario', '/configuracoes'];
+      return allowedForStudents.some(p => path.startsWith(p));
+    }
+
+    return false;
+  }, [isAdmin, isInstrutor, isAluno]);
+
+  // Route protection
+  useEffect(() => {
+    if (!authLoading && !canAccess(pathname)) {
+      router.push('/proibido');
+    }
+  }, [pathname, authLoading, canAccess, router]);
 
   if (authLoading) {
     return (
@@ -103,13 +149,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       ]
     },
     { name: t.nav.grades, icon: FileCheck, path: '/notas' },
-    { name: t.nav.reportCard, icon: FileText, path: '/boletim' },
-    { name: t.schedule.title, icon: Calendar, path: '/horario' },
+    { name: isAluno ? (language === 'pt' ? "Meu Boletim" : "My Report Card") : t.nav.reportCard, icon: FileText, path: '/boletim' },
+    { name: isAluno ? (language === 'pt' ? "Minhas Aulas" : "My Classes") : t.schedule.title, icon: Calendar, path: '/horario' },
     { name: t.nav.attendance, icon: CalendarDays, path: '/frequencia' },
     { name: t.calendar.title, icon: CalendarDays, path: '/calendario' },
-    ...(isAdmin ? [{ name: t.users.title, icon: Users, path: '/usuarios' }] : []),
-    { name: t.nav.settings, icon: Settings, path: '/configuracoes' },
-  ];
+    ...(isAdmin ? [
+      { name: t.users.title, icon: Users, path: '/usuarios' }
+    ] : []),
+    { name: isAluno ? (language === 'pt' ? "Meu Perfil" : "My Profile") : t.nav.settings, icon: Settings, path: '/configuracoes' },
+  ].filter(item => canAccess(item.path));
 
   const userInitials = profile?.full_name ? profile.full_name.slice(0, 2).toUpperCase() : 'US';
 
@@ -357,6 +405,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
           <div className="flex items-center gap-6">
             <HeaderClock />
+            {isAdmin && onlineCount !== null && (
+              <div id="logged-users-counter" className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 border border-emerald-100 rounded-xl text-emerald-700 text-xs font-bold shadow-sm">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span className="text-slate-600 font-medium whitespace-nowrap">
+                  {language === 'pt' ? 'Usuários online:' : 'Online users:'}
+                </span>
+                <span className="text-emerald-700 font-black">{onlineCount}</span>
+              </div>
+            )}
             <div className="hidden md:flex items-center gap-2">
                <div className="relative">
                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -370,6 +430,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {/* Language toggle removed as per user request */}
           </div>
         </header>
+
+        {!isConfigured && (
+          <div className="bg-red-500 text-white px-8 py-2 text-center text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-3 animate-pulse border-b border-red-600">
+            <span className="flex h-2 w-2 rounded-full bg-white animate-ping" />
+            {language === 'pt' ? 'Supabase não configurado! Verifique os segredos no painel do AI Studio.' : 'Supabase not configured! Check secrets in AI Studio panel.'}
+            <span className="flex h-2 w-2 rounded-full bg-white animate-ping" />
+          </div>
+        )}
 
         <main className="flex-1 p-4 lg:p-8 overflow-y-auto overflow-x-hidden pb-24 lg:pb-8">
           <AnimatePresence mode="wait" initial={false}>

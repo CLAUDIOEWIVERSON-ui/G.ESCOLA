@@ -1,9 +1,14 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase/client';
+import { getSession, requireInstructorOrAdmin } from '@/lib/auth/rbac';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
+  const session = await getSession();
+  if (!session) {
+    return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
+  }
   try {
     const { data, error } = await supabase
       .from('cursos')
@@ -18,6 +23,8 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const { authorized, response } = await requireInstructorOrAdmin();
+  if (!authorized) return response!;
   try {
     const body = await request.json();
     const { data, error } = await supabase

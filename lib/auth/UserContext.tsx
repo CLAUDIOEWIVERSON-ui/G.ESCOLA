@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase/client';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 
 type Role = 'admin' | 'instrutor' | 'aluno';
 
@@ -9,6 +9,7 @@ interface UserProfile {
   id: string;
   role: Role;
   full_name: string | null;
+  email: string | null;
 }
 
 interface UserContextType {
@@ -29,6 +30,10 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const SUPER_ADMIN_EMAIL = 'claudiomarinha2012@gmail.com';
 
   const fetchProfile = async () => {
+    if (!isSupabaseConfigured()) {
+      setLoading(false);
+      return;
+    }
     try {
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
@@ -74,10 +79,14 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         finalProfile = {
           id: session.user.id,
           role: metadataRole,
-          full_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User'
+          full_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
+          email: session.user.email || null
         };
       } else {
-        finalProfile = data as UserProfile;
+        finalProfile = {
+          ...(data as UserProfile),
+          email: session.user.email || null
+        };
       }
 
       // Hardcode perm admin check
@@ -86,17 +95,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       }
 
       setProfile(finalProfile);
-    } catch (err: any) {
+    } catch (err) {
       console.error('Unexpected error fetching profile:', err);
-      const errorMsg = err?.message?.toLowerCase() || '';
-      if (errorMsg.includes('refresh token') || 
-          errorMsg.includes('refresh_token_not_found') ||
-          errorMsg.includes('invalid refresh token') ||
-          errorMsg.includes('invalid_grant')) {
-        console.warn('Signing out due to refresh token error in catch block...');
-        await supabase.auth.signOut({ scope: 'local' });
-        setProfile(null);
-      }
     } finally {
       setLoading(false);
     }
