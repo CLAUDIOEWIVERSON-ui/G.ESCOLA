@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
 import { Plus, Search, Layers, Trash2, Pencil, Loader2, CheckCircle2, X } from 'lucide-react';
@@ -32,19 +31,8 @@ export default function WidgetsPage() {
   const fetchWidgets = useCallback(async () => {
     setLoading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const headers: HeadersInit = {};
-      if (session?.access_token) {
-        headers['Authorization'] = `Bearer ${session.access_token}`;
-      }
-      const response = await fetch('/api/widgets', { headers });
-      const text = await response.text();
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch (e) {
-        throw new Error('Resposta do servidor inválida (esperava JSON).');
-      }
+      const response = await fetch('/api/widgets');
+      const data = await response.json();
       if (data.error) throw new Error(data.error);
       setWidgets(data || []);
     } catch (err: any) {
@@ -76,24 +64,13 @@ export default function WidgetsPage() {
     setSaving(true);
     try {
       const method = currentWidget?.id ? 'PUT' : 'POST';
-      const { data: { session } } = await supabase.auth.getSession();
-      const headers: HeadersInit = { 'Content-Type': 'application/json' };
-      if (session?.access_token) {
-        headers['Authorization'] = `Bearer ${session.access_token}`;
-      }
       const response = await fetch('/api/widgets', {
         method,
-        headers,
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(currentWidget)
       });
       
-      const text = await response.text();
-      let result;
-      try {
-        result = JSON.parse(text);
-      } catch (e) {
-        throw new Error('Resposta do servidor inválida (esperava JSON).');
-      }
+      const result = await response.json();
       if (result.error) throw new Error(result.error);
 
       setIsModalOpen(false);
@@ -110,22 +87,10 @@ export default function WidgetsPage() {
     if (!confirm(t.common.deleteConfirm)) return;
     setDeleting(id);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const headers: HeadersInit = {};
-      if (session?.access_token) {
-        headers['Authorization'] = `Bearer ${session.access_token}`;
-      }
       const response = await fetch(`/api/widgets?id=${id}`, {
-        method: 'DELETE',
-        headers
+        method: 'DELETE'
       });
-      const text = await response.text();
-      let result;
-      try {
-        result = JSON.parse(text);
-      } catch (e) {
-        throw new Error('Resposta do servidor inválida (esperava JSON).');
-      }
+      const result = await response.json();
       if (result.error) throw new Error(result.error);
       
       setWidgets(widgets.filter(w => w.id !== id));

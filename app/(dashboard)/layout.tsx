@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
+import { supabase } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { Logo } from '@/components/Logo';
 import { 
@@ -37,7 +37,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { t, language } = useI18n();
   const { profile, isAdmin, isAluno, isInstrutor, loading: authLoading } = useUser();
   const isReadOnly = !isAdmin;
-  const [isConfigured] = useState(() => isSupabaseConfigured());
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
 
@@ -76,35 +75,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     router.push('/login');
   };
 
-  const canAccess = useCallback((path: string) => {
-    if (isAdmin) return true;
-    
-    // Public/Shared dashboard is accessible by all
-    if (path === '/dashboard' || path === '/') return true;
-    if (path === '/proibido') return true;
-
-    if (isInstrutor) {
-      // Instructors can't access user management
-      const forbiddenForInstructors = ['/usuarios'];
-      return !forbiddenForInstructors.some(p => path.startsWith(p));
-    }
-
-    if (isAluno) {
-      // Students have very restricted access
-      const allowedForStudents = ['/dashboard', '/boletim', '/horario', '/configuracoes'];
-      return allowedForStudents.some(p => path.startsWith(p));
-    }
-
-    return false;
-  }, [isAdmin, isInstrutor, isAluno]);
-
-  // Route protection
-  useEffect(() => {
-    if (!authLoading && !canAccess(pathname)) {
-      router.push('/proibido');
-    }
-  }, [pathname, authLoading, canAccess, router]);
-
   if (authLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-white">
@@ -127,13 +97,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       ]
     },
     { name: t.nav.grades, icon: FileCheck, path: '/notas' },
-    { name: isAluno ? (language === 'pt' ? "Meu Boletim" : "My Report Card") : t.nav.reportCard, icon: FileText, path: '/boletim' },
-    { name: isAluno ? (language === 'pt' ? "Minhas Aulas" : "My Classes") : t.schedule.title, icon: Calendar, path: '/horario' },
+    { name: t.nav.reportCard, icon: FileText, path: '/boletim' },
+    { name: t.schedule.title, icon: Calendar, path: '/horario' },
     { name: t.nav.attendance, icon: CalendarDays, path: '/frequencia' },
     { name: t.calendar.title, icon: CalendarDays, path: '/calendario' },
     ...(isAdmin ? [{ name: t.users.title, icon: Users, path: '/usuarios' }] : []),
-    { name: isAluno ? (language === 'pt' ? "Meu Perfil" : "My Profile") : t.nav.settings, icon: Settings, path: '/configuracoes' },
-  ].filter(item => canAccess(item.path));
+    { name: t.nav.settings, icon: Settings, path: '/configuracoes' },
+  ];
 
   const userInitials = profile?.full_name ? profile.full_name.slice(0, 2).toUpperCase() : 'US';
 
@@ -394,14 +364,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {/* Language toggle removed as per user request */}
           </div>
         </header>
-
-        {!isConfigured && (
-          <div className="bg-red-500 text-white px-8 py-2 text-center text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-3 animate-pulse border-b border-red-600">
-            <span className="flex h-2 w-2 rounded-full bg-white animate-ping" />
-            {language === 'pt' ? 'Supabase não configurado! Verifique os segredos no painel do AI Studio.' : 'Supabase not configured! Check secrets in AI Studio panel.'}
-            <span className="flex h-2 w-2 rounded-full bg-white animate-ping" />
-          </div>
-        )}
 
         <main className="flex-1 p-4 lg:p-8 overflow-y-auto overflow-x-hidden pb-24 lg:pb-8">
           <AnimatePresence mode="wait" initial={false}>

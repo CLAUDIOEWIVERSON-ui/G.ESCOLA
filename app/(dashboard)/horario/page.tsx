@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/LanguageContext';
-import { useUser } from '@/lib/auth/UserContext';
 import { 
   Calendar, 
   Printer, 
@@ -16,10 +15,7 @@ import {
   Coffee,
   AlertCircle,
   User,
-  Book,
-  GraduationCap,
-  ChevronLeft,
-  ChevronRight
+  Book
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
@@ -45,7 +41,6 @@ const BRAZIL_HOLIDAYS = [
 
 export default function HorarioPage() {
   const { t, language } = useI18n();
-  const { profile, isAdmin, isInstrutor, isAluno } = useUser();
   const [cursos, setCursos] = useState<any[]>([]);
   const [turmas, setTurmas] = useState<any[]>([]);
   const [disciplinas, setDisciplinas] = useState<any[]>([]);
@@ -55,14 +50,13 @@ export default function HorarioPage() {
   const [isPrinting, setIsPrinting] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
-  const [studentTurma, setStudentTurma] = useState<any>(null);
 
   // Editable Schedule State
   const [scheduleData, setScheduleData] = useState<Record<string, any>>({});
   const [isSaving, setIsSaving] = useState(false);
   
-  const selectedTurma = studentTurma || turmas.find(tu => tu.id === selectedTurmaId);
-  const selectedCurso = cursos.find(cu => cu.id === (selectedTurma?.curso_id || selectedCursoId));
+  const selectedTurma = turmas.find(tu => tu.id === selectedTurmaId);
+  const selectedCurso = cursos.find(cu => cu.id === selectedCursoId);
 
   // Fetch schedule data when turma changes
   const fetchSchedule = useMemo(() => async (turmaId: string) => {
@@ -90,13 +84,10 @@ export default function HorarioPage() {
 
   useEffect(() => {
     const run = async () => {
-      const idToFetch = isAluno ? studentTurma?.id : selectedTurmaId;
-      if (idToFetch) {
-        await fetchSchedule(idToFetch);
-      }
+      await fetchSchedule(selectedTurmaId);
     };
     run();
-  }, [selectedTurmaId, studentTurma, isAluno, fetchSchedule]);
+  }, [selectedTurmaId, fetchSchedule]);
 
   async function handleSave() {
     if (!selectedTurmaId) return;
@@ -132,22 +123,10 @@ export default function HorarioPage() {
       setIsEditMode(true);
     }
   };
-  const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
-  const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
-  const weekEnd = addDays(weekStart, 4); // Periodo somente de segunda a sexta-feira
+  const today = new Date();
+  const weekStart = startOfWeek(today, { weekStartsOn: 1 });
+  const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
   const weekPeriodFormatted = `${format(weekStart, "dd/MM")} a ${format(weekEnd, "dd/MM/yyyy")}`;
-
-  const handlePreviousWeek = () => {
-    setCurrentDate(prev => addDays(prev, -7));
-  };
-
-  const handleNextWeek = () => {
-    setCurrentDate(prev => addDays(prev, 7));
-  };
-
-  const handleCurrentWeek = () => {
-    setCurrentDate(new Date());
-  };
 
   // Generate 50min class + 10min break slots from 08:00 to 16:00
   const slots = useMemo(() => {
@@ -211,29 +190,9 @@ export default function HorarioPage() {
       if (d) setDisciplinas(d);
       const { data: i } = await supabase.from('profiles').select('*').eq('role', 'instrutor');
       if (i) setInstrutores(i);
-
-      if (isAluno && profile?.email) {
-        try {
-          const { data: alunoData } = await supabase
-            .from('alunos')
-            .select('*, turmas(*)')
-            .eq('email', profile.email)
-            .single();
-          
-          if (alunoData && alunoData.turmas) {
-            const tData = Array.isArray(alunoData.turmas) ? alunoData.turmas[0] : alunoData.turmas;
-            setStudentTurma(tData);
-            setSelectedTurmaId(tData.id);
-          }
-        } catch (err) {
-          console.error("Error fetching alumno turma:", err);
-        }
-      }
     }
-    if (profile?.email || !isAluno) {
-      fetchData();
-    }
-  }, [profile, isAluno]);
+    fetchData();
+  }, []);
 
   const handlePrint = () => {
     window.print();
@@ -267,209 +226,49 @@ export default function HorarioPage() {
     <div className="space-y-6">
       <style jsx global>{`
         @media print {
-          /* Setup page format to Landscape to ensure a wide grid layout fits standard A4 perfectly */
           @page { 
-            size: A4 landscape; 
-            margin: 6mm 8mm;
+            size: A4 portrait; 
+            margin: 0;
           }
-          
-          /* Force parent and layout containers to occupy natural print sizing without clipping */
-          body, html, #__next, .flex-1, main {
+          body { 
             background: white !important;
-            color: #0f172a !important;
             padding: 0 !important;
             margin: 0 !important;
-            box-shadow: none !important;
-            border-radius: 0 !important;
-            overflow: visible !important;
-            height: auto !important;
-            width: auto !important;
-            display: block !important;
           }
-
-          /* Hide UI wrappers, sidebars, headers and bottom navigations */
-          header, aside, nav, .print\:hidden, [class*="print:hidden"], #sidebar-nav, .no-print {
-            display: none !important;
-          }
-
-          /* Reset container sizing for full page utility */
           .print-container {
             width: 100% !important;
-            max-width: 100% !important;
-            border: 1px solid #e2e8f0 !important;
-            border-radius: 8px !important;
+            max-width: none !important;
+            border: none !important;
+            border-radius: 0 !important;
             box-shadow: none !important;
             margin: 0 !important;
             padding: 0 !important;
-            background: white !important;
-            overflow: hidden !important;
-            display: flex !important;
-            flex-direction: column !important;
           }
-
-          /* Scale and densify headers/footers */
           .print-header {
-            padding: 8px 16px !important;
+            padding: 20px !important;
             background: #0f172a !important;
             color: white !important;
             -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
           }
-          .print-header h2 {
-            font-size: 18px !important;
-            line-height: 1.2 !important;
-          }
-          .print-header .text-5xl {
-            font-size: 18px !important;
-          }
-          .print-header .col-span-2 {
-            display: flex !important;
-            flex-direction: column !important;
-            gap: 2px !important;
-          }
-          .print-header .space-y-4 > * {
-            margin: 0 !important;
-          }
-          .print-header .text-[10px], .print-header .text-[8px], .print-header .text-[9px] {
-            font-size: 7px !important;
-          }
-          .print-header .text-xl {
-            font-size: 11px !important;
-          }
-          .print-header .px-5 {
-            padding-left: 10px !important;
-            padding-right: 10px !important;
-          }
-          .print-header .py-2\.5 {
-            padding-top: 4px !important;
-            padding-bottom: 4px !important;
-          }
-          .print-header .px-12, .print-header .py-8 {
-            padding: 6px 16px !important;
-          }
-          .print-header .w-10, .print-header .h-10 {
-            width: 24px !important;
-            height: 24px !important;
-          }
-          .print-header .w-96, .print-header .h-96, .print-header .w-64, .print-header .h-64 {
-            display: none !important;
-          }
-
-          /* Printable Main Content Wrapper */
           .print-content {
-            padding: 6px !important;
+            padding: 10px !important;
             background: white !important;
           }
-
-          .print-content > div {
-            border: 1px solid #cbd5e1 !important;
-            border-radius: 6px !important;
-          }
-
-          /* Compress table headers */
-          .print-content table th {
-            padding: 4px 2px !important;
-            border-bottom: 1px solid #cbd5e1 !important;
-            background-color: #f8fafc !important;
-          }
-          .print-content table th span.text-\[10px\] {
-            font-size: 8px !important;
-          }
-          .print-content table th span.text-\[11px\] {
-            font-size: 8px !important;
-          }
-
-          /* Set specific narrower width for Time column header */
-          .print-content table th.w-32 {
-            width: 70px !important;
-          }
-
-          /* Hour cell padding reduction */
-          .print-content table td.py-8 {
-            padding: 4px 2px !important;
-            background-color: #f8fafc !important;
-            font-size: 8px !important;
-            width: 70px !important;
-          }
-          .print-content table td.py-8 .text-xs {
-            font-size: 9px !important;
-          }
-
-          /* Break-rows height and padding reduction */
-          .print-content table tr td.py-1\.5 {
-            padding: 2px 4px !important;
-            background-color: #f8fafc !important;
-          }
-          .print-content table tr td.py-1\.5 span {
-            font-size: 7.5px !important;
-          }
-
-          /* Compress class cells/cards */
-          .print-content table td {
-            padding: 2px !important;
-            border-bottom: 1px solid #cbd5e1 !important;
-            border-right: 1px solid #cbd5e1 !important;
-          }
-          .print-content table td:last-child {
-            border-right: none !important;
-          }
-          .print-content table tr:last-child td {
-            border-bottom: none !important;
-          }
-
-          /* Modify day details block to make them dense */
-          .print-content table td div.rounded-2xl {
-            padding: 4px 6px !important;
-            min-height: 48px !important;
-            border-radius: 4px !important;
-            border: 1px solid #cbd5e1 !important;
-            background-color: #fcfcfc !important;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-          }
-          
-          /* Text scaling for schedule elements */
-          .print-content table td div.rounded-2xl span.text-\[11px\] {
-            font-size: 8px !important;
-          }
-          .print-content table td div.rounded-2xl span.text-\[10px\] {
-            font-size: 7.5px !important;
-          }
-          .print-content table td div.rounded-2xl span.text-\[9px\] {
-            font-size: 7px !important;
-          }
-          .print-content table td div.rounded-2xl .space-y-2 {
-            margin: 0 !important;
-          }
-          .print-content table td div.rounded-2xl .space-y-1 > div {
-            margin-bottom: 1px !important;
-            gap: 2px !important;
-          }
-          .print-content table td div.rounded-2xl .mt-auto {
-            margin-top: 2px !important;
-            padding-top: 2px !important;
-            border-top: 1px solid #e2e8f0 !important;
-          }
-          
-          /* Downsize Icons in schedules */
-          .print-content table td div.rounded-2xl svg {
-            width: 8px !important;
-            height: 8px !important;
-          }
-
           .print-row {
-            break-inside: avoid !important;
-            page-break-inside: avoid !important;
+            break-inside: avoid;
           }
-
-          table { 
-            page-break-inside: avoid !important;
-            width: 100% !important;
-            height: auto !important;
+          .no-print {
+            display: none !important;
+          }
+          .rounded-3xl, .rounded-2xl, .rounded-\[3rem\], .rounded-\[2.5rem\] {
+            border-radius: 4px !important;
+          }
+           table { 
+            page-break-inside: auto;
           }
           tr { 
-            page-break-inside: avoid !important; 
-            page-break-after: auto !important;
+            page-break-inside: avoid; 
+            page-break-after: auto;
           }
         }
       `}</style>
@@ -484,69 +283,65 @@ export default function HorarioPage() {
           <p className="text-slate-500 font-medium ml-11">{t.reportCard.subtitle}</p>
         </div>
         
-        {!isAluno && (
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleToggleEdit}
-              disabled={isSaving || !selectedTurmaId}
-              className={cn(
-                "flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-black uppercase tracking-widest transition-all shadow-lg disabled:opacity-50",
-                isEditMode 
-                  ? "bg-emerald-600 text-white shadow-emerald-200 hover:bg-emerald-700" 
-                  : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 shadow-slate-100"
-              )}
-            >
-              {isSaving ? <Loader2 size={18} className="animate-spin" /> : (isEditMode ? <Check size={18} /> : <Edit3 size={18} />)}
-              {isEditMode ? (language === 'pt' ? 'Salvar' : 'Save') : (language === 'pt' ? 'Editar' : 'Edit')}
-            </button>
-            
-            <button 
-              onClick={handlePrint}
-              disabled={isPrinting || isEditMode || !selectedTurmaId}
-              className="flex items-center gap-2 bg-[#0f172a] text-white px-5 py-2.5 rounded-2xl text-sm font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 disabled:opacity-50 disabled:grayscale"
-            >
-              {isPrinting ? <Loader2 size={18} className="animate-spin" /> : <Printer size={18} />}
-              {t.schedule.print}
-            </button>
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleToggleEdit}
+            disabled={isSaving || !selectedTurmaId}
+            className={cn(
+              "flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-black uppercase tracking-widest transition-all shadow-lg disabled:opacity-50",
+              isEditMode 
+                ? "bg-emerald-600 text-white shadow-emerald-200 hover:bg-emerald-700" 
+                : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 shadow-slate-100"
+            )}
+          >
+            {isSaving ? <Loader2 size={18} className="animate-spin" /> : (isEditMode ? <Check size={18} /> : <Edit3 size={18} />)}
+            {isEditMode ? (language === 'pt' ? 'Salvar' : 'Save') : (language === 'pt' ? 'Editar' : 'Edit')}
+          </button>
+          
+          <button 
+            onClick={handlePrint}
+            disabled={isPrinting || isEditMode || !selectedTurmaId}
+            className="flex items-center gap-2 bg-[#0f172a] text-white px-5 py-2.5 rounded-2xl text-sm font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 disabled:opacity-50 disabled:grayscale"
+          >
+            {isPrinting ? <Loader2 size={18} className="animate-spin" /> : <Printer size={18} />}
+            {t.schedule.print}
+          </button>
+        </div>
       </div>
 
       {/* Selectors */}
-      {!isAluno && (
-        <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm grid grid-cols-1 md:grid-cols-2 gap-6 print:hidden">
-          <div className="space-y-2">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 flex items-center gap-2">
-              <BookOpen size={12} /> {t.nav.courses}
-            </label>
-            <select
-              value={selectedCursoId}
-              onChange={(e) => { setSelectedCursoId(e.target.value); setSelectedTurmaId(''); }}
-              className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-4 focus:ring-blue-500/10 transition-all outline-none text-sm font-bold text-slate-800 appearance-none cursor-pointer"
-            >
-              <option value="">{t.courses.selectCourse}</option>
-              {cursos.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
-            </select>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 flex items-center gap-2">
-              <Calendar size={12} /> {t.nav.classes}
-            </label>
-            <select
-              value={selectedTurmaId}
-              onChange={(e) => setSelectedTurmaId(e.target.value)}
-              disabled={!selectedCursoId}
-              className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-4 focus:ring-blue-500/10 transition-all outline-none text-sm font-bold text-slate-800 appearance-none cursor-pointer disabled:opacity-50"
-            >
-              <option value="">{t.attendance.selectClass}</option>
-              {turmas.filter(tu => tu.curso_id === selectedCursoId || !selectedCursoId).map(tu => (
-                <option key={tu.id} value={tu.id}>{tu.nome}</option>
-              ))}
-            </select>
-          </div>
+      <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm grid grid-cols-1 md:grid-cols-2 gap-6 print:hidden">
+        <div className="space-y-2">
+          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 flex items-center gap-2">
+            <BookOpen size={12} /> {t.nav.courses}
+          </label>
+          <select
+            value={selectedCursoId}
+            onChange={(e) => { setSelectedCursoId(e.target.value); setSelectedTurmaId(''); }}
+            className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-4 focus:ring-blue-500/10 transition-all outline-none text-sm font-bold text-slate-800 appearance-none cursor-pointer"
+          >
+            <option value="">{t.courses.selectCourse}</option>
+            {cursos.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+          </select>
         </div>
-      )}
+
+        <div className="space-y-2">
+          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 flex items-center gap-2">
+            <Calendar size={12} /> {t.nav.classes}
+          </label>
+          <select
+            value={selectedTurmaId}
+            onChange={(e) => setSelectedTurmaId(e.target.value)}
+            disabled={!selectedCursoId}
+            className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-4 focus:ring-blue-500/10 transition-all outline-none text-sm font-bold text-slate-800 appearance-none cursor-pointer disabled:opacity-50"
+          >
+            <option value="">{t.attendance.selectClass}</option>
+            {turmas.filter(tu => tu.curso_id === selectedCursoId || !selectedCursoId).map(tu => (
+              <option key={tu.id} value={tu.id}>{tu.nome}</option>
+            ))}
+          </select>
+        </div>
+      </div>
 
       <AnimatePresence mode="wait">
         {selectedTurmaId ? (
@@ -579,46 +374,11 @@ export default function HorarioPage() {
                     </h2>
                   </div>
                   
-                  <div className="flex flex-col md:items-end justify-center gap-2">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
-                      {t.schedule.period.toUpperCase()} • Ref. Ano Letivo {selectedTurma?.ano || '2026'}
-                    </p>
-                    
-                    <div className="flex flex-wrap items-center gap-3 justify-end">
-                      {/* Controles de Navegação */}
-                      <div className="flex items-center bg-white/5 border border-white/10 rounded-2xl p-1 shadow-inner print:hidden">
-                        <button
-                          type="button"
-                          onClick={handlePreviousWeek}
-                          className="p-1 px-2 hover:bg-white/10 text-white rounded-xl transition-all hover:scale-105 active:scale-95"
-                          title={language === 'pt' ? 'Semana Anterior' : 'Previous Week'}
-                        >
-                          <ChevronLeft size={16} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleCurrentWeek}
-                          className="px-2.5 py-1 hover:bg-white/10 text-[9px] font-black uppercase text-white rounded-lg transition-all hover:scale-105 active:scale-95 border border-white/5 bg-white/5"
-                        >
-                          {language === 'pt' ? 'Hoje' : 'Today'}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleNextWeek}
-                          className="p-1 px-2 hover:bg-white/10 text-white rounded-xl transition-all hover:scale-105 active:scale-95"
-                          title={language === 'pt' ? 'Próxima Semana' : 'Next Week'}
-                        >
-                          <ChevronRight size={16} />
-                        </button>
-                      </div>
-
-                      {/* Caixa de Período */}
-                      <div className="bg-white/5 border border-white/10 px-5 py-2.5 rounded-2xl flex flex-col items-end shadow-lg backdrop-blur-sm">
-                        <span className="text-xl font-black text-white leading-tight">{weekPeriodFormatted}</span>
-                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
-                          {format(currentDate, 'MMMM yyyy', { locale: ptBR })}
-                        </span>
-                      </div>
+                  <div className="flex flex-col md:items-end justify-center">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{t.schedule.period.toUpperCase()}</p>
+                    <div className="bg-white/5 border border-white/10 px-6 py-3 rounded-2xl inline-flex flex-col items-end">
+                      <span className="text-2xl font-black text-white">{weekPeriodFormatted}</span>
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{format(today, 'MMMM yyyy', { locale: ptBR })}</span>
                     </div>
                   </div>
                 </div>

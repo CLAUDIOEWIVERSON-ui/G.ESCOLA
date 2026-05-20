@@ -26,19 +26,8 @@ export default function UsuariosPage() {
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const headers: HeadersInit = {};
-      if (session?.access_token) {
-        headers['Authorization'] = `Bearer ${session.access_token}`;
-      }
-      const response = await fetch('/api/admin/users', { headers });
-      const text = await response.text();
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch (e) {
-        throw new Error('Resposta do servidor inválida (esperava JSON).');
-      }
+      const response = await fetch('/api/admin/users');
+      const data = await response.json();
       
       if (data.error && (data.error.includes('not configured') || data.error.includes('Inválida') || data.error.includes('API key'))) {
         setIsConfigured(false);
@@ -89,23 +78,13 @@ export default function UsuariosPage() {
       let result: any = {};
 
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        const headers: HeadersInit = { 'Content-Type': 'application/json' };
-        if (session?.access_token) {
-          headers['Authorization'] = `Bearer ${session.access_token}`;
-        }
         const response = await fetch('/api/admin/users', {
           method,
-          headers,
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(currentUser)
         });
         
-        const text = await response.text();
-        try {
-          result = JSON.parse(text);
-        } catch (e) {
-          result = { error: 'Resposta do servidor inválida (esperava JSON).' };
-        }
+        result = await response.json();
       } catch (apiErr) {
         console.error('API Error:', apiErr);
         result = { error: 'API connection failed' };
@@ -145,22 +124,10 @@ export default function UsuariosPage() {
     if (!confirm(t.common.deleteConfirm)) return;
     setDeleting(id);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const headers: HeadersInit = {};
-      if (session?.access_token) {
-        headers['Authorization'] = `Bearer ${session.access_token}`;
-      }
       const response = await fetch(`/api/admin/users?id=${id}`, {
-        method: 'DELETE',
-        headers
+        method: 'DELETE'
       });
-      const text = await response.text();
-      let result;
-      try {
-        result = JSON.parse(text);
-      } catch (e) {
-        throw new Error('Resposta do servidor inválida (esperava JSON).');
-      }
+      const result = await response.json();
       if (result.error) throw new Error(result.error);
       
       setUsers(users.filter(u => u.id !== id));

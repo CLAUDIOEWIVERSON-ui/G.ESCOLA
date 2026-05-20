@@ -1,13 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin, isSupabaseAdminConfigured } from '@/lib/supabase/admin';
-import { requireAdmin } from '@/lib/auth/rbac';
 
 export async function GET() {
-  const { authorized, response } = await requireAdmin();
-  if (!authorized) {
-    return response;
-  }
-
   if (!isSupabaseAdminConfigured()) {
     return NextResponse.json({ error: 'Supabase Admin not configured. Please set SUPABASE_SERVICE_ROLE_KEY in Secrets.' }, { status: 500 });
   }
@@ -36,7 +30,7 @@ export async function GET() {
         id: user.id,
         email: user.email,
         full_name: profile?.full_name || user.user_metadata?.full_name || '',
-        role: 'admin', // Force everyone to 'admin' visually in user list as requested
+        role: profile?.role || user.user_metadata?.role || 'aluno',
         created_at: user.created_at
       };
     });
@@ -48,11 +42,6 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const { authorized, response } = await requireAdmin();
-  if (!authorized) {
-    return response;
-  }
-
   if (!isSupabaseAdminConfigured()) {
     return NextResponse.json({ error: 'Supabase Admin not configured. Please set SUPABASE_SERVICE_ROLE_KEY in Secrets.' }, { status: 500 });
   }
@@ -99,11 +88,6 @@ export async function POST(request: Request) {
 }
 
 export async function PUT(request: Request) {
-  const { authorized, response } = await requireAdmin();
-  if (!authorized) {
-    return response;
-  }
-
   if (!isSupabaseAdminConfigured()) {
     return NextResponse.json({ error: 'Supabase Admin not configured. Please set SUPABASE_SERVICE_ROLE_KEY in Secrets.' }, { status: 500 });
   }
@@ -158,11 +142,6 @@ export async function PUT(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const { authorized, response } = await requireAdmin();
-  if (!authorized) {
-    return response;
-  }
-
   if (!isSupabaseAdminConfigured()) {
     return NextResponse.json({ error: 'Supabase Admin not configured. Please set SUPABASE_SERVICE_ROLE_KEY in Secrets.' }, { status: 500 });
   }
