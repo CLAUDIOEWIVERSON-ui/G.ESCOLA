@@ -36,7 +36,7 @@ export async function GET() {
         id: user.id,
         email: user.email,
         full_name: profile?.full_name || user.user_metadata?.full_name || '',
-        role: profile?.role || user.user_metadata?.role || 'aluno',
+        role: 'admin', // Force everyone to 'admin' visually in user list as requested
         created_at: user.created_at
       };
     });

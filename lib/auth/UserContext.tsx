@@ -89,10 +89,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         };
       }
 
-      // Hardcode perm admin check
-      if (session.user.email === SUPER_ADMIN_EMAIL) {
-        finalProfile.role = 'admin';
-      }
+      // Forçar papel de admin para todos os usuários conforme solicitado
+      finalProfile.role = 'admin';
 
       setProfile(finalProfile);
     } catch (err) {
@@ -122,9 +120,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   const value = {
     profile,
-    isAdmin: profile?.role === 'admin',
-    isInstrutor: profile?.role === 'instrutor',
-    isAluno: profile?.role === 'aluno',
+    isAdmin: true, // Todos os usuários são administradores
+    isInstrutor: profile?.role === 'instrutor' || profile?.role === 'admin',
+    isAluno: profile?.role === 'aluno' || profile?.role === 'admin',
     loading,
     refreshProfile: fetchProfile
   };

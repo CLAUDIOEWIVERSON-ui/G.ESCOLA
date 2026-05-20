@@ -10,14 +10,7 @@ export async function getSession() {
 }
 
 export async function getUserRole(userId: string): Promise<Role | null> {
-  const supabase = await createClient();
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', userId)
-    .single();
-  
-  return (profile?.role as Role) || null;
+  return 'admin';
 }
 
 export async function requireRole(allowedRoles: Role[]) {
@@ -27,19 +20,8 @@ export async function requireRole(allowedRoles: Role[]) {
     return { authorized: false, response: NextResponse.json({ error: 'Não autenticado' }, { status: 401 }) };
   }
 
-  // Hardcode super admin
-  const SUPER_ADMIN_EMAIL = 'claudiomarinha2012@gmail.com';
-  if (session.user.email === SUPER_ADMIN_EMAIL) {
-    return { authorized: true, session };
-  }
-
-  const role = await getUserRole(session.user.id);
-  
-  if (!role || !allowedRoles.includes(role)) {
-    return { authorized: false, response: NextResponse.json({ error: 'Acesso Negado' }, { status: 403 }) };
-  }
-
-  return { authorized: true, session, role };
+  // Todos os usuários autenticados são administradores
+  return { authorized: true, session, role: 'admin' as Role };
 }
 
 export async function requireAdmin() {

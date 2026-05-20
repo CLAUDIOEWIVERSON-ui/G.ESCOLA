@@ -267,49 +267,209 @@ export default function HorarioPage() {
     <div className="space-y-6">
       <style jsx global>{`
         @media print {
+          /* Setup page format to Landscape to ensure a wide grid layout fits standard A4 perfectly */
           @page { 
-            size: A4 portrait; 
-            margin: 0;
+            size: A4 landscape; 
+            margin: 6mm 8mm;
           }
-          body { 
+          
+          /* Force parent and layout containers to occupy natural print sizing without clipping */
+          body, html, #__next, .flex-1, main {
             background: white !important;
+            color: #0f172a !important;
             padding: 0 !important;
             margin: 0 !important;
+            box-shadow: none !important;
+            border-radius: 0 !important;
+            overflow: visible !important;
+            height: auto !important;
+            width: auto !important;
+            display: block !important;
           }
+
+          /* Hide UI wrappers, sidebars, headers and bottom navigations */
+          header, aside, nav, .print\:hidden, [class*="print:hidden"], #sidebar-nav, .no-print {
+            display: none !important;
+          }
+
+          /* Reset container sizing for full page utility */
           .print-container {
             width: 100% !important;
-            max-width: none !important;
-            border: none !important;
-            border-radius: 0 !important;
+            max-width: 100% !important;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 8px !important;
             box-shadow: none !important;
             margin: 0 !important;
             padding: 0 !important;
+            background: white !important;
+            overflow: hidden !important;
+            display: flex !important;
+            flex-direction: column !important;
           }
+
+          /* Scale and densify headers/footers */
           .print-header {
-            padding: 20px !important;
+            padding: 8px 16px !important;
             background: #0f172a !important;
             color: white !important;
             -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
           }
-          .print-content {
-            padding: 10px !important;
-            background: white !important;
+          .print-header h2 {
+            font-size: 18px !important;
+            line-height: 1.2 !important;
           }
-          .print-row {
-            break-inside: avoid;
+          .print-header .text-5xl {
+            font-size: 18px !important;
           }
-          .no-print {
+          .print-header .col-span-2 {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 2px !important;
+          }
+          .print-header .space-y-4 > * {
+            margin: 0 !important;
+          }
+          .print-header .text-[10px], .print-header .text-[8px], .print-header .text-[9px] {
+            font-size: 7px !important;
+          }
+          .print-header .text-xl {
+            font-size: 11px !important;
+          }
+          .print-header .px-5 {
+            padding-left: 10px !important;
+            padding-right: 10px !important;
+          }
+          .print-header .py-2\.5 {
+            padding-top: 4px !important;
+            padding-bottom: 4px !important;
+          }
+          .print-header .px-12, .print-header .py-8 {
+            padding: 6px 16px !important;
+          }
+          .print-header .w-10, .print-header .h-10 {
+            width: 24px !important;
+            height: 24px !important;
+          }
+          .print-header .w-96, .print-header .h-96, .print-header .w-64, .print-header .h-64 {
             display: none !important;
           }
-          .rounded-3xl, .rounded-2xl, .rounded-\[3rem\], .rounded-\[2.5rem\] {
-            border-radius: 4px !important;
+
+          /* Printable Main Content Wrapper */
+          .print-content {
+            padding: 6px !important;
+            background: white !important;
           }
-           table { 
-            page-break-inside: auto;
+
+          .print-content > div {
+            border: 1px solid #cbd5e1 !important;
+            border-radius: 6px !important;
+          }
+
+          /* Compress table headers */
+          .print-content table th {
+            padding: 4px 2px !important;
+            border-bottom: 1px solid #cbd5e1 !important;
+            background-color: #f8fafc !important;
+          }
+          .print-content table th span.text-\[10px\] {
+            font-size: 8px !important;
+          }
+          .print-content table th span.text-\[11px\] {
+            font-size: 8px !important;
+          }
+
+          /* Set specific narrower width for Time column header */
+          .print-content table th.w-32 {
+            width: 70px !important;
+          }
+
+          /* Hour cell padding reduction */
+          .print-content table td.py-8 {
+            padding: 4px 2px !important;
+            background-color: #f8fafc !important;
+            font-size: 8px !important;
+            width: 70px !important;
+          }
+          .print-content table td.py-8 .text-xs {
+            font-size: 9px !important;
+          }
+
+          /* Break-rows height and padding reduction */
+          .print-content table tr td.py-1\.5 {
+            padding: 2px 4px !important;
+            background-color: #f8fafc !important;
+          }
+          .print-content table tr td.py-1\.5 span {
+            font-size: 7.5px !important;
+          }
+
+          /* Compress class cells/cards */
+          .print-content table td {
+            padding: 2px !important;
+            border-bottom: 1px solid #cbd5e1 !important;
+            border-right: 1px solid #cbd5e1 !important;
+          }
+          .print-content table td:last-child {
+            border-right: none !important;
+          }
+          .print-content table tr:last-child td {
+            border-bottom: none !important;
+          }
+
+          /* Modify day details block to make them dense */
+          .print-content table td div.rounded-2xl {
+            padding: 4px 6px !important;
+            min-height: 48px !important;
+            border-radius: 4px !important;
+            border: 1px solid #cbd5e1 !important;
+            background-color: #fcfcfc !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          
+          /* Text scaling for schedule elements */
+          .print-content table td div.rounded-2xl span.text-\[11px\] {
+            font-size: 8px !important;
+          }
+          .print-content table td div.rounded-2xl span.text-\[10px\] {
+            font-size: 7.5px !important;
+          }
+          .print-content table td div.rounded-2xl span.text-\[9px\] {
+            font-size: 7px !important;
+          }
+          .print-content table td div.rounded-2xl .space-y-2 {
+            margin: 0 !important;
+          }
+          .print-content table td div.rounded-2xl .space-y-1 > div {
+            margin-bottom: 1px !important;
+            gap: 2px !important;
+          }
+          .print-content table td div.rounded-2xl .mt-auto {
+            margin-top: 2px !important;
+            padding-top: 2px !important;
+            border-top: 1px solid #e2e8f0 !important;
+          }
+          
+          /* Downsize Icons in schedules */
+          .print-content table td div.rounded-2xl svg {
+            width: 8px !important;
+            height: 8px !important;
+          }
+
+          .print-row {
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
+          }
+
+          table { 
+            page-break-inside: avoid !important;
+            width: 100% !important;
+            height: auto !important;
           }
           tr { 
-            page-break-inside: avoid; 
-            page-break-after: auto;
+            page-break-inside: avoid !important; 
+            page-break-after: auto !important;
           }
         }
       `}</style>
