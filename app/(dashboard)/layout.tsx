@@ -70,6 +70,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  useEffect(() => {
+    if (!authLoading && !profile) {
+      router.push('/login');
+    }
+  }, [profile, authLoading, router]);
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push('/login');

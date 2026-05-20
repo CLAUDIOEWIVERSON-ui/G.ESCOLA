@@ -4,11 +4,12 @@ import { createClient } from '@/lib/supabase/server';
 export async function GET() {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: userData, error: authError } = await supabase.auth.getUser();
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (authError || !userData?.user) {
+      return NextResponse.json({ error: authError?.message || 'Unauthorized' }, { status: 401 });
     }
+    const user = userData.user;
 
     const { data, error } = await supabase
       .from('widgets')
@@ -26,11 +27,12 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: userData, error: authError } = await supabase.auth.getUser();
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (authError || !userData?.user) {
+      return NextResponse.json({ error: authError?.message || 'Unauthorized' }, { status: 401 });
     }
+    const user = userData.user;
 
     const body = await request.json();
     const { data, error } = await supabase
@@ -53,11 +55,12 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: userData, error: authError } = await supabase.auth.getUser();
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (authError || !userData?.user) {
+      return NextResponse.json({ error: authError?.message || 'Unauthorized' }, { status: 401 });
     }
+    const user = userData.user;
 
     const body = await request.json();
     const { id, ...updates } = body;
@@ -86,11 +89,12 @@ export async function DELETE(request: Request) {
     }
 
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: userData, error: authError } = await supabase.auth.getUser();
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (authError || !userData?.user) {
+      return NextResponse.json({ error: authError?.message || 'Unauthorized' }, { status: 401 });
     }
+    const user = userData.user;
 
     const { error } = await supabase
       .from('widgets')

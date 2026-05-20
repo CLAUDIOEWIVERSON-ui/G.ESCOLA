@@ -86,8 +86,17 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       }
 
       setProfile(finalProfile);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Unexpected error fetching profile:', err);
+      const errorMsg = err?.message?.toLowerCase() || '';
+      if (errorMsg.includes('refresh token') || 
+          errorMsg.includes('refresh_token_not_found') ||
+          errorMsg.includes('invalid refresh token') ||
+          errorMsg.includes('invalid_grant')) {
+        console.warn('Signing out due to refresh token error in catch block...');
+        await supabase.auth.signOut({ scope: 'local' });
+        setProfile(null);
+      }
     } finally {
       setLoading(false);
     }
