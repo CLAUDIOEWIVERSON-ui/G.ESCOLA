@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils';
 import { format, startOfWeek, endOfWeek, addDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 import { toast } from 'sonner';
 
 // Helper to fetch Brazil holidays (Simplified for this version)
@@ -194,8 +195,63 @@ export default function HorarioPage() {
     fetchData();
   }, []);
 
-  const handlePrint = () => {
-    window.print();
+  const handlePrint = async () => {
+    if (!printRef.current) return;
+    setIsPrinting(true);
+    
+    toast.info(
+      language === 'pt' 
+        ? 'Gerando PDF de alta definição...' 
+        : 'Generating high-definition PDF...'
+    );
+
+    try {
+      const element = printRef.current;
+      
+      const canvas = await html2canvas(element, {
+        scale: 2, 
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      
+      const orientation = imgWidth > imgHeight ? 'l' : 'p';
+      
+      const pdf = new jsPDF({
+        orientation: orientation,
+        unit: 'px',
+        format: [imgWidth, imgHeight]
+      });
+
+      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      
+      const fileName = `quadro-de-horarios-${selectedTurma?.nome || 'turma'}.pdf`;
+      pdf.save(fileName);
+      
+      toast.success(
+        language === 'pt'
+          ? 'Quadro de horários exportado com sucesso!'
+          : 'Weekly schedule exported successfully!'
+      );
+    } catch (err) {
+      console.error('Failed to export PDF:', err);
+      toast.error(
+        language === 'pt'
+          ? 'Erro na exportação de alta fidelidade. Abrindo impressão nativa...'
+          : 'High-fidelity export failed. Opening native print...'
+      );
+      try {
+        window.print();
+      } catch (printErr) {
+        console.error('Native print failed:', printErr);
+      }
+    } finally {
+      setIsPrinting(false);
+    }
   };
 
   const updateCell = (slotId: string, dayKey: string, field: string, value: string) => {
