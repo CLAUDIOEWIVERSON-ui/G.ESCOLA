@@ -40,26 +40,6 @@ const BRAZIL_HOLIDAYS = [
   { date: '2026-12-25', name: 'Natal' },
 ];
 
-const getSubjectColor = (subjectId: string) => {
-  if (!subjectId) return { bg: '#ffffff', border: '#e2e8f0', text: '#1e293b', borderStyle: 'border-slate-100', dot: '#94a3b8' };
-  
-  let hash = 0;
-  for (let i = 0; i < subjectId.length; i++) {
-    hash = subjectId.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  
-  const palettes = [
-    { bg: '#eff6ff', border: '#cbd5e1', text: '#1e3a8a', borderStyle: 'border-blue-200', dot: '#367af6' },     // Soft Blue
-    { bg: '#ecfdf5', border: '#cbd5e1', text: '#064e3b', borderStyle: 'border-emerald-200', dot: '#10b981' }, // Soft Emerald
-    { bg: '#faf5ff', border: '#cbd5e1', text: '#4c1d95', borderStyle: 'border-purple-200', dot: '#a855f7' },  // Soft Purple
-    { bg: '#fff7ed', border: '#cbd5e1', text: '#7c2d12', borderStyle: 'border-orange-200', dot: '#f97316' },  // Soft Orange
-    { bg: '#f0fdfa', border: '#cbd5e1', text: '#115e59', borderStyle: 'border-teal-200', dot: '#14b8a6' },    // Soft Teal
-    { bg: '#fdf2f8', border: '#cbd5e1', text: '#831843', borderStyle: 'border-pink-200', dot: '#ec4899' },    // Soft Pink
-  ];
-  
-  return palettes[Math.abs(hash) % palettes.length];
-};
-
 export default function HorarioPage() {
   const { t, language } = useI18n();
   const [cursos, setCursos] = useState<any[]>([]);
@@ -327,7 +307,7 @@ export default function HorarioPage() {
           }
           .print-header {
             padding: 20px !important;
-            background: #0f172a !important;
+            background: #000000 !important;
             color: white !important;
           }
           .print-content {
@@ -436,26 +416,26 @@ export default function HorarioPage() {
               className="w-full max-w-[1200px] bg-white rounded-[3rem] shadow-2xl border border-slate-100 overflow-hidden flex flex-col font-sans mb-10 print-container"
             >
               {/* Specialized Header */}
-              <div className="bg-slate-900 p-12 text-white relative overflow-hidden print-header">
+              <div className="bg-neutral-950 p-12 text-white relative overflow-hidden print-header border-b border-neutral-900">
                 <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-12">
                   <div className="col-span-2 space-y-4">
                     <div className="flex items-center gap-3">
-                      <div className="px-3 py-1 bg-blue-600 rounded-lg text-[10px] font-black uppercase tracking-widest">
+                      <div className="px-3 py-1 bg-white text-black rounded-lg text-[10px] font-black uppercase tracking-widest border border-white">
                         {t.nav.classes}
                       </div>
-                      <span className="text-slate-400 font-bold">/</span>
-                      <span className="text-blue-400 font-bold">{selectedCurso?.nome}</span>
+                      <span className="text-neutral-500 font-bold">/</span>
+                      <span className="text-neutral-200 font-bold">{selectedCurso?.nome}</span>
                     </div>
-                    <h2 className="text-5xl font-black tracking-tighter leading-none">
+                    <h2 className="text-5xl font-black tracking-tighter leading-none text-white animate-fade-in">
                       {selectedTurma?.nome}
                     </h2>
                   </div>
                   
                   <div className="flex flex-col md:items-end justify-center">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{t.schedule.period.toUpperCase()}</p>
-                    <div className="bg-white/5 border border-white/10 px-6 py-3 rounded-2xl inline-flex flex-col items-end">
+                    <p className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em] mb-2">{t.schedule.period.toUpperCase()}</p>
+                    <div className="bg-neutral-900/80 border border-neutral-800 px-6 py-3 rounded-2xl inline-flex flex-col items-end shadow-sm">
                       <span className="text-2xl font-black text-white">{weekPeriodFormatted}</span>
-                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{format(today, 'MMMM yyyy', { locale: ptBR })}</span>
+                      <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">{format(weekStart, 'MMMM yyyy', { locale: ptBR })}</span>
                     </div>
                   </div>
                 </div>
@@ -475,16 +455,16 @@ export default function HorarioPage() {
                           return (
                             <th key={day.key} className={cn(
                               "px-4 py-6 border-r border-slate-200 last:border-r-0",
-                              holiday ? "bg-amber-50/30" : ""
+                              holiday ? "bg-neutral-100/50" : ""
                             )}>
                               <div className="flex flex-col gap-1">
                                 <span className={cn(
                                   "text-[10px] font-black uppercase tracking-widest",
-                                  holiday ? "text-amber-600" : "text-slate-900"
+                                  holiday ? "text-neutral-500" : "text-neutral-900"
                                 )}>
                                   {day.label}
                                 </span>
-                                <span className="text-[11px] font-bold text-slate-400">
+                                <span className="text-[11px] font-bold text-neutral-400">
                                   {format(day.date, 'dd/MM')}
                                 </span>
                               </div>
@@ -521,14 +501,13 @@ export default function HorarioPage() {
                             {weekDays.map(day => {
                               const cell = getCellData(slot.id, day.key);
                               const holiday = isHoliday(day.date);
-                              const cellColors = getSubjectColor(cell.subjectId);
                               
                               if (holiday) {
                                 return (
-                                  <td key={day.key} className="px-3 py-3 border-r border-slate-100 last:border-r-0 bg-amber-50/20">
+                                  <td key={day.key} className="px-3 py-3 border-r border-slate-100 last:border-r-0 bg-neutral-50">
                                     <div className="h-full flex flex-col items-center justify-center opacity-40">
-                                      <AlertCircle size={14} className="text-amber-500 mb-1" />
-                                      <span className="text-[8px] font-black text-amber-600 uppercase tracking-widest">{holiday.name}</span>
+                                      <AlertCircle size={14} className="text-neutral-500 mb-1" />
+                                      <span className="text-[8px] font-black text-neutral-600 uppercase tracking-widest">{holiday.name}</span>
                                     </div>
                                   </td>
                                 );
@@ -536,27 +515,20 @@ export default function HorarioPage() {
 
                               return (
                                 <td key={day.key} className="px-3 py-3 border-r border-slate-100 last:border-r-0">
-                                  <div 
-                                    className={cn(
-                                      "rounded-2xl p-4 h-full flex flex-col transition-all min-h-[140px]",
-                                      isEditMode 
-                                        ? "bg-white border-2 border-dashed border-blue-200" 
-                                        : cell.subjectId 
-                                          ? "shadow-sm" 
-                                          : "hover:bg-slate-50/40"
-                                    )}
-                                    style={!isEditMode && cell.subjectId ? {
-                                      backgroundColor: cellColors.bg,
-                                      border: `1px solid ${cellColors.border}`,
-                                      color: cellColors.text,
-                                    } : undefined}
-                                  >
+                                  <div className={cn(
+                                    "rounded-2xl p-4 h-full flex flex-col transition-all min-h-[140px]",
+                                    isEditMode 
+                                      ? "bg-white border-2 border-dashed border-neutral-300" 
+                                      : cell.subjectId 
+                                        ? "bg-slate-50 border border-slate-200/80 shadow-sm" 
+                                        : "hover:bg-slate-50/40 border border-transparent"
+                                  )}>
                                     {isEditMode ? (
                                       <div className="space-y-3">
                                         <select 
                                           value={cell.subjectId || ''}
                                           onChange={(e) => updateCell(slot.id, day.key, 'subjectId', e.target.value)}
-                                          className="w-full text-[10px] font-black text-blue-900 bg-transparent border-none focus:ring-0 p-0 cursor-pointer"
+                                          className="w-full text-[10px] font-black text-neutral-950 bg-transparent border-none focus:ring-0 p-0 cursor-pointer"
                                         >
                                           <option value="">{t.schedule.subject}</option>
                                           {filteredDisciplinas.map(d => (
@@ -589,13 +561,13 @@ export default function HorarioPage() {
                                       cell.subjectId ? (
                                         <div className="space-y-2 flex-1 flex flex-col">
                                           <div className="space-y-1">
-                                            <div className="flex items-center gap-1.5" style={{ color: cellColors.text }}>
+                                            <div className="flex items-center gap-1.5 text-neutral-950">
                                               <BookOpen size={10} />
                                               <span className="text-[11px] font-black leading-tight uppercase tracking-tight">
                                                 {disciplinas.find(d => d.id === cell.subjectId)?.nome || 'Disciplina'}
                                               </span>
                                             </div>
-                                            <div className="flex items-center gap-1.5 opacity-80" style={{ color: cellColors.text }}>
+                                            <div className="flex items-center gap-1.5 text-neutral-500">
                                               <User size={10} />
                                               <span className="text-[10px] font-bold">
                                                 {instrutores.find(i => i.id === cell.instructorId)?.full_name || 'Instrutor'}
@@ -603,19 +575,19 @@ export default function HorarioPage() {
                                             </div>
                                           </div>
                                           
-                                          <div className="mt-auto pt-2 flex flex-col gap-1 border-t opacity-70" style={{ borderColor: cellColors.border, color: cellColors.text }}>
-                                            <div className="flex items-center gap-1 text-[9px] font-black uppercase tracking-widest">
+                                          <div className="mt-auto pt-2 flex flex-col gap-1 border-t border-slate-100">
+                                            <div className="flex items-center gap-1 text-[9px] font-black text-neutral-400 uppercase tracking-widest">
                                               <Book size={8} />
                                               <span>{selectedCurso?.nome || 'Curso'}</span>
                                             </div>
-                                            <div className="flex items-center gap-1.5">
+                                            <div className="flex items-center gap-1.5 text-neutral-400">
                                               <MapPin size={10} />
                                               <span className="text-[9px] font-black uppercase tracking-tight">{cell.room || 'N/A'}</span>
                                             </div>
                                           </div>
                                         </div>
                                       ) : (
-                                        <div className="flex-1 flex items-center justify-center opacity-10 text-slate-400">
+                                        <div className="flex-1 flex items-center justify-center opacity-10">
                                           <Shield size={16} />
                                         </div>
                                       )
@@ -633,18 +605,18 @@ export default function HorarioPage() {
               </div>
 
               {/* Footer */}
-              <div className="px-12 py-8 bg-slate-900 flex items-center justify-between print-header">
+              <div className="px-12 py-8 bg-black flex items-center justify-between print-header border-t border-neutral-900">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
-                    <Shield size={20} className="text-blue-400" />
+                    <Shield size={20} className="text-white" />
                   </div>
                   <div>
-                    <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">{t.schedule.footerVersion}</p>
+                    <p className="text-[8px] font-black text-neutral-400 uppercase tracking-widest">{t.schedule.footerVersion}</p>
                     <p className="text-[10px] font-bold text-white">Academic Scheduler • 2026</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t.schedule.footerDocGenerated}</p>
+                  <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">{t.schedule.footerDocGenerated}</p>
                   <p className="text-xs font-black text-white">{format(new Date(), "dd/MM/yyyy • HH:mm")}</p>
                 </div>
               </div>
