@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/LanguageContext';
-import { useUser } from '@/lib/auth/UserContext';
 import { 
   Calendar, 
   Printer, 
@@ -16,8 +15,7 @@ import {
   Coffee,
   AlertCircle,
   User,
-  Book,
-  GraduationCap
+  Book
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
@@ -43,7 +41,6 @@ const BRAZIL_HOLIDAYS = [
 
 export default function HorarioPage() {
   const { t, language } = useI18n();
-  const { profile, isAdmin, isInstrutor, isAluno } = useUser();
   const [cursos, setCursos] = useState<any[]>([]);
   const [turmas, setTurmas] = useState<any[]>([]);
   const [disciplinas, setDisciplinas] = useState<any[]>([]);
@@ -53,14 +50,13 @@ export default function HorarioPage() {
   const [isPrinting, setIsPrinting] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
-  const [studentTurma, setStudentTurma] = useState<any>(null);
 
   // Editable Schedule State
   const [scheduleData, setScheduleData] = useState<Record<string, any>>({});
   const [isSaving, setIsSaving] = useState(false);
   
-  const selectedTurma = studentTurma || turmas.find(tu => tu.id === selectedTurmaId);
-  const selectedCurso = cursos.find(cu => cu.id === (selectedTurma?.curso_id || selectedCursoId));
+  const selectedTurma = turmas.find(tu => tu.id === selectedTurmaId);
+  const selectedCurso = cursos.find(cu => cu.id === selectedCursoId);
 
   // Fetch schedule data when turma changes
   const fetchSchedule = useMemo(() => async (turmaId: string) => {
@@ -88,13 +84,10 @@ export default function HorarioPage() {
 
   useEffect(() => {
     const run = async () => {
-      const idToFetch = isAluno ? studentTurma?.id : selectedTurmaId;
-      if (idToFetch) {
-        await fetchSchedule(idToFetch);
-      }
+      await fetchSchedule(selectedTurmaId);
     };
     run();
-  }, [selectedTurmaId, studentTurma, isAluno, fetchSchedule]);
+  }, [selectedTurmaId, fetchSchedule]);
 
   async function handleSave() {
     if (!selectedTurmaId) return;
@@ -197,29 +190,9 @@ export default function HorarioPage() {
       if (d) setDisciplinas(d);
       const { data: i } = await supabase.from('profiles').select('*').eq('role', 'instrutor');
       if (i) setInstrutores(i);
-
-      if (isAluno && profile?.email) {
-        try {
-          const { data: alunoData } = await supabase
-            .from('alunos')
-            .select('*, turmas(*)')
-            .eq('email', profile.email)
-            .single();
-          
-          if (alunoData && alunoData.turmas) {
-            const tData = Array.isArray(alunoData.turmas) ? alunoData.turmas[0] : alunoData.turmas;
-            setStudentTurma(tData);
-            setSelectedTurmaId(tData.id);
-          }
-        } catch (err) {
-          console.error("Error fetching alumno turma:", err);
-        }
-      }
     }
-    if (profile?.email || !isAluno) {
-      fetchData();
-    }
-  }, [profile, isAluno]);
+    fetchData();
+  }, []);
 
   const handlePrint = () => {
     window.print();
@@ -310,69 +283,65 @@ export default function HorarioPage() {
           <p className="text-slate-500 font-medium ml-11">{t.reportCard.subtitle}</p>
         </div>
         
-        {!isAluno && (
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleToggleEdit}
-              disabled={isSaving || !selectedTurmaId}
-              className={cn(
-                "flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-black uppercase tracking-widest transition-all shadow-lg disabled:opacity-50",
-                isEditMode 
-                  ? "bg-emerald-600 text-white shadow-emerald-200 hover:bg-emerald-700" 
-                  : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 shadow-slate-100"
-              )}
-            >
-              {isSaving ? <Loader2 size={18} className="animate-spin" /> : (isEditMode ? <Check size={18} /> : <Edit3 size={18} />)}
-              {isEditMode ? (language === 'pt' ? 'Salvar' : 'Save') : (language === 'pt' ? 'Editar' : 'Edit')}
-            </button>
-            
-            <button 
-              onClick={handlePrint}
-              disabled={isPrinting || isEditMode || !selectedTurmaId}
-              className="flex items-center gap-2 bg-[#0f172a] text-white px-5 py-2.5 rounded-2xl text-sm font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 disabled:opacity-50 disabled:grayscale"
-            >
-              {isPrinting ? <Loader2 size={18} className="animate-spin" /> : <Printer size={18} />}
-              {t.schedule.print}
-            </button>
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleToggleEdit}
+            disabled={isSaving || !selectedTurmaId}
+            className={cn(
+              "flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-black uppercase tracking-widest transition-all shadow-lg disabled:opacity-50",
+              isEditMode 
+                ? "bg-emerald-600 text-white shadow-emerald-200 hover:bg-emerald-700" 
+                : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 shadow-slate-100"
+            )}
+          >
+            {isSaving ? <Loader2 size={18} className="animate-spin" /> : (isEditMode ? <Check size={18} /> : <Edit3 size={18} />)}
+            {isEditMode ? (language === 'pt' ? 'Salvar' : 'Save') : (language === 'pt' ? 'Editar' : 'Edit')}
+          </button>
+          
+          <button 
+            onClick={handlePrint}
+            disabled={isPrinting || isEditMode || !selectedTurmaId}
+            className="flex items-center gap-2 bg-[#0f172a] text-white px-5 py-2.5 rounded-2xl text-sm font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 disabled:opacity-50 disabled:grayscale"
+          >
+            {isPrinting ? <Loader2 size={18} className="animate-spin" /> : <Printer size={18} />}
+            {t.schedule.print}
+          </button>
+        </div>
       </div>
 
       {/* Selectors */}
-      {!isAluno && (
-        <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm grid grid-cols-1 md:grid-cols-2 gap-6 print:hidden">
-          <div className="space-y-2">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 flex items-center gap-2">
-              <BookOpen size={12} /> {t.nav.courses}
-            </label>
-            <select
-              value={selectedCursoId}
-              onChange={(e) => { setSelectedCursoId(e.target.value); setSelectedTurmaId(''); }}
-              className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-4 focus:ring-blue-500/10 transition-all outline-none text-sm font-bold text-slate-800 appearance-none cursor-pointer"
-            >
-              <option value="">{t.courses.selectCourse}</option>
-              {cursos.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
-            </select>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 flex items-center gap-2">
-              <Calendar size={12} /> {t.nav.classes}
-            </label>
-            <select
-              value={selectedTurmaId}
-              onChange={(e) => setSelectedTurmaId(e.target.value)}
-              disabled={!selectedCursoId}
-              className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-4 focus:ring-blue-500/10 transition-all outline-none text-sm font-bold text-slate-800 appearance-none cursor-pointer disabled:opacity-50"
-            >
-              <option value="">{t.attendance.selectClass}</option>
-              {turmas.filter(tu => tu.curso_id === selectedCursoId || !selectedCursoId).map(tu => (
-                <option key={tu.id} value={tu.id}>{tu.nome}</option>
-              ))}
-            </select>
-          </div>
+      <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm grid grid-cols-1 md:grid-cols-2 gap-6 print:hidden">
+        <div className="space-y-2">
+          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 flex items-center gap-2">
+            <BookOpen size={12} /> {t.nav.courses}
+          </label>
+          <select
+            value={selectedCursoId}
+            onChange={(e) => { setSelectedCursoId(e.target.value); setSelectedTurmaId(''); }}
+            className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-4 focus:ring-blue-500/10 transition-all outline-none text-sm font-bold text-slate-800 appearance-none cursor-pointer"
+          >
+            <option value="">{t.courses.selectCourse}</option>
+            {cursos.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+          </select>
         </div>
-      )}
+
+        <div className="space-y-2">
+          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 flex items-center gap-2">
+            <Calendar size={12} /> {t.nav.classes}
+          </label>
+          <select
+            value={selectedTurmaId}
+            onChange={(e) => setSelectedTurmaId(e.target.value)}
+            disabled={!selectedCursoId}
+            className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-4 focus:ring-blue-500/10 transition-all outline-none text-sm font-bold text-slate-800 appearance-none cursor-pointer disabled:opacity-50"
+          >
+            <option value="">{t.attendance.selectClass}</option>
+            {turmas.filter(tu => tu.curso_id === selectedCursoId || !selectedCursoId).map(tu => (
+              <option key={tu.id} value={tu.id}>{tu.nome}</option>
+            ))}
+          </select>
+        </div>
+      </div>
 
       <AnimatePresence mode="wait">
         {selectedTurmaId ? (

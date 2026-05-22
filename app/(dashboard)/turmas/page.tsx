@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
+import { supabase } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
-import { Plus, Search, Layers as LayersIcon, Library, Calendar, Clock, MapPin, Pencil, Trash2, Loader2, CheckCircle2, RefreshCcw, Users, Mail, Phone, Building, Camera, MessageCircle, XCircle, FileText, X, GraduationCap, School, ChevronRight, Upload } from 'lucide-react';
+import { Plus, Search, Layers as LayersIcon, Library, Calendar, Clock, MapPin, Pencil, Trash2, Loader2, CheckCircle2, RefreshCcw, Users, Mail, Phone, Building, Camera, MessageCircle, XCircle, FileText, X, GraduationCap, School, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import Modal from '@/components/Modal';
@@ -22,8 +22,8 @@ function TurmasContent() {
   const pathname = usePathname();
   const categoryParam = searchParams.get('cat');
   
-  const { isAdmin, isInstrutor, isAluno } = useUser();
-  const isReadOnly = isAluno;
+  const { isAdmin } = useUser();
+  const isReadOnly = !isAdmin;
   const [turmas, setTurmas] = useState<any[]>([]);
   const [cursos, setCursos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -167,13 +167,6 @@ function TurmasContent() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!isSupabaseConfigured()) {
-      toast.error(language === 'pt' 
-        ? 'Supabase não configurado. Adicione as chaves API nos Segredos do AI Studio.' 
-        : 'Supabase not configured. Add API keys in AI Studio Secrets.');
-      return;
-    }
-
     setSavingStudent(true);
     try {
       const fileExt = file.name.split('.').pop();
@@ -193,11 +186,7 @@ function TurmasContent() {
       setCurrentAluno({ ...currentAluno, foto_url: publicUrl });
       toast.success(language === 'pt' ? 'Foto carregada!' : 'Photo uploaded!');
     } catch (err: any) {
-      const isNetworkError = err.message?.includes('fetch') || err.message?.includes('NetworkError');
-      const message = isNetworkError 
-        ? (language === 'pt' ? 'Erro de rede. Verifique sua conexão ou se as chaves do Supabase estão corretas.' : 'Network error. Check your connection or if Supabase keys are correct.')
-        : (err.message || '');
-      toast.error(t.common.uploadError + ': ' + message);
+      toast.error(t.common.uploadError + ': ' + (err.message || ''));
     } finally {
       setSavingStudent(false);
     }
@@ -1080,45 +1069,17 @@ function TurmasContent() {
       >
         <form onSubmit={handleSaveStudent} className="space-y-4 max-h-[75vh] overflow-y-auto px-1">
           <div className="flex flex-col sm:flex-row gap-4 mb-4 pb-4 border-b border-slate-100">
-            <div className="flex-shrink-0 flex flex-col items-center gap-3">
-              <div className="relative group w-36 h-48 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 overflow-hidden text-center p-1 shadow-inner">
+            <div className="flex-shrink-0 flex flex-col items-center gap-2">
+              <div className="relative group cursor-pointer w-36 h-48 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 hover:border-blue-400 hover:text-blue-500 transition-all overflow-hidden text-center p-2 shadow-inner">
                 {currentAluno?.foto_url ? (
-                  <>
-                    <Image src={currentAluno.foto_url} alt="3x4" fill className="object-cover" sizes="144px" referrerPolicy="no-referrer" />
-                    <button 
-                      type="button"
-                      onClick={() => setCurrentAluno({ ...currentAluno, foto_url: '' })}
-                      className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 shadow-lg"
-                      title={t.common.delete}
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </>
+                  <Image src={currentAluno.foto_url} alt="3x4" fill className="object-cover" sizes="144px" referrerPolicy="no-referrer" />
                 ) : (
                   <>
                     <Camera size={24} strokeWidth={1.5} />
-                    <span className="text-[10px] font-bold uppercase mt-1 leading-tight">{t.students.photo} <br/> 3x4</span>
+                    <span className="text-[8px] font-bold uppercase mt-1">{t.students.photo}</span>
                   </>
                 )}
-                {savingStudent && (
-                  <div className="absolute inset-0 bg-white/60 flex items-center justify-center backdrop-blur-[1px]">
-                    <Loader2 size={24} className="animate-spin text-blue-600" />
-                  </div>
-                )}
-              </div>
-              
-              <div className="flex flex-col w-full gap-2">
-                <label className="flex items-center justify-center gap-2 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-[9px] font-black uppercase tracking-wider cursor-pointer transition-all border border-slate-200/50">
-                  <Upload size={14} />
-                  {language === 'pt' ? 'Upload Arquivo' : 'File Upload'}
-                  <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
-                </label>
-                
-                <label className="flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-[9px] font-black uppercase tracking-wider cursor-pointer transition-all shadow-md shadow-blue-100">
-                  <Camera size={14} />
-                  {language === 'pt' ? 'Tirar Foto (Câmera)' : 'Take Photo (Camera)'}
-                  <input type="file" accept="image/*" capture="environment" onChange={handleFileUpload} className="hidden" />
-                </label>
+                <input type="file" accept="image/*" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
               </div>
             </div>
 

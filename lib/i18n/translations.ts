@@ -217,6 +217,7 @@ export const translations = {
       grade2: "Nota 2",
       module: "Módulo",
       saveAll: "Salvar Todas as Notas",
+      saveSuccess: "Notas salvas com sucesso!",
       selectTurma: "Selecione uma Turma",
       selectDisciplina: "Selecione uma Disciplina",
       noStudentsInTurma: "Nenhum aluno encontrado nesta turma.",

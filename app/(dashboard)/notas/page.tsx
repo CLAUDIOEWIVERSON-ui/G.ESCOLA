@@ -152,7 +152,14 @@ export default function NotasPage() {
   const handleBulkChange = (alunoId: string, modulo: number, value: string) => {
     if (disciplinas.length === 0) return;
     
-    const numValue = value === '' ? null : parseFloat(value);
+    let numValue = value === '' ? null : parseFloat(value);
+    if (numValue !== null) {
+      if (numValue < 0) {
+        numValue = 0;
+      } else if (settings?.nota_maxima !== undefined && numValue > settings.nota_maxima) {
+        numValue = settings.nota_maxima;
+      }
+    }
     const field = `nota${modulo}`;
     const targetDisciplinaId = disciplinas[0].id; // Use first discipline as main container
     
@@ -219,7 +226,23 @@ export default function NotasPage() {
     try {
       const dataToUpsert = Object.values(studentGrades).map(gradeData => {
         const cleaned = { ...gradeData };
-        if (!cleaned.id) delete cleaned.id;
+        delete cleaned.id;
+        
+        // Ensure values are numbers and validate constraints
+        for (let i = 1; i <= 5; i++) {
+          const val = cleaned[`nota${i}`];
+          if (val !== null && val !== undefined && val !== '') {
+            const parsedVal = typeof val === 'string' ? parseFloat(val) : val;
+            if (isNaN(parsedVal) || parsedVal < 0 || (settings?.nota_maxima && parsedVal > settings.nota_maxima)) {
+              throw new Error(language === 'pt' 
+                ? `A nota do módulo ${i} deve ser um número entre 0 e ${settings.nota_maxima || 10}.` 
+                : `Module ${i} grade must be a number between 0 and ${settings.nota_maxima || 10}.`);
+            }
+            cleaned[`nota${i}`] = parsedVal;
+          } else {
+            cleaned[`nota${i}`] = null;
+          }
+        }
         return cleaned;
       });
 
@@ -233,12 +256,15 @@ export default function NotasPage() {
 
       if (error) throw error;
       
+      const student = turmaAlunos.find(a => a.id === alunoId);
+      const studentTurmaId = student?.turma_id || selectedTurma;
+
       // Refresh
       const { data: newGrades } = await supabase
         .from('notas')
         .select('*')
         .eq('aluno_id', alunoId)
-        .eq('turma_id', selectedTurma);
+        .eq('turma_id', studentTurmaId);
       
       if (newGrades) {
         setBulkNotas(prev => {
@@ -268,7 +294,23 @@ export default function NotasPage() {
 
       const dataToUpsert = allGrades.map(e => {
         const cleaned = { ...e };
-        if (!cleaned.id) delete cleaned.id;
+        delete cleaned.id;
+        
+        // Ensure values are numbers and validate constraints
+        for (let i = 1; i <= 5; i++) {
+          const val = cleaned[`nota${i}`];
+          if (val !== null && val !== undefined && val !== '') {
+            const parsedVal = typeof val === 'string' ? parseFloat(val) : val;
+            if (isNaN(parsedVal) || parsedVal < 0 || (settings?.nota_maxima && parsedVal > settings.nota_maxima)) {
+              throw new Error(language === 'pt' 
+                ? `A nota do módulo ${i} deve ser um número entre 0 e ${settings.nota_maxima || 10}.` 
+                : `Module ${i} grade must be a number between 0 and ${settings.nota_maxima || 10}.`);
+            }
+            cleaned[`nota${i}`] = parsedVal;
+          } else {
+            cleaned[`nota${i}`] = null;
+          }
+        }
         return cleaned;
       });
 
@@ -279,7 +321,7 @@ export default function NotasPage() {
         });
 
       if (error) throw error;
-      toast.success(t.attendance.saveSuccess);
+      toast.success(t.grades.saveSuccess);
     } catch (err: any) {
       toast.error(err.message);
     } finally {
@@ -389,7 +431,7 @@ export default function NotasPage() {
                     <th className="px-3 lg:px-6 py-4 text-center bg-blue-50/50 text-blue-900 border-l border-slate-100">{t.reportCard.average}</th>
                     <th className="px-3 lg:px-6 py-4 text-center border-l border-slate-100">{t.reportCard.status}</th>
                     <th className="px-3 lg:px-6 py-4 text-center border-l border-slate-100">Pgto</th>
-                    <th className="px-2 lg:px-6 py-4 border-l border-slate-100 rounded-tr-2xl"></th>
+                    <th className="px-2 lg:px-6 py-4 border-l border-slate-100 rounded-tr-2xl text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t.common.save}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
@@ -475,6 +517,12 @@ export default function NotasPage() {
                                 placeholder="-"
                                 value={gradeData[`nota${m}`] ?? ''}
                                 onChange={(e) => handleBulkChange(aluno.id, m, e.target.value)}
+                                onBlur={() => saveStudent(aluno.id)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    saveStudent(aluno.id);
+                                  }
+                                }}
                                 className="w-16 h-10 text-center bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-sm font-bold font-mono transition-all"
                               />
                             </td>
