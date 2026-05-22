@@ -40,6 +40,26 @@ const BRAZIL_HOLIDAYS = [
   { date: '2026-12-25', name: 'Natal' },
 ];
 
+const getSubjectColor = (subjectId: string) => {
+  if (!subjectId) return { bg: '#ffffff', border: '#e2e8f0', text: '#1e293b', borderStyle: 'border-slate-100', dot: '#94a3b8' };
+  
+  let hash = 0;
+  for (let i = 0; i < subjectId.length; i++) {
+    hash = subjectId.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  
+  const palettes = [
+    { bg: '#eff6ff', border: '#cbd5e1', text: '#1e3a8a', borderStyle: 'border-blue-200', dot: '#367af6' },     // Soft Blue
+    { bg: '#ecfdf5', border: '#cbd5e1', text: '#064e3b', borderStyle: 'border-emerald-200', dot: '#10b981' }, // Soft Emerald
+    { bg: '#faf5ff', border: '#cbd5e1', text: '#4c1d95', borderStyle: 'border-purple-200', dot: '#a855f7' },  // Soft Purple
+    { bg: '#fff7ed', border: '#cbd5e1', text: '#7c2d12', borderStyle: 'border-orange-200', dot: '#f97316' },  // Soft Orange
+    { bg: '#f0fdfa', border: '#cbd5e1', text: '#115e59', borderStyle: 'border-teal-200', dot: '#14b8a6' },    // Soft Teal
+    { bg: '#fdf2f8', border: '#cbd5e1', text: '#831843', borderStyle: 'border-pink-200', dot: '#ec4899' },    // Soft Pink
+  ];
+  
+  return palettes[Math.abs(hash) % palettes.length];
+};
+
 export default function HorarioPage() {
   const { t, language } = useI18n();
   const [cursos, setCursos] = useState<any[]>([]);
@@ -279,9 +299,14 @@ export default function HorarioPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <style jsx global>{`
+    <div className="space-y-6 col-print-style">
+      <style dangerouslySetInnerHTML={{ __html: `
         @media print {
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
+          }
           @page { 
             size: A4 portrait; 
             margin: 0;
@@ -304,7 +329,6 @@ export default function HorarioPage() {
             padding: 20px !important;
             background: #0f172a !important;
             color: white !important;
-            -webkit-print-color-adjust: exact;
           }
           .print-content {
             padding: 10px !important;
@@ -316,10 +340,10 @@ export default function HorarioPage() {
           .no-print {
             display: none !important;
           }
-          .rounded-3xl, .rounded-2xl, .rounded-\[3rem\], .rounded-\[2.5rem\] {
+          .rounded-3xl, .rounded-2xl, .rounded-[3rem], .rounded-[2.5rem], .rounded-2xl {
             border-radius: 4px !important;
           }
-           table { 
+          table { 
             page-break-inside: auto;
           }
           tr { 
@@ -327,7 +351,7 @@ export default function HorarioPage() {
             page-break-after: auto;
           }
         }
-      `}</style>
+      `}} />
 
       {/* Header Panel */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 print:hidden">
@@ -413,9 +437,6 @@ export default function HorarioPage() {
             >
               {/* Specialized Header */}
               <div className="bg-slate-900 p-12 text-white relative overflow-hidden print-header">
-                <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/10 rounded-full -mr-48 -mt-48 blur-3xl" />
-                <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-600/10 rounded-full -ml-32 -mb-32 blur-3xl" />
-                
                 <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-12">
                   <div className="col-span-2 space-y-4">
                     <div className="flex items-center gap-3">
@@ -500,6 +521,7 @@ export default function HorarioPage() {
                             {weekDays.map(day => {
                               const cell = getCellData(slot.id, day.key);
                               const holiday = isHoliday(day.date);
+                              const cellColors = getSubjectColor(cell.subjectId);
                               
                               if (holiday) {
                                 return (
@@ -514,10 +536,21 @@ export default function HorarioPage() {
 
                               return (
                                 <td key={day.key} className="px-3 py-3 border-r border-slate-100 last:border-r-0">
-                                  <div className={cn(
-                                    "rounded-2xl p-4 h-full flex flex-col transition-all min-h-[140px]",
-                                    isEditMode ? "bg-white border-2 border-dashed border-blue-200" : "hover:bg-slate-50"
-                                  )}>
+                                  <div 
+                                    className={cn(
+                                      "rounded-2xl p-4 h-full flex flex-col transition-all min-h-[140px]",
+                                      isEditMode 
+                                        ? "bg-white border-2 border-dashed border-blue-200" 
+                                        : cell.subjectId 
+                                          ? "shadow-sm" 
+                                          : "hover:bg-slate-50/40"
+                                    )}
+                                    style={!isEditMode && cell.subjectId ? {
+                                      backgroundColor: cellColors.bg,
+                                      border: `1px solid ${cellColors.border}`,
+                                      color: cellColors.text,
+                                    } : undefined}
+                                  >
                                     {isEditMode ? (
                                       <div className="space-y-3">
                                         <select 
@@ -556,13 +589,13 @@ export default function HorarioPage() {
                                       cell.subjectId ? (
                                         <div className="space-y-2 flex-1 flex flex-col">
                                           <div className="space-y-1">
-                                            <div className="flex items-center gap-1.5 text-blue-600">
+                                            <div className="flex items-center gap-1.5" style={{ color: cellColors.text }}>
                                               <BookOpen size={10} />
                                               <span className="text-[11px] font-black leading-tight uppercase tracking-tight">
                                                 {disciplinas.find(d => d.id === cell.subjectId)?.nome || 'Disciplina'}
                                               </span>
                                             </div>
-                                            <div className="flex items-center gap-1.5 text-slate-500">
+                                            <div className="flex items-center gap-1.5 opacity-80" style={{ color: cellColors.text }}>
                                               <User size={10} />
                                               <span className="text-[10px] font-bold">
                                                 {instrutores.find(i => i.id === cell.instructorId)?.full_name || 'Instrutor'}
@@ -570,19 +603,19 @@ export default function HorarioPage() {
                                             </div>
                                           </div>
                                           
-                                          <div className="mt-auto pt-2 flex flex-col gap-1 border-t border-slate-100">
-                                            <div className="flex items-center gap-1 text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                                          <div className="mt-auto pt-2 flex flex-col gap-1 border-t opacity-70" style={{ borderColor: cellColors.border, color: cellColors.text }}>
+                                            <div className="flex items-center gap-1 text-[9px] font-black uppercase tracking-widest">
                                               <Book size={8} />
                                               <span>{selectedCurso?.nome || 'Curso'}</span>
                                             </div>
-                                            <div className="flex items-center gap-1.5 text-slate-400">
+                                            <div className="flex items-center gap-1.5">
                                               <MapPin size={10} />
                                               <span className="text-[9px] font-black uppercase tracking-tight">{cell.room || 'N/A'}</span>
                                             </div>
                                           </div>
                                         </div>
                                       ) : (
-                                        <div className="flex-1 flex items-center justify-center opacity-10">
+                                        <div className="flex-1 flex items-center justify-center opacity-10 text-slate-400">
                                           <Shield size={16} />
                                         </div>
                                       )
