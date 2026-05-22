@@ -1,1 +1,70 @@
 @import "tailwindcss";
+
+@media print {
+  /* Reset the canvas layout for standard paper printing */
+  html, body {
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    background: white !important;
+    color: black !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Cancel flexbox restrictions on parent containers to prevent content truncation/blank pages */
+  div.flex,
+  div.flex-1,
+  div[class*="min-h-screen"],
+  main {
+    display: block !important;
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    position: static !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  /* Hide navigation, sidebars, headers, bottom bars, and other print-unfriendly items */
+  aside,
+  header,
+  nav,
+  button,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Clean spacing for the printable main content area */
+  main {
+    padding: 1.5rem !important;
+  }
+
+  /* Improve page break behavior for layout items during printing */
+  .grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1.5rem !important;
+  }
+
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    page-break-inside: auto !important;
+  }
+
+  tr {
+    page-break-inside: avoid !important;
+    page-break-after: auto !important;
+  }
+
+  td, th {
+    font-size: 11px !important;
+  }
+}
+

@@ -19,9 +19,10 @@ import { motion, AnimatePresence } from 'motion/react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { toast } from 'sonner';
 
 export default function BoletimPage() {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const [loading, setLoading] = useState(false);
   const [cursos, setCursos] = useState<any[]>([]);
   const [turmas, setTurmas] = useState<any[]>([]);
@@ -37,6 +38,29 @@ export default function BoletimPage() {
   const [boletimData, setBoletimData] = useState<any[]>([]);
   const [classStats, setClassStats] = useState({ avg: 0, total: 0 });
   const [settings, setSettings] = useState({ media_aprovacao: 7, media_recuperacao: 5, frequencia_minima: 75, nota_maxima: 10 });
+
+  const handlePrint = () => {
+    try {
+      const isIframe = typeof window !== 'undefined' && window.self !== window.top;
+      
+      if (isIframe) {
+        toast.info(
+          language === 'pt' 
+            ? 'Atenção: Se a janela de impressão não abrir, use o botão no topo direito do visualizador para abrir o aplicativo em uma nova aba e imprimir.' 
+            : 'Notice: If the print dialog does not open, please open the application in a new tab by clicking the top-right button in the preview.'
+        );
+      }
+      
+      window.print();
+    } catch (error) {
+      console.error('Print failed:', error);
+      toast.error(
+        language === 'pt'
+          ? 'Não foi possível imprimir no visualizador integrado. Por favor, abra em uma nova aba.'
+          : 'Failed to open print dialog in the integrated preview. Please open in a new tab.'
+      );
+    }
+  };
 
   useEffect(() => {
     const fetchFilters = async () => {
@@ -61,7 +85,7 @@ export default function BoletimPage() {
 
   const handleSearch = async () => {
     if (!selectedTurma || !selectedDisciplina) {
-      alert(t.common.selectRequired);
+      toast.warning(t.common.selectRequired);
       return;
     }
 
@@ -102,7 +126,7 @@ export default function BoletimPage() {
         setClassStats({ avg, total: data.length });
       }
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }
@@ -162,10 +186,10 @@ export default function BoletimPage() {
             )}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 print:hidden">
           <button 
-            onClick={() => window.print()}
-            className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-all shadow-sm"
+            onClick={handlePrint}
+            className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-all shadow-sm cursor-pointer"
           >
             <Printer size={18} />
             {t.reportCard.print}
@@ -174,7 +198,7 @@ export default function BoletimPage() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm print:hidden">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
           <div>
             <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">
@@ -278,7 +302,7 @@ export default function BoletimPage() {
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden min-h-[400px]">
              <div className="p-4 border-b border-slate-100 bg-slate-50/30 flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-widest px-2">{t.common.finalResult}</span>
-                <div className="flex gap-2">
+                <div className="flex gap-2 print:hidden">
                    <button className="p-1.5 hover:bg-slate-100 rounded text-slate-400 transition-colors">
                       <Download size={16} />
                    </button>
