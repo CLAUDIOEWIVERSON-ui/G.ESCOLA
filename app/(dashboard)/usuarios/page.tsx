@@ -144,7 +144,6 @@ export default function UsuariosPage() {
       <div className="flex flex-col items-center justify-center h-[60vh] text-center p-8 bg-white rounded-2xl shadow-sm border border-slate-100">
         <ShieldAlert size={64} className="text-red-500 mb-4 opacity-20" />
         <h2 className="text-2xl font-bold text-slate-800 mb-2">{t.users.onlyAdminCanManage}</h2>
-        <p className="text-slate-500 max-w-sm">{t.users.readOnlyWarning}</p>
       </div>
     );
   }

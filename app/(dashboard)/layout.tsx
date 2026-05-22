@@ -344,12 +344,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </h1>
               <div className="flex items-center gap-2 mt-1">
                 <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">{t.auth.term}</p>
-                {isReadOnly && (
-                  <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-bold uppercase tracking-widest border border-amber-200 flex items-center gap-1 shadow-sm">
-                    <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse" />
-                    {t.users.readOnlyWarning}
-                  </span>
-                )}
               </div>
             </div>
           </div>
