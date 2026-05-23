@@ -237,53 +237,47 @@ export default function HorarioPage() {
     <div className="space-y-6 col-print-style">
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
+          /* Setup page size and margin */
+          @page { 
+            size: A4 ${printOrientation}; 
+            margin: 0mm;
+          }
+          
+          /* Force color printing across standard browsers */
           * {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
             color-adjust: exact !important;
           }
-          @page { 
-            size: A4 ${printOrientation}; 
-            margin: 5mm;
-          }
-          html, body { 
+
+          /* Hide all surrounding page layers, leaving only the targeted schedule print element visible */
+          html, body {
             background: white !important;
-            padding: 0 !important;
-            margin: 0 !important;
             width: 100% !important;
-            height: auto !important;
+            height: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
             overflow: visible !important;
           }
-          /* Hide all App Layout Shell UI elements */
-          aside, header, nav, button, .print\:hidden, .no-print {
-            display: none !important;
-            width: 0 !important;
-            height: 0 !important;
-            overflow: hidden !important;
-            opacity: 0 !important;
+
+          body * {
             visibility: hidden !important;
           }
-          /* Neutralize container and parent restrictions */
-          main, 
-          div[class*="bg-slate-950"], 
-          div[class*="flex-1"], 
-          .col-print-style,
-          .col-print-style > * {
-            display: block !important;
-            position: relative !important;
-            width: 100% !important;
-            max-width: none !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            border: none !important;
-            box-shadow: none !important;
-            overflow: visible !important;
-            height: auto !important;
-            min-height: 0 !important;
+
+          /* Render the exact target container and its inner nodes */
+          .print-container,
+          .print-container * {
+            visibility: visible !important;
           }
+
+          /* Pin the schedule directly at top-left to avoid empty pages or massive spacing leaks */
           .print-container {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
             width: 100% !important;
             max-width: 100% !important;
+            height: auto !important;
             margin: 0 !important;
             padding: 0 !important;
             border: none !important;
@@ -292,70 +286,198 @@ export default function HorarioPage() {
             display: flex !important;
             flex-direction: column !important;
             background: white !important;
-            page-break-after: avoid !important;
-            page-break-inside: avoid !important;
           }
-          .print-container, .print-container * {
-            border-radius: 0 !important; /* Pristine flat borders for clean document look */
-          }
-          table { 
-            page-break-inside: avoid !important;
-            width: 100% !important;
-            border-collapse: collapse !important;
-          }
+
+          /* Avoid dividing rows and tables weirdly across pages */
           tr { 
             page-break-inside: avoid !important; 
             page-break-after: auto !important;
           }
-          
-          /* Fine-tune padding and heights according to selected printOrientation */
+          table {
+            page-break-inside: avoid !important;
+            width: 100% !important;
+            border-collapse: collapse !important;
+          }
+
+          .print-container {
+            border-radius: 0 !important;
+          }
+          .print-container * {
+            border-radius: 0 !important;
+          }
+          .print-header {
+            border-bottom: 2px solid #000000 !important;
+          }
+
+          /* Portrait or Landscape specific layout scaling and sizing */
           ${printOrientation === 'landscape' ? `
-            .print-header {
-              padding: 16px 24px !important;
-            }
-            .print-content {
-              padding: 4px !important;
-            }
-            .print-content td, .print-content th {
-              padding: 4px 6px !important;
-            }
-            .print-content .min-h-\\[140px\\] {
-              min-height: 80px !important;
-              padding: 6px 8px !important;
-            }
-            .print-content .py-8 {
-              padding-top: 4px !important;
-              padding-bottom: 4px !important;
-            }
+            /* LANDSCAPE PRESENTATION */
             .print-container {
-              max-height: 195mm !important;
+              padding: 8mm 10mm !important;
+              box-sizing: border-box !important;
+              height: 210mm !important;
+              max-height: 210mm !important;
+              justify-content: space-between !important;
             }
-          ` : `
             .print-header {
-              padding: 12px 16px !important;
+              padding: 14px 20px !important;
+              background-color: #000000 !important;
+              color: #ffffff !important;
+            }
+            .print-header h2 {
+              font-size: 26px !important;
+              line-height: 1.1 !important;
             }
             .print-content {
+              padding: 0 !important;
+              background: white !important;
+              margin-top: 8px !important;
+              margin-bottom: 8px !important;
+            }
+            .print-content th {
+              padding: 6px 4px !important;
+              background-color: #f8fafc !important;
+              border-bottom: 2px solid #cbd5e1 !important;
+            }
+            .print-content th span {
+              font-size: 9px !important;
+            }
+            .print-content td {
               padding: 2px !important;
+              height: auto !important;
             }
-            .print-content td, .print-content th {
-              padding: 2px 2px !important;
+            /* First/Time column scaling */
+            .print-content td:first-child {
+              padding: 2px !important;
+              width: 70px !important;
             }
+            .print-content td:first-child div {
+              font-size: 10px !important;
+            }
+            /* Grid schedule cards inside td elements */
             .print-content .min-h-\\[140px\\] {
-              min-height: 60px !important;
-              padding: 4px 2px !important;
+              min-height: 55px !important;
+              height: 55px !important;
+              padding: 4px 6px !important;
+              border-radius: 4px !important;
+              background-color: #f8fafc !important;
+              border: 1px solid #e2e8f0 !important;
             }
-            .print-content .py-8 {
-              padding-top: 2px !important;
-              padding-bottom: 2px !important;
-            }
-            .print-container {
-              max-height: 285mm !important;
-            }
-            .print-content span, .print-content p, .print-content select, .print-content div {
+            .print-content .min-h-\\[140px\\] span,
+            .print-content .min-h-\\[140px\\] p,
+            .print-content .min-h-\\[140px\\] div {
               font-size: 8px !important;
               line-height: 1.1 !important;
             }
+            .print-content .min-h-\\[140px\\] svg {
+              width: 8px !important;
+              height: 8px !important;
+            }
+            /* Interval/Lunch slot compact presentation */
+            .print-content tr[class*="bg-slate-50"] td {
+              padding: 3px !important;
+            }
+            .print-content tr[class*="bg-slate-50"] span {
+              font-size: 8px !important;
+              letter-spacing: 0.3em !important;
+            }
+          ` : `
+            /* PORTRAIT PRESENTATION */
+            .print-container {
+              padding: 10mm 12mm !important;
+              box-sizing: border-box !important;
+              height: 297mm !important;
+              max-height: 297mm !important;
+              justify-content: space-between !important;
+            }
+            .print-header {
+              padding: 18px 24px !important;
+              background-color: #000000 !important;
+              color: #ffffff !important;
+            }
+            .print-header h2 {
+              font-size: 32px !important;
+              line-height: 1.1 !important;
+            }
+            .print-content {
+              padding: 0 !important;
+              background: white !important;
+              margin-top: 12px !important;
+              margin-bottom: 12px !important;
+            }
+            .print-content th {
+              padding: 8px 4px !important;
+              background-color: #f8fafc !important;
+              border-bottom: 2px solid #cbd5e1 !important;
+            }
+            .print-content th span {
+              font-size: 11px !important;
+            }
+            .print-content td {
+              padding: 3px !important;
+              height: auto !important;
+            }
+            /* First/Time column scaling */
+            .print-content td:first-child {
+              padding: 3px !important;
+              width: 85px !important;
+            }
+            .print-content td:first-child div {
+              font-size: 11px !important;
+            }
+            /* Grid schedule cards inside td elements */
+            .print-content .min-h-\\[140px\\] {
+              min-height: 85px !important;
+              height: 85px !important;
+              padding: 6px 8px !important;
+              border-radius: 4px !important;
+              background-color: #f8fafc !important;
+              border: 1px solid #e2e8f0 !important;
+            }
+            .print-content .min-h-\\[140px\\] span,
+            .print-content .min-h-\\[140px\\] p,
+            .print-content .min-h-\\[140px\\] div {
+              font-size: 9px !important;
+              line-height: 1.2 !important;
+            }
+            .print-content .min-h-\\[140px\\] svg {
+              width: 10px !important;
+              height: 10px !important;
+            }
+            /* Interval/Lunch slot compact presentation */
+            .print-content tr[class*="bg-slate-50"] td {
+              padding: 4px !important;
+            }
+            .print-content tr[class*="bg-slate-50"] span {
+              font-size: 9px !important;
+              letter-spacing: 0.4em !important;
+            }
           `}
+
+          /* Black header/footer block elements */
+          .print-header, .print-header * {
+            background-color: #000000 !important;
+            color: #ffffff !important;
+          }
+          .print-header span, .print-header p, .print-header h2 {
+            color: #ffffff !important;
+          }
+
+          /* Ensure layout fonts look crisp and color adjustments are accurate */
+          .print-content .text-neutral-950,
+          .print-content .text-slate-800 {
+            color: #000000 !important;
+            font-weight: 800 !important;
+          }
+          .print-content .text-neutral-500,
+          .print-content .text-slate-600 {
+            color: #334155 !important;
+            font-weight: 600 !important;
+          }
+          .print-content .text-neutral-400,
+          .print-content .text-slate-400 {
+            color: #64748b !important;
+          }
         }
       `}} />
 
