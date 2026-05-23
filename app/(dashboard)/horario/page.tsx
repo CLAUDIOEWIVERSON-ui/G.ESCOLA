@@ -315,9 +315,9 @@ export default function HorarioPage() {
             .print-container {
               padding: 8mm 10mm !important;
               box-sizing: border-box !important;
-              height: 210mm !important;
+              height: auto !important;
               max-height: 210mm !important;
-              justify-content: space-between !important;
+              justify-content: flex-start !important;
             }
             .print-header {
               padding: 14px 20px !important;
@@ -386,9 +386,9 @@ export default function HorarioPage() {
             .print-container {
               padding: 10mm 12mm !important;
               box-sizing: border-box !important;
-              height: 297mm !important;
+              height: auto !important;
               max-height: 297mm !important;
-              justify-content: space-between !important;
+              justify-content: flex-start !important;
             }
             .print-header {
               padding: 18px 24px !important;
@@ -651,10 +651,33 @@ export default function HorarioPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {slots.map((slot) => {
+                      {slots.map((slot, index) => {
+                        const isClassFilled = (slotId: string) => {
+                          return weekDays.some(day => {
+                            const cell = getCellData(slotId, day.key);
+                            return !!cell.subjectId;
+                          });
+                        };
+
+                        let printClass = "";
+                        if (slot.type === 'class') {
+                          const filled = isClassFilled(slot.id);
+                          if (!filled) {
+                            printClass = "print:hidden no-print";
+                          }
+                        } else if (slot.type === 'interval') {
+                          const prevSlot = slots[index - 1];
+                          const nextSlot = slots[index + 1];
+                          const prevFilled = prevSlot ? isClassFilled(prevSlot.id) : false;
+                          const nextFilled = nextSlot ? isClassFilled(nextSlot.id) : false;
+                          if (!prevFilled && !nextFilled) {
+                            printClass = "print:hidden no-print";
+                          }
+                        }
+
                         if (slot.type === 'interval') {
                           return (
-                            <tr key={slot.id} className="bg-slate-50/50 border-b border-slate-100">
+                            <tr key={slot.id} className={cn("bg-slate-50/50 border-b border-slate-100", printClass)}>
                               <td className="px-4 py-1.5 text-center border-r border-slate-200">
                                 <span className="text-[9px] font-black text-slate-300 italic">{slot.time}</span>
                               </td>
@@ -671,7 +694,7 @@ export default function HorarioPage() {
                         }
 
                         return (
-                          <tr key={slot.id} className="border-b border-slate-100 last:border-b-0 print-row">
+                          <tr key={slot.id} className={cn("border-b border-slate-100 last:border-b-0 print-row", printClass)}>
                             <td className="px-4 py-8 text-center border-r border-slate-200 bg-slate-50/20">
                               <div className="text-xs font-black text-slate-800 leading-none">{slot.time}</div>
                             </td>
