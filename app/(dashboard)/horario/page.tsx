@@ -15,9 +15,7 @@ import {
   Coffee,
   AlertCircle,
   User,
-  Book,
-  ChevronLeft,
-  ChevronRight
+  Book
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
@@ -126,11 +124,10 @@ export default function HorarioPage() {
       setIsEditMode(true);
     }
   };
-  
-  const [selectedWeekDate, setSelectedWeekDate] = useState<Date>(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
-  const weekStart = useMemo(() => startOfWeek(selectedWeekDate, { weekStartsOn: 1 }), [selectedWeekDate]);
-  const weekEnd = useMemo(() => endOfWeek(selectedWeekDate, { weekStartsOn: 1 }), [selectedWeekDate]);
-  const weekPeriodFormatted = useMemo(() => `${format(weekStart, "dd/MM")} a ${format(weekEnd, "dd/MM/yyyy")}`, [weekStart, weekEnd]);
+  const today = new Date();
+  const weekStart = startOfWeek(today, { weekStartsOn: 1 });
+  const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
+  const weekPeriodFormatted = `${format(weekStart, "dd/MM")} a ${format(weekEnd, "dd/MM/yyyy")}`;
 
   // Generate 50min class + 10min break slots from 08:00 to 16:00
   const slots = useMemo(() => {
@@ -212,31 +209,18 @@ export default function HorarioPage() {
     }
   };
 
-  const getCellData = (slotId: string, dayKey: string) => {
-    const weekKey = format(weekStart, 'yyyy-MM-dd');
-    const keyWithWeek = `${weekKey}-${slotId}-${dayKey}`;
-    // Return week-specific data if it exists
-    if (scheduleData[keyWithWeek]) {
-      return scheduleData[keyWithWeek];
-    }
-    // Backward compatibility: fallback to legacy data without week prefix
-    return scheduleData[`${slotId}-${dayKey}`] || { subjectId: '', instructorId: '', room: '', courseId: '' };
+  const updateCell = (slotId: string, dayKey: string, field: string, value: string) => {
+    setScheduleData(prev => ({
+      ...prev,
+      [`${slotId}-${dayKey}`]: {
+        ...prev[`${slotId}-${dayKey}`],
+        [field]: value
+      }
+    }));
   };
 
-  const updateCell = (slotId: string, dayKey: string, field: string, value: string) => {
-    const weekKey = format(weekStart, 'yyyy-MM-dd');
-    const keyWithWeek = `${weekKey}-${slotId}-${dayKey}`;
-    setScheduleData(prev => {
-      // Find base/previous value to start from
-      const baseValue = prev[keyWithWeek] || prev[`${slotId}-${dayKey}`] || { subjectId: '', instructorId: '', room: '', courseId: '' };
-      return {
-        ...prev,
-        [keyWithWeek]: {
-          ...baseValue,
-          [field]: value
-        }
-      };
-    });
+  const getCellData = (slotId: string, dayKey: string) => {
+    return scheduleData[`${slotId}-${dayKey}`] || { subjectId: '', instructorId: '', room: '', courseId: '' };
   };
 
   const filteredDisciplinas = useMemo(() => {
@@ -282,7 +266,7 @@ export default function HorarioPage() {
             height: 100% !important;
             margin: 0 !important;
             padding: 0 !important;
-            overflow: visible !important;
+            overflow: hidden !important;
             position: relative !important;
           }
 
@@ -317,9 +301,9 @@ export default function HorarioPage() {
             border: none !important;
           }
 
-          /* Pin the schedule directly at top-left of the page viewport */
+          /* Pin the schedule directly at top-left of the page viewport using fixed positioning */
           .print-container {
-            position: absolute !important;
+            position: fixed !important;
             left: 0 !important;
             top: 0 !important;
             width: 100% !important;
@@ -333,7 +317,9 @@ export default function HorarioPage() {
             flex-direction: column !important;
             background: white !important;
             box-sizing: border-box !important;
+            z-index: 99999999 !important;
             page-break-after: avoid !important;
+            page-break-before: avoid !important;
             page-break-inside: avoid !important;
           }
 
@@ -360,8 +346,8 @@ export default function HorarioPage() {
             /* LANDSCAPE PRESENTATION */
             .print-container {
               padding: 10mm 12mm !important;
-              height: 210mm !important;
-              max-height: 210mm !important;
+              height: 100% !important;
+              max-height: 100% !important;
               justify-content: flex-start !important;
             }
             .print-header {
@@ -431,8 +417,8 @@ export default function HorarioPage() {
             /* PORTRAIT PRESENTATION */
             .print-container {
               padding: 12mm 15mm !important;
-              height: 297mm !important;
-              max-height: 297mm !important;
+              height: 100% !important;
+              max-height: 100% !important;
               justify-content: flex-start !important;
             }
             .print-header {
@@ -593,7 +579,7 @@ export default function HorarioPage() {
       </div>
 
       {/* Selectors */}
-      <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-6 print:hidden">
+      <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm grid grid-cols-1 md:grid-cols-2 gap-6 print:hidden">
         <div className="space-y-2">
           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 flex items-center gap-2">
             <BookOpen size={12} /> {t.nav.courses}
@@ -623,44 +609,6 @@ export default function HorarioPage() {
               <option key={tu.id} value={tu.id}>{tu.nome}</option>
             ))}
           </select>
-        </div>
-
-        <div className="space-y-2">
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 flex items-center justify-between">
-            <span className="flex items-center gap-2"><Calendar size={12} /> {language === 'pt' ? 'Semana' : 'Week'}</span>
-            <button 
-              type="button"
-              onClick={() => setSelectedWeekDate(startOfWeek(new Date(), { weekStartsOn: 1 }))}
-              className="text-[9px] font-black text-blue-600 hover:text-blue-700 uppercase tracking-wider transition-colors cursor-pointer"
-              title={language === 'pt' ? 'Voltar para semana atual' : 'Back to current week'}
-            >
-              {language === 'pt' ? 'Semana Atual' : 'Current Week'}
-            </button>
-          </label>
-          <div className="flex items-center gap-1 bg-slate-50 rounded-2xl p-1.5 border border-slate-100 min-h-[56px]">
-            <button
-              type="button"
-              onClick={() => setSelectedWeekDate(prev => addDays(prev, -7))}
-              className="p-2 hover:bg-white active:scale-95 rounded-xl transition-all cursor-pointer text-slate-650 hover:text-slate-950 font-black border border-transparent hover:border-slate-100 hover:shadow-sm"
-              title={language === 'pt' ? 'Semana Anterior' : 'Previous Week'}
-            >
-              <ChevronLeft size={18} />
-            </button>
-            <div className="flex-1 text-center select-none">
-              <span className="text-xs font-black text-slate-800 block leading-tight">{weekPeriodFormatted}</span>
-              <span className="text-[9px] font-bold text-slate-400 block uppercase tracking-wide">
-                {format(weekStart, 'MMMM yyyy', { locale: ptBR })}
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={() => setSelectedWeekDate(prev => addDays(prev, 7))}
-              className="p-2 hover:bg-white active:scale-95 rounded-xl transition-all cursor-pointer text-slate-650 hover:text-slate-950 font-black border border-transparent hover:border-slate-100 hover:shadow-sm"
-              title={language === 'pt' ? 'Próxima Semana' : 'Next Week'}
-            >
-              <ChevronRight size={18} />
-            </button>
-          </div>
         </div>
       </div>
 
