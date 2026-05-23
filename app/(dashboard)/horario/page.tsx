@@ -339,8 +339,9 @@ export default function HorarioPage() {
             }
             .print-header {
               padding: 14px 20px !important;
-              background-color: #000000 !important;
-              color: #ffffff !important;
+              background-color: #ffffff !important;
+              color: #000000 !important;
+              border-bottom: 2px solid #e2e8f0 !important;
             }
             .print-header h2 {
               font-size: 26px !important;
@@ -409,8 +410,9 @@ export default function HorarioPage() {
             }
             .print-header {
               padding: 18px 24px !important;
-              background-color: #000000 !important;
-              color: #ffffff !important;
+              background-color: #ffffff !important;
+              color: #000000 !important;
+              border-bottom: 2px solid #e2e8f0 !important;
             }
             .print-header h2 {
               font-size: 32px !important;
@@ -471,13 +473,13 @@ export default function HorarioPage() {
             }
           `}
 
-          /* Black header/footer block elements */
+          /* White header/footer block elements */
           .print-header, .print-header * {
-            background-color: #000000 !important;
-            color: #ffffff !important;
+            background-color: #ffffff !important;
+            color: #000000 !important;
           }
           .print-header span, .print-header p, .print-header h2 {
-            color: #ffffff !important;
+            color: #000000 !important;
           }
 
           /* Ensure layout fonts look crisp and color adjustments are accurate */
@@ -610,26 +612,26 @@ export default function HorarioPage() {
               className="w-full max-w-[1200px] bg-white rounded-[3rem] shadow-2xl border border-slate-100 overflow-hidden flex flex-col font-sans mb-10 print-container"
             >
               {/* Specialized Header */}
-              <div className="bg-neutral-950 p-12 text-white relative overflow-hidden print-header border-b border-neutral-900">
+              <div className="bg-white p-12 text-slate-800 relative overflow-hidden print-header border-b border-slate-200">
                 <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-12">
                   <div className="col-span-2 space-y-4">
                     <div className="flex items-center gap-3">
-                      <div className="px-3 py-1 bg-white text-black rounded-lg text-[10px] font-black uppercase tracking-widest border border-white">
+                      <div className="px-3 py-1 bg-slate-900 text-white rounded-lg text-[10px] font-black uppercase tracking-widest border border-slate-900">
                         {t.nav.classes}
                       </div>
-                      <span className="text-neutral-500 font-bold">/</span>
-                      <span className="text-neutral-200 font-bold">{selectedCurso?.nome}</span>
+                      <span className="text-slate-400 font-bold">/</span>
+                      <span className="text-slate-600 font-bold">{selectedCurso?.nome}</span>
                     </div>
-                    <h2 className="text-5xl font-black tracking-tighter leading-none text-white animate-fade-in">
+                    <h2 className="text-5xl font-black tracking-tighter leading-none text-slate-900 animate-fade-in">
                       {selectedTurma?.nome}
                     </h2>
                   </div>
                   
                   <div className="flex flex-col md:items-end justify-center">
-                    <p className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em] mb-2">{t.schedule.period.toUpperCase()}</p>
-                    <div className="bg-neutral-900/80 border border-neutral-800 px-6 py-3 rounded-2xl inline-flex flex-col items-end shadow-sm">
-                      <span className="text-2xl font-black text-white">{weekPeriodFormatted}</span>
-                      <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">{format(weekStart, 'MMMM yyyy', { locale: ptBR })}</span>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{t.schedule.period.toUpperCase()}</p>
+                    <div className="bg-slate-50 border border-slate-200 px-6 py-3 rounded-2xl inline-flex flex-col items-end shadow-sm">
+                      <span className="text-2xl font-black text-slate-800">{weekPeriodFormatted}</span>
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{format(weekStart, 'MMMM yyyy', { locale: ptBR })}</span>
                     </div>
                   </div>
                 </div>
@@ -819,24 +821,22 @@ export default function HorarioPage() {
                     </tbody>
                   </table>
                 </div>
-              </div>
-
-              {/* Footer */}
-              <div className="px-12 py-8 bg-black flex items-center justify-between print-header border-t border-neutral-900">
+                         {/* Footer */}
+              <div className="px-12 py-8 bg-white flex items-center justify-between print-header border-t border-slate-200">
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
-                    <Shield size={20} className="text-white" />
+                  <div className="w-10 h-10 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center">
+                    <Shield size={20} className="text-slate-700" />
                   </div>
                   <div>
-                    <p className="text-[8px] font-black text-neutral-400 uppercase tracking-widest">{t.schedule.footerVersion}</p>
-                    <p className="text-[10px] font-bold text-white">Academic Scheduler • 2026</p>
+                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{t.schedule.footerVersion}</p>
+                    <p className="text-[10px] font-bold text-slate-800">Academic Scheduler • 2026</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">{t.schedule.footerDocGenerated}</p>
-                  <p className="text-xs font-black text-white">{format(new Date(), "dd/MM/yyyy • HH:mm")}</p>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.schedule.footerDocGenerated}</p>
+                  <p className="text-xs font-black text-slate-800">{format(new Date(), "dd/MM/yyyy • HH:mm")}</p>
                 </div>
-              </div>
+              </div>         </div>
             </div>
           </motion.div>
         ) : (
