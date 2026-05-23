@@ -246,63 +246,116 @@ export default function HorarioPage() {
             size: A4 ${printOrientation}; 
             margin: 5mm;
           }
-          body { 
+          html, body { 
             background: white !important;
             padding: 0 !important;
             margin: 0 !important;
+            width: 100% !important;
+            height: auto !important;
+            overflow: visible !important;
+          }
+          /* Hide all App Layout Shell UI elements */
+          aside, header, nav, button, .print\:hidden, .no-print {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
+            overflow: hidden !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+          }
+          /* Neutralize container and parent restrictions */
+          main, 
+          div[class*="bg-slate-950"], 
+          div[class*="flex-1"], 
+          .col-print-style,
+          .col-print-style > * {
+            display: block !important;
+            position: relative !important;
+            width: 100% !important;
+            max-width: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: none !important;
+            box-shadow: none !important;
+            overflow: visible !important;
+            height: auto !important;
+            min-height: 0 !important;
           }
           .print-container {
             width: 100% !important;
-            max-width: none !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
             border: none !important;
             border-radius: 0 !important;
             box-shadow: none !important;
-            margin: 0 !important;
-            padding: 0 !important;
-          }
-          .print-header {
-            padding: 24px !important;
-            background: #000000 !important;
-            color: white !important;
-          }
-          .print-content {
-            padding: 8px !important;
+            display: flex !important;
+            flex-direction: column !important;
             background: white !important;
+            page-break-after: avoid !important;
+            page-break-inside: avoid !important;
           }
-          .print-row {
-            break-inside: avoid;
-          }
-          .no-print {
-            display: none !important;
-          }
-          .rounded-3xl, .rounded-2xl, .rounded-[3rem], .rounded-[2.5rem] {
-            border-radius: 4px !important;
+          .print-container, .print-container * {
+            border-radius: 0 !important; /* Pristine flat borders for clean document look */
           }
           table { 
-            page-break-inside: auto;
+            page-break-inside: avoid !important;
             width: 100% !important;
+            border-collapse: collapse !important;
           }
           tr { 
-            page-break-inside: avoid; 
-            page-break-after: auto;
+            page-break-inside: avoid !important; 
+            page-break-after: auto !important;
           }
-          .print-content td, .print-content th {
-            padding: ${printOrientation === 'portrait' ? '4px 2px' : '10px 6px'} !important;
-          }
-          .print-content .min-h-\\[140px\\] {
-            min-height: ${printOrientation === 'portrait' ? '70px' : '110px'} !important;
-            padding: ${printOrientation === 'portrait' ? '4px' : '12px'} !important;
-          }
-          .print-content .py-8 {
-            padding-top: ${printOrientation === 'portrait' ? '8px' : '16px'} !important;
-            padding-bottom: ${printOrientation === 'portrait' ? '8px' : '16px'} !important;
-          }
-          ${printOrientation === 'portrait' ? `
+          
+          /* Fine-tune padding and heights according to selected printOrientation */
+          ${printOrientation === 'landscape' ? `
+            .print-header {
+              padding: 16px 24px !important;
+            }
+            .print-content {
+              padding: 4px !important;
+            }
+            .print-content td, .print-content th {
+              padding: 4px 6px !important;
+            }
+            .print-content .min-h-\\[140px\\] {
+              min-height: 80px !important;
+              padding: 6px 8px !important;
+            }
+            .print-content .py-8 {
+              padding-top: 4px !important;
+              padding-bottom: 4px !important;
+            }
+            .print-container {
+              max-height: 195mm !important;
+            }
+          ` : `
+            .print-header {
+              padding: 12px 16px !important;
+            }
+            .print-content {
+              padding: 2px !important;
+            }
+            .print-content td, .print-content th {
+              padding: 2px 2px !important;
+            }
+            .print-content .min-h-\\[140px\\] {
+              min-height: 60px !important;
+              padding: 4px 2px !important;
+            }
+            .print-content .py-8 {
+              padding-top: 2px !important;
+              padding-bottom: 2px !important;
+            }
+            .print-container {
+              max-height: 285mm !important;
+            }
             .print-content span, .print-content p, .print-content select, .print-content div {
               font-size: 8px !important;
               line-height: 1.1 !important;
             }
-          ` : ''}
+          `}
         }
       `}} />
 
