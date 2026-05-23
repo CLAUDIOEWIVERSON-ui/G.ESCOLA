@@ -29,7 +29,7 @@ import { cn } from '@/lib/utils';
 import { useUser } from '@/lib/auth/UserContext';
 import { ProximityAlert } from '@/components/ProximityAlert';
 import { EventMarquee } from '@/components/EventMarquee';
-import { SidebarClock } from '@/components/SidebarClock';
+import { HeaderClock } from '@/components/HeaderClock';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -92,16 +92,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const navItems = [
     { name: t.nav.dashboard, icon: LayoutDashboard, path: '/dashboard' },
     { name: t.nav.courses, icon: BookOpen, path: '/cursos' },
-    { 
-      name: t.nav.classes, 
-      icon: Library, 
-      path: '/turmas',
-      subItems: [
-        { name: t.classes.categoryExpedito, path: '/turmas?cat=expedito' },
-        { name: t.classes.categoryEspecial, path: '/turmas?cat=especial' },
-        { name: t.classes.categoryCarreira, path: '/turmas?cat=carreira' },
-      ]
-    },
+    { name: t.nav.classes, icon: Library, path: '/turmas' },
     { name: t.nav.grades, icon: FileCheck, path: '/notas' },
     { name: t.nav.reportCard, icon: FileText, path: '/boletim' },
     { name: t.schedule.title, icon: Calendar, path: '/horario' },
@@ -142,11 +133,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           <div className="flex-1 flex flex-col min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar">
             <nav id="sidebar-nav" className="px-4 py-6 space-y-8">
-              {/* Clock Widget */}
-              <div className="px-2">
-                <SidebarClock collapsed={!sidebarOpen} />
-              </div>
-
               <div>
                 <div className={cn("text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4 px-3 flex items-center gap-2", !sidebarOpen && "opacity-0 invisible h-0")}>
                   <div className="w-1 h-1 rounded-full bg-blue-500" />
@@ -353,7 +339,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4 md:gap-6">
             <div className="hidden md:flex items-center gap-2">
                <div className="relative">
                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -364,6 +350,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                  />
                </div>
             </div>
+            <HeaderClock />
             {/* Language toggle removed as per user request */}
           </div>
         </header>

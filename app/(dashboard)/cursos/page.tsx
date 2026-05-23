@@ -45,6 +45,7 @@ export default function CursosPage() {
   const [saving, setSaving] = useState(false);
   const [editingCurso, setEditingCurso] = useState<Curso | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
   
   // Discipline Management State
   const [manageDisciplinasCurso, setManageDisciplinasCurso] = useState<Curso | null>(null);
@@ -73,6 +74,8 @@ export default function CursosPage() {
       ativo: true,
       qtd_modulos: 4,
       categoria: null,
+      internacional: false,
+      localizacao: '',
     }
   });
 
@@ -95,7 +98,9 @@ export default function CursosPage() {
           ...item,
           duracao: val || 1,
           duracao_unidade: (units[unitIdx] || 'ano') as any,
-          qtd_modulos: item.qtd_modulos || 4
+          qtd_modulos: item.qtd_modulos || 4,
+          internacional: !!item.internacional,
+          localizacao: item.localizacao || ''
         };
       });
       setCursos(mappedData);
@@ -125,7 +130,9 @@ export default function CursosPage() {
         ano_inicio: encodedDuration, // stores both value and unit encoded
         ativo: data.ativo,
         qtd_modulos: data.qtd_modulos,
-        categoria: data.categoria
+        categoria: data.categoria,
+        internacional: data.internacional || false,
+        localizacao: data.localizacao || ''
       };
 
       if (editingCurso) {
@@ -400,36 +407,74 @@ export default function CursosPage() {
     }
   };
 
-  const filteredCursos = cursos.filter(c => 
-    c.nome.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredCursos = cursos.filter(c => {
+    const matchesSearch = c.nome.toLowerCase().includes(searchTerm.toLowerCase());
+    if (activeCategory === 'Exterior') {
+      return matchesSearch && c.internacional === true;
+    }
+    const matchesCategory = !activeCategory || 
+      (c.categoria && c.categoria.toLowerCase() === activeCategory.toLowerCase());
+    return matchesSearch && matchesCategory;
+  });
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{t.courses.title}</h1>
           <p className="text-slate-500 text-sm">{language === 'pt' ? 'Visualize e gerencie os cursos oferecidos pela instituição.' : 'View and manage the courses offered by the institution.'}</p>
         </div>
-        {!isReadOnly && (
-          <div className="flex gap-2">
-            <button 
-              onClick={() => setIsBulkModalOpen(true)}
-              className="flex items-center gap-2 bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-all shadow-sm"
-            >
-              <FileText size={18} />
-              {t.common.bulkAdd}
-            </button>
-            <button 
-              id="add-course-btn"
-              onClick={() => { reset(); setEditingCurso(null); setModalOpen(true); }}
-              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-all shadow-sm shadow-blue-100"
-            >
-              <Plus size={18} />
-              {t.courses.add}
-            </button>
+        
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full xl:w-auto">
+          {/* Cursos Category Buttons */}
+          <div className="flex items-center bg-white p-1 rounded-xl shadow-sm border border-slate-200 overflow-x-auto hide-scrollbar">
+            {([null, 'Expedito', 'Especial', 'Carreira', 'Exterior'] as const).map((cat) => (
+              <button
+                key={cat || 'todos'}
+                type="button"
+                onClick={() => setActiveCategory(cat)}
+                className={cn(
+                  "flex-1 sm:flex-none px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap cursor-pointer",
+                  activeCategory === cat 
+                    ? "bg-blue-600 text-white shadow-lg shadow-blue-200" 
+                    : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
+                )}
+              >
+                {cat === null 
+                  ? (language === 'pt' ? 'Todos' : 'All')
+                  : cat === 'Expedito' 
+                    ? t.courses.categoryExpedito 
+                    : cat === 'Especial' 
+                      ? t.courses.categoryEspecial 
+                      : cat === 'Carreira'
+                        ? t.courses.categoryCarreira
+                        : t.courses.categoryExterior}
+              </button>
+            ))}
           </div>
-        )}
+
+          {!isReadOnly && (
+            <div className="flex gap-2 justify-end">
+              <button 
+                type="button"
+                onClick={() => setIsBulkModalOpen(true)}
+                className="flex items-center gap-2 bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-all shadow-sm whitespace-nowrap"
+              >
+                <FileText size={18} />
+                {t.common.bulkAdd}
+              </button>
+              <button 
+                id="add-course-btn"
+                type="button"
+                onClick={() => { reset(); setEditingCurso(null); setModalOpen(true); }}
+                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-all shadow-sm shadow-blue-100 whitespace-nowrap"
+              >
+                <Plus size={18} />
+                {t.courses.add}
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -473,6 +518,16 @@ export default function CursosPage() {
                       {curso.categoria && (
                         <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-bold uppercase rounded-md border border-blue-100">
                           {curso.categoria}
+                        </span>
+                      )}
+                      {curso.internacional && (
+                        <span className="px-2 py-0.5 bg-amber-50 text-amber-600 text-[10px] font-bold uppercase rounded-md border border-amber-100">
+                          {language === 'pt' ? 'Exterior' : 'Abroad'}
+                        </span>
+                      )}
+                      {curso.localizacao && (
+                        <span className="text-xs text-slate-400 font-medium whitespace-nowrap">
+                          ({curso.localizacao})
                         </span>
                       )}
                     </div>
@@ -631,6 +686,30 @@ export default function CursosPage() {
                     <option value="Especial">{t.courses.categoryEspecial}</option>
                     <option value="Carreira">{t.courses.categoryCarreira}</option>
                   </select>
+                </div>
+
+                <div className="flex items-center gap-2 py-2">
+                  <input
+                    id="checkbox-internacional"
+                    type="checkbox"
+                    {...register('internacional')}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded cursor-pointer"
+                  />
+                  <label htmlFor="checkbox-internacional" className="text-sm font-semibold text-slate-700 cursor-pointer">
+                    {language === 'pt' ? 'Curso realizado no Exterior (Internacional)' : 'Course conducted Abroad (International)'}
+                  </label>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-sm font-semibold text-slate-700">
+                    {language === 'pt' ? 'Localização' : 'Location'}
+                  </label>
+                  <input
+                    type="text"
+                    {...register('localizacao')}
+                    placeholder={language === 'pt' ? 'Ex: Luanda, Paris, EaD' : 'E.g., Luanda, Paris, Remote'}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
+                  />
                 </div>
 
                 <div className="flex gap-3 pt-6">

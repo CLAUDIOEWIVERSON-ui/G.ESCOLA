@@ -8,6 +8,8 @@ export const cursoSchema = z.object({
   ativo: z.boolean(),
   qtd_modulos: z.number().int().min(1).max(5),
   categoria: z.enum(['Expedito', 'Especial', 'Carreira']).optional().nullable(),
+  internacional: z.boolean().optional(),
+  localizacao: z.string().optional().nullable(),
 });
 
 export const turmaSchema = z.object({
