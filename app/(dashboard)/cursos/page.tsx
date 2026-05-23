@@ -427,7 +427,7 @@ export default function CursosPage() {
         
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full xl:w-auto">
           {/* Cursos Category Buttons */}
-          <div className="flex items-center bg-white p-1 rounded-xl shadow-sm border border-slate-200 overflow-x-auto hide-scrollbar">
+          <div className="flex flex-wrap items-center bg-white p-1 rounded-xl shadow-sm border border-slate-200 gap-1">
             {([null, 'Expedito', 'Especial', 'Carreira', 'Exterior'] as const).map((cat) => (
               <button
                 key={cat || 'todos'}
@@ -458,7 +458,7 @@ export default function CursosPage() {
               <button 
                 type="button"
                 onClick={() => setIsBulkModalOpen(true)}
-                className="flex items-center gap-2 bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-all shadow-sm whitespace-nowrap"
+                className="flex items-center gap-2 bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-all shadow-sm whitespace-nowrap cursor-pointer"
               >
                 <FileText size={18} />
                 {t.common.bulkAdd}
@@ -467,7 +467,7 @@ export default function CursosPage() {
                 id="add-course-btn"
                 type="button"
                 onClick={() => { reset(); setEditingCurso(null); setModalOpen(true); }}
-                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-all shadow-sm shadow-blue-100 whitespace-nowrap"
+                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-all shadow-sm shadow-blue-100 whitespace-nowrap cursor-pointer"
               >
                 <Plus size={18} />
                 {t.courses.add}
@@ -477,115 +477,151 @@ export default function CursosPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center">
-          <div className="relative flex-1 max-w-sm">
+      <div className="space-y-4">
+        {/* Search Bar and Info Panel */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+          <div className="relative w-full sm:max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold" size={18} />
             <input
               type="text"
               placeholder={t.common.search}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900/5 focus:border-slate-900 text-sm"
+              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900/5 focus:border-slate-900 focus:bg-white text-sm transition-all"
             />
+          </div>
+          <div className="text-xs text-slate-400 font-bold uppercase tracking-wider">
+            {language === 'pt' 
+              ? `${filteredCursos.length} ${filteredCursos.length === 1 ? 'curso encontrado' : 'cursos encontrados'}`
+              : `${filteredCursos.length} ${filteredCursos.length === 1 ? 'course found' : 'courses found'}`
+            }
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table id="courses-table" className="w-full text-left border-collapse">
-            <thead>
-              <tr className="text-xs font-semibold text-slate-500 border-b border-slate-100 uppercase tracking-wider">
-                <th className="px-6 py-4 font-semibold">{t.courses.name}</th>
-                <th className="px-6 py-4 font-semibold text-center">{t.nav.subjects}</th>
-                <th className="px-6 py-4 font-semibold">{t.courses.duration}</th>
-                <th className="px-6 py-4 font-semibold text-right">{t.common.actions}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={4} className="px-6 py-8 text-center text-slate-500">{t.common.loading}</td>
-                </tr>
-              ) : filteredCursos.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="px-6 py-8 text-center text-slate-500">{t.common.noneFound}</td>
-                </tr>
-              ) : filteredCursos.map((curso) => (
-                <tr key={curso.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors group">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                       <div className="font-semibold text-slate-900">{curso.nome}</div>
-                      {curso.categoria && (
-                        <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-bold uppercase rounded-md border border-blue-100">
-                          {curso.categoria}
-                        </span>
-                      )}
-                      {curso.internacional && (
-                        <span className="px-2 py-0.5 bg-amber-50 text-amber-600 text-[10px] font-bold uppercase rounded-md border border-amber-100">
-                          {language === 'pt' ? 'Exterior' : 'Abroad'}
-                        </span>
-                      )}
-                      {curso.localizacao && (
-                        <span className="text-xs text-slate-400 font-medium whitespace-nowrap">
-                          ({curso.localizacao})
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-xs text-slate-500 truncate max-w-[200px]">
-                       {curso.descricao}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <button 
-                      onClick={() => {
-                        setManageDisciplinasCurso(curso);
-                        setLoadingDisciplinas(true);
-                      }}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-[10px] font-bold uppercase hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all shadow-sm"
-                    >
-                      <BookMarked size={12} />
-                      {t.nav.subjects}
-                    </button>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-slate-600">
-                    <div className="flex flex-col">
-                      <span>
+        {/* Dynamic Card Grid */}
+        {loading ? (
+          <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-500 flex flex-col items-center justify-center gap-3 shadow-sm">
+            <Loader2 className="animate-spin text-blue-600" size={32} />
+            <span className="text-sm font-medium">{t.common.loading}...</span>
+          </div>
+        ) : filteredCursos.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-500 flex flex-col items-center justify-center gap-3 shadow-sm">
+            <GraduationCap className="text-slate-300" size={48} />
+            <span className="text-sm font-medium">{t.common.noneFound}</span>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredCursos.map((curso) => (
+              <motion.div
+                key={curso.id}
+                layout
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-300 flex flex-col justify-between group relative overflow-hidden"
+              >
+                <div className={cn(
+                  "absolute top-0 left-0 right-0 h-1.5",
+                  curso.categoria === 'Expedito' ? 'bg-amber-400' :
+                  curso.categoria === 'Especial' ? 'bg-purple-500' :
+                  curso.categoria === 'Carreira' ? 'bg-emerald-500' :
+                  curso.internacional ? 'bg-blue-600' : 'bg-slate-300'
+                )} />
+
+                <div>
+                  <div className="flex items-start justify-between gap-3 mb-3 mt-1">
+                    <h3 className="font-bold text-slate-900 text-base sm:text-lg tracking-tight leading-snug line-clamp-2">
+                      {curso.nome}
+                    </h3>
+                    
+                    {!isReadOnly && (
+                      <div className="opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity flex items-center gap-1 shrink-0">
+                        <button 
+                          onClick={() => { setEditingCurso(curso); reset(curso); setModalOpen(true); }}
+                          className="p-1.5 bg-slate-50 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-slate-400 cursor-pointer"
+                          title={t.common.edit}
+                        >
+                          <Edit2 size={13} />
+                        </button>
+                        <button 
+                          onClick={() => deleteCurso(curso.id)}
+                          className="p-1.5 bg-slate-50 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors text-slate-400 cursor-pointer"
+                          title={t.common.delete}
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Badge Section */}
+                  <div className="flex flex-wrap gap-1.5 mb-4">
+                    {curso.categoria && (
+                      <span className={cn(
+                        "px-2 py-0.5 text-[9px] font-bold uppercase rounded-md border",
+                        curso.categoria === 'Expedito' ? 'bg-amber-50 text-amber-700 border-amber-100' :
+                        curso.categoria === 'Especial' ? 'bg-purple-50 text-purple-700 border-purple-100' :
+                        'bg-emerald-50 text-emerald-700 border-emerald-100'
+                      )}>
+                        {curso.categoria}
+                      </span>
+                    )}
+                    {curso.internacional && (
+                      <span className="px-2 py-0.5 bg-blue-50 text-blue-700 text-[9px] font-bold uppercase rounded-md border border-blue-100">
+                        {language === 'pt' ? 'Exterior' : 'Abroad'}
+                      </span>
+                    )}
+                    {curso.localizacao && (
+                      <span className="px-2 py-0.5 bg-slate-50 text-slate-600 text-[9px] font-bold uppercase rounded-md border border-slate-150">
+                        {curso.localizacao}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Description */}
+                  {curso.descricao ? (
+                    <p className="text-slate-500 text-xs leading-relaxed mb-4 line-clamp-3">
+                      {curso.descricao}
+                    </p>
+                  ) : (
+                    <p className="text-slate-350 italic text-xs mb-4">
+                      {language === 'pt' ? 'Sem descrição cadastrada' : 'No description provided'}
+                    </p>
+                  )}
+                </div>
+
+                <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-3 mt-auto">
+                  <div className="flex items-center gap-1.5 text-slate-500 shrink-0">
+                    <Clock size={14} className="text-slate-400" />
+                    <div className="flex flex-col select-none">
+                      <span className="text-xs font-semibold text-slate-700 leading-tight">
                         {curso.duracao} {
                           curso.duracao === 1 
                             ? (curso.duracao_unidade === 'dia' ? t.courses.day : curso.duracao_unidade === 'semana' ? t.courses.week : curso.duracao_unidade === 'mes' ? t.courses.month : t.courses.year)
                             : (curso.duracao_unidade === 'dia' ? t.courses.days : curso.duracao_unidade === 'semana' ? t.courses.weeks : curso.duracao_unidade === 'mes' ? t.courses.months : t.courses.years)
                         }
                       </span>
-                      <span className="text-[10px] font-bold text-slate-400 uppercase">
+                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
                         {curso.qtd_modulos || 4} {t.grades.module}s
                       </span>
                     </div>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      {!isReadOnly && (
-                        <>
-                          <button 
-                            onClick={() => { setEditingCurso(curso); reset(curso); setModalOpen(true); }}
-                            className="p-2 bg-white border border-slate-100 shadow-sm rounded-lg text-slate-400 hover:text-indigo-600 hover:border-indigo-100 transition-all"
-                          >
-                            <Edit2 size={16} />
-                          </button>
-                          <button 
-                            onClick={() => deleteCurso(curso.id)}
-                            className="p-2 bg-white border border-slate-100 shadow-sm rounded-lg text-slate-400 hover:text-red-600 hover:border-red-100 transition-all"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                  </div>
+
+                  <button 
+                    onClick={() => {
+                      setManageDisciplinasCurso(curso);
+                      setLoadingDisciplinas(true);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 text-slate-700 border border-slate-200 hover:bg-blue-600 hover:text-white hover:border-blue-600 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-300 shadow-sm shrink-0 cursor-pointer"
+                  >
+                    <BookMarked size={12} />
+                    {t.nav.subjects}
+                  </button>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Modal */}
