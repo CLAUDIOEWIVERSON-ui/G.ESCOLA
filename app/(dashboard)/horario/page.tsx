@@ -15,11 +15,15 @@ import {
   Coffee,
   AlertCircle,
   User,
-  Book
+  Book,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  Clock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
-import { format, startOfWeek, endOfWeek, addDays } from 'date-fns';
+import { format, startOfWeek, addDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
@@ -124,10 +128,39 @@ export default function HorarioPage() {
       setIsEditMode(true);
     }
   };
-  const today = new Date();
-  const weekStart = startOfWeek(today, { weekStartsOn: 1 });
-  const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
-  const weekPeriodFormatted = `${format(weekStart, "dd/MM")} a ${format(weekEnd, "dd/MM/yyyy")}`;
+  const [currentDate, setCurrentDate] = useState<Date>(new Date());
+
+  const weekStart = useMemo(() => startOfWeek(currentDate, { weekStartsOn: 1 }), [currentDate]);
+  const weekEnd = useMemo(() => addDays(weekStart, 4), [weekStart]);
+  const weekPeriodFormatted = useMemo(() => `${format(weekStart, "dd/MM")} a ${format(weekEnd, "dd/MM/yyyy")}`, [weekStart, weekEnd]);
+
+  const handlePrevWeek = () => {
+    setCurrentDate(prev => addDays(prev, -7));
+  };
+  const handleNextWeek = () => {
+    setCurrentDate(prev => addDays(prev, 7));
+  };
+  const handleCurrentWeek = () => {
+    setCurrentDate(new Date());
+  };
+
+  const weekOptions = useMemo(() => {
+    const options = [];
+    const baseToday = new Date();
+    const baseWeekStart = startOfWeek(baseToday, { weekStartsOn: 1 });
+    // Generate from 4 weeks back to 8 weeks ahead
+    for (let i = -4; i <= 8; i++) {
+      const s = addDays(baseWeekStart, i * 7);
+      const e = addDays(s, 4);
+      const label = `${format(s, "dd/MM")} a ${format(e, "dd/MM/yyyy")}`;
+      options.push({
+        date: s,
+        label: i === 0 ? `${label} (${language === 'pt' ? 'Semana Atual' : 'Current Week'})` : label,
+        isCurrent: i === 0
+      });
+    }
+    return options;
+  }, [language]);
 
   // Generate 50min class + 10min break slots from 08:00 to 16:00
   const slots = useMemo(() => {
@@ -210,17 +243,21 @@ export default function HorarioPage() {
   };
 
   const updateCell = (slotId: string, dayKey: string, field: string, value: string) => {
+    const weekKey = format(weekStart, 'yyyy-MM-dd');
     setScheduleData(prev => ({
       ...prev,
-      [`${slotId}-${dayKey}`]: {
-        ...prev[`${slotId}-${dayKey}`],
+      [`${weekKey}_${slotId}-${dayKey}`]: {
+        ...(prev[`${weekKey}_${slotId}-${dayKey}`] || prev[`${slotId}-${dayKey}`] || {}),
         [field]: value
       }
     }));
   };
 
   const getCellData = (slotId: string, dayKey: string) => {
-    return scheduleData[`${slotId}-${dayKey}`] || { subjectId: '', instructorId: '', room: '', courseId: '' };
+    const weekKey = format(weekStart, 'yyyy-MM-dd');
+    return scheduleData[`${weekKey}_${slotId}-${dayKey}`] || 
+           scheduleData[`${slotId}-${dayKey}`] || 
+           { subjectId: '', instructorId: '', room: '', courseId: '' };
   };
 
   const filteredDisciplinas = useMemo(() => {
@@ -584,7 +621,7 @@ export default function HorarioPage() {
       </div>
 
       {/* Selectors */}
-      <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm grid grid-cols-1 md:grid-cols-2 gap-6 print:hidden">
+      <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 print:hidden">
         <div className="space-y-2">
           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 flex items-center gap-2">
             <BookOpen size={12} /> {t.nav.courses}
@@ -614,6 +651,55 @@ export default function HorarioPage() {
               <option key={tu.id} value={tu.id}>{tu.nome}</option>
             ))}
           </select>
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 flex items-center gap-2 flex-wrap">
+            <Clock size={12} className="text-blue-500" /> {language === 'pt' ? 'Semana' : 'Week'}
+          </label>
+          <div className="flex items-center gap-1 bg-slate-50 border border-slate-100 rounded-2xl p-1 h-[56px]">
+            {/* Prev Week */}
+            <button
+              type="button"
+              onClick={handlePrevWeek}
+              disabled={!selectedTurmaId}
+              className="text-slate-405 hover:text-slate-800 hover:bg-white rounded-xl transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed shrink-0 flex items-center justify-center h-11 w-11 shadow-sm border border-transparent hover:border-slate-100"
+              title={language === 'pt' ? 'Semana anterior' : 'Previous week'}
+            >
+              <ChevronLeft size={16} />
+            </button>
+
+            {/* Select Input container */}
+            <div className="relative flex-1">
+              <select
+                value={format(weekStart, 'yyyy-MM-dd')}
+                onChange={(e) => {
+                  const selectedD = new Date(e.target.value);
+                  setCurrentDate(selectedD);
+                }}
+                disabled={!selectedTurmaId}
+                className="w-full px-1 py-2.5 bg-transparent outline-none text-xs font-bold text-slate-800 appearance-none cursor-pointer disabled:opacity-30 text-center"
+              >
+                {weekOptions.map(opt => (
+                  <option key={format(opt.date, 'yyyy-MM-dd')} value={format(opt.date, 'yyyy-MM-dd')}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={12} className="absolute right-1 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            </div>
+
+            {/* Next Week */}
+            <button
+              type="button"
+              onClick={handleNextWeek}
+              disabled={!selectedTurmaId}
+              className="text-slate-405 hover:text-slate-800 hover:bg-white rounded-xl transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed shrink-0 flex items-center justify-center h-11 w-11 shadow-sm border border-transparent hover:border-slate-100"
+              title={language === 'pt' ? 'Próxima semana' : 'Next week'}
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -647,9 +733,13 @@ export default function HorarioPage() {
                   
                   <div className="flex flex-col md:items-end justify-center">
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{t.schedule.period.toUpperCase()}</p>
-                    <div className="bg-slate-50 border border-slate-200 px-6 py-3 rounded-2xl inline-flex flex-col items-end shadow-sm">
-                      <span className="text-2xl font-black text-slate-800">{weekPeriodFormatted}</span>
-                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{format(weekStart, 'MMMM yyyy', { locale: ptBR })}</span>
+                    
+                    {/* Beautiful, static/read-only period badge for both Screen and Print */}
+                    <div className="bg-slate-50 border border-slate-200 px-6 py-3 rounded-2xl flex flex-col md:items-end shadow-sm">
+                      <span className="text-xl md:text-2xl font-black text-slate-800 tracking-tight leading-none">{weekPeriodFormatted}</span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1.5 leading-none">
+                        {format(weekStart, 'MMMM yyyy', { locale: ptBR })}
+                      </span>
                     </div>
                   </div>
                 </div>

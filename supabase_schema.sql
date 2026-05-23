@@ -287,3 +287,15 @@ CREATE POLICY "Admins can manage all widgets" ON public.widgets FOR ALL USING (E
 ALTER TABLE public.eventos ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Public read access" ON public.eventos FOR SELECT USING (true);
 CREATE POLICY "Admins have full access" ON public.eventos FOR ALL USING (auth.role() = 'authenticated');
+
+-- 14. Horários
+CREATE TABLE IF NOT EXISTS public.horarios (
+  turma_id UUID PRIMARY KEY REFERENCES public.turmas(id) ON DELETE CASCADE,
+  data JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.horarios ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Public read access" ON public.horarios FOR SELECT USING (true);
+CREATE POLICY "Admins have full access" ON public.horarios FOR ALL USING (auth.role() = 'authenticated');
