@@ -237,10 +237,10 @@ export default function HorarioPage() {
     <div className="space-y-6 col-print-style">
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
-          /* Setup page size and margin */
+          /* Setup page size and margin to 0 for maximum control of margins via container */
           @page { 
             size: A4 ${printOrientation}; 
-            margin: 0mm;
+            margin: 0mm !important;
           }
           
           /* Force color printing across standard browsers */
@@ -250,7 +250,16 @@ export default function HorarioPage() {
             color-adjust: exact !important;
           }
 
-          /* Hide all surrounding page layers, leaving only the targeted schedule print element visible */
+          /* Hide all surrounding page layers completely */
+          aside, header, nav, button, .print\:hidden, .no-print {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+          }
+
+          /* Reset html, body, and all structural wrappers to eliminate any offsets, margins, paddings, and transforms */
           html, body {
             background: white !important;
             width: 100% !important;
@@ -258,34 +267,47 @@ export default function HorarioPage() {
             margin: 0 !important;
             padding: 0 !important;
             overflow: visible !important;
+            position: relative !important;
           }
 
-          body * {
-            visibility: hidden !important;
+          /* Neutralize containers, motion divs and layout components to allow print-container to pin perfectly at 0,0 */
+          main, 
+          div, 
+          section, 
+          .col-print-style,
+          [class*="bg-slate-950"], 
+          [class*="flex-1"] {
+            margin: 0 !important;
+            padding: 0 !important;
+            transform: none !important;
+            perspective: none !important;
+            position: static !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            height: auto !important;
+            min-height: 0 !important;
+            box-shadow: none !important;
+            border: none !important;
           }
 
-          /* Render the exact target container and its inner nodes */
-          .print-container,
-          .print-container * {
-            visibility: visible !important;
-          }
-
-          /* Pin the schedule directly at top-left to avoid empty pages or massive spacing leaks */
+          /* Pin the schedule directly at top-left of the page viewport */
           .print-container {
             position: absolute !important;
             left: 0 !important;
             top: 0 !important;
             width: 100% !important;
             max-width: 100% !important;
-            height: auto !important;
+            min-width: 100% !important;
             margin: 0 !important;
-            padding: 0 !important;
             border: none !important;
             border-radius: 0 !important;
             box-shadow: none !important;
             display: flex !important;
             flex-direction: column !important;
             background: white !important;
+            box-sizing: border-box !important;
+            page-break-after: avoid !important;
+            page-break-inside: avoid !important;
           }
 
           /* Avoid dividing rows and tables weirdly across pages */
@@ -299,23 +321,19 @@ export default function HorarioPage() {
             border-collapse: collapse !important;
           }
 
-          .print-container {
-            border-radius: 0 !important;
-          }
-          .print-container * {
+          .print-container, .print-container * {
             border-radius: 0 !important;
           }
           .print-header {
             border-bottom: 2px solid #000000 !important;
           }
 
-          /* Portrait or Landscape specific layout scaling and sizing */
+          /* Portrait or Landscape specific layout scaling */
           ${printOrientation === 'landscape' ? `
             /* LANDSCAPE PRESENTATION */
             .print-container {
-              padding: 8mm 10mm !important;
-              box-sizing: border-box !important;
-              height: auto !important;
+              padding: 10mm 12mm !important;
+              height: 210mm !important;
               max-height: 210mm !important;
               justify-content: flex-start !important;
             }
@@ -384,9 +402,8 @@ export default function HorarioPage() {
           ` : `
             /* PORTRAIT PRESENTATION */
             .print-container {
-              padding: 10mm 12mm !important;
-              box-sizing: border-box !important;
-              height: auto !important;
+              padding: 12mm 15mm !important;
+              height: 297mm !important;
               max-height: 297mm !important;
               justify-content: flex-start !important;
             }
