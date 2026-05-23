@@ -263,10 +263,11 @@ export default function HorarioPage() {
           html, body {
             background: white !important;
             width: 100% !important;
-            height: 100% !important;
+            height: auto !important;
+            min-height: 100% !important;
             margin: 0 !important;
             padding: 0 !important;
-            overflow: hidden !important;
+            overflow: visible !important;
             position: relative !important;
           }
 
@@ -301,9 +302,9 @@ export default function HorarioPage() {
             border: none !important;
           }
 
-          /* Pin the schedule directly at top-left of the page viewport using fixed positioning */
+          /* Pin the schedule directly at top-left of the page viewport using absolute positioning */
           .print-container {
-            position: fixed !important;
+            position: absolute !important;
             left: 0 !important;
             top: 0 !important;
             width: 100% !important;
@@ -318,6 +319,8 @@ export default function HorarioPage() {
             background: white !important;
             box-sizing: border-box !important;
             z-index: 99999999 !important;
+            height: auto !important;
+            min-height: 100% !important;
             page-break-after: avoid !important;
             page-break-before: avoid !important;
             page-break-inside: avoid !important;
@@ -346,8 +349,9 @@ export default function HorarioPage() {
             /* LANDSCAPE PRESENTATION */
             .print-container {
               padding: 10mm 12mm !important;
-              height: 100% !important;
-              max-height: 100% !important;
+              height: auto !important;
+              min-height: 210mm !important;
+              max-height: none !important;
               justify-content: flex-start !important;
             }
             .print-header {
@@ -417,8 +421,9 @@ export default function HorarioPage() {
             /* PORTRAIT PRESENTATION */
             .print-container {
               padding: 12mm 15mm !important;
-              height: 100% !important;
-              max-height: 100% !important;
+              height: auto !important;
+              min-height: 297mm !important;
+              max-height: none !important;
               justify-content: flex-start !important;
             }
             .print-header {
