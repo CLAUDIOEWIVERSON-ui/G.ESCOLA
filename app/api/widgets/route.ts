@@ -1,10 +1,22 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
+async function getAuthUser(supabase: any) {
+  try {
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data?.user) {
+      return null;
+    }
+    return data.user;
+  } catch {
+    return null;
+  }
+}
+
 export async function GET() {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getAuthUser(supabase);
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -26,7 +38,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getAuthUser(supabase);
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -53,7 +65,7 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getAuthUser(supabase);
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -86,7 +98,7 @@ export async function DELETE(request: Request) {
     }
 
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getAuthUser(supabase);
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

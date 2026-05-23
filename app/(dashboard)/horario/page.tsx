@@ -48,8 +48,8 @@ export default function HorarioPage() {
   const [instrutores, setInstrutores] = useState<any[]>([]);
   const [selectedCursoId, setSelectedCursoId] = useState('');
   const [selectedTurmaId, setSelectedTurmaId] = useState('');
-  const [isPrinting, setIsPrinting] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [printOrientation, setPrintOrientation] = useState<'portrait' | 'landscape'>('landscape');
   const printRef = useRef<HTMLDivElement>(null);
 
   // Editable Schedule State
@@ -195,62 +195,17 @@ export default function HorarioPage() {
     fetchData();
   }, []);
 
-  const handlePrint = async () => {
-    if (!printRef.current) return;
-    setIsPrinting(true);
-    
-    toast.info(
-      language === 'pt' 
-        ? 'Gerando PDF de alta definição...' 
-        : 'Generating high-definition PDF...'
-    );
-
+  const handlePrint = () => {
+    if (!selectedTurmaId) return;
     try {
-      const element = printRef.current;
-      
-      const canvas = await html2canvas(element, {
-        scale: 2, 
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff',
-      });
-
-      const imgData = canvas.toDataURL('image/png');
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-      
-      const orientation = imgWidth > imgHeight ? 'l' : 'p';
-      
-      const pdf = new jsPDF({
-        orientation: orientation,
-        unit: 'px',
-        format: [imgWidth, imgHeight]
-      });
-
-      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-      
-      const fileName = `quadro-de-horarios-${selectedTurma?.nome || 'turma'}.pdf`;
-      pdf.save(fileName);
-      
-      toast.success(
-        language === 'pt'
-          ? 'Quadro de horários exportado com sucesso!'
-          : 'Weekly schedule exported successfully!'
-      );
+      window.print();
     } catch (err) {
-      console.error('Failed to export PDF:', err);
+      console.error('Failed to open native print dialog:', err);
       toast.error(
         language === 'pt'
-          ? 'Erro na exportação de alta fidelidade. Abrindo impressão nativa...'
-          : 'High-fidelity export failed. Opening native print...'
+          ? 'Não foi possível abrir a janela de impressão.'
+          : 'Could not open print window.'
       );
-      try {
-        window.print();
-      } catch (printErr) {
-        console.error('Native print failed:', printErr);
-      }
-    } finally {
-      setIsPrinting(false);
     }
   };
 
@@ -288,8 +243,8 @@ export default function HorarioPage() {
             color-adjust: exact !important;
           }
           @page { 
-            size: A4 portrait; 
-            margin: 0;
+            size: A4 ${printOrientation}; 
+            margin: 5mm;
           }
           body { 
             background: white !important;
@@ -306,12 +261,12 @@ export default function HorarioPage() {
             padding: 0 !important;
           }
           .print-header {
-            padding: 20px !important;
+            padding: 24px !important;
             background: #000000 !important;
             color: white !important;
           }
           .print-content {
-            padding: 10px !important;
+            padding: 8px !important;
             background: white !important;
           }
           .print-row {
@@ -320,16 +275,34 @@ export default function HorarioPage() {
           .no-print {
             display: none !important;
           }
-          .rounded-3xl, .rounded-2xl, .rounded-[3rem], .rounded-[2.5rem], .rounded-2xl {
+          .rounded-3xl, .rounded-2xl, .rounded-[3rem], .rounded-[2.5rem] {
             border-radius: 4px !important;
           }
           table { 
             page-break-inside: auto;
+            width: 100% !important;
           }
           tr { 
             page-break-inside: avoid; 
             page-break-after: auto;
           }
+          .print-content td, .print-content th {
+            padding: ${printOrientation === 'portrait' ? '4px 2px' : '10px 6px'} !important;
+          }
+          .print-content .min-h-\\[140px\\] {
+            min-height: ${printOrientation === 'portrait' ? '70px' : '110px'} !important;
+            padding: ${printOrientation === 'portrait' ? '4px' : '12px'} !important;
+          }
+          .print-content .py-8 {
+            padding-top: ${printOrientation === 'portrait' ? '8px' : '16px'} !important;
+            padding-bottom: ${printOrientation === 'portrait' ? '8px' : '16px'} !important;
+          }
+          ${printOrientation === 'portrait' ? `
+            .print-content span, .print-content p, .print-content select, .print-content div {
+              font-size: 8px !important;
+              line-height: 1.1 !important;
+            }
+          ` : ''}
         }
       `}} />
 
@@ -357,13 +330,42 @@ export default function HorarioPage() {
             {isSaving ? <Loader2 size={18} className="animate-spin" /> : (isEditMode ? <Check size={18} /> : <Edit3 size={18} />)}
             {isEditMode ? (language === 'pt' ? 'Salvar' : 'Save') : (language === 'pt' ? 'Editar' : 'Edit')}
           </button>
+
+          {selectedTurmaId && !isEditMode && (
+            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-2xl border border-slate-200 shadow-inner">
+              <button
+                type="button"
+                onClick={() => setPrintOrientation('portrait')}
+                className={cn(
+                  "px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer select-none",
+                  printOrientation === 'portrait' 
+                    ? "bg-neutral-950 text-white shadow-sm" 
+                    : "text-slate-500 hover:text-slate-800"
+                )}
+              >
+                {language === 'pt' ? 'Retrato' : 'Portrait'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setPrintOrientation('landscape')}
+                className={cn(
+                  "px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer select-none",
+                  printOrientation === 'landscape' 
+                    ? "bg-neutral-950 text-white shadow-sm" 
+                    : "text-slate-500 hover:text-slate-800"
+                )}
+              >
+                {language === 'pt' ? 'Paisagem' : 'Landscape'}
+              </button>
+            </div>
+          )}
           
           <button 
             onClick={handlePrint}
-            disabled={isPrinting || isEditMode || !selectedTurmaId}
+            disabled={isEditMode || !selectedTurmaId}
             className="flex items-center gap-2 bg-[#0f172a] text-white px-5 py-2.5 rounded-2xl text-sm font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 disabled:opacity-50 disabled:grayscale"
           >
-            {isPrinting ? <Loader2 size={18} className="animate-spin" /> : <Printer size={18} />}
+            <Printer size={18} />
             {t.schedule.print}
           </button>
         </div>
