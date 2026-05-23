@@ -270,6 +270,17 @@ export default function HorarioPage() {
             position: relative !important;
           }
 
+          /* General hide rule for all descendants to prevent duplicating any content on print */
+          body * {
+            visibility: hidden !important;
+          }
+
+          /* Explicitly make only the printable schedule container and its descendants visible */
+          .print-container,
+          .print-container * {
+            visibility: visible !important;
+          }
+
           /* Neutralize containers, motion divs and layout components to allow print-container to pin perfectly at 0,0 */
           main, 
           div, 
