@@ -882,6 +882,10 @@ export default function HorarioPage() {
                               const displayInstrutores = cellFilteredInstrutores.length > 0 
                                 ? cellFilteredInstrutores 
                                 : instrutores;
+
+                              const displayTurmas = selectedCursoId
+                                ? turmas.filter(tu => tu.curso_id === selectedCursoId)
+                                : turmas;
                               
                               if (holiday) {
                                 return (
@@ -934,7 +938,7 @@ export default function HorarioPage() {
                                           className="w-full text-[10px] font-bold text-blue-600 bg-transparent border-none focus:ring-0 p-0 cursor-pointer block truncate"
                                         >
                                           <option value="">{language === 'pt' ? 'Turma' : 'Class'}</option>
-                                          {turmas.map(tu => (
+                                          {displayTurmas.map(tu => (
                                             <option key={tu.id} value={tu.id}>{tu.nome}</option>
                                           ))}
                                         </select>
