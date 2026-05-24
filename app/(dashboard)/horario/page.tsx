@@ -333,10 +333,12 @@ export default function HorarioPage() {
           html, body {
             background: white !important;
             width: 100% !important;
-            height: 100% !important;
+            height: auto !important;
+            min-height: auto !important;
             margin: 0 !important;
             padding: 0 !important;
-            overflow: hidden !important;
+            overflow: visible !important;
+            position: relative !important;
           }
 
           /* General hide rule for all descendants to prevent duplicating any content on print */
@@ -373,9 +375,9 @@ export default function HorarioPage() {
             border: none !important;
           }
 
-          /* Pin the schedule directly at top-left of the page viewport using fixed positioning to bypass parent layout offsets */
+          /* Pin the schedule directly at top-left of the page viewport using absolute positioning */
           .print-container {
-            position: fixed !important;
+            position: absolute !important;
             left: 0 !important;
             top: 0 !important;
             margin-top: 0 !important;
@@ -953,30 +955,30 @@ export default function HorarioPage() {
                                       </div>
                                     ) : (
                                       cell.subjectId ? (
-                                        <div className="space-y-2 flex-1 flex flex-col min-w-0">
-                                          <div className="space-y-1 min-w-0">
-                                            <div className="flex items-center gap-1.5 text-neutral-950 min-w-0">
-                                              <BookOpen size={10} className="shrink-0" />
-                                              <span className="text-[11px] font-black leading-tight uppercase tracking-tight break-words whitespace-normal text-wrap flex-1 min-w-0">
+                                        <div className="space-y-2 flex-1 flex flex-col">
+                                          <div className="space-y-1">
+                                            <div className="flex items-center gap-1.5 text-neutral-950">
+                                              <BookOpen size={10} />
+                                              <span className="text-[11px] font-black leading-tight uppercase tracking-tight">
                                                 {disciplinas.find(d => d.id === cell.subjectId)?.nome || 'Disciplina'}
                                               </span>
                                             </div>
-                                            <div className="flex items-center gap-1.5 text-neutral-500 min-w-0">
-                                              <User size={10} className="shrink-0" />
-                                              <span className="text-[10px] font-bold break-words whitespace-normal text-wrap flex-1 min-w-0">
+                                            <div className="flex items-center gap-1.5 text-neutral-500">
+                                              <User size={10} />
+                                              <span className="text-[10px] font-bold">
                                                 {instrutores.find(i => i.id === cell.instructorId)?.full_name || cell.instructorId || 'Instrutor'}
                                               </span>
                                             </div>
                                           </div>
                                           
-                                          <div className="mt-auto pt-2 flex flex-col gap-1 border-t border-slate-100 min-w-0">
-                                            <div className="flex items-center gap-1 text-[9px] font-black text-blue-600 uppercase tracking-widest min-w-0">
-                                              <Shield size={8} className="shrink-0" />
-                                              <span className="break-words whitespace-normal text-wrap flex-1 min-w-0">{turmas.find(tu => tu.id === cell.turmaId)?.nome || selectedTurma?.nome}</span>
+                                          <div className="mt-auto pt-2 flex flex-col gap-1 border-t border-slate-100">
+                                            <div className="flex items-center gap-1 text-[9px] font-black text-blue-600 uppercase tracking-widest">
+                                              <Shield size={8} />
+                                              <span>{turmas.find(tu => tu.id === cell.turmaId)?.nome || selectedTurma?.nome}</span>
                                             </div>
-                                            <div className="flex items-center gap-1.5 text-neutral-400 min-w-0">
-                                              <MapPin size={10} className="shrink-0" />
-                                              <span className="text-[9px] font-black uppercase tracking-tight break-words whitespace-normal text-wrap flex-1 min-w-0">{cell.room || 'N/A'}</span>
+                                            <div className="flex items-center gap-1.5 text-neutral-400">
+                                              <MapPin size={10} />
+                                              <span className="text-[9px] font-black uppercase tracking-tight">{cell.room || 'N/A'}</span>
                                             </div>
                                           </div>
                                         </div>
