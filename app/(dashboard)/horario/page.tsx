@@ -223,7 +223,37 @@ export default function HorarioPage() {
       const { data: d } = await supabase.from('disciplinas').select('*').is('deleted_at', null).order('nome');
       if (d) setDisciplinas(d);
       const { data: i } = await supabase.from('profiles').select('*').eq('role', 'instrutor');
-      if (i) setInstrutores(i);
+      
+      const combinedInstructors: any[] = [];
+      const seenNames = new Set<string>();
+      
+      if (i) {
+        i.forEach((prof: any) => {
+          const name = (prof.full_name || '').trim();
+          if (name) {
+            seenNames.add(name.toLowerCase());
+            combinedInstructors.push({
+              id: prof.id,
+              full_name: prof.full_name
+            });
+          }
+        });
+      }
+      
+      if (tu) {
+        tu.forEach((t: any) => {
+          const name = (t.instrutor || '').trim();
+          if (name && !seenNames.has(name.toLowerCase())) {
+            seenNames.add(name.toLowerCase());
+            combinedInstructors.push({
+              id: name,
+              full_name: name
+            });
+          }
+        });
+      }
+      
+      setInstrutores(combinedInstructors);
     }
     fetchData();
   }, []);
@@ -915,7 +945,7 @@ export default function HorarioPage() {
                                             <div className="flex items-center gap-1.5 text-neutral-500">
                                               <User size={10} />
                                               <span className="text-[10px] font-bold">
-                                                {instrutores.find(i => i.id === cell.instructorId)?.full_name || 'Instrutor'}
+                                                {instrutores.find(i => i.id === cell.instructorId)?.full_name || cell.instructorId || 'Instrutor'}
                                               </span>
                                             </div>
                                           </div>
