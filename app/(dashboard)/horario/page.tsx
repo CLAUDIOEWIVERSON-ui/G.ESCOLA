@@ -727,15 +727,13 @@ export default function HorarioPage() {
               {/* Specialized Header */}
               <div className="bg-white p-12 text-slate-800 relative overflow-hidden print-header border-b border-slate-200">
                 <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-12">
-                  <div className="col-span-2 space-y-4">
-                    <div className="flex items-center gap-3">
-                      <div className="px-3 py-1 bg-slate-900 text-white rounded-lg text-[10px] font-black uppercase tracking-widest border border-slate-900">
-                        {t.nav.classes}
-                      </div>
-                      <span className="text-slate-400 font-bold">/</span>
-                      <span className="text-slate-600 font-bold">{selectedCurso?.nome}</span>
+                  <div className="col-span-2 space-y-3">
+                    <div className="flex items-center">
+                      <span className="text-xs font-black text-blue-600 uppercase tracking-widest">
+                        {selectedCurso?.nome}
+                      </span>
                     </div>
-                    <h2 className="text-5xl font-black tracking-tighter leading-none text-slate-900 animate-fade-in">
+                    <h2 className="text-4xl md:text-5xl font-black tracking-tighter leading-none text-slate-900 animate-fade-in">
                       {selectedTurma?.nome}
                     </h2>
                   </div>
@@ -860,11 +858,11 @@ export default function HorarioPage() {
                                         : "hover:bg-slate-50/40 border border-transparent"
                                   )}>
                                     {isEditMode ? (
-                                      <div className="space-y-3">
+                                      <div className="space-y-2.5">
                                         <select 
                                           value={cell.subjectId || ''}
                                           onChange={(e) => updateCell(slot.id, day.key, 'subjectId', e.target.value)}
-                                          className="w-full text-[10px] font-black text-neutral-950 bg-transparent border-none focus:ring-0 p-0 cursor-pointer"
+                                          className="w-full text-[10px] font-black text-neutral-950 bg-transparent border-none focus:ring-0 p-0 cursor-pointer block truncate"
                                         >
                                           <option value="">{t.schedule.subject}</option>
                                           {filteredDisciplinas.map(d => (
@@ -875,11 +873,22 @@ export default function HorarioPage() {
                                         <select 
                                           value={cell.instructorId || ''}
                                           onChange={(e) => updateCell(slot.id, day.key, 'instructorId', e.target.value)}
-                                          className="w-full text-[10px] font-bold text-slate-600 bg-transparent border-none focus:ring-0 p-0 cursor-pointer"
+                                          className="w-full text-[10px] font-bold text-slate-600 bg-transparent border-none focus:ring-0 p-0 cursor-pointer block truncate"
                                         >
                                           <option value="">{t.schedule.instructor}</option>
                                           {instrutores.map(i => (
                                             <option key={i.id} value={i.id}>{i.full_name}</option>
+                                          ))}
+                                        </select>
+
+                                        <select 
+                                          value={cell.turmaId || ''}
+                                          onChange={(e) => updateCell(slot.id, day.key, 'turmaId', e.target.value)}
+                                          className="w-full text-[10px] font-bold text-blue-600 bg-transparent border-none focus:ring-0 p-0 cursor-pointer block truncate"
+                                        >
+                                          <option value="">{language === 'pt' ? 'Turma' : 'Class'}</option>
+                                          {turmas.map(tu => (
+                                            <option key={tu.id} value={tu.id}>{tu.nome}</option>
                                           ))}
                                         </select>
 
@@ -912,9 +921,9 @@ export default function HorarioPage() {
                                           </div>
                                           
                                           <div className="mt-auto pt-2 flex flex-col gap-1 border-t border-slate-100">
-                                            <div className="flex items-center gap-1 text-[9px] font-black text-neutral-400 uppercase tracking-widest">
-                                              <Book size={8} />
-                                              <span>{selectedCurso?.nome || 'Curso'}</span>
+                                            <div className="flex items-center gap-1 text-[9px] font-black text-blue-600 uppercase tracking-widest">
+                                              <Shield size={8} />
+                                              <span>{turmas.find(tu => tu.id === cell.turmaId)?.nome || selectedTurma?.nome}</span>
                                             </div>
                                             <div className="flex items-center gap-1.5 text-neutral-400">
                                               <MapPin size={10} />
