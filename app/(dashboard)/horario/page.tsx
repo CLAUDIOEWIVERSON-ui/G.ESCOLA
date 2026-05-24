@@ -866,6 +866,23 @@ export default function HorarioPage() {
                               const cell = getCellData(slot.id, day.key);
                               const holiday = isHoliday(day.date);
                               
+                              const cellTurmaId = cell.turmaId || selectedTurmaId;
+                              const cellTurmaObj = turmas.find(t => t.id === cellTurmaId);
+                              const cellTurmaInstrutor = cellTurmaObj?.instrutor?.trim();
+                              
+                              const cellFilteredInstrutores = cellTurmaInstrutor
+                                ? instrutores.filter(i => {
+                                    const instName = (i.full_name || '').toLowerCase();
+                                    const instId = String(i.id).toLowerCase();
+                                    const searchStr = cellTurmaInstrutor.toLowerCase();
+                                    return instName === searchStr || instId === searchStr;
+                                  })
+                                : instrutores;
+
+                              const displayInstrutores = cellFilteredInstrutores.length > 0 
+                                ? cellFilteredInstrutores 
+                                : instrutores;
+                              
                               if (holiday) {
                                 return (
                                   <td key={day.key} className="px-3 py-3 border-r border-slate-100 last:border-r-0 bg-neutral-50">
@@ -906,7 +923,7 @@ export default function HorarioPage() {
                                           className="w-full text-[10px] font-bold text-slate-600 bg-transparent border-none focus:ring-0 p-0 cursor-pointer block truncate"
                                         >
                                           <option value="">{t.schedule.instructor}</option>
-                                          {instrutores.map(i => (
+                                          {displayInstrutores.map(i => (
                                             <option key={i.id} value={i.id}>{i.full_name}</option>
                                           ))}
                                         </select>
