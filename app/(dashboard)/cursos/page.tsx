@@ -46,6 +46,7 @@ export default function CursosPage() {
   const [editingCurso, setEditingCurso] = useState<Curso | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [viewingDescriptionCurso, setViewingDescriptionCurso] = useState<Curso | null>(null);
   
   // Discipline Management State
   const [manageDisciplinasCurso, setManageDisciplinasCurso] = useState<Curso | null>(null);
@@ -518,7 +519,8 @@ export default function CursosPage() {
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.98 }}
-                className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-300 flex flex-col justify-between group relative overflow-hidden"
+                onClick={() => setViewingDescriptionCurso(curso)}
+                className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow-md hover:border-slate-300 hover:ring-4 hover:ring-blue-50/50 transition-all duration-300 flex flex-col justify-between group relative overflow-hidden cursor-pointer"
               >
                 <div className={cn(
                   "absolute top-0 left-0 right-0 h-1.5",
@@ -537,14 +539,14 @@ export default function CursosPage() {
                     {!isReadOnly && (
                       <div className="opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity flex items-center gap-1 shrink-0">
                         <button 
-                          onClick={() => { setEditingCurso(curso); reset(curso); setModalOpen(true); }}
+                          onClick={(e) => { e.stopPropagation(); setEditingCurso(curso); reset(curso); setModalOpen(true); }}
                           className="p-1.5 bg-slate-50 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-slate-400 cursor-pointer"
                           title={t.common.edit}
                         >
                           <Edit2 size={13} />
                         </button>
                         <button 
-                          onClick={() => deleteCurso(curso.id)}
+                          onClick={(e) => { e.stopPropagation(); deleteCurso(curso.id); }}
                           className="p-1.5 bg-slate-50 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors text-slate-400 cursor-pointer"
                           title={t.common.delete}
                         >
@@ -608,7 +610,8 @@ export default function CursosPage() {
                   </div>
 
                   <button 
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();
                       setManageDisciplinasCurso(curso);
                       setLoadingDisciplinas(true);
                     }}
@@ -1059,6 +1062,90 @@ export default function CursosPage() {
             </button>
           </div>
         </form>
+      </Modal>
+
+      <Modal
+        isOpen={!!viewingDescriptionCurso}
+        onClose={() => setViewingDescriptionCurso(null)}
+        title={viewingDescriptionCurso?.nome || (language === 'pt' ? 'Descrição do Curso' : 'Course Description')}
+      >
+        {viewingDescriptionCurso && (
+          <div className="space-y-6">
+            <div className="flex flex-wrap gap-2 pb-4 border-b border-slate-100">
+              {viewingDescriptionCurso.categoria && (
+                <span className={cn(
+                  "px-3 py-1 text-xs font-bold uppercase rounded-lg border",
+                  viewingDescriptionCurso.categoria === 'Expedito' ? 'bg-amber-50 text-amber-700 border-amber-100' :
+                  viewingDescriptionCurso.categoria === 'Especial' ? 'bg-purple-50 text-purple-700 border-purple-100' :
+                  'bg-emerald-50 text-emerald-700 border-emerald-100'
+                )}>
+                  {viewingDescriptionCurso.categoria}
+                </span>
+              )}
+              {viewingDescriptionCurso.internacional && (
+                <span className="px-3 py-1 bg-blue-50 text-blue-700 text-xs font-bold uppercase rounded-lg border border-blue-100">
+                  {language === 'pt' ? 'Exterior' : 'Abroad'}
+                </span>
+              )}
+              {viewingDescriptionCurso.localizacao && (
+                <span className="px-3 py-1 bg-slate-50 text-slate-600 text-xs font-bold uppercase rounded-lg border border-slate-150">
+                  {viewingDescriptionCurso.localizacao}
+                </span>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
+              <div className="flex items-center gap-3">
+                <Clock className="text-slate-400 shrink-0" size={18} />
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider leading-none mb-1">
+                    {language === 'pt' ? 'DURAÇÃO' : 'DURATION'}
+                  </span>
+                  <span className="text-sm font-semibold text-slate-700 leading-none">
+                    {viewingDescriptionCurso.duracao} {
+                      viewingDescriptionCurso.duracao === 1 
+                        ? (viewingDescriptionCurso.duracao_unidade === 'dia' ? t.courses.day : viewingDescriptionCurso.duracao_unidade === 'semana' ? t.courses.week : viewingDescriptionCurso.duracao_unidade === 'mes' ? t.courses.month : t.courses.year)
+                        : (viewingDescriptionCurso.duracao_unidade === 'dia' ? t.courses.days : viewingDescriptionCurso.duracao_unidade === 'semana' ? t.courses.weeks : viewingDescriptionCurso.duracao_unidade === 'mes' ? t.courses.months : t.courses.years)
+                    }
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <GraduationCap className="text-slate-400 shrink-0" size={18} />
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider leading-none mb-1">
+                    {language === 'pt' ? 'ESTRUTURA' : 'STRUCTURE'}
+                  </span>
+                  <span className="text-sm font-semibold text-slate-700 leading-none">
+                    {viewingDescriptionCurso.qtd_modulos || 4} {t.grades.module}s
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <span className="text-xs text-slate-400 font-bold uppercase tracking-wider block">
+                {language === 'pt' ? 'SOBRE O CURSO' : 'ABOUT THIS COURSE'}
+              </span>
+              <div className="bg-white p-4 rounded-xl border border-slate-100 max-h-[250px] overflow-y-auto">
+                <p className="text-slate-600 text-sm leading-relaxed whitespace-pre-wrap">
+                  {viewingDescriptionCurso.descricao || (language === 'pt' ? 'Nenhuma descrição detalhada disponível.' : 'No detailed description available.')}
+                </p>
+              </div>
+            </div>
+
+            <div className="pt-4 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setViewingDescriptionCurso(null)}
+                className="w-full sm:w-auto px-6 py-2.5 bg-slate-100 text-slate-600 font-bold text-sm rounded-lg hover:bg-slate-200 transition-all cursor-pointer"
+              >
+                {language === 'pt' ? 'Fechar' : 'Close'}
+              </button>
+            </div>
+          </div>
+        )}
       </Modal>
 
       <Modal

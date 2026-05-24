@@ -375,7 +375,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Bottom Nav for Mobile */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-4 py-2 flex items-center justify-around z-50 h-16 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] print:hidden">
-        {navItems.filter(item => ['/dashboard', '/cursos', '/turmas', '/horario', '/configuracoes'].includes(item.path)).map((item) => {
+        {navItems.filter(item => ['/dashboard', '/cursos', '/turmas', '/boletim', '/horario', '/configuracoes'].includes(item.path)).map((item) => {
           const isActive = pathname === item.path;
           return (
             <Link 
