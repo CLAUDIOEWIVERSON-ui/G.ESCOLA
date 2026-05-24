@@ -411,34 +411,30 @@ export default function HorarioPage() {
             page-break-inside: avoid !important;
             width: 100% !important;
             border-collapse: collapse !important;
-            border: 2px solid #334155 !important;
-          }
-          th, td {
-            border: 1px solid #475569 !important;
           }
 
           .print-container, .print-container * {
             border-radius: 0 !important;
           }
           .print-header {
-            border-bottom: 3px solid #000000 !important;
+            border-bottom: 2px solid #000000 !important;
           }
 
           /* Portrait or Landscape specific layout scaling */
           ${printOrientation === 'landscape' ? `
             /* LANDSCAPE PRESENTATION */
             .print-container {
-              padding: 15mm 16mm !important;
+              padding: 10mm 12mm !important;
               height: auto !important;
               min-height: 210mm !important;
               max-height: none !important;
               justify-content: flex-start !important;
             }
             .print-header {
-              padding: 16px 24px !important;
+              padding: 14px 20px !important;
               background-color: #ffffff !important;
               color: #000000 !important;
-              border-bottom: 3.5px double #000000 !important;
+              border-bottom: 2px solid #e2e8f0 !important;
             }
             .print-header h2 {
               font-size: 26px !important;
@@ -447,14 +443,13 @@ export default function HorarioPage() {
             .print-content {
               padding: 0 !important;
               background: white !important;
-              margin-top: 12px !important;
-              margin-bottom: 12px !important;
+              margin-top: 8px !important;
+              margin-bottom: 8px !important;
             }
             .print-content th {
               padding: 6px 4px !important;
-              background-color: #f1f5f9 !important;
-              border: 1px solid #334155 !important;
-              border-bottom: 2px solid #000000 !important;
+              background-color: #f8fafc !important;
+              border-bottom: 2px solid #cbd5e1 !important;
             }
             .print-content th span {
               font-size: 9px !important;
@@ -462,14 +457,11 @@ export default function HorarioPage() {
             .print-content td {
               padding: 2px !important;
               height: auto !important;
-              border: 1px solid #475569 !important;
             }
             /* First/Time column scaling */
             .print-content td:first-child {
               padding: 2px !important;
               width: 70px !important;
-              background-color: #f8fafc !important;
-              border-right: 2px solid #334155 !important;
             }
             .print-content td:first-child div {
               font-size: 10px !important;
@@ -481,7 +473,7 @@ export default function HorarioPage() {
               padding: 4px 6px !important;
               border-radius: 4px !important;
               background-color: #f8fafc !important;
-              border: 1px solid #64748b !important;
+              border: 1px solid #e2e8f0 !important;
             }
             .print-content .min-h-\\[140px\\] span,
             .print-content .min-h-\\[140px\\] p,
@@ -496,9 +488,6 @@ export default function HorarioPage() {
             /* Interval/Lunch slot compact presentation */
             .print-content tr[class*="bg-slate-50"] td {
               padding: 3px !important;
-              background-color: #f1f5f9 !important;
-              border-top: 1.5px solid #334155 !important;
-              border-bottom: 1.5px solid #334155 !important;
             }
             .print-content tr[class*="bg-slate-50"] span {
               font-size: 8px !important;
@@ -507,17 +496,17 @@ export default function HorarioPage() {
           ` : `
             /* PORTRAIT PRESENTATION */
             .print-container {
-              padding: 16mm 18mm !important;
+              padding: 12mm 15mm !important;
               height: auto !important;
               min-height: 297mm !important;
               max-height: none !important;
               justify-content: flex-start !important;
             }
             .print-header {
-              padding: 20px 28px !important;
+              padding: 18px 24px !important;
               background-color: #ffffff !important;
               color: #000000 !important;
-              border-bottom: 3.5px double #000000 !important;
+              border-bottom: 2px solid #e2e8f0 !important;
             }
             .print-header h2 {
               font-size: 32px !important;
@@ -526,14 +515,13 @@ export default function HorarioPage() {
             .print-content {
               padding: 0 !important;
               background: white !important;
-              margin-top: 16px !important;
-              margin-bottom: 16px !important;
+              margin-top: 12px !important;
+              margin-bottom: 12px !important;
             }
             .print-content th {
               padding: 8px 4px !important;
-              background-color: #f1f5f9 !important;
-              border: 1px solid #334155 !important;
-              border-bottom: 2px solid #000000 !important;
+              background-color: #f8fafc !important;
+              border-bottom: 2px solid #cbd5e1 !important;
             }
             .print-content th span {
               font-size: 11px !important;
@@ -541,14 +529,11 @@ export default function HorarioPage() {
             .print-content td {
               padding: 3px !important;
               height: auto !important;
-              border: 1px solid #475569 !important;
             }
             /* First/Time column scaling */
             .print-content td:first-child {
               padding: 3px !important;
               width: 85px !important;
-              background-color: #f8fafc !important;
-              border-right: 2px solid #334155 !important;
             }
             .print-content td:first-child div {
               font-size: 11px !important;
@@ -560,7 +545,7 @@ export default function HorarioPage() {
               padding: 6px 8px !important;
               border-radius: 4px !important;
               background-color: #f8fafc !important;
-              border: 1px solid #64748b !important;
+              border: 1px solid #e2e8f0 !important;
             }
             .print-content .min-h-\\[140px\\] span,
             .print-content .min-h-\\[140px\\] p,
@@ -575,9 +560,6 @@ export default function HorarioPage() {
             /* Interval/Lunch slot compact presentation */
             .print-content tr[class*="bg-slate-50"] td {
               padding: 4px !important;
-              background-color: #f1f5f9 !important;
-              border-top: 1.5px solid #334155 !important;
-              border-bottom: 1.5px solid #334155 !important;
             }
             .print-content tr[class*="bg-slate-50"] span {
               font-size: 9px !important;
