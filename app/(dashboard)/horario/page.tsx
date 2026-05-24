@@ -277,7 +277,7 @@ export default function HorarioPage() {
           /* Setup page size and margin to 0 for maximum control of margins via container */
           @page { 
             size: A4 ${printOrientation}; 
-            margin: 0mm !important;
+            margin: 0 !important;
           }
           
           /* Force color printing across standard browsers */
@@ -285,6 +285,7 @@ export default function HorarioPage() {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
             color-adjust: exact !important;
+            box-shadow: none !important;
           }
 
           /* Hide all surrounding page layers completely */
@@ -294,6 +295,8 @@ export default function HorarioPage() {
             height: 0 !important;
             opacity: 0 !important;
             visibility: hidden !important;
+            margin: 0 !important;
+            padding: 0 !important;
           }
 
           /* Reset html, body, and all structural wrappers to eliminate any offsets, margins, paddings, and transforms */
@@ -327,7 +330,10 @@ export default function HorarioPage() {
           [class*="bg-slate-950"], 
           [class*="flex-1"] {
             margin: 0 !important;
+            margin-top: 0 !important;
             padding: 0 !important;
+            padding-top: 0 !important;
+            top: 0 !important;
             transform: none !important;
             perspective: none !important;
             position: static !important;
@@ -344,6 +350,9 @@ export default function HorarioPage() {
             position: absolute !important;
             left: 0 !important;
             top: 0 !important;
+            margin-top: 0 !important;
+            padding-top: 0 !important;
+            transform: none !important;
             width: 100% !important;
             max-width: 100% !important;
             min-width: 100% !important;
@@ -387,7 +396,7 @@ export default function HorarioPage() {
             .print-container {
               padding: 10mm 12mm !important;
               height: auto !important;
-              min-height: auto !important;
+              min-height: 210mm !important;
               max-height: none !important;
               justify-content: flex-start !important;
             }
@@ -459,7 +468,7 @@ export default function HorarioPage() {
             .print-container {
               padding: 12mm 15mm !important;
               height: auto !important;
-              min-height: auto !important;
+              min-height: 297mm !important;
               max-height: none !important;
               justify-content: flex-start !important;
             }

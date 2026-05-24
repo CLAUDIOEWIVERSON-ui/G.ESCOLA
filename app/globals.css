@@ -1,52 +1,41 @@
 @import "tailwindcss";
 
+@page {
+  margin: 0;
+  size: auto;
+}
+
+html,
+body {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100%;
+  height: auto;
+}
+
+body {
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
 @media print {
-  /* Reset the canvas layout for standard paper printing and eliminate trailing white pages */
-  html, body {
-    height: auto !important;
-    min-height: auto !important;
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
     overflow: visible !important;
     background: white !important;
     color: black !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-
-  /* Set a clean, consistent page margin */
-  @page {
-    margin: 10mm !important;
-  }
-
-  /* Fully neutralize structural wrappers, Next.js root divs, and page bodies */
-  #__next,
-  body > div,
-  main,
-  [role="group"],
-  div.flex,
-  div.flex-1,
-  div[class*="min-h-screen"] {
-    display: block !important;
     height: auto !important;
-    min-height: 0 !important;
     min-height: auto !important;
-    overflow: visible !important;
-    position: static !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    background: transparent !important;
-    box-shadow: none !important;
-    border: none !important;
   }
 
-  /* Hide navigation, sidebars, headers, bottom bars, and other print-unfriendly items */
-  aside,
   header,
   nav,
-  button,
-  .print\:hidden,
-  .no-print {
+  footer,
+  aside,
+  .no-print,
+  .print\:hidden {
     display: none !important;
     width: 0 !important;
     height: 0 !important;
@@ -57,22 +46,52 @@
     padding: 0 !important;
   }
 
-  /* Keep table contents and items from producing orphan trailing blank space */
-  .grid, .card, section, article {
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
+  .print-container,
+  main,
+  section {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+    top: 0 !important;
+    transform: none !important;
   }
 
-  /* Clean spacing for the printable main content area */
-  main {
-    padding: 1rem !important;
+  * {
+    box-shadow: none !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Cancel all flex and layouts that block top matching or cause trailing white space */
+  div.flex,
+  div.flex-1,
+  div[class*="min-h-screen"],
+  div[class*="h-screen"],
+  div[class*="sticky"],
+  div[class*="fixed"],
+  main,
+  #__next,
+  body > div,
+  [role="group"] {
+    display: block !important;
+    height: auto !important;
+    min-height: 0 !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    position: static !important;
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+    transform: none !important;
   }
 
   /* Improve page break behavior for layout items during printing */
-  .grid {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 1rem !important;
+  .grid, .card, section, article {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 
   table {
@@ -90,4 +109,5 @@
     font-size: 11px !important;
   }
 }
+
 
