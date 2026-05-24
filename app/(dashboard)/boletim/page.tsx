@@ -13,13 +13,94 @@ import {
   XCircle,
   AlertCircle,
   Loader2,
-  Users
+  Users,
+  X,
+  Award,
+  Shield,
+  Clock,
+  BookOpen,
+  Calendar,
+  User,
+  Percent
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+
+const reportT = {
+  pt: {
+    headerTitle: "SISTEMA DE ENSINO E INSTRUÇÃO",
+    headerSubtitle: "RELATÓRIO INDIVIDUAL DE DESEMPENHO ACADÊMICO",
+    studentInfo: "IDENTIFICAÇÃO DO ALUNO / PATRULHEIRO",
+    academicMap: "MAPA DE RENDIMENTO ACADÊMICO",
+    attendanceReg: "REGISTRO DE FREQUÊNCIA",
+    footerText: "Emitido eletronicamente via Sistema de Gestão Escolar",
+    observations: "OBSERVAÇÕES PEDAGÓGICAS E DISCIPLINARES",
+    defaultObs: "Atleta/Aluno demonstra comprometimento acadêmico regular, preenchendo os requisitos regulamentares de frequência e aproveitamento didático estabelecidos pelas normas vigentes.",
+    signatureInstructor: "Assinatura do Instrutor-Chefe / Coordenador",
+    signatureStudent: "Assinatura do Aluno / Treinando",
+    fullName: "Nome Completo",
+    rank: "Posto / Graduação",
+    course: "Curso de Formação",
+    class: "Turma",
+    period: "Turno / Período",
+    status: "Status de Matrícula",
+    totalLectures: "Total de Aulas",
+    attendances: "Presenças",
+    absences: "Faltas",
+    attendanceRate: "Aproveitamento de Frequência",
+    discipline: "Disciplina / Módulo",
+    finalGrade: "Nota Final",
+    situation: "Situação",
+    overallAverage: "Média Geral de Notas",
+    overallStatus: "Situação de Curso",
+    approved: "APROVADO",
+    reproved: "REPROVADO",
+    retake: "RECUPERAÇÃO",
+    pending: "EM AVALIAÇÃO",
+    inProgress: "Em Andamento (Ativo)",
+    completed: "Curso Concluído",
+    printReport: "Imprimir Relatório",
+    close: "Fechar",
+  },
+  en: {
+    headerTitle: "EDUCATION AND TRAINING SYSTEM",
+    headerSubtitle: "INDIVIDUAL ACADEMIC PERFORMANCE REPORT",
+    studentInfo: "STUDENT / TRAINEE IDENTIFICATION",
+    academicMap: "ACADEMIC PERFORMANCE MAP",
+    attendanceReg: "ATTENDANCE REGISTER",
+    footerText: "Electronically issued via School Management System",
+    observations: "PEDAGOGICAL & DISCIPLINARY OBSERVATIONS",
+    defaultObs: "The student demonstrates regular academic commitment, complying with the regulatory requirements of attendance and training achievements established by current regulations.",
+    signatureInstructor: "Signature of Chief Instructor / Coordinator",
+    signatureStudent: "Signature of Student / Trainee",
+    fullName: "Full Name",
+    rank: "Rank / Post",
+    course: "Course of Instruction",
+    class: "Class Section",
+    period: "Session / Period",
+    status: "Enrollment Status",
+    totalLectures: "Total Lectures",
+    attendances: "Attendances",
+    absences: "Absences",
+    attendanceRate: "Attendance Rate",
+    discipline: "Discipline / Module",
+    finalGrade: "Final Grade",
+    situation: "Situation",
+    overallAverage: "Overall GPA",
+    overallStatus: "Overall Status",
+    approved: "APPROVED",
+    reproved: "FAILED",
+    retake: "RETAKE",
+    pending: "UNDER EVALUATION",
+    inProgress: "In Progress (Active)",
+    completed: "Course Completed",
+    printReport: "Print Report",
+    close: "Close",
+  }
+};
 
 export default function BoletimPage() {
   const { t, language } = useI18n();
@@ -38,6 +119,10 @@ export default function BoletimPage() {
   const [boletimData, setBoletimData] = useState<any[]>([]);
   const [classStats, setClassStats] = useState({ avg: 0, total: 0 });
   const [settings, setSettings] = useState({ media_aprovacao: 7, media_recuperacao: 5, frequencia_minima: 75, nota_maxima: 10 });
+
+  const [selectedStudentForReport, setSelectedStudentForReport] = useState<string | null>(null);
+  const [loadingReport, setLoadingReport] = useState(false);
+  const [reportData, setReportData] = useState<any | null>(null);
 
   const handlePrint = () => {
     try {
@@ -82,6 +167,87 @@ export default function BoletimPage() {
     };
     fetchFilters();
   }, []);
+
+  useEffect(() => {
+    if (!selectedStudentForReport) {
+      return;
+    }
+
+    const fetchReportData = async () => {
+      setReportData(null);
+      setLoadingReport(true);
+      try {
+        const { data: student, error: studentErr } = await supabase
+          .from('alunos')
+          .select('*')
+          .eq('id', selectedStudentForReport)
+          .single();
+        if (studentErr) throw studentErr;
+
+        const classId = student.turma_id || selectedTurma;
+        let classObj: any = null;
+        let courseObj: any = null;
+
+        if (classId) {
+          const { data: tData } = await supabase
+            .from('turmas')
+            .select('*')
+            .eq('id', classId)
+            .single();
+          classObj = tData;
+
+          if (tData?.curso_id) {
+            const { data: cData } = await supabase
+              .from('cursos')
+              .select('*')
+              .eq('id', tData.curso_id)
+              .single();
+            courseObj = cData;
+          }
+        }
+
+        let discList: any[] = [];
+        if (courseObj?.id) {
+          const { data: dData } = await supabase
+            .from('disciplinas')
+            .select('*')
+            .eq('curso_id', courseObj.id)
+            .is('deleted_at', null);
+          discList = dData || [];
+        }
+
+        const { data: gradesData } = await supabase
+          .from('notas')
+          .select('*')
+          .eq('aluno_id', selectedStudentForReport)
+          .eq('turma_id', classId);
+
+        const { data: attendanceData } = await supabase
+          .from('frequencia')
+          .select('*')
+          .eq('aluno_id', selectedStudentForReport)
+          .eq('turma_id', classId)
+          .order('data', { ascending: false });
+
+        setReportData({
+          student,
+          classObj,
+          courseObj,
+          disciplines: discList,
+          grades: gradesData || [],
+          attendance: attendanceData || []
+        });
+      } catch (err: any) {
+        console.error("Error generating student report:", err);
+        toast.error(language === 'pt' ? 'Erro ao carregar dados do relatório para este aluno.' : 'Error loading report data for this student.');
+        setSelectedStudentForReport(null);
+      } finally {
+        setLoadingReport(false);
+      }
+    };
+
+    fetchReportData();
+  }, [selectedStudentForReport, selectedTurma, language]);
 
   const handleSearch = async () => {
     if (!selectedTurma || !selectedDisciplina) {
@@ -275,30 +441,9 @@ export default function BoletimPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Statistics */}
-        <div className="lg:col-span-1 space-y-4">
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-            <div className="flex items-center gap-3 text-slate-400 mb-2">
-              <Users size={16} />
-              <span className="text-[10px] font-bold uppercase tracking-widest">{t.nav.students}</span>
-            </div>
-            <div className="text-2xl font-bold text-slate-900">{classStats.total}</div>
-          </div>
-          <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm ring-1 ring-blue-500/5 bg-gradient-to-br from-white to-blue-50/30">
-            <div className="flex items-center gap-3 text-blue-400 mb-2">
-              <AlertCircle size={16} />
-              <span className="text-[10px] font-bold uppercase tracking-widest">{t.reportCard.overallAverage}</span>
-            </div>
-            <div className="text-2xl font-bold text-blue-600">{classStats.avg.toFixed(2)}</div>
-            <div className="mt-2 w-full h-1.5 bg-blue-100 rounded-full overflow-hidden">
-               <div className="h-full bg-blue-500 transition-all" style={{ width: `${(classStats.avg / 10) * 100}%` }} />
-            </div>
-          </div>
-        </div>
-
+      <div className="max-w-4xl mx-auto w-full">
         {/* Grades Table */}
-        <div className="lg:col-span-3">
+        <div>
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden min-h-[400px]">
              <div className="p-4 border-b border-slate-100 bg-slate-50/30 flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-widest px-2">{t.common.finalResult}</span>
@@ -319,12 +464,13 @@ export default function BoletimPage() {
                       ))}
                       <th className="px-2 lg:px-6 py-4 text-center">{t.reportCard.average}</th>
                       <th className="px-3 lg:px-6 py-4 text-right">{t.reportCard.status}</th>
+                      <th className="px-3 lg:px-6 py-4 text-right print:hidden">{language === 'pt' ? 'Ações' : 'Actions'}</th>
                    </tr>
                  </thead>
                  <tbody>
                    {boletimData.length === 0 ? (
                      <tr>
-                        <td colSpan={3 + courseModules} className="py-20 text-center">
+                        <td colSpan={4 + courseModules} className="py-20 text-center">
                            <div className="flex flex-col items-center text-slate-300">
                               <FileText size={48} className="mb-4 opacity-20" />
                               <p className="text-sm font-medium">{t.reportCard.noData}</p>
@@ -342,13 +488,13 @@ export default function BoletimPage() {
                                <div className="font-bold text-slate-800 text-xs lg:text-sm">{row.aluno?.nome}</div>
                                {row.nota_final !== null && row.nota_final !== undefined && Number(row.nota_final) === maxAvgInBoletim && maxAvgInBoletim > 0 && (
                                  <span className="flex items-center gap-1 bg-amber-100 text-amber-700 text-[8px] font-black uppercase px-1.5 py-0.5 rounded border border-amber-200">
-                                   ⭐ Melhor Média
+                                   ⭐ {language === 'pt' ? 'Melhor Média' : 'Top Average'}
                                  </span>
                                )}
                              </div>
                              <div className="text-[10px] font-mono text-slate-400 tracking-tight">#{row.aluno?.matricula}</div>
                              {row.pago === false && (
-                               <div className="text-[9px] font-black text-red-500 uppercase tracking-widest mt-1">Pendente de Pgto.</div>
+                               <div className="text-[9px] font-black text-red-500 uppercase tracking-widest mt-1">{language === 'pt' ? 'Pendente de Pgto.' : 'Payment Pending'}</div>
                              )}
                            </td>
                            {Array.from({ length: courseModules }).map((_, i) => {
@@ -367,7 +513,7 @@ export default function BoletimPage() {
                            <td className="px-6 py-4 text-right">
                               <div className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ring-1 ring-inset ring-current/20", status.className)}>
                                  <StatusIcon size={12} />
-                                 {status.label}
+                                 {status.label}</div></td><td className="px-6 py-4 text-right print:hidden"><button onClick={() => setSelectedStudentForReport(row.aluno?.id)} className="inline-flex items-center gap-1.5 bg-slate-50 hover:bg-blue-600 hover:text-white text-slate-600 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer border border-slate-200 hover:border-blue-600 shadow-sm"><FileText size={12} /><span>{language === 'pt' ? 'Relatório' : 'Report'}</span></button></td><td className="hidden border-none" style={{ display: 'none' }}><div>
                               </div>
                            </td>
                          </tr>
@@ -376,6 +522,470 @@ export default function BoletimPage() {
                    )}
                  </tbody>
                </table>
+
+                {/* Modal of Individual Student Report */}
+                {selectedStudentForReport && (
+                  <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 overflow-y-auto no-print">
+                    <div className="bg-slate-950 text-slate-100 max-w-4xl w-full rounded-2xl shadow-2xl border border-slate-800/80 flex flex-col max-h-[90vh]">
+                      {/* Modal Actions Header */}
+                      <div className="p-4 border-b border-slate-800/40 flex items-center justify-between no-print bg-slate-900 rounded-t-2xl">
+                        <div className="flex items-center gap-2">
+                          <FileText className="text-blue-500" size={20} />
+                          <h3 className="text-sm font-black uppercase tracking-widest text-slate-200">
+                            {language === 'pt' ? 'Visualização do Relatório' : 'Report Preview'}
+                          </h3>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => {
+                              try {
+                                window.print();
+                              } catch (err) {
+                                console.error("Window print error", err);
+                              }
+                            }}
+                            disabled={loadingReport || !reportData}
+                            className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md shadow-blue-500/10 cursor-pointer"
+                          >
+                            <Printer size={14} />
+                            <span>{language === 'pt' ? 'Imprimir' : 'Print'}</span>
+                          </button>
+                          <button
+                            onClick={() => setSelectedStudentForReport(null)}
+                            className="p-2 hover:bg-slate-800 rounded-xl text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
+                          >
+                            <X size={18} />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Modal Scrollable Body */}
+                      <div className="flex-1 overflow-y-auto p-6 bg-slate-950">
+                        {loadingReport ? (
+                          <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-3">
+                            <Loader2 className="animate-spin text-blue-500" size={36} />
+                            <span className="text-xs font-bold tracking-widest uppercase">
+                              {language === 'pt' ? 'Carregando dados...' : 'Loading report data...'}
+                            </span>
+                          </div>
+                        ) : reportData ? (
+                          <div className="flex flex-col gap-6">
+                            <p className="text-xs text-slate-400 text-center mb-2 leading-relaxed">
+                              {language === 'pt' 
+                                ? 'Esta é uma pré-visualização. Clique no botão de impressão para obter o documento formatado em folha A4 com fundo branco.' 
+                                : 'This is a print preview. Click the print button to generate the formatted document on an A4 sheet with clean background.'}
+                            </p>
+                            
+                            {/* The actual A4 Printable Area */}
+                            <div 
+                              id="student-report-print-area" 
+                              className="bg-white text-slate-900 border border-slate-200 shadow-xl p-8 rounded-lg max-w-[210mm] min-h-[297mm] mx-auto flex flex-col gap-6 font-sans relative text-left text-xs"
+                              style={{ width: '100%', boxSizing: 'border-box' }}
+                            >
+                              {/* STYLE TAG FOR DIRECTED CUSTOM CSS FOR PRINT MEDIA */}
+                              <style dangerouslySetInnerHTML={{ __html: `
+                                @media print {
+                                  body * {
+                                    visibility: hidden !important;
+                                  }
+                                  #student-report-print-area, #student-report-print-area * {
+                                    visibility: visible !important;
+                                  }
+                                  #student-report-print-area {
+                                    position: absolute !important;
+                                    left: 0 !important;
+                                    top: 0 !important;
+                                    width: 210mm !important;
+                                    min-height: 297mm !important;
+                                    padding: 15mm !important;
+                                    margin: 0 !important;
+                                    border: none !important;
+                                    box-shadow: none !important;
+                                    background: #ffffff !important;
+                                    color: #000000 !important;
+                                    font-family: Arial, sans-serif !important;
+                                  }
+                                  .print-only-layout {
+                                    visibility: visible !important;
+                                  }
+                                  .print-bg-gray {
+                                    background-color: #f8fafc !important;
+                                    -webkit-print-color-adjust: exact !important;
+                                    print-color-adjust: exact !important;
+                                  }
+                                  .print-border-black {
+                                    border-color: #000000 !important;
+                                  }
+                                }
+                                @page {
+                                  size: A4;
+                                  margin: 10mm;
+                                }
+                              `}} />
+
+                              {/* Clean Header: Student Individual Report and participating class(es) only */}
+                              <div className="flex flex-col items-center justify-center pb-6 border-b-2 border-slate-900 text-center gap-2">
+                                <h1 className="text-2xl font-black text-slate-900 tracking-tight uppercase">
+                                  {language === 'pt' ? 'Relatório Individual do Aluno' : 'Student Individual Report'}
+                                </h1>
+                                <p className="text-xs font-black uppercase tracking-widest text-slate-500">
+                                  {language === 'pt' 
+                                    ? `Turma(s) ao qual participou: ${reportData.classObj?.nome || 'Não informada'}` 
+                                    : `Participated Class(es): ${reportData.classObj?.nome || 'Unassigned'}`}
+                                </p>
+                              </div>
+
+                              {/* Personal Info Grid */}
+                              <div className="border border-slate-200 rounded-lg p-5 bg-slate-50/50 print-bg-gray text-left">
+                                <h3 className="text-[11px] font-black text-slate-400 tracking-[0.15em] uppercase mb-4 pb-1 border-b border-slate-200">
+                                  {reportT[language as 'pt' | 'en'].studentInfo}
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-y-3 gap-x-6 text-sm">
+                                  <div className="flex flex-col gap-0.5 col-span-2 md:col-span-1">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as 'pt' | 'en'].fullName}</span>
+                                    <span className="font-extrabold text-slate-900 uppercase text-xs lg:text-sm">{reportData.student.nome}</span>
+                                  </div>
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as 'pt' | 'en'].rank}</span>
+                                    <span className="font-bold text-slate-800 uppercase">{reportData.student.posto_graduacao || (language === 'pt' ? 'Não declarado' : 'Not declared')}</span>
+                                  </div>
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Matrícula</span>
+                                    <span className="font-bold font-mono text-slate-800">#{reportData.student.matricula}</span>
+                                  </div>
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as 'pt' | 'en'].course}</span>
+                                    <span className="font-bold text-slate-800">{reportData.courseObj?.nome || (language === 'pt' ? 'Não disponível' : 'Not available')}</span>
+                                  </div>
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as 'pt' | 'en'].class}</span>
+                                    <span className="font-bold text-slate-800">{reportData.classObj?.nome || (language === 'pt' ? 'Não disponível' : 'Not available')}</span>
+                                  </div>
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as 'pt' | 'en'].period}</span>
+                                    <span className="font-bold text-slate-800 capitalize">
+                                      {reportData.classObj?.periodo === 'manhã' ? t.common.morning :
+                                       reportData.classObj?.periodo === 'tarde' ? t.common.afternoon :
+                                       reportData.classObj?.periodo === 'noite' ? t.common.night : reportData.classObj?.periodo}
+                                    </span>
+                                  </div>
+                                  <div className="flex flex-col gap-0.5 col-span-2">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as 'pt' | 'en'].status}</span>
+                                    <span className="font-bold flex items-center gap-1.5 text-slate-800">
+                                      <span className={cn("w-2 h-2 rounded-full", reportData.classObj?.status === 'concluida' || reportData.classObj?.status === 'finalizada' ? 'bg-emerald-500' : 'bg-blue-500')} />
+                                      {reportData.classObj?.status === 'concluida' || reportData.classObj?.status === 'finalizada' 
+                                        ? reportT[language as 'pt' | 'en'].completed 
+                                        : reportT[language as 'pt' | 'en'].inProgress}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Academic Performance Map */}
+                              <div className="space-y-3 font-sans">
+                                <h3 className="text-[11px] font-black text-slate-400 tracking-[0.15em] uppercase pb-1 border-b border-slate-200 text-left">
+                                  {reportT[language as 'pt' | 'en'].academicMap}
+                                </h3>
+                                <div className="overflow-x-auto">
+                                  <table className="w-full text-left report-table border border-slate-200 bg-white">
+                                    <thead>
+                                      <tr className="bg-slate-100 print-bg-gray text-[10px] font-extrabold text-slate-600 uppercase tracking-wider border-b border-slate-200">
+                                        <th className="px-4 py-3 border-r border-slate-200">{reportT[language as 'pt' | 'en'].discipline}</th>
+                                        <th className="px-3 py-3 text-center border-r border-slate-200 font-mono">MOD 1</th>
+                                        <th className="px-3 py-3 text-center border-r border-slate-200 font-mono">MOD 2</th>
+                                        <th className="px-3 py-3 text-center border-r border-slate-200 font-mono">MOD 3</th>
+                                        <th className="px-3 py-3 text-center border-r border-slate-200 font-mono">MOD 4</th>
+                                        <th className="px-3 py-3 text-center border-r border-slate-200 font-mono">{reportT[language as 'pt' | 'en'].finalGrade}</th>
+                                        <th className="px-4 py-3 text-right">{reportT[language as 'pt' | 'en'].situation}</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="text-xs text-left">
+                                      {reportData.disciplines.length === 0 ? (
+                                        <tr>
+                                          <td colSpan={7} className="text-center py-6 text-slate-400 font-bold bg-white">
+                                            {language === 'pt' ? 'Nenhuma disciplina cadastrada.' : 'No disciplines registered.'}
+                                          </td>
+                                        </tr>
+                                      ) : (
+                                        reportData.disciplines.map((disc: any) => {
+                                          const grade = reportData.grades.find((g: any) => g.disciplina_id === disc.id);
+                                          const finalGradeValue = grade ? grade.nota_final : null;
+                                          const freqValue = grade ? grade.frequencia : null;
+                                          const finalGradeFormatted = finalGradeValue !== null && finalGradeValue !== undefined ? Number(finalGradeValue).toFixed(1) : '-';
+                                          
+                                          // Determine status
+                                          let statusLabel = '';
+                                          let statusClass = 'text-slate-400';
+                                          if (finalGradeValue === null || finalGradeValue === undefined) {
+                                            statusLabel = reportT[language as 'pt' | 'en'].pending;
+                                          } else if (finalGradeValue >= settings.media_aprovacao && (freqValue === null || freqValue >= settings.frequencia_minima)) {
+                                            statusLabel = reportT[language as 'pt' | 'en'].approved;
+                                            statusClass = 'text-emerald-600 font-extrabold';
+                                          } else if (freqValue !== null && freqValue < settings.frequencia_minima) {
+                                            statusLabel = language === 'pt' ? 'FALTA FREQ.' : 'LOW FREQ.';
+                                            statusClass = 'text-orange-600 font-extrabold';
+                                          } else if (finalGradeValue >= settings.media_recuperacao) {
+                                            statusLabel = reportT[language as 'pt' | 'en'].retake;
+                                            statusClass = 'text-yellow-600 font-extrabold';
+                                          } else {
+                                            statusLabel = reportT[language as 'pt' | 'en'].reproved;
+                                            statusClass = 'text-rose-600 font-extrabold';
+                                          }
+
+                                          return (
+                                            <tr key={disc.id} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors bg-white">
+                                              <td className="px-4 py-2.5 font-bold text-slate-800 border-r border-slate-200 text-left bg-white">{disc.nome}</td>
+                                              <td className="px-3 py-2.5 text-center font-mono border-r border-slate-200 bg-white">{grade?.nota1 !== null && grade?.nota1 !== undefined ? Number(grade.nota1).toFixed(1) : '-'}</td>
+                                              <td className="px-3 py-2.5 text-center font-mono border-r border-slate-200 bg-white">{grade?.nota2 !== null && grade?.nota2 !== undefined ? Number(grade.nota2).toFixed(1) : '-'}</td>
+                                              <td className="px-3 py-2.5 text-center font-mono border-r border-slate-200 bg-white">{grade?.nota3 !== null && grade?.nota3 !== undefined ? Number(grade.nota3).toFixed(1) : '-'}</td>
+                                              <td className="px-3 py-2.5 text-center font-mono border-r border-slate-200 bg-white">{grade?.nota4 !== null && grade?.nota4 !== undefined ? Number(grade.nota4).toFixed(1) : '-'}</td>
+                                              <td className="px-3 py-2.5 text-center font-black font-mono border-r border-slate-200 text-slate-900 bg-white">{finalGradeFormatted}</td>
+                                              <td className={cn("px-4 py-2.5 text-right font-black bg-white", statusClass)}>{statusLabel}</td>
+                                            </tr>
+                                          );
+                                        })
+                                      )}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </div>
+
+                              {/* Attendance and KPI Cards Container */}
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                                {/* Attendance Summary */}
+                                <div className="border border-slate-200 rounded-lg p-4 flex flex-col gap-3 text-left">
+                                  <h3 className="text-[11px] font-black text-slate-400 tracking-[0.1em] uppercase border-b border-slate-200 pb-1">
+                                    {reportT[language as 'pt' | 'en'].attendanceReg}
+                                  </h3>
+                                  
+                                  {/* Attendance Stats Calculation */}
+                                  {(() => {
+                                    const totalAulas = reportData.attendance?.length || 0;
+                                    const presencas = reportData.attendance?.filter((a: any) => a.presente).length || 0;
+                                    const faltas = reportData.attendance?.filter((a: any) => !a.presente).length || 0;
+                                    
+                                    let percentualPresenca = 100;
+                                    if (totalAulas > 0) {
+                                      percentualPresenca = (presencas / totalAulas) * 100;
+                                    } else if (reportData.grades && reportData.grades.length > 0) {
+                                      const validFreqs = reportData.grades.filter((g: any) => g.frequencia !== null && g.frequencia !== undefined);
+                                      if (validFreqs.length > 0) {
+                                        percentualPresenca = validFreqs.reduce((sum: number, g: any) => sum + g.frequencia, 0) / validFreqs.length;
+                                      }
+                                    }
+
+                                    return (
+                                      <div className="flex flex-col gap-2.5 text-left">
+                                        <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                                          <div className="p-2 bg-slate-50 print-bg-gray rounded border border-slate-100 flex flex-col gap-0.5">
+                                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as 'pt' | 'en'].totalLectures}</span>
+                                            <span className="text-sm font-black text-slate-800">{totalAulas || '-'}</span>
+                                          </div>
+                                          <div className="p-2 bg-slate-50 print-bg-gray rounded border border-slate-100 flex flex-col gap-0.5">
+                                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as 'pt' | 'en'].attendances}</span>
+                                            <span className="text-sm font-black text-emerald-600">{totalAulas ? presencas : '-'}</span>
+                                          </div>
+                                          <div className="p-2 bg-slate-50 print-bg-gray rounded border border-slate-100 flex flex-col gap-0.5">
+                                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as 'pt' | 'en'].absences}</span>
+                                            <span className="text-sm font-black text-rose-600">{totalAulas ? faltas : '-'}</span>
+                                          </div>
+                                        </div>
+
+                                        {/* Attendance percentage indicator */}
+                                        <div className="flex items-center justify-between text-xs p-1.5 mt-1 border-t border-slate-100">
+                                          <span className="font-extrabold text-slate-500 uppercase text-[9px] tracking-wide">{reportT[language as 'pt' | 'en'].attendanceRate}:</span>
+                                          <span className={cn(
+                                            "font-black text-sm",
+                                            percentualPresenca >= settings.frequencia_minima ? "text-emerald-600" : "text-rose-600"
+                                          )}>
+                                            {percentualPresenca.toFixed(1)}%
+                                          </span>
+                                        </div>
+
+                                        {/* Tiny timeline of latest attendance dates */}
+                                        {reportData.attendance && reportData.attendance.length > 0 && (
+                                          <div className="flex flex-col gap-1.5 mt-1 pt-1.5 border-t border-dashed border-slate-200">
+                                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                                              {language === 'pt' ? 'Histórico de Presenças (Últimas 10):' : 'Attendance Record (Last 10):'}
+                                            </span>
+                                            <div className="flex flex-wrap gap-1">
+                                              {reportData.attendance.slice(0, 10).map((att: any, ind: number) => (
+                                                <span 
+                                                  key={att.id || ind} 
+                                                  className={cn(
+                                                    "text-[9px] px-1.5 py-0.5 rounded font-bold uppercase",
+                                                    att.presente 
+                                                      ? "bg-emerald-50 text-emerald-700 border border-emerald-100" 
+                                                      : "bg-rose-50 text-rose-700 border border-rose-100"
+                                                  )}
+                                                  title={format(new Date(att.data), 'dd/MM/yyyy')}
+                                                >
+                                                  {format(new Date(att.data), 'dd/MM')} {att.presente ? '✓' : '✗'}
+                                                </span>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  })()}
+                                </div>
+
+                                {/* Performance & Summary */}
+                                <div className="border border-slate-200 rounded-lg p-4 flex flex-col gap-3 text-left">
+                                  <h3 className="text-[11px] font-black text-slate-400 tracking-[0.1em] uppercase border-b border-slate-200 pb-1">
+                                    {language === 'pt' ? 'DESEMPENHO GLOBAL' : 'GLOBAL PERFORMANCE'}
+                                  </h3>
+                                  
+                                  {(() => {
+                                    const validFinalGrades = reportData.grades
+                                      ? reportData.grades.filter((g: any) => g.nota_final !== null && g.nota_final !== undefined) 
+                                      : [];
+                                    const averageGrade = validFinalGrades.length > 0
+                                      ? validFinalGrades.reduce((sum: number, g: any) => sum + Number(g.nota_final), 0) / validFinalGrades.length
+                                      : null;
+
+                                    // Compute overall status
+                                    let overallLabel = language === 'pt' ? 'EM FILTRAGEM / AVALIAÇÃO' : 'UNDER REVIEW';
+                                    let overallClass = 'bg-slate-100 text-slate-700';
+
+                                    if (averageGrade !== null) {
+                                      // Let's check for any failure or low attendance
+                                      const hasReprovedDiscipline = reportData.grades.some((g: any) => g.nota_final !== null && g.nota_final < settings.media_aprovacao);
+                                      const totalAulas = reportData.attendance?.length || 0;
+                                      let percentualPresenca = 100;
+                                      if (totalAulas > 0) {
+                                        const presencas = reportData.attendance.filter((a: any) => a.presente).length;
+                                        percentualPresenca = (presencas / totalAulas) * 100;
+                                      } else if (reportData.grades && reportData.grades.length > 0) {
+                                        const validFreqs = reportData.grades.filter((g: any) => g.frequencia !== null && g.frequencia !== undefined);
+                                        if (validFreqs.length > 0) {
+                                          percentualPresenca = validFreqs.reduce((sum: number, g: any) => sum + g.frequencia, 0) / validFreqs.length;
+                                        }
+                                      }
+
+                                      if (percentualPresenca < settings.frequencia_minima) {
+                                        overallLabel = language === 'pt' ? 'REPROVADO POR FREQUÊNCIA' : 'FAILED BY ATTENDANCE';
+                                        overallClass = 'bg-rose-100 text-rose-700';
+                                      } else if (hasReprovedDiscipline) {
+                                        overallLabel = language === 'pt' ? 'REPROVADO POR NOTA' : 'FAILED BY ACADEMICS';
+                                        overallClass = 'bg-red-100 text-red-700';
+                                      } else if (averageGrade >= settings.media_aprovacao) {
+                                        overallLabel = reportT[language as 'pt' | 'en'].approved;
+                                        overallClass = 'bg-emerald-100 text-emerald-700 font-extrabold';
+                                      } else if (averageGrade >= settings.media_recuperacao) {
+                                        overallLabel = reportT[language as 'pt' | 'en'].retake;
+                                        overallClass = 'bg-yellow-100 text-yellow-700';
+                                      } else {
+                                        overallLabel = reportT[language as 'pt' | 'en'].reproved;
+                                        overallClass = 'bg-rose-100 text-rose-700';
+                                      }
+                                    }
+
+                                    return (
+                                      <div className="flex-1 flex flex-col justify-between gap-3 text-left">
+                                        <div className="flex flex-col gap-2">
+                                          <div className="flex justify-between items-center text-xs p-1">
+                                            <span className="font-extrabold text-slate-500 uppercase text-[9px] tracking-wide">{reportT[language as 'pt' | 'en'].overallAverage}:</span>
+                                            <span className={cn(
+                                              "font-black font-mono text-base px-2 py-0.5 rounded",
+                                              averageGrade !== null && averageGrade >= settings.media_aprovacao ? "text-blue-600 bg-blue-50" : "text-rose-600 bg-rose-50"
+                                            )}>
+                                              {averageGrade !== null ? averageGrade.toFixed(2) : '-'}
+                                            </span>
+                                          </div>
+
+                                          <div className="flex justify-between items-center text-xs p-1 border-t border-slate-100">
+                                            <span className="font-extrabold text-slate-500 uppercase text-[9px] tracking-wide">{reportT[language as 'pt' | 'en'].overallStatus}:</span>
+                                            <span className={cn(
+                                              "text-[10px] font-black uppercase px-2.5 py-1 rounded",
+                                              overallClass
+                                            )}>
+                                              {overallLabel}
+                                            </span>
+                                          </div>
+                                        </div>
+
+                                        {/* Visual feedback or badge */}
+                                        <div className="text-[10px] text-slate-400 bg-slate-50 print-bg-gray rounded-lg p-2.5 border border-slate-100 flex items-start gap-2">
+                                          <Award className="text-slate-400 shrink-0 mt-0.5" size={14} />
+                                          <p className="leading-normal">
+                                            {language === 'pt' 
+                                              ? `Média de aprovação configurada em ${settings.media_aprovacao.toFixed(1)} e frequência mínima em ${settings.frequencia_minima}%.`
+                                              : `Program passing grade configured at ${settings.media_aprovacao.toFixed(1)} and minimum attendance at ${settings.frequencia_minima}%.`}
+                                          </p>
+                                        </div>
+                                      </div>
+                                    );
+                                  })()}
+                                </div>
+                              </div>
+
+                              {/* Observations section */}
+                              <div className="border border-slate-200 rounded-lg p-4 flex flex-col gap-2 text-left text-xs text-slate-600 italic">
+                                <h3 className="text-[11px] font-black text-slate-400 tracking-[0.1em] uppercase border-b border-slate-200 pb-1">
+                                  {reportT[language as 'pt' | 'en'].observations}
+                                </h3>
+                                <p className="leading-relaxed text-justify">
+                                  {reportT[language as 'pt' | 'en'].defaultObs}
+                                </p>
+                              </div>
+
+                              {/* Signature Block - At the bottom */}
+                              <div className="mt-auto pt-10 grid grid-cols-2 gap-12 text-center text-xs text-slate-900 bg-white">
+                                <div className="flex flex-col items-center gap-1 bg-white">
+                                  <div className="w-full max-w-[200px] border-b border-slate-400 h-6 bg-white"></div>
+                                  <span className="font-extrabold text-slate-800 text-[10px] uppercase tracking-wide bg-white">
+                                    {reportT[language as 'pt' | 'en'].signatureStudent}
+                                  </span>
+                                  <span className="text-[9px] text-slate-400 bg-white">
+                                    {language === 'pt' ? 'Identidade / Cadastro' : 'ID / Registration No.'}
+                                  </span>
+                                </div>
+                                <div className="flex flex-col items-center gap-1 bg-white">
+                                  <div className="w-full max-w-[200px] border-b border-slate-400 h-6 bg-white"></div>
+                                  <span className="font-extrabold text-slate-800 text-[10px] uppercase tracking-wide bg-white">
+                                    {reportT[language as 'pt' | 'en'].signatureInstructor}
+                                  </span>
+                                  <span className="text-[9px] text-slate-400 bg-white">
+                                    {language === 'pt' ? 'Diretor de Ensino / Coordenador' : 'Commanding Officer / Instructor'}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Stamp & Verification Text */}
+                              <div className="pt-6 border-t border-slate-100 flex items-center justify-between text-[9px] text-slate-400 font-medium uppercase tracking-wider bg-white">
+                                <span>{reportT[language as 'pt' | 'en'].footerText}</span>
+                                <span>
+                                  {language === 'pt' ? 'Data de Emissão: ' : 'Date of Issue: '}
+                                  {new Date().toLocaleDateString(language === 'pt' ? 'pt-BR' : 'en-US', {
+                                    day: '2-digit',
+                                    month: 'long',
+                                    year: 'numeric'
+                                  })}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-center py-20 text-slate-400">
+                            {language === 'pt' ? 'Não foi possível carregar os dados.' : 'Failed to retrieve report data.'}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Modal Actions Footer */}
+                      <div className="p-4 border-t border-slate-700/50 flex justify-end gap-3 no-print bg-slate-900 rounded-b-2xl">
+                        <button
+                          onClick={() => setSelectedStudentForReport(null)}
+                          className="bg-slate-800 hover:bg-slate-700 px-5 py-2.5 rounded-xl text-xs font-bold text-slate-300 transition-all cursor-pointer"
+                        >
+                          {reportT[language as 'pt' | 'en'].close}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
              </div>
           </div>
         </div>
