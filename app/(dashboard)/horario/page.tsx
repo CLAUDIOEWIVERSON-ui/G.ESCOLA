@@ -955,30 +955,30 @@ export default function HorarioPage() {
                                       </div>
                                     ) : (
                                       cell.subjectId ? (
-                                        <div className="space-y-2 flex-1 flex flex-col">
-                                          <div className="space-y-1">
-                                            <div className="flex items-center gap-1.5 text-neutral-950">
-                                              <BookOpen size={10} />
-                                              <span className="text-[11px] font-black leading-tight uppercase tracking-tight">
+                                        <div className="space-y-2 flex-1 flex flex-col min-w-0">
+                                          <div className="space-y-1 min-w-0">
+                                            <div className="flex items-center gap-1.5 text-neutral-950 min-w-0">
+                                              <BookOpen size={10} className="shrink-0" />
+                                              <span className="text-[11px] font-black leading-tight uppercase tracking-tight break-words whitespace-normal text-wrap flex-1 min-w-0">
                                                 {disciplinas.find(d => d.id === cell.subjectId)?.nome || 'Disciplina'}
                                               </span>
                                             </div>
-                                            <div className="flex items-center gap-1.5 text-neutral-500">
-                                              <User size={10} />
-                                              <span className="text-[10px] font-bold">
+                                            <div className="flex items-center gap-1.5 text-neutral-500 min-w-0">
+                                              <User size={10} className="shrink-0" />
+                                              <span className="text-[10px] font-bold break-words whitespace-normal text-wrap flex-1 min-w-0">
                                                 {instrutores.find(i => i.id === cell.instructorId)?.full_name || cell.instructorId || 'Instrutor'}
                                               </span>
                                             </div>
                                           </div>
                                           
-                                          <div className="mt-auto pt-2 flex flex-col gap-1 border-t border-slate-100">
-                                            <div className="flex items-center gap-1 text-[9px] font-black text-blue-600 uppercase tracking-widest">
-                                              <Shield size={8} />
-                                              <span>{turmas.find(tu => tu.id === cell.turmaId)?.nome || selectedTurma?.nome}</span>
+                                          <div className="mt-auto pt-2 flex flex-col gap-1 border-t border-slate-100 min-w-0">
+                                            <div className="flex items-center gap-1 text-[9px] font-black text-blue-600 uppercase tracking-widest min-w-0">
+                                              <Shield size={8} className="shrink-0" />
+                                              <span className="break-words whitespace-normal text-wrap flex-1 min-w-0">{turmas.find(tu => tu.id === cell.turmaId)?.nome || selectedTurma?.nome}</span>
                                             </div>
-                                            <div className="flex items-center gap-1.5 text-neutral-400">
-                                              <MapPin size={10} />
-                                              <span className="text-[9px] font-black uppercase tracking-tight">{cell.room || 'N/A'}</span>
+                                            <div className="flex items-center gap-1.5 text-neutral-400 min-w-0">
+                                              <MapPin size={10} className="shrink-0" />
+                                              <span className="text-[9px] font-black uppercase tracking-tight break-words whitespace-normal text-wrap flex-1 min-w-0">{cell.room || 'N/A'}</span>
                                             </div>
                                           </div>
                                         </div>

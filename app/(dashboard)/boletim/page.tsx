@@ -614,12 +614,13 @@ export default function BoletimPage() {
                                 : 'This is a print preview. Click the print button to generate the formatted document on an A4 sheet with clean background.'}
                             </p>
                             
-                            {/* The actual A4 Printable Area */}
-                            <div 
-                              id="student-report-print-area" 
-                              className="bg-white text-slate-900 border border-slate-200 shadow-xl p-8 rounded-lg max-w-[210mm] min-h-[297mm] mx-auto flex flex-col gap-6 font-sans relative text-left text-xs"
-                              style={{ width: '100%', boxSizing: 'border-box' }}
-                            >
+                            {/* The actual A4 Printable Area Wrapper */}
+                            <div className="w-full overflow-x-auto pb-4 no-print flex justify-start md:justify-center">
+                              <div 
+                                id="student-report-print-area" 
+                                className="bg-white text-slate-900 border border-slate-200 shadow-xl p-8 rounded-lg min-w-[760px] max-w-[210mm] min-h-[297mm] flex flex-col gap-6 font-sans relative text-left text-xs"
+                                style={{ boxSizing: 'border-box' }}
+                              >
                               {/* STYLE TAG FOR DIRECTED CUSTOM CSS FOR PRINT MEDIA */}
                               <style dangerouslySetInnerHTML={{ __html: `
                                 @media print {
@@ -678,26 +679,26 @@ export default function BoletimPage() {
                                 <h3 className="text-[11px] font-black text-slate-400 tracking-[0.15em] uppercase mb-4 pb-1 border-b border-slate-200">
                                   {reportT[language as 'pt' | 'en'].studentInfo}
                                 </h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-y-3 gap-x-6 text-sm">
-                                  <div className="flex flex-col gap-0.5 col-span-2 md:col-span-1">
+                                <div className="grid grid-cols-1 md:grid-cols-2 print:grid-cols-2 gap-y-3 gap-x-6 text-sm">
+                                  <div className="flex flex-col gap-0.5 col-span-2 md:col-span-1 print:col-span-1">
                                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as 'pt' | 'en'].fullName}</span>
-                                    <span className="font-extrabold text-slate-900 uppercase text-xs lg:text-sm">{reportData.student.nome}</span>
+                                    <span className="font-extrabold text-slate-900 uppercase text-xs lg:text-sm break-words whitespace-normal leading-tight">{reportData.student.nome}</span>
                                   </div>
                                   <div className="flex flex-col gap-0.5">
                                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as 'pt' | 'en'].rank}</span>
-                                    <span className="font-bold text-slate-800 uppercase">{reportData.student.posto_graduacao || (language === 'pt' ? 'Não declarado' : 'Not declared')}</span>
+                                    <span className="font-bold text-slate-800 uppercase break-words whitespace-normal leading-tight">{reportData.student.posto_graduacao || (language === 'pt' ? 'Não declarado' : 'Not declared')}</span>
                                   </div>
                                   <div className="flex flex-col gap-0.5">
                                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Matrícula</span>
-                                    <span className="font-bold font-mono text-slate-800">#{reportData.student.matricula}</span>
+                                    <span className="font-bold font-mono text-slate-800 break-words whitespace-normal">#{reportData.student.matricula}</span>
                                   </div>
                                   <div className="flex flex-col gap-0.5">
                                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as 'pt' | 'en'].course}</span>
-                                    <span className="font-bold text-slate-800">{reportData.courseObj?.nome || (language === 'pt' ? 'Não disponível' : 'Not available')}</span>
+                                    <span className="font-bold text-slate-800 break-words whitespace-normal leading-tight">{reportData.courseObj?.nome || (language === 'pt' ? 'Não disponível' : 'Not available')}</span>
                                   </div>
                                   <div className="flex flex-col gap-0.5">
                                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as 'pt' | 'en'].class}</span>
-                                    <span className="font-bold text-slate-800">{reportData.classObj?.nome || (language === 'pt' ? 'Não disponível' : 'Not available')}</span>
+                                    <span className="font-bold text-slate-800 break-words whitespace-normal leading-tight">{reportData.classObj?.nome || (language === 'pt' ? 'Não disponível' : 'Not available')}</span>
                                   </div>
                                   <div className="flex flex-col gap-0.5">
                                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as 'pt' | 'en'].period}</span>
@@ -707,7 +708,7 @@ export default function BoletimPage() {
                                        reportData.classObj?.periodo === 'noite' ? t.common.night : reportData.classObj?.periodo}
                                     </span>
                                   </div>
-                                  <div className="flex flex-col gap-0.5 col-span-2">
+                                  <div className="flex flex-col gap-0.5 col-span-2 print:col-span-2">
                                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as 'pt' | 'en'].status}</span>
                                     <span className="font-bold flex items-center gap-1.5 text-slate-800">
                                       <span className={cn("w-2 h-2 rounded-full", reportData.classObj?.status === 'concluida' || reportData.classObj?.status === 'finalizada' ? 'bg-emerald-500' : 'bg-blue-500')} />
@@ -725,16 +726,16 @@ export default function BoletimPage() {
                                   {reportT[language as 'pt' | 'en'].academicMap}
                                 </h3>
                                 <div className="overflow-x-auto">
-                                  <table className="w-full text-left report-table border border-slate-200 bg-white">
+                                  <table className="w-full text-left report-table border border-slate-200 bg-white table-fixed">
                                     <thead>
                                       <tr className="bg-slate-100 print-bg-gray text-[10px] font-extrabold text-slate-600 uppercase tracking-wider border-b border-slate-200">
-                                        <th className="px-4 py-3 border-r border-slate-200">{reportT[language as 'pt' | 'en'].discipline}</th>
-                                        <th className="px-3 py-3 text-center border-r border-slate-200 font-mono">MOD 1</th>
-                                        <th className="px-3 py-3 text-center border-r border-slate-200 font-mono">MOD 2</th>
-                                        <th className="px-3 py-3 text-center border-r border-slate-200 font-mono">MOD 3</th>
-                                        <th className="px-3 py-3 text-center border-r border-slate-200 font-mono">MOD 4</th>
-                                        <th className="px-3 py-3 text-center border-r border-slate-200 font-mono">{reportT[language as 'pt' | 'en'].finalGrade}</th>
-                                        <th className="px-4 py-3 text-right">{reportT[language as 'pt' | 'en'].situation}</th>
+                                        <th className="px-4 py-3 border-r border-slate-200 w-[240px] text-left">{reportT[language as 'pt' | 'en'].discipline}</th>
+                                        <th className="px-2 py-3 text-center border-r border-slate-200 font-mono w-[60px]">MOD 1</th>
+                                        <th className="px-2 py-3 text-center border-r border-slate-200 font-mono w-[60px]">MOD 2</th>
+                                        <th className="px-2 py-3 text-center border-r border-slate-200 font-mono w-[60px]">MOD 3</th>
+                                        <th className="px-2 py-3 text-center border-r border-slate-200 font-mono w-[60px]">MOD 4</th>
+                                        <th className="px-2 py-3 text-center border-r border-slate-200 font-mono w-[80px]">{reportT[language as 'pt' | 'en'].finalGrade}</th>
+                                        <th className="px-4 py-3 text-right w-[100px]">{reportT[language as 'pt' | 'en'].situation}</th>
                                       </tr>
                                     </thead>
                                     <tbody className="text-xs text-left">
@@ -772,13 +773,13 @@ export default function BoletimPage() {
 
                                           return (
                                             <tr key={disc.id} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors bg-white">
-                                              <td className="px-4 py-2.5 font-bold text-slate-800 border-r border-slate-200 text-left bg-white">{disc.nome}</td>
-                                              <td className="px-3 py-2.5 text-center font-mono border-r border-slate-200 bg-white">{grade?.nota1 !== null && grade?.nota1 !== undefined ? Number(grade.nota1).toFixed(1) : '-'}</td>
-                                              <td className="px-3 py-2.5 text-center font-mono border-r border-slate-200 bg-white">{grade?.nota2 !== null && grade?.nota2 !== undefined ? Number(grade.nota2).toFixed(1) : '-'}</td>
-                                              <td className="px-3 py-2.5 text-center font-mono border-r border-slate-200 bg-white">{grade?.nota3 !== null && grade?.nota3 !== undefined ? Number(grade.nota3).toFixed(1) : '-'}</td>
-                                              <td className="px-3 py-2.5 text-center font-mono border-r border-slate-200 bg-white">{grade?.nota4 !== null && grade?.nota4 !== undefined ? Number(grade.nota4).toFixed(1) : '-'}</td>
-                                              <td className="px-3 py-2.5 text-center font-black font-mono border-r border-slate-200 text-slate-900 bg-white">{finalGradeFormatted}</td>
-                                              <td className={cn("px-4 py-2.5 text-right font-black bg-white", statusClass)}>{statusLabel}</td>
+                                              <td className="px-4 py-2.5 font-bold text-slate-800 border-r border-slate-200 text-left bg-white break-words whitespace-normal overflow-hidden">{disc.nome}</td>
+                                              <td className="px-2 py-2.5 text-center font-mono border-r border-slate-200 bg-white">{grade?.nota1 !== null && grade?.nota1 !== undefined ? Number(grade.nota1).toFixed(1) : '-'}</td>
+                                              <td className="px-2 py-2.5 text-center font-mono border-r border-slate-200 bg-white">{grade?.nota2 !== null && grade?.nota2 !== undefined ? Number(grade.nota2).toFixed(1) : '-'}</td>
+                                              <td className="px-2 py-2.5 text-center font-mono border-r border-slate-200 bg-white">{grade?.nota3 !== null && grade?.nota3 !== undefined ? Number(grade.nota3).toFixed(1) : '-'}</td>
+                                              <td className="px-2 py-2.5 text-center font-mono border-r border-slate-200 bg-white">{grade?.nota4 !== null && grade?.nota4 !== undefined ? Number(grade.nota4).toFixed(1) : '-'}</td>
+                                              <td className="px-2 py-2.5 text-center font-black font-mono border-r border-slate-200 text-slate-900 bg-white">{finalGradeFormatted}</td>
+                                              <td className={cn("px-4 py-2.5 text-right font-black bg-white break-words whitespace-normal", statusClass)}>{statusLabel}</td>
                                             </tr>
                                           );
                                         })
@@ -981,6 +982,7 @@ export default function BoletimPage() {
                                     year: 'numeric'
                                   })}
                                 </span>
+                              </div>
                               </div>
                             </div>
                           </div>
