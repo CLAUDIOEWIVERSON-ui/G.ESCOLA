@@ -333,12 +333,10 @@ export default function HorarioPage() {
           html, body {
             background: white !important;
             width: 100% !important;
-            height: auto !important;
-            min-height: auto !important;
+            height: 100% !important;
             margin: 0 !important;
             padding: 0 !important;
-            overflow: visible !important;
-            position: relative !important;
+            overflow: hidden !important;
           }
 
           /* General hide rule for all descendants to prevent duplicating any content on print */
@@ -375,9 +373,9 @@ export default function HorarioPage() {
             border: none !important;
           }
 
-          /* Pin the schedule directly at top-left of the page viewport using absolute positioning */
+          /* Pin the schedule directly at top-left of the page viewport using fixed positioning to bypass parent layout offsets */
           .print-container {
-            position: absolute !important;
+            position: fixed !important;
             left: 0 !important;
             top: 0 !important;
             margin-top: 0 !important;

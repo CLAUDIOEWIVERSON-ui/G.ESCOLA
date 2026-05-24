@@ -614,8 +614,8 @@ export default function BoletimPage() {
                                 : 'This is a print preview. Click the print button to generate the formatted document on an A4 sheet with clean background.'}
                             </p>
                             
-                            {/* The actual A4 Printable Area Wrapper */}
-                            <div className="w-full overflow-x-auto pb-4 no-print flex justify-start md:justify-center">
+                            {/* The actual A4 Printable Area Wrapper - Removed no-print so children print, but made layout transparent in print */}
+                            <div className="w-full overflow-x-auto pb-4 flex justify-start md:justify-center print:overflow-visible print:pb-0 print:p-0">
                               <div 
                                 id="student-report-print-area" 
                                 className="bg-white text-slate-900 border border-slate-200 shadow-xl p-8 rounded-lg min-w-[760px] max-w-[210mm] min-h-[297mm] flex flex-col gap-6 font-sans relative text-left text-xs"
@@ -624,18 +624,34 @@ export default function BoletimPage() {
                               {/* STYLE TAG FOR DIRECTED CUSTOM CSS FOR PRINT MEDIA */}
                               <style dangerouslySetInnerHTML={{ __html: `
                                 @media print {
+                                  /* Strictly lock html and body overflow to avoid any extra empty pages */
+                                  html, body {
+                                    overflow: hidden !important;
+                                    height: 100% !important;
+                                    margin: 0 !important;
+                                    padding: 0 !important;
+                                    background: #ffffff !important;
+                                  }
+
+                                  /* Hide everything else visually by default */
                                   body * {
                                     visibility: hidden !important;
                                   }
+
+                                  /* Force display only of the report container and its children */
                                   #student-report-print-area, #student-report-print-area * {
                                     visibility: visible !important;
                                   }
+
+                                  /* Pin the print container perfectly at 0,0 using fixed positioning to bypass parent margins and scrolls */
                                   #student-report-print-area {
-                                    position: absolute !important;
+                                    position: fixed !important;
                                     left: 0 !important;
                                     top: 0 !important;
                                     width: 210mm !important;
-                                    min-height: 297mm !important;
+                                    height: 297mm !important;
+                                    max-width: 210mm !important;
+                                    max-height: 297mm !important;
                                     padding: 15mm !important;
                                     margin: 0 !important;
                                     border: none !important;
@@ -643,7 +659,26 @@ export default function BoletimPage() {
                                     background: #ffffff !important;
                                     color: #000000 !important;
                                     font-family: Arial, sans-serif !important;
+                                    box-sizing: border-box !important;
+                                    z-index: 9999999 !important;
+                                    page-break-before: avoid !important;
+                                    page-break-after: avoid !important;
+                                    page-break-inside: avoid !important;
                                   }
+
+                                  /* Force neutralization of layout wrappers to avoid pushing things onto page 2 */
+                                  main, 
+                                  section, 
+                                  [class*="flex"] {
+                                    margin: 0 !important;
+                                    padding: 0 !important;
+                                    position: static !important;
+                                    transform: none !important;
+                                    box-shadow: none !important;
+                                    height: auto !important;
+                                    min-height: 0 !important;
+                                  }
+
                                   .print-only-layout {
                                     visibility: visible !important;
                                   }
@@ -657,8 +692,8 @@ export default function BoletimPage() {
                                   }
                                 }
                                 @page {
-                                  size: A4;
-                                  margin: 10mm;
+                                  size: A4 portrait;
+                                  margin: 0;
                                 }
                               `}} />
 
