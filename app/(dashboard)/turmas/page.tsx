@@ -935,9 +935,12 @@ function TurmasContent() {
             </div>
           ) : alunosInTurma.length > 0 ? (
             <div className="space-y-2">
-              {alunosInTurma.map((aluno) => (
+              {alunosInTurma.map((aluno, index) => (
                 <div key={aluno.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100 group">
                   <div className="flex items-center gap-3">
+                    <span className="font-mono text-xs font-bold text-slate-400 min-w-[1.5rem] text-right shrink-0">
+                      {index + 1}
+                    </span>
                     <div 
                       className={cn(
                         "w-12 h-16 bg-slate-200 rounded-lg overflow-hidden relative border border-slate-200 shrink-0 shadow-sm transition-transform group",

@@ -1006,7 +1006,6 @@ export default function HorarioPage() {
                   </div>
                   <div>
                     <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{t.schedule.footerVersion}</p>
-                    <p className="text-[10px] font-bold text-slate-800">Academic Scheduler • 2026</p>
                   </div>
                 </div>
                 <div className="text-right">

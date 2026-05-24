@@ -425,6 +425,7 @@ export default function FrequenciaPage() {
                 <table className="w-full text-left">
                   <thead>
                     <tr className="bg-slate-50/50 border-b border-slate-100">
+                      <th className="px-4 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest text-left w-12">#</th>
                       <th className="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">{t.reportCard.student}</th>
                       <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">{t.students.registration || 'MATRÍCULA (ID)'}</th>
                       <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">ÚLTIMA PRESENÇA</th>
@@ -434,20 +435,23 @@ export default function FrequenciaPage() {
                   <tbody className="divide-y divide-slate-50">
                     {loading ? (
                       <tr>
-                        <td colSpan={4} className="py-20 text-center">
+                        <td colSpan={5} className="py-20 text-center">
                           <Loader2 size={32} className="animate-spin text-blue-600 mx-auto" />
                           <p className="mt-4 text-slate-400 font-medium">Carregando chamada...</p>
                         </td>
                       </tr>
                     ) : filteredStudents.length === 0 ? (
                       <tr>
-                        <td colSpan={4} className="py-20 text-center text-slate-400 italic text-sm">
+                        <td colSpan={5} className="py-20 text-center text-slate-400 italic text-sm">
                           {selectedTurma ? t.common.noneFound : t.attendance.selectClassMsg}
                         </td>
                       </tr>
                     ) : (
                       filteredStudents.map((student, index) => (
                         <tr key={student.id} className="hover:bg-slate-50/70 transition-colors group">
+                          <td className="px-4 py-4 font-mono text-xs font-bold text-slate-400 text-left">
+                            {index + 1}
+                          </td>
                           <td className="px-8 py-4">
                             <div className="flex items-center gap-4">
                               <div className="w-10 h-[52px] rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-[10px] border border-slate-200 shadow-sm overflow-hidden relative shrink-0">

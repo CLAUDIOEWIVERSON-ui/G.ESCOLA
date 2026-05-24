@@ -417,7 +417,10 @@ export default function NotasPage() {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">
-                    <th className="px-4 lg:px-6 py-4 min-w-[140px] lg:min-w-[200px] bg-slate-50/50 rounded-tl-2xl">
+                    <th className="px-4 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-left w-12 bg-slate-50/50 rounded-tl-2xl">
+                      #
+                    </th>
+                    <th className="px-4 lg:px-6 py-4 min-w-[140px] lg:min-w-[200px] bg-slate-50/50">
                       <div className="flex items-center gap-2">
                         <Users size={14} className="text-slate-400" />
                         {t.reportCard.student}
@@ -450,7 +453,7 @@ export default function NotasPage() {
                         }).filter((a): a is number => a !== null), -1)
                       : -1;
 
-                    return turmaAlunos.map((aluno) => {
+                    return turmaAlunos.map((aluno, index) => {
                       const studentGrades = bulkNotas[aluno.id] || {};
                       const isSavingRow = savingRows[aluno.id];
                       const firstDiscId = disciplinas[0].id;
@@ -476,6 +479,9 @@ export default function NotasPage() {
                             avg !== null && avg === maxAvgValue && maxAvgValue > 0 && "bg-blue-50/50"
                           )}
                         >
+                          <td className="px-4 py-4 font-mono text-xs font-bold text-slate-400 text-left">
+                            {index + 1}
+                          </td>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
                               <div className="w-8 h-11 bg-slate-100 rounded overflow-hidden relative border border-slate-200 shrink-0 shadow-sm flex items-center justify-center">

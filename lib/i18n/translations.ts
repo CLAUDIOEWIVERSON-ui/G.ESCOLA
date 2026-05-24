@@ -259,7 +259,7 @@ export const translations = {
       subject: "Disciplina",
       room: "Sala",
       footerDocGenerated: "Documento gerado em",
-      footerVersion: "Versão para impressão oficial - Academic Scheduler System",
+      footerVersion: "VERSÃO PARA IMPRESSÃO - GESTOR DE CURSOS",
       holiday: "Feriado",
     },
     cartao: {

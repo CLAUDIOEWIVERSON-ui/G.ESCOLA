@@ -33,7 +33,7 @@ const reportT = {
   pt: {
     headerTitle: "SISTEMA DE ENSINO E INSTRUÇÃO",
     headerSubtitle: "RELATÓRIO INDIVIDUAL DE DESEMPENHO ACADÊMICO",
-    studentInfo: "IDENTIFICAÇÃO DO ALUNO / PATRULHEIRO",
+    studentInfo: "IDENTIFICAÇÃO DO ALUNO",
     academicMap: "MAPA DE RENDIMENTO ACADÊMICO",
     attendanceReg: "REGISTRO DE FREQUÊNCIA",
     footerText: "Emitido eletronicamente via Sistema de Gestão Escolar",
@@ -267,30 +267,64 @@ export default function BoletimPage() {
         }
       }
 
-      let query = supabase
+      // 1. Fetch all students currently enrolled in this class and not deleted
+      const { data: students, error: studentsError } = await supabase
+        .from('alunos')
+        .select('id, nome, matricula, foto_url, turma_id, status, posto_graduacao')
+        .eq('turma_id', selectedTurma)
+        .is('deleted_at', null)
+        .order('nome');
+
+      if (studentsError) throw studentsError;
+
+      // 2. Fetch all grades registered for this class and discipline
+      let gradesQuery = supabase
         .from('notas')
-        .select(`
-          *,
-          aluno:alunos(id, nome, matricula, foto_url)
-        `)
+        .select('*')
         .eq('turma_id', selectedTurma)
         .eq('disciplina_id', selectedDisciplina);
 
       if (selectedAno) {
-        query = query.eq('ano_letivo', parseInt(selectedAno));
+        gradesQuery = gradesQuery.eq('ano_letivo', parseInt(selectedAno));
       }
 
-      const { data, error } = await query;
+      const { data: grades, error: gradesError } = await gradesQuery;
+      if (gradesError) throw gradesError;
 
-      if (error) throw error;
+      // 3. Merged list: only include students who are actually enrolled in the class!
+      // This synchronizes lists and tables, excluding non-enrolled students like "Abdul Lima Quaresma".
+      const mergedData = (students || []).map(student => {
+        const existingGrade = (grades || []).find(g => g.aluno_id === student.id);
+        if (existingGrade) {
+          return {
+            ...existingGrade,
+            aluno: student
+          };
+        } else {
+          return {
+            id: `temp-${student.id}`,
+            aluno_id: student.id,
+            turma_id: selectedTurma,
+            disciplina_id: selectedDisciplina,
+            nota1: null,
+            nota2: null,
+            nota3: null,
+            nota4: null,
+            nota5: null,
+            nota_final: null,
+            frequencia: null,
+            pago: true,
+            ano_letivo: parseInt(selectedAno) || new Date().getFullYear(),
+            aluno: student
+          };
+        }
+      });
 
-      if (data) {
-        setBoletimData(data);
-        
-        const totalGrades = data.reduce((acc, curr) => acc + (Number(curr.nota_final) || 0), 0);
-        const avg = data.length > 0 ? totalGrades / data.length : 0;
-        setClassStats({ avg, total: data.length });
-      }
+      setBoletimData(mergedData);
+      
+      const totalGrades = mergedData.reduce((acc, curr) => acc + (Number(curr.nota_final) || 0), 0);
+      const avg = mergedData.length > 0 ? totalGrades / mergedData.length : 0;
+      setClassStats({ avg, total: mergedData.length });
     } catch (err: any) {
       toast.error(err.message);
     } finally {
@@ -458,6 +492,7 @@ export default function BoletimPage() {
                <table className="w-full text-left border-collapse">
                  <thead>
                    <tr className="text-[10px] font-bold text-slate-400 border-b border-slate-100 uppercase tracking-wider">
+                      <th className="px-4 lg:px-6 py-4 text-left w-12">#</th>
                       <th className="px-4 lg:px-6 py-4">{t.reportCard.student}</th>
                       {Array.from({ length: courseModules }).map((_, i) => (
                         <th key={i} className="px-1 lg:px-3 py-4 text-center">MOD {i + 1}</th>
@@ -470,7 +505,7 @@ export default function BoletimPage() {
                  <tbody>
                    {boletimData.length === 0 ? (
                      <tr>
-                        <td colSpan={4 + courseModules} className="py-20 text-center">
+                        <td colSpan={5 + courseModules} className="py-20 text-center">
                            <div className="flex flex-col items-center text-slate-300">
                               <FileText size={48} className="mb-4 opacity-20" />
                               <p className="text-sm font-medium">{t.reportCard.noData}</p>
@@ -478,11 +513,14 @@ export default function BoletimPage() {
                         </td>
                      </tr>
                    ) : (
-                     boletimData.map((row) => {
+                     boletimData.map((row, idx) => {
                        const status = getStatus(row.nota_final, row.frequencia);
                        const StatusIcon = status.icon;
                        return (
                          <tr key={row.id} className={cn("border-b border-slate-50 hover:bg-slate-50/40 transition-colors group", row.nota_final !== null && row.nota_final !== undefined && Number(row.nota_final) === maxAvgInBoletim && maxAvgInBoletim > 0 && "bg-blue-50/50")}>
+                            <td className="px-4 lg:px-6 py-4 font-mono text-xs font-bold text-slate-400 text-left">
+                              {idx + 1}
+                            </td>
                            <td className="px-4 lg:px-6 py-4">
                              <div className="flex items-center gap-2">
                                <div className="font-bold text-slate-800 text-xs lg:text-sm">{row.aluno?.nome}</div>
@@ -525,7 +563,7 @@ export default function BoletimPage() {
 
                 {/* Modal of Individual Student Report */}
                 {selectedStudentForReport && (
-                  <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 overflow-y-auto no-print">
+                  <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 overflow-y-auto">
                     <div className="bg-slate-950 text-slate-100 max-w-4xl w-full rounded-2xl shadow-2xl border border-slate-800/80 flex flex-col max-h-[90vh]">
                       {/* Modal Actions Header */}
                       <div className="p-4 border-b border-slate-800/40 flex items-center justify-between no-print bg-slate-900 rounded-t-2xl">
@@ -931,27 +969,6 @@ export default function BoletimPage() {
                                 </p>
                               </div>
 
-                              {/* Signature Block - At the bottom */}
-                              <div className="mt-auto pt-10 grid grid-cols-2 gap-12 text-center text-xs text-slate-900 bg-white">
-                                <div className="flex flex-col items-center gap-1 bg-white">
-                                  <div className="w-full max-w-[200px] border-b border-slate-400 h-6 bg-white"></div>
-                                  <span className="font-extrabold text-slate-800 text-[10px] uppercase tracking-wide bg-white">
-                                    {reportT[language as 'pt' | 'en'].signatureStudent}
-                                  </span>
-                                  <span className="text-[9px] text-slate-400 bg-white">
-                                    {language === 'pt' ? 'Identidade / Cadastro' : 'ID / Registration No.'}
-                                  </span>
-                                </div>
-                                <div className="flex flex-col items-center gap-1 bg-white">
-                                  <div className="w-full max-w-[200px] border-b border-slate-400 h-6 bg-white"></div>
-                                  <span className="font-extrabold text-slate-800 text-[10px] uppercase tracking-wide bg-white">
-                                    {reportT[language as 'pt' | 'en'].signatureInstructor}
-                                  </span>
-                                  <span className="text-[9px] text-slate-400 bg-white">
-                                    {language === 'pt' ? 'Diretor de Ensino / Coordenador' : 'Commanding Officer / Instructor'}
-                                  </span>
-                                </div>
-                              </div>
 
                               {/* Stamp & Verification Text */}
                               <div className="pt-6 border-t border-slate-100 flex items-center justify-between text-[9px] text-slate-400 font-medium uppercase tracking-wider bg-white">
