@@ -301,7 +301,7 @@ export default function HorarioPage() {
             background: white !important;
             width: 100% !important;
             height: auto !important;
-            min-height: 100% !important;
+            min-height: auto !important;
             margin: 0 !important;
             padding: 0 !important;
             overflow: visible !important;
@@ -357,7 +357,7 @@ export default function HorarioPage() {
             box-sizing: border-box !important;
             z-index: 99999999 !important;
             height: auto !important;
-            min-height: 100% !important;
+            min-height: auto !important;
             page-break-after: avoid !important;
             page-break-before: avoid !important;
             page-break-inside: avoid !important;
@@ -387,7 +387,7 @@ export default function HorarioPage() {
             .print-container {
               padding: 10mm 12mm !important;
               height: auto !important;
-              min-height: 210mm !important;
+              min-height: auto !important;
               max-height: none !important;
               justify-content: flex-start !important;
             }
@@ -459,7 +459,7 @@ export default function HorarioPage() {
             .print-container {
               padding: 12mm 15mm !important;
               height: auto !important;
-              min-height: 297mm !important;
+              min-height: auto !important;
               max-height: none !important;
               justify-content: flex-start !important;
             }
