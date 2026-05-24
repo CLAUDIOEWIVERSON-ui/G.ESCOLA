@@ -635,7 +635,7 @@ export default function BoletimPage() {
                                     top: 0 !important;
                                     width: 210mm !important;
                                     min-height: 297mm !important;
-                                    padding: 15mm !important;
+                                    padding: 18mm !important;
                                     margin: 0 !important;
                                     border: none !important;
                                     box-shadow: none !important;
@@ -654,10 +654,35 @@ export default function BoletimPage() {
                                   .print-border-black {
                                     border-color: #000000 !important;
                                   }
+                                  
+                                  /* Force explicit darker borders in print to ensure they don't fade out */
+                                  #student-report-print-area table {
+                                    border: 2px solid #334155 !important;
+                                    border-collapse: collapse !important;
+                                    width: 100% !important;
+                                  }
+                                  #student-report-print-area td,
+                                  #student-report-print-area th {
+                                    border: 1px solid #475569 !important;
+                                    padding: 8px 10px !important;
+                                  }
+                                  #student-report-print-area th {
+                                    background-color: #f1f5f9 !important;
+                                    border-bottom: 2px solid #000000 !important;
+                                  }
+                                  #student-report-print-area .border,
+                                  #student-report-print-area .border-slate-200,
+                                  #student-report-print-area div[class*="border"] {
+                                    border: 1.5px solid #475569 !important;
+                                  }
+                                  #student-report-print-area .border-b,
+                                  #student-report-print-area [class*="border-b"] {
+                                    border-bottom: 1.5px solid #334155 !important;
+                                  }
                                 }
                                 @page {
                                   size: A4;
-                                  margin: 10mm;
+                                  margin: 15mm;
                                 }
                               `}} />
 
