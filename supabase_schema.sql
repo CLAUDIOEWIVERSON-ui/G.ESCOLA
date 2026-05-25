@@ -72,6 +72,8 @@ CREATE TABLE IF NOT EXISTS public.alunos (
   nome_pai TEXT,
   nome_mae TEXT,
   titulo_eleitor TEXT,
+  data_inicio_curso DATE,
+  data_fim_curso DATE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   deleted_at TIMESTAMPTZ
 );
