@@ -374,24 +374,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </div>
 
       {/* Bottom Nav for Mobile */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-4 py-2 flex items-center justify-around z-50 h-16 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] print:hidden">
-        {navItems.filter(item => ['/dashboard', '/cursos', '/turmas', '/horario', '/configuracoes'].includes(item.path)).map((item) => {
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-2 py-2 flex items-center justify-around z-50 h-16 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] print:hidden">
+        {navItems.filter(item => ['/dashboard', '/cursos', '/turmas', '/horario', '/calendario', '/configuracoes'].includes(item.path)).map((item) => {
           const isActive = pathname === item.path;
           return (
             <Link 
               key={item.path} 
               href={item.path}
               className={cn(
-                "flex flex-col items-center gap-1 p-2 transition-all min-w-[64px]",
+                "flex flex-col items-center gap-1 p-1 transition-all min-w-0 flex-1 max-w-[64px]",
                 isActive ? "text-blue-600 scale-110" : "text-slate-400 hover:text-slate-600"
               )}
             >
-              <item.icon size={20} className={isActive ? "text-blue-600" : "text-slate-400"} />
+              <item.icon size={19} className={isActive ? "text-blue-600" : "text-slate-400"} />
               <span className={cn(
-                "text-[8px] font-black uppercase tracking-widest text-center",
+                "text-[8px] font-black uppercase tracking-widest text-center truncate w-full",
                 isActive ? "text-blue-600" : "text-slate-400"
               )}>
-                {item.name.split(' ')[0]}
+                {item.path === '/calendario' ? 'CALEND.' : item.name.split(' ')[0]}
               </span>
               {isActive && (
                 <motion.div 
@@ -404,10 +404,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         })}
         <button
           onClick={() => setSidebarOpen(true)}
-          className="flex flex-col items-center gap-1 p-2 text-slate-400 hover:text-slate-600 min-w-[64px]"
+          className="flex flex-col items-center gap-1 p-1 text-slate-400 hover:text-slate-600 min-w-0 flex-1 max-w-[64px]"
         >
-          <Menu size={20} />
-          <span className="text-[8px] font-black uppercase tracking-widest">{t.common.menu || 'Menu'}</span>
+          <Menu size={19} />
+          <span className="text-[8px] font-black uppercase tracking-widest truncate w-full">{t.common.menu || 'Menu'}</span>
         </button>
       </nav>
     </div>
