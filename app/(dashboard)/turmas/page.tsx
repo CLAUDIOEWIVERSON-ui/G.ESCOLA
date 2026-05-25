@@ -48,6 +48,22 @@ function TurmasContent() {
   
   const isCiabaOrCiaga = viewingTurma?.nome ? (viewingTurma.nome.toUpperCase().includes('CIABA') || viewingTurma.nome.toUpperCase().includes('CIAGA')) : false;
   
+  const getStudentRegDate = (aluno: any): string => {
+    if (!aluno) return '—';
+    const dateStr = aluno.created_at || aluno.data_cadastro;
+    if (!dateStr) {
+      const today = new Date();
+      return `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+    }
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return '—';
+      return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+    } catch (e) {
+      return '—';
+    }
+  };
+  
   // States for Folha de Frequência (Mensal & Semanal)
   const [isPrintAttendanceOpen, setIsPrintAttendanceOpen] = useState(false);
   const [printProfessorName, setPrintProfessorName] = useState('');
@@ -1338,15 +1354,15 @@ function TurmasContent() {
                     <div>
                       <div className="font-bold text-slate-800 text-sm">{aluno.nome}</div>
                       <div className="text-[10px] text-slate-500 font-medium">{aluno.posto_graduacao || ''} • {aluno.matricula}</div>
-                      {isCiabaOrCiaga && (aluno.data_inicio_curso || aluno.data_fim_curso) && (
+                      {isCiabaOrCiaga && (
                         <div className="text-[9px] font-black text-blue-700 bg-blue-50 border border-blue-100 rounded px-1.5 py-0.5 mt-1 inline-block">
                           {language === 'pt' ? 'Curso: ' : 'Course: '}
                           <span className="font-mono text-blue-900">
-                            {aluno.data_inicio_curso ? aluno.data_inicio_curso.split('-').reverse().join('/') : '—'}
+                            {getStudentRegDate(aluno)}
                           </span>
                           {' a '}
                           <span className="font-mono text-blue-900">
-                            {aluno.data_fim_curso ? aluno.data_fim_curso.split('-').reverse().join('/') : '—'}
+                            {getStudentRegDate(aluno)}
                           </span>
                         </div>
                       )}
@@ -1636,32 +1652,7 @@ function TurmasContent() {
             </div>
           </div>
 
-          {isCiabaOrCiaga && (
-            <div className="grid grid-cols-2 gap-3 p-3 bg-blue-50/40 rounded-xl border border-blue-100">
-              <div>
-                <label className="block text-[10px] font-extrabold text-blue-700 uppercase tracking-wider mb-1">
-                  {language === 'pt' ? 'Início do Curso' : 'Course Start Date'}
-                </label>
-                <input
-                  type="date"
-                  value={currentAluno?.data_inicio_curso || ''}
-                  onChange={(e) => setCurrentAluno({ ...currentAluno, data_inicio_curso: e.target.value })}
-                  className="w-full px-3 py-2 bg-white border border-blue-200 text-blue-900 rounded text-sm focus:ring-2 focus:ring-blue-500/20 outline-none font-bold"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-extrabold text-blue-700 uppercase tracking-wider mb-1">
-                  {language === 'pt' ? 'Término do Curso' : 'Course End Date'}
-                </label>
-                <input
-                  type="date"
-                  value={currentAluno?.data_fim_curso || ''}
-                  onChange={(e) => setCurrentAluno({ ...currentAluno, data_fim_curso: e.target.value })}
-                  className="w-full px-3 py-2 bg-white border border-blue-200 text-blue-900 rounded text-sm focus:ring-2 focus:ring-blue-500/20 outline-none font-bold"
-                />
-              </div>
-            </div>
-          )}
+
 
           <div className="flex gap-3 pt-4">
             <button
@@ -2020,15 +2011,15 @@ function TurmasContent() {
                                 <span className={cn(isCiabaOrCiaga ? "text-[8px] truncate block" : "")}>
                                   {student.posto_graduacao ? `${student.posto_graduacao} ${student.nome}` : student.nome}
                                 </span>
-                                {isCiabaOrCiaga && (student.data_inicio_curso || student.data_fim_curso) && (
+                                {isCiabaOrCiaga && (
                                   <span className="text-[6px] text-neutral-500 font-extrabold normal-case mt-0.5 whitespace-nowrap overflow-hidden block">
                                     {language === 'pt' ? 'período: ' : 'period: '}
                                     <span className="font-mono text-black">
-                                      {student.data_inicio_curso ? student.data_inicio_curso.split('-').reverse().join('/') : '—'}
+                                      {getStudentRegDate(student)}
                                     </span>
                                     {' a '}
                                     <span className="font-mono text-black">
-                                      {student.data_fim_curso ? student.data_fim_curso.split('-').reverse().join('/') : '—'}
+                                      {getStudentRegDate(student)}
                                     </span>
                                   </span>
                                 )}
