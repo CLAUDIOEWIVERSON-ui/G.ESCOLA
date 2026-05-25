@@ -2049,6 +2049,14 @@ function TurmasContent() {
                   </div>
                 </div>
 
+                {/* Observation Warning Block */}
+                <div className="mt-4 border-2 border-red-500 bg-red-50/50 p-2.5 rounded-lg text-center font-extrabold uppercase text-[8px] text-red-800 tracking-wider leading-relaxed">
+                  {language === 'pt' 
+                    ? 'OBS: ENTREGAR ESTA FOLHA DE PRESENÇA DIARIAMENTE PARA LANÇAMENTO NO CONTROLE DO ALUNO AO COORDENADOR DE CURSOS' 
+                    : 'OBS: SUBMIT THIS ATTENDANCE SHEET DAILY FOR ENTRY INTO THE STUDENT RECORD TO THE COURSE COORDINATOR'
+                  }
+                </div>
+
                 {/* Micro-printed controlled copy warning centered */}
                 <div className="absolute bottom-[10mm] left-0 right-0 text-center text-[7px] font-bold tracking-[0.34em] text-neutral-400 uppercase">
                   {language === 'pt' ? 'Documento de uso oficial - Cópia controlada' : 'Official Document - Controlled Copy'}
