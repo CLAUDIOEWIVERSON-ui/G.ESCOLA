@@ -35,10 +35,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       if (sessionError) {
         // If there's a session error typical of a bad refresh token, clear it
         const errorMsg = sessionError.message.toLowerCase();
-        if (errorMsg.includes('refresh token not found') || 
-            errorMsg.includes('refresh_token_not_found') ||
+        if (errorMsg.includes('refresh token') || 
+            errorMsg.includes('refresh_token') ||
             errorMsg.includes('invalid refresh token') ||
-            errorMsg.includes('invalid_grant')) {
+            errorMsg.includes('invalid_grant') ||
+            errorMsg.includes('not found')) {
           console.warn('Handling invalid refresh token, signing out...');
           // Use { scope: 'local' } to ensure it clears even if the server is unreachable or token is invalid
           await supabase.auth.signOut({ scope: 'local' });
@@ -86,8 +87,19 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       }
 
       setProfile(finalProfile);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Unexpected error fetching profile:', err);
+      if (err?.message) {
+        const errMsg = err.message.toLowerCase();
+        if (errMsg.includes('refresh token') || 
+            errMsg.includes('refresh_token') ||
+            errMsg.includes('invalid refresh token') ||
+            errMsg.includes('invalid_grant') ||
+            errMsg.includes('not found')) {
+          supabase.auth.signOut({ scope: 'local' }).catch(() => {});
+          setProfile(null);
+        }
+      }
     } finally {
       setLoading(false);
     }

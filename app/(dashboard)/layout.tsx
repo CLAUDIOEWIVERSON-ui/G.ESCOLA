@@ -77,7 +77,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [authLoading, profile, router]);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {
+      console.warn('Server signout failed, trying local signout:', e);
+      try {
+        await supabase.auth.signOut({ scope: 'local' });
+      } catch (localError) {
+        console.error('Local signout failed:', localError);
+      }
+    }
     router.push('/login');
   };
 

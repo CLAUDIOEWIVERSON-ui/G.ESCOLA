@@ -13,9 +13,11 @@ export default function HomePage() {
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error) {
           const msg = error.message.toLowerCase();
-          if (msg.includes('refresh token not found') || 
+          if (msg.includes('refresh token') || 
+              msg.includes('refresh_token') || 
               msg.includes('invalid refresh token') ||
-              msg.includes('invalid_grant')) {
+              msg.includes('invalid_grant') ||
+              msg.includes('not found')) {
             await supabase.auth.signOut({ scope: 'local' });
             router.push('/login');
             return;
@@ -29,8 +31,12 @@ export default function HomePage() {
         }
       } catch (err) {
         console.error('Auth check error:', err);
-        // Clear session on error to avoid refresh token issues
-        await supabase.auth.signOut();
+        // Clear session locally on error to avoid refresh token issues
+        try {
+          await supabase.auth.signOut({ scope: 'local' });
+        } catch (e) {
+          console.error('Error signing out locally:', e);
+        }
         router.push('/login');
       }
     };

@@ -5,7 +5,7 @@ import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
-import { Plus, Search, Layers as LayersIcon, Library, Calendar, Clock, MapPin, Pencil, Trash2, Loader2, CheckCircle2, RefreshCcw, Users, Mail, Phone, Building, Camera, MessageCircle, XCircle, FileText, X, GraduationCap, School, ChevronRight } from 'lucide-react';
+import { Plus, Search, Layers as LayersIcon, Library, Calendar, Clock, MapPin, Pencil, Trash2, Loader2, CheckCircle2, RefreshCcw, Users, Mail, Phone, Building, Camera, MessageCircle, XCircle, FileText, X, GraduationCap, School, ChevronRight, Printer } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import Modal from '@/components/Modal';
@@ -45,6 +45,20 @@ function TurmasContent() {
   const [currentAluno, setCurrentAluno] = useState<any>(null);
   const [loadingAlunos, setLoadingAlunos] = useState(false);
   const [expandedPhoto, setExpandedPhoto] = useState<{url: string, name: string} | null>(null);
+  
+  // States for Folha de Frequência Mensal
+  const [isPrintAttendanceOpen, setIsPrintAttendanceOpen] = useState(false);
+  const [printProfessorName, setPrintProfessorName] = useState('');
+  const [printPeriod, setPrintPeriod] = useState('');
+  const [printClassName, setPrintClassName] = useState('');
+
+  const handleOpenPrintAttendance = (turma: any) => {
+    setPrintProfessorName(turma.instrutor || '');
+    setPrintClassName(turma.nome || '');
+    const currentMonthYear = `${String(new Date().getMonth() + 1).padStart(2, '0')}/${new Date().getFullYear()}`;
+    setPrintPeriod(currentMonthYear);
+    setIsPrintAttendanceOpen(true);
+  };
   
   const activeCategory = (categoryParam && ['expedito', 'especial', 'carreira', 'exterior'].includes(categoryParam)) 
     ? (categoryParam as 'expedito' | 'especial' | 'carreira' | 'exterior') 
@@ -902,11 +916,20 @@ function TurmasContent() {
         onClose={() => setIsStudentsModalOpen(false)}
         title={`${t.nav.students} - ${viewingTurma?.nome}`}
       >
-        <div className="mb-4 flex justify-between items-center">
-          <p className="text-xs text-slate-500 font-medium italic">
-            {alunosInTurma.length} {language === 'pt' ? 'alunos matriculados' : 'students enrolled'}
-          </p>
-          <div className="flex gap-2">
+        <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-100">
+          <div>
+            <p className="text-xs text-slate-500 font-medium italic">
+              {alunosInTurma.length} {language === 'pt' ? 'alunos matriculados' : 'students enrolled'}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => handleOpenPrintAttendance(viewingTurma)}
+              className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-100 px-3 py-1.5 rounded-lg hover:bg-emerald-100 hover:text-emerald-800 transition-all cursor-pointer shadow-sm shadow-emerald-100"
+            >
+              <Printer size={13} strokeWidth={2.5} />
+              {language === 'pt' ? 'Folha de Frequência' : 'Attendance Sheet'}
+            </button>
             {!isReadOnly && (
               <>
                 <button
@@ -1345,6 +1368,232 @@ function TurmasContent() {
                 </div>
               </div>
             </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Folha de Frequência Mensal Print Preview & Controls */}
+      <AnimatePresence>
+        {isPrintAttendanceOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[80] bg-slate-900/90 overflow-y-auto custom-scrollbar flex flex-col no-print"
+          >
+            {/* Top Workspace Bar */}
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-4 border-b border-white/10 bg-slate-950 sticky top-0 z-50 text-white shadow-xl">
+              <div className="flex items-center gap-3 w-full md:w-auto">
+                <button
+                  onClick={() => setIsPrintAttendanceOpen(false)}
+                  className="p-2 hover:bg-white/10 text-slate-400 hover:text-white rounded-xl transition-all"
+                  title="Fechar"
+                >
+                  <X size={20} />
+                </button>
+                <div>
+                  <h2 className="text-base font-black uppercase tracking-wider text-white">
+                    {language === 'pt' ? 'Folha de Frequência Mensal' : 'Monthly Attendance Sheet'}
+                  </h2>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
+                    {alunosInTurma.length} {language === 'pt' ? 'alunos listados' : 'students listed'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Editable Fields in Controls Bar */}
+              <div className="flex flex-wrap items-center gap-3 bg-white/[0.03] p-2 rounded-2xl border border-white/5 w-full md:w-auto">
+                <div className="flex flex-col flex-1 sm:flex-initial">
+                  <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest pl-1 mb-1">Professor(a)</span>
+                  <input
+                    type="text"
+                    value={printProfessorName}
+                    onChange={(e) => setPrintProfessorName(e.target.value)}
+                    className="px-3 py-1.5 bg-slate-900 border border-white/10 rounded-lg text-xs font-bold font-sans text-white focus:outline-none focus:border-blue-500 w-full sm:w-44"
+                    placeholder="Nome do Professor"
+                  />
+                </div>
+                <div className="flex flex-col flex-1 sm:flex-initial">
+                  <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest pl-1 mb-1">Turma</span>
+                  <input
+                    type="text"
+                    value={printClassName}
+                    onChange={(e) => setPrintClassName(e.target.value)}
+                    className="px-3 py-1.5 bg-slate-900 border border-white/10 rounded-lg text-xs font-bold font-sans text-white focus:outline-none focus:border-blue-500 w-full sm:w-44"
+                    placeholder="Nome da Turma"
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest pl-1 mb-1">Mês/Ano</span>
+                  <input
+                    type="text"
+                    value={printPeriod}
+                    onChange={(e) => setPrintPeriod(e.target.value)}
+                    className="px-3 py-1.5 bg-slate-900 border border-white/10 rounded-lg text-xs font-bold font-mono text-white focus:outline-none focus:border-blue-500 w-24 text-center text-center"
+                    placeholder="MM/AAAA"
+                  />
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2 w-full md:w-auto justify-end">
+                <button
+                  onClick={() => setIsPrintAttendanceOpen(false)}
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold text-xs uppercase tracking-widest transition"
+                >
+                  {t.common.cancel}
+                </button>
+                <button
+                  onClick={() => window.print()}
+                  className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-emerald-950 transition-all active:translate-y-px"
+                >
+                  <Printer size={16} />
+                  {language === 'pt' ? 'Imprimir Frequência' : 'Print Sheet'}
+                </button>
+              </div>
+            </div>
+
+            {/* Printable canvas container centerer with Zoom styling */}
+            <div className="flex-1 flex justify-center items-start p-6 bg-slate-900 overflow-auto custom-scrollbar">
+              <div 
+                id="print-attendance-sheet"
+                className="bg-white text-black p-[10mm] shadow-2xl relative rounded border border-slate-700 w-[297mm] h-[210mm] shrink-0 font-sans"
+              >
+                {/* Print Styles */}
+                <style dangerouslySetInnerHTML={{ __html: `
+                  #print-attendance-sheet {
+                    color-adjust: exact;
+                    -webkit-print-color-adjust: exact;
+                  }
+                  .print-attendance-table td, .print-attendance-table th {
+                    border: 1px solid #111111 !important;
+                  }
+                  @media print {
+                    /* Only print the sheet */
+                    body * {
+                      visibility: hidden !important;
+                    }
+                    #print-attendance-sheet, #print-attendance-sheet * {
+                      visibility: visible !important;
+                    }
+                    #print-attendance-sheet {
+                      position: absolute !important;
+                      left: 0 !important;
+                      top: 0 !important;
+                      width: 297mm !important;
+                      height: 210mm !important;
+                      margin: 0 !important;
+                      padding: 10mm !important;
+                      background: white !important;
+                      box-shadow: none !important;
+                      border: none !important;
+                      page-break-inside: avoid !important;
+                    }
+                    @page {
+                      size: A4 landscape !important;
+                      margin: 0 !important;
+                    }
+                  }
+                `}} />
+
+                {/* Print Header */}
+                <div className="mb-4">
+                  <h1 className="text-xl font-extrabold text-center border-b-2 border-black pb-2 mb-4 uppercase tracking-normal">
+                    {language === 'pt' ? 'FOLHA DE FREQUÊNCIA MENSAL' : 'MONTHLY ATTENDANCE SHEET'}
+                  </h1>
+                  <div className="grid grid-cols-3 gap-6 font-semibold uppercase text-[10px]">
+                    <div className="flex flex-col">
+                      <span>{language === 'pt' ? 'Professor(a):' : 'Instructor:'}</span>
+                      <div className="border-b border-black h-8 flex items-end pb-1 text-xs font-bold px-1 whitespace-nowrap overflow-hidden">
+                        {printProfessorName}
+                      </div>
+                    </div>
+                    <div className="flex flex-col">
+                      <span>{language === 'pt' ? 'Turma:' : 'Class/Group:'}</span>
+                      <div className="border-b border-black h-8 flex items-end pb-1 text-xs font-bold px-1 whitespace-nowrap overflow-hidden">
+                        {printClassName}
+                      </div>
+                    </div>
+                    <div className="flex flex-col">
+                      <span>{language === 'pt' ? 'Mês/Ano:' : 'Month/Year:'}</span>
+                      <div className="border-b border-black h-8 flex items-end pb-1 text-xs font-mono font-bold px-1 text-center justify-center font-bold">
+                        {printPeriod}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Table container wrapping the exact styled attendance grid */}
+                <div className="overflow-hidden mt-3">
+                  <table className="print-attendance-table w-full border-collapse border border-black table-fixed">
+                    <thead>
+                      <tr className="bg-neutral-100 text-[8px] font-bold uppercase text-center h-5">
+                        <th className="w-[32px] border border-black p-0.5 text-center">#</th>
+                        <th className="border border-black p-0.5 text-left pl-2 text-[9px] w-[210px] overflow-hidden truncate whitespace-nowrap">
+                          {language === 'pt' ? 'Nome do Aluno' : 'Student Name'}
+                        </th>
+                        {Array.from({ length: 31 }).map((_, d) => (
+                          <th key={d} className="border border-black p-0 text-center font-mono font-medium text-[8px] w-[18px]">
+                            {d + 1}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Array.from({ length: 40 }).map((_, index) => {
+                        const student = alunosInTurma[index] || null;
+                        return (
+                          <tr key={index} className="h-[3.9mm] text-[8px] font-bold uppercase">
+                            <td className="border border-black text-center font-mono font-semibold text-[8px]">
+                              {index + 1}
+                            </td>
+                            <td className="border border-black px-2 text-[9px] truncate whitespace-nowrap font-sans max-w-[210px]">
+                              {student ? (student.posto_graduacao ? `${student.posto_graduacao} ${student.nome}` : student.nome) : ''}
+                            </td>
+                            {Array.from({ length: 31 }).map((_, d) => (
+                              <td key={d} className="border border-black p-0 text-center font-mono"></td>
+                            ))}
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Legenda & Signature Section */}
+                <div className="mt-4 grid grid-cols-2 gap-8 items-end absolute bottom-12 left-[10mm] right-[10mm]">
+                  <div>
+                    <div className="text-[10px] font-black uppercase tracking-wider mb-1.5">
+                      {language === 'pt' ? 'Legenda:' : 'Legend:'}
+                    </div>
+                    <div className="flex select-none flex-wrap gap-x-4 gap-y-1 text-[8px] font-black border-2 border-black p-2 rounded-lg bg-neutral-50 shadow-sm">
+                      <span><strong>P</strong> = {language === 'pt' ? 'Presente' : 'Present'}</span>
+                      <span><strong>F</strong> = {language === 'pt' ? 'Falta' : 'Absent'}</span>
+                      <span><strong>H</strong> = {language === 'pt' ? 'Hospital' : 'Hospitalizado'}</span>
+                      <span><strong>N</strong> = {language === 'pt' ? 'Não houve aula' : 'No Class'}</span>
+                      <span><strong>D</strong> = {language === 'pt' ? 'Desligado' : 'Withdrawn'}</span>
+                    </div>
+                  </div>
+                  <div className="text-right flex flex-col gap-3 font-semibold text-[9px]">
+                    <div className="flex flex-col items-end">
+                      <span className="uppercase tracking-[0.05em] mb-1 text-[8px]">
+                        {language === 'pt' ? 'Assinatura do Responsável / Professor' : 'Authorized Signature'}
+                      </span>
+                      <div className="w-full max-w-[280px] border-b-2 border-dashed border-black h-5"></div>
+                    </div>
+                    <div className="flex justify-end gap-1 items-center">
+                      <span className="uppercase tracking-[0.05em] text-[8px]">{language === 'pt' ? 'Data:' : 'Date:'}</span>
+                      <span className="border-b-2 border-dashed border-black w-28 h-4"></span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Micro-printed controlled copy warning centered */}
+                <div className="absolute bottom-[10mm] left-0 right-0 text-center text-[7px] font-bold tracking-[0.34em] text-neutral-400 uppercase">
+                  {language === 'pt' ? 'Documento de uso oficial - Cópia controlada' : 'Official Document - Controlled Copy'}
+                </div>
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
