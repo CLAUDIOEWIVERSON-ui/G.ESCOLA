@@ -59,6 +59,163 @@ function TurmasContent() {
     setPrintPeriod(currentMonthYear);
     setIsPrintAttendanceOpen(true);
   };
+
+  const handleDirectPrintAttendance = async (turma: any) => {
+    setViewingTurma(turma);
+    setLoadingAlunos(true);
+    try {
+      const { data, error } = await supabase
+        .from('alunos')
+        .select('*')
+        .eq('turma_id', { targetId: turma.id }.targetId)
+        .is('deleted_at', null)
+        .order('nome');
+        
+      if (error) throw error;
+      setAlunosInTurma(data || []);
+      
+      // Auto open print modal
+      setPrintProfessorName(turma.instrutor || '');
+      setPrintClassName(turma.nome || '');
+      const currentMonthYear = `${String(new Date().getMonth() + 1).padStart(2, '0')}/${new Date().getFullYear()}`;
+      setPrintPeriod(currentMonthYear);
+      setIsPrintAttendanceOpen(true);
+    } catch (err: any) {
+      console.error('Error fetching students for print:', err.message);
+    } finally {
+      setLoadingAlunos(false);
+    }
+  };
+
+  const getDaysInMonth = () => {
+    if (!printPeriod) return 31;
+    const parts = printPeriod.split('/');
+    if (parts.length < 2) return 31;
+    const month = parseInt(parts[0], 10) - 1; // 0-based month
+    const year = parseInt(parts[1], 10);
+    if (isNaN(month) || isNaN(year)) return 31;
+    return new Date(year, month + 1, 0).getDate();
+  };
+
+  const getDayStatus = (dayNum: number) => {
+    if (!printPeriod) return { label: '', bgClass: '', isValid: true };
+    const parts = printPeriod.split('/');
+    if (parts.length < 2) return { label: '', bgClass: '', isValid: true };
+    const month = parseInt(parts[0], 10) - 1; // 0-based month
+    const year = parseInt(parts[1], 10);
+    if (isNaN(month) || isNaN(year)) return { label: '', bgClass: '', isValid: true };
+
+    const maxDays = new Date(year, month + 1, 0).getDate();
+    if (dayNum > maxDays) {
+      return { label: '-', bgClass: 'bg-neutral-100 text-neutral-400 font-bold', isValid: false };
+    }
+
+    const date = new Date(year, month, dayNum);
+    const dayOfWeek = date.getDay(); // 0 = Sunday, 6 = Saturday
+    const isSunday = dayOfWeek === 0;
+    const isSaturday = dayOfWeek === 6;
+
+    // São Tomé and Príncipe national holidays
+    const holidays = [
+      { m: 0, d: 1, name: 'Ano Novo' },
+      { m: 1, d: 3, name: 'Dia dos Mártires' },
+      { m: 4, d: 1, name: 'Dia do Trabalhador' },
+      { m: 5, d: 1, name: 'Dia da Criança' },
+      { m: 6, d: 12, name: 'Dia da Independência' },
+      { m: 8, d: 6, name: 'Dia das Forças Armadas' },
+      { m: 8, d: 30, name: 'Reforma Agrária / Nacionalizações' },
+      { m: 11, d: 21, name: 'Dia de São Tomé' },
+      { m: 11, d: 25, name: 'Natal' }
+    ];
+
+    const isHoliday = holidays.some(h => h.m === month && h.d === dayNum);
+
+    if (isHoliday) {
+      return { label: 'FE', bgClass: 'bg-red-50 text-red-700 font-black', isValid: true };
+    }
+    if (isSaturday) {
+      return { label: 'S', bgClass: 'bg-neutral-100 text-neutral-500 font-bold', isValid: true };
+    }
+    if (isSunday) {
+      return { label: 'D', bgClass: 'bg-neutral-100 text-neutral-500 font-bold', isValid: true };
+    }
+
+    return { label: '', bgClass: '', isValid: true };
+  };
+
+  const getMonthHolidays = () => {
+    if (!printPeriod) return [];
+    const parts = printPeriod.split('/');
+    if (parts.length < 2) return [];
+    const month = parseInt(parts[0], 10) - 1; // 0-based month
+    const year = parseInt(parts[1], 10);
+    if (isNaN(month) || isNaN(year)) return [];
+
+    const holidays = [
+      { 
+        m: 0, 
+        d: 1, 
+        name: 'Ano Novo', 
+        meaning: 'Celebração universal do início do ano novo civil.' 
+      },
+      { 
+        m: 1, 
+        d: 3, 
+        name: 'Dia dos Mártires', 
+        meaning: 'Homenagem aos mártires do Massacre de Batepá (1953), símbolo histórico de resistência nacional contra a opressão colonial.' 
+      },
+      { 
+        m: 4, 
+        d: 1, 
+        name: 'Dia do Trabalhador', 
+        meaning: 'Celebração internacional da classe trabalhadora, seus direitos e conquistas sociais laborais.' 
+      },
+      { 
+        m: 5, 
+        d: 1, 
+        name: 'Dia da Criança', 
+        meaning: 'Data comemorativa visando à sensibilização pública para a proteção contínua dos direitos básicos das crianças santomenses.' 
+      },
+      { 
+        m: 6, 
+        d: 12, 
+        name: 'Dia da Independência', 
+        meaning: 'Aniversário da Proclamação da Independência Nacional de São Tomé e Príncipe em 12 de julho de 1975.' 
+      },
+      { 
+        m: 8, 
+        d: 6, 
+        name: 'Dia das Forças Armadas', 
+        meaning: 'Reconhecimento oficial e de agradecimento às Forças Armadas de São Tomé e Príncipe (FASTP).' 
+      },
+      { 
+        m: 8, 
+        d: 30, 
+        name: 'Reforma Agrária / Nacionalizações', 
+        meaning: 'Celebração da nacionalização histórica das grandes plantações agrícolas (roças) pós-independência em 1975.' 
+      },
+      { 
+        m: 11, 
+        d: 21, 
+        name: 'Dia de São Tomé', 
+        meaning: 'Dia em honra do padroeiro nacional do país e do descobrimento histórico da ilha de São Tomé no ano de 1470.' 
+      },
+      { 
+        m: 11, 
+        d: 25, 
+        name: 'Natal', 
+        meaning: 'Celebração cristã solene do nascimento de Jesus Cristo, também festejada como o Dia da Família.' 
+      }
+    ];
+
+    return holidays
+      .filter(h => h.m === month)
+      .map(h => ({
+        day: h.d,
+        name: h.name,
+        meaning: h.meaning
+      }));
+  };
   
   const activeCategory = (categoryParam && ['expedito', 'especial', 'carreira', 'exterior'].includes(categoryParam)) 
     ? (categoryParam as 'expedito' | 'especial' | 'carreira' | 'exterior') 
@@ -652,27 +809,43 @@ function TurmasContent() {
                 </div>
               </div>
 
-              <div className="space-y-4 pt-6 border-t border-slate-50 mt-auto">
+              <div className="space-y-2 pt-5 border-t border-slate-50 mt-auto">
                 <button 
                   onClick={(e) => {
                     e.stopPropagation();
                     handleViewStudents(turma);
                   }}
-                  className="w-full flex items-center justify-between p-3 rounded-2xl bg-slate-50 group/btn hover:bg-blue-600 transition-all"
+                  className="w-full flex items-center justify-between p-2.5 rounded-xl bg-slate-50 group/btn hover:bg-blue-600 transition-all cursor-pointer"
                 >
                   <div className="flex items-center gap-2 text-slate-600 group-hover/btn:text-white transition-colors">
-                    <Users size={16} />
-                    <span className="text-[10px] font-black uppercase tracking-widest">{t.classes.manageStudents}</span>
+                    <Users size={15} />
+                    <span className="text-[9px] font-black uppercase tracking-widest">{t.classes.manageStudents}</span>
                   </div>
-                  <ChevronRight size={14} className="text-slate-300 group-hover/btn:text-white transition-colors" />
+                  <ChevronRight size={13} className="text-slate-300 group-hover/btn:text-white transition-colors" />
                 </button>
 
-                <div className="space-y-2 px-1">
-                  <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest text-slate-400">
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDirectPrintAttendance(turma);
+                  }}
+                  className="w-full flex items-center justify-between p-2.5 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white group/print transition-all cursor-pointer"
+                >
+                  <div className="flex items-center gap-2 text-emerald-700 group-hover/print:text-white transition-colors">
+                    <Printer size={15} />
+                    <span className="text-[9px] font-black uppercase tracking-widest">
+                      {language === 'pt' ? 'Folha de Frequência' : 'Attendance Sheet'}
+                    </span>
+                  </div>
+                  <ChevronRight size={13} className="text-emerald-400 group-hover/print:text-white transition-colors" />
+                </button>
+
+                <div className="space-y-1.5 px-1 pt-1">
+                  <div className="flex justify-between items-center text-[8px] font-black uppercase tracking-widest text-slate-400">
                     <span>{t.classes.capacity}</span>
                     <span className="text-slate-900">{turma.alunos_matriculados} / {turma.capacidade_max}</span>
                   </div>
-                  <div className="h-1.5 bg-slate-50 rounded-full overflow-hidden p-0.5 border border-slate-100 shadow-inner">
+                  <div className="h-1 bg-slate-50 rounded-full overflow-hidden p-0.5 border border-slate-100 shadow-inner">
                     <div 
                       className={cn(
                         "h-full rounded-full transition-all duration-1000 ease-out",
@@ -1532,11 +1705,27 @@ function TurmasContent() {
                         <th className="border border-black p-0.5 text-left pl-2 text-[9px] w-[210px] overflow-hidden truncate whitespace-nowrap">
                           {language === 'pt' ? 'Nome do Aluno' : 'Student Name'}
                         </th>
-                        {Array.from({ length: 31 }).map((_, d) => (
-                          <th key={d} className="border border-black p-0 text-center font-mono font-medium text-[8px] w-[18px]">
-                            {d + 1}
-                          </th>
-                        ))}
+                        {Array.from({ length: getDaysInMonth() }).map((_, d) => {
+                          const status = getDayStatus(d + 1);
+                          return (
+                            <th 
+                              key={d} 
+                              className={cn(
+                                "border border-black p-0 text-center font-mono font-bold text-[8px] w-[18px]",
+                                !status.isValid ? "bg-neutral-200 text-neutral-400" :
+                                status.label === 'FE' ? "bg-red-100 text-red-800" :
+                                (status.label === 'S' || status.label === 'D') ? "bg-neutral-200 text-neutral-700" : ""
+                              )}
+                            >
+                              <div className="flex flex-col items-center justify-center leading-tight">
+                                <span>{d + 1}</span>
+                                {status.isValid && (status.label === 'FE' || status.label === 'S' || status.label === 'D') && (
+                                  <span className="text-[5.5px] opacity-75 font-black text-[red-600]">{status.label}</span>
+                                )}
+                              </div>
+                            </th>
+                          );
+                        })}
                       </tr>
                     </thead>
                     <tbody>
@@ -1550,9 +1739,20 @@ function TurmasContent() {
                             <td className="border border-black px-2 text-[9px] truncate whitespace-nowrap font-sans max-w-[210px]">
                               {student ? (student.posto_graduacao ? `${student.posto_graduacao} ${student.nome}` : student.nome) : ''}
                             </td>
-                            {Array.from({ length: 31 }).map((_, d) => (
-                              <td key={d} className="border border-black p-0 text-center font-mono"></td>
-                            ))}
+                            {Array.from({ length: getDaysInMonth() }).map((_, d) => {
+                              const status = getDayStatus(d + 1);
+                              return (
+                                <td 
+                                  key={d} 
+                                  className={cn(
+                                    "border border-black p-0 text-center font-bold font-mono text-[7px] select-none",
+                                    status.bgClass
+                                  )}
+                                >
+                                  {status.label}
+                                </td>
+                              );
+                            })}
                           </tr>
                         );
                       })}
@@ -1566,24 +1766,35 @@ function TurmasContent() {
                     <div className="text-[10px] font-black uppercase tracking-wider mb-1.5">
                       {language === 'pt' ? 'Legenda:' : 'Legend:'}
                     </div>
-                    <div className="flex select-none flex-wrap gap-x-4 gap-y-1 text-[8px] font-black border-2 border-black p-2 rounded-lg bg-neutral-50 shadow-sm">
+                    <div className="flex select-none flex-wrap gap-x-3 gap-y-1 text-[8px] font-black border-2 border-black p-2 rounded-lg bg-neutral-50 shadow-sm">
                       <span><strong>P</strong> = {language === 'pt' ? 'Presente' : 'Present'}</span>
                       <span><strong>F</strong> = {language === 'pt' ? 'Falta' : 'Absent'}</span>
                       <span><strong>H</strong> = {language === 'pt' ? 'Hospital' : 'Hospitalizado'}</span>
                       <span><strong>N</strong> = {language === 'pt' ? 'Não houve aula' : 'No Class'}</span>
                       <span><strong>D</strong> = {language === 'pt' ? 'Desligado' : 'Withdrawn'}</span>
+                      <span className="text-red-700 border-l border-black pl-2"><strong>FE</strong> = {language === 'pt' ? 'Feriado' : 'Holiday'}</span>
+                      <span className="text-neutral-600 border-l border-black pl-2"><strong>S/D</strong> = Sáb/Dom</span>
                     </div>
                   </div>
-                  <div className="text-right flex flex-col gap-3 font-semibold text-[9px]">
-                    <div className="flex flex-col items-end">
-                      <span className="uppercase tracking-[0.05em] mb-1 text-[8px]">
-                        {language === 'pt' ? 'Assinatura do Responsável / Professor' : 'Authorized Signature'}
-                      </span>
-                      <div className="w-full max-w-[280px] border-b-2 border-dashed border-black h-5"></div>
+                  <div>
+                    <div className="text-[10px] font-black uppercase tracking-wider mb-1.5 flex justify-between items-center">
+                      <span>{language === 'pt' ? 'Feriados Descritos (Motivo):' : 'Holidays Described (Reason):'}</span>
+                      <span className="text-[7px] text-neutral-400 font-bold tracking-widest uppercase">São Tomé e Príncipe</span>
                     </div>
-                    <div className="flex justify-end gap-1 items-center">
-                      <span className="uppercase tracking-[0.05em] text-[8px]">{language === 'pt' ? 'Data:' : 'Date:'}</span>
-                      <span className="border-b-2 border-dashed border-black w-28 h-4"></span>
+                    <div className="flex flex-col gap-1 text-[7.5px] font-black border-2 border-dashed border-red-500 p-2 rounded-lg bg-red-50/50 min-h-[46px] justify-center">
+                      {getMonthHolidays().length > 0 ? (
+                        getMonthHolidays().map((holiday, hIdx) => (
+                          <div key={hIdx} className="text-red-700 flex items-start gap-1 justify-start leading-tight">
+                            <span className="bg-red-600 text-white font-mono text-[6.5px] px-1 rounded shrink-0">FE {holiday.day}</span>
+                            <span className="font-bold shrink-0">{holiday.name}:</span>
+                            <span className="font-medium text-neutral-700 normal-case italic line-clamp-2">{holiday.meaning}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <span className="text-neutral-500 italic font-mono uppercase tracking-widest text-[7px] text-center block w-full">
+                          {language === 'pt' ? 'Nenhum feriado nacional neste mês.' : 'No national holidays this month.'}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
