@@ -1729,15 +1729,14 @@ function TurmasContent() {
                       </tr>
                     </thead>
                     <tbody>
-                      {Array.from({ length: 40 }).map((_, index) => {
-                        const student = alunosInTurma[index] || null;
-                        return (
-                          <tr key={index} className="h-[3.9mm] text-[8px] font-bold uppercase">
+                      {alunosInTurma.length > 0 ? (
+                        alunosInTurma.map((student, index) => (
+                          <tr key={student.id || index} className="h-[3.9mm] text-[8px] font-bold uppercase">
                             <td className="border border-black text-center font-mono font-semibold text-[8px]">
                               {index + 1}
                             </td>
                             <td className="border border-black px-2 text-[9px] truncate whitespace-nowrap font-sans max-w-[210px]">
-                              {student ? (student.posto_graduacao ? `${student.posto_graduacao} ${student.nome}` : student.nome) : ''}
+                              {student.posto_graduacao ? `${student.posto_graduacao} ${student.nome}` : student.nome}
                             </td>
                             {Array.from({ length: getDaysInMonth() }).map((_, d) => {
                               const status = getDayStatus(d + 1);
@@ -1754,14 +1753,26 @@ function TurmasContent() {
                               );
                             })}
                           </tr>
-                        );
-                      })}
+                        ))
+                      ) : (
+                        <tr className="h-[3.9mm] text-[8px] font-bold uppercase">
+                          <td className="border border-black text-center font-mono font-semibold text-[8px]">
+                            1
+                          </td>
+                          <td className="border border-black px-2 text-[9px] italic text-neutral-400">
+                            {language === 'pt' ? 'Nenhum aluno inscrito nesta turma' : 'No students registered in this class'}
+                          </td>
+                          {Array.from({ length: getDaysInMonth() }).map((_, d) => (
+                            <td key={d} className="border border-black p-0 bg-neutral-100"></td>
+                          ))}
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>
 
-                {/* Legenda & Signature Section */}
-                <div className="mt-4 grid grid-cols-2 gap-8 items-end absolute bottom-12 left-[10mm] right-[10mm]">
+                {/* Legenda & Signature Section flowing naturally directly below the sheet in the blank space */}
+                <div className="mt-5 grid grid-cols-2 gap-8 items-start">
                   <div>
                     <div className="text-[10px] font-black uppercase tracking-wider mb-1.5">
                       {language === 'pt' ? 'Legenda:' : 'Legend:'}
