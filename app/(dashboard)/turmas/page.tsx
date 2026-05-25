@@ -46,22 +46,27 @@ function TurmasContent() {
   const [loadingAlunos, setLoadingAlunos] = useState(false);
   const [expandedPhoto, setExpandedPhoto] = useState<{url: string, name: string} | null>(null);
   
-  // States for Folha de Frequência Mensal
+  // States for Folha de Frequência (Mensal & Semanal)
   const [isPrintAttendanceOpen, setIsPrintAttendanceOpen] = useState(false);
   const [printProfessorName, setPrintProfessorName] = useState('');
   const [printPeriod, setPrintPeriod] = useState('');
   const [printClassName, setPrintClassName] = useState('');
+  const [printSheetType, setPrintSheetType] = useState<'mensal' | 'semanal'>('mensal');
+  const [selectedWeekIndex, setSelectedWeekIndex] = useState<number | null>(null);
 
   const handleOpenPrintAttendance = (turma: any) => {
     setPrintProfessorName(turma.instrutor || '');
     setPrintClassName(turma.nome || '');
     const currentMonthYear = `${String(new Date().getMonth() + 1).padStart(2, '0')}/${new Date().getFullYear()}`;
     setPrintPeriod(currentMonthYear);
+    setSelectedWeekIndex(null);
     setIsPrintAttendanceOpen(true);
   };
 
-  const handleDirectPrintAttendance = async (turma: any) => {
+  const handleDirectPrintAttendance = async (turma: any, type: 'mensal' | 'semanal' = 'mensal') => {
     setViewingTurma(turma);
+    setPrintSheetType(type);
+    setSelectedWeekIndex(null);
     setLoadingAlunos(true);
     try {
       const { data, error } = await supabase
@@ -87,6 +92,13 @@ function TurmasContent() {
     }
   };
 
+  interface PrintDay {
+    dayNum: number;
+    month: number;
+    year: number;
+    isCurrentMonth: boolean;
+  }
+
   const getDaysInMonth = () => {
     if (!printPeriod) return 31;
     const parts = printPeriod.split('/');
@@ -97,16 +109,78 @@ function TurmasContent() {
     return new Date(year, month + 1, 0).getDate();
   };
 
-  const getDayStatus = (dayNum: number) => {
+  const getWeeksOfMonth = (month: number, year: number): { days: PrintDay[] }[] => {
+    const firstDayOfMonth = new Date(year, month, 1);
+    const dayOfWeek = firstDayOfMonth.getDay(); // 0 = Sunday, 1 = Monday, ...
+    const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    const firstMonday = new Date(year, month, 1 + diff);
+
+    const lastDayOfMonth = new Date(year, month + 1, 0);
+
+    const weeks: { days: PrintDay[] }[] = [];
+    const currentMonday = new Date(firstMonday);
+
+    while (currentMonday <= lastDayOfMonth) {
+      const weekDays: PrintDay[] = [];
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(currentMonday);
+        d.setDate(currentMonday.getDate() + i);
+        weekDays.push({
+          dayNum: d.getDate(),
+          month: d.getMonth(),
+          year: d.getFullYear(),
+          isCurrentMonth: d.getMonth() === month,
+        });
+      }
+      weeks.push({ days: weekDays });
+      currentMonday.setDate(currentMonday.getDate() + 7);
+    }
+    return weeks;
+  };
+
+  const getWeeksList = () => {
+    if (!printPeriod) return [];
+    const parts = printPeriod.split('/');
+    if (parts.length < 2) return [];
+    const month = parseInt(parts[0], 10) - 1; // 0-based month
+    const year = parseInt(parts[1], 10);
+    if (isNaN(month) || isNaN(year)) return [];
+
+    const weeks = getWeeksOfMonth(month, year);
+    return weeks.map((w, idx) => {
+      const firstDay = w.days[0];
+      const lastDay = w.days[w.days.length - 1];
+      const formatDay = (d: number) => String(d).padStart(2, '0');
+      const formatMonth = (m: number) => String(m + 1).padStart(2, '0');
+      return {
+        label: `${language === 'pt' ? 'Semana' : 'Week'} ${idx + 1} (${formatDay(firstDay.dayNum)}/${formatMonth(firstDay.month)} a ${formatDay(lastDay.dayNum)}/${formatMonth(lastDay.month)})`,
+        days: w.days,
+        index: idx
+      };
+    });
+  };
+
+  const getWeekdayName = (dayOfWeek: number) => {
+    const weekdaysPt = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+    const weekdaysEn = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    return language === 'pt' ? weekdaysPt[dayOfWeek] : weekdaysEn[dayOfWeek];
+  };
+
+  const getDayStatus = (dayNum: number, targetMonth?: number, targetYear?: number) => {
     if (!printPeriod) return { label: '', bgClass: '', isValid: true };
     const parts = printPeriod.split('/');
     if (parts.length < 2) return { label: '', bgClass: '', isValid: true };
-    const month = parseInt(parts[0], 10) - 1; // 0-based month
-    const year = parseInt(parts[1], 10);
+    const defaultMonth = parseInt(parts[0], 10) - 1; // 0-based month
+    const defaultYear = parseInt(parts[1], 10);
+    
+    const month = targetMonth !== undefined ? targetMonth : defaultMonth;
+    const year = targetYear !== undefined ? targetYear : defaultYear;
+    
     if (isNaN(month) || isNaN(year)) return { label: '', bgClass: '', isValid: true };
 
     const maxDays = new Date(year, month + 1, 0).getDate();
-    if (dayNum > maxDays) {
+    if (dayNum > maxDays || dayNum < 1) {
       return { label: '-', bgClass: 'bg-neutral-100 text-neutral-400 font-bold', isValid: false };
     }
 
@@ -216,6 +290,36 @@ function TurmasContent() {
         meaning: h.meaning
       }));
   };
+
+  const getHolidaysForDays = (days: { dayNum: number; month: number; year: number }[]) => {
+    const holidaysMeaning = [
+      { m: 0, d: 1, name: 'Ano Novo', meaning: 'Celebração universal do início do ano novo civil.' },
+      { m: 1, d: 3, name: 'Dia dos Mártires', meaning: 'Homenagem aos mártires do Massacre de Batepá (1953), símbolo histórico de resistência nacional contra a opressão colonial.' },
+      { m: 4, d: 1, name: 'Dia do Trabalhador', meaning: 'Celebração internacional da classe trabalhadora, seus direitos e conquistas sociais laborais.' },
+      { m: 5, d: 1, name: 'Dia da Criança', meaning: 'Data comemorativa visando à sensibilização pública para a proteção contínua dos direitos básicos das crianças santomenses.' },
+      { m: 6, d: 12, name: 'Dia da Independência', meaning: 'Aniversário da Proclamação da Independência Nacional de São Tomé e Príncipe em 12 de julho de 1975.' },
+      { m: 8, d: 6, name: 'Dia das Forças Armadas', meaning: 'Reconhecimento oficial e de agradecimento às Forças Armadas de São Tomé e Príncipe (FASTP).' },
+      { m: 8, d: 30, name: 'Reforma Agrária / Nacionalizações', meaning: 'Celebração da nacionalização histórica das grandes plantações agrícolas (roças) pós-independência em 1975.' },
+      { m: 11, d: 21, name: 'Dia de São Tomé', meaning: 'Dia em honra do padroeiro nacional do país e do descobrimento histórico da ilha de São Tomé no ano de 1470.' },
+      { m: 11, d: 25, name: 'Natal', meaning: 'Celebração cristã solene do nascimento de Jesus Cristo, também festejada como o Dia da Família.' }
+    ];
+
+    const result: { day: number; name: string; meaning: string; month: number }[] = [];
+    days.forEach((day) => {
+      const h = holidaysMeaning.find((hm) => hm.m === day.month && hm.d === day.dayNum);
+      if (h) {
+        if (!result.some(r => r.day === day.dayNum && r.month === day.month)) {
+          result.push({
+            day: day.dayNum,
+            name: h.name,
+            meaning: h.meaning,
+            month: day.month
+          });
+        }
+      }
+    });
+    return result;
+  };
   
   const activeCategory = (categoryParam && ['expedito', 'especial', 'carreira', 'exterior'].includes(categoryParam)) 
     ? (categoryParam as 'expedito' | 'especial' | 'carreira' | 'exterior') 
@@ -269,6 +373,7 @@ function TurmasContent() {
     };
     init();
   }, [fetchTurmas, fetchCursos]);
+
 
   const refreshData = () => fetchTurmas(true);
 
@@ -662,6 +767,48 @@ function TurmasContent() {
     });
   };
 
+  const activeWeeksList = getWeeksList();
+  
+  // Find which week contains today's date
+  const getTodayWeekIndex = (): number => {
+    const today = new Date();
+    const todayDay = today.getDate();
+    const todayMonth = today.getMonth();
+    const todayYear = today.getFullYear();
+
+    const idx = activeWeeksList.findIndex(w => 
+      w.days.some(d => d.dayNum === todayDay && d.month === todayMonth && d.year === todayYear)
+    );
+    return idx !== -1 ? idx : 0;
+  };
+
+  const activeWeekIndex = selectedWeekIndex !== null 
+    ? (selectedWeekIndex >= activeWeeksList.length ? 0 : selectedWeekIndex)
+    : getTodayWeekIndex();
+
+  const activeWeekObj = activeWeeksList[activeWeekIndex];
+  
+  const getDaysOfCurrentMonth = (): PrintDay[] => {
+    if (!printPeriod) return [];
+    const parts = printPeriod.split('/');
+    if (parts.length < 2) return [];
+    const month = parseInt(parts[0], 10) - 1;
+    const year = parseInt(parts[1], 10);
+    if (isNaN(month) || isNaN(year)) return [];
+
+    const daysCount = new Date(year, month + 1, 0).getDate();
+    return Array.from({ length: daysCount }).map((_, i) => ({
+      dayNum: i + 1,
+      month: month,
+      year: year,
+      isCurrentMonth: true
+    }));
+  };
+
+  const daysToRender = printSheetType === 'semanal' 
+    ? (activeWeekObj?.days || []) 
+    : getDaysOfCurrentMonth();
+
   const filteredTurmas = turmas.filter(t => {
     if (activeCategory === 'exterior') {
       return t.internacional === true;
@@ -824,21 +971,37 @@ function TurmasContent() {
                   <ChevronRight size={13} className="text-slate-300 group-hover/btn:text-white transition-colors" />
                 </button>
 
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDirectPrintAttendance(turma);
-                  }}
-                  className="w-full flex items-center justify-between p-2.5 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white group/print transition-all cursor-pointer"
-                >
-                  <div className="flex items-center gap-2 text-emerald-700 group-hover/print:text-white transition-colors">
-                    <Printer size={15} />
-                    <span className="text-[9px] font-black uppercase tracking-widest">
-                      {language === 'pt' ? 'Folha de Frequência' : 'Attendance Sheet'}
-                    </span>
-                  </div>
-                  <ChevronRight size={13} className="text-emerald-400 group-hover/print:text-white transition-colors" />
-                </button>
+                <div className="grid grid-cols-2 gap-2">
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDirectPrintAttendance(turma, 'mensal');
+                    }}
+                    className="flex items-center justify-between p-2.5 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white group/print transition-all cursor-pointer"
+                  >
+                    <div className="flex items-center gap-1.5 text-emerald-700 group-hover/print:text-white transition-colors">
+                      <Printer size={13} />
+                      <span className="text-[8.5px] font-black uppercase tracking-wider">
+                        {language === 'pt' ? 'Folha Mensal' : 'Monthly Sheet'}
+                      </span>
+                    </div>
+                  </button>
+
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDirectPrintAttendance(turma, 'semanal');
+                    }}
+                    className="flex items-center justify-between p-2.5 rounded-xl bg-teal-50 text-teal-700 hover:bg-teal-600 hover:text-white group/print-week transition-all cursor-pointer"
+                  >
+                    <div className="flex items-center gap-1.5 text-teal-700 group-hover/print-week:text-white transition-colors">
+                      <Calendar size={13} />
+                      <span className="text-[8.5px] font-black uppercase tracking-wider">
+                        {language === 'pt' ? 'Folha Semanal' : 'Weekly Sheet'}
+                      </span>
+                    </div>
+                  </button>
+                </div>
 
                 <div className="space-y-1.5 px-1 pt-1">
                   <div className="flex justify-between items-center text-[8px] font-black uppercase tracking-widest text-slate-400">
@@ -1555,8 +1718,8 @@ function TurmasContent() {
             className="fixed inset-0 z-[80] bg-slate-900/90 overflow-y-auto custom-scrollbar flex flex-col no-print"
           >
             {/* Top Workspace Bar */}
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-4 border-b border-white/10 bg-slate-950 sticky top-0 z-50 text-white shadow-xl">
-              <div className="flex items-center gap-3 w-full md:w-auto">
+            <div className="flex flex-col lg:flex-row items-center justify-between gap-4 p-4 border-b border-white/10 bg-slate-950 sticky top-0 z-50 text-white shadow-xl">
+              <div className="flex items-center gap-3 w-full lg:w-auto">
                 <button
                   onClick={() => setIsPrintAttendanceOpen(false)}
                   className="p-2 hover:bg-white/10 text-slate-400 hover:text-white rounded-xl transition-all"
@@ -1566,7 +1729,10 @@ function TurmasContent() {
                 </button>
                 <div>
                   <h2 className="text-base font-black uppercase tracking-wider text-white">
-                    {language === 'pt' ? 'Folha de Frequência Mensal' : 'Monthly Attendance Sheet'}
+                    {printSheetType === 'semanal' 
+                      ? (language === 'pt' ? 'Folha de Frequência Semanal' : 'Weekly Attendance Sheet')
+                      : (language === 'pt' ? 'Folha de Frequência Mensal' : 'Monthly Attendance Sheet')
+                    }
                   </h2>
                   <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
                     {alunosInTurma.length} {language === 'pt' ? 'alunos listados' : 'students listed'}
@@ -1575,14 +1741,46 @@ function TurmasContent() {
               </div>
 
               {/* Editable Fields in Controls Bar */}
-              <div className="flex flex-wrap items-center gap-3 bg-white/[0.03] p-2 rounded-2xl border border-white/5 w-full md:w-auto">
+              <div className="flex flex-wrap items-center gap-3 bg-white/[0.03] p-2 rounded-2xl border border-white/5 w-full lg:w-auto">
+                <div className="flex flex-col">
+                  <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest pl-1 mb-1">Tipo</span>
+                  <select
+                    value={printSheetType}
+                    onChange={(e) => {
+                      setPrintSheetType(e.target.value as 'mensal' | 'semanal');
+                      setSelectedWeekIndex(null);
+                    }}
+                    className="px-2.5 py-1.5 bg-slate-900 border border-white/10 rounded-lg text-xs font-bold text-white focus:outline-none focus:border-blue-500 cursor-pointer h-[34px]"
+                  >
+                    <option value="mensal">{language === 'pt' ? 'Mensal' : 'Monthly'}</option>
+                    <option value="semanal">{language === 'pt' ? 'Semanal' : 'Weekly'}</option>
+                  </select>
+                </div>
+
+                {printSheetType === 'semanal' && (
+                  <div className="flex flex-col">
+                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest pl-1 mb-1">Semana Selecionada</span>
+                    <select
+                      value={activeWeekIndex}
+                      onChange={(e) => setSelectedWeekIndex(parseInt(e.target.value, 10))}
+                      className="px-2.5 py-1.5 bg-slate-900 border border-white/10 rounded-lg text-xs font-bold text-white focus:outline-none focus:border-blue-500 min-w-[200px] cursor-pointer h-[34px]"
+                    >
+                      {activeWeeksList.map((w) => (
+                        <option key={w.index} value={w.index}>
+                          {w.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 <div className="flex flex-col flex-1 sm:flex-initial">
                   <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest pl-1 mb-1">Professor(a)</span>
                   <input
                     type="text"
                     value={printProfessorName}
                     onChange={(e) => setPrintProfessorName(e.target.value)}
-                    className="px-3 py-1.5 bg-slate-900 border border-white/10 rounded-lg text-xs font-bold font-sans text-white focus:outline-none focus:border-blue-500 w-full sm:w-44"
+                    className="px-3 py-1.5 bg-slate-900 border border-white/10 rounded-lg text-xs font-bold font-sans text-white focus:outline-none focus:border-blue-500 w-full sm:w-44 h-[34px]"
                     placeholder="Nome do Professor"
                   />
                 </div>
@@ -1592,7 +1790,7 @@ function TurmasContent() {
                     type="text"
                     value={printClassName}
                     onChange={(e) => setPrintClassName(e.target.value)}
-                    className="px-3 py-1.5 bg-slate-900 border border-white/10 rounded-lg text-xs font-bold font-sans text-white focus:outline-none focus:border-blue-500 w-full sm:w-44"
+                    className="px-3 py-1.5 bg-slate-900 border border-white/10 rounded-lg text-xs font-bold font-sans text-white focus:outline-none focus:border-blue-500 w-full sm:w-44 h-[34px]"
                     placeholder="Nome da Turma"
                   />
                 </div>
@@ -1601,8 +1799,11 @@ function TurmasContent() {
                   <input
                     type="text"
                     value={printPeriod}
-                    onChange={(e) => setPrintPeriod(e.target.value)}
-                    className="px-3 py-1.5 bg-slate-900 border border-white/10 rounded-lg text-xs font-bold font-mono text-white focus:outline-none focus:border-blue-500 w-24 text-center text-center"
+                    onChange={(e) => {
+                      setPrintPeriod(e.target.value);
+                      setSelectedWeekIndex(null);
+                    }}
+                    className="px-3 py-1.5 bg-slate-900 border border-white/10 rounded-lg text-xs font-bold font-mono text-white focus:outline-none focus:border-blue-500 w-24 text-center h-[34px]"
                     placeholder="MM/AAAA"
                   />
                 </div>
@@ -1672,7 +1873,10 @@ function TurmasContent() {
                 {/* Print Header */}
                 <div className="mb-4">
                   <h1 className="text-xl font-extrabold text-center border-b-2 border-black pb-2 mb-4 uppercase tracking-normal">
-                    {language === 'pt' ? 'FOLHA DE FREQUÊNCIA MENSAL' : 'MONTHLY ATTENDANCE SHEET'}
+                    {printSheetType === 'semanal' 
+                      ? (language === 'pt' ? 'FOLHA DE FREQUÊNCIA SEMANAL' : 'WEEKLY ATTENDANCE SHEET')
+                      : (language === 'pt' ? 'FOLHA DE FREQUÊNCIA MENSAL' : 'MONTHLY ATTENDANCE SHEET')
+                    }
                   </h1>
                   <div className="grid grid-cols-3 gap-6 font-semibold uppercase text-[10px]">
                     <div className="flex flex-col">
@@ -1688,9 +1892,17 @@ function TurmasContent() {
                       </div>
                     </div>
                     <div className="flex flex-col">
-                      <span>{language === 'pt' ? 'Mês/Ano:' : 'Month/Year:'}</span>
+                      <span>
+                        {printSheetType === 'semanal' 
+                          ? (language === 'pt' ? 'Semana / Período:' : 'Week / Period:') 
+                          : (language === 'pt' ? 'Mês/Ano:' : 'Month/Year:')
+                        }
+                      </span>
                       <div className="border-b border-black h-8 flex items-end pb-1 text-xs font-mono font-bold px-1 text-center justify-center font-bold">
-                        {printPeriod}
+                        {printSheetType === 'semanal'
+                          ? (activeWeeksList[activeWeekIndex]?.label || printPeriod) 
+                          : printPeriod
+                        }
                       </div>
                     </div>
                   </div>
@@ -1702,25 +1914,37 @@ function TurmasContent() {
                     <thead>
                       <tr className="bg-neutral-100 text-[8px] font-bold uppercase text-center h-5">
                         <th className="w-[32px] border border-black p-0.5 text-center">#</th>
-                        <th className="border border-black p-0.5 text-left pl-2 text-[9px] w-[210px] overflow-hidden truncate whitespace-nowrap">
+                        <th 
+                          className={cn(
+                            "border border-black p-0.5 text-left pl-2 text-[9px] overflow-hidden truncate whitespace-nowrap",
+                            printSheetType === 'semanal' ? "w-[350px]" : "w-[210px]"
+                          )}
+                        >
                           {language === 'pt' ? 'Nome do Aluno' : 'Student Name'}
                         </th>
-                        {Array.from({ length: getDaysInMonth() }).map((_, d) => {
-                          const status = getDayStatus(d + 1);
+                        {daysToRender.map((day) => {
+                          const status = getDayStatus(day.dayNum, day.month, day.year);
+                          const dateObj = new Date(day.year, day.month, day.dayNum);
+                          const dayOfWeek = dateObj.getDay();
                           return (
                             <th 
-                              key={d} 
+                              key={`${day.year}-${day.month}-${day.dayNum}`} 
                               className={cn(
-                                "border border-black p-0 text-center font-mono font-bold text-[8px] w-[18px]",
+                                "border border-black p-0 text-center font-mono font-bold text-[8px]",
+                                printSheetType === 'semanal' ? "w-[40px]" : "w-[18px]",
                                 !status.isValid ? "bg-neutral-200 text-neutral-400" :
                                 status.label === 'FE' ? "bg-red-100 text-red-800" :
                                 (status.label === 'S' || status.label === 'D') ? "bg-neutral-200 text-neutral-700" : ""
                               )}
                             >
                               <div className="flex flex-col items-center justify-center leading-tight">
-                                <span>{d + 1}</span>
-                                {status.isValid && (status.label === 'FE' || status.label === 'S' || status.label === 'D') && (
-                                  <span className="text-[5.5px] opacity-75 font-black text-[red-600]">{status.label}</span>
+                                <span className={cn(printSheetType === 'semanal' ? "text-[9px]" : "text-[8px]")}>{day.dayNum}</span>
+                                {printSheetType === 'semanal' ? (
+                                  <span className="text-[6.5px] uppercase text-neutral-500 font-extrabold">{getWeekdayName(dayOfWeek)}</span>
+                                ) : (
+                                  status.isValid && (status.label === 'FE' || status.label === 'S' || status.label === 'D') && (
+                                    <span className="text-[5.5px] opacity-75 font-black text-red-600">{status.label}</span>
+                                  )
                                 )}
                               </div>
                             </th>
@@ -1731,20 +1955,26 @@ function TurmasContent() {
                     <tbody>
                       {alunosInTurma.length > 0 ? (
                         alunosInTurma.map((student, index) => (
-                          <tr key={student.id || index} className="h-[3.9mm] text-[8px] font-bold uppercase">
+                          <tr key={student.id || index} className={cn("text-[8px] font-bold uppercase", printSheetType === 'semanal' ? "h-[5.5mm]" : "h-[3.9mm]")}>
                             <td className="border border-black text-center font-mono font-semibold text-[8px]">
                               {index + 1}
                             </td>
-                            <td className="border border-black px-2 text-[9px] truncate whitespace-nowrap font-sans max-w-[210px]">
+                            <td 
+                              className={cn(
+                                "border border-black px-2 text-[9px] truncate whitespace-nowrap font-sans",
+                                printSheetType === 'semanal' ? "max-w-[350px]" : "max-w-[210px]"
+                              )}
+                            >
                               {student.posto_graduacao ? `${student.posto_graduacao} ${student.nome}` : student.nome}
                             </td>
-                            {Array.from({ length: getDaysInMonth() }).map((_, d) => {
-                              const status = getDayStatus(d + 1);
+                            {daysToRender.map((day) => {
+                              const status = getDayStatus(day.dayNum, day.month, day.year);
                               return (
                                 <td 
-                                  key={d} 
+                                  key={`${day.year}-${day.month}-${day.dayNum}`} 
                                   className={cn(
-                                    "border border-black p-0 text-center font-bold font-mono text-[7px] select-none",
+                                    "border border-black p-0 text-center font-bold font-mono select-none",
+                                    printSheetType === 'semanal' ? "text-[9px]" : "text-[7px]",
                                     status.bgClass
                                   )}
                                 >
@@ -1762,8 +1992,8 @@ function TurmasContent() {
                           <td className="border border-black px-2 text-[9px] italic text-neutral-400">
                             {language === 'pt' ? 'Nenhum aluno inscrito nesta turma' : 'No students registered in this class'}
                           </td>
-                          {Array.from({ length: getDaysInMonth() }).map((_, d) => (
-                            <td key={d} className="border border-black p-0 bg-neutral-100"></td>
+                          {daysToRender.map((day) => (
+                            <td key={`${day.year}-${day.month}-${day.dayNum}`} className="border border-black p-0 bg-neutral-100"></td>
                           ))}
                         </tr>
                       )}
@@ -1793,19 +2023,28 @@ function TurmasContent() {
                       <span className="text-[7px] text-neutral-400 font-bold tracking-widest uppercase">São Tomé e Príncipe</span>
                     </div>
                     <div className="flex flex-col gap-1 text-[7.5px] font-black border-2 border-dashed border-red-500 p-2 rounded-lg bg-red-50/50 min-h-[46px] justify-center">
-                      {getMonthHolidays().length > 0 ? (
-                        getMonthHolidays().map((holiday, hIdx) => (
-                          <div key={hIdx} className="text-red-700 flex items-start gap-1 justify-start leading-tight">
-                            <span className="bg-red-600 text-white font-mono text-[6.5px] px-1 rounded shrink-0">FE {holiday.day}</span>
-                            <span className="font-bold shrink-0">{holiday.name}:</span>
-                            <span className="font-medium text-neutral-700 normal-case italic line-clamp-2">{holiday.meaning}</span>
-                          </div>
-                        ))
-                      ) : (
-                        <span className="text-neutral-500 italic font-mono uppercase tracking-widest text-[7px] text-center block w-full">
-                          {language === 'pt' ? 'Nenhum feriado nacional neste mês.' : 'No national holidays this month.'}
-                        </span>
-                      )}
+                      {(() => {
+                        const activeHolidays = getHolidaysForDays(daysToRender);
+
+                        return activeHolidays.length > 0 ? (
+                          activeHolidays.map((holiday, hIdx) => (
+                            <div key={hIdx} className="text-red-700 flex items-start gap-1 justify-start leading-tight">
+                              <span className="bg-red-600 text-white font-mono text-[6.5px] px-1 rounded shrink-0 font-extrabold">
+                                FE {holiday.day}/{String(holiday.month + 1).padStart(2, '0')}
+                              </span>
+                              <span className="font-bold shrink-0">{holiday.name}:</span>
+                              <span className="font-medium text-neutral-700 normal-case italic line-clamp-2">{holiday.meaning}</span>
+                            </div>
+                          ))
+                        ) : (
+                          <span className="text-neutral-500 italic font-mono uppercase tracking-widest text-[7px] text-center block w-full">
+                            {printSheetType === 'semanal'
+                              ? (language === 'pt' ? 'Nenhum feriado nacional nesta semana.' : 'No national holidays this week.')
+                              : (language === 'pt' ? 'Nenhum feriado nacional neste mês.' : 'No national holidays this month.')
+                            }
+                          </span>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>
