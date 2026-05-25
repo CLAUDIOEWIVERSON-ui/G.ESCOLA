@@ -334,11 +334,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <h1 className="text-lg font-bold text-slate-800 leading-none">
                 {navItems.find(item => item.path === pathname)?.name || t.dashboard.title}
               </h1>
-              <div className="flex items-center gap-2 mt-1">
-                {pathname !== '/boletim' && (
-                  <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">{t.auth.term}</p>
-                )}
-              </div>
             </div>
           </div>
           <div className="flex items-center gap-4 md:gap-6">
