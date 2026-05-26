@@ -965,6 +965,14 @@ function TurmasContent() {
                        turma.periodo === 'noite' ? t.common.night : turma.periodo}
                     </span>
                   </div>
+                  {(turma.data_inicio || turma.data_fim) && (
+                    <div className="flex items-center gap-2 text-slate-500 col-span-2">
+                      <Calendar size={14} className="text-blue-500" />
+                      <span className="text-[10px] font-black text-slate-700 uppercase tracking-wider">
+                        {turma.data_inicio ? turma.data_inicio.split('-').reverse().join('/') : '—'} - {turma.data_fim ? turma.data_fim.split('-').reverse().join('/') : '—'}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex items-center gap-2 text-slate-500 col-span-2">
                     <Users size={14} className="text-slate-300" />
                     <span className="text-[10px] font-bold uppercase tracking-wider">{turma.instrutor || "S/ Instrutor"}</span>
