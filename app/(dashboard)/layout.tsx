@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
@@ -31,15 +31,12 @@ import { ProximityAlert } from '@/components/ProximityAlert';
 import { EventMarquee } from '@/components/EventMarquee';
 import { HeaderClock } from '@/components/HeaderClock';
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+// Isolated search bar component to avoid CSR bailout in layout.tsx
+function HeaderSearchBar() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { t, language } = useI18n();
-  const { profile, isAdmin, isAluno, isInstrutor, loading: authLoading } = useUser();
-  const isReadOnly = !isAdmin;
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
+  const { t } = useI18n();
 
   const handleSearchChange = (val: string) => {
     const params = new URLSearchParams(searchParams ? searchParams.toString() : '');
@@ -50,6 +47,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
     router.replace(`${pathname}?${params.toString()}`);
   };
+
+  return (
+    <div className="relative">
+      <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+      <input 
+        type="text" 
+        placeholder={t.common.search}
+        value={searchParams ? (searchParams.get('q') || '') : ''}
+        onChange={(e) => handleSearchChange(e.target.value)}
+        className="pl-9 pr-4 py-1.5 border border-slate-200 rounded-lg text-xs bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500/10 w-48"
+      />
+    </div>
+  );
+}
+
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const { t, language } = useI18n();
+  const { profile, isAdmin, isAluno, isInstrutor, loading: authLoading } = useUser();
+  const isReadOnly = !isAdmin;
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
 
   const toggleSubmenu = (path: string, e: React.MouseEvent) => {
     if (!sidebarOpen) {
@@ -147,7 +167,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         )}
       >
         <div className="flex flex-col h-full">
-          <div className="p-5 flex items-center border-b border-white/5 h-16 bg-white/[0.02]">
+          <div className={cn("px-4 py-3 flex items-center border-b border-white/5 bg-white/[0.02] overflow-hidden transition-all duration-300", sidebarOpen ? "h-28" : "h-16 justify-center")}>
             <Logo collapsed={!sidebarOpen} size="md" orientation="horizontal" />
           </div>
 
@@ -358,16 +378,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
           <div className="flex items-center gap-4 md:gap-6">
             <div className="hidden md:flex items-center gap-2">
-               <div className="relative">
-                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                 <input 
-                   type="text" 
-                   placeholder={t.common.search}
-                    value={searchParams ? (searchParams.get('q') || '') : ''}
-                    onChange={(e) => handleSearchChange(e.target.value)}
-                   className="pl-9 pr-4 py-1.5 border border-slate-200 rounded-lg text-xs bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500/10 w-48"
-                 />
-               </div>
+               <Suspense fallback={<div className="w-48 h-8 bg-slate-50 border border-slate-200 rounded-lg animate-pulse" />}>
+                 <HeaderSearchBar />
+               </Suspense>
             </div>
             <HeaderClock />
             {/* Language toggle removed as per user request */}
