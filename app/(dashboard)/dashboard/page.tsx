@@ -42,6 +42,8 @@ export default function DashboardPage() {
               posto_graduacao,
               om,
               foto_url,
+              data_inicio_curso,
+              data_fim_curso,
               turma:turmas!inner(
                 nome,
                 ano,
@@ -173,7 +175,21 @@ export default function DashboardPage() {
                         <div className="text-[10px] text-slate-400 uppercase font-bold">{turmaData?.localizacao || '-'}</div>
                       </td>
                       <td className="px-6 py-4 text-center text-slate-500 font-mono text-xs">
-                        {turmaData?.data_inicio ? new Date(turmaData.data_inicio).getFullYear() : '-'} / {turmaData?.data_fim ? new Date(turmaData.data_fim).getFullYear() : '-'}
+                        {aluno.data_inicio_curso || aluno.data_fim_curso ? (
+                          <div className="flex flex-col items-center justify-center leading-normal">
+                            <span className="text-slate-800 font-bold whitespace-nowrap">
+                              {aluno.data_inicio_curso ? aluno.data_inicio_curso.split('-').reverse().join('/') : '—'}
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-sans uppercase font-extrabold my-0.5">a</span>
+                            <span className="text-slate-800 font-bold whitespace-nowrap">
+                              {aluno.data_fim_curso ? aluno.data_fim_curso.split('-').reverse().join('/') : '—'}
+                            </span>
+                          </div>
+                        ) : (
+                          <span>
+                            {turmaData?.data_inicio ? new Date(turmaData.data_inicio).getFullYear() : '-'} / {turmaData?.data_fim ? new Date(turmaData.data_fim).getFullYear() : '-'}
+                          </span>
+                        )}
                       </td>
                     </tr>
                   );
