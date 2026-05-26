@@ -323,9 +323,9 @@ function TurmasContent() {
     return result;
   };
   
-  const activeCategory = (categoryParam && ['expedito', 'especial', 'carreira', 'exterior'].includes(categoryParam)) 
-    ? (categoryParam as 'expedito' | 'especial' | 'carreira' | 'exterior') 
-    : 'expedito';
+  const activeCategory = (categoryParam && ['all', 'expedito', 'especial', 'carreira', 'exterior'].includes(categoryParam)) 
+    ? (categoryParam as 'all' | 'expedito' | 'especial' | 'carreira' | 'exterior') 
+    : 'all';
 
   const setActiveCategory = (cat: string) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -384,7 +384,7 @@ function TurmasContent() {
     setCurrentTurma(turma || { 
       nome: '', 
       curso_id: '', 
-      categoria: activeCategory === 'exterior' ? 'expedito' : activeCategory,
+      categoria: activeCategory === 'all' ? 'expedito' : (activeCategory === 'exterior' ? 'expedito' : activeCategory),
       ano: new Date().getFullYear(), 
       periodo: 'manhã', 
       capacidade_max: 40, 
@@ -826,6 +826,9 @@ function TurmasContent() {
     : getDaysOfCurrentMonth();
 
   const filteredTurmas = turmas.filter(t => {
+    if (activeCategory === 'all') {
+      return true;
+    }
     if (activeCategory === 'exterior') {
       return t.internacional === true;
     }
@@ -845,8 +848,8 @@ function TurmasContent() {
         </div>
         
         <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
-          <div className="grid grid-cols-4 gap-1 bg-white p-1 rounded-xl shadow-sm border border-slate-200 w-full sm:w-[480px]">
-            {(['expedito', 'especial', 'carreira', 'exterior'] as const).map((cat) => (
+          <div className="grid grid-cols-5 gap-1 bg-white p-1 rounded-xl shadow-sm border border-slate-200 w-full sm:w-[550px]">
+            {(['all', 'expedito', 'especial', 'carreira', 'exterior'] as const).map((cat) => (
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}

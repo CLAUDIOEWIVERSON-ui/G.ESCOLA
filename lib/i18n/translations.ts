@@ -181,6 +181,7 @@ export const translations = {
       startDate: "Início",
       endDate: "Fim",
       category: "Categoria",
+      categoryAll: "Todas",
       categoryExpedito: "Expedito",
       categoryEspecial: "Especial",
       categoryCarreira: "Carreira",
