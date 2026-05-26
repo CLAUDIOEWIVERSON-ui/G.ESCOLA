@@ -8,7 +8,9 @@ import {
   BookOpen, 
   GraduationCap,
   Layers as LayersIcon,
-  X
+  X,
+  BookMarked,
+  Award
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import Image from 'next/image';
@@ -16,8 +18,13 @@ import Image from 'next/image';
 export default function DashboardPage() {
   const { t } = useI18n();
   const [stats, setStats] = useState({
-    turmasInternacionais: 0,
     alunosExterior: 0,
+    turmasExpedito: 0,
+    turmasCarreira: 0,
+    turmasEspeciais: 0,
+    studentsExpedito: 0,
+    studentsCarreira: 0,
+    studentsEspeciais: 0,
   });
   const [alunosExterior, setAlunosExterior] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,13 +35,11 @@ export default function DashboardPage() {
       setLoading(true);
       try {
         const [
-          { count: turmasIntCount },
-          { data: alunosExteriorData }
+          alunosExteriorRes,
+          cursosRes,
+          turmasRes,
+          alunosRes
         ] = await Promise.all([
-          supabase.from('turmas')
-            .select('*', { count: 'exact', head: true })
-            .eq('internacional', true)
-            .is('deleted_at', null),
           supabase.from('alunos')
             .select(`
               id,
@@ -57,14 +62,96 @@ export default function DashboardPage() {
               )
             `)
             .eq('turma.internacional', true)
+            .is('deleted_at', null),
+          supabase.from('cursos')
+            .select('id, nome, categoria')
+            .is('deleted_at', null),
+          supabase.from('turmas')
+            .select('id, nome, curso_id, status')
+            .is('deleted_at', null),
+          supabase.from('alunos')
+            .select('id, turma_id')
             .is('deleted_at', null)
         ]);
 
-        setStats({
-          turmasInternacionais: turmasIntCount || 0,
-          alunosExterior: alunosExteriorData?.length || 0,
+        const activeCursos = cursosRes.data || [];
+        const activeTurmas = turmasRes.data || [];
+        const activeAlunos = alunosRes.data || [];
+        const alunosExteriorData = alunosExteriorRes.data || [];
+
+        // Map course id to course object
+        const courseMap = new Map<string, { id: string; nome: string; categoria: string | null }>();
+        activeCursos.forEach((c: any) => {
+          courseMap.set(c.id, c);
         });
-        setAlunosExterior(alunosExteriorData || []);
+
+        // Map turma id to course object with status
+        const turmaCoursesMap = new Map<string, { id: string; nome: string; categoria: string | null; status: string | null }>();
+        activeTurmas.forEach((t: any) => {
+          if (t.curso_id) {
+            const c = courseMap.get(t.curso_id);
+            if (c) {
+              turmaCoursesMap.set(t.id, { ...c, status: t.status });
+            }
+          }
+        });
+
+        // Count turmas by category of their course - Active only, non-concluded
+        let expeditoTurmasCount = 0;
+        let carreiraTurmasCount = 0;
+        let especialTurmasCount = 0;
+
+        activeTurmas.forEach((t: any) => {
+          const isAtiva = t.status === 'ativa' || !t.status;
+          if (isAtiva && t.curso_id) {
+            const course = courseMap.get(t.curso_id);
+            if (course) {
+              const cat = course.categoria?.toLowerCase();
+              if (cat === 'expedito') {
+                expeditoTurmasCount++;
+              } else if (cat === 'carreira') {
+                carreiraTurmasCount++;
+              } else if (cat === 'especial') {
+                especialTurmasCount++;
+              }
+            }
+          }
+        });
+
+        // Count students by course category (only for active turmas)
+        let expeditoAlunosCount = 0;
+        let carreiraAlunosCount = 0;
+        let especialAlunosCount = 0;
+
+        activeAlunos.forEach((al: any) => {
+          if (al.turma_id) {
+            const course = turmaCoursesMap.get(al.turma_id);
+            if (course) {
+              const isAtiva = course.status === 'ativa' || !course.status;
+              if (isAtiva) {
+                const cat = course.categoria?.toLowerCase();
+                if (cat === 'expedito') {
+                  expeditoAlunosCount++;
+                } else if (cat === 'carreira') {
+                  carreiraAlunosCount++;
+                } else if (cat === 'especial') {
+                  especialAlunosCount++;
+                }
+              }
+            }
+          }
+        });
+
+        setStats({
+          alunosExterior: alunosExteriorData.length,
+          turmasExpedito: expeditoTurmasCount,
+          turmasCarreira: carreiraTurmasCount,
+          turmasEspeciais: especialTurmasCount,
+          studentsExpedito: expeditoAlunosCount,
+          studentsCarreira: carreiraAlunosCount,
+          studentsEspeciais: especialAlunosCount,
+        });
+        setAlunosExterior(alunosExteriorData);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
       } finally {
@@ -75,36 +162,64 @@ export default function DashboardPage() {
   }, []);
 
   const statCards = [
-    { name: t.dashboard.activeClassesIntl, value: stats.turmasInternacionais, icon: BookOpen, color: 'bg-emerald-600' },
-    { name: t.dashboard.studentsAbroad, value: stats.alunosExterior, icon: GraduationCap, color: 'bg-purple-600' },
-  ];
+    { 
+      name: t.dashboard.studentsAbroad, 
+      value: stats.alunosExterior, 
+      icon: GraduationCap, 
+      color: 'bg-purple-600',
+      shouldShow: stats.alunosExterior > 0
+    },
+    { 
+      name: t.dashboard.turmasExpedito, 
+      value: stats.turmasExpedito, 
+      icon: BookOpen, 
+      color: 'bg-amber-500',
+      shouldShow: stats.studentsExpedito > 0
+    },
+    { 
+      name: t.dashboard.turmasCarreira, 
+      value: stats.turmasCarreira, 
+      icon: BookMarked, 
+      color: 'bg-emerald-600',
+      shouldShow: stats.studentsCarreira > 0
+    },
+    { 
+      name: t.dashboard.turmasEspeciais, 
+      value: stats.turmasEspeciais, 
+      icon: Award, 
+      color: 'bg-blue-600',
+      shouldShow: stats.studentsEspeciais > 0
+    },
+  ].filter(card => card.shouldShow);
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        {statCards.map((card, i) => (
-          <motion.div
-            key={card.name}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.1 }}
-            className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className={`p-2 rounded-lg ${card.color} text-white`}>
-                <card.icon size={20} />
+      {statCards.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {statCards.map((card, i) => (
+            <motion.div
+              key={card.name}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1 }}
+              className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className={`p-2 rounded-lg ${card.color} text-white`}>
+                  <card.icon size={20} />
+                </div>
+                <span className="text-[10px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded uppercase">
+                  {t.dashboard.stable}
+                </span>
               </div>
-              <span className="text-[10px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded uppercase">
-                {t.dashboard.stable}
-              </span>
-            </div>
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">{card.name}</p>
-            <div className="flex items-end justify-between">
-              <span className="text-3xl font-bold text-slate-800">{card.value}</span>
-            </div>
-          </motion.div>
-        ))}
-      </div>
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">{card.name}</p>
+              <div className="flex items-end justify-between">
+                <span className="text-3xl font-bold text-slate-800">{card.value}</span>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      )}
 
       <div className="bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col overflow-hidden">
         <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
