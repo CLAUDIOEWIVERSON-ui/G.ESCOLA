@@ -998,37 +998,39 @@ function TurmasContent() {
                   <ChevronRight size={13} className="text-slate-300 group-hover/btn:text-white transition-colors" />
                 </button>
 
-                <div className="grid grid-cols-2 gap-2">
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDirectPrintAttendance(turma, 'mensal');
-                    }}
-                    className="flex items-center justify-between p-2.5 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white group/print transition-all cursor-pointer"
-                  >
-                    <div className="flex items-center gap-1.5 text-emerald-700 group-hover/print:text-white transition-colors">
-                      <Printer size={13} />
-                      <span className="text-[8.5px] font-black uppercase tracking-wider">
-                        {language === 'pt' ? 'Folha Mensal' : 'Monthly Sheet'}
-                      </span>
-                    </div>
-                  </button>
+                {!turma.internacional && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDirectPrintAttendance(turma, 'mensal');
+                      }}
+                      className="flex items-center justify-between p-2.5 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white group/print transition-all cursor-pointer"
+                    >
+                      <div className="flex items-center gap-1.5 text-emerald-700 group-hover/print:text-white transition-colors">
+                        <Printer size={13} />
+                        <span className="text-[8.5px] font-black uppercase tracking-wider">
+                          {language === 'pt' ? 'Folha Mensal' : 'Monthly Sheet'}
+                        </span>
+                      </div>
+                    </button>
 
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDirectPrintAttendance(turma, 'semanal');
-                    }}
-                    className="flex items-center justify-between p-2.5 rounded-xl bg-teal-50 text-teal-700 hover:bg-teal-600 hover:text-white group/print-week transition-all cursor-pointer"
-                  >
-                    <div className="flex items-center gap-1.5 text-teal-700 group-hover/print-week:text-white transition-colors">
-                      <Calendar size={13} />
-                      <span className="text-[8.5px] font-black uppercase tracking-wider">
-                        {language === 'pt' ? 'Folha Semanal' : 'Weekly Sheet'}
-                      </span>
-                    </div>
-                  </button>
-                </div>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDirectPrintAttendance(turma, 'semanal');
+                      }}
+                      className="flex items-center justify-between p-2.5 rounded-xl bg-teal-50 text-teal-700 hover:bg-teal-600 hover:text-white group/print-week transition-all cursor-pointer"
+                    >
+                      <div className="flex items-center gap-1.5 text-teal-700 group-hover/print-week:text-white transition-colors">
+                        <Calendar size={13} />
+                        <span className="text-[8.5px] font-black uppercase tracking-wider">
+                          {language === 'pt' ? 'Folha Semanal' : 'Weekly Sheet'}
+                        </span>
+                      </div>
+                    </button>
+                  </div>
+                )}
 
                 <div className="space-y-1.5 px-1 pt-1">
                   <div className="flex justify-between items-center text-[8px] font-black uppercase tracking-widest text-slate-400">
@@ -1290,13 +1292,15 @@ function TurmasContent() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => handleOpenPrintAttendance(viewingTurma)}
-              className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-100 px-3 py-1.5 rounded-lg hover:bg-emerald-100 hover:text-emerald-800 transition-all cursor-pointer shadow-sm shadow-emerald-100"
-            >
-              <Printer size={13} strokeWidth={2.5} />
-              {language === 'pt' ? 'Folha de Frequência' : 'Attendance Sheet'}
-            </button>
+            {!viewingTurma?.internacional && (
+              <button
+                onClick={() => handleOpenPrintAttendance(viewingTurma)}
+                className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-100 px-3 py-1.5 rounded-lg hover:bg-emerald-100 hover:text-emerald-800 transition-all cursor-pointer shadow-sm shadow-emerald-100"
+              >
+                <Printer size={13} strokeWidth={2.5} />
+                {language === 'pt' ? 'Folha de Frequência' : 'Attendance Sheet'}
+              </button>
+            )}
             {!isReadOnly && (
               <>
                 <button
