@@ -5,7 +5,7 @@ import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
-import { Plus, Search, Layers as LayersIcon, Library, Calendar, Clock, MapPin, Pencil, Trash2, Loader2, CheckCircle2, RefreshCcw, Users, Mail, Phone, Building, Camera, MessageCircle, XCircle, FileText, X, GraduationCap, School, ChevronRight, Printer } from 'lucide-react';
+import { Plus, Search, Layers as LayersIcon, Library, Calendar, Clock, MapPin, Pencil, Trash2, Loader2, CheckCircle2, RefreshCcw, Users, Mail, Phone, Building, Camera, MessageCircle, XCircle, FileText, X, GraduationCap, School, ChevronRight, Printer, Monitor } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import Modal from '@/components/Modal';
@@ -323,8 +323,8 @@ function TurmasContent() {
     return result;
   };
   
-  const activeCategory = (categoryParam && ['all', 'expedito', 'especial', 'carreira', 'exterior'].includes(categoryParam)) 
-    ? (categoryParam as 'all' | 'expedito' | 'especial' | 'carreira' | 'exterior') 
+  const activeCategory = (categoryParam && ['all', 'expedito', 'especial', 'carreira', 'ead', 'exterior'].includes(categoryParam)) 
+    ? (categoryParam as 'all' | 'expedito' | 'especial' | 'carreira' | 'ead' | 'exterior') 
     : 'all';
 
   const setActiveCategory = (cat: string) => {
@@ -858,8 +858,8 @@ function TurmasContent() {
         </div>
         
         <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
-          <div className="grid grid-cols-5 gap-1 bg-white p-1 rounded-xl shadow-sm border border-slate-200 w-full sm:w-[550px]">
-            {(['all', 'expedito', 'especial', 'carreira', 'exterior'] as const).map((cat) => (
+          <div className="grid grid-cols-6 gap-1 bg-white p-1 rounded-xl shadow-sm border border-slate-200 w-full sm:w-[620px]">
+            {(['all', 'expedito', 'especial', 'carreira', 'ead', 'exterior'] as const).map((cat) => (
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
@@ -929,17 +929,23 @@ function TurmasContent() {
               <div className={cn(
                 "absolute top-0 left-0 w-full h-1.5",
                 turma.categoria === 'expedito' ? "bg-blue-500" :
-                turma.categoria === 'especial' ? "bg-purple-500" : "bg-amber-500"
+                turma.categoria === 'especial' ? "bg-purple-500" :
+                turma.categoria === 'carreira' ? "bg-emerald-500" :
+                turma.categoria === 'ead' ? "bg-cyan-500" : "bg-amber-500"
               )} />
 
               <div className="flex justify-between items-start mb-6">
                 <div className={cn(
                   "w-14 h-14 rounded-2xl flex items-center justify-center transition-colors shadow-inner",
                   turma.categoria === 'expedito' ? "bg-blue-50 text-blue-500" :
-                  turma.categoria === 'especial' ? "bg-purple-50 text-purple-500" : "bg-amber-50 text-amber-500"
+                  turma.categoria === 'especial' ? "bg-purple-50 text-purple-500" :
+                  turma.categoria === 'carreira' ? "bg-emerald-50 text-emerald-500" :
+                  turma.categoria === 'ead' ? "bg-cyan-50 text-cyan-500" : "bg-amber-50 text-amber-500"
                 )}>
                   {turma.categoria === 'expedito' ? <LayersIcon size={28} /> :
-                   turma.categoria === 'especial' ? <GraduationCap size={28} /> : <Library size={28} />}
+                   turma.categoria === 'especial' ? <GraduationCap size={28} /> :
+                   turma.categoria === 'carreira' ? <Library size={28} /> :
+                   turma.categoria === 'ead' ? <Monitor size={28} /> : <Library size={28} />}
                 </div>
                 
                 <div className="flex flex-col items-end gap-2">
@@ -1134,6 +1140,7 @@ function TurmasContent() {
                 <option value="expedito">{t.classes.categoryExpedito}</option>
                 <option value="especial">{t.classes.categoryEspecial}</option>
                 <option value="carreira">{t.classes.categoryCarreira}</option>
+                <option value="ead">{t.classes.categoryEad}</option>
               </select>
             </div>
 

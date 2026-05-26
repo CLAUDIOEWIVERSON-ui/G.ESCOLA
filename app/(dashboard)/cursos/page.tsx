@@ -428,7 +428,7 @@ export default function CursosPage() {
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full xl:w-auto">
           {/* Cursos Category Buttons */}
           <div className="flex flex-wrap items-center bg-white p-1 rounded-xl shadow-sm border border-slate-200 gap-1">
-            {([null, 'Expedito', 'Especial', 'Carreira', 'Exterior'] as const).map((cat) => (
+            {([null, 'Expedito', 'Especial', 'Carreira', 'EaD', 'Exterior'] as const).map((cat) => (
               <button
                 key={cat || 'todos'}
                 type="button"
@@ -448,7 +448,9 @@ export default function CursosPage() {
                       ? t.courses.categoryEspecial 
                       : cat === 'Carreira'
                         ? t.courses.categoryCarreira
-                        : t.courses.categoryExterior}
+                        : cat === 'EaD'
+                          ? t.courses.categoryEad
+                          : t.courses.categoryExterior}
               </button>
             ))}
           </div>
@@ -525,6 +527,7 @@ export default function CursosPage() {
                   curso.categoria === 'Expedito' ? 'bg-amber-400' :
                   curso.categoria === 'Especial' ? 'bg-purple-500' :
                   curso.categoria === 'Carreira' ? 'bg-emerald-500' :
+                  curso.categoria === 'EaD' ? 'bg-cyan-500' :
                   curso.internacional ? 'bg-blue-600' : 'bg-slate-300'
                 )} />
 
@@ -561,6 +564,7 @@ export default function CursosPage() {
                         "px-2 py-0.5 text-[9px] font-bold uppercase rounded-md border",
                         curso.categoria === 'Expedito' ? 'bg-amber-50 text-amber-700 border-amber-100' :
                         curso.categoria === 'Especial' ? 'bg-purple-50 text-purple-700 border-purple-100' :
+                        curso.categoria === 'EaD' ? 'bg-cyan-50 text-cyan-700 border-cyan-100' :
                         'bg-emerald-50 text-emerald-700 border-emerald-100'
                       )}>
                         {curso.categoria}
@@ -721,6 +725,7 @@ export default function CursosPage() {
                     <option value="Expedito">{t.courses.categoryExpedito}</option>
                     <option value="Especial">{t.courses.categoryEspecial}</option>
                     <option value="Carreira">{t.courses.categoryCarreira}</option>
+                    <option value="EaD">{t.courses.categoryEad}</option>
                   </select>
                 </div>
 
