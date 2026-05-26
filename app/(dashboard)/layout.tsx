@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/LanguageContext';
@@ -34,11 +34,22 @@ import { HeaderClock } from '@/components/HeaderClock';
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { t, language } = useI18n();
   const { profile, isAdmin, isAluno, isInstrutor, loading: authLoading } = useUser();
   const isReadOnly = !isAdmin;
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
+
+  const handleSearchChange = (val: string) => {
+    const params = new URLSearchParams(searchParams ? searchParams.toString() : '');
+    if (val) {
+      params.set('q', val);
+    } else {
+      params.delete('q');
+    }
+    router.replace(`${pathname}?${params.toString()}`);
+  };
 
   const toggleSubmenu = (path: string, e: React.MouseEvent) => {
     if (!sidebarOpen) {
@@ -352,6 +363,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                  <input 
                    type="text" 
                    placeholder={t.common.search}
+                    value={searchParams ? (searchParams.get('q') || '') : ''}
+                    onChange={(e) => handleSearchChange(e.target.value)}
                    className="pl-9 pr-4 py-1.5 border border-slate-200 rounded-lg text-xs bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500/10 w-48"
                  />
                </div>

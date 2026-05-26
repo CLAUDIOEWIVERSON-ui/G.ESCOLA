@@ -58,8 +58,8 @@ export default function NotasPage() {
           studentsFetch = studentsFetch.eq('turma_id', selectedTurma);
         } else if (selectedCurso) {
           // Join with turmas to get students of this course
-          const { data: turmaIds } = await supabase.from('turmas').select('id').eq('curso_id', selectedCurso).is('deleted_at', null);
-          const ids = turmaIds?.map(t => t.id) || [];
+          const { data: turmaIds } = await supabase.from('turmas').select('id, internacional').eq('curso_id', selectedCurso).is('deleted_at', null);
+          const ids = turmaIds?.filter(t => !t.internacional).map(t => t.id) || [];
           if (ids.length > 0) {
             studentsFetch = studentsFetch.in('turma_id', ids);
           } else {
@@ -77,8 +77,8 @@ export default function NotasPage() {
         if (selectedTurma) {
           gradesFetch = gradesFetch.eq('turma_id', selectedTurma);
         } else if (selectedCurso) {
-          const { data: turmaIds } = await supabase.from('turmas').select('id').eq('curso_id', selectedCurso).is('deleted_at', null);
-          const ids = turmaIds?.map(t => t.id) || [];
+          const { data: turmaIds } = await supabase.from('turmas').select('id, internacional').eq('curso_id', selectedCurso).is('deleted_at', null);
+          const ids = turmaIds?.filter(t => !t.internacional).map(t => t.id) || [];
           if (ids.length > 0) {
             gradesFetch = gradesFetch.in('turma_id', ids);
           }
@@ -116,11 +116,11 @@ export default function NotasPage() {
 
       // Fetch Cursos
       const { data: cursosData } = await supabase.from('cursos').select('*').is('deleted_at', null).order('nome');
-      if (cursosData) setCursos(cursosData);
+      if (cursosData) setCursos(cursosData.filter((c: any) => !c.internacional));
 
       // Fetch Turmas
-      const { data: turmasData } = await supabase.from('turmas').select('id, nome, curso_id').is('deleted_at', null).order('nome');
-      if (turmasData) setTurmas(turmasData);
+      const { data: turmasData } = await supabase.from('turmas').select('id, nome, curso_id, internacional').is('deleted_at', null).order('nome');
+      if (turmasData) setTurmas(turmasData.filter((t: any) => !t.internacional));
       
       setLoading(false);
     };

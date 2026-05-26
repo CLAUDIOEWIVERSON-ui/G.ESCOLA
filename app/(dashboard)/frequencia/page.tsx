@@ -209,11 +209,11 @@ export default function FrequenciaPage() {
 
   useEffect(() => {
     const fetchFilters = async () => {
-      const { data: cursosData } = await supabase.from('cursos').select('id, nome').is('deleted_at', null).order('nome');
-      if (cursosData) setCursos(cursosData);
+      const { data: cursosData } = await supabase.from('cursos').select('id, nome, internacional').is('deleted_at', null).order('nome');
+      if (cursosData) setCursos(cursosData.filter((c: any) => !c.internacional));
 
-      const { data: turmasData } = await supabase.from('turmas').select('id, nome, curso_id').is('deleted_at', null).order('nome');
-      if (turmasData) setTurmas(turmasData);
+      const { data: turmasData } = await supabase.from('turmas').select('id, nome, curso_id, internacional').is('deleted_at', null).order('nome');
+      if (turmasData) setTurmas(turmasData.filter((t: any) => !t.internacional));
 
       const { data: disciplinasData } = await supabase.from('disciplinas').select('id, nome, curso_id').is('deleted_at', null).order('nome');
       if (disciplinasData) setDisciplinas(disciplinasData);

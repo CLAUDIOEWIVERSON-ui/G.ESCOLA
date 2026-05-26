@@ -825,7 +825,17 @@ function TurmasContent() {
     ? (activeWeekObj?.days || []) 
     : getDaysOfCurrentMonth();
 
+  const q = searchParams ? (searchParams.get('q')?.toLowerCase() || '') : '';
+
   const filteredTurmas = turmas.filter(t => {
+    if (q) {
+      const nomeMatch = t.nome?.toLowerCase().includes(q);
+      const cursoMatch = t.curso?.nome?.toLowerCase().includes(q);
+      const instrutorMatch = t.instrutor?.toLowerCase().includes(q);
+      if (!nomeMatch && !cursoMatch && !instrutorMatch) {
+        return false;
+      }
+    }
     if (activeCategory === 'all') {
       return true;
     }
