@@ -175,7 +175,7 @@ export default function DashboardPage() {
                         <div className="text-[10px] text-slate-400 uppercase font-bold">{turmaData?.localizacao || '-'}</div>
                       </td>
                       <td className="px-6 py-4 text-center text-slate-500 font-mono text-xs">
-                        {aluno.data_inicio_curso || aluno.data_fim_curso ? (
+                        {turmaData?.internacional ? (
                           <div className="flex flex-col items-center justify-center leading-normal">
                             <span className="text-slate-800 font-bold whitespace-nowrap">
                               {aluno.data_inicio_curso ? aluno.data_inicio_curso.split('-').reverse().join('/') : '—'}
