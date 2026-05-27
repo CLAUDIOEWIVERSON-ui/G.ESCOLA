@@ -430,9 +430,12 @@ export default function LinksUteisPage() {
   };
 
   const filteredLinks = links.filter(link => {
-    return link.name.toLowerCase().includes(search.toLowerCase()) || 
-           link.description.toLowerCase().includes(search.toLowerCase()) || 
-           link.url.toLowerCase().includes(search.toLowerCase());
+    const searchLower = search.toLowerCase();
+    const nameMatch = (link.name || '').toLowerCase().includes(searchLower);
+    const descriptionMatch = (link.description || '').toLowerCase().includes(searchLower);
+    const urlMatch = (link.url || '').toLowerCase().includes(searchLower);
+    const categoryMatch = (link.category || '').toLowerCase().includes(searchLower);
+    return nameMatch || descriptionMatch || urlMatch || categoryMatch;
   });
 
   return (
