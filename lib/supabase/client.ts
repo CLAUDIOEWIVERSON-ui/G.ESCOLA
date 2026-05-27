@@ -47,6 +47,56 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   }
 });
 
+// Clear all local storage, session storage, and cookies that might contain an invalid refresh token to prevent infinite loops
+export const clearSupabaseCookiesAndStorage = () => {
+  if (typeof window !== 'undefined') {
+    // Clear localStorage
+    if (window.localStorage) {
+      try {
+        const keysToRemove: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k && (k.startsWith('sb-') || k.includes('supabase.auth.token'))) {
+            keysToRemove.push(k);
+          }
+        }
+        keysToRemove.forEach(k => localStorage.removeItem(k));
+      } catch (e) {
+        console.error('Error clearing localStorage:', e);
+      }
+    }
+    // Clear sessionStorage
+    if (window.sessionStorage) {
+      try {
+        const keysToRemove: string[] = [];
+        for (let i = 0; i < sessionStorage.length; i++) {
+          const k = sessionStorage.key(i);
+          if (k && (k.startsWith('sb-') || k.includes('supabase.auth.token'))) {
+            keysToRemove.push(k);
+          }
+        }
+        keysToRemove.forEach(k => sessionStorage.removeItem(k));
+      } catch (e) {
+        console.error('Error clearing sessionStorage:', e);
+      }
+    }
+    // Clear cookies
+    try {
+      const cookiesList = document.cookie.split(';');
+      for (let i = 0; i < cookiesList.length; i++) {
+        const cookie = cookiesList[i].trim();
+        const cookieName = cookie.split('=')[0];
+        if (cookieName.startsWith('sb-') || cookieName.includes('supabase')) {
+          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname};`;
+        }
+      }
+    } catch (e) {
+      console.error('Error clearing cookies:', e);
+    }
+  }
+};
+
 // Clear local session if it contains an invalid refresh token to prevent console errors and loops
 if (typeof window !== 'undefined') {
   supabase.auth.getSession().then(({ error }) => {
@@ -60,6 +110,7 @@ if (typeof window !== 'undefined') {
         msg.includes('not found')
       ) {
         console.warn('Invalid refresh token detected on init, clearing local session...');
+        clearSupabaseCookiesAndStorage();
         supabase.auth.signOut({ scope: 'local' }).then(() => {
           if (window.location.pathname !== '/login') {
             window.location.href = '/login';

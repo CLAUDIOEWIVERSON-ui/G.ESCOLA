@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase/client';
+import { supabase, clearSupabaseCookiesAndStorage } from '@/lib/supabase/client';
 
 export default function HomePage() {
   const router = useRouter();
@@ -18,6 +18,7 @@ export default function HomePage() {
               msg.includes('invalid refresh token') ||
               msg.includes('invalid_grant') ||
               msg.includes('not found')) {
+            clearSupabaseCookiesAndStorage();
             await supabase.auth.signOut({ scope: 'local' });
             router.push('/login');
             return;
@@ -33,6 +34,7 @@ export default function HomePage() {
         console.error('Auth check error:', err);
         // Clear session locally on error to avoid refresh token issues
         try {
+          clearSupabaseCookiesAndStorage();
           await supabase.auth.signOut({ scope: 'local' });
         } catch (e) {
           console.error('Error signing out locally:', e);

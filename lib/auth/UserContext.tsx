@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase/client';
+import { supabase, clearSupabaseCookiesAndStorage } from '@/lib/supabase/client';
 
 type Role = 'admin' | 'instrutor' | 'aluno';
 
@@ -41,6 +41,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
             errorMsg.includes('invalid_grant') ||
             errorMsg.includes('not found')) {
           console.warn('Handling invalid refresh token, signing out...');
+          clearSupabaseCookiesAndStorage();
           // Use { scope: 'local' } to ensure it clears even if the server is unreachable or token is invalid
           await supabase.auth.signOut({ scope: 'local' });
           setProfile(null);
@@ -96,6 +97,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
             errMsg.includes('invalid refresh token') ||
             errMsg.includes('invalid_grant') ||
             errMsg.includes('not found')) {
+          clearSupabaseCookiesAndStorage();
           supabase.auth.signOut({ scope: 'local' }).catch(() => {});
           setProfile(null);
         }
