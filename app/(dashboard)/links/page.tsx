@@ -97,6 +97,7 @@ export default function LinksUteisPage() {
   const [selectedLink, setSelectedLink] = useState<LinkItem | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
   const [isTableMissing, setIsTableMissing] = useState(false);
 
   // Form states
@@ -118,27 +119,10 @@ export default function LinksUteisPage() {
 
       setIsTableMissing(false);
 
-      if (data && data.length > 0) {
+      if (data) {
         setLinks(data as LinkItem[]);
         // Sync local cache
         localStorage.setItem('school_useful_links', JSON.stringify(data));
-      } else {
-        // Table exists but is completely empty across environments, fallback to DEFAULT_LINKS
-        setLinks(DEFAULT_LINKS);
-
-        // Auto-seed table globally with template links to keep things synchronized automatically
-        try {
-          const { error: insertError } = await supabase
-            .from('useful_links')
-            .insert(DEFAULT_LINKS);
-          if (insertError) {
-            console.warn('Auto-seed inserted error, but is likely safe:', insertError);
-          } else {
-            console.log('Successfully seeded database with DEFAULT_LINKS');
-          }
-        } catch (seedErr) {
-          console.warn('Failed to auto-seed database useful_links:', seedErr);
-        }
       }
     } catch (err: any) {
       console.warn('Error fetching from Supabase, falling back to localStorage...', err);
@@ -148,7 +132,7 @@ export default function LinksUteisPage() {
       }
 
       const storedLinks = localStorage.getItem('school_useful_links');
-      if (storedLinks) {
+      if (storedLinks !== null) {
         try {
           setLinks(JSON.parse(storedLinks));
         } catch (e) {
@@ -203,6 +187,35 @@ export default function LinksUteisPage() {
 
     setIsLoading(true);
     try {
+      if (isTableMissing) {
+        // Direct local save fallback when database is not migrated yet
+        let updatedLinks: LinkItem[] = [];
+        if (selectedLink) {
+          updatedLinks = links.map(l => l.id === selectedLink.id ? {
+            ...l,
+            name,
+            url,
+            description,
+            category
+          } : l);
+        } else {
+          const newLink: LinkItem = {
+            id: `link-${Date.now()}`,
+            name,
+            url,
+            description,
+            category
+          };
+          updatedLinks = [...links, newLink];
+        }
+        setLinks(updatedLinks);
+        localStorage.setItem('school_useful_links', JSON.stringify(updatedLinks));
+        toast.success(t.links.saveSuccess);
+        setSearch('');
+        setModalOpen(false);
+        return;
+      }
+
       if (selectedLink && isUUID(selectedLink.id)) {
         // Edit in global DB
         const { error } = await supabase
@@ -273,6 +286,15 @@ export default function LinksUteisPage() {
     if (confirmDeleteId === id) {
       setIsLoading(true);
       try {
+        if (isTableMissing) {
+          // Direct local delete fallback when database is not migrated yet
+          const updated = links.filter(l => l.id !== id);
+          setLinks(updated);
+          localStorage.setItem('school_useful_links', JSON.stringify(updated));
+          toast.success(t.links.deleteSuccess);
+          return;
+        }
+
         if (isUUID(id)) {
           const { error } = await supabase
             .from('useful_links')
@@ -281,6 +303,12 @@ export default function LinksUteisPage() {
 
           if (error) throw error;
         }
+        
+        // Ensure we also clean up local storage cache to match DB
+        const updated = links.filter(l => l.id !== id);
+        setLinks(updated);
+        localStorage.setItem('school_useful_links', JSON.stringify(updated));
+
         toast.success(t.links.deleteSuccess);
         await fetchLinks();
       } catch (err: any) {
@@ -299,6 +327,46 @@ export default function LinksUteisPage() {
       setConfirmDeleteId(id);
       setTimeout(() => {
         setConfirmDeleteId((current) => current === id ? null : current);
+      }, 4000);
+    }
+  };
+
+  const handleDeleteAllLinks = async () => {
+    if (confirmDeleteAll) {
+      setIsLoading(true);
+      try {
+        if (isTableMissing) {
+          setLinks([]);
+          localStorage.setItem('school_useful_links', JSON.stringify([]));
+          toast.success("Todos os links foram apagados localmente.");
+          return;
+        }
+
+        const { error } = await supabase
+          .from('useful_links')
+          .delete()
+          .neq('id', '00000000-0000-0000-0000-000000000000');
+
+        if (error) throw error;
+
+        setLinks([]);
+        localStorage.setItem('school_useful_links', JSON.stringify([]));
+        toast.success("Todos os links foram excluídos com sucesso.");
+      } catch (err: any) {
+        console.error('Error deleting all links globally:', err?.message || err);
+        toast.error('Erro ao excluir todos os links globalmente.');
+
+        // Local fallback
+        setLinks([]);
+        localStorage.setItem('school_useful_links', JSON.stringify([]));
+      } finally {
+        setIsLoading(false);
+        setConfirmDeleteAll(false);
+      }
+    } else {
+      setConfirmDeleteAll(true);
+      setTimeout(() => {
+        setConfirmDeleteAll(false);
       }, 4000);
     }
   };
@@ -365,13 +433,29 @@ export default function LinksUteisPage() {
           <p className="text-slate-500 text-sm mt-1">{t.links.subtitle}</p>
         </div>
         {isAdmin && (
-          <button
-            onClick={handleOpenAddModal}
-            className="flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs py-2.5 px-5 rounded-xl uppercase tracking-wider transition-all duration-200 active:scale-95 shadow-sm inline-flex shrink-0 border border-slate-800"
-          >
-            <Plus size={16} />
-            {t.links.addLink}
-          </button>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            {links.length > 0 && (
+              <button
+                onClick={handleDeleteAllLinks}
+                className={cn(
+                  "flex items-center justify-center gap-2 font-semibold text-xs py-2.5 px-5 rounded-xl uppercase tracking-wider transition-all duration-200 active:scale-95 shadow-sm inline-flex shrink-0 border cursor-pointer",
+                  confirmDeleteAll 
+                    ? "bg-rose-600 text-white border-rose-600 hover:bg-rose-700 animate-pulse" 
+                    : "bg-white text-rose-600 border-rose-200 hover:bg-rose-50"
+                )}
+              >
+                <Trash2 size={16} />
+                {confirmDeleteAll ? "Confirmar Exclusão?" : "Excluir Todos"}
+              </button>
+            )}
+            <button
+              onClick={handleOpenAddModal}
+              className="flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs py-2.5 px-5 rounded-xl uppercase tracking-wider transition-all duration-200 active:scale-95 shadow-sm inline-flex shrink-0 border border-slate-800 cursor-pointer"
+            >
+              <Plus size={16} />
+              {t.links.addLink}
+            </button>
+          </div>
         )}
       </div>
 

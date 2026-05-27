@@ -57,6 +57,13 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
+      // Sync user profile database record in the background to ensure RLS rules are fully met
+      try {
+        await fetch('/api/auth/sync', { method: 'POST' });
+      } catch (syncErr) {
+        console.warn('Could not sync user profile with database:', syncErr);
+      }
+
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
