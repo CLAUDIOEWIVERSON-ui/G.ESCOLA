@@ -99,6 +99,7 @@ export const translations = {
       year: "Ano",
       attendance: "Frequência",
       settings: "Configurações",
+      links: "Links Úteis",
     },
     courses: {
       title: "Gerenciamento de Cursos",
@@ -374,6 +375,27 @@ export const translations = {
       noWidgets: "Nenhum widget encontrado.",
       saveSuccess: "Widget salvo com sucesso!",
       deleteSuccess: "Widget excluído com sucesso!",
+    },
+    links: {
+      title: "Links Úteis",
+      subtitle: "Acesse rapidamente portais, manuais e ferramentas acadêmicas da instituição.",
+      addLink: "Novo Link",
+      editLink: "Editar Link",
+      name: "Nome do Link",
+      url: "Endereço URL",
+      description: "Descrição / Informações",
+      category: "Categoria",
+      categoryAcademic: "Portais Acadêmicos",
+      categoryAdmin: "Administrativo & Suporte",
+      categoryLibrary: "Biblioteca & Recursos",
+      categoryExternal: "Ferramentas Externas",
+      categoryOthers: "Outros Links",
+      openLink: "Acessar",
+      deleteConfirm: "Tem certeza que deseja excluir este link?",
+      saveSuccess: "Link salvo com sucesso!",
+      deleteSuccess: "Link excluído com sucesso!",
+      formErrorUrl: "Insira uma URL válida (ex: https://...)",
+      formErrorName: "O nome é obrigatório",
     }
   }
 };

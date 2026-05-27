@@ -21,7 +21,8 @@ import {
   Menu,
   X,
   Search,
-  Calendar
+  Calendar,
+  Link2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
@@ -139,6 +140,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: t.nav.attendance, icon: CalendarDays, path: '/frequencia' },
     { name: t.calendar.title, icon: CalendarDays, path: '/calendario' },
     ...(isAdmin ? [{ name: t.users.title, icon: Users, path: '/usuarios' }] : []),
+    { name: t.nav.links, icon: Link2, path: '/links' },
     { name: t.nav.settings, icon: Settings, path: '/configuracoes' },
   ];
 
