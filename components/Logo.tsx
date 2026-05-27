@@ -54,6 +54,7 @@ export function Logo({
               fill
               className="object-contain"
               referrerPolicy="no-referrer"
+              sizes="(max-width: 640px) 42px, (max-width: 768px) 80px, 176px"
             />
           </div>
         </motion.div>
