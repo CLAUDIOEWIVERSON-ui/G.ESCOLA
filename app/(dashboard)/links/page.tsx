@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
 import { 
@@ -21,6 +21,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { Toaster, toast } from 'sonner';
 import Modal from '@/components/Modal';
+import { supabase } from '@/lib/supabase/client';
 
 interface LinkItem {
   id: string;
@@ -32,55 +33,59 @@ interface LinkItem {
 
 const DEFAULT_LINKS: LinkItem[] = [
   {
-    id: "link-1",
+    id: "c3194511-bba0-42f8-9a3c-b171f1110001",
     name: "Portal do Aluno",
     url: "https://portal.escola.edu",
     description: "Acesse notas, boletins parciais, grade horária e realize rematrículas online.",
     category: "academic",
   },
   {
-    id: "link-2",
+    id: "c3194511-bba0-42f8-9a3c-b171f1110002",
     name: "Ambiente Virtual EaD (Moodle)",
     url: "https://ead.escola.edu",
     description: "Plataforma oficial de ensino a distância com aulas gravadas, fóruns de discussão e fórum de dúvidas.",
     category: "academic",
   },
   {
-    id: "link-3",
+    id: "c3194511-bba0-42f8-9a3c-b171f1110003",
     name: "Biblioteca Digital Integrada",
     url: "https://biblioteca.escola.edu",
     description: "Acesso ao acervo online de livros acadêmicos recomendados, artigos científicos de alta qualidade e periódicos.",
     category: "library",
   },
   {
-    id: "link-4",
+    id: "c3194511-bba0-42f8-9a3c-b171f1110004",
     name: "Suporte de TI e Service Desk",
     url: "https://suporte.escola.edu",
     description: "Abertura de chamados técnicos para problemas relacionados a login institucional, rede wi-fi ou infraestrutura.",
     category: "admin",
   },
   {
-    id: "link-5",
+    id: "c3194511-bba0-42f8-9a3c-b171f1110005",
     name: "Calendário Acadêmico Oficial 2024",
     url: "https://escola.edu/calendario-2024.pdf",
     description: "Visualização e download do calendário letivo contendo datas de provas, recessos e eventos acadêmicos marcantes.",
     category: "academic",
   },
   {
-    id: "link-6",
+    id: "c3194511-bba0-42f8-9a3c-b171f1110006",
     name: "Webmail Institucional G-Suite",
     url: "https://mail.google.com/a/escola.edu",
     description: "Acesse sua caixa postal corporativa e ferramentas colaborativas integradas da conta escolar.",
     category: "external",
   },
   {
-    id: "link-7",
+    id: "c3194511-bba0-42f8-9a3c-b171f1110007",
     name: "Periódicos CAPES & Google Acadêmico",
     url: "https://www.periodicos.capes.gov.br",
     description: "Bases externas e externas de inteligência, pesquisas, teses e publicações científicas renomadas.",
     category: "external",
   }
 ];
+
+const isUUID = (str: string) => {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+};
 
 export default function LinksUteisPage() {
   const { t } = useI18n();
@@ -99,34 +104,49 @@ export default function LinksUteisPage() {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<'academic' | 'admin' | 'library' | 'external' | 'others'>('academic');
 
-  useEffect(() => {
-    const storedLinks = localStorage.getItem('school_useful_links');
-    if (storedLinks) {
-      try {
-        const parsed = JSON.parse(storedLinks);
-        setTimeout(() => {
-          setLinks(parsed);
-          setIsLoading(false);
-        }, 0);
-      } catch (e) {
-        setTimeout(() => {
-          setLinks(DEFAULT_LINKS);
-          setIsLoading(false);
-        }, 0);
+  const fetchLinks = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('useful_links')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        throw error;
       }
-    } else {
-      setTimeout(() => {
+
+      if (data && data.length > 0) {
+        setLinks(data as LinkItem[]);
+        // Sync local cache
+        localStorage.setItem('school_useful_links', JSON.stringify(data));
+      } else {
+        // Table exists but is completely empty across environments, fallback to DEFAULT_LINKS
+        setLinks(DEFAULT_LINKS);
+      }
+    } catch (err) {
+      console.warn('Error fetching from Supabase, falling back to localStorage...', err);
+      const storedLinks = localStorage.getItem('school_useful_links');
+      if (storedLinks) {
+        try {
+          setLinks(JSON.parse(storedLinks));
+        } catch (e) {
+          setLinks(DEFAULT_LINKS);
+        }
+      } else {
         setLinks(DEFAULT_LINKS);
         localStorage.setItem('school_useful_links', JSON.stringify(DEFAULT_LINKS));
-        setIsLoading(false);
-      }, 0);
+      }
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
-  const saveToLocalStorage = (newLinks: LinkItem[]) => {
-    setLinks(newLinks);
-    localStorage.setItem('school_useful_links', JSON.stringify(newLinks));
-  };
+  useEffect(() => {
+    const init = async () => {
+      await fetchLinks();
+    };
+    init();
+  }, [fetchLinks]);
 
   const handleOpenAddModal = () => {
     setSelectedLink(null);
@@ -146,7 +166,7 @@ export default function LinksUteisPage() {
     setModalOpen(true);
   };
 
-  const handleSaveLink = (e: React.FormEvent) => {
+  const handleSaveLink = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!name.trim()) {
@@ -159,43 +179,100 @@ export default function LinksUteisPage() {
       return;
     }
 
-    let updatedLinks: LinkItem[] = [];
+    setIsLoading(true);
+    try {
+      if (selectedLink && isUUID(selectedLink.id)) {
+        // Edit in global DB
+        const { error } = await supabase
+          .from('useful_links')
+          .update({
+            name,
+            url,
+            description,
+            category
+          })
+          .eq('id', selectedLink.id);
 
-    if (selectedLink) {
-      // Edit
-      updatedLinks = links.map(l => l.id === selectedLink.id ? {
-        ...l,
-        name,
-        url,
-        description,
-        category
-      } : l);
-      toast.success(t.links.saveSuccess);
-    } else {
-      // Add
-      const newLink: LinkItem = {
-        id: `link-${Date.now()}`,
-        name,
-        url,
-        description,
-        category
-      };
-      updatedLinks = [...links, newLink];
-      toast.success(t.links.saveSuccess);
+        if (error) throw error;
+        toast.success(t.links.saveSuccess);
+      } else {
+        // Add or convert legacy to global DB
+        const { error } = await supabase
+          .from('useful_links')
+          .insert([{
+            name,
+            url,
+            description,
+            category
+          }]);
+
+        if (error) throw error;
+        toast.success(t.links.saveSuccess);
+      }
+
+      await fetchLinks();
+      setSearch('');
+      setModalOpen(false);
+    } catch (err: any) {
+      console.error('Error saving link globally:', err?.message || err);
+      toast.error('Erro ao salvar o link globalmente.');
+
+      // Resilient local fallback
+      let updatedLinks: LinkItem[] = [];
+      if (selectedLink) {
+        updatedLinks = links.map(l => l.id === selectedLink.id ? {
+          ...l,
+          name,
+          url,
+          description,
+          category
+        } : l);
+      } else {
+        const newLink: LinkItem = {
+          id: `link-${Date.now()}`,
+          name,
+          url,
+          description,
+          category
+        };
+        updatedLinks = [...links, newLink];
+      }
+      setLinks(updatedLinks);
+      localStorage.setItem('school_useful_links', JSON.stringify(updatedLinks));
+      setSearch('');
+      setModalOpen(false);
+    } finally {
+      setIsLoading(false);
     }
-
-    saveToLocalStorage(updatedLinks);
-    setSearch('');
-    setModalOpen(false);
   };
 
-  const handleDeleteLink = (id: string, e: React.MouseEvent) => {
+  const handleDeleteLink = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (confirmDeleteId === id) {
-      const updated = links.filter(l => l.id !== id);
-      saveToLocalStorage(updated);
-      toast.success(t.links.deleteSuccess);
-      setConfirmDeleteId(null);
+      setIsLoading(true);
+      try {
+        if (isUUID(id)) {
+          const { error } = await supabase
+            .from('useful_links')
+            .delete()
+            .eq('id', id);
+
+          if (error) throw error;
+        }
+        toast.success(t.links.deleteSuccess);
+        await fetchLinks();
+      } catch (err: any) {
+        console.error('Error deleting link globally:', err?.message || err);
+        toast.error('Erro ao excluir o link globalmente.');
+
+        // Local fallback
+        const updated = links.filter(l => l.id !== id);
+        setLinks(updated);
+        localStorage.setItem('school_useful_links', JSON.stringify(updated));
+      } finally {
+        setIsLoading(false);
+        setConfirmDeleteId(null);
+      }
     } else {
       setConfirmDeleteId(id);
       setTimeout(() => {
