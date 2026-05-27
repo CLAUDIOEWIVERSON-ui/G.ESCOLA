@@ -445,31 +445,7 @@ export default function LinksUteisPage() {
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{t.links.title}</h1>
           <p className="text-slate-500 text-sm mt-1">{t.links.subtitle}</p>
         </div>
-        {isAdmin && (
-          <div className="flex items-center gap-2.5 flex-wrap">
-            {links.length > 0 && (
-              <button
-                onClick={handleDeleteAllLinks}
-                className={cn(
-                  "flex items-center justify-center gap-2 font-semibold text-xs py-2.5 px-5 rounded-xl uppercase tracking-wider transition-all duration-200 active:scale-95 shadow-sm inline-flex shrink-0 border cursor-pointer",
-                  confirmDeleteAll 
-                    ? "bg-rose-600 text-white border-rose-600 hover:bg-rose-700 animate-pulse" 
-                    : "bg-white text-rose-600 border-rose-200 hover:bg-rose-50"
-                )}
-              >
-                <Trash2 size={16} />
-                {confirmDeleteAll ? "Confirmar Exclusão?" : "Excluir Todos"}
-              </button>
-            )}
-            <button
-              onClick={handleOpenAddModal}
-              className="flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs py-2.5 px-5 rounded-xl uppercase tracking-wider transition-all duration-200 active:scale-95 shadow-sm inline-flex shrink-0 border border-slate-800 cursor-pointer"
-            >
-              <Plus size={16} />
-              {t.links.addLink}
-            </button>
-          </div>
-        )}
+
       </div>
 
       {isAdmin && isTableMissing && (
@@ -606,48 +582,11 @@ CREATE POLICY "Admins have full access" ON public.useful_links FOR ALL USING (
                   </div>
                 </div>
 
-                {/* Right Side: URL domain & Actions */}
-                <div className="flex items-center justify-between sm:justify-start gap-4 shrink-0 border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100">
+                {/* Right Side: URL domain */}
+                <div className="flex items-center shrink-0 border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100">
                   <span className="text-slate-400 font-mono text-[11px] truncate max-w-[180px] group-hover:text-blue-500 transition-colors">
                     {link.url.replace(/^https?:\/\/(www\.)?/, '')}
                   </span>
-
-                  <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-                    {/* Admin Actions */}
-                    {isAdmin && (
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => handleOpenEditModal(link)}
-                          className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-700 transition-colors"
-                          title={t.common.edit || 'Editar'}
-                        >
-                          <Pencil size={14} />
-                        </button>
-                        <button
-                          onClick={(e) => handleDeleteLink(link.id, e)}
-                          className={cn(
-                            "p-1.5 rounded-lg transition-all duration-200 flex items-center gap-1 text-center font-bold text-xs leading-none shrink-0",
-                            confirmDeleteId === link.id
-                              ? "bg-rose-500 text-white hover:bg-rose-600 px-2 py-1 shadow-sm border border-rose-500"
-                              : "hover:bg-red-50 text-rose-500 hover:text-rose-700"
-                          )}
-                          title={confirmDeleteId === link.id ? "Clique novamente para confirmar" : (t.common.delete || 'Excluir')}
-                        >
-                          {confirmDeleteId === link.id ? (
-                            <span className="text-[9px] uppercase tracking-wider">Confirmar?</span>
-                          ) : (
-                            <Trash2 size={14} />
-                          )}
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Simple chevron or external indicator */}
-                    <div className="p-1 px-2 hover:bg-slate-50 rounded-lg text-blue-500 hover:text-blue-600 flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider transition-colors shrink-0">
-                      <span>{t.links.openLink}</span>
-                      <ExternalLink size={12} />
-                    </div>
-                  </div>
                 </div>
               </motion.div>
             ))}

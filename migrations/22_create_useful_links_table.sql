@@ -83,7 +83,7 @@ INSERT INTO public.useful_links (
 VALUES
 (
   'c3194511-bba0-42f8-9a3c-b171f1110001',
-  'SITE OFICIAL',
+  'MARINHA DO BRASIL',
   'https://www.marinha.mil.br/',
   'Acesse o site oficial da Marinha do Brasil.',
   'mb'
@@ -97,7 +97,7 @@ VALUES
 ),
 (
   'c3194511-bba0-42f8-9a3c-b171f1110003',
-  'CORREIO MARINHA',
+  ' ZIMBRA MARINHA',
   'https://webmail.marinha.mil.br/?client=preferred',
   'Acesso ao correio eletrônico da MB.',
   'mb'
