@@ -97,6 +97,7 @@ export default function LinksUteisPage() {
   const [selectedLink, setSelectedLink] = useState<LinkItem | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [isTableMissing, setIsTableMissing] = useState(false);
 
   // Form states
   const [name, setName] = useState('');
@@ -115,6 +116,8 @@ export default function LinksUteisPage() {
         throw error;
       }
 
+      setIsTableMissing(false);
+
       if (data && data.length > 0) {
         setLinks(data as LinkItem[]);
         // Sync local cache
@@ -122,9 +125,28 @@ export default function LinksUteisPage() {
       } else {
         // Table exists but is completely empty across environments, fallback to DEFAULT_LINKS
         setLinks(DEFAULT_LINKS);
+
+        // Auto-seed table globally with template links to keep things synchronized automatically
+        try {
+          const { error: insertError } = await supabase
+            .from('useful_links')
+            .insert(DEFAULT_LINKS);
+          if (insertError) {
+            console.warn('Auto-seed inserted error, but is likely safe:', insertError);
+          } else {
+            console.log('Successfully seeded database with DEFAULT_LINKS');
+          }
+        } catch (seedErr) {
+          console.warn('Failed to auto-seed database useful_links:', seedErr);
+        }
       }
-    } catch (err) {
+    } catch (err: any) {
       console.warn('Error fetching from Supabase, falling back to localStorage...', err);
+      
+      if (err?.code === 'PGRST205' || err?.message?.includes('schema cache')) {
+        setIsTableMissing(true);
+      }
+
       const storedLinks = localStorage.getItem('school_useful_links');
       if (storedLinks) {
         try {
@@ -352,6 +374,77 @@ export default function LinksUteisPage() {
           </button>
         )}
       </div>
+
+      {isAdmin && isTableMissing && (
+        <div className="bg-amber-50/60 border border-amber-200 rounded-2xl p-6 space-y-4">
+          <div className="flex items-start gap-3">
+            <HelpCircle className="text-amber-600 shrink-0 mt-0.5" size={20} />
+            <div className="space-y-1">
+              <h3 className="font-bold text-slate-800 text-sm">
+                Sincronização Global Pendente (Banco de Dados)
+              </h3>
+              <p className="text-slate-600 text-xs leading-relaxed max-w-3xl">
+                A tabela <code className="bg-amber-100 text-amber-800 px-1 py-0.5 rounded text-[11px] font-mono">useful_links</code> ainda não foi criada no seu banco de dados Supabase do projeto. Atualmente, os links adicionados ou editados estão funcionando e salvos residindo no armazenamento local do seu navegador (localStorage). Para que todos os usuários (alunos/instrutores) acessem os mesmos links de forma síncrona, execute a migração SQL no seu painel.
+              </p>
+            </div>
+          </div>
+          
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 relative overflow-hidden">
+            <div className="absolute right-3 top-3">
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(`CREATE TABLE IF NOT EXISTS public.useful_links (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  url TEXT NOT NULL,
+  description TEXT,
+  category TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.useful_links ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Public read access" ON public.useful_links;
+DROP POLICY IF EXISTS "Admins have full access" ON public.useful_links;
+
+CREATE POLICY "Public read access" ON public.useful_links FOR SELECT USING (true);
+CREATE POLICY "Admins have full access" ON public.useful_links FOR ALL USING (
+  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
+);`);
+                  toast.success("Script SQL copiado com sucesso!");
+                }}
+                className="bg-slate-800 hover:bg-slate-705 text-slate-300 hover:text-white text-[10px] font-bold uppercase tracking-wider py-1.5 px-3 rounded-lg border border-slate-700 transition-all cursor-pointer"
+              >
+                Copiar SQL
+              </button>
+            </div>
+            
+            <pre className="text-[11px] font-mono text-slate-300 overflow-x-auto pr-24 max-h-40 whitespace-pre">
+{`CREATE TABLE IF NOT EXISTS public.useful_links (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  url TEXT NOT NULL,
+  description TEXT,
+  category TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.useful_links ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Public read access" ON public.useful_links FOR SELECT USING (true);
+CREATE POLICY "Admins have full access" ON public.useful_links FOR ALL USING (
+  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
+);`}
+            </pre>
+          </div>
+          
+          <div className="text-slate-500 text-[11px]">
+            💡 <strong>Como resolver rapidamente:</strong> Acesse seu painel do Supabase, clique em <strong>SQL Editor</strong>, crie uma <strong>New Query</strong>, cole o código acima e clique em <strong>Run</strong>. Feito isso, os links serão gravados globalmente na nuvem e atualizados em tempo real!
+          </div>
+        </div>
+      )}
 
       {/* Search bar container */}
       <div className="relative">
