@@ -108,15 +108,13 @@ export default function LinksUteisPage() {
 
   const fetchLinks = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from('useful_links')
-        .select('*')
-        .order('created_at', { ascending: true });
-
-      if (error) {
-        throw error;
+      const res = await fetch('/api/links');
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || `Erro de rede: ${res.status}`);
       }
 
+      const data = await res.json();
       setIsTableMissing(false);
 
       if (data) {
@@ -218,30 +216,40 @@ export default function LinksUteisPage() {
 
       if (selectedLink && isUUID(selectedLink.id)) {
         // Edit in global DB
-        const { error } = await supabase
-          .from('useful_links')
-          .update({
+        const res = await fetch('/api/links', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: selectedLink.id,
             name,
             url,
             description,
             category
           })
-          .eq('id', selectedLink.id);
+        });
 
-        if (error) throw error;
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.error || `Erro de rede: ${res.status}`);
+        }
         toast.success(t.links.saveSuccess);
       } else {
         // Add or convert legacy to global DB
-        const { error } = await supabase
-          .from('useful_links')
-          .insert([{
+        const res = await fetch('/api/links', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
             name,
             url,
             description,
             category
-          }]);
+          })
+        });
 
-        if (error) throw error;
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.error || `Erro de rede: ${res.status}`);
+        }
         toast.success(t.links.saveSuccess);
       }
 
@@ -296,12 +304,14 @@ export default function LinksUteisPage() {
         }
 
         if (isUUID(id)) {
-          const { error } = await supabase
-            .from('useful_links')
-            .delete()
-            .eq('id', id);
+          const res = await fetch(`/api/links?id=${id}`, {
+            method: 'DELETE'
+          });
 
-          if (error) throw error;
+          if (!res.ok) {
+            const errorData = await res.json().catch(() => ({}));
+            throw new Error(errorData.error || `Erro de rede: ${res.status}`);
+          }
         }
         
         // Ensure we also clean up local storage cache to match DB
@@ -342,12 +352,14 @@ export default function LinksUteisPage() {
           return;
         }
 
-        const { error } = await supabase
-          .from('useful_links')
-          .delete()
-          .neq('id', '00000000-0000-0000-0000-000000000000');
+        const res = await fetch('/api/links?all=true', {
+          method: 'DELETE'
+        });
 
-        if (error) throw error;
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.error || `Erro de rede: ${res.status}`);
+        }
 
         setLinks([]);
         localStorage.setItem('school_useful_links', JSON.stringify([]));
