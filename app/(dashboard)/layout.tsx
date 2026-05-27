@@ -294,6 +294,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   {navItems.slice(4).map((item) => {
                     const isActive = pathname === item.path;
                     const isCalendar = item.path === '/calendario';
+                    const isSettings = item.path === '/configuracoes';
+                    const needsPasswordChange = isSettings && profile && !profile.has_changed_password;
                     
                     return (
                       <Link 
@@ -316,16 +318,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         )}
                         <item.icon size={18} className={cn(
                           "shrink-0 transition-transform group-hover:scale-110", 
-                          isActive ? "text-blue-400" : isCalendar ? "text-amber-500" : "text-slate-500 group-hover:text-slate-300"
+                          isActive 
+                            ? "text-blue-400" 
+                            : isCalendar 
+                              ? "text-amber-500" 
+                              : needsPasswordChange
+                                ? "text-amber-500 animate-pulse bg-amber-500/10 p-0.5 rounded-md"
+                                : "text-slate-500 group-hover:text-slate-300"
                         )} />
                         <span className={cn(
                           "text-sm transition-opacity whitespace-nowrap font-medium",
                           !sidebarOpen && "opacity-0 invisible w-0",
+                          needsPasswordChange && "text-amber-500 font-bold"
                         )}>
                           {item.name}
                         </span>
                         {isCalendar && sidebarOpen && (
                           <span className="ml-auto flex h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                        )}
+                        {needsPasswordChange && sidebarOpen && (
+                          <span className="ml-auto text-[9px] font-black tracking-wider text-amber-500 bg-amber-500/10 border border-amber-500/30 px-1.5 py-0.5 rounded-full uppercase animate-pulse shrink-0 font-sans">
+                            Atenção
+                          </span>
+                        )}
+                        {needsPasswordChange && !sidebarOpen && (
+                          <span className="absolute right-2 top-2 flex h-2 w-2 rounded-full bg-amber-500 animate-pulse shrink-0" />
                         )}
                       </Link>
                     );
@@ -409,19 +426,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-2 py-2 flex items-center justify-around z-50 h-16 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] print:hidden">
         {navItems.filter(item => ['/dashboard', '/cursos', '/turmas', '/horario', '/calendario', '/configuracoes'].includes(item.path)).map((item) => {
           const isActive = pathname === item.path;
+          const isSettings = item.path === '/configuracoes';
+          const needsPasswordChange = isSettings && profile && !profile.has_changed_password;
+          
           return (
             <Link 
               key={item.path} 
               href={item.path}
               className={cn(
-                "flex flex-col items-center gap-1 p-1 transition-all min-w-0 flex-1 max-w-[64px]",
+                "flex flex-col items-center gap-1 p-1 transition-all min-w-0 flex-1 max-w-[64px] relative",
                 isActive ? "text-blue-600 scale-110" : "text-slate-400 hover:text-slate-600"
               )}
             >
-              <item.icon size={19} className={isActive ? "text-blue-600" : "text-slate-400"} />
+              <item.icon size={19} className={cn(
+                isActive ? "text-blue-600" : "text-slate-400",
+                needsPasswordChange && "text-amber-500 animate-pulse"
+              )} />
               <span className={cn(
                 "text-[8px] font-black uppercase tracking-widest text-center truncate w-full",
-                isActive ? "text-blue-600" : "text-slate-400"
+                isActive ? "text-blue-600" : needsPasswordChange ? "text-amber-500 font-bold" : "text-slate-400"
               )}>
                 {item.path === '/calendario' ? 'CALEND.' : item.name.split(' ')[0]}
               </span>
@@ -430,6 +453,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   layoutId="bottom-nav-indicator"
                   className="absolute -bottom-2 w-8 h-1 bg-blue-600 rounded-t-full"
                 />
+              )}
+              {needsPasswordChange && (
+                <span className="absolute top-1 right-3.5 flex h-2 w-2 rounded-full bg-amber-500 animate-ping" />
               )}
             </Link>
           );

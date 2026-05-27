@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/LanguageContext';
+import { useUser } from '@/lib/auth/UserContext';
+import Link from 'next/link';
 import { 
   Users, 
   BookOpen, 
@@ -10,13 +12,17 @@ import {
   Layers as LayersIcon,
   X,
   BookMarked,
-  Award
+  Award,
+  ShieldAlert,
+  KeyRound,
+  ArrowRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import Image from 'next/image';
 
 export default function DashboardPage() {
   const { t } = useI18n();
+  const { profile } = useUser();
   const [stats, setStats] = useState({
     alunosExterior: 0,
     turmasExpedito: 0,
@@ -194,6 +200,49 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      {profile && !profile.has_changed_password && (
+        <motion.div
+          initial={{ opacity: 0, y: -15, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          className="relative bg-gradient-to-r from-amber-500/10 via-orange-500/5 to-amber-500/10 border-2 border-amber-500/30 rounded-2xl p-6 shadow-md overflow-hidden"
+        >
+          {/* Decorative glowing background */}
+          <div className="absolute top-0 right-0 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl pointer-events-none -mr-16 -mt-16" />
+          
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl bg-amber-500 shadow-lg shadow-amber-500/20 text-white flex items-center justify-center shrink-0 border border-amber-400">
+                <KeyRound size={24} className="animate-pulse" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-black uppercase tracking-wider bg-amber-500 text-white px-2 py-0.5 rounded-full">
+                    Atenção
+                  </span>
+                  <span className="text-xs font-bold text-amber-700 font-mono">
+                    Segurança da Conta
+                  </span>
+                </div>
+                <h3 className="text-base sm:text-lg font-bold text-slate-800 tracking-tight">
+                  Proteja seu acesso: Altere sua senha temporária!
+                </h3>
+                <p className="text-xs text-slate-600 max-w-2xl leading-relaxed font-medium">
+                  Para maior segurança dos seus dados de boletins e cursos, é recomendado atualizar a sua senha de primeiro acesso. Esta redefinição autônoma poderá ser feita **somente uma vez** diretamente por você.
+                </p>
+              </div>
+            </div>
+            
+            <Link 
+              href="/configuracoes"
+              className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold px-6 py-3 rounded-xl text-xs shadow-lg shadow-amber-500/20 active:scale-95 transition-all group shrink-0"
+            >
+              Alterar Minha Senha
+              <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
+            </Link>
+          </div>
+        </motion.div>
+      )}
+
       {statCards.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {statCards.map((card, i) => (
