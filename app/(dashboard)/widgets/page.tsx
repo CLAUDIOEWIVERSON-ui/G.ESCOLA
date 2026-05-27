@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
+import { fetchWithAuth } from '@/lib/api';
 import { Plus, Search, Layers, Trash2, Pencil, Loader2, CheckCircle2, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
@@ -31,7 +32,7 @@ export default function WidgetsPage() {
   const fetchWidgets = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/widgets');
+      const response = await fetchWithAuth('/api/widgets');
       const data = await response.json();
       if (data.error) throw new Error(data.error);
       setWidgets(data || []);
@@ -64,7 +65,7 @@ export default function WidgetsPage() {
     setSaving(true);
     try {
       const method = currentWidget?.id ? 'PUT' : 'POST';
-      const response = await fetch('/api/widgets', {
+      const response = await fetchWithAuth('/api/widgets', {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(currentWidget)
@@ -87,7 +88,7 @@ export default function WidgetsPage() {
     if (!confirm(t.common.deleteConfirm)) return;
     setDeleting(id);
     try {
-      const response = await fetch(`/api/widgets?id=${id}`, {
+      const response = await fetchWithAuth(`/api/widgets?id=${id}`, {
         method: 'DELETE'
       });
       const result = await response.json();

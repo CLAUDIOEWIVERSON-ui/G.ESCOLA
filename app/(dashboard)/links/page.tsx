@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
+import { fetchWithAuth } from '@/lib/api';
 import { 
   Plus, 
   Search, 
@@ -108,13 +109,13 @@ export default function LinksUteisPage() {
 
   const fetchLinks = useCallback(async () => {
     try {
-      const res = await fetch('/api/links');
+      const res = await fetchWithAuth('/api/links');
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
         throw new Error(errorData.error || `Erro de rede: ${res.status}`);
       }
-
       const data = await res.json();
+
       setIsTableMissing(false);
 
       if (data) {
@@ -216,7 +217,7 @@ export default function LinksUteisPage() {
 
       if (selectedLink && isUUID(selectedLink.id)) {
         // Edit in global DB
-        const res = await fetch('/api/links', {
+        const res = await fetchWithAuth('/api/links', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -235,7 +236,7 @@ export default function LinksUteisPage() {
         toast.success(t.links.saveSuccess);
       } else {
         // Add or convert legacy to global DB
-        const res = await fetch('/api/links', {
+        const res = await fetchWithAuth('/api/links', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -304,7 +305,7 @@ export default function LinksUteisPage() {
         }
 
         if (isUUID(id)) {
-          const res = await fetch(`/api/links?id=${id}`, {
+          const res = await fetchWithAuth(`/api/links?id=${id}`, {
             method: 'DELETE'
           });
 
@@ -352,7 +353,7 @@ export default function LinksUteisPage() {
           return;
         }
 
-        const res = await fetch('/api/links?all=true', {
+        const res = await fetchWithAuth('/api/links?all=true', {
           method: 'DELETE'
         });
 

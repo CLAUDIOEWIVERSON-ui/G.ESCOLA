@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase/client';
+import { fetchWithAuth } from '@/lib/api';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
 import { Plus, Search, User, Shield, ShieldAlert, Mail, Trash2, Pencil, Loader2, CheckCircle2 } from 'lucide-react';
@@ -26,7 +27,7 @@ export default function UsuariosPage() {
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/admin/users');
+      const response = await fetchWithAuth('/api/admin/users');
       const data = await response.json();
       
       if (data.error && (data.error.includes('not configured') || data.error.includes('Inválida') || data.error.includes('API key'))) {
@@ -78,7 +79,7 @@ export default function UsuariosPage() {
       let result: any = {};
 
       try {
-        const response = await fetch('/api/admin/users', {
+        const response = await fetchWithAuth('/api/admin/users', {
           method,
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(currentUser)
@@ -124,7 +125,7 @@ export default function UsuariosPage() {
     if (!confirm(t.common.deleteConfirm)) return;
     setDeleting(id);
     try {
-      const response = await fetch(`/api/admin/users?id=${id}`, {
+      const response = await fetchWithAuth(`/api/admin/users?id=${id}`, {
         method: 'DELETE'
       });
       const result = await response.json();

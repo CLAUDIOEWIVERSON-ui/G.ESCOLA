@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import { supabase, clearSupabaseCookiesAndStorage } from '@/lib/supabase/client';
+import { fetchWithAuth } from '@/lib/api';
 
 type Role = 'admin' | 'instrutor' | 'aluno';
 
@@ -59,7 +60,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
       // Sync user profile database record in the background to ensure RLS rules are fully met
       try {
-        await fetch('/api/auth/sync', { method: 'POST' });
+        await fetchWithAuth('/api/auth/sync', { method: 'POST' });
       } catch (syncErr) {
         console.warn('Could not sync user profile with database:', syncErr);
       }
