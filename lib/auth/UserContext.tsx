@@ -10,6 +10,7 @@ interface UserProfile {
   id: string;
   role: Role;
   full_name: string | null;
+  has_changed_password?: boolean;
 }
 
 interface UserContextType {

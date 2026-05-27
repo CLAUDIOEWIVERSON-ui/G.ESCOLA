@@ -520,15 +520,28 @@ export default function CursosPage() {
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.98 }}
-                className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-300 flex flex-col justify-between group relative overflow-hidden"
+                className={cn(
+                  "rounded-2xl border p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between group relative overflow-hidden",
+                  curso.internacional
+                    ? "bg-blue-50/30 hover:bg-blue-50/60 border-blue-200/80 hover:border-blue-400/80 shadow-blue-500/5"
+                    : curso.categoria === 'Expedito'
+                    ? "bg-amber-50/30 hover:bg-amber-50/60 border-amber-200/80 hover:border-amber-400/80 shadow-amber-500/5"
+                    : curso.categoria === 'Especial'
+                    ? "bg-purple-50/30 hover:bg-purple-50/60 border-purple-200/80 hover:border-purple-400/80 shadow-purple-500/5"
+                    : curso.categoria === 'EaD'
+                    ? "bg-cyan-50/30 hover:bg-cyan-50/60 border-cyan-200/80 hover:border-cyan-400/80 shadow-cyan-500/5"
+                    : curso.categoria === 'Carreira'
+                    ? "bg-emerald-50/30 hover:bg-emerald-50/60 border-emerald-200/80 hover:border-emerald-400/80 shadow-emerald-500/5"
+                    : "bg-white border-slate-200 hover:border-slate-300"
+                )}
               >
                 <div className={cn(
                   "absolute top-0 left-0 right-0 h-1.5",
-                  curso.categoria === 'Expedito' ? 'bg-amber-400' :
+                  curso.internacional ? 'bg-blue-600' :
+                  curso.categoria === 'Expedito' ? 'bg-amber-500' :
                   curso.categoria === 'Especial' ? 'bg-purple-500' :
-                  curso.categoria === 'Carreira' ? 'bg-emerald-500' :
                   curso.categoria === 'EaD' ? 'bg-cyan-500' :
-                  curso.internacional ? 'bg-blue-600' : 'bg-slate-300'
+                  curso.categoria === 'Carreira' ? 'bg-emerald-500' : 'bg-slate-300'
                 )} />
 
                 <div>

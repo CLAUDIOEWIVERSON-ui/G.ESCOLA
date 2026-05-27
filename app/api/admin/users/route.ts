@@ -31,6 +31,7 @@ export async function GET() {
         email: user.email,
         full_name: profile?.full_name || user.user_metadata?.full_name || '',
         role: profile?.role || user.user_metadata?.role || 'aluno',
+        has_changed_password: profile?.has_changed_password || false,
         created_at: user.created_at
       };
     });
@@ -121,13 +122,29 @@ export async function PUT(request: Request) {
     }
 
     // 2. Update profile
-    const { error: profileError } = await supabaseAdmin
+    const profileUpdateData: any = { 
+      full_name, 
+      role 
+    };
+    if (password) {
+      profileUpdateData.has_changed_password = false;
+    }
+
+    let { error: profileError } = await supabaseAdmin
       .from('profiles')
-      .update({ 
-        full_name, 
-        role 
-      })
+      .update(profileUpdateData)
       .eq('id', id);
+
+    // If it failed because of has_changed_password column missing, try without it
+    if (profileError && password && (profileError.message?.includes('has_changed_password') || profileError.code === 'PGRST100' || profileError.message?.includes('column'))) {
+      console.warn('Retrying user profile update without has_changed_password column...');
+      delete profileUpdateData.has_changed_password;
+      const { error: retryError } = await supabaseAdmin
+        .from('profiles')
+        .update(profileUpdateData)
+        .eq('id', id);
+      profileError = retryError;
+    }
 
     if (profileError) throw profileError;
 

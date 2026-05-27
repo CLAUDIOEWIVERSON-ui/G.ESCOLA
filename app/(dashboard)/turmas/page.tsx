@@ -5,7 +5,7 @@ import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
-import { Plus, Search, Layers as LayersIcon, Library, Calendar, Clock, MapPin, Pencil, Trash2, Loader2, CheckCircle2, RefreshCcw, Users, Mail, Phone, Building, Camera, MessageCircle, XCircle, FileText, X, GraduationCap, School, ChevronRight, Printer, Monitor } from 'lucide-react';
+import { Plus, Search, Layers as LayersIcon, Library, Calendar, Clock, MapPin, Pencil, Trash2, Loader2, CheckCircle2, RefreshCcw, Users, Mail, Phone, Building, Camera, MessageCircle, XCircle, FileText, X, GraduationCap, School, ChevronRight, Printer, Monitor, Globe } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import Modal from '@/components/Modal';
@@ -923,26 +923,42 @@ function TurmasContent() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05, ease: [0.23, 1, 0.32, 1] }}
               onClick={() => handleViewStudents(turma)}
-              className="bg-white rounded-3xl border border-slate-100 shadow-sm relative overflow-hidden group hover:shadow-xl hover:border-blue-100 hover:-translate-y-1 transition-all cursor-pointer flex flex-col p-6"
+              className={cn(
+                "rounded-3xl border shadow-sm relative overflow-hidden group hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer flex flex-col p-6",
+                turma.internacional
+                  ? "bg-blue-50/30 hover:bg-blue-50/60 border-blue-200/80 hover:border-blue-400 shadow-blue-500/5 hover:shadow-blue-500/10"
+                  : turma.categoria === 'expedito'
+                  ? "bg-amber-50/30 hover:bg-amber-50/60 border-amber-200/80 hover:border-amber-400 shadow-amber-500/5 hover:shadow-amber-500/10"
+                  : turma.categoria === 'especial'
+                  ? "bg-purple-50/30 hover:bg-purple-50/60 border-purple-200/80 hover:border-purple-400 shadow-purple-500/5 hover:shadow-purple-500/10"
+                  : turma.categoria === 'ead'
+                  ? "bg-cyan-50/30 hover:bg-cyan-50/60 border-cyan-200/80 hover:border-cyan-400 shadow-cyan-500/5 hover:shadow-cyan-500/10"
+                  : turma.categoria === 'carreira'
+                  ? "bg-emerald-50/30 hover:bg-emerald-50/60 border-emerald-200/80 hover:border-emerald-400 shadow-emerald-500/5 hover:shadow-emerald-500/10"
+                  : "bg-white border-slate-100 hover:border-slate-300"
+              )}
             >
               {/* Category Indicator Line */}
               <div className={cn(
                 "absolute top-0 left-0 w-full h-1.5",
-                turma.categoria === 'expedito' ? "bg-blue-500" :
+                turma.internacional ? "bg-blue-600" :
+                turma.categoria === 'expedito' ? "bg-amber-500" :
                 turma.categoria === 'especial' ? "bg-purple-500" :
                 turma.categoria === 'carreira' ? "bg-emerald-500" :
-                turma.categoria === 'ead' ? "bg-cyan-500" : "bg-amber-500"
+                turma.categoria === 'ead' ? "bg-cyan-500" : "bg-slate-300"
               )} />
 
               <div className="flex justify-between items-start mb-6">
                 <div className={cn(
                   "w-14 h-14 rounded-2xl flex items-center justify-center transition-colors shadow-inner",
-                  turma.categoria === 'expedito' ? "bg-blue-50 text-blue-500" :
-                  turma.categoria === 'especial' ? "bg-purple-50 text-purple-500" :
-                  turma.categoria === 'carreira' ? "bg-emerald-50 text-emerald-500" :
-                  turma.categoria === 'ead' ? "bg-cyan-50 text-cyan-500" : "bg-amber-50 text-amber-500"
+                  turma.internacional ? "bg-blue-100 text-blue-600" :
+                  turma.categoria === 'expedito' ? "bg-amber-100 text-amber-600" :
+                  turma.categoria === 'especial' ? "bg-purple-100 text-purple-600" :
+                  turma.categoria === 'carreira' ? "bg-emerald-100 text-emerald-600" :
+                  turma.categoria === 'ead' ? "bg-cyan-100 text-cyan-600" : "bg-slate-100 text-slate-500"
                 )}>
-                  {turma.categoria === 'expedito' ? <LayersIcon size={28} /> :
+                  {turma.internacional ? <Globe size={28} /> :
+                   turma.categoria === 'expedito' ? <LayersIcon size={28} /> :
                    turma.categoria === 'especial' ? <GraduationCap size={28} /> :
                    turma.categoria === 'carreira' ? <Library size={28} /> :
                    turma.categoria === 'ead' ? <Monitor size={28} /> : <Library size={28} />}

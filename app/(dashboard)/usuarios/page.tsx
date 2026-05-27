@@ -219,6 +219,7 @@ export default function UsuariosPage() {
                 <th className="px-6 py-4">{t.users.name}</th>
                 <th className="px-6 py-4">{t.users.email}</th>
                 <th className="px-6 py-4">{t.users.role}</th>
+                <th className="px-6 py-4">Alterou Senha?</th>
                 <th className="px-6 py-4 text-right">{t.common.actions}</th>
               </tr>
             </thead>
@@ -259,6 +260,17 @@ export default function UsuariosPage() {
                         {user.role === 'admin' ? <Shield size={12} /> : <User size={12} />}
                         {user.role === 'admin' ? t.users.admin : user.role === 'instrutor' ? t.users.instrutor : t.users.aluno}
                       </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      {user.has_changed_password ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 uppercase tracking-wider">
+                          ● Sim (Troca Realizada)
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-100 uppercase tracking-wider animate-pulse">
+                          ● Não (Primeiro Acesso)
+                        </span>
+                      )}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-2 pr-2">
