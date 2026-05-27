@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS public.useful_links (
   description TEXT,
 
   category TEXT NOT NULL CHECK (
-    category IN ('academic', 'library', 'admin', 'external', 'mb')
+    category IN ('academic', 'library', 'admin', 'external')
   ),
 
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -28,11 +28,8 @@ ON public.useful_links(created_at DESC);
 ALTER TABLE public.useful_links ENABLE ROW LEVEL SECURITY;
 
 -- Remove old policies safely
-DROP POLICY IF EXISTS "Public read access"
-ON public.useful_links;
-
-DROP POLICY IF EXISTS "Admins have full access"
-ON public.useful_links;
+DROP POLICY IF EXISTS "Public read access" ON public.useful_links;
+DROP POLICY IF EXISTS "Admins have full access" ON public.useful_links;
 
 -- Public read access
 CREATE POLICY "Public read access"
@@ -62,11 +59,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Remove trigger if exists
 DROP TRIGGER IF EXISTS update_useful_links_updated_at
 ON public.useful_links;
 
--- Create trigger
 CREATE TRIGGER update_useful_links_updated_at
 BEFORE UPDATE ON public.useful_links
 FOR EACH ROW
@@ -81,38 +76,109 @@ INSERT INTO public.useful_links (
   category
 )
 VALUES
+
 (
   'c3194511-bba0-42f8-9a3c-b171f1110001',
   'MARINHA DO BRASIL',
   'https://www.marinha.mil.br/',
   'Acesse o site oficial da Marinha do Brasil.',
-  'mb'
+  'external'
 ),
+
 (
   'c3194511-bba0-42f8-9a3c-b171f1110002',
   'BONO MARINHA',
   'https://bono.marinha.mil.br/',
   'Boletim de Ordens e Notícias.',
-  'mb'
+  'external'
 ),
+
 (
   'c3194511-bba0-42f8-9a3c-b171f1110003',
-  ' ZIMBRA MARINHA',
+  'ZIMBRA MARINHA',
   'https://webmail.marinha.mil.br/?client=preferred',
-  'Acesso ao correio eletrônico da MB.',
-  'mb'
+  'Acesso ao correio eletrônico.',
+  'external'
 ),
+
 (
   'c3194511-bba0-42f8-9a3c-b171f1110004',
   'PORTAL MARINHA DO BRASIL',
   'https://portal.marinha.mil.br/logon/LogonPoint/tmindex.html',
   'Portal oficial da Marinha do Brasil.',
-  'mb'
+  'external'
 ),
+
 (
   'c3194511-bba0-42f8-9a3c-b171f1110005',
   'BILHETE DE PAGAMENTO ONLINE',
   'https://bponline.marinha.mil.br/bponline/login',
-  'Acesso ao bilhete de pagamento online.',
-  'mb'
-);
+  'Acesso ao sistema de pagamento online.',
+  'external'
+),
+
+(
+  'c3194511-bba0-42f8-9a3c-b171f1110006',
+  'MARINE TRAFFIC',
+  'https://www.marinetraffic.com/en/ais/home/centerx:-12.0/centery:25.0/zoom:4',
+  'Monitoramento de navios em tempo real.',
+  'external'
+),
+
+(
+  'c3194511-bba0-42f8-9a3c-b171f1110007',
+  'VESSEL FINDER',
+  'https://www.vesselfinder.com/',
+  'Rastreamento global de embarcações.',
+  'external'
+),
+
+(
+  'c3194511-bba0-42f8-9a3c-b171f1110008',
+  'NOAA',
+  'https://www.noaa.gov/',
+  'Meteorologia e oceanografia oficial dos EUA.',
+  'external'
+),
+
+(
+  'c3194511-bba0-42f8-9a3c-b171f1110009',
+  'INTERNATIONAL MARITIME BUREAU (IMB)',
+  'https://www.icc-ccs.org/piracy-reporting-centre',
+  'Relatórios globais de pirataria marítima e crimes no mar.',
+  'external'
+),
+
+(
+  'c3194511-bba0-42f8-9a3c-b171f1110010',
+  'MARITIME EXECUTIVE',
+  'https://www.maritime-executive.com/',
+  'Notícias globais sobre shipping e segurança marítima.',
+  'external'
+),
+
+(
+  'c3194511-bba0-42f8-9a3c-b171f1110011',
+  'SEATRADE MARITIME NEWS',
+  'https://www.seatrade-maritime.com/',
+  'Notícias do setor marítimo global.',
+  'external'
+),
+
+(
+  'c3194511-bba0-42f8-9a3c-b171f1110012',
+  'TRADEWINDS NEWS',
+  'https://www.tradewindsnews.com/',
+  'Notícias especializadas em shipping e frota global.',
+  'external'
+),
+
+(
+  'c3194511-bba0-42f8-9a3c-b171f1110013',
+  'SAFETY4SEA',
+  'https://safety4sea.com/',
+  'Segurança marítima, pirataria e regulamentação naval.',
+  'external'
+)
+
+ON CONFLICT (id) DO NOTHING;
