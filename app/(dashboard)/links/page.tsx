@@ -121,7 +121,7 @@ export default function LinksUteisPage() {
         setIsLoading(false);
       }, 0);
     }
-  }, [t]);
+  }, []);
 
   const saveToLocalStorage = (newLinks: LinkItem[]) => {
     setLinks(newLinks);
