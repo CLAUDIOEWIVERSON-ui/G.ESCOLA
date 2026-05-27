@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
+import { fetchWithAuth } from '@/lib/api';
 import { 
   Settings, 
   Save, 
@@ -106,7 +107,7 @@ export default function ConfiguracoesPage() {
     setUpdatingPassword(true);
     const toastId = toast.loading('Atualizando sua senha...');
     try {
-      const response = await fetch('/api/auth/change-password', {
+      const response = await fetchWithAuth('/api/auth/change-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password: newPassword }),
