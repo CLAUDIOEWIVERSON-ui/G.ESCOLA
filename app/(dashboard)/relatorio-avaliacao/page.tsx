@@ -46,6 +46,41 @@ const getScoreBgColor = (val: number) => {
   return "bg-rose-50 text-rose-700 border-rose-200";
 };
 
+const CURSO_QUESTIONS = [
+  { key: "curso_q1", label: "O conteúdo do curso atendeu às expectativas?" },
+  { key: "curso_q2", label: "O material didático foi adequado?" },
+  { key: "curso_q3", label: "A carga horária foi suficiente?" },
+  { key: "curso_q4", label: "Os exercícios práticos contribuíram para o aprendizado?" },
+  { key: "curso_q5", label: "A organização do curso foi satisfatória?" },
+  { key: "curso_q6", label: "O curso possui aplicabilidade prática na atividade profissional?" }
+];
+
+const INSTRUTOR_QUESTIONS = [
+  { key: "instrutor_q1", label: "Domínio do conteúdo" },
+  { key: "instrutor_q2", label: "Clareza na explicação" },
+  { key: "instrutor_q3", label: "Pontualidade" },
+  { key: "instrutor_q4", label: "Didática" },
+  { key: "instrutor_q5", label: "Relacionamento com a turma" },
+  { key: "instrutor_q6", label: "Capacidade de solucionar dúvidas" },
+  { key: "instrutor_q7", label: "Condução das atividades práticas" }
+];
+
+const AUTO_QUESTIONS = [
+  { key: "auto_q1", label: "Participação nas aulas" },
+  { key: "auto_q2", label: "Interesse demonstrado" },
+  { key: "auto_q3", label: "Frequência" },
+  { key: "auto_q4", label: "Aproveitamento do conteúdo" },
+  { key: "auto_q5", label: "Dedicação aos exercícios e avaliações" }
+];
+
+const INFRA_QUESTIONS = [
+  { key: "infra_q1", label: "Sala de aula" },
+  { key: "infra_q2", label: "Equipamentos" },
+  { key: "infra_q3", label: "Recursos audiovisuais" },
+  { key: "infra_q4", label: "Organização administrativa" },
+  { key: "infra_q5", label: "Ambiente de ensino" }
+];
+
 export default function RelatorioAvaliacaoAdminPage() {
   const { profile, isAdmin, loading: userLoading } = useUser();
   const [loading, setLoading] = useState(true);
