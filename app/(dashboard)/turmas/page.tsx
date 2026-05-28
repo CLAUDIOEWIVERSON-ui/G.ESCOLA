@@ -1522,8 +1522,18 @@ function TurmasContent() {
                   <Image src={currentAluno.foto_url} alt="3x4" fill className="object-cover" sizes="144px" referrerPolicy="no-referrer" />
                 ) : (
                   <>
-                    <Camera size={24} strokeWidth={1.5} />
-                    <span className="text-[8px] font-bold uppercase mt-1">{t.students.photo}</span>
+                    <Image 
+                      src={currentAluno?.genero === 'feminino' ? femaleAvatar : maleAvatar} 
+                      alt="Avatar" 
+                      fill 
+                      className="object-cover opacity-20 group-hover:opacity-30 transition-opacity" 
+                      sizes="144px" 
+                      referrerPolicy="no-referrer" 
+                    />
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 group-hover:text-blue-500 transition-colors pointer-events-none">
+                      <Camera size={24} strokeWidth={1.5} />
+                      <span className="text-[8px] font-bold uppercase mt-1">{t.students.photo}</span>
+                    </div>
                   </>
                 )}
                 <input type="file" accept="image/*" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer" />

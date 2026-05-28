@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import Image from 'next/image';
+import maleAvatar from '@/src/assets/images/avatar_male_1778977230783.png';
+import femaleAvatar from '@/src/assets/images/avatar_female_1778977246051.png';
 
 export default function DashboardPage() {
   const { t } = useI18n();
@@ -53,6 +55,7 @@ export default function DashboardPage() {
               posto_graduacao,
               om,
               foto_url,
+              genero,
               data_inicio_curso,
               data_fim_curso,
               turma:turmas!inner(
@@ -319,9 +322,15 @@ export default function DashboardPage() {
                               </div>
                             </div>
                           ) : (
-                            <div className="w-12 h-16 rounded-lg bg-slate-100 flex flex-col items-center justify-center text-slate-400 shrink-0 border border-slate-200">
-                              <Users size={16} />
-                              <span className="text-[8px] font-bold mt-0.5">3x4</span>
+                            <div className="w-12 h-16 rounded-lg overflow-hidden border border-slate-200 shrink-0 shadow-sm relative bg-slate-100">
+                              <Image 
+                                src={aluno.genero === 'feminino' ? femaleAvatar : maleAvatar} 
+                                alt={aluno.nome} 
+                                fill
+                                className="object-cover opacity-60" 
+                                referrerPolicy="no-referrer" 
+                                sizes="48px"
+                              />
                             </div>
                           )}
                           <div>

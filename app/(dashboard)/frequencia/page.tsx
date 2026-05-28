@@ -26,6 +26,8 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import Image from 'next/image';
+import maleAvatar from '@/src/assets/images/avatar_male_1778977230783.png';
+import femaleAvatar from '@/src/assets/images/avatar_female_1778977246051.png';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { 
@@ -85,7 +87,7 @@ export default function FrequenciaPage() {
       // Fetch students in the class
       const { data: alunoData, error: alunoError } = await supabase
         .from('alunos')
-        .select('id, nome, matricula, foto_url')
+        .select('id, nome, matricula, foto_url, genero')
         .eq('turma_id', selectedTurma)
         .is('deleted_at', null)
         .order('nome');
@@ -465,7 +467,14 @@ export default function FrequenciaPage() {
                                     sizes="40px"
                                   />
                                 ) : (
-                                  student.nome.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()
+                                  <Image 
+                                    src={student.genero === 'feminino' ? femaleAvatar : maleAvatar} 
+                                    alt={student.nome} 
+                                    fill 
+                                    className="object-cover opacity-50" 
+                                    referrerPolicy="no-referrer"
+                                    sizes="40px"
+                                  />
                                 )}
                               </div>
                               <span className="font-bold text-slate-700 group-hover:text-blue-700 transition-colors">{student.nome}</span>

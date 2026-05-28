@@ -14,6 +14,8 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import Image from 'next/image';
+import maleAvatar from '@/src/assets/images/avatar_male_1778977230783.png';
+import femaleAvatar from '@/src/assets/images/avatar_female_1778977246051.png';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -111,7 +113,7 @@ export default function NotasPage() {
       if (configData) setSettings(configData);
 
       // Fetch Alunos
-      const { data: alunosData } = await supabase.from('alunos').select('id, nome, matricula, foto_url').is('deleted_at', null).order('nome');
+      const { data: alunosData } = await supabase.from('alunos').select('id, nome, matricula, foto_url, genero').is('deleted_at', null).order('nome');
       if (alunosData) setAlunos(alunosData);
 
       // Fetch Cursos
@@ -495,7 +497,14 @@ export default function NotasPage() {
                                     sizes="32px"
                                   />
                                 ) : (
-                                  <Users size={12} className="text-slate-300" />
+                                  <Image 
+                                    src={aluno.genero === 'feminino' ? femaleAvatar : maleAvatar} 
+                                    alt={aluno.nome} 
+                                    fill 
+                                    className="object-cover opacity-50" 
+                                    referrerPolicy="no-referrer"
+                                    sizes="32px"
+                                  />
                                 )}
                               </div>
                               <div className="flex flex-col">
