@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { useUser } from '@/lib/auth/UserContext';
 import { motion, AnimatePresence } from 'motion/react';
@@ -81,9 +82,14 @@ const INFRA_QUESTIONS = [
   { key: "infra_q5", label: "Ambiente de ensino" }
 ];
 
-export default function RelatorioAvaliacaoAdminPage() {
+function RelatorioAvaliacaoAdminContent() {
   const { profile, isAdmin, loading: userLoading } = useUser();
   const [loading, setLoading] = useState(true);
+
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const qStr = searchParams ? (searchParams.get('q') || '') : '';
 
   // Raw DB data
   const [submissions, setSubmissions] = useState<any[]>([]);
@@ -114,8 +120,8 @@ export default function RelatorioAvaliacaoAdminPage() {
       const { data: cursosData } = await supabase.from('cursos').select('id, nome').is('deleted_at', null);
       if (cursosData) setCursos(cursosData);
 
-      // Fetch Turmas
-      const { data: turmasData } = await supabase.from('turmas').select('id, nome, curso_id, periodo').is('deleted_at', null);
+      // Fetch Turmas with registered instructor field
+      const { data: turmasData } = await supabase.from('turmas').select('id, nome, curso_id, periodo, instrutor').is('deleted_at', null);
       if (turmasData) setTurmas(turmasData);
 
       // Fetch Questionarios joined with relation metrics
@@ -154,8 +160,19 @@ export default function RelatorioAvaliacaoAdminPage() {
       const activeSubmissions = qData || [];
       setSubmissions(activeSubmissions);
 
-      // Extract unique instructors mentioned in submissions
+      // Extract unique instructors registered in classes (turmas) and mentioned in submissions
       const uniqueInstructorsSet = new Set<string>();
+      
+      // 1. From classes (turmas)
+      if (turmasData) {
+        turmasData.forEach(t => {
+          if (t.instrutor && t.instrutor.trim()) {
+            uniqueInstructorsSet.add(t.instrutor.trim());
+          }
+        });
+      }
+
+      // 2. From submissions
       activeSubmissions.forEach(sub => {
         if (sub.instrutor_nome && sub.instrutor_nome.trim()) {
           uniqueInstructorsSet.add(sub.instrutor_nome.trim());
@@ -163,7 +180,7 @@ export default function RelatorioAvaliacaoAdminPage() {
           uniqueInstructorsSet.add(sub.turma.instrutor.trim());
         }
       });
-      const instructors = Array.from(uniqueInstructorsSet);
+      const instructors = Array.from(uniqueInstructorsSet).filter(Boolean);
       setInstructorsList(instructors);
 
       // Focus default elements
@@ -216,8 +233,41 @@ export default function RelatorioAvaliacaoAdminPage() {
       result = result.filter(sub => sub.aluno_id === selectedStudent);
     }
 
+    // Keyword search filters linked with query or path state
+    if (qStr && qStr.trim() !== '') {
+      const searchLower = qStr.toLowerCase().trim();
+      result = result.filter(sub => {
+        const studentName = (sub.aluno?.nome || '').toLowerCase();
+        const studentPosto = (sub.aluno?.posto_graduacao || '').toLowerCase();
+        const studentOM = (sub.aluno?.om || '').toLowerCase();
+        const studentMatricula = (sub.aluno?.matricula || '').toLowerCase();
+        const instructorNameStr = (sub.instrutor_nome || sub.turma?.instrutor || '').toLowerCase();
+        const courseName = (sub.turma?.curso?.nome || '').toLowerCase();
+        const turmaName = (sub.turma?.nome || '').toLowerCase();
+        const remarks_sugestoes = (sub.sugestoes_melhoria || '').toLowerCase();
+        const remarks_criticas = (sub.criticas_construtivas || '').toLowerCase();
+        const remarks_elogios = (sub.elogios || '').toLowerCase();
+
+        return studentName.includes(searchLower) ||
+               studentPosto.includes(searchLower) ||
+               studentOM.includes(searchLower) ||
+               studentMatricula.includes(searchLower) ||
+               instructorNameStr.includes(searchLower) ||
+               courseName.includes(searchLower) ||
+               turmaName.includes(searchLower) ||
+               remarks_sugestoes.includes(searchLower) ||
+               remarks_criticas.includes(searchLower) ||
+               remarks_elogios.includes(searchLower);
+      });
+    }
+
     return result;
-  }, [selectedCurso, selectedTurma, selectedInstructor, selectedPeriod, selectedStudent, submissions]);
+  }, [selectedCurso, selectedTurma, selectedInstructor, selectedPeriod, selectedStudent, submissions, qStr]);
+
+  const hasActiveFilter = selectedTurma !== 'ALL' || 
+                         selectedInstructor !== 'ALL' || 
+                         selectedStudent !== 'ALL' || 
+                         (!!qStr && qStr.trim() !== '');
 
   // Auto set defaults for focused elements when data loads
   useEffect(() => {
@@ -237,7 +287,15 @@ export default function RelatorioAvaliacaoAdminPage() {
     setSelectedInstructor('ALL');
     setSelectedPeriod('ALL');
     setSelectedStudent('ALL');
-    toast.success('Filtros redefinidos');
+    setFocusedInstructor('');
+    setFocusedStudent('');
+    
+    // Reset/Clear search query parameter
+    const params = new URLSearchParams(searchParams ? searchParams.toString() : '');
+    params.delete('q');
+    router.push(`${pathname}?${params.toString()}`);
+
+    toast.success('Filtros e pesquisa limpos');
   };
 
   // Metric Computations based on filtered datasets
@@ -373,8 +431,18 @@ export default function RelatorioAvaliacaoAdminPage() {
     );
   }
 
-  // Define active filtering lists computed from current state
-  const availableStudentsInFilteredRange = filteredSubmissions.map(sub => sub.aluno).filter(Boolean);
+  // Filter specific students based on selected turma
+  const studentsFilteredByTurma = useMemo(() => {
+    const studentMap = new Map<string, any>();
+    submissions.forEach(sub => {
+      if (sub.aluno) {
+        if (selectedTurma === 'ALL' || sub.turma_id === selectedTurma) {
+          studentMap.set(sub.aluno_id, sub.aluno);
+        }
+      }
+    });
+    return Array.from(studentMap.values()).sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
+  }, [submissions, selectedTurma]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
@@ -407,42 +475,41 @@ export default function RelatorioAvaliacaoAdminPage() {
           <h2 className="text-xs font-black uppercase tracking-wider font-mono">Filtros de Pesquisa e Segmentação</h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          {/* Curso Selection */}
-          <div>
-            <label className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1.5 font-mono">Curso</label>
-            <select
-              value={selectedCurso}
-              onChange={(e) => setSelectedCurso(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 text-xs rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-sky-500 text-slate-300"
-            >
-              <option value="ALL">Todos os Cursos</option>
-              {cursos.map(c => (
-                <option key={c.id} value={c.id}>{c.nome}</option>
-              ))}
-            </select>
-          </div>
-
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Turma Selection */}
           <div>
             <label className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1.5 font-mono">Turma</label>
             <select
               value={selectedTurma}
-              onChange={(e) => setSelectedTurma(e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value;
+                setSelectedTurma(val);
+                // Preencher automaticamente conforme a turma escolhida
+                if (val === 'ALL') {
+                  setSelectedInstructor('ALL');
+                } else {
+                  const foundTurma = turmas.find(t => t.id === val);
+                  if (foundTurma && foundTurma.instrutor) {
+                    setSelectedInstructor(foundTurma.instrutor.trim());
+                  } else {
+                    setSelectedInstructor('ALL');
+                  }
+                }
+                // Reset student filter on class change
+                setSelectedStudent('ALL');
+              }}
               className="w-full bg-slate-950 border border-slate-800 text-xs rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-sky-500 text-slate-300"
             >
               <option value="ALL">Todas as Turmas</option>
-              {turmas
-                .filter(t => selectedCurso === 'ALL' || t.curso_id === selectedCurso)
-                .map(t => (
-                  <option key={t.id} value={t.id}>{t.nome}</option>
-                ))}
+              {turmas.map(t => (
+                <option key={t.id} value={t.id}>{t.nome}</option>
+              ))}
             </select>
           </div>
 
           {/* Instrutor Selection */}
           <div>
-            <label className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1.5 font-mono font-mono">Instrutor</label>
+            <label className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1.5 font-mono">Instrutor</label>
             <select
               value={selectedInstructor}
               onChange={(e) => setSelectedInstructor(e.target.value)}
@@ -455,34 +522,43 @@ export default function RelatorioAvaliacaoAdminPage() {
             </select>
           </div>
 
-          {/* Period selection */}
-          <div>
-            <label className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1.5 font-mono">Período</label>
-            <select
-              value={selectedPeriod}
-              onChange={(e) => setSelectedPeriod(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 text-xs rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-sky-500 text-slate-300"
-            >
-              <option value="ALL">Todos os Períodos</option>
-              <option value="manhã">Manhã</option>
-              <option value="tarde">Tarde</option>
-              <option value="noite">Noite</option>
-            </select>
-          </div>
-
           {/* Student selection filter */}
           <div>
-            <label className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1.5 font-mono font-mono font-mono">Aluno Específico</label>
+            <label className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1.5 font-mono">Aluno Específico</label>
             <select
               value={selectedStudent}
               onChange={(e) => setSelectedStudent(e.target.value)}
               className="w-full bg-slate-950 border border-slate-800 text-xs rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-sky-500 text-slate-300"
             >
-              <option value="ALL">Todos os Alunos ({filteredSubmissions.length} avaliados)</option>
-              {filteredSubmissions.map(sub => (
-                <option key={sub.id} value={sub.aluno_id}>{sub.aluno?.nome || sub.aluno_id}</option>
+              <option value="ALL">Todos os Alunos ({studentsFilteredByTurma.length} disponíveis)</option>
+              {studentsFilteredByTurma.map(stud => (
+                <option key={stud.id} value={stud.id}>{stud.nome}</option>
               ))}
             </select>
+          </div>
+
+          {/* Quick Search */}
+          <div>
+            <label className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1.5 font-mono">Pesquisa rápida</label>
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 h-3.5 w-3.5" />
+              <input
+                type="text"
+                value={qStr}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  const params = new URLSearchParams(searchParams ? searchParams.toString() : '');
+                  if (val) {
+                    params.set('q', val);
+                  } else {
+                    params.delete('q');
+                  }
+                  router.push(`${pathname}?${params.toString()}`);
+                }}
+                placeholder="Buscar palavra..."
+                className="w-full bg-slate-950 border border-slate-800 text-[11px] rounded-lg pl-8 pr-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-sky-500 text-slate-300 placeholder-slate-600 outline-none"
+              />
+            </div>
           </div>
         </div>
 
@@ -501,8 +577,22 @@ export default function RelatorioAvaliacaoAdminPage() {
         </div>
       </div>
 
-      {/* DASHBOARD TABS AND CONTENT CONTROLLERS */}
-      <div className="border-b border-slate-200 flex flex-wrap gap-2 print:hidden">
+      {!hasActiveFilter ? (
+        <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center shadow-sm max-w-xl mx-auto my-8 space-y-4">
+          <div className="w-16 h-16 bg-slate-50 border rounded-2xl flex items-center justify-center mx-auto shadow-sm">
+            <SlidersHorizontal className="h-6 w-6 text-slate-700 animate-pulse" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider font-mono">Pesquisa e Relatórios Ocultos</h3>
+            <p className="text-slate-500 text-xs mt-1.5 max-w-sm mx-auto leading-relaxed">
+              Os dados e gráficos das avaliações pedagógicas não estão ativos. Ative qualquer um dos filtros acima ou utilize a pesquisa rápida para carregar o dashboard embaixo.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* DASHBOARD TABS AND CONTENT CONTROLLERS */}
+          <div className="border-b border-slate-200 flex flex-wrap gap-2 print:hidden">
         <button
           onClick={() => setActiveTab('geral')}
           className={`px-5 py-3 text-xs font-bold transition border-b-2 font-mono ${
@@ -1143,6 +1233,8 @@ export default function RelatorioAvaliacaoAdminPage() {
 
         </div>
       )}
+        </>
+      )}
 
       {/* FOOTER METADATA MARKERS */}
       <div className="text-center font-mono text-[10px] text-slate-400 border-t pt-4 space-y-1 print:block">
@@ -1151,5 +1243,21 @@ export default function RelatorioAvaliacaoAdminPage() {
       </div>
 
     </div>
+  );
+}
+
+export default function RelatorioAvaliacaoAdminPage() {
+  return (
+    <Suspense fallback={
+      <div className="py-24 flex flex-col items-center justify-center bg-slate-50 min-h-[75vh]">
+        <div className="relative">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-slate-900"></div>
+          <BarChart3 className="absolute inset-0 m-auto text-slate-900" size={24} />
+        </div>
+        <p className="mt-4 text-slate-500 font-mono text-[10px] uppercase tracking-wider animate-pulse">Carregando Relatórios...</p>
+      </div>
+    }>
+      <RelatorioAvaliacaoAdminContent />
+    </Suspense>
   );
 }
