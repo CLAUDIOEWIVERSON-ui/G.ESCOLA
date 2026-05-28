@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable react-hooks/set-state-in-effect */
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
@@ -108,12 +109,6 @@ export default function BoletimPage() {
   const { profile } = useUser();
   const isNifStudent = profile?.role === 'aluno' && (profile as any).isNifStudent;
 
-  useEffect(() => {
-    if (isNifStudent && profile?.student_id) {
-      setSelectedStudentForReport(profile.student_id);
-    }
-  }, [isNifStudent, profile]);
-
   const [loading, setLoading] = useState(false);
   const [cursos, setCursos] = useState<any[]>([]);
   const [turmas, setTurmas] = useState<any[]>([]);
@@ -133,6 +128,12 @@ export default function BoletimPage() {
   const [selectedStudentForReport, setSelectedStudentForReport] = useState<string | null>(null);
   const [loadingReport, setLoadingReport] = useState(false);
   const [reportData, setReportData] = useState<any | null>(null);
+
+  useEffect(() => {
+    if (isNifStudent && profile?.student_id) {
+      setSelectedStudentForReport(profile.student_id);
+    }
+  }, [isNifStudent, profile]);
 
   const handlePrint = () => {
     try {
