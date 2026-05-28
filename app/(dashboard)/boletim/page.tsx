@@ -28,6 +28,7 @@ import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { useUser } from '@/lib/auth/UserContext';
 
 const reportT = {
   pt: {
@@ -104,6 +105,15 @@ const reportT = {
 
 export default function BoletimPage() {
   const { t, language } = useI18n();
+  const { profile } = useUser();
+  const isNifStudent = profile?.role === 'aluno' && (profile as any).isNifStudent;
+
+  useEffect(() => {
+    if (isNifStudent && profile?.student_id) {
+      setSelectedStudentForReport(profile.student_id);
+    }
+  }, [isNifStudent, profile]);
+
   const [loading, setLoading] = useState(false);
   const [cursos, setCursos] = useState<any[]>([]);
   const [turmas, setTurmas] = useState<any[]>([]);
@@ -370,6 +380,405 @@ export default function BoletimPage() {
   const maxAvgInBoletim = boletimData.length > 0 
     ? Math.max(...boletimData.map(r => Number(r.nota_final)).filter(n => !isNaN(n)), -1) 
     : -1;
+
+  if (isNifStudent) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{t.reportCard.title}</h1>
+            <p className="text-slate-500 text-sm">
+              {language === 'pt' ? 'Consulte as suas notas individuais e aproveitamento acadêmico' : 'Check your individual grades and academic performance.'}
+            </p>
+          </div>
+          <div className="flex gap-2 print:hidden">
+            <button 
+              onClick={handlePrint}
+              className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-all shadow-sm cursor-pointer"
+            >
+              <Printer size={18} />
+              {t.reportCard.print}
+            </button>
+          </div>
+        </div>
+
+        {loadingReport || !reportData ? (
+          <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-3 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+            <Loader2 className="animate-spin text-blue-500" size={36} />
+            <span className="text-xs font-bold tracking-widest uppercase">
+              {language === 'pt' ? 'Carregando boletim do aluno...' : 'Loading student report...'}
+            </span>
+          </div>
+        ) : (
+          <div className="max-w-4xl mx-auto w-full">
+            <div 
+              id="student-report-print-area" 
+              className="bg-white text-slate-900 border border-slate-200 shadow-xl p-8 rounded-lg flex flex-col gap-6 font-sans relative text-left text-xs"
+              style={{ width: '100%', boxSizing: 'border-box' }}
+            >
+              <style dangerouslySetInnerHTML={{ __html: `
+                @media print {
+                  body * {
+                    visibility: hidden !important;
+                  }
+                  #student-report-print-area, #student-report-print-area * {
+                    visibility: visible !important;
+                  }
+                  #student-report-print-area {
+                    position: absolute !important;
+                    left: 0 !important;
+                    top: 0 !important;
+                    width: 210mm !important;
+                    min-height: 297mm !important;
+                    padding: 15mm !important;
+                    margin: 0 !important;
+                    border: none !important;
+                    box-shadow: none !important;
+                    background: #ffffff !important;
+                    color: #000000 !important;
+                    font-family: Arial, sans-serif !important;
+                  }
+                  .print-only-layout {
+                    visibility: visible !important;
+                  }
+                  .print-bg-gray {
+                    background-color: #f8fafc !important;
+                    -webkit-print-color-adjust: exact !important;
+                    print-color-adjust: exact !important;
+                  }
+                  .print-border-black {
+                    border-color: #000000 !important;
+                  }
+                }
+                @page {
+                  size: A4;
+                  margin: 10mm;
+                }
+              `}} />
+
+              {/* Clean Header: Student Individual Report and participating class(es) only */}
+              <div className="flex flex-col items-center justify-center pb-6 border-b-2 border-slate-900 text-center gap-2">
+                <h1 className="text-2xl font-black text-slate-900 tracking-tight uppercase">
+                  {language === 'pt' ? 'Relatório Individual do Aluno' : 'Student Individual Report'}
+                </h1>
+                <p className="text-xs font-black uppercase tracking-widest text-slate-500">
+                  {language === 'pt' 
+                    ? `Turma(s) ao qual participou: ${reportData.classObj?.nome || 'Não informada'}` 
+                    : `Participated Class(es): ${reportData.classObj?.nome || 'Unassigned'}`}
+                </p>
+              </div>
+
+              {/* Personal Info Grid */}
+              <div className="border border-slate-200 rounded-lg p-5 bg-slate-50/50 print-bg-gray text-left">
+                <h3 className="text-[11px] font-black text-slate-400 tracking-[0.15em] uppercase mb-4 pb-1 border-b border-slate-200">
+                  {reportT[language as 'pt' | 'en'].studentInfo}
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-y-3 gap-x-6 text-sm">
+                  <div className="flex flex-col gap-0.5 col-span-2 md:col-span-1">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as 'pt' | 'en'].fullName}</span>
+                    <span className="font-extrabold text-slate-900 uppercase text-xs lg:text-sm">{reportData.student.nome}</span>
+                  </div>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as 'pt' | 'en'].rank}</span>
+                    <span className="font-bold text-slate-800 uppercase">{reportData.student.posto_graduacao || (language === 'pt' ? 'Não declarado' : 'Not declared')}</span>
+                  </div>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Matrícula</span>
+                    <span className="font-bold font-mono text-slate-800">#{reportData.student.matricula}</span>
+                  </div>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as 'pt' | 'en'].course}</span>
+                    <span className="font-bold text-slate-800">{reportData.courseObj?.nome || (language === 'pt' ? 'Não disponível' : 'Not available')}</span>
+                  </div>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as 'pt' | 'en'].class}</span>
+                    <span className="font-bold text-slate-800">{reportData.classObj?.nome || (language === 'pt' ? 'Não disponível' : 'Not available')}</span>
+                  </div>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as 'pt' | 'en'].period}</span>
+                    <span className="font-bold text-slate-800 capitalize">
+                      {reportData.classObj?.periodo === 'manhã' ? t.common.morning :
+                       reportData.classObj?.periodo === 'tarde' ? t.common.afternoon :
+                       reportData.classObj?.periodo === 'noite' ? t.common.night : reportData.classObj?.periodo}
+                    </span>
+                  </div>
+                  <div className="flex flex-col gap-0.5 col-span-2">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as 'pt' | 'en'].status}</span>
+                    <span className="font-bold flex items-center gap-1.5 text-slate-800">
+                      <span className={cn("w-2 h-2 rounded-full", reportData.classObj?.status === 'concluida' || reportData.classObj?.status === 'finalizada' ? 'bg-emerald-500' : 'bg-blue-500')} />
+                      {reportData.classObj?.status === 'concluida' || reportData.classObj?.status === 'finalizada' 
+                        ? reportT[language as 'pt' | 'en'].completed 
+                        : reportT[language as 'pt' | 'en'].inProgress}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Academic Performance Map */}
+              <div className="space-y-3 font-sans">
+                <h3 className="text-[11px] font-black text-slate-400 tracking-[0.15em] uppercase pb-1 border-b border-slate-200 text-left">
+                  {reportT[language as 'pt' | 'en'].academicMap}
+                </h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left report-table border border-slate-200 bg-white">
+                    <thead>
+                      <tr className="bg-slate-100 print-bg-gray text-[10px] font-extrabold text-slate-600 uppercase tracking-wider border-b border-slate-200">
+                        <th className="px-4 py-3 border-r border-slate-200">{reportT[language as 'pt' | 'en'].discipline}</th>
+                        <th className="px-3 py-3 text-center border-r border-slate-200 font-mono">MOD 1</th>
+                        <th className="px-3 py-3 text-center border-r border-slate-200 font-mono">MOD 2</th>
+                        <th className="px-3 py-3 text-center border-r border-slate-200 font-mono">MOD 3</th>
+                        <th className="px-3 py-3 text-center border-r border-slate-200 font-mono">MOD 4</th>
+                        <th className="px-3 py-3 text-center border-r border-slate-200 font-mono">{reportT[language as 'pt' | 'en'].finalGrade}</th>
+                        <th className="px-4 py-3 text-right">{reportT[language as 'pt' | 'en'].situation}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="text-xs text-left">
+                      {reportData.disciplines.length === 0 ? (
+                        <tr>
+                          <td colSpan={7} className="text-center py-6 text-slate-400 font-bold bg-white">
+                            {language === 'pt' ? 'Nenhuma disciplina cadastrada.' : 'No disciplines registered.'}
+                          </td>
+                        </tr>
+                      ) : (
+                        reportData.disciplines.map((disc: any) => {
+                          const grade = reportData.grades.find((g: any) => g.disciplina_id === disc.id);
+                          const finalGradeValue = grade ? grade.nota_final : null;
+                          const freqValue = grade ? grade.frequencia : null;
+                          const finalGradeFormatted = finalGradeValue !== null && finalGradeValue !== undefined ? Number(finalGradeValue).toFixed(1) : '-';
+                          
+                          // Determine status
+                          let statusLabel = '';
+                          let statusClass = 'text-slate-400';
+                          if (finalGradeValue === null || finalGradeValue === undefined) {
+                            statusLabel = reportT[language as 'pt' | 'en'].pending;
+                          } else if (finalGradeValue >= settings.media_aprovacao && (freqValue === null || freqValue >= settings.frequencia_minima)) {
+                            statusLabel = reportT[language as 'pt' | 'en'].approved;
+                            statusClass = 'text-emerald-600 font-extrabold';
+                          } else if (freqValue !== null && freqValue < settings.frequencia_minima) {
+                            statusLabel = language === 'pt' ? 'FALTA FREQ.' : 'LOW FREQ.';
+                            statusClass = 'text-orange-600 font-extrabold';
+                          } else if (finalGradeValue >= settings.media_recuperacao) {
+                            statusLabel = reportT[language as 'pt' | 'en'].retake;
+                            statusClass = 'text-yellow-600 font-extrabold';
+                          } else {
+                            statusLabel = reportT[language as 'pt' | 'en'].reproved;
+                            statusClass = 'text-rose-600 font-extrabold';
+                          }
+
+                          return (
+                            <tr key={disc.id} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors bg-white">
+                              <td className="px-4 py-2.5 font-bold text-slate-800 border-r border-slate-200 text-left bg-white">{disc.nome}</td>
+                              <td className="px-3 py-2.5 text-center font-mono border-r border-slate-200 bg-white">{grade?.nota1 !== null && grade?.nota1 !== undefined ? Number(grade.nota1).toFixed(1) : '-'}</td>
+                              <td className="px-3 py-2.5 text-center font-mono border-r border-slate-200 bg-white">{grade?.nota2 !== null && grade?.nota2 !== undefined ? Number(grade.nota2).toFixed(1) : '-'}</td>
+                              <td className="px-3 py-2.5 text-center font-mono border-r border-slate-200 bg-white">{grade?.nota3 !== null && grade?.nota3 !== undefined ? Number(grade.nota3).toFixed(1) : '-'}</td>
+                              <td className="px-3 py-2.5 text-center font-mono border-r border-slate-200 bg-white">{grade?.nota4 !== null && grade?.nota4 !== undefined ? Number(grade.nota4).toFixed(1) : '-'}</td>
+                              <td className="px-3 py-2.5 text-center font-black font-mono border-r border-slate-200 text-slate-900 bg-white">{finalGradeFormatted}</td>
+                              <td className={cn("px-4 py-2.5 text-right font-black bg-white", statusClass)}>{statusLabel}</td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Attendance and KPI Cards Container */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                {/* Attendance Summary */}
+                <div className="border border-slate-200 rounded-lg p-4 flex flex-col gap-3 text-left">
+                  <h3 className="text-[11px] font-black text-slate-400 tracking-[0.1em] uppercase border-b border-slate-200 pb-1">
+                    {reportT[language as 'pt' | 'en'].attendanceReg}
+                  </h3>
+                  
+                  {(() => {
+                    const totalAulas = reportData.attendance?.length || 0;
+                    const presencas = reportData.attendance?.filter((a: any) => a.presente).length || 0;
+                    const faltas = reportData.attendance?.filter((a: any) => !a.presente).length || 0;
+                    
+                    let percentualPresenca = 100;
+                    if (totalAulas > 0) {
+                      percentualPresenca = (presencas / totalAulas) * 100;
+                    } else if (reportData.grades && reportData.grades.length > 0) {
+                      const validFreqs = reportData.grades.filter((g: any) => g.frequencia !== null && g.frequencia !== undefined);
+                      if (validFreqs.length > 0) {
+                        percentualPresenca = validFreqs.reduce((sum: number, g: any) => sum + g.frequencia, 0) / validFreqs.length;
+                      }
+                    }
+
+                    return (
+                      <div className="flex flex-col gap-2.5 text-left">
+                        <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                          <div className="p-2 bg-slate-50 print-bg-gray rounded border border-slate-100 flex flex-col gap-0.5">
+                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as 'pt' | 'en'].totalLectures}</span>
+                            <span className="text-sm font-black text-slate-800">{totalAulas || '-'}</span>
+                          </div>
+                          <div className="p-2 bg-slate-50 print-bg-gray rounded border border-slate-100 flex flex-col gap-0.5">
+                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as 'pt' | 'en'].attendances}</span>
+                            <span className="text-sm font-black text-emerald-600">{totalAulas ? presencas : '-'}</span>
+                          </div>
+                          <div className="p-2 bg-slate-50 print-bg-gray rounded border border-slate-100 flex flex-col gap-0.5">
+                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as 'pt' | 'en'].absences}</span>
+                            <span className="text-sm font-black text-rose-600">{totalAulas ? faltas : '-'}</span>
+                          </div>
+                        </div>
+
+                        {/* Attendance percentage indicator */}
+                        <div className="flex items-center justify-between text-xs p-1.5 mt-1 border-t border-slate-100">
+                          <span className="font-extrabold text-slate-500 uppercase text-[9px] tracking-wide">{reportT[language as 'pt' | 'en'].attendanceRate}:</span>
+                          <span className={cn(
+                            "font-black text-sm",
+                            percentualPresenca >= settings.frequencia_minima ? "text-emerald-600" : "text-rose-600"
+                          )}>
+                            {percentualPresenca.toFixed(1)}%
+                          </span>
+                        </div>
+
+                        {/* Tiny timeline of latest attendance dates */}
+                        {reportData.attendance && reportData.attendance.length > 0 && (
+                          <div className="flex flex-col gap-1.5 mt-1 pt-1.5 border-t border-dashed border-slate-200">
+                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                              {language === 'pt' ? 'Histórico de Presenças (Últimas 10):' : 'Attendance Record (Last 10):'}
+                            </span>
+                            <div className="flex flex-wrap gap-1">
+                              {reportData.attendance.slice(0, 10).map((att: any, ind: number) => (
+                                <span 
+                                  key={att.id || ind} 
+                                  className={cn(
+                                    "text-[9px] px-1.5 py-0.5 rounded font-bold uppercase",
+                                    att.presente 
+                                      ? "bg-emerald-50 text-emerald-700 border border-emerald-100" 
+                                      : "bg-rose-50 text-rose-700 border border-rose-100"
+                                  )}
+                                  title={format(new Date(att.data), 'dd/MM/yyyy')}
+                                >
+                                  {format(new Date(att.data), 'dd/MM')} {att.presente ? '✓' : '✗'}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                {/* Performance & Summary */}
+                <div className="border border-slate-200 rounded-lg p-4 flex flex-col justify-between text-left">
+                  <div className="flex flex-col gap-3">
+                    <h3 className="text-[11px] font-black text-slate-400 tracking-[0.1em] uppercase border-b border-slate-200 pb-1">
+                      {language === 'pt' ? 'DESEMPENHO GLOBAL' : 'GLOBAL PERFORMANCE'}
+                    </h3>
+                    
+                    {(() => {
+                      const validFinalGrades = reportData.grades
+                        ? reportData.grades.filter((g: any) => g.nota_final !== null && g.nota_final !== undefined) 
+                        : [];
+                      const averageGrade = validFinalGrades.length > 0
+                        ? validFinalGrades.reduce((sum: number, g: any) => sum + Number(g.nota_final), 0) / validFinalGrades.length
+                        : null;
+
+                      // Compute overall status
+                      let overallLabel = language === 'pt' ? 'EM FILTRAGEM / AVALIAÇÃO' : 'UNDER REVIEW';
+                      let overallClass = 'bg-slate-100 text-slate-700';
+
+                      if (averageGrade !== null) {
+                        const hasReprovedDiscipline = reportData.grades.some((g: any) => g.nota_final !== null && g.nota_final < settings.media_aprovacao);
+                        const totalAulas = reportData.attendance?.length || 0;
+                        let percentualPresenca = 100;
+                        if (totalAulas > 0) {
+                          const presencas = reportData.attendance.filter((a: any) => a.presente).length;
+                          percentualPresenca = (presencas / totalAulas) * 100;
+                        } else if (reportData.grades && reportData.grades.length > 0) {
+                          const validFreqs = reportData.grades.filter((g: any) => g.frequencia !== null && g.frequencia !== undefined);
+                          if (validFreqs.length > 0) {
+                            percentualPresenca = validFreqs.reduce((sum: number, g: any) => sum + g.frequencia, 0) / validFreqs.length;
+                          }
+                        }
+
+                        if (percentualPresenca < settings.frequencia_minima) {
+                          overallLabel = language === 'pt' ? 'REPROVADO POR FREQUÊNCIA' : 'FAILED BY ATTENDANCE';
+                          overallClass = 'bg-rose-100 text-rose-700';
+                        } else if (hasReprovedDiscipline) {
+                          overallLabel = language === 'pt' ? 'REPROVADO POR NOTA' : 'FAILED BY ACADEMICS';
+                          overallClass = 'bg-red-100 text-red-700';
+                        } else if (averageGrade >= settings.media_aprovacao) {
+                          overallLabel = reportT[language as 'pt' | 'en'].approved;
+                          overallClass = 'bg-emerald-100 text-emerald-700 font-extrabold';
+                        } else if (averageGrade >= settings.media_recuperacao) {
+                          overallLabel = reportT[language as 'pt' | 'en'].retake;
+                          overallClass = 'bg-yellow-100 text-yellow-700';
+                        } else {
+                          overallLabel = reportT[language as 'pt' | 'en'].reproved;
+                          overallClass = 'bg-rose-100 text-rose-700';
+                        }
+                      }
+
+                      return (
+                        <div className="flex flex-col gap-2">
+                          <div className="flex justify-between items-center text-xs p-1">
+                            <span className="font-extrabold text-slate-500 uppercase text-[9px] tracking-wide">{reportT[language as 'pt' | 'en'].overallAverage}:</span>
+                            <span className={cn(
+                              "font-black font-mono text-base px-2 py-0.5 rounded",
+                              averageGrade !== null && averageGrade >= settings.media_aprovacao ? "text-blue-600 bg-blue-50" : "text-rose-600 bg-rose-50"
+                            )}>
+                              {averageGrade !== null ? averageGrade.toFixed(2) : '-'}
+                            </span>
+                          </div>
+
+                          <div className="flex justify-between items-center text-xs p-1 border-t border-slate-100">
+                            <span className="font-extrabold text-slate-500 uppercase text-[9px] tracking-wide">{reportT[language as 'pt' | 'en'].overallStatus}:</span>
+                            <span className={cn(
+                              "text-[10px] font-black uppercase px-2.5 py-1 rounded",
+                              overallClass
+                            )}>
+                              {overallLabel}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  <div className="text-[10px] text-slate-400 bg-slate-50 print-bg-gray rounded-lg p-2.5 border border-slate-100 flex items-start gap-2 mt-4">
+                    <Award className="text-slate-400 shrink-0 mt-0.5" size={14} />
+                    <p className="leading-normal">
+                      {language === 'pt' 
+                        ? `Média de aprovação configurada em ${settings.media_aprovacao.toFixed(1)} e frequência mínima em ${settings.frequencia_minima}%.`
+                        : `Program passing grade configured at ${settings.media_aprovacao.toFixed(1)} and minimum attendance at ${settings.frequencia_minima}%.`}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Observations section */}
+              <div className="border border-slate-200 rounded-lg p-4 flex flex-col gap-2 text-left text-xs text-slate-600 italic">
+                <h3 className="text-[11px] font-black text-slate-400 tracking-[0.1em] uppercase border-b border-slate-200 pb-1">
+                  {reportT[language as 'pt' | 'en'].observations}
+                </h3>
+                <p className="leading-relaxed text-justify">
+                  {reportT[language as 'pt' | 'en'].defaultObs}
+                </p>
+              </div>
+
+              {/* Stamp & Verification Text */}
+              <div className="pt-6 border-t border-slate-100 flex items-center justify-between text-[9px] text-slate-400 font-medium uppercase tracking-wider">
+                <span>{reportT[language as 'pt' | 'en'].footerText}</span>
+                <span>
+                  {language === 'pt' ? 'Data de Emissão: ' : 'Date of Issue: '}
+                  {new Date().toLocaleDateString(language === 'pt' ? 'pt-BR' : 'en-US', {
+                    day: '2-digit',
+                    month: 'long',
+                    year: 'numeric'
+                  })}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

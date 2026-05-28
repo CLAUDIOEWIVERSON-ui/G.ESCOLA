@@ -28,6 +28,7 @@ import { ptBR } from 'date-fns/locale';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { toast } from 'sonner';
+import { useUser } from '@/lib/auth/UserContext';
 
 // Helper to fetch Brazil holidays (Simplified for this version)
 const BRAZIL_HOLIDAYS = [
@@ -46,12 +47,27 @@ const BRAZIL_HOLIDAYS = [
 
 export default function HorarioPage() {
   const { t, language } = useI18n();
+  const { profile } = useUser();
+  const isNifStudent = profile?.role === 'aluno' && profile?.isNifStudent;
+
   const [cursos, setCursos] = useState<any[]>([]);
   const [turmas, setTurmas] = useState<any[]>([]);
   const [disciplinas, setDisciplinas] = useState<any[]>([]);
   const [instrutores, setInstrutores] = useState<any[]>([]);
   const [selectedCursoId, setSelectedCursoId] = useState('');
   const [selectedTurmaId, setSelectedTurmaId] = useState('');
+
+  useEffect(() => {
+    if (isNifStudent && profile?.turma_id) {
+      setSelectedTurmaId(profile.turma_id);
+      if (turmas.length > 0) {
+        const studentTurma = turmas.find(tu => tu.id === profile.turma_id);
+        if (studentTurma?.curso_id) {
+          setSelectedCursoId(studentTurma.curso_id);
+        }
+      }
+    }
+  }, [isNifStudent, profile, turmas]);
   const [isEditMode, setIsEditMode] = useState(false);
   const [printOrientation, setPrintOrientation] = useState<'portrait' | 'landscape'>('landscape');
   const printRef = useRef<HTMLDivElement>(null);
@@ -605,19 +621,21 @@ export default function HorarioPage() {
         </div>
         
         <div className="flex items-center gap-3">
-          <button
-            onClick={handleToggleEdit}
-            disabled={isSaving || !selectedTurmaId}
-            className={cn(
-              "flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-black uppercase tracking-widest transition-all shadow-lg disabled:opacity-50",
-              isEditMode 
-                ? "bg-emerald-600 text-white shadow-emerald-200 hover:bg-emerald-700" 
-                : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 shadow-slate-100"
-            )}
-          >
-            {isSaving ? <Loader2 size={18} className="animate-spin" /> : (isEditMode ? <Check size={18} /> : <Edit3 size={18} />)}
-            {isEditMode ? (language === 'pt' ? 'Salvar' : 'Save') : (language === 'pt' ? 'Editar' : 'Edit')}
-          </button>
+          {!isNifStudent && (
+            <button
+              onClick={handleToggleEdit}
+              disabled={isSaving || !selectedTurmaId}
+              className={cn(
+                "flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-black uppercase tracking-widest transition-all shadow-lg disabled:opacity-50",
+                isEditMode 
+                  ? "bg-emerald-600 text-white shadow-emerald-200 hover:bg-emerald-700" 
+                  : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 shadow-slate-100"
+              )}
+            >
+              {isSaving ? <Loader2 size={18} className="animate-spin" /> : (isEditMode ? <Check size={18} /> : <Edit3 size={18} />)}
+              {isEditMode ? (language === 'pt' ? 'Salvar' : 'Save') : (language === 'pt' ? 'Editar' : 'Edit')}
+            </button>
+          )}
 
           {selectedTurmaId && !isEditMode && (
             <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-2xl border border-slate-200 shadow-inner">
@@ -661,36 +679,54 @@ export default function HorarioPage() {
 
       {/* Selectors */}
       <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 print:hidden">
-        <div className="space-y-2">
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 flex items-center gap-2">
-            <BookOpen size={12} /> {t.nav.courses}
-          </label>
-          <select
-            value={selectedCursoId}
-            onChange={(e) => { setSelectedCursoId(e.target.value); setSelectedTurmaId(''); }}
-            className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-4 focus:ring-blue-500/10 transition-all outline-none text-sm font-bold text-slate-800 appearance-none cursor-pointer"
-          >
-            <option value="">{t.courses.selectCourse}</option>
-            {cursos.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
-          </select>
-        </div>
+        {isNifStudent ? (
+          <div className="space-y-2 col-span-1 md:col-span-2 flex flex-col justify-center">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">
+              {language === 'pt' ? 'Sua Matrícula e Turma' : 'Your Registration & Class'}
+            </span>
+            <div className="flex flex-wrap gap-3 items-center mt-1">
+              <span className="px-4 py-2 bg-blue-50 text-blue-700 font-extrabold text-xs md:text-sm rounded-2xl border border-blue-100 uppercase tracking-wider">
+                Curso: {selectedCurso?.nome || '...'}
+              </span>
+              <span className="px-4 py-2 bg-emerald-50 text-emerald-700 font-extrabold text-xs md:text-sm rounded-2xl border border-emerald-100 uppercase tracking-wider">
+                Turma: {selectedTurma?.nome || '...'}
+              </span>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 flex items-center gap-2">
+                <BookOpen size={12} /> {t.nav.courses}
+              </label>
+              <select
+                value={selectedCursoId}
+                onChange={(e) => { setSelectedCursoId(e.target.value); setSelectedTurmaId(''); }}
+                className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-4 focus:ring-blue-500/10 transition-all outline-none text-sm font-bold text-slate-800 appearance-none cursor-pointer"
+              >
+                <option value="">{t.courses.selectCourse}</option>
+                {cursos.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+              </select>
+            </div>
 
-        <div className="space-y-2">
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 flex items-center gap-2">
-            <Calendar size={12} /> {t.nav.classes}
-          </label>
-          <select
-            value={selectedTurmaId}
-            onChange={(e) => setSelectedTurmaId(e.target.value)}
-            disabled={!selectedCursoId}
-            className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-4 focus:ring-blue-500/10 transition-all outline-none text-sm font-bold text-slate-800 appearance-none cursor-pointer disabled:opacity-50"
-          >
-            <option value="">{t.attendance.selectClass}</option>
-            {turmas.filter(tu => tu.curso_id === selectedCursoId || !selectedCursoId).map(tu => (
-              <option key={tu.id} value={tu.id}>{tu.nome}</option>
-            ))}
-          </select>
-        </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 flex items-center gap-2">
+                <Calendar size={12} /> {t.nav.classes}
+              </label>
+              <select
+                value={selectedTurmaId}
+                onChange={(e) => setSelectedTurmaId(e.target.value)}
+                disabled={!selectedCursoId}
+                className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-4 focus:ring-blue-500/10 transition-all outline-none text-sm font-bold text-slate-800 appearance-none cursor-pointer disabled:opacity-50"
+              >
+                <option value="">{t.attendance.selectClass}</option>
+                {turmas.filter(tu => tu.curso_id === selectedCursoId || !selectedCursoId).map(tu => (
+                  <option key={tu.id} value={tu.id}>{tu.nome}</option>
+                ))}
+              </select>
+            </div>
+          </>
+        )}
 
         <div className="space-y-2">
           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 flex items-center gap-2 flex-wrap">

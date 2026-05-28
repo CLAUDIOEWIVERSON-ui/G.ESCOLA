@@ -5,14 +5,17 @@ import { useRouter } from 'next/navigation';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { Logo } from '@/components/Logo';
-import { LogIn, Mail, Lock, AlertCircle } from 'lucide-react';
+import { LogIn, Mail, Lock, AlertCircle, FileText } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { cn } from '@/lib/utils';
 
 export default function LoginPage() {
   const router = useRouter();
   const { t } = useI18n();
+  const [loginType, setLoginType] = useState<'staff' | 'aluno'>('staff');
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
+  const [nif, setNif] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,6 +32,32 @@ export default function LoginPage() {
     setError(null);
 
     try {
+      if (loginType === 'aluno') {
+        // Student login via NIF
+        const response = await fetch('/api/auth/student-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nif, password })
+        });
+        
+        const data = await response.json();
+        if (!response.ok || data.error) {
+          throw new Error(data.error || 'Erro ao realizar login.');
+        }
+
+        // Authenticate client-side to Supabase with shadow account
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: data.email,
+          password: data.password
+        });
+        
+        if (signInError) throw signInError;
+
+        router.push('/boletim');
+        return;
+      }
+
+      // Staff login (Standard admin / instrutor login)
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -64,7 +93,7 @@ export default function LoginPage() {
       }
       router.push('/dashboard');
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || 'Ocorreu um erro ao fazer login.');
     } finally {
       setLoading(false);
     }
@@ -77,8 +106,42 @@ export default function LoginPage() {
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-sm bg-white rounded-xl shadow-xl shadow-slate-200/50 p-8 border border-slate-200"
       >
-        <div className="flex flex-col items-center mb-10">
+        <div className="flex flex-col items-center mb-6">
           <Logo className="mb-0" dark={true} />
+        </div>
+
+        {/* Access Role Tabs */}
+        <div className="flex bg-slate-100 p-1 rounded-xl mb-6">
+          <button
+            type="button"
+            onClick={() => {
+              setLoginType('staff');
+              setError(null);
+            }}
+            className={cn(
+              "flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer",
+              loginType === 'staff' 
+                ? "bg-white text-blue-600 shadow-sm" 
+                : "text-slate-500 hover:text-slate-800"
+            )}
+          >
+            Gestão / Instrutor
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setLoginType('aluno');
+              setError(null);
+            }}
+            className={cn(
+              "flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer",
+              loginType === 'aluno' 
+                ? "bg-white text-blue-600 shadow-sm" 
+                : "text-slate-500 hover:text-slate-800"
+            )}
+          >
+            Aluno (NIF)
+          </button>
         </div>
 
         <form id="auth-form" onSubmit={handleAuth} className="space-y-4">
@@ -96,24 +159,44 @@ export default function LoginPage() {
             )}
           </AnimatePresence>
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">{t.auth.email}</label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition-all"
-                placeholder={t.auth.emailPlaceholder}
-              />
+          {loginType === 'staff' ? (
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">{t.auth.email}</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition-all"
+                  placeholder={t.auth.emailPlaceholder}
+                />
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">NIF do Aluno</label>
+              <div className="relative">
+                <FileText className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                <input
+                  id="nif"
+                  type="text"
+                  value={nif}
+                  onChange={(e) => setNif(e.target.value)}
+                  required
+                  placeholder="Digite o NIF cadastrado"
+                  className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition-all"
+                />
+              </div>
+            </div>
+          )}
 
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">{t.auth.password}</label>
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">
+              {loginType === 'aluno' ? 'Senha do Aluno (padrão 123)' : t.auth.password}
+            </label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
               <input
@@ -132,7 +215,7 @@ export default function LoginPage() {
             id="auth-submit"
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 bg-blue-600 text-white rounded-lg font-bold text-sm flex items-center justify-center gap-2 hover:bg-blue-700 transition-all active:scale-[0.98] disabled:opacity-70 shadow-sm shadow-blue-200"
+            className="w-full py-2.5 bg-blue-600 text-white rounded-lg font-bold text-sm flex items-center justify-center gap-2 hover:bg-blue-700 transition-all active:scale-[0.98] disabled:opacity-70 shadow-sm shadow-blue-200 cursor-pointer mt-2"
           >
             {loading ? (
               <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>

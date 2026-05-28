@@ -11,6 +11,9 @@ interface UserProfile {
   role: Role;
   full_name: string | null;
   has_changed_password?: boolean;
+  isNifStudent?: boolean;
+  student_id?: string;
+  turma_id?: string;
 }
 
 interface UserContextType {
@@ -94,6 +97,12 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       // Hardcode perm admin check
       if (session.user.email === SUPER_ADMIN_EMAIL) {
         finalProfile.role = 'admin';
+      }
+
+      if (session.user.user_metadata?.isNifStudent) {
+        finalProfile.isNifStudent = true;
+        finalProfile.student_id = session.user.user_metadata?.student_id;
+        finalProfile.turma_id = session.user.user_metadata?.turma_id;
       }
 
       setProfile(finalProfile);

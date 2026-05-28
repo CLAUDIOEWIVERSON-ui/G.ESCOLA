@@ -102,11 +102,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  const isNifStudent = profile?.role === 'aluno' && (profile as any).isNifStudent;
+
   useEffect(() => {
-    if (!authLoading && !profile) {
-      router.push('/login');
+    if (!authLoading) {
+      if (!profile) {
+        router.push('/login');
+      } else if (isNifStudent && !['/boletim', '/horario'].includes(pathname)) {
+        // Force students logged in via NIF to only access allowed sections
+        router.push('/boletim');
+      }
     }
-  }, [authLoading, profile, router]);
+  }, [authLoading, profile, isNifStudent, pathname, router]);
 
   const handleLogout = async () => {
     try {
@@ -130,7 +137,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     );
   }
 
-  const navItems = [
+  const navItems = isNifStudent ? [
+    { name: t.nav.reportCard, icon: FileText, path: '/boletim' },
+    { name: t.schedule.title, icon: Calendar, path: '/horario' },
+  ] : [
     { name: t.nav.dashboard, icon: LayoutDashboard, path: '/dashboard' },
     { name: t.nav.courses, icon: BookOpen, path: '/cursos' },
     { name: t.nav.classes, icon: Library, path: '/turmas' },
@@ -143,6 +153,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: t.nav.links, icon: Link2, path: '/links' },
     { name: t.nav.settings, icon: Settings, path: '/configuracoes' },
   ];
+
+  const firstGroup = isNifStudent ? [] : navItems.slice(0, 4);
+  const secondGroup = isNifStudent ? navItems : navItems.slice(4);
 
   const userInitials = profile?.full_name ? profile.full_name.slice(0, 2).toUpperCase() : 'US';
 
@@ -181,7 +194,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   {t.auth.management}
                 </div>
                 <div className="space-y-1.5">
-                  {navItems.slice(0, 4).map((item: any) => {
+                  {firstGroup.map((item: any) => {
                     const subItemPaths = item.subItems?.map((s: any) => s.path) || [];
                     const isAnySubActive = subItemPaths.some((p: string) => (pathname + (typeof window !== 'undefined' ? window.location.search : '')) === p);
                     const isParentActive = pathname === item.path || isAnySubActive;
@@ -291,7 +304,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   {t.auth.academic}
                 </div>
                 <div className="space-y-1.5">
-                  {navItems.slice(4).map((item) => {
+                  {secondGroup.map((item) => {
                     const isActive = pathname === item.path;
                     const isCalendar = item.path === '/calendario';
                     const isSettings = item.path === '/configuracoes';
@@ -424,7 +437,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Bottom Nav for Mobile */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-2 py-2 flex items-center justify-around z-50 h-16 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] print:hidden">
-        {navItems.filter(item => ['/dashboard', '/cursos', '/turmas', '/horario', '/calendario', '/configuracoes'].includes(item.path)).map((item) => {
+        {navItems.filter(item => {
+          if (isNifStudent) {
+            return ['/boletim', '/horario'].includes(item.path);
+          }
+          return ['/dashboard', '/cursos', '/turmas', '/horario', '/calendario', '/configuracoes'].includes(item.path);
+        }).map((item) => {
           const isActive = pathname === item.path;
           const isSettings = item.path === '/configuracoes';
           const needsPasswordChange = isSettings && profile && !profile.has_changed_password;
