@@ -103,67 +103,117 @@ export async function POST(req: NextRequest) {
 
     let authUserId = '';
 
-    // Attempt to create Auth user
+    // Proactively check if the user already exists in auth.users before attempting creation
     try {
-      const { data: authData, error: createError } = await supabaseAdmin.auth.admin.createUser({
-        email,
-        password: shadowPassword,
-        email_confirm: true,
-        user_metadata: {
-          role: 'aluno',
-          full_name: student.nome,
-          isNifStudent: true,
-          student_id: student.id,
-          turma_id: student.turma_id
+      let page = 1;
+      let foundUser = null;
+      while (true) {
+        const { data: uList, error: listError } = await supabaseAdmin.auth.admin.listUsers({
+          page: page,
+          perPage: 1000
+        });
+        if (listError || !uList?.users || uList.users.length === 0) {
+          break;
         }
-      });
-
-      if (createError) {
-        throw createError;
-      }
-      if (authData?.user) {
-        authUserId = authData.user.id;
-      }
-    } catch (err: any) {
-      const errMessage = (err && err.message ? err.message : '').toLowerCase();
-      const isAlreadyRegistered = errMessage.includes('already exists') || errMessage.includes('already registered');
-
-      if (isAlreadyRegistered) {
-        try {
-          // Search for existing user in auth.users with pagination
-          let page = 1;
-          let foundUser = null;
-          while (true) {
-            const { data: uList, error: listError } = await supabaseAdmin.auth.admin.listUsers({
-              page: page,
-              perPage: 1000
-            });
-            if (listError || !uList?.users || uList.users.length === 0) {
-              break;
-            }
-            const found = uList.users.find(u => u.email === email);
-            if (found) {
-              foundUser = found;
-              break;
-            }
-            if (uList.users.length < 1000) {
-              break;
-            }
-            page++;
-          }
-          if (foundUser) {
-            authUserId = foundUser.id;
-          } else {
-            console.error('User already registered error returned, but user not found in listUsers.');
-            return NextResponse.json({ error: 'Erro de provisionamento: Aluno já cadastrado, mas não localizado.' }, { status: 500 });
-          }
-        } catch (listErr: any) {
-          console.error('Error listing users to find existing auth user:', listErr);
-          return NextResponse.json({ error: 'Erro ao localizar conta de estudante existente.' }, { status: 500 });
+        const found = uList.users.find(u => u.email?.toLowerCase() === email.toLowerCase());
+        if (found) {
+          foundUser = found;
+          break;
         }
-      } else {
-        console.error('Error in student auth provision:', err);
-        return NextResponse.json({ error: 'Erro ao provisionar conta de acesso do aluno.' }, { status: 500 });
+        if (uList.users.length < 1000) {
+          break;
+        }
+        page++;
+      }
+      if (foundUser) {
+        authUserId = foundUser.id;
+        console.log(`[student-login] Proactive check found existing auth user: ${authUserId}`);
+      }
+    } catch (listErr: any) {
+      console.warn('[student-login] Error during proactive user list check (non-blocking):', listErr);
+    }
+
+    // Only attempt to create the user if they were not found proactively
+    if (!authUserId) {
+      try {
+        const { data: authData, error: createError } = await supabaseAdmin.auth.admin.createUser({
+          email,
+          password: shadowPassword,
+          email_confirm: true,
+          user_metadata: {
+            role: 'aluno',
+            full_name: student.nome,
+            isNifStudent: true,
+            student_id: student.id,
+            turma_id: student.turma_id
+          }
+        });
+
+        if (createError) {
+          throw createError;
+        }
+        if (authData?.user) {
+          authUserId = authData.user.id;
+        }
+      } catch (err: any) {
+        console.log('[student-login] Caught error during createUser:', err);
+        const errStr = (
+          err?.message || 
+          err?.error_description || 
+          err?.error || 
+          (typeof err === 'string' ? err : '') || 
+          String(err || '')
+        ).toLowerCase();
+
+        const isAlreadyRegistered = 
+          errStr.includes('already registered') || 
+          errStr.includes('already exists') || 
+          errStr.includes('user_already_exists') || 
+          errStr.includes('registered') || 
+          errStr.includes('exists') || 
+          err?.status === 422 || 
+          err?.statusCode === 422;
+
+        if (isAlreadyRegistered) {
+          console.log(`[student-login] User with email ${email} is reported as already registered. Fetching user list...`);
+          try {
+            // Search again for existing user in auth.users with pagination
+            let page = 1;
+            let foundUser = null;
+            while (true) {
+              const { data: uList, error: listError } = await supabaseAdmin.auth.admin.listUsers({
+                page: page,
+                perPage: 1000
+              });
+              if (listError || !uList?.users || uList.users.length === 0) {
+                break;
+              }
+              const found = uList.users.find(u => u.email?.toLowerCase() === email.toLowerCase());
+              if (found) {
+                foundUser = found;
+                break;
+              }
+              if (uList.users.length < 1000) {
+                break;
+              }
+              page++;
+            }
+            if (foundUser) {
+              authUserId = foundUser.id;
+            } else {
+              console.error(`[student-login] User reported already registered, but not found in listUsers format for ${email}`);
+              return NextResponse.json({ 
+                error: `Erro de login: A conta para o e-mail ${email} já existe, mas não pôde ser sincronizada.` 
+              }, { status: 500 });
+            }
+          } catch (listErr: any) {
+            console.error('[student-login] Error listing users fallback:', listErr);
+            return NextResponse.json({ error: 'Erro ao localizar conta de estudante cadastrada.' }, { status: 500 });
+          }
+        } else {
+          console.error('[student-login] Fatal error during student auth provision:', err);
+          return NextResponse.json({ error: 'Erro ao provisionar conta de acesso do aluno.' }, { status: 500 });
+        }
       }
     }
 
