@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/LanguageContext';
+import { useUser } from '@/lib/auth/UserContext';
 import { Logo } from '@/components/Logo';
 import { LogIn, Mail, Lock, AlertCircle, FileText } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -12,6 +13,7 @@ import { cn } from '@/lib/utils';
 export default function LoginPage() {
   const router = useRouter();
   const { t } = useI18n();
+  const { refreshProfile } = useUser();
   const [loginType, setLoginType] = useState<'staff' | 'aluno'>('staff');
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
@@ -53,6 +55,9 @@ export default function LoginPage() {
         
         if (signInError) throw signInError;
 
+        // Force reload context profile information in a blocking await
+        await refreshProfile();
+
         router.push('/boletim');
         return;
       }
@@ -61,6 +66,9 @@ export default function LoginPage() {
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+
+        // Force reload context profile information in a blocking await
+        await refreshProfile();
       } else {
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ 
           email, 
