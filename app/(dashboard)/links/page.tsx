@@ -81,13 +81,6 @@ const DEFAULT_LINKS: LinkItem[] = [
     url: "https://www.periodicos.capes.gov.br",
     description: "Bases externas e externas de inteligência, pesquisas, teses e publicações científicas renomadas.",
     category: "external",
-  },
-  {
-    id: "c3194511-bba0-42f8-9a3c-b171f1110014",
-    name: "Rádio Marinha",
-    url: "https://www.marinha.mil.br/radio-marinha",
-    description: "Rádio e notícias oficiais da Marinha do Brasil, integrando informações e cultura.",
-    category: "external",
   }
 ];
 
@@ -126,22 +119,9 @@ export default function LinksUteisPage() {
       setIsTableMissing(false);
 
       if (data) {
-        const fetched = data as LinkItem[];
-        const hasRadio = fetched.some(l => l.url === 'https://www.marinha.mil.br/radio-marinha' || l.id === 'c3194511-bba0-42f8-9a3c-b171f1110014');
-        let finalData = fetched;
-        if (!hasRadio) {
-          const radioMarinha: LinkItem = {
-            id: "c3194511-bba0-42f8-9a3c-b171f1110014",
-            name: "Rádio Marinha",
-            url: "https://www.marinha.mil.br/radio-marinha",
-            description: "Rádio e notícias oficiais da Marinha do Brasil, integrando informações e cultura.",
-            category: "external"
-          };
-          finalData = [...fetched, radioMarinha];
-        }
-        setLinks(finalData);
+        setLinks(data as LinkItem[]);
         // Sync local cache
-        localStorage.setItem('school_useful_links', JSON.stringify(finalData));
+        localStorage.setItem('school_useful_links', JSON.stringify(data));
       }
     } catch (err: any) {
       console.warn('Error fetching from Supabase, falling back to localStorage...', err);
@@ -153,22 +133,7 @@ export default function LinksUteisPage() {
       const storedLinks = localStorage.getItem('school_useful_links');
       if (storedLinks !== null) {
         try {
-          const parsed = JSON.parse(storedLinks) as LinkItem[];
-          const hasRadio = parsed.some(l => l.url === 'https://www.marinha.mil.br/radio-marinha' || l.id === 'c3194511-bba0-42f8-9a3c-b171f1110014');
-          if (!hasRadio) {
-            const radioMarinha: LinkItem = {
-              id: "c3194511-bba0-42f8-9a3c-b171f1110014",
-              name: "Rádio Marinha",
-              url: "https://www.marinha.mil.br/radio-marinha",
-              description: "Rádio e notícias oficiais da Marinha do Brasil, integrando informações e cultura.",
-              category: "external"
-            };
-            const merged = [...parsed, radioMarinha];
-            setLinks(merged);
-            localStorage.setItem('school_useful_links', JSON.stringify(merged));
-          } else {
-            setLinks(parsed);
-          }
+          setLinks(JSON.parse(storedLinks));
         } catch (e) {
           setLinks(DEFAULT_LINKS);
         }

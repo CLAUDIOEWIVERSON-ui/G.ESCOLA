@@ -179,14 +179,6 @@ VALUES
   'https://safety4sea.com/',
   'Segurança marítima, pirataria e regulamentação naval.',
   'external'
-),
-
-(
-  'c3194511-bba0-42f8-9a3c-b171f1110014',
-  'RÁDIO MARINHA',
-  'https://www.marinha.mil.br/radio-marinha',
-  'Rádio e notícias oficiais da Marinha do Brasil, integrando informações e cultura.',
-  'external'
 )
 
 ON CONFLICT (id) DO NOTHING;
