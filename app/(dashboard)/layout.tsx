@@ -108,7 +108,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (!authLoading) {
       if (!profile) {
         router.push('/login');
-      } else if (isNifStudent && !['/boletim', '/horario'].includes(pathname)) {
+      } else if (isNifStudent && !['/boletim', '/horario', '/avaliacao'].includes(pathname)) {
         // Force students logged in via NIF to only access allowed sections
         router.push('/boletim');
       }
@@ -140,6 +140,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const navItems = isNifStudent ? [
     { name: t.nav.reportCard, icon: FileText, path: '/boletim' },
     { name: t.schedule.title, icon: Calendar, path: '/horario' },
+    { name: "Avaliação Pós-Curso", icon: FileCheck, path: '/avaliacao' },
   ] : [
     { name: t.nav.dashboard, icon: LayoutDashboard, path: '/dashboard' },
     { name: t.nav.courses, icon: BookOpen, path: '/cursos' },
@@ -150,6 +151,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: t.nav.attendance, icon: CalendarDays, path: '/frequencia' },
     { name: t.calendar.title, icon: CalendarDays, path: '/calendario' },
     ...(isAdmin ? [{ name: t.users.title, icon: Users, path: '/usuarios' }] : []),
+    ...(isAdmin ? [{ name: "Análise de Avaliações", icon: FileCheck, path: '/relatorio-avaliacao' }] : []),
     { name: t.nav.links, icon: Link2, path: '/links' },
     { name: t.nav.settings, icon: Settings, path: '/configuracoes' },
   ];
