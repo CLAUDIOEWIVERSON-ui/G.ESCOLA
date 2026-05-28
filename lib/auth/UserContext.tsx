@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { supabase, clearSupabaseCookiesAndStorage } from '@/lib/supabase/client';
 import { fetchWithAuth } from '@/lib/api';
 
@@ -30,10 +30,13 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 export function UserProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const isFetchingRef = useRef(false);
 
   const SUPER_ADMIN_EMAIL = 'claudiomarinha2012@gmail.com';
 
   const fetchProfile = async () => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
     try {
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
@@ -121,6 +124,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         }
       }
     } finally {
+      isFetchingRef.current = false;
       setLoading(false);
     }
   };

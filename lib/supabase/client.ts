@@ -97,30 +97,6 @@ export const clearSupabaseCookiesAndStorage = () => {
   }
 };
 
-// Clear local session if it contains an invalid refresh token to prevent console errors and loops
-if (typeof window !== 'undefined') {
-  supabase.auth.getSession().then(({ error }) => {
-    if (error) {
-      const msg = error.message.toLowerCase();
-      if (
-        msg.includes('refresh token') ||
-        msg.includes('refresh_token') ||
-        msg.includes('invalid_grant') ||
-        msg.includes('grant_invalid') ||
-        msg.includes('not found')
-      ) {
-        console.warn('Invalid refresh token detected on init, clearing local session...');
-        clearSupabaseCookiesAndStorage();
-        supabase.auth.signOut({ scope: 'local' }).then(() => {
-          if (window.location.pathname !== '/login') {
-            window.location.href = '/login';
-          }
-        }).catch(() => {});
-      }
-    }
-  }).catch(() => {});
-}
-
 export const isSupabaseConfigured = () => {
   return !!rawUrl && 
          !!rawKey && 
