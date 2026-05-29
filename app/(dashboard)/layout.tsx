@@ -108,9 +108,32 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (!authLoading) {
       if (!profile) {
         router.push('/login');
-      } else if (isNifStudent && !['/boletim', '/horario', '/avaliacao'].includes(pathname)) {
-        // Force students logged in via NIF to only access allowed sections
-        router.push('/boletim');
+      } else {
+        if (profile.role === 'aluno' && profile.turma_id) {
+          const checkClassStatus = async () => {
+            try {
+              const { data: turma } = await supabase
+                .from('turmas')
+                .select('id, status')
+                .eq('id', profile.turma_id)
+                .maybeSingle();
+
+              if (turma && (turma.status === 'concluída' || turma.status === 'cancelada')) {
+                // Auto sign-out active session instantly
+                await supabase.auth.signOut();
+                router.push('/login?blocked=true');
+              }
+            } catch (err) {
+              console.error('Error dynamic verifying student class status:', err);
+            }
+          };
+          checkClassStatus();
+        }
+
+        if (isNifStudent && !['/boletim', '/horario', '/avaliacao'].includes(pathname)) {
+          // Force students logged in via NIF to only access allowed sections
+          router.push('/boletim');
+        }
       }
     }
   }, [authLoading, profile, isNifStudent, pathname, router]);

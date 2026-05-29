@@ -4,83 +4,73 @@ import crypto from 'crypto';
 
 export async function POST(req: NextRequest) {
   try {
-    const { nif, password } = await req.json();
+    const { accessCode, password } = await req.json();
 
-    if (!nif) {
-      return NextResponse.json({ error: 'NIF é obrigatório.' }, { status: 400 });
+    if (!accessCode) {
+      return NextResponse.json({ error: 'Código de Acesso é obrigatório.' }, { status: 400 });
     }
 
-    if (password !== '123') {
-      return NextResponse.json({ error: 'Senha incorreta. A senha padrão para alunos é 123.' }, { status: 401 });
+    if (!password) {
+      return NextResponse.json({ error: 'Senha é obrigatória.' }, { status: 400 });
     }
 
     if (!isSupabaseAdminConfigured()) {
       return NextResponse.json({ error: 'Serviço de autenticação administrativa não configurado.' }, { status: 500 });
     }
 
-    // Clean nif: let's query both raw input and clean digits to be highly user-friendly
-    const cleanedNifInput = nif.trim();
-    const digitsOnlyNif = cleanedNifInput.replace(/\D/g, '');
+    const cleanedAccessCode = accessCode.trim().toUpperCase();
 
-    // Search for student in database
-    let student = null;
-    let studentError = null;
+    // Query access code record in database
+    const { data: accessRecord, error: accessErr } = await supabaseAdmin
+      .from('student_access_codes')
+      .select('*')
+      .eq('access_code', cleanedAccessCode)
+      .maybeSingle();
 
-    try {
-      const { data, error } = await supabaseAdmin
-        .from('alunos')
-        .select('id, nome, nif, turma_id, genero, matricula, posto_graduacao, om')
-        .eq('nif', cleanedNifInput)
-        .maybeSingle();
-      
-      student = data;
-      studentError = error;
-    } catch (err: any) {
-      studentError = err;
-    }
-
-    // If not found and input contains formatting, try search with digits only
-    if (!student && digitsOnlyNif && digitsOnlyNif !== cleanedNifInput) {
-      try {
-        const { data: studentByDigits } = await supabaseAdmin
-          .from('alunos')
-          .select('id, nome, nif, turma_id, genero, matricula, posto_graduacao, om')
-          .eq('nif', digitsOnlyNif)
-          .maybeSingle();
-        if (studentByDigits) {
-          student = studentByDigits;
-        }
-      } catch (err: any) {
-        // ignore fallback errors
-      }
-    }
-
-    if (studentError) {
-      console.error('Erro ao buscar aluno por NIF:', studentError);
-      const errorMsg = (studentError.message || '').toLowerCase();
+    if (accessErr) {
+      console.error('Erro ao verificar Código de Acesso:', accessErr);
+      const errorMsg = (accessErr.message || '').toLowerCase();
       if (errorMsg.includes('relation') && (errorMsg.includes('does not exist') || errorMsg.includes('missing'))) {
         return NextResponse.json({ 
-          error: 'As tabelas do banco de dados (alunos, turmas, etc) não foram encontradas no Supabase. Por favor, execute o script de migração (ex: migrations/24_garantir_tabelas_aluno_nif_turma.sql) no painel SQL do seu console Supabase.' 
+          error: 'As tabelas do banco de dados (student_access_codes, etc) não foram encontradas no Supabase. Por favor, execute o script de migração (ex: migrations/28_student_access_codes.sql) no painel SQL do seu console Supabase.' 
         }, { status: 500 });
       }
-      return NextResponse.json({ error: 'Erro de banco de dados ao buscar aluno.' }, { status: 500 });
+      return NextResponse.json({ error: 'Erro de banco de dados ao verificar login.' }, { status: 500 });
     }
 
-    if (!student) {
-      return NextResponse.json({ error: 'Aluno não encontrado com o NIF fornecido.' }, { status: 404 });
+    if (!accessRecord) {
+      return NextResponse.json({ error: 'Código de acesso incorreto ou não cadastrado.' }, { status: 404 });
+    }
+
+    // Hash input password and compare with stored hash
+    const inputHash = crypto.createHash('sha256').update(password.trim()).digest('hex');
+    if (inputHash !== accessRecord.password_hash) {
+      return NextResponse.json({ error: 'Senha incorreta. A senha padrão para novos alunos é 123.' }, { status: 401 });
+    }
+
+    // Search for student in database
+    const { data: student, error: studentError } = await supabaseAdmin
+      .from('alunos')
+      .select('id, nome, turma_id, genero, matricula, posto_graduacao, om')
+      .eq('id', accessRecord.student_id)
+      .maybeSingle();
+
+    if (studentError || !student) {
+      console.error('Erro ao carregar o estudante correspondente:', studentError);
+      return NextResponse.json({ error: 'Estudante correspondente não pôde ser carregado ou não existe.' }, { status: 404 });
     }
 
     // Validação estrita: somente alunos vinculados à turma (turma_id cadastrado) podem acessar o sistema
     if (!student.turma_id) {
       return NextResponse.json({ 
-        error: 'Acesso negado: Este aluno de NIF ' + cleanedNifInput + ' não está cadastrado/matriculado em nenhuma turma no sistema.' 
+        error: 'Acesso negado: Este aluno não está matriculado em nenhuma turma cadastrada.' 
       }, { status: 403 });
     }
 
-    // Verifica se a turma correspondente realmente existe
+    // Verifica se a turma correspondente realmente existe e se está "ATIVA"
     const { data: turma, error: turmaError } = await supabaseAdmin
       .from('turmas')
-      .select('id, nome, ativa')
+      .select('id, nome, status')
       .eq('id', student.turma_id)
       .maybeSingle();
 
@@ -91,7 +81,20 @@ export async function POST(req: NextRequest) {
 
     if (!turma) {
       return NextResponse.json({ 
-        error: 'Acesso negado: A turma vinculada a esta matrícula/NIF não existe ou foi removida do sistema.' 
+        error: 'Acesso negado: A turma vinculada a este aluno não existe ou foi removida do sistema.' 
+      }, { status: 403 });
+    }
+
+    // BLOQUEIO EXCLUSIVO PELO STATUS DA TURMA
+    if (turma.status === 'concluída') {
+      return NextResponse.json({ 
+        error: 'Seu acesso foi encerrado porque sua turma foi concluída. Em caso de dúvidas, procure a administração.' 
+      }, { status: 403 });
+    }
+
+    if (turma.status === 'cancelada') {
+      return NextResponse.json({ 
+        error: 'Seu acesso foi encerrado porque sua turma foi cancelada. Em caso de dúvidas, procure a administração.' 
       }, { status: 403 });
     }
 
@@ -177,7 +180,6 @@ export async function POST(req: NextRequest) {
         if (isAlreadyRegistered) {
           console.log(`[student-login] User with email ${email} is reported as already registered. Fetching user list...`);
           try {
-            // Search again for existing user in auth.users with pagination
             let page = 1;
             let foundUser = null;
             while (true) {
@@ -204,7 +206,7 @@ export async function POST(req: NextRequest) {
               console.error(`[student-login] User reported already registered, but not found in listUsers format for ${email}`);
               return NextResponse.json({ 
                 error: `Erro de login: A conta para o e-mail ${email} já existe, mas não pôde ser sincronizada.` 
-              }, { status: 500 });
+			  }, { status: 500 });
             }
           } catch (listErr: any) {
             console.error('[student-login] Error listing users fallback:', listErr);
@@ -235,6 +237,15 @@ export async function POST(req: NextRequest) {
         console.error('Error upserting student profile:', profileError);
       }
     }
+
+    // Log successful login access info
+    await supabaseAdmin
+      .from('student_access_codes')
+      .update({
+        last_login: new Date().toISOString(),
+        login_count: (accessRecord.login_count || 0) + 1
+      })
+      .eq('id', accessRecord.id);
 
     return NextResponse.json({
       success: true,

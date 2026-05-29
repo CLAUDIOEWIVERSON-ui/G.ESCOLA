@@ -320,7 +320,22 @@ export default function BoletimPage() {
         }
       });
 
-      setBoletimData(mergedData);
+      // Sort mergedData by grade descending. Students without a grade (null/undefined) go to the end.
+      const sortedMergedData = [...mergedData].sort((a, b) => {
+        const gradeA = a.nota_final !== null && a.nota_final !== undefined ? Number(a.nota_final) : -1;
+        const gradeB = b.nota_final !== null && b.nota_final !== undefined ? Number(b.nota_final) : -1;
+        
+        if (gradeB !== gradeA) {
+          return gradeB - gradeA;
+        }
+        
+        // If grades are identical, sort alphabetically by student name
+        const nameA = a.aluno?.nome || '';
+        const nameB = b.aluno?.nome || '';
+        return nameA.localeCompare(nameB, 'pt-BR');
+      });
+
+      setBoletimData(sortedMergedData);
       
       const totalGrades = mergedData.reduce((acc, curr) => acc + (Number(curr.nota_final) || 0), 0);
       const avg = mergedData.length > 0 ? totalGrades / mergedData.length : 0;
