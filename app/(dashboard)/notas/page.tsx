@@ -231,7 +231,7 @@ export default function NotasPage() {
         delete cleaned.id;
         
         // Ensure values are numbers and validate constraints
-        for (let i = 1; i <= 5; i++) {
+        for (let i = 1; i <= 10; i++) {
           const val = cleaned[`nota${i}`];
           if (val !== null && val !== undefined && val !== '') {
             const parsedVal = typeof val === 'string' ? parseFloat(val) : val;
@@ -299,7 +299,7 @@ export default function NotasPage() {
         delete cleaned.id;
         
         // Ensure values are numbers and validate constraints
-        for (let i = 1; i <= 5; i++) {
+        for (let i = 1; i <= 10; i++) {
           const val = cleaned[`nota${i}`];
           if (val !== null && val !== undefined && val !== '') {
             const parsedVal = typeof val === 'string' ? parseFloat(val) : val;

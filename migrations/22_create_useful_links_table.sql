@@ -142,46 +142,6 @@ VALUES
 ),
 
 (
-  'c3194511-bba0-42f8-9a3c-b171f1110009',
-  'INTERNATIONAL MARITIME BUREAU (IMB)',
-  'https://www.icc-ccs.org/piracy-reporting-centre',
-  'Relatórios globais de pirataria marítima e crimes no mar.',
-  'external'
-),
-
-(
-  'c3194511-bba0-42f8-9a3c-b171f1110010',
-  'MARITIME EXECUTIVE',
-  'https://www.maritime-executive.com/',
-  'Notícias globais sobre shipping e segurança marítima.',
-  'external'
-),
-
-(
-  'c3194511-bba0-42f8-9a3c-b171f1110011',
-  'SEATRADE MARITIME NEWS',
-  'https://www.seatrade-maritime.com/',
-  'Notícias do setor marítimo global.',
-  'external'
-),
-
-(
-  'c3194511-bba0-42f8-9a3c-b171f1110012',
-  'TRADEWINDS NEWS',
-  'https://www.tradewindsnews.com/',
-  'Notícias especializadas em shipping e frota global.',
-  'external'
-),
-
-(
-  'c3194511-bba0-42f8-9a3c-b171f1110013',
-  'SAFETY4SEA',
-  'https://safety4sea.com/',
-  'Segurança marítima, pirataria e regulamentação naval.',
-  'external'
-),
-
-(
   'c3194511-bba0-42f8-9a3c-b171f1110014',
   'RÁDIO MARINHA',
   'https://www.marinha.mil.br/radio-marinha',

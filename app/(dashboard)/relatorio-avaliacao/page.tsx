@@ -264,6 +264,19 @@ function RelatorioAvaliacaoAdminContent() {
     return result;
   }, [selectedCurso, selectedTurma, selectedInstructor, selectedPeriod, selectedStudent, submissions, qStr]);
 
+  // Filter specific students based on selected turma
+  const studentsFilteredByTurma = useMemo(() => {
+    const studentMap = new Map<string, any>();
+    submissions.forEach(sub => {
+      if (sub.aluno) {
+        if (selectedTurma === 'ALL' || sub.turma_id === selectedTurma) {
+          studentMap.set(sub.aluno_id, sub.aluno);
+        }
+      }
+    });
+    return Array.from(studentMap.values()).sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
+  }, [submissions, selectedTurma]);
+
   const hasActiveFilter = selectedTurma !== 'ALL' || 
                          selectedInstructor !== 'ALL' || 
                          selectedStudent !== 'ALL' || 
@@ -430,19 +443,6 @@ function RelatorioAvaliacaoAdminContent() {
       </div>
     );
   }
-
-  // Filter specific students based on selected turma
-  const studentsFilteredByTurma = useMemo(() => {
-    const studentMap = new Map<string, any>();
-    submissions.forEach(sub => {
-      if (sub.aluno) {
-        if (selectedTurma === 'ALL' || sub.turma_id === selectedTurma) {
-          studentMap.set(sub.aluno_id, sub.aluno);
-        }
-      }
-    });
-    return Array.from(studentMap.values()).sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
-  }, [submissions, selectedTurma]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">

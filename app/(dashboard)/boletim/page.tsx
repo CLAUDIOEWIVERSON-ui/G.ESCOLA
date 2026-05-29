@@ -477,15 +477,15 @@ export default function BoletimPage() {
               {/* Personal Info Grid */}
               <div className="border border-slate-200 rounded-lg p-5 bg-slate-50/50 print-bg-gray text-left">
                 <h3 className="text-[11px] font-black text-slate-400 tracking-[0.15em] uppercase mb-4 pb-1 border-b border-slate-200">
-                  {reportT[language as 'pt' | 'en'].studentInfo}
+                  {reportT[language as "pt" | "en"].studentInfo}
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-y-3 gap-x-6 text-sm">
                   <div className="flex flex-col gap-0.5 col-span-2 md:col-span-1">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as 'pt' | 'en'].fullName}</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as "pt" | "en"].fullName}</span>
                     <span className="font-extrabold text-slate-900 uppercase text-xs lg:text-sm">{reportData.student.nome}</span>
                   </div>
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as 'pt' | 'en'].rank}</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as "pt" | "en"].rank}</span>
                     <span className="font-bold text-slate-800 uppercase">{reportData.student.posto_graduacao || (language === 'pt' ? 'Não declarado' : 'Not declared')}</span>
                   </div>
                   <div className="flex flex-col gap-0.5">
@@ -493,15 +493,15 @@ export default function BoletimPage() {
                     <span className="font-bold font-mono text-slate-800">#{reportData.student.matricula}</span>
                   </div>
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as 'pt' | 'en'].course}</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as "pt" | "en"].course}</span>
                     <span className="font-bold text-slate-800">{reportData.courseObj?.nome || (language === 'pt' ? 'Não disponível' : 'Not available')}</span>
                   </div>
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as 'pt' | 'en'].class}</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as "pt" | "en"].class}</span>
                     <span className="font-bold text-slate-800">{reportData.classObj?.nome || (language === 'pt' ? 'Não disponível' : 'Not available')}</span>
                   </div>
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as 'pt' | 'en'].period}</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as "pt" | "en"].period}</span>
                     <span className="font-bold text-slate-800 capitalize">
                       {reportData.classObj?.periodo === 'manhã' ? t.common.morning :
                        reportData.classObj?.periodo === 'tarde' ? t.common.afternoon :
@@ -509,12 +509,12 @@ export default function BoletimPage() {
                     </span>
                   </div>
                   <div className="flex flex-col gap-0.5 col-span-2">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as 'pt' | 'en'].status}</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as "pt" | "en"].status}</span>
                     <span className="font-bold flex items-center gap-1.5 text-slate-800">
                       <span className={cn("w-2 h-2 rounded-full", reportData.classObj?.status === 'concluida' || reportData.classObj?.status === 'finalizada' ? 'bg-emerald-500' : 'bg-blue-500')} />
                       {reportData.classObj?.status === 'concluida' || reportData.classObj?.status === 'finalizada' 
-                        ? reportT[language as 'pt' | 'en'].completed 
-                        : reportT[language as 'pt' | 'en'].inProgress}
+                        ? reportT[language as "pt" | "en"].completed 
+                        : reportT[language as "pt" | "en"].inProgress}
                     </span>
                   </div>
                 </div>
@@ -523,25 +523,24 @@ export default function BoletimPage() {
               {/* Academic Performance Map */}
               <div className="space-y-3 font-sans">
                 <h3 className="text-[11px] font-black text-slate-400 tracking-[0.15em] uppercase pb-1 border-b border-slate-200 text-left">
-                  {reportT[language as 'pt' | 'en'].academicMap}
+                  {reportT[language as "pt" | "en"].academicMap}
                 </h3>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left report-table border border-slate-200 bg-white">
                     <thead>
                       <tr className="bg-slate-100 print-bg-gray text-[10px] font-extrabold text-slate-600 uppercase tracking-wider border-b border-slate-200">
-                        <th className="px-4 py-3 border-r border-slate-200">{reportT[language as 'pt' | 'en'].discipline}</th>
-                        <th className="px-3 py-3 text-center border-r border-slate-200 font-mono">MOD 1</th>
-                        <th className="px-3 py-3 text-center border-r border-slate-200 font-mono">MOD 2</th>
-                        <th className="px-3 py-3 text-center border-r border-slate-200 font-mono">MOD 3</th>
-                        <th className="px-3 py-3 text-center border-r border-slate-200 font-mono">MOD 4</th>
-                        <th className="px-3 py-3 text-center border-r border-slate-200 font-mono">{reportT[language as 'pt' | 'en'].finalGrade}</th>
-                        <th className="px-4 py-3 text-right">{reportT[language as 'pt' | 'en'].situation}</th>
+                        <th className="px-4 py-3 border-r border-slate-200">{reportT[language as "pt" | "en"].discipline}</th>
+                        {Array.from({ length: courseModules }).map((_, idx) => (
+                          <th key={idx} className="px-3 py-3 text-center border-r border-slate-200 font-mono">MOD {idx + 1}</th>
+                        ))}
+                        <th className="px-3 py-3 text-center border-r border-slate-200 font-mono">{reportT[language as "pt" | "en"].finalGrade}</th>
+                        <th className="px-4 py-3 text-right">{reportT[language as "pt" | "en"].situation}</th>
                       </tr>
                     </thead>
                     <tbody className="text-xs text-left">
                       {reportData.disciplines.length === 0 ? (
                         <tr>
-                          <td colSpan={7} className="text-center py-6 text-slate-400 font-bold bg-white">
+                          <td colSpan={3 + courseModules} className="text-center py-6 text-slate-400 font-bold bg-white">
                             {language === 'pt' ? 'Nenhuma disciplina cadastrada.' : 'No disciplines registered.'}
                           </td>
                         </tr>
@@ -556,28 +555,32 @@ export default function BoletimPage() {
                           let statusLabel = '';
                           let statusClass = 'text-slate-400';
                           if (finalGradeValue === null || finalGradeValue === undefined) {
-                            statusLabel = reportT[language as 'pt' | 'en'].pending;
+                            statusLabel = reportT[language as "pt" | "en"].pending;
                           } else if (finalGradeValue >= settings.media_aprovacao && (freqValue === null || freqValue >= settings.frequencia_minima)) {
-                            statusLabel = reportT[language as 'pt' | 'en'].approved;
+                            statusLabel = reportT[language as "pt" | "en"].approved;
                             statusClass = 'text-emerald-600 font-extrabold';
                           } else if (freqValue !== null && freqValue < settings.frequencia_minima) {
                             statusLabel = language === 'pt' ? 'FALTA FREQ.' : 'LOW FREQ.';
                             statusClass = 'text-orange-600 font-extrabold';
                           } else if (finalGradeValue >= settings.media_recuperacao) {
-                            statusLabel = reportT[language as 'pt' | 'en'].retake;
+                            statusLabel = reportT[language as "pt" | "en"].retake;
                             statusClass = 'text-yellow-600 font-extrabold';
                           } else {
-                            statusLabel = reportT[language as 'pt' | 'en'].reproved;
+                            statusLabel = reportT[language as "pt" | "en"].reproved;
                             statusClass = 'text-rose-600 font-extrabold';
                           }
 
                           return (
                             <tr key={disc.id} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors bg-white">
                               <td className="px-4 py-2.5 font-bold text-slate-800 border-r border-slate-200 text-left bg-white">{disc.nome}</td>
-                              <td className="px-3 py-2.5 text-center font-mono border-r border-slate-200 bg-white">{grade?.nota1 !== null && grade?.nota1 !== undefined ? Number(grade.nota1).toFixed(1) : '-'}</td>
-                              <td className="px-3 py-2.5 text-center font-mono border-r border-slate-200 bg-white">{grade?.nota2 !== null && grade?.nota2 !== undefined ? Number(grade.nota2).toFixed(1) : '-'}</td>
-                              <td className="px-3 py-2.5 text-center font-mono border-r border-slate-200 bg-white">{grade?.nota3 !== null && grade?.nota3 !== undefined ? Number(grade.nota3).toFixed(1) : '-'}</td>
-                              <td className="px-3 py-2.5 text-center font-mono border-r border-slate-200 bg-white">{grade?.nota4 !== null && grade?.nota4 !== undefined ? Number(grade.nota4).toFixed(1) : '-'}</td>
+                              {Array.from({ length: courseModules }).map((_, idx) => {
+                                const nVal = grade ? grade[`nota${idx + 1}`] : null;
+                                return (
+                                  <td key={idx} className="px-3 py-2.5 text-center font-mono border-r border-slate-200 bg-white">
+                                    {nVal !== null && nVal !== undefined ? Number(nVal).toFixed(1) : '-'}
+                                  </td>
+                                );
+                              })}
                               <td className="px-3 py-2.5 text-center font-black font-mono border-r border-slate-200 text-slate-900 bg-white">{finalGradeFormatted}</td>
                               <td className={cn("px-4 py-2.5 text-right font-black bg-white", statusClass)}>{statusLabel}</td>
                             </tr>
@@ -594,7 +597,7 @@ export default function BoletimPage() {
                 {/* Attendance Summary */}
                 <div className="border border-slate-200 rounded-lg p-4 flex flex-col gap-3 text-left">
                   <h3 className="text-[11px] font-black text-slate-400 tracking-[0.1em] uppercase border-b border-slate-200 pb-1">
-                    {reportT[language as 'pt' | 'en'].attendanceReg}
+                    {reportT[language as "pt" | "en"].attendanceReg}
                   </h3>
                   
                   {(() => {
@@ -616,22 +619,22 @@ export default function BoletimPage() {
                       <div className="flex flex-col gap-2.5 text-left">
                         <div className="grid grid-cols-3 gap-2 text-center text-xs">
                           <div className="p-2 bg-slate-50 print-bg-gray rounded border border-slate-100 flex flex-col gap-0.5">
-                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as 'pt' | 'en'].totalLectures}</span>
+                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as "pt" | "en"].totalLectures}</span>
                             <span className="text-sm font-black text-slate-800">{totalAulas || '-'}</span>
                           </div>
                           <div className="p-2 bg-slate-50 print-bg-gray rounded border border-slate-100 flex flex-col gap-0.5">
-                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as 'pt' | 'en'].attendances}</span>
+                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as "pt" | "en"].attendances}</span>
                             <span className="text-sm font-black text-emerald-600">{totalAulas ? presencas : '-'}</span>
                           </div>
                           <div className="p-2 bg-slate-50 print-bg-gray rounded border border-slate-100 flex flex-col gap-0.5">
-                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as 'pt' | 'en'].absences}</span>
+                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as "pt" | "en"].absences}</span>
                             <span className="text-sm font-black text-rose-600">{totalAulas ? faltas : '-'}</span>
                           </div>
                         </div>
 
                         {/* Attendance percentage indicator */}
                         <div className="flex items-center justify-between text-xs p-1.5 mt-1 border-t border-slate-100">
-                          <span className="font-extrabold text-slate-500 uppercase text-[9px] tracking-wide">{reportT[language as 'pt' | 'en'].attendanceRate}:</span>
+                          <span className="font-extrabold text-slate-500 uppercase text-[9px] tracking-wide">{reportT[language as "pt" | "en"].attendanceRate}:</span>
                           <span className={cn(
                             "font-black text-sm",
                             percentualPresenca >= settings.frequencia_minima ? "text-emerald-600" : "text-rose-600"
@@ -709,13 +712,13 @@ export default function BoletimPage() {
                           overallLabel = language === 'pt' ? 'REPROVADO POR NOTA' : 'FAILED BY ACADEMICS';
                           overallClass = 'bg-red-100 text-red-700';
                         } else if (averageGrade >= settings.media_aprovacao) {
-                          overallLabel = reportT[language as 'pt' | 'en'].approved;
+                          overallLabel = reportT[language as "pt" | "en"].approved;
                           overallClass = 'bg-emerald-100 text-emerald-700 font-extrabold';
                         } else if (averageGrade >= settings.media_recuperacao) {
-                          overallLabel = reportT[language as 'pt' | 'en'].retake;
+                          overallLabel = reportT[language as "pt" | "en"].retake;
                           overallClass = 'bg-yellow-100 text-yellow-700';
                         } else {
-                          overallLabel = reportT[language as 'pt' | 'en'].reproved;
+                          overallLabel = reportT[language as "pt" | "en"].reproved;
                           overallClass = 'bg-rose-100 text-rose-700';
                         }
                       }
@@ -723,7 +726,7 @@ export default function BoletimPage() {
                       return (
                         <div className="flex flex-col gap-2">
                           <div className="flex justify-between items-center text-xs p-1">
-                            <span className="font-extrabold text-slate-500 uppercase text-[9px] tracking-wide">{reportT[language as 'pt' | 'en'].overallAverage}:</span>
+                            <span className="font-extrabold text-slate-500 uppercase text-[9px] tracking-wide">{reportT[language as "pt" | "en"].overallAverage}:</span>
                             <span className={cn(
                               "font-black font-mono text-base px-2 py-0.5 rounded",
                               averageGrade !== null && averageGrade >= settings.media_aprovacao ? "text-blue-600 bg-blue-50" : "text-rose-600 bg-rose-50"
@@ -733,7 +736,7 @@ export default function BoletimPage() {
                           </div>
 
                           <div className="flex justify-between items-center text-xs p-1 border-t border-slate-100">
-                            <span className="font-extrabold text-slate-500 uppercase text-[9px] tracking-wide">{reportT[language as 'pt' | 'en'].overallStatus}:</span>
+                            <span className="font-extrabold text-slate-500 uppercase text-[9px] tracking-wide">{reportT[language as "pt" | "en"].overallStatus}:</span>
                             <span className={cn(
                               "text-[10px] font-black uppercase px-2.5 py-1 rounded",
                               overallClass
@@ -760,16 +763,16 @@ export default function BoletimPage() {
               {/* Observations section */}
               <div className="border border-slate-200 rounded-lg p-4 flex flex-col gap-2 text-left text-xs text-slate-600 italic">
                 <h3 className="text-[11px] font-black text-slate-400 tracking-[0.1em] uppercase border-b border-slate-200 pb-1">
-                  {reportT[language as 'pt' | 'en'].observations}
+                  {reportT[language as "pt" | "en"].observations}
                 </h3>
                 <p className="leading-relaxed text-justify">
-                  {reportT[language as 'pt' | 'en'].defaultObs}
+                  {reportT[language as "pt" | "en"].defaultObs}
                 </p>
               </div>
 
               {/* Stamp & Verification Text */}
               <div className="pt-6 border-t border-slate-100 flex items-center justify-between text-[9px] text-slate-400 font-medium uppercase tracking-wider">
-                <span>{reportT[language as 'pt' | 'en'].footerText}</span>
+                <span>{reportT[language as "pt" | "en"].footerText}</span>
                 <span>
                   {language === 'pt' ? 'Data de Emissão: ' : 'Date of Issue: '}
                   {new Date().toLocaleDateString(language === 'pt' ? 'pt-BR' : 'en-US', {
@@ -1091,15 +1094,15 @@ export default function BoletimPage() {
                               {/* Personal Info Grid */}
                               <div className="border border-slate-200 rounded-lg p-5 bg-slate-50/50 print-bg-gray text-left">
                                 <h3 className="text-[11px] font-black text-slate-400 tracking-[0.15em] uppercase mb-4 pb-1 border-b border-slate-200">
-                                  {reportT[language as 'pt' | 'en'].studentInfo}
+                                  {reportT[language as "pt" | "en"].studentInfo}
                                 </h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-y-3 gap-x-6 text-sm">
                                   <div className="flex flex-col gap-0.5 col-span-2 md:col-span-1">
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as 'pt' | 'en'].fullName}</span>
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as "pt" | "en"].fullName}</span>
                                     <span className="font-extrabold text-slate-900 uppercase text-xs lg:text-sm">{reportData.student.nome}</span>
                                   </div>
                                   <div className="flex flex-col gap-0.5">
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as 'pt' | 'en'].rank}</span>
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as "pt" | "en"].rank}</span>
                                     <span className="font-bold text-slate-800 uppercase">{reportData.student.posto_graduacao || (language === 'pt' ? 'Não declarado' : 'Not declared')}</span>
                                   </div>
                                   <div className="flex flex-col gap-0.5">
@@ -1107,15 +1110,15 @@ export default function BoletimPage() {
                                     <span className="font-bold font-mono text-slate-800">#{reportData.student.matricula}</span>
                                   </div>
                                   <div className="flex flex-col gap-0.5">
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as 'pt' | 'en'].course}</span>
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as "pt" | "en"].course}</span>
                                     <span className="font-bold text-slate-800">{reportData.courseObj?.nome || (language === 'pt' ? 'Não disponível' : 'Not available')}</span>
                                   </div>
                                   <div className="flex flex-col gap-0.5">
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as 'pt' | 'en'].class}</span>
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as "pt" | "en"].class}</span>
                                     <span className="font-bold text-slate-800">{reportData.classObj?.nome || (language === 'pt' ? 'Não disponível' : 'Not available')}</span>
                                   </div>
                                   <div className="flex flex-col gap-0.5">
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as 'pt' | 'en'].period}</span>
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as "pt" | "en"].period}</span>
                                     <span className="font-bold text-slate-800 capitalize">
                                       {reportData.classObj?.periodo === 'manhã' ? t.common.morning :
                                        reportData.classObj?.periodo === 'tarde' ? t.common.afternoon :
@@ -1123,12 +1126,12 @@ export default function BoletimPage() {
                                     </span>
                                   </div>
                                   <div className="flex flex-col gap-0.5 col-span-2">
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as 'pt' | 'en'].status}</span>
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as "pt" | "en"].status}</span>
                                     <span className="font-bold flex items-center gap-1.5 text-slate-800">
                                       <span className={cn("w-2 h-2 rounded-full", reportData.classObj?.status === 'concluida' || reportData.classObj?.status === 'finalizada' ? 'bg-emerald-500' : 'bg-blue-500')} />
                                       {reportData.classObj?.status === 'concluida' || reportData.classObj?.status === 'finalizada' 
-                                        ? reportT[language as 'pt' | 'en'].completed 
-                                        : reportT[language as 'pt' | 'en'].inProgress}
+                                        ? reportT[language as "pt" | "en"].completed 
+                                        : reportT[language as "pt" | "en"].inProgress}
                                     </span>
                                   </div>
                                 </div>
@@ -1137,25 +1140,24 @@ export default function BoletimPage() {
                               {/* Academic Performance Map */}
                               <div className="space-y-3 font-sans">
                                 <h3 className="text-[11px] font-black text-slate-400 tracking-[0.15em] uppercase pb-1 border-b border-slate-200 text-left">
-                                  {reportT[language as 'pt' | 'en'].academicMap}
+                                  {reportT[language as "pt" | "en"].academicMap}
                                 </h3>
                                 <div className="overflow-x-auto">
                                   <table className="w-full text-left report-table border border-slate-200 bg-white">
                                     <thead>
                                       <tr className="bg-slate-100 print-bg-gray text-[10px] font-extrabold text-slate-600 uppercase tracking-wider border-b border-slate-200">
                                         <th className="px-4 py-3 border-r border-slate-200">{reportT[language as 'pt' | 'en'].discipline}</th>
-                                        <th className="px-3 py-3 text-center border-r border-slate-200 font-mono">MOD 1</th>
-                                        <th className="px-3 py-3 text-center border-r border-slate-200 font-mono">MOD 2</th>
-                                        <th className="px-3 py-3 text-center border-r border-slate-200 font-mono">MOD 3</th>
-                                        <th className="px-3 py-3 text-center border-r border-slate-200 font-mono">MOD 4</th>
-                                        <th className="px-3 py-3 text-center border-r border-slate-200 font-mono">{reportT[language as 'pt' | 'en'].finalGrade}</th>
-                                        <th className="px-4 py-3 text-right">{reportT[language as 'pt' | 'en'].situation}</th>
+                                         {Array.from({ length: courseModules }).map((_, idx) => (
+                                           <th key={idx} className="px-3 py-3 text-center border-r border-slate-200 font-mono">MOD {idx + 1}</th>
+                                         ))}
+                                        <th className="px-3 py-3 text-center border-r border-slate-200 font-mono">{reportT[language as "pt" | "en"].finalGrade}</th>
+                                        <th className="px-4 py-3 text-right">{reportT[language as "pt" | "en"].situation}</th>
                                       </tr>
                                     </thead>
                                     <tbody className="text-xs text-left">
                                       {reportData.disciplines.length === 0 ? (
                                         <tr>
-                                          <td colSpan={7} className="text-center py-6 text-slate-400 font-bold bg-white">
+                                          <td colSpan={3 + courseModules} className="text-center py-6 text-slate-400 font-bold bg-white">
                                             {language === 'pt' ? 'Nenhuma disciplina cadastrada.' : 'No disciplines registered.'}
                                           </td>
                                         </tr>
@@ -1170,28 +1172,32 @@ export default function BoletimPage() {
                                           let statusLabel = '';
                                           let statusClass = 'text-slate-400';
                                           if (finalGradeValue === null || finalGradeValue === undefined) {
-                                            statusLabel = reportT[language as 'pt' | 'en'].pending;
+                                            statusLabel = reportT[language as "pt" | "en"].pending;
                                           } else if (finalGradeValue >= settings.media_aprovacao && (freqValue === null || freqValue >= settings.frequencia_minima)) {
-                                            statusLabel = reportT[language as 'pt' | 'en'].approved;
+                                            statusLabel = reportT[language as "pt" | "en"].approved;
                                             statusClass = 'text-emerald-600 font-extrabold';
                                           } else if (freqValue !== null && freqValue < settings.frequencia_minima) {
                                             statusLabel = language === 'pt' ? 'FALTA FREQ.' : 'LOW FREQ.';
                                             statusClass = 'text-orange-600 font-extrabold';
                                           } else if (finalGradeValue >= settings.media_recuperacao) {
-                                            statusLabel = reportT[language as 'pt' | 'en'].retake;
+                                            statusLabel = reportT[language as "pt" | "en"].retake;
                                             statusClass = 'text-yellow-600 font-extrabold';
                                           } else {
-                                            statusLabel = reportT[language as 'pt' | 'en'].reproved;
+                                            statusLabel = reportT[language as "pt" | "en"].reproved;
                                             statusClass = 'text-rose-600 font-extrabold';
                                           }
 
                                           return (
                                             <tr key={disc.id} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors bg-white">
                                               <td className="px-4 py-2.5 font-bold text-slate-800 border-r border-slate-200 text-left bg-white">{disc.nome}</td>
-                                              <td className="px-3 py-2.5 text-center font-mono border-r border-slate-200 bg-white">{grade?.nota1 !== null && grade?.nota1 !== undefined ? Number(grade.nota1).toFixed(1) : '-'}</td>
-                                              <td className="px-3 py-2.5 text-center font-mono border-r border-slate-200 bg-white">{grade?.nota2 !== null && grade?.nota2 !== undefined ? Number(grade.nota2).toFixed(1) : '-'}</td>
-                                              <td className="px-3 py-2.5 text-center font-mono border-r border-slate-200 bg-white">{grade?.nota3 !== null && grade?.nota3 !== undefined ? Number(grade.nota3).toFixed(1) : '-'}</td>
-                                              <td className="px-3 py-2.5 text-center font-mono border-r border-slate-200 bg-white">{grade?.nota4 !== null && grade?.nota4 !== undefined ? Number(grade.nota4).toFixed(1) : '-'}</td>
+                                               {Array.from({ length: courseModules }).map((_, idx) => {
+                                                 const nVal = grade ? grade[`nota${idx + 1}`] : null;
+                                                 return (
+                                                   <td key={idx} className="px-3 py-2.5 text-center font-mono border-r border-slate-200 bg-white">
+                                                     {nVal !== null && nVal !== undefined ? Number(nVal).toFixed(1) : '-'}
+                                                   </td>
+                                                 );
+                                               })}
                                               <td className="px-3 py-2.5 text-center font-black font-mono border-r border-slate-200 text-slate-900 bg-white">{finalGradeFormatted}</td>
                                               <td className={cn("px-4 py-2.5 text-right font-black bg-white", statusClass)}>{statusLabel}</td>
                                             </tr>
@@ -1208,7 +1214,7 @@ export default function BoletimPage() {
                                 {/* Attendance Summary */}
                                 <div className="border border-slate-200 rounded-lg p-4 flex flex-col gap-3 text-left">
                                   <h3 className="text-[11px] font-black text-slate-400 tracking-[0.1em] uppercase border-b border-slate-200 pb-1">
-                                    {reportT[language as 'pt' | 'en'].attendanceReg}
+                                    {reportT[language as "pt" | "en"].attendanceReg}
                                   </h3>
                                   
                                   {/* Attendance Stats Calculation */}
@@ -1231,22 +1237,22 @@ export default function BoletimPage() {
                                       <div className="flex flex-col gap-2.5 text-left">
                                         <div className="grid grid-cols-3 gap-2 text-center text-xs">
                                           <div className="p-2 bg-slate-50 print-bg-gray rounded border border-slate-100 flex flex-col gap-0.5">
-                                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as 'pt' | 'en'].totalLectures}</span>
+                                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as "pt" | "en"].totalLectures}</span>
                                             <span className="text-sm font-black text-slate-800">{totalAulas || '-'}</span>
                                           </div>
                                           <div className="p-2 bg-slate-50 print-bg-gray rounded border border-slate-100 flex flex-col gap-0.5">
-                                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as 'pt' | 'en'].attendances}</span>
+                                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as "pt" | "en"].attendances}</span>
                                             <span className="text-sm font-black text-emerald-600">{totalAulas ? presencas : '-'}</span>
                                           </div>
                                           <div className="p-2 bg-slate-50 print-bg-gray rounded border border-slate-100 flex flex-col gap-0.5">
-                                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as 'pt' | 'en'].absences}</span>
+                                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as "pt" | "en"].absences}</span>
                                             <span className="text-sm font-black text-rose-600">{totalAulas ? faltas : '-'}</span>
                                           </div>
                                         </div>
 
                                         {/* Attendance percentage indicator */}
                                         <div className="flex items-center justify-between text-xs p-1.5 mt-1 border-t border-slate-100">
-                                          <span className="font-extrabold text-slate-500 uppercase text-[9px] tracking-wide">{reportT[language as 'pt' | 'en'].attendanceRate}:</span>
+                                          <span className="font-extrabold text-slate-500 uppercase text-[9px] tracking-wide">{reportT[language as "pt" | "en"].attendanceRate}:</span>
                                           <span className={cn(
                                             "font-black text-sm",
                                             percentualPresenca >= settings.frequencia_minima ? "text-emerald-600" : "text-rose-600"
@@ -1324,13 +1330,13 @@ export default function BoletimPage() {
                                         overallLabel = language === 'pt' ? 'REPROVADO POR NOTA' : 'FAILED BY ACADEMICS';
                                         overallClass = 'bg-red-100 text-red-700';
                                       } else if (averageGrade >= settings.media_aprovacao) {
-                                        overallLabel = reportT[language as 'pt' | 'en'].approved;
+                                        overallLabel = reportT[language as "pt" | "en"].approved;
                                         overallClass = 'bg-emerald-100 text-emerald-700 font-extrabold';
                                       } else if (averageGrade >= settings.media_recuperacao) {
-                                        overallLabel = reportT[language as 'pt' | 'en'].retake;
+                                        overallLabel = reportT[language as "pt" | "en"].retake;
                                         overallClass = 'bg-yellow-100 text-yellow-700';
                                       } else {
-                                        overallLabel = reportT[language as 'pt' | 'en'].reproved;
+                                        overallLabel = reportT[language as "pt" | "en"].reproved;
                                         overallClass = 'bg-rose-100 text-rose-700';
                                       }
                                     }
@@ -1339,7 +1345,7 @@ export default function BoletimPage() {
                                       <div className="flex-1 flex flex-col justify-between gap-3 text-left">
                                         <div className="flex flex-col gap-2">
                                           <div className="flex justify-between items-center text-xs p-1">
-                                            <span className="font-extrabold text-slate-500 uppercase text-[9px] tracking-wide">{reportT[language as 'pt' | 'en'].overallAverage}:</span>
+                                            <span className="font-extrabold text-slate-500 uppercase text-[9px] tracking-wide">{reportT[language as "pt" | "en"].overallAverage}:</span>
                                             <span className={cn(
                                               "font-black font-mono text-base px-2 py-0.5 rounded",
                                               averageGrade !== null && averageGrade >= settings.media_aprovacao ? "text-blue-600 bg-blue-50" : "text-rose-600 bg-rose-50"
@@ -1349,7 +1355,7 @@ export default function BoletimPage() {
                                           </div>
 
                                           <div className="flex justify-between items-center text-xs p-1 border-t border-slate-100">
-                                            <span className="font-extrabold text-slate-500 uppercase text-[9px] tracking-wide">{reportT[language as 'pt' | 'en'].overallStatus}:</span>
+                                            <span className="font-extrabold text-slate-500 uppercase text-[9px] tracking-wide">{reportT[language as "pt" | "en"].overallStatus}:</span>
                                             <span className={cn(
                                               "text-[10px] font-black uppercase px-2.5 py-1 rounded",
                                               overallClass
@@ -1377,17 +1383,17 @@ export default function BoletimPage() {
                               {/* Observations section */}
                               <div className="border border-slate-200 rounded-lg p-4 flex flex-col gap-2 text-left text-xs text-slate-600 italic">
                                 <h3 className="text-[11px] font-black text-slate-400 tracking-[0.1em] uppercase border-b border-slate-200 pb-1">
-                                  {reportT[language as 'pt' | 'en'].observations}
+                                  {reportT[language as "pt" | "en"].observations}
                                 </h3>
                                 <p className="leading-relaxed text-justify">
-                                  {reportT[language as 'pt' | 'en'].defaultObs}
+                                  {reportT[language as "pt" | "en"].defaultObs}
                                 </p>
                               </div>
 
 
                               {/* Stamp & Verification Text */}
                               <div className="pt-6 border-t border-slate-100 flex items-center justify-between text-[9px] text-slate-400 font-medium uppercase tracking-wider bg-white">
-                                <span>{reportT[language as 'pt' | 'en'].footerText}</span>
+                                <span>{reportT[language as "pt" | "en"].footerText}</span>
                                 <span>
                                   {language === 'pt' ? 'Data de Emissão: ' : 'Date of Issue: '}
                                   {new Date().toLocaleDateString(language === 'pt' ? 'pt-BR' : 'en-US', {
@@ -1412,7 +1418,7 @@ export default function BoletimPage() {
                           onClick={() => setSelectedStudentForReport(null)}
                           className="bg-slate-800 hover:bg-slate-700 px-5 py-2.5 rounded-xl text-xs font-bold text-slate-300 transition-all cursor-pointer"
                         >
-                          {reportT[language as 'pt' | 'en'].close}
+                          {reportT[language as "pt" | "en"].close}
                         </button>
                       </div>
                     </div>
