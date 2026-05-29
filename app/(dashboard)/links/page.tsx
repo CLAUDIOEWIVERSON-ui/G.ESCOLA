@@ -95,6 +95,20 @@ const DEFAULT_LINKS: LinkItem[] = [
     url: "https://www.marinha.mil.br/radio-marinha",
     description: "Rádio e notícias oficiais da Marinha do Brasil, integrando informações e cultura.",
     category: "external",
+  },
+  {
+    id: "c3194511-bba0-42f8-9a3c-b171f1110015",
+    name: "FLIGHTRADAR24 PREMIUM",
+    url: "https://www.flightradar24.com/premium",
+    description: "Monitoramento de voos em tempo real (Painel Premium).",
+    category: "external",
+  },
+  {
+    id: "c3194511-bba0-42f8-9a3c-b171f1110016",
+    name: "FLIGHTAWARE LIVE",
+    url: "https://www.flightaware.com/live/",
+    description: "Rastreamento e monitoramento de voos ao vivo.",
+    category: "external",
   }
 ];
 
@@ -135,17 +149,44 @@ export default function LinksUteisPage() {
       if (data) {
         const fetched = data as LinkItem[];
         const hasRadio = fetched.some(l => l.url === 'https://www.marinha.mil.br/radio-marinha' || l.id === 'c3194511-bba0-42f8-9a3c-b171f1110014');
+        const hasFlightradar = fetched.some(l => l.url === 'https://www.flightradar24.com/premium' || l.id === 'c3194511-bba0-42f8-9a3c-b171f1110015');
+        const hasFlightaware = fetched.some(l => l.url === 'https://www.flightaware.com/live/' || l.id === 'c3194511-bba0-42f8-9a3c-b171f1110016');
+        
         let finalData = fetched;
+        const missingDefaults: LinkItem[] = [];
+        
         if (!hasRadio) {
-          const radioMarinha: LinkItem = {
+          missingDefaults.push({
             id: "c3194511-bba0-42f8-9a3c-b171f1110014",
             name: "Rádio Marinha",
             url: "https://www.marinha.mil.br/radio-marinha",
             description: "Rádio e notícias oficiais da Marinha do Brasil, integrando informações e cultura.",
             category: "external"
-          };
-          finalData = [...fetched, radioMarinha];
+          });
         }
+        if (!hasFlightradar) {
+          missingDefaults.push({
+            id: "c3194511-bba0-42f8-9a3c-b171f1110015",
+            name: "FLIGHTRADAR24 PREMIUM",
+            url: "https://www.flightradar24.com/premium",
+            description: "Monitoramento de voos em tempo real (Painel Premium).",
+            category: "external"
+          });
+        }
+        if (!hasFlightaware) {
+          missingDefaults.push({
+            id: "c3194511-bba0-42f8-9a3c-b171f1110016",
+            name: "FLIGHTAWARE LIVE",
+            url: "https://www.flightaware.com/live/",
+            description: "Rastreamento e monitoramento de voos ao vivo.",
+            category: "external"
+          });
+        }
+        
+        if (missingDefaults.length > 0) {
+          finalData = [...fetched, ...missingDefaults];
+        }
+        
         setLinks(finalData);
         // Sync local cache
         localStorage.setItem('school_useful_links', JSON.stringify(finalData));
@@ -162,15 +203,42 @@ export default function LinksUteisPage() {
         try {
           const parsed = JSON.parse(storedLinks) as LinkItem[];
           const hasRadio = parsed.some(l => l.url === 'https://www.marinha.mil.br/radio-marinha' || l.id === 'c3194511-bba0-42f8-9a3c-b171f1110014');
+          const hasFlightradar = parsed.some(l => l.url === 'https://www.flightradar24.com/premium' || l.id === 'c3194511-bba0-42f8-9a3c-b171f1110015');
+          const hasFlightaware = parsed.some(l => l.url === 'https://www.flightaware.com/live/' || l.id === 'c3194511-bba0-42f8-9a3c-b171f1110016');
+          
+          let merged = parsed;
+          const missingDefaults: LinkItem[] = [];
+          
           if (!hasRadio) {
-            const radioMarinha: LinkItem = {
+            missingDefaults.push({
               id: "c3194511-bba0-42f8-9a3c-b171f1110014",
               name: "Rádio Marinha",
               url: "https://www.marinha.mil.br/radio-marinha",
               description: "Rádio e notícias oficiais da Marinha do Brasil, integrando informações e cultura.",
               category: "external"
-            };
-            const merged = [...parsed, radioMarinha];
+            });
+          }
+          if (!hasFlightradar) {
+            missingDefaults.push({
+              id: "c3194511-bba0-42f8-9a3c-b171f1110015",
+              name: "FLIGHTRADAR24 PREMIUM",
+              url: "https://www.flightradar24.com/premium",
+              description: "Monitoramento de voos em tempo real (Painel Premium).",
+              category: "external"
+            });
+          }
+          if (!hasFlightaware) {
+            missingDefaults.push({
+              id: "c3194511-bba0-42f8-9a3c-b171f1110016",
+              name: "FLIGHTAWARE LIVE",
+              url: "https://www.flightaware.com/live/",
+              description: "Rastreamento e monitoramento de voos ao vivo.",
+              category: "external"
+            });
+          }
+          
+          if (missingDefaults.length > 0) {
+            merged = [...parsed, ...missingDefaults];
             setLinks(merged);
             localStorage.setItem('school_useful_links', JSON.stringify(merged));
           } else {

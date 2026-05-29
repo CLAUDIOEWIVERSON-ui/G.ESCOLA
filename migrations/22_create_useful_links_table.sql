@@ -147,6 +147,22 @@ VALUES
   'https://www.marinha.mil.br/radio-marinha',
   'Rádio e notícias oficiais da Marinha do Brasil, integrando informações e cultura.',
   'external'
+),
+
+(
+  'c3194511-bba0-42f8-9a3c-b171f1110015',
+  'FLIGHTRADAR24 PREMIUM',
+  'https://www.flightradar24.com/premium',
+  'Monitoramento de voos em tempo real (Painel Premium).',
+  'external'
+),
+
+(
+  'c3194511-bba0-42f8-9a3c-b171f1110016',
+  'FLIGHTAWARE LIVE',
+  'https://www.flightaware.com/live/',
+  'Rastreamento e monitoramento de voos ao vivo.',
+  'external'
 )
 
 ON CONFLICT (id) DO NOTHING;
