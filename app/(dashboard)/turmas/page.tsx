@@ -1841,15 +1841,28 @@ function TurmasContent() {
 
               <div className="pt-2 border-t border-slate-200 flex gap-2">
                 <button
+                  id="resend-student-code-btn"
                   type="button"
                   onClick={async () => {
-                    if (!studentAccess?.access_code) return;
+                    if (!currentAluno?.id) return;
+                    
                     toast.promise(
-                      new Promise((resolve) => setTimeout(resolve, 1200)),
+                      (async () => {
+                        const res = await fetch('/api/auth/send-access-code', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ studentId: currentAluno.id })
+                        });
+                        const data = await res.json();
+                        if (!res.ok) {
+                          throw new Error(data.error || 'Erro ao enviar e-mail.');
+                        }
+                        return data;
+                      })(),
                       {
-                        loading: 'Reenviando código ao aluno...',
-                        success: `Código de acesso enviado com sucesso para ${currentAluno.email || 'o e-mail do aluno'}!`,
-                        error: 'Erro ao reenviar.'
+                        loading: 'Enviando código de acesso por e-mail...',
+                        success: () => `Código enviado com sucesso para ${currentAluno.email || 'e-mail do aluno'}!`,
+                        error: (err: any) => `${err.message || 'Erro ao enviar.'}`
                       }
                     );
                   }}
