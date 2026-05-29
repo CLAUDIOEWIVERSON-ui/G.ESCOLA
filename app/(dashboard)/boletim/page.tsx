@@ -274,7 +274,7 @@ export default function BoletimPage() {
       if (cursoId) {
         const curso = cursos.find(c => c.id === cursoId);
         if (curso) {
-          setCourseModules(Math.min(curso.qtd_modulos || 4, 5));
+          setCourseModules(Math.min(curso.qtd_modulos || 4, 10));
         }
       }
 
@@ -322,6 +322,11 @@ export default function BoletimPage() {
             nota3: null,
             nota4: null,
             nota5: null,
+            nota6: null,
+            nota7: null,
+            nota8: null,
+            nota9: null,
+            nota10: null,
             nota_final: null,
             frequencia: null,
             pago: true,

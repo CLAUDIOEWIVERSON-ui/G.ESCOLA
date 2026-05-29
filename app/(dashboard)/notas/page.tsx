@@ -41,7 +41,7 @@ export default function NotasPage() {
   const selectedTurmaObj = turmas.find(t => t.id === selectedTurma);
   const currentCursoId = selectedCurso || selectedTurmaObj?.curso_id;
   const selectedCursoObj = cursos.find(c => c.id === currentCursoId);
-  const effectiveModules = Math.min(selectedCursoObj?.qtd_modulos || 4, 5);
+  const effectiveModules = Math.min(selectedCursoObj?.qtd_modulos || 4, 10);
 
   useEffect(() => {
     const fetchTurmaData = async () => {

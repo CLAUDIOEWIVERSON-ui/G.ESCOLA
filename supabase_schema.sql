@@ -114,6 +114,11 @@ CREATE TABLE IF NOT EXISTS public.notas (
   nota3 NUMERIC CHECK (nota3 >= 0),
   nota4 NUMERIC CHECK (nota4 >= 0),
   nota5 NUMERIC CHECK (nota5 >= 0),
+  nota6 NUMERIC CHECK (nota6 >= 0),
+  nota7 NUMERIC CHECK (nota7 >= 0),
+  nota8 NUMERIC CHECK (nota8 >= 0),
+  nota9 NUMERIC CHECK (nota9 >= 0),
+  nota10 NUMERIC CHECK (nota10 >= 0),
   nota_final NUMERIC,
   frequencia NUMERIC(4,1) CHECK (frequencia >= 0 AND frequencia <= 100),
   pago BOOLEAN DEFAULT FALSE,
@@ -149,6 +154,26 @@ BEGIN
   END IF;
   IF NEW.nota5 IS NOT NULL THEN
     total := total + NEW.nota5;
+    count := count + 1;
+  END IF;
+  IF NEW.nota6 IS NOT NULL THEN
+    total := total + NEW.nota6;
+    count := count + 1;
+  END IF;
+  IF NEW.nota7 IS NOT NULL THEN
+    total := total + NEW.nota7;
+    count := count + 1;
+  END IF;
+  IF NEW.nota8 IS NOT NULL THEN
+    total := total + NEW.nota8;
+    count := count + 1;
+  END IF;
+  IF NEW.nota9 IS NOT NULL THEN
+    total := total + NEW.nota9;
+    count := count + 1;
+  END IF;
+  IF NEW.nota10 IS NOT NULL THEN
+    total := total + NEW.nota10;
     count := count + 1;
   END IF;
 
