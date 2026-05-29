@@ -44,6 +44,7 @@ export const alunoSchema = z.object({
   telefone: z.string().optional().nullable(),
   whatsapp: z.string().optional().nullable(),
   foto_url: z.string().url().optional().nullable(),
+  funcao: z.string().optional().nullable(),
 });
 
 export const disciplinaSchema = z.object({

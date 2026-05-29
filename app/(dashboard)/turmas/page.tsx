@@ -412,7 +412,9 @@ function TurmasContent() {
       whatsapp: '',
       foto_url: '',
       data_inicio_curso: '',
-      data_fim_curso: ''
+      data_fim_curso: '',
+      data_nascimento: '',
+      funcao: ''
     });
     setIsStudentFormOpen(true);
   };
@@ -479,6 +481,13 @@ function TurmasContent() {
       if (currentAluno.telefone) dataToSave.telefone = currentAluno.telefone;
       if (currentAluno.whatsapp) dataToSave.whatsapp = currentAluno.whatsapp;
       if (currentAluno.foto_url) dataToSave.foto_url = currentAluno.foto_url;
+      
+      if (currentAluno.data_nascimento !== undefined) {
+        dataToSave.data_nascimento = currentAluno.data_nascimento ? currentAluno.data_nascimento : null;
+      }
+      if (currentAluno.funcao !== undefined) {
+        dataToSave.funcao = currentAluno.funcao ? currentAluno.funcao : null;
+      }
       
       if (isCiabaOrCiaga) {
         if (currentAluno.data_inicio_curso !== undefined) {
@@ -1369,6 +1378,22 @@ function TurmasContent() {
                     <div>
                       <div className="font-bold text-slate-800 text-sm">{aluno.nome}</div>
                       <div className="text-[10px] text-slate-500 font-medium">{aluno.posto_graduacao || ''} • {aluno.matricula}</div>
+                      
+                      {(aluno.data_nascimento || aluno.funcao) && (
+                        <div className="flex flex-wrap gap-1.5 mt-1">
+                          {aluno.data_nascimento && (
+                            <span className="text-[9px] text-slate-600 bg-slate-100 border border-slate-200 rounded px-1.5 py-0.5 whitespace-nowrap">
+                              🎂 {aluno.data_nascimento.split('-').reverse().join('/')}
+                            </span>
+                          )}
+                          {aluno.funcao && (
+                            <span className="text-[9px] text-slate-600 bg-slate-100 border border-slate-200 rounded px-1.5 py-0.5 whitespace-nowrap italic">
+                              💼 {aluno.funcao}
+                            </span>
+                          )}
+                        </div>
+                      )}
+
                       {isCiabaOrCiaga && (aluno.data_inicio_curso || aluno.data_fim_curso) && (
                         <div className="text-[9px] font-black text-blue-700 bg-blue-50 border border-blue-100 rounded px-1.5 py-0.5 mt-1 inline-block">
                           {language === 'pt' ? 'Curso: ' : 'Course: '}
@@ -1673,6 +1698,32 @@ function TurmasContent() {
                 value={currentAluno?.whatsapp || ''}
                 onChange={(e) => setCurrentAluno({ ...currentAluno, whatsapp: e.target.value })}
                 className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded text-sm"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                {t.students.data_nascimento}
+              </label>
+              <input
+                type="date"
+                value={currentAluno?.data_nascimento || ''}
+                onChange={(e) => setCurrentAluno({ ...currentAluno, data_nascimento: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded text-sm outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                {t.students.funcao}
+              </label>
+              <input
+                type="text"
+                value={currentAluno?.funcao || ''}
+                onChange={(e) => setCurrentAluno({ ...currentAluno, funcao: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded text-sm outline-none"
+                placeholder={language === 'pt' ? 'Função que exerce' : 'Current function'}
               />
             </div>
           </div>

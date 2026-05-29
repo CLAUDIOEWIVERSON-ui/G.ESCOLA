@@ -152,6 +152,8 @@ export const translations = {
       nome_pai: "Nome do Pai",
       nome_mae: "Nome da Mãe",
       titulo_eleitor: "Título de Eleitor",
+      data_nascimento: "Data de Nascimento",
+      funcao: "Função que Exerce",
       status: "Status",
       active: "Ativo",
       inactive: "Inativo",
