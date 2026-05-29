@@ -1,8 +1,9 @@
 'use client';
 /* eslint-disable react-hooks/set-state-in-effect */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase/client';
+import { useCursos, useTurmas, useDisciplinas, useConfiguracoes } from '@/hooks/useCachedData';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { 
   FileText, 
@@ -110,10 +111,14 @@ export default function BoletimPage() {
   const isNifStudent = profile?.role === 'aluno' && (profile as any).isNifStudent;
 
   const [loading, setLoading] = useState(false);
-  const [cursos, setCursos] = useState<any[]>([]);
-  const [turmas, setTurmas] = useState<any[]>([]);
-  const [disciplinas, setDisciplinas] = useState<any[]>([]);
-  const [anos, setAnos] = useState<number[]>([]);
+  const { cursos } = useCursos();
+  const { turmas } = useTurmas();
+  const { disciplinas } = useDisciplinas();
+  const { configuracoes } = useConfiguracoes();
+
+  const anos = useMemo(() => {
+    return Array.from(new Set(turmas.map((t: any) => t.ano))).sort((a: any, b: any) => b - a);
+  }, [turmas]);
   
   const [selectedCurso, setSelectedCurso] = useState('');
   const [selectedTurma, setSelectedTurma] = useState('');
@@ -123,7 +128,7 @@ export default function BoletimPage() {
   
   const [boletimData, setBoletimData] = useState<any[]>([]);
   const [classStats, setClassStats] = useState({ avg: 0, total: 0 });
-  const [settings, setSettings] = useState({ media_aprovacao: 7, media_recuperacao: 5, frequencia_minima: 75, nota_maxima: 10 });
+  const settings = configuracoes || { media_aprovacao: 7, media_recuperacao: 5, frequencia_minima: 75, nota_maxima: 10 };
 
   const [selectedStudentForReport, setSelectedStudentForReport] = useState<string | null>(null);
   const [loadingReport, setLoadingReport] = useState(false);
@@ -157,27 +162,6 @@ export default function BoletimPage() {
       );
     }
   };
-
-  useEffect(() => {
-    const fetchFilters = async () => {
-      const { data: cursosData } = await supabase.from('cursos').select('id, nome, qtd_modulos').is('deleted_at', null).order('nome');
-      if (cursosData) setCursos(cursosData);
-
-      const { data: turmasData } = await supabase.from('turmas').select('id, nome, curso_id, ano').is('deleted_at', null).order('nome');
-      if (turmasData) {
-        setTurmas(turmasData);
-        const uniqueAnos = Array.from(new Set(turmasData.map(t => t.ano))).sort((a, b) => b - a);
-        setAnos(uniqueAnos);
-      }
-
-      const { data: disciplinasData } = await supabase.from('disciplinas').select('id, nome, curso_id').is('deleted_at', null).order('nome');
-      if (disciplinasData) setDisciplinas(disciplinasData);
-
-      const { data: configData } = await supabase.from('configuracoes').select('*').single();
-      if (configData) setSettings(configData);
-    };
-    fetchFilters();
-  }, []);
 
   useEffect(() => {
     if (!selectedStudentForReport) {

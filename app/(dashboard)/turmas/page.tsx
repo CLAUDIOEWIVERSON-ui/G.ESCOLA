@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
+import { useTurmas, useCursos } from '@/hooks/useCachedData';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
 import { Plus, Search, Layers as LayersIcon, Library, Calendar, Clock, MapPin, Pencil, Trash2, Loader2, CheckCircle2, RefreshCcw, Users, Mail, Phone, Building, Camera, MessageCircle, XCircle, FileText, X, GraduationCap, School, ChevronRight, Printer, Monitor, Globe } from 'lucide-react';
@@ -24,9 +25,9 @@ function TurmasContent() {
   
   const { isAdmin } = useUser();
   const isReadOnly = !isAdmin;
-  const [turmas, setTurmas] = useState<any[]>([]);
-  const [cursos, setCursos] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { turmas, loading: loadingTurmas, mutate: revalidateTurmas } = useTurmas();
+  const { cursos, loading: loadingCursos } = useCursos();
+  const loading = loadingTurmas || loadingCursos;
   const [refreshing, setRefreshing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentTurma, setCurrentTurma] = useState<any>(null);
@@ -345,39 +346,12 @@ function TurmasContent() {
     onConfirm: () => {},
   });
 
-  const fetchCursos = useCallback(async () => {
-    const { data } = await supabase
-      .from('cursos')
-      .select('id, nome')
-      .is('deleted_at', null)
-      .order('nome');
-    if (data) setCursos(data);
-  }, []);
-
-  const fetchTurmas = useCallback(async (isRefresh = false) => {
-    if (!isRefresh) setLoading(true);
-    else setRefreshing(true);
-
-    const { data } = await supabase
-      .from('turmas')
-      .select('*, curso:cursos(nome)')
-      .is('deleted_at', null)
-      .order('nome');
-      
-    if (data) setTurmas(data);
-    setLoading(false);
-    setRefreshing(false);
-  }, []);
-
-  useEffect(() => {
-    const init = async () => {
-      await Promise.all([fetchTurmas(), fetchCursos()]);
-    };
-    init();
-  }, [fetchTurmas, fetchCursos]);
-
-
-  const refreshData = () => fetchTurmas(true);
+  const refreshData = () => {
+    setRefreshing(true);
+    revalidateTurmas().finally(() => {
+      setRefreshing(false);
+    });
+  };
 
   const handleOpenModal = (turma: any = null) => {
     if (isReadOnly) return;

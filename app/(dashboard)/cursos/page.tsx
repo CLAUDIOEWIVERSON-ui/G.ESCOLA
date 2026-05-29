@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase/client';
+import { useCursos } from '@/hooks/useCachedData';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
 import { cursoSchema } from '@/lib/validations/schemas';
@@ -36,8 +37,7 @@ export default function CursosPage() {
   const { t, language } = useI18n();
   const { isAdmin } = useUser();
   const isReadOnly = !isAdmin;
-  const [cursos, setCursos] = useState<Curso[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { cursos, loading, mutate: revalidateCursos } = useCursos();
   const [modalOpen, setModalOpen] = useState(false);
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [skipHeader, setSkipHeader] = useState(false);
@@ -79,43 +79,6 @@ export default function CursosPage() {
     }
   });
 
-  const fetchCursos = async (showLoading = true) => {
-    if (showLoading) setLoading(true);
-    const { data, error } = await supabase
-      .from('cursos')
-      .select('*')
-      .is('deleted_at', null)
-      .order('nome');
-    if (data) {
-      // Map database field to our logic field
-      const units = ['dia', 'semana', 'mes', 'ano'];
-      const mappedData = data.map(item => {
-        const dbVal = item.ano_inicio || 13; // default 1 year (1 * 10 + 3)
-        const val = Math.floor(dbVal / 10);
-        const unitIdx = dbVal % 10;
-        
-        return {
-          ...item,
-          duracao: val || 1,
-          duracao_unidade: (units[unitIdx] || 'ano') as any,
-          qtd_modulos: item.qtd_modulos || 4,
-          internacional: !!item.internacional,
-          localizacao: item.localizacao || ''
-        };
-      });
-      setCursos(mappedData);
-    }
-    if (showLoading) setLoading(false);
-  };
-
-  useEffect(() => {
-    const init = async () => {
-      await fetchCursos(false);
-      setLoading(false);
-    };
-    init();
-  }, []);
-
   const onSubmit = async (data: z.infer<typeof cursoSchema>) => {
     if (isReadOnly) return;
     try {
@@ -150,7 +113,7 @@ export default function CursosPage() {
       reset();
       setModalOpen(false);
       setEditingCurso(null);
-      fetchCursos();
+      await revalidateCursos();
       toast.success(language === 'pt' ? 'Curso salvo com sucesso!' : 'Course saved successfully!');
     } catch (err: any) {
       toast.error(err.message);
@@ -166,7 +129,7 @@ export default function CursosPage() {
     if (error) toast.error(error.message);
     else {
       toast.success(language === 'pt' ? 'Curso removido!' : 'Course removed!');
-      fetchCursos();
+      await revalidateCursos();
     }
   };
 
@@ -391,7 +354,7 @@ export default function CursosPage() {
       
       if (error) throw error;
 
-      await fetchCursos();
+      await revalidateCursos();
       setIsBulkModalOpen(false);
       setBulkData('');
       
