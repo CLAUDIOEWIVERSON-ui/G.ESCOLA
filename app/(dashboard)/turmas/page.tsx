@@ -1334,6 +1334,38 @@ function TurmasContent() {
             {!isReadOnly && (
               <>
                 <button
+                  onClick={async () => {
+                    if (!viewingTurma?.id) return;
+                    
+                    toast.promise(
+                      (async () => {
+                        const res = await fetch('/api/auth/send-class-access-codes', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ classId: viewingTurma.id })
+                        });
+                        const data = await res.json();
+                        if (!res.ok) {
+                          throw new Error(data.error || 'Erro no disparo de e-mails.');
+                        }
+                        return data;
+                      })(),
+                      {
+                        loading: 'Disparando e-mails para todos os alunos...',
+                        success: (data: any) => {
+                          const stats = data.stats || {};
+                          return `Processado! Sucesso: ${stats.sent || 0}, Ignorados/Sem Email: ${stats.skipped || 0}, Erros: ${stats.failed || 0}.`;
+                        },
+                        error: (err: any) => `${err.message || 'Erro ao enviar.'}`
+                      }
+                    );
+                  }}
+                  className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-200 px-3 py-1.5 rounded-lg hover:bg-amber-100 transition-all cursor-pointer shadow-sm shadow-amber-50"
+                  title="Enviar código de acesso a todos os alunos desta turma via SMTP"
+                >
+                  📩 Disparar E-mails (Lote)
+                </button>
+                <button
                   onClick={() => setIsBulkModalOpen(true)}
                   className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg hover:bg-slate-200 transition-all"
                 >

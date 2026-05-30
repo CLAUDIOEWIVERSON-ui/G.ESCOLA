@@ -306,7 +306,7 @@ function RelatorioAvaliacaoAdminContent() {
       // Fetch Alunos
       const { data: alunosData } = await supabase
         .from('alunos')
-        .select('id, nome, turma_id, posto_graduacao, om, matricula')
+        .select('id, nome, turma_id, posto_graduacao, om, matricula, email')
         .is('deleted_at', null);
       if (alunosData) setAllStudents(alunosData);
 
@@ -320,7 +320,8 @@ function RelatorioAvaliacaoAdminContent() {
             nome,
             posto_graduacao,
             om,
-            matricula
+            matricula,
+            email
           ),
           turma:turmas(
             id,
@@ -468,6 +469,7 @@ function RelatorioAvaliacaoAdminContent() {
           om: stud.om,
           matricula: stud.matricula,
           turma_id: stud.turma_id,
+          email: stud.email,
           responded: false
         });
       }
@@ -479,6 +481,7 @@ function RelatorioAvaliacaoAdminContent() {
         const existing = studentsMap.get(sub.aluno_id);
         if (existing) {
           existing.responded = true;
+          existing.email = sub.aluno.email || existing.email;
         } else {
           studentsMap.set(sub.aluno_id, {
             id: sub.aluno_id,
@@ -487,6 +490,7 @@ function RelatorioAvaliacaoAdminContent() {
             om: sub.aluno.om,
             matricula: sub.aluno.matricula,
             turma_id: sub.turma_id,
+            email: sub.aluno.email,
             responded: true
           });
         }
@@ -1052,23 +1056,87 @@ function RelatorioAvaliacaoAdminContent() {
                       </div>
                     </div>
                     {stud.responded ? (
-                      <button
-                        type="button"
-                        onClick={() => handleSelectAndEditAction(stud.id, stud.turma_id)}
-                        className="bg-emerald-650 hover:bg-emerald-700 text-white font-extrabold text-[10px] px-3.5 py-2 rounded-lg shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer font-sans tracking-wide self-end sm:self-center shrink-0 border border-emerald-500"
-                      >
-                        <Edit3 className="h-3 w-3" />
-                        EDITAR RESPOSTAS
-                      </button>
+                      <div className="flex flex-col sm:flex-row gap-2 self-end sm:self-center shrink-0">
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (!stud.id) return;
+                            toast.promise(
+                              (async () => {
+                                const res = await fetch('/api/auth/send-access-code', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ studentId: stud.id })
+                                });
+                                const data = await res.json();
+                                if (!res.ok) {
+                                  throw new Error(data.error || 'Erro ao enviar e-mail.');
+                                }
+                                return data;
+                              })(),
+                              {
+                                loading: 'Reenviando código de acesso...',
+                                success: () => `Código reenviado com sucesso para ${stud.email || 'o e-mail do aluno'}!`,
+                                error: (err: any) => `${err.message || 'Erro ao enviar.'}`
+                              }
+                            );
+                          }}
+                          className="bg-emerald-50 hover:bg-emerald-100/80 text-emerald-700 text-[10px] font-bold px-3 py-1.5 rounded-lg border border-emerald-250 transition flex items-center justify-center gap-1 cursor-pointer font-mono"
+                          title="Reenviar código de acesso via SMTP"
+                        >
+                          ✉️ REENVIAR CÓD
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleSelectAndEditAction(stud.id, stud.turma_id)}
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[10px] px-3.5 py-1.5 rounded-lg shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer font-sans tracking-wide border border-emerald-500 font-mono"
+                        >
+                          <Edit3 className="h-3 w-3" />
+                          EDITAR RESPOSTAS
+                        </button>
+                      </div>
                     ) : (
-                      <button
-                        type="button"
-                        onClick={() => handleSelectAndFillPending(stud.id, stud.turma_id)}
-                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-[10px] px-3.5 py-2 rounded-lg shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer font-sans tracking-wide self-end sm:self-center shrink-0 border border-indigo-500"
-                      >
-                        <Edit3 className="h-3 w-3" />
-                        PREENCHER COMO ADMIN
-                      </button>
+                      <div className="flex flex-col sm:flex-row gap-2 self-end sm:self-center shrink-0">
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (!stud.id) return;
+                            toast.promise(
+                              (async () => {
+                                const res = await fetch('/api/auth/send-access-code', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ studentId: stud.id })
+                                });
+                                const data = await res.json();
+                                if (!res.ok) {
+                                  throw new Error(data.error || 'Erro ao enviar e-mail.');
+                                }
+                                return data;
+                              })(),
+                              {
+                                loading: 'Enviando código de acesso...',
+                                success: () => `Código enviado com sucesso para ${stud.email || 'o e-mail do aluno'}!`,
+                                error: (err: any) => `${err.message || 'Erro ao enviar.'}`
+                              }
+                            );
+                          }}
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition flex items-center justify-center gap-1 cursor-pointer border border-emerald-500 font-mono"
+                          title="Enviar código de acesso via SMTP"
+                        >
+                          ✉️ ENVIAR CÓD
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleSelectAndFillPending(stud.id, stud.turma_id)}
+                          className="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-[10px] px-3.5 py-1.5 rounded-lg shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer font-sans tracking-wide border border-indigo-500 font-mono"
+                        >
+                          <Edit3 className="h-3 w-3" />
+                          PREENCHER
+                        </button>
+                      </div>
                     )}
                   </div>
                 ))}
@@ -1307,14 +1375,46 @@ function RelatorioAvaliacaoAdminContent() {
                           </p>
                         </div>
 
-                        <button
-                          type="button"
-                          onClick={() => handleSelectAndFillPending(stud.id, stud.turma_id)}
-                          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-[10px] py-2 rounded-lg transition flex items-center justify-center gap-1.5 cursor-pointer font-mono tracking-wider shadow-sm border border-indigo-500"
-                        >
-                          <Edit3 className="h-3.5 w-3.5" />
-                          PREENCHER COMO ADMIN
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (!stud.id) return;
+                              toast.promise(
+                                (async () => {
+                                  const res = await fetch('/api/auth/send-access-code', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ studentId: stud.id })
+                                  });
+                                  const data = await res.json();
+                                  if (!res.ok) {
+                                    throw new Error(data.error || 'Erro ao enviar e-mail.');
+                                  }
+                                  return data;
+                                })(),
+                                {
+                                  loading: 'Enviando código de acesso...',
+                                  success: () => `Código enviado com sucesso para ${stud.email || 'o e-mail do aluno'}!`,
+                                  error: (err: any) => `${err.message || 'Erro ao enviar.'}`
+                                }
+                              );
+                            }}
+                            className="w-1/2 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[9px] py-2 rounded-lg transition flex items-center justify-center gap-1 cursor-pointer font-mono tracking-wider shadow-sm border border-emerald-500"
+                            title="Enviar código de acesso ao aluno por e-mail via SMTP"
+                          >
+                            ✉️ ENVIAR CÓD
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleSelectAndFillPending(stud.id, stud.turma_id)}
+                            className="w-1/2 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-[9px] py-2 rounded-lg transition flex items-center justify-center gap-1.5 cursor-pointer font-mono tracking-wider shadow-sm border border-indigo-500"
+                          >
+                            <Edit3 className="h-3.5 w-3.5" />
+                            PREENCHER
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -1624,18 +1724,53 @@ function RelatorioAvaliacaoAdminContent() {
                       ⚠️ Selecione uma turma nos filtros do topo primeiro
                     </span>
                   ) : (
-                    <select
-                      value={focusedStudent}
-                      onChange={(e) => setFocusedStudent(e.target.value)}
-                      className="bg-slate-100 border text-xs px-3 py-2 rounded-lg font-semibold focus:outline-none focus:ring-1 text-slate-800 w-full md:w-64"
-                    >
-                      <option value="">Selecione um aluno...</option>
-                      {studentsFilteredByTurma.map(stud => (
-                        <option key={stud.id} value={stud.id}>
-                          {stud.responded ? "✅" : "⚠️ (Pendente)"} {stud.nome}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full md:w-auto">
+                      <button
+                        onClick={async () => {
+                          if (!selectedTurma) return;
+                          
+                          toast.promise(
+                            (async () => {
+                              const res = await fetch('/api/auth/send-class-access-codes', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ classId: selectedTurma })
+                              });
+                              const data = await res.json();
+                              if (!res.ok) {
+                                throw new Error(data.error || 'Erro no disparo de e-mails.');
+                              }
+                              return data;
+                            })(),
+                            {
+                              loading: 'Disparando e-mails para todos os alunos da turma...',
+                              success: (data: any) => {
+                                const stats = data.stats || {};
+                                return `Processado! Sucesso: ${stats.sent || 0}, Ignorados/Sem Email: ${stats.skipped || 0}, Erros: ${stats.failed || 0}.`;
+                              },
+                              error: (err: any) => `${err.message || 'Erro ao enviar.'}`
+                            }
+                          );
+                        }}
+                        className="flex items-center justify-center gap-1.5 text-[11px] font-bold uppercase tracking-wider bg-amber-55 hover:bg-amber-100/80 text-amber-805 border border-amber-200 px-3.5 py-2 rounded-lg transition-all cursor-pointer shadow-sm shadow-amber-50"
+                        title="Enviar ou reenviar código de acesso a todos os alunos desta turma via SMTP"
+                      >
+                        📩 Disparar E-mails (Lote)
+                      </button>
+
+                      <select
+                        value={focusedStudent}
+                        onChange={(e) => setFocusedStudent(e.target.value)}
+                        className="bg-slate-100 border text-xs px-3 py-2 rounded-lg font-semibold focus:outline-none focus:ring-1 text-slate-800 w-full md:w-64"
+                      >
+                        <option value="">Selecione um aluno...</option>
+                        {studentsFilteredByTurma.map(stud => (
+                          <option key={stud.id} value={stud.id}>
+                            {stud.responded ? "✅" : "⚠️ (Pendente)"} {stud.nome}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   )}
                 </div>
               </div>
@@ -1958,11 +2093,40 @@ function RelatorioAvaliacaoAdminContent() {
                           <p><strong>OM:</strong> {studentDetails?.om || "Não disponível"}</p>
                           <p><strong>Frequência:</strong> Dependente de envio</p>
                         </div>
-                        <div className="pt-2 border-t border-slate-100 flex justify-center">
+                        <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row justify-center gap-3">
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (!studentDetails?.id) return;
+                              toast.promise(
+                                (async () => {
+                                  const res = await fetch('/api/auth/send-access-code', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ studentId: studentDetails.id })
+                                  });
+                                  const data = await res.json();
+                                  if (!res.ok) {
+                                    throw new Error(data.error || 'Erro ao enviar e-mail.');
+                                  }
+                                  return data;
+                                })(),
+                                {
+                                  loading: 'Enviando código de acesso ao aluno...',
+                                  success: () => `Código enviado com sucesso para ${studentDetails?.email || 'e-mail do aluno'}!`,
+                                  error: (err: any) => `${err.message || 'Erro ao enviar.'}`
+                                }
+                              );
+                            }}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2.5 rounded-lg shadow-sm transition flex items-center justify-center gap-2 cursor-pointer border border-emerald-500"
+                          >
+                            ✉️ Enviar Código por E-mail
+                          </button>
+                          
                           <button
                             type="button"
                             onClick={() => setIsAdminFilling(true)}
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-5 py-2.5 rounded-lg shadow-sm transition flex items-center gap-2 cursor-pointer"
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-lg shadow-sm transition flex items-center justify-center gap-2 cursor-pointer border border-indigo-500"
                           >
                             <Edit3 className="h-4 w-4" />
                             Preencher Questionário como Admin
@@ -1985,16 +2149,47 @@ function RelatorioAvaliacaoAdminContent() {
                               <Building className="h-5 w-5 text-slate-500" />
                               <h3 className="text-base font-bold text-slate-900">{studentSub.aluno?.nome}</h3>
                             </div>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                handleSelectAndEditAction(studentSub.aluno_id, studentSub.turma_id);
-                              }}
-                              className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs px-3.5 py-2 rounded-lg font-bold border border-indigo-200 transition flex items-center gap-1.5 cursor-pointer font-sans"
-                            >
-                              <Edit3 className="h-3.5 w-3.5" />
-                              EDITAR COMO ADMIN
-                            </button>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  if (!studentSub.aluno_id) return;
+                                  toast.promise(
+                                    (async () => {
+                                      const res = await fetch('/api/auth/send-access-code', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ studentId: studentSub.aluno_id })
+                                      });
+                                      const data = await res.json();
+                                      if (!res.ok) {
+                                        throw new Error(data.error || 'Erro ao enviar e-mail.');
+                                      }
+                                      return data;
+                                    })(),
+                                    {
+                                      loading: 'Enviando código de acesso...',
+                                      success: () => `Código reenviado com sucesso para ${studentSub.aluno?.email || 'e-mail do aluno'}!`,
+                                      error: (err: any) => `${err.message || 'Erro ao enviar.'}`
+                                    }
+                                  );
+                                }}
+                                className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs px-3 py-2 rounded-lg font-bold border border-emerald-200 transition flex items-center gap-1 cursor-pointer font-sans"
+                              >
+                                ✉️ REENVIAR CÓDIGO
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  handleSelectAndEditAction(studentSub.aluno_id, studentSub.turma_id);
+                                }}
+                                className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs px-3.5 py-2 rounded-lg font-bold border border-indigo-200 transition flex items-center gap-1.5 cursor-pointer font-sans"
+                              >
+                                <Edit3 className="h-3.5 w-3.5" />
+                                EDITAR COMO ADMIN
+                              </button>
+                            </div>
                           </div>
                           
                           <div className="grid grid-cols-2 gap-4 text-xs font-mono">

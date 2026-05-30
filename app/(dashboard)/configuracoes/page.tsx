@@ -15,7 +15,12 @@ import {
   Percent,
   Lock,
   ShieldAlert,
-  KeyRound
+  KeyRound,
+  Mail,
+  CheckCircle,
+  AlertTriangle,
+  Send,
+  RefreshCw
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
@@ -40,6 +45,68 @@ export default function ConfiguracoesPage() {
     frequencia_minima: 75,
     ano_letivo_atual: new Date().getFullYear()
   });
+
+  // SMTP Server states
+  const [smtpStatus, setSmtpStatus] = useState<any>(null);
+  const [smtpLoading, setSmtpLoading] = useState(true);
+  const [testEmail, setTestEmail] = useState('');
+  const [sendingTest, setSendingTest] = useState(false);
+
+  const fetchSmtpStatus = async () => {
+    if (!isAdmin) return;
+    setSmtpLoading(true);
+    try {
+      const res = await fetch('/api/admin/smtp-status');
+      if (res.ok) {
+        const data = await res.json();
+        setSmtpStatus(data);
+      }
+    } catch (err) {
+      console.error('Error fetching SMTP status:', err);
+    } finally {
+      setSmtpLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    let active = true;
+    const timer = setTimeout(() => {
+      if (isAdmin && active) {
+        fetchSmtpStatus();
+      }
+    }, 50);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [isAdmin]);
+
+  const handleSendTestEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!testEmail || !testEmail.includes('@')) {
+      toast.error('Insira um e-mail válido para o destinatário de teste.');
+      return;
+    }
+    setSendingTest(true);
+    const toastId = toast.loading('Enviando e-mail de teste...');
+    try {
+      const res = await fetch('/api/admin/smtp-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ testEmail })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Erro ao enviar e-mail de teste.');
+      }
+      toast.success(data.message || 'E-mail de teste enviado!', { id: toastId });
+      setTestEmail('');
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao rodar teste SMTP.', { id: toastId });
+    } finally {
+      setSendingTest(false);
+    }
+  };
 
   useEffect(() => {
     const fetchConfig = async () => {
@@ -328,6 +395,117 @@ export default function ConfiguracoesPage() {
           </form>
         )}
       </div>
+
+      {/* Servidor de E-mails Card */}
+      {isAdmin && (
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+          <div className="flex items-center justify-between border-b border-slate-50 pb-4">
+            <div className="flex items-center gap-3">
+               <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
+                  <Mail size={20} />
+               </div>
+               <div>
+                  <h2 className="font-bold text-slate-800">Servidor de Envio de E-mails (SMTP)</h2>
+                  <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Distribuição de Códigos aos Alunos</p>
+               </div>
+            </div>
+            <button
+              onClick={fetchSmtpStatus}
+              disabled={smtpLoading}
+              className="p-2 hover:bg-slate-50 rounded-lg border border-slate-200 text-slate-500 hover:text-slate-700 transition cursor-pointer"
+              title="Atualizar status"
+            >
+              <RefreshCw size={14} className={smtpLoading ? "animate-spin" : ""} />
+            </button>
+          </div>
+
+          {smtpLoading ? (
+            <div className="py-6 flex justify-center items-center gap-2 text-slate-500 text-xs font-mono">
+              <Loader2 size={16} className="animate-spin text-emerald-600" />
+              Carregando status do canal de e-mails...
+            </div>
+          ) : smtpStatus ? (
+            <div className="space-y-4">
+              {/* Status Header */}
+              <div className={cn(
+                "p-4 rounded-xl border flex items-start gap-3",
+                smtpStatus.isConfigured 
+                  ? "bg-emerald-50/50 border-emerald-100 text-emerald-800"
+                  : "bg-amber-50/50 border-amber-100 text-amber-800"
+              )}>
+                {smtpStatus.isConfigured ? (
+                  <CheckCircle size={20} className="text-emerald-600 shrink-0 mt-0.5" />
+                ) : (
+                  <AlertTriangle size={20} className="text-amber-600 shrink-0 mt-0.5" />
+                )}
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider">
+                    {smtpStatus.isConfigured ? "Servidor de Emails Ativo & Configurado" : "Servidor de Emails Não Configurado / Pendente"}
+                  </h4>
+                  <p className="text-[11px] opacity-90 leading-relaxed mt-1 font-sans">
+                    {smtpStatus.isConfigured 
+                      ? "As credenciais do servidor SMTP foram detectadas corretas no ambiente. Os códigos de acesso de novos ou atuais alunos serão despachados a eles de maneira automatizada e segura."
+                      : "As credenciais SMTP_HOST, SMTP_USER ou SMTP_PASS estão vazias nos Secrets. O recurso de disparo autônomo está temporariamente desativado até a inclusão das variáveis de ambiente correspondentes."}
+                  </p>
+                </div>
+              </div>
+
+              {/* Server info list */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100 text-xs font-mono">
+                <div>
+                  <span className="block text-[10px] uppercase text-slate-400 font-bold mb-0.5">Host de Envio (SMTP)</span>
+                  <span className="font-semibold text-slate-700">{smtpStatus.smtpHost || 'Não especificado (-)'}</span>
+                </div>
+                <div>
+                  <span className="block text-[10px] uppercase text-slate-400 font-bold mb-0.5">Porta</span>
+                  <span className="font-semibold text-slate-700">{smtpStatus.smtpPort || '587'} {smtpStatus.smtpSecure ? '(SSL/TLS Seguro)' : '(Standard)'}</span>
+                </div>
+                <div>
+                  <span className="block text-[10px] uppercase text-slate-400 font-bold mb-0.5">Usuário autenticado</span>
+                  <span className="font-semibold text-slate-600">{smtpStatus.smtpUser || 'Não configurado'}</span>
+                </div>
+                <div>
+                  <span className="block text-[10px] uppercase text-slate-400 font-bold mb-0.5">Remetente Oficial (From)</span>
+                  <span className="font-semibold text-slate-700">{smtpStatus.smtpFrom}</span>
+                </div>
+              </div>
+
+              {/* Send test form if configured */}
+              {smtpStatus.isConfigured && (
+                <form onSubmit={handleSendTestEmail} className="pt-2 space-y-3">
+                  <div className="h-[1px] bg-slate-100" />
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold text-slate-700">Testar Disparo de E-mail</label>
+                    <p className="text-[10px] text-slate-400">Insira um endereço válido para que o sistema envie uma mensagem SMTP de validação imediata.</p>
+                  </div>
+                  <div className="flex gap-2 max-w-md">
+                    <input
+                      type="email"
+                      required
+                      placeholder="seu-email@teste.com"
+                      value={testEmail}
+                      onChange={(e) => setTestEmail(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold focus:ring-2 focus:ring-emerald-500/20 outline-none"
+                    />
+                    <button
+                      type="submit"
+                      disabled={sendingTest}
+                      className="bg-emerald-600 text-white font-bold text-xs px-4 py-2 rounded-lg hover:bg-emerald-700 transition flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-sm shadow-emerald-50"
+                    >
+                      {sendingTest ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
+                      Testar
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-4 text-xs italic text-slate-400 font-mono">
+              Não foi possível sincronizar informações do servidor SMTP.
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="flex justify-end pt-4">
         {!isReadOnly && (
