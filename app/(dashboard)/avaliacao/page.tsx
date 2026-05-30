@@ -25,11 +25,9 @@ import { toast } from 'sonner';
 
 // Define the scale options
 const EVALUATION_SCALE = [
-  { value: 5, label: "Excelente", color: "bg-emerald-600 border-emerald-500 text-emerald-700 hover:bg-emerald-50" },
-  { value: 4, label: "Muito Bom", color: "bg-teal-600 border-teal-500 text-teal-700 hover:bg-teal-50" },
-  { value: 3, label: "Bom", color: "bg-sky-600 border-sky-500 text-sky-700 hover:bg-sky-50" },
-  { value: 2, label: "Regular", color: "bg-amber-600 border-amber-500 text-amber-700 hover:bg-amber-50" },
-  { value: 1, label: "Insatisfatório", color: "bg-rose-600 border-rose-500 text-rose-700 hover:bg-rose-50" }
+  { value: 5, label: "CONCORDO PLENAMENTE", color: "bg-emerald-605 border-emerald-500 text-emerald-700 hover:bg-emerald-50" },
+  { value: 3, label: "CONCORDO PARCIALMENTE", color: "bg-sky-605 border-sky-500 text-sky-700 hover:bg-sky-50" },
+  { value: 1, label: "DISCORDO/ NÃO SE APLICA", color: "bg-rose-605 border-rose-500 text-rose-700 hover:bg-rose-50" }
 ];
 
 const CURSO_QUESTIONS = [
@@ -581,9 +579,9 @@ export default function AvaliacaoAlunoPage() {
           </div>
 
           <div className="text-[11px] text-slate-700 font-sans leading-relaxed border-l-2 border-slate-900 pl-3 my-4">
-            <strong>Instruções de Preenchimento:</strong> Para cada item listado abaixo, marque com um <strong>X</strong> a coluna correspondente à sua nota/avaliação, seguindo a escala de 1 a 5:
+            <strong>Instruções de Preenchimento:</strong> Para cada item listado abaixo, marque com um <strong>X</strong> a coluna correspondente à sua avaliação:
             <br />
-            <strong>[ 1 ]</strong> Insatisfatório | <strong>[ 2 ]</strong> Regular | <strong>[ 3 ]</strong> Bom | <strong>[ 4 ]</strong> Muito Bom | <strong>[ 5 ]</strong> Excelente
+            <strong>[ CP ]</strong> Concordo Plenamente | <strong>[ CPa ]</strong> Concordo Parcialmente | <strong>[ D/NA ]</strong> Discordo / Não se aplica
           </div>
 
           {/* TABLE SCHEMA FOR PRINTING QUESTIONS */}
@@ -593,20 +591,16 @@ export default function AvaliacaoAlunoPage() {
             <table className="w-full text-xs border-collapse border border-slate-300 font-sans">
               <thead>
                 <tr className="bg-slate-50">
-                  <th className="border border-slate-300 p-1.5 text-left w-2/3">Critério Acadêmico</th>
-                  <th className="border border-slate-300 p-1.5 text-center w-12">1</th>
-                  <th className="border border-slate-300 p-1.5 text-center w-12">2</th>
-                  <th className="border border-slate-300 p-1.5 text-center w-12">3</th>
-                  <th className="border border-slate-300 p-1.5 text-center w-12">4</th>
-                  <th className="border border-slate-300 p-1.5 text-center w-12">5</th>
+                  <th className="border border-slate-300 p-1.5 text-left w-1/2">Critério Acadêmico</th>
+                  <th className="border border-slate-300 p-1.5 text-center w-32">Concordo Plenamente</th>
+                  <th className="border border-slate-300 p-1.5 text-center w-32">Concordo Parcialmente</th>
+                  <th className="border border-slate-300 p-1.5 text-center w-32">Discordo / Não se Aplica</th>
                 </tr>
               </thead>
               <tbody>
                 {CURSO_QUESTIONS.map((q, idx) => (
                   <tr key={q.key} className="hover:bg-slate-50/50">
                     <td className="border border-slate-300 p-1.5">{idx + 1}. {q.label}</td>
-                    <td className="border border-slate-300 p-1.5 text-center text-slate-300 font-mono">[  ]</td>
-                    <td className="border border-slate-300 p-1.5 text-center text-slate-300 font-mono">[  ]</td>
                     <td className="border border-slate-300 p-1.5 text-center text-slate-300 font-mono">[  ]</td>
                     <td className="border border-slate-300 p-1.5 text-center text-slate-300 font-mono">[  ]</td>
                     <td className="border border-slate-300 p-1.5 text-center text-slate-300 font-mono">[  ]</td>
@@ -622,20 +616,16 @@ export default function AvaliacaoAlunoPage() {
             <table className="w-full text-xs border-collapse border border-slate-300 font-sans">
               <thead>
                 <tr className="bg-slate-50">
-                  <th className="border border-slate-300 p-1.5 text-left w-2/3">Critério Acadêmico</th>
-                  <th className="border border-slate-300 p-1.5 text-center w-12">1</th>
-                  <th className="border border-slate-300 p-1.5 text-center w-12">2</th>
-                  <th className="border border-slate-300 p-1.5 text-center w-12">3</th>
-                  <th className="border border-slate-300 p-1.5 text-center w-12">4</th>
-                  <th className="border border-slate-300 p-1.5 text-center w-12">5</th>
+                  <th className="border border-slate-300 p-1.5 text-left w-1/2">Critério Acadêmico</th>
+                  <th className="border border-slate-300 p-1.5 text-center w-32">Concordo Plenamente</th>
+                  <th className="border border-slate-300 p-1.5 text-center w-32">Concordo Parcialmente</th>
+                  <th className="border border-slate-300 p-1.5 text-center w-32">Discordo / Não se Aplica</th>
                 </tr>
               </thead>
               <tbody>
                 {INSTRUTOR_QUESTIONS.map((q, idx) => (
                   <tr key={q.key} className="hover:bg-slate-50/50">
                     <td className="border border-slate-300 p-1.5">{idx + 1}. {q.label}</td>
-                    <td className="border border-slate-300 p-1.5 text-center text-slate-300 font-mono">[  ]</td>
-                    <td className="border border-slate-300 p-1.5 text-center text-slate-300 font-mono">[  ]</td>
                     <td className="border border-slate-300 p-1.5 text-center text-slate-300 font-mono">[  ]</td>
                     <td className="border border-slate-300 p-1.5 text-center text-slate-300 font-mono">[  ]</td>
                     <td className="border border-slate-300 p-1.5 text-center text-slate-300 font-mono">[  ]</td>
@@ -653,20 +643,16 @@ export default function AvaliacaoAlunoPage() {
             <table className="w-full text-xs border-collapse border border-slate-300 font-sans">
               <thead>
                 <tr className="bg-slate-50">
-                  <th className="border border-slate-300 p-1.5 text-left w-2/3">Critério Acadêmico</th>
-                  <th className="border border-slate-300 p-1.5 text-center w-12">1</th>
-                  <th className="border border-slate-300 p-1.5 text-center w-12">2</th>
-                  <th className="border border-slate-300 p-1.5 text-center w-12">3</th>
-                  <th className="border border-slate-300 p-1.5 text-center w-12">4</th>
-                  <th className="border border-slate-300 p-1.5 text-center w-12">5</th>
+                  <th className="border border-slate-300 p-1.5 text-left w-1/2">Critério Acadêmico</th>
+                  <th className="border border-slate-300 p-1.5 text-center w-32">Concordo Plenamente</th>
+                  <th className="border border-slate-300 p-1.5 text-center w-32">Concordo Parcialmente</th>
+                  <th className="border border-slate-300 p-1.5 text-center w-32">Discordo / Não se Aplica</th>
                 </tr>
               </thead>
               <tbody>
                 {AUTO_QUESTIONS.map((q, idx) => (
                   <tr key={q.key} className="hover:bg-slate-50/50">
                     <td className="border border-slate-300 p-1.5">{idx + 1}. {q.label}</td>
-                    <td className="border border-slate-300 p-1.5 text-center text-slate-300 font-mono">[  ]</td>
-                    <td className="border border-slate-300 p-1.5 text-center text-slate-300 font-mono">[  ]</td>
                     <td className="border border-slate-300 p-1.5 text-center text-slate-300 font-mono">[  ]</td>
                     <td className="border border-slate-300 p-1.5 text-center text-slate-300 font-mono">[  ]</td>
                     <td className="border border-slate-300 p-1.5 text-center text-slate-300 font-mono">[  ]</td>
@@ -682,20 +668,16 @@ export default function AvaliacaoAlunoPage() {
             <table className="w-full text-xs border-collapse border border-slate-300 font-sans">
               <thead>
                 <tr className="bg-slate-50">
-                  <th className="border border-slate-300 p-1.5 text-left w-2/3">Critério Acadêmico</th>
-                  <th className="border border-slate-300 p-1.5 text-center w-12">1</th>
-                  <th className="border border-slate-300 p-1.5 text-center w-12">2</th>
-                  <th className="border border-slate-300 p-1.5 text-center w-12">3</th>
-                  <th className="border border-slate-300 p-1.5 text-center w-12">4</th>
-                  <th className="border border-slate-300 p-1.5 text-center w-12">5</th>
+                  <th className="border border-slate-300 p-1.5 text-left w-1/2">Critério Acadêmico</th>
+                  <th className="border border-slate-300 p-1.5 text-center w-32">Concordo Plenamente</th>
+                  <th className="border border-slate-300 p-1.5 text-center w-32">Concordo Parcialmente</th>
+                  <th className="border border-slate-300 p-1.5 text-center w-32">Discordo / Não se Aplica</th>
                 </tr>
               </thead>
               <tbody>
                 {INFRA_QUESTIONS.map((q, idx) => (
                   <tr key={q.key} className="hover:bg-slate-50/50">
                     <td className="border border-slate-300 p-1.5">{idx + 1}. {q.label}</td>
-                    <td className="border border-slate-300 p-1.5 text-center text-slate-300 font-mono">[  ]</td>
-                    <td className="border border-slate-300 p-1.5 text-center text-slate-300 font-mono">[  ]</td>
                     <td className="border border-slate-300 p-1.5 text-center text-slate-300 font-mono">[  ]</td>
                     <td className="border border-slate-300 p-1.5 text-center text-slate-300 font-mono">[  ]</td>
                     <td className="border border-slate-300 p-1.5 text-center text-slate-300 font-mono">[  ]</td>
@@ -892,8 +874,8 @@ export default function AvaliacaoAlunoPage() {
                       {idx + 1}. {q.label}
                     </p>
                     
-                    {/* Radio Grid (Excelente to Insatisfatório) */}
-                    <div className="grid grid-cols-5 gap-2 max-w-3xl">
+                    {/* Radio Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-3xl">
                       {EVALUATION_SCALE.map((opt) => {
                         const isSelected = answers[q.key] === opt.value;
                         return (
@@ -952,8 +934,8 @@ export default function AvaliacaoAlunoPage() {
                       {idx + 1}. {q.label}
                     </p>
                     
-                    {/* Radio Grid (Excelente to Insatisfatório) */}
-                    <div className="grid grid-cols-5 gap-2 max-w-3xl">
+                    {/* Radio Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-3xl">
                       {EVALUATION_SCALE.map((opt) => {
                         const isSelected = answers[q.key] === opt.value;
                         return (
@@ -1013,8 +995,8 @@ export default function AvaliacaoAlunoPage() {
                         {idx + 1}. {q.label}
                       </p>
                       
-                      {/* Radio Grid (Excelente to Insatisfatório) */}
-                      <div className="grid grid-cols-5 gap-2 max-w-3xl">
+                      {/* Radio Grid */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-3xl">
                         {EVALUATION_SCALE.map((opt) => {
                           const isSelected = answers[q.key] === opt.value;
                           return (
@@ -1052,7 +1034,7 @@ export default function AvaliacaoAlunoPage() {
                       </p>
                       
                       {/* Radio Grid */}
-                      <div className="grid grid-cols-5 gap-2 max-w-3xl">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-3xl">
                         {EVALUATION_SCALE.map((opt) => {
                           const isSelected = answers[q.key] === opt.value;
                           return (

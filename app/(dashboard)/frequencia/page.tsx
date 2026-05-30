@@ -163,8 +163,49 @@ export default function FrequenciaPage() {
     return () => { isMounted = false; };
   }, [fetchAttendance]);
 
+  const getTurmaPeriodStatus = useCallback(() => {
+    if (!selectedTurma) return { isValid: true, isExpired: false, isBefore: false, data_inicio: null, data_fim: null };
+    const activeTurma = turmas.find(t => t.id === selectedTurma);
+    if (!activeTurma) return { isValid: true, isExpired: false, isBefore: false, data_inicio: null, data_fim: null };
+
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    const hasStart = !!activeTurma.data_inicio;
+    const hasEnd = !!activeTurma.data_fim;
+
+    let isExpired = false;
+    let isBefore = false;
+
+    if (hasEnd) {
+      if (todayStr > activeTurma.data_fim || selectedDate > activeTurma.data_fim) {
+        isExpired = true;
+      }
+    }
+    if (hasStart) {
+      if (selectedDate < activeTurma.data_inicio) {
+        isBefore = true;
+      }
+    }
+
+    return {
+      isValid: !isExpired && !isBefore,
+      isExpired,
+      isBefore,
+      data_inicio: activeTurma.data_inicio,
+      data_fim: activeTurma.data_fim
+    };
+  }, [selectedTurma, turmas, selectedDate]);
+
   const handleToggleAttendance = (alunoId: string) => {
     if (isReadOnly) return;
+    const { isValid, isExpired } = getTurmaPeriodStatus();
+    if (isExpired) {
+      toast.error(language === 'pt' ? 'O período desta turma já expirou. Não é permitido marcar frequência.' : 'The period for this class has expired. Attendance marking is not allowed.');
+      return;
+    }
+    if (!isValid) {
+      toast.error(language === 'pt' ? 'A data selecionada está fora do período da turma.' : 'The selected date is outside the class period.');
+      return;
+    }
     setAttendanceRecords(prev => ({
       ...prev,
       [alunoId]: { ...prev[alunoId], presente: !prev[alunoId].presente }
@@ -175,6 +216,15 @@ export default function FrequenciaPage() {
     if (!selectedTurma || isReadOnly) return;
     if (!selectedDate) {
       toast.error(language === 'pt' ? 'Por favor, selecione uma data válida.' : 'Please select a valid date.');
+      return;
+    }
+    const { isValid, isExpired } = getTurmaPeriodStatus();
+    if (isExpired) {
+      toast.error(language === 'pt' ? 'Impossível salvar. O período da turma já expirou.' : 'Cannot save. The class period has already expired.');
+      return;
+    }
+    if (!isValid) {
+      toast.error(language === 'pt' ? 'Impossível salvar. A data selecionada está fora do período da turma.' : 'Cannot save. Selected date is outside the class period.');
       return;
     }
     setSaving(true);
@@ -214,7 +264,7 @@ export default function FrequenciaPage() {
       const { data: cursosData } = await supabase.from('cursos').select('id, nome, internacional').is('deleted_at', null).order('nome');
       if (cursosData) setCursos(cursosData.filter((c: any) => !c.internacional));
 
-      const { data: turmasData } = await supabase.from('turmas').select('id, nome, curso_id, internacional').is('deleted_at', null).order('nome');
+      const { data: turmasData } = await supabase.from('turmas').select('id, nome, curso_id, internacional, data_inicio, data_fim').is('deleted_at', null).order('nome');
       if (turmasData) setTurmas(turmasData.filter((t: any) => !t.internacional));
 
       const { data: disciplinasData } = await supabase.from('disciplinas').select('id, nome, curso_id').is('deleted_at', null).order('nome');
@@ -358,69 +408,111 @@ export default function FrequenciaPage() {
         </div>
       </div>
 
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden min-h-[500px]">
-              {/* List Header/Toolbar */}
-              <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="flex-1 max-w-md relative">
-                  <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input
-                    type="text"
-                    placeholder="Buscar aluno por nome ou ID..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500/10 focus:border-blue-400 outline-none text-sm transition-all"
-                  />
-                </div>
-
-                <div className="flex flex-wrap items-center gap-3">
-                  <div className="flex bg-slate-100 p-1.5 rounded-2xl">
-                    <button
-                      onClick={() => setActiveFilter('all')}
-                      className={cn(
-                        "px-6 py-2 rounded-xl text-xs font-bold uppercase transition-all",
-                        activeFilter === 'all' ? "bg-white text-blue-600 shadow-md" : "text-slate-500 hover:text-slate-700"
-                      )}
-                    >
-                      {t.common.all || 'TODOS'}
-                    </button>
-                    <button
-                      onClick={() => setActiveFilter('absent')}
-                      className={cn(
-                        "px-6 py-2 rounded-xl text-xs font-bold uppercase transition-all",
-                        activeFilter === 'absent' ? "bg-white text-blue-600 shadow-md" : "text-slate-500 hover:text-slate-700"
-                      )}
-                    >
-                      {t.attendance.absent || 'AUSENTES'}
-                    </button>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 rounded-2xl border border-emerald-200/50 shadow-sm">
-                      <span className="text-sm font-black">{totalPresent < 10 ? `0${totalPresent}` : totalPresent}</span>
-                      <span className="text-[10px] font-bold uppercase tracking-widest opacity-80">{t.attendance.present}</span>
-                    </div>
-                    <div className="flex items-center gap-2 px-4 py-2 bg-rose-50 text-rose-700 rounded-2xl border border-rose-200/50 shadow-sm">
-                      <span className="text-sm font-black">{totalAbsent < 10 ? `0${totalAbsent}` : totalAbsent}</span>
-                      <span className="text-[10px] font-bold uppercase tracking-widest opacity-80">{t.attendance.absent}</span>
-                    </div>
-                    <div className="flex items-center gap-2 px-4 py-2 bg-orange-50 text-orange-700 rounded-2xl border border-orange-200/50 shadow-sm">
-                      <span className="text-sm font-black">00</span>
-                      <span className="text-[10px] font-bold uppercase tracking-widest opacity-80">ATRASO</span>
-                    </div>
-                  </div>
-
-                  {!isReadOnly && (
-                    <button
-                      onClick={handleSaveAttendance}
-                      disabled={saving || !selectedTurma}
-                      className="flex items-center justify-center gap-3 bg-blue-900 text-white px-8 py-3.5 rounded-2xl text-sm font-black hover:bg-blue-800 transition-all shadow-xl shadow-blue-900/20 disabled:opacity-50 active:scale-95"
-                    >
-                      <Save size={20} className={cn(saving && "animate-spin")} />
-                      {t.attendance.saveCall || 'Salvar Chamada'}
-                    </button>
-                  )}
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden min-h-[500px]">
+        {/* Period status banner if selectedTurma is active */}
+        {selectedTurma && (() => {
+          const { isValid, isExpired, isBefore, data_inicio, data_fim } = getTurmaPeriodStatus();
+          if (isExpired) {
+            return (
+              <div className="mx-6 mt-6 p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-center gap-3 text-amber-800">
+                <ShieldAlert className="h-5 w-5 text-amber-600 shrink-0" />
+                <div className="text-xs font-semibold">
+                  <p className="font-bold">⚠️ Período da Turma Expirado!</p>
+                  <p className="font-normal mt-0.5">
+                    O período letivo definido para esta turma ({data_inicio ? data_inicio.split('-').reverse().join('/') : 'N/A'} a {data_fim ? data_fim.split('-').reverse().join('/') : 'N/A'}) já encerrou. As alterações de presença, falta ou atraso estão bloqueadas.
+                  </p>
                 </div>
               </div>
+            );
+          }
+          if (isBefore) {
+            return (
+              <div className="mx-6 mt-6 p-4 bg-blue-50 border border-blue-200 rounded-2xl flex items-center gap-3 text-blue-800">
+                <ShieldAlert className="h-5 w-5 text-blue-600 shrink-0" />
+                <div className="text-xs font-semibold">
+                  <p className="font-bold">📅 Data selecionada anterior ao início das aulas!</p>
+                  <p className="font-normal mt-0.5">
+                    O período letivo desta turma inicia em {data_inicio ? data_inicio.split('-').reverse().join('/') : 'N/A'}. A gravação de frequências para esta data está bloqueada.
+                  </p>
+                </div>
+              </div>
+            );
+          }
+          if (data_inicio || data_fim) {
+            return (
+              <div className="mx-6 mt-6 p-3 bg-slate-50 border border-slate-150 rounded-2xl flex items-center gap-2 text-slate-600">
+                <CalendarDays className="h-4 w-4 text-blue-600 shrink-0" />
+                <span className="text-[11px] font-bold font-mono uppercase tracking-wider">
+                  Período Vigente: {data_inicio ? data_inicio.split('-').reverse().join('/') : '—'} até {data_fim ? data_fim.split('-').reverse().join('/') : '—'}
+                </span>
+              </div>
+            );
+          }
+          return null;
+        })()}
+
+        {/* List Header/Toolbar */}
+        <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex-1 max-w-md relative">
+            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Buscar aluno por nome ou ID..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500/10 focus:border-blue-400 outline-none text-sm transition-all"
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex bg-slate-100 p-1.5 rounded-2xl">
+              <button
+                onClick={() => setActiveFilter('all')}
+                className={cn(
+                  "px-6 py-2 rounded-xl text-xs font-bold uppercase transition-all",
+                  activeFilter === 'all' ? "bg-white text-blue-600 shadow-md" : "text-slate-500 hover:text-slate-700"
+                )}
+              >
+                {t.common.all || 'TODOS'}
+              </button>
+              <button
+                onClick={() => setActiveFilter('absent')}
+                className={cn(
+                  "px-6 py-2 rounded-xl text-xs font-bold uppercase transition-all",
+                  activeFilter === 'absent' ? "bg-white text-blue-600 shadow-md" : "text-slate-500 hover:text-slate-700"
+                )}
+              >
+                {t.attendance.absent || 'AUSENTES'}
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 rounded-2xl border border-emerald-200/50 shadow-sm">
+                <span className="text-sm font-black">{totalPresent < 10 ? `0${totalPresent}` : totalPresent}</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest opacity-80">{t.attendance.present}</span>
+              </div>
+              <div className="flex items-center gap-2 px-4 py-2 bg-rose-50 text-rose-700 rounded-2xl border border-rose-200/50 shadow-sm">
+                <span className="text-sm font-black">{totalAbsent < 10 ? `0${totalAbsent}` : totalAbsent}</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest opacity-80">{t.attendance.absent}</span>
+              </div>
+              <div className="flex items-center gap-2 px-4 py-2 bg-orange-50 text-orange-700 rounded-2xl border border-orange-200/50 shadow-sm">
+                <span className="text-sm font-black">00</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest opacity-80">ATRASO</span>
+              </div>
+            </div>
+
+            {!isReadOnly && (
+              <button
+                onClick={handleSaveAttendance}
+                disabled={saving || !selectedTurma || getTurmaPeriodStatus().isExpired || !getTurmaPeriodStatus().isValid}
+                className="flex items-center justify-center gap-3 bg-blue-900 text-white px-8 py-3.5 rounded-2xl text-sm font-black hover:bg-blue-800 transition-all shadow-xl shadow-blue-900/20 disabled:opacity-50 active:scale-95"
+              >
+                <Save size={20} className={cn(saving && "animate-spin")} />
+                {t.attendance.saveCall || 'Salvar Chamada'}
+              </button>
+            )}
+          </div>
+        </div>
 
               {/* Table Area */}
               <div className="overflow-x-auto">
@@ -490,32 +582,47 @@ export default function FrequenciaPage() {
                           <td className="px-6 py-4">
                             <div className="flex items-center justify-center gap-2">
                               <button
-                                onClick={() => !attendanceRecords[student.id]?.presente && handleToggleAttendance(student.id)}
+                                onClick={() => !getTurmaPeriodStatus().isExpired && !attendanceRecords[student.id]?.presente && handleToggleAttendance(student.id)}
+                                disabled={getTurmaPeriodStatus().isExpired || isReadOnly}
                                 className={cn(
                                   "w-10 h-10 rounded-xl flex items-center justify-center transition-all shadow-sm",
                                   attendanceRecords[student.id]?.presente 
                                     ? "bg-blue-100 text-blue-600 ring-2 ring-blue-500/20" 
-                                    : "bg-slate-50 text-slate-400 hover:bg-slate-100"
+                                    : "bg-slate-50 text-slate-400 hover:bg-slate-100",
+                                  getTurmaPeriodStatus().isExpired && "opacity-40 cursor-not-allowed"
                                 )}
-                                title="Presente"
+                                title={getTurmaPeriodStatus().isExpired ? "Período Expirado" : "Presente"}
                               >
                                 <CheckCircle2 size={20} />
                               </button>
                               <button
-                                onClick={() => attendanceRecords[student.id]?.presente && handleToggleAttendance(student.id)}
+                                onClick={() => !getTurmaPeriodStatus().isExpired && attendanceRecords[student.id]?.presente && handleToggleAttendance(student.id)}
+                                disabled={getTurmaPeriodStatus().isExpired || isReadOnly}
                                 className={cn(
                                   "w-10 h-10 rounded-xl flex items-center justify-center transition-all shadow-sm",
                                   !attendanceRecords[student.id]?.presente 
                                     ? "bg-rose-100 text-rose-600 ring-2 ring-rose-500/20" 
-                                    : "bg-slate-50 text-slate-400 hover:bg-slate-100"
+                                    : "bg-slate-50 text-slate-400 hover:bg-slate-100",
+                                  getTurmaPeriodStatus().isExpired && "opacity-40 cursor-not-allowed"
                                 )}
-                                title="Falta"
+                                title={getTurmaPeriodStatus().isExpired ? "Período Expirado" : "Falta"}
                               >
                                 <XCircle size={20} />
                               </button>
                               <button
-                                className="w-10 h-10 rounded-xl flex items-center justify-center transition-all bg-slate-50 text-slate-400 hover:bg-orange-50 hover:text-orange-600 hover:ring-2 hover:ring-orange-500/20 shadow-sm"
-                                title="Atraso"
+                                onClick={() => {
+                                  if (getTurmaPeriodStatus().isExpired) {
+                                    toast.error(language === 'pt' ? 'O período desta turma já expirou. Não é permitido marcar atraso.' : 'The class period has expired. Marking delay is not allowed.');
+                                    return;
+                                  }
+                                  toast.info(language === 'pt' ? 'Registro de atraso não disponível no momento.' : 'Delay registration not available at this moment.');
+                                }}
+                                disabled={getTurmaPeriodStatus().isExpired}
+                                className={cn(
+                                  "w-10 h-10 rounded-xl flex items-center justify-center transition-all bg-slate-50 text-slate-400 hover:bg-orange-50 hover:text-orange-600 hover:ring-2 hover:ring-orange-500/20 shadow-sm",
+                                  getTurmaPeriodStatus().isExpired && "opacity-40 cursor-not-allowed"
+                                )}
+                                title={getTurmaPeriodStatus().isExpired ? "Período Expirado" : "Atraso"}
                               >
                                 <Clock size={20} />
                               </button>

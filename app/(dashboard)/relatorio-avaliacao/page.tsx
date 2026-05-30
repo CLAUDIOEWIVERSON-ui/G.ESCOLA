@@ -25,25 +25,23 @@ import {
   AlertTriangle, 
   CheckCircle, 
   Star,
-  Info
+  Info,
+  Edit3,
+  Signature
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-// Scaling text helper
+// Scaling text helper matches CP: 5, CPa: 3, D/NA: 1
 const getScaleLabel = (val: number) => {
-  if (val >= 4.5) return "Excelente";
-  if (val >= 3.5) return "Muito Bom";
-  if (val >= 2.5) return "Bom";
-  if (val >= 1.5) return "Regular";
-  return "Insatisfatório";
+  if (val >= 4.2) return "Concordância Plena (CP)";
+  if (val >= 2.6) return "Concordância Parcial (CPa)";
+  return "Discordo / Não se Aplica (D/NA)";
 };
 
 // Colors based on score
 const getScoreBgColor = (val: number) => {
   if (val >= 4.0) return "bg-emerald-50 text-emerald-700 border-emerald-200";
-  if (val >= 3.0) return "bg-teal-50 text-teal-700 border-teal-200";
-  if (val >= 2.5) return "bg-sky-50 text-sky-700 border-sky-200";
-  if (val >= 1.5) return "bg-amber-50 text-amber-700 border-amber-200";
+  if (val >= 2.6) return "bg-sky-50 text-sky-700 border-sky-200";
   return "bg-rose-50 text-rose-700 border-rose-200";
 };
 
@@ -112,6 +110,186 @@ function RelatorioAvaliacaoAdminContent() {
   const [focusedInstructor, setFocusedInstructor] = useState<string>('');
   const [focusedStudent, setFocusedStudent] = useState<string>('');
   const [migratingMessage, setMigratingMessage] = useState(false);
+
+  // Admin questionnaire prefill states
+  const [isAdminFilling, setIsAdminFilling] = useState(false);
+  const [adminAnswers, setAdminAnswers] = useState<Record<string, number>>({});
+  const [adminComments, setAdminComments] = useState({
+    sugestoes_melhoria: '',
+    criticas_construtivas: '',
+    elogios: '',
+    necessidades_novos_cursos: '',
+    comentarios_adicionais: ''
+  });
+  const [adminSignature, setAdminSignature] = useState('');
+  const [adminSubmitting, setAdminSubmitting] = useState(false);
+
+  // Exit form if tab changes
+  const changeTab = (tab: string) => {
+    setActiveTab(tab);
+    if (tab !== 'aluno') {
+      setIsAdminFilling(false);
+    }
+  };
+
+  // Synchronize and auto-load existing questionnaire answers/comments when editing
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (isAdminFilling && focusedStudent) {
+        const existingSub = submissions.find(sub => sub.aluno_id === focusedStudent);
+        if (existingSub) {
+          const answers: Record<string, number> = {};
+          const allQuestions = [
+            ...CURSO_QUESTIONS,
+            ...INSTRUTOR_QUESTIONS,
+            ...AUTO_QUESTIONS,
+            ...INFRA_QUESTIONS
+          ];
+          allQuestions.forEach(q => {
+            if (existingSub[q.key] !== undefined && existingSub[q.key] !== null) {
+              answers[q.key] = Number(existingSub[q.key]);
+            }
+          });
+
+          setAdminAnswers(answers);
+          setAdminComments({
+            sugestoes_melhoria: existingSub.sugestoes_melhoria || '',
+            criticas_construtivas: existingSub.criticas_construtivas || '',
+            elogios: existingSub.elogios || '',
+            necessidades_novos_cursos: existingSub.necessidades_novos_cursos || '',
+            comentarios_adicionais: existingSub.comentarios_adicionais || ''
+          });
+
+          let namePart = '';
+          if (existingSub.assinatura_digital && existingSub.assinatura_digital.includes('Administrador')) {
+            const match = existingSub.assinatura_digital.match(/Administrador\s+(.*?)\s+em/);
+            if (match && match[1]) {
+              namePart = match[1].trim();
+            }
+          }
+          setAdminSignature(namePart || 'Administrador');
+        } else {
+          setAdminAnswers({});
+          setAdminComments({
+            sugestoes_melhoria: '',
+            criticas_construtivas: '',
+            elogios: '',
+            necessidades_novos_cursos: '',
+            comentarios_adicionais: ''
+          });
+          setAdminSignature('');
+        }
+      } else if (!isAdminFilling) {
+        setAdminAnswers({});
+        setAdminComments({
+          sugestoes_melhoria: '',
+          criticas_construtivas: '',
+          elogios: '',
+          necessidades_novos_cursos: '',
+          comentarios_adicionais: ''
+        });
+        setAdminSignature('');
+      }
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [isAdminFilling, focusedStudent, submissions]);
+
+  const handleQuickPrefill = (score: number) => {
+    const prefill: Record<string, number> = {};
+    const allQuestions = [
+      ...CURSO_QUESTIONS,
+      ...INSTRUTOR_QUESTIONS,
+      ...AUTO_QUESTIONS,
+      ...INFRA_QUESTIONS
+    ];
+    allQuestions.forEach(q => {
+      prefill[q.key] = score;
+    });
+    setAdminAnswers(prefill);
+    toast.success(`Todas as questões foram preenchidas com a nota ${score}!`);
+  };
+
+  const handleAdminSubmit = async (e: React.FormEvent, studentDetails: any) => {
+    e.preventDefault();
+    if (!adminSignature.trim()) {
+      toast.error('Por favor, digite seu nome no campo de assinatura digital do administrador.');
+      return;
+    }
+
+    const allQuestions = [
+      ...CURSO_QUESTIONS,
+      ...INSTRUTOR_QUESTIONS,
+      ...AUTO_QUESTIONS,
+      ...INFRA_QUESTIONS
+    ];
+
+    const missing = allQuestions.filter(q => !adminAnswers[q.key]);
+    if (missing.length > 0) {
+      toast.error(`Ainda restam ${missing.length} questões sem resposta.`);
+      return;
+    }
+
+    setAdminSubmitting(true);
+
+    try {
+      const turma = turmas.find(t => t.id === studentDetails.turma_id);
+      const adminSignatureText = `Preenchido e Assinado pelo Administrador ${adminSignature.trim()} em ${new Date().toLocaleString('pt-BR')}`;
+      
+      const payload = {
+        aluno_id: studentDetails.id,
+        turma_id: studentDetails.turma_id,
+        curso_id: turma?.curso_id || null,
+        instrutor_nome: turma?.instrutor || 'Não especificado',
+        
+        // Answers
+        ...adminAnswers,
+        
+        // Comments
+        sugestoes_melhoria: adminComments.sugestoes_melhoria,
+        criticas_construtivas: adminComments.criticas_construtivas,
+        elogios: adminComments.elogios,
+        necessidades_novos_cursos: adminComments.necessidades_novos_cursos,
+        comentarios_adicionais: adminComments.comentarios_adicionais,
+
+        assinatura_digital: adminSignatureText
+      };
+
+      const existingSub = submissions.find(sub => sub.aluno_id === studentDetails.id);
+      
+      let query;
+      if (existingSub) {
+        query = supabase
+          .from('questionarios_conclusao')
+          .update(payload)
+          .eq('id', existingSub.id);
+      } else {
+        query = supabase
+          .from('questionarios_conclusao')
+          .insert(payload);
+      }
+
+      const { data, error } = await query
+        .select()
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      if (existingSub) {
+        toast.success('Avaliação atualizada e retificada pelo Administrador com sucesso!');
+      } else {
+        toast.success('Avaliação preenchida e enviada com sucesso pelo Administrador!');
+      }
+      setIsAdminFilling(false);
+      await loadAllData();
+    } catch (err: any) {
+      console.error('Error submitting administrative evaluation:', err);
+      toast.error('Ocorreu um erro ao salvar a avaliação: ' + (err.message || 'Erro desconhecido.'));
+    } finally {
+      setAdminSubmitting(false);
+    }
+  };
 
   const loadAllData = async () => {
     try {
@@ -318,6 +496,126 @@ function RelatorioAvaliacaoAdminContent() {
     return Array.from(studentsMap.values()).sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
   }, [allStudents, submissions, selectedTurma]);
 
+  // Compute pending students based on raw DB data, current class selection, and keyword search
+  const filteredPendingStudents = useMemo(() => {
+    const respondedIds = new Set(submissions.map(sub => sub.aluno_id));
+    
+    let result = allStudents.filter(stud => !respondedIds.has(stud.id));
+    
+    if (selectedTurma !== 'ALL') {
+      result = result.filter(stud => stud.turma_id === selectedTurma);
+    }
+    
+    if (qStr && qStr.trim() !== '') {
+      const searchLower = qStr.toLowerCase().trim();
+      result = result.filter(stud => {
+        const studentName = (stud.nome || '').toLowerCase();
+        const studentPosto = (stud.posto_graduacao || '').toLowerCase();
+        const studentOM = (stud.om || '').toLowerCase();
+        const studentMatricula = (stud.matricula || '').toLowerCase();
+        return studentName.includes(searchLower) ||
+               studentPosto.includes(searchLower) ||
+               studentOM.includes(searchLower) ||
+               studentMatricula.includes(searchLower);
+      });
+    }
+    
+    return result.map(stud => {
+      const parentTurma = turmas.find(t => t.id === stud.turma_id);
+      return {
+        ...stud,
+        turma_nome: parentTurma ? parentTurma.nome : 'Sem Turma'
+      };
+    }).sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
+  }, [allStudents, submissions, selectedTurma, qStr, turmas]);
+
+  // Compute responded students based on raw DB data, current class selection, and keyword search
+  const filteredRespondedStudents = useMemo(() => {
+    const respondedIds = new Set(submissions.map(sub => sub.aluno_id));
+    
+    let result = allStudents.filter(stud => respondedIds.has(stud.id));
+    
+    if (selectedTurma !== 'ALL') {
+      result = result.filter(stud => stud.turma_id === selectedTurma);
+    }
+    
+    if (qStr && qStr.trim() !== '') {
+      const searchLower = qStr.toLowerCase().trim();
+      result = result.filter(stud => {
+        const studentName = (stud.nome || '').toLowerCase();
+        const studentPosto = (stud.posto_graduacao || '').toLowerCase();
+        const studentOM = (stud.om || '').toLowerCase();
+        const studentMatricula = (stud.matricula || '').toLowerCase();
+        return studentName.includes(searchLower) ||
+               studentPosto.includes(searchLower) ||
+               studentOM.includes(searchLower) ||
+               studentMatricula.includes(searchLower);
+      });
+    }
+    
+    return result.map(stud => {
+      const parentTurma = turmas.find(t => t.id === stud.turma_id);
+      return {
+        ...stud,
+        turma_nome: parentTurma ? parentTurma.nome : 'Sem Turma'
+      };
+    }).sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
+  }, [allStudents, submissions, selectedTurma, qStr, turmas]);
+
+  // Compute all students with their responded and turma metadata
+  const filteredAllStudentsForOperation = useMemo(() => {
+    const respondedIds = new Set(submissions.map(sub => sub.aluno_id));
+    
+    let result = allStudents;
+    
+    if (selectedTurma !== 'ALL') {
+      result = result.filter(stud => stud.turma_id === selectedTurma);
+    }
+    
+    if (qStr && qStr.trim() !== '') {
+      const searchLower = qStr.toLowerCase().trim();
+      result = result.filter(stud => {
+        const studentName = (stud.nome || '').toLowerCase();
+        const studentPosto = (stud.posto_graduacao || '').toLowerCase();
+        const studentOM = (stud.om || '').toLowerCase();
+        const studentMatricula = (stud.matricula || '').toLowerCase();
+        return studentName.includes(searchLower) ||
+               studentPosto.includes(searchLower) ||
+               studentOM.includes(searchLower) ||
+               studentMatricula.includes(searchLower);
+      });
+    }
+    
+    return result.map(stud => {
+      const parentTurma = turmas.find(t => t.id === stud.turma_id);
+      return {
+        ...stud,
+        turma_nome: parentTurma ? parentTurma.nome : 'Sem Turma',
+        responded: respondedIds.has(stud.id)
+      };
+    }).sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
+  }, [allStudents, submissions, selectedTurma, qStr, turmas]);
+
+  // Handle direct selection and edit action for any students (whether pending or responded)
+  const handleSelectAndEditAction = (studentId: string, turmaId: string) => {
+    setSelectedTurma(turmaId);
+    setFocusedStudent(studentId);
+    setActiveTab('aluno');
+    setIsAdminFilling(true);
+    
+    const existing = submissions.some(sub => sub.aluno_id === studentId);
+    if (existing) {
+      toast.info('Carregando questionário respondido para edição e retificação...', { duration: 2500 });
+    } else {
+      toast.info('Carregando formulário para preenchimento administrativo...', { duration: 2500 });
+    }
+  };
+
+  // Handle direct selection and pre-fill of a pending questionnaire under Admin privileges
+  const handleSelectAndFillPending = (studentId: string, turmaId: string) => {
+    handleSelectAndEditAction(studentId, turmaId);
+  };
+
   const hasActiveFilter = selectedTurma !== 'ALL' || 
                          selectedInstructor !== 'ALL' || 
                          selectedStudent !== 'ALL' || 
@@ -405,7 +703,7 @@ function RelatorioAvaliacaoAdminContent() {
   const infraIndex = calculateAverage(filteredSubmissions, infraAvgKeys);
   const studentSelfIndex = calculateAverage(filteredSubmissions, autoAvgKeys);
   
-  // High satisfaction percentage (scores 4 and 5)
+  // Percentage of "Concordo Plenamente" (score 5) on the new scale
   const getAggregatedSatisfactionPct = () => {
     if (filteredSubmissions.length === 0) return 0;
     let satisfiedAnswers = 0;
@@ -414,7 +712,7 @@ function RelatorioAvaliacaoAdminContent() {
       allKeys.forEach(k => {
         if (sub[k] !== undefined && sub[k] !== null) {
           totalAnswers++;
-          if (Number(sub[k]) >= 4) {
+          if (Number(sub[k]) === 5) {
             satisfiedAnswers++;
           }
         }
@@ -650,7 +948,7 @@ function RelatorioAvaliacaoAdminContent() {
           {/* DASHBOARD TABS AND CONTENT CONTROLLERS */}
           <div className="border-b border-slate-200 flex flex-wrap gap-2 print:hidden">
         <button
-          onClick={() => setActiveTab('geral')}
+          onClick={() => changeTab('geral')}
           className={`px-5 py-3 text-xs font-bold transition border-b-2 font-mono ${
             activeTab === 'geral' 
               ? "border-slate-900 text-slate-900" 
@@ -660,7 +958,7 @@ function RelatorioAvaliacaoAdminContent() {
           Visão Geral & Estatísticas
         </button>
         <button
-          onClick={() => setActiveTab('curso')}
+          onClick={() => changeTab('curso')}
           className={`px-5 py-3 text-xs font-bold transition border-b-2 font-mono ${
             activeTab === 'curso' 
               ? "border-slate-900 text-slate-900" 
@@ -670,7 +968,7 @@ function RelatorioAvaliacaoAdminContent() {
           Relatório do Curso
         </button>
         <button
-          onClick={() => setActiveTab('instrutor')}
+          onClick={() => changeTab('instrutor')}
           className={`px-5 py-3 text-xs font-bold transition border-b-2 font-mono ${
             activeTab === 'instrutor' 
               ? "border-slate-900 text-slate-900" 
@@ -680,7 +978,7 @@ function RelatorioAvaliacaoAdminContent() {
           Relatório do Instrutor
         </button>
         <button
-          onClick={() => setActiveTab('aluno')}
+          onClick={() => changeTab('aluno')}
           className={`px-5 py-3 text-xs font-bold transition border-b-2 font-mono ${
             activeTab === 'aluno' 
               ? "border-slate-900 text-slate-900" 
@@ -691,11 +989,92 @@ function RelatorioAvaliacaoAdminContent() {
         </button>
       </div>
 
-      {filteredSubmissions.length === 0 ? (
-        <div className="bg-white border border-slate-200 rounded-xl p-12 text-center shadow-sm">
-          <FilterX className="h-12 w-12 text-slate-350 mx-auto mb-4" />
-          <h3 className="text-base font-bold text-slate-800 mb-1">Nenhum registro localizado</h3>
-          <p className="text-slate-500 text-xs">Ajuste seus filtros de busca para visualizar as respostas cadastradas.</p>
+      {filteredSubmissions.length === 0 && activeTab !== 'aluno' ? (
+        <div className="bg-white border border-slate-200 rounded-2xl p-8 md:p-12 text-center shadow-sm space-y-8 max-w-3xl mx-auto my-4">
+          <div className="space-y-3">
+            <FilterX className="h-12 w-12 text-slate-400 mx-auto" />
+            <h3 className="text-base font-extrabold text-slate-800 uppercase tracking-wider font-mono">Nenhum registro localizado</h3>
+            <p className="text-slate-500 text-xs max-w-md mx-auto leading-relaxed">
+              Não há avaliações acadêmicas gravadas no banco para o filtro selecionado. Como administrador, você pode preencher o questionário para os alunos pendentes abaixo:
+            </p>
+          </div>
+
+          {/* List of all students in this selected class, or overall if no class selected, marking responded/pending */}
+          <div className="border border-slate-150 rounded-xl overflow-hidden bg-slate-50 text-left">
+            <div className="bg-slate-100 px-4 py-3 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+              <div>
+                <span className="text-xs font-black uppercase tracking-wider text-slate-700 font-mono">
+                  Selecione um Aluno para Preenchimento ou Edição Administrativa
+                </span>
+                <p className="text-[10px] text-slate-450 font-sans">
+                  {selectedTurma !== 'ALL' 
+                    ? `Mostrando todos os alunos nesta turma (${filteredAllStudentsForOperation.length})`
+                    : `Mostrando todos os alunos cadastrados (${filteredAllStudentsForOperation.length})`}
+                </p>
+              </div>
+              <span className="text-[9px] bg-indigo-100 text-indigo-800 font-black px-2.5 py-1 rounded-full font-sans uppercase tracking-wider">
+                Operação Geral Admin
+              </span>
+            </div>
+            
+            {filteredAllStudentsForOperation.length === 0 ? (
+              <div className="p-8 text-center text-slate-400 italic text-xs font-mono">
+                🎉 Nenhum aluno localizado no filtro atual!
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-100 max-h-80 overflow-y-auto custom-scrollbar">
+                {filteredAllStudentsForOperation.map((stud) => (
+                  <div key={stud.id} className="p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-100/50 transition">
+                    <div>
+                      <div className="text-xs font-black text-slate-800 flex items-center gap-1.5 font-mono">
+                        {stud.posto_graduacao ? (
+                          <span className="bg-slate-200/80 text-slate-700 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase font-mono">
+                            {stud.posto_graduacao}
+                          </span>
+                        ) : null}
+                        {stud.nome}
+                        {stud.responded ? (
+                          <span className="text-[9px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-bold uppercase">
+                            Respondido
+                          </span>
+                        ) : (
+                          <span className="text-[9px] bg-amber-105 text-amber-800 px-1.5 py-0.5 rounded font-bold uppercase">
+                            Pendente
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[10px] text-slate-500 font-mono flex flex-wrap gap-2 mt-1">
+                        <span>OM: <strong>{stud.om || 'Não especificada'}</strong></span>
+                        <span className="text-slate-305">•</span>
+                        <span>Matrícula: <strong>{stud.matricula || '-'}</strong></span>
+                        <span className="text-slate-305">•</span>
+                        <span>Turma: <strong className="text-indigo-650">{stud.turma_nome}</strong></span>
+                      </div>
+                    </div>
+                    {stud.responded ? (
+                      <button
+                        type="button"
+                        onClick={() => handleSelectAndEditAction(stud.id, stud.turma_id)}
+                        className="bg-emerald-650 hover:bg-emerald-700 text-white font-extrabold text-[10px] px-3.5 py-2 rounded-lg shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer font-sans tracking-wide self-end sm:self-center shrink-0 border border-emerald-500"
+                      >
+                        <Edit3 className="h-3 w-3" />
+                        EDITAR RESPOSTAS
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleSelectAndFillPending(stud.id, stud.turma_id)}
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-[10px] px-3.5 py-2 rounded-lg shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer font-sans tracking-wide self-end sm:self-center shrink-0 border border-indigo-500"
+                      >
+                        <Edit3 className="h-3 w-3" />
+                        PREENCHER COMO ADMIN
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       ) : (
         <div className="space-y-8">
@@ -744,12 +1123,12 @@ function RelatorioAvaliacaoAdminContent() {
                 {/* General satisfaction ring */}
                 <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center justify-between">
                   <div className="space-y-1">
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1.5 block font-mono">Meta de Qualidade</span>
-                    <p className="text-3xl font-black text-slate-900 tracking-tight">{satisfactionPercentage.toFixed(1)}%</p>
-                    <span className="text-[10px] text-slate-500 block font-medium font-mono">Votos Excelente/Muito Bom</span>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1.5 block font-mono">Concordância Plena (CP)</span>
+                    <p className="text-3xl font-black text-emerald-700 tracking-tight">{satisfactionPercentage.toFixed(1)}%</p>
+                    <span className="text-[10px] text-slate-500 block font-medium font-mono">Índice Geral de Votos CP (Nota 5)</span>
                   </div>
-                  <div className="w-12 h-12 bg-slate-50 rounded-lg flex items-center justify-center border">
-                    <TrendingUp className="h-6 w-6 text-slate-700" />
+                  <div className="w-12 h-12 bg-emerald-50 border border-emerald-100 rounded-lg flex items-center justify-center">
+                    <TrendingUp className="h-6 w-6 text-emerald-600" />
                   </div>
                 </div>
               </div>
@@ -827,7 +1206,7 @@ function RelatorioAvaliacaoAdminContent() {
 
                   <div className="bg-slate-50 rounded-lg p-4 border border-slate-200/55 text-xs text-slate-600 flex gap-2">
                     <Info className="h-4 w-4 text-sky-500 mt-0.5 shrink-0" />
-                    <p>A escala varia de 1 a 5 pontos (onde 1 é Insatisfatório e 5 é Excelente). Um índice geral superior a 4.0 indica ótimo desempenho pedagógico e atende aos mais rígidos padrões de auditoria.</p>
+                    <p>A escala é baseada em três níveis: 5 (Concordo Plenamente), 3 (Concordo Parcialmente) e 1 (Discordo / Não se Aplica). Um índice geral superior a 4.0 indica ótimo alinhamento e conformidade com as metas de excelência pedagógica.</p>
                   </div>
                 </div>
 
@@ -840,7 +1219,7 @@ function RelatorioAvaliacaoAdminContent() {
 
                     <div className="space-y-4">
                       {/* Percent boxes */}
-                      {[5, 4, 3, 2, 1].map((score) => {
+                      {[5, 3, 1].map((score) => {
                         // Calculate percentage of this specific score in the entire dataset
                         let totalElements = 0;
                         let matchedElements = 0;
@@ -857,13 +1236,19 @@ function RelatorioAvaliacaoAdminContent() {
                         return (
                           <div key={score} className="space-y-1">
                             <div className="flex justify-between text-xs">
-                              <span className="font-medium text-slate-700">{score === 5 ? "Excelentes Votos (5)" : score === 4 ? "Muito Bons (4)" : score === 3 ? "Bons Votos (3)" : score === 2 ? "Regulares (2)" : "Insatisfatórios (1)"}</span>
+                              <span className="font-semibold text-slate-700">
+                                {score === 5 
+                                  ? "Concordo Plenamente - CP (5)" 
+                                  : score === 3 
+                                    ? "Concordo Parcialmente - CPa (3)" 
+                                    : "Discordo / Não se Aplica - D/NA (1)"}
+                              </span>
                               <span className="font-bold text-slate-900">{percentage.toFixed(1)}%</span>
                             </div>
                             <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                               <div 
                                 className={`h-full transition-all duration-300 rounded-full ${
-                                  score === 5 ? "bg-emerald-500" : score === 4 ? "bg-teal-500" : score === 3 ? "bg-sky-500" : score === 2 ? "bg-amber-500" : "bg-rose-500"
+                                  score === 5 ? "bg-emerald-500" : score === 3 ? "bg-sky-500" : "bg-rose-500"
                                 }`}
                                 style={{ width: `${percentage}%` }}
                               />
@@ -878,6 +1263,118 @@ function RelatorioAvaliacaoAdminContent() {
                     Cômputo baseado em {filteredSubmissions.length} formulários
                   </div>
                 </div>
+              </div>
+
+              {/* Card List of Pending Questionnaires on the General Tab */}
+              <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-4">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-3 gap-2">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider font-mono flex items-center gap-2">
+                      <Signature className="h-4 w-4 text-indigo-600" />
+                      Formulários Pendentes nesta Seleção ({filteredPendingStudents.length})
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      Estes estudantes ainda não responderam à avaliação acadêmica de conclusão. Clique em preencher para atuar como Administrador.
+                    </p>
+                  </div>
+                  <span className="text-[10px] bg-indigo-50 text-indigo-750 font-bold px-2.5 py-1 rounded-lg font-mono uppercase tracking-wider">
+                    Pendentes de Envio
+                  </span>
+                </div>
+
+                {filteredPendingStudents.length === 0 ? (
+                  <div className="text-center py-6 text-slate-400 italic text-xs font-mono">
+                    🎉 Excelente! Todos os alunos deste escopo responderam à avaliação pedagógica.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {filteredPendingStudents.map((stud) => (
+                      <div key={stud.id} className="border border-slate-150 rounded-xl p-4 bg-slate-50/50 hover:bg-slate-100/40 transition flex flex-col justify-between space-y-3">
+                        <div className="space-y-1">
+                          <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5 font-mono">
+                            {stud.posto_graduacao ? (
+                              <span className="bg-slate-200/85 text-slate-600 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase font-mono">
+                                {stud.posto_graduacao}
+                              </span>
+                            ) : null}
+                            {stud.nome}
+                          </div>
+                          <p className="text-[10px] text-slate-500 font-mono">
+                            OM: <strong className="text-slate-700">{stud.om || 'Não especificada'}</strong>
+                          </p>
+                          <p className="text-[10px] text-slate-500 font-mono">
+                            Turma: <strong className="text-indigo-600">{stud.turma_nome}</strong>
+                          </p>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleSelectAndFillPending(stud.id, stud.turma_id)}
+                          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-[10px] py-2 rounded-lg transition flex items-center justify-center gap-1.5 cursor-pointer font-mono tracking-wider shadow-sm border border-indigo-500"
+                        >
+                          <Edit3 className="h-3.5 w-3.5" />
+                          PREENCHER COMO ADMIN
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Card List of Responded/Submitted Questionnaires on the General Tab */}
+              <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-4">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-3 gap-2">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider font-mono flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-emerald-600" />
+                      Formulários Respondidos nesta Seleção ({filteredRespondedStudents.length})
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      Estes estudantes já enviaram suas avaliações. Como Administrador, você pode retificar ou editar as notas e observações deles.
+                    </p>
+                  </div>
+                  <span className="text-[10px] bg-emerald-50 text-emerald-750 font-bold px-2.5 py-1 rounded-lg font-mono uppercase tracking-wider">
+                    Concluídos / Respondidos
+                  </span>
+                </div>
+
+                {filteredRespondedStudents.length === 0 ? (
+                  <div className="text-center py-6 text-slate-400 italic text-xs font-mono">
+                    📭 Nenhuma avaliação enviada para o escopo selecionado ainda.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {filteredRespondedStudents.map((stud) => (
+                      <div key={stud.id} className="border border-slate-150 rounded-xl p-4 bg-slate-50/50 hover:bg-slate-100/40 transition flex flex-col justify-between space-y-3">
+                        <div className="space-y-1">
+                          <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5 font-mono">
+                            {stud.posto_graduacao ? (
+                              <span className="bg-slate-200/85 text-slate-600 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase font-mono">
+                                {stud.posto_graduacao}
+                              </span>
+                            ) : null}
+                            {stud.nome}
+                          </div>
+                          <p className="text-[10px] text-slate-500 font-mono">
+                            OM: <strong className="text-slate-700">{stud.om || 'Não especificada'}</strong>
+                          </p>
+                          <p className="text-[10px] text-slate-500 font-mono">
+                            Turma: <strong className="text-indigo-600">{stud.turma_nome}</strong>
+                          </p>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleSelectAndEditAction(stud.id, stud.turma_id)}
+                          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[10px] py-2 rounded-lg transition flex items-center justify-center gap-1.5 cursor-pointer font-mono tracking-wider shadow-sm border border-emerald-500"
+                        >
+                          <Edit3 className="h-3.5 w-3.5" />
+                          EDITAR RESPOSTAS
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -1146,11 +1643,307 @@ function RelatorioAvaliacaoAdminContent() {
               {focusedStudent ? (
                 (() => {
                   const studentSub = submissions.find(sub => sub.aluno_id === focusedStudent);
+                  const studentDetails = allStudents.find(stud => stud.id === focusedStudent);
                   
-                  if (!studentSub) {
-                    const studentDetails = allStudents.find(stud => stud.id === focusedStudent);
+                  if (isAdminFilling) {
                     return (
-                      <div className="bg-white border border-slate-200 rounded-xl p-8 text-center max-w-xl mx-auto shadow-sm space-y-4">
+                      <div className="bg-white border border-slate-200 rounded-xl p-6 md:p-8 shadow-sm space-y-6 max-w-4xl mx-auto">
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b pb-4 gap-4">
+                          <div>
+                            <span className="text-[10px] uppercase tracking-wider font-mono bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded font-bold">
+                              Painel de Administração
+                            </span>
+                            <h3 className="text-base font-bold text-slate-900 uppercase font-mono mt-1">
+                              {studentSub ? "Editar Questionário:" : "Preencher Questionário:"} {studentDetails?.nome || "Selecionado"}
+                            </h3>
+                            <p className="text-xs text-slate-500 mt-1">
+                              {studentSub 
+                                ? "Altere as notas ou observações conforme necessário. Ao salvar, as alterações atualizarão os relatórios." 
+                                : "Insira as notas para cada pergunta. Estas respostas farão parte dos relatórios agregados."}
+                            </p>
+                          </div>
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                onClick={() => handleQuickPrefill(5)}
+                                className="bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-850 text-[11px] px-2.5 py-1.5 rounded-lg font-mono font-semibold transition cursor-pointer"
+                              >
+                                🟢 Concordo Plenamente (Tudo 5)
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleQuickPrefill(3)}
+                                className="bg-sky-50 hover:bg-sky-100 border border-sky-200 text-sky-850 text-[11px] px-2.5 py-1.5 rounded-lg font-mono font-semibold transition cursor-pointer"
+                              >
+                                🟡 Concordo Parcialmente (Tudo 3)
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleQuickPrefill(1)}
+                                className="bg-rose-50 hover:bg-rose-100 border border-rose-250 text-rose-850 text-[11px] px-2.5 py-1.5 rounded-lg font-mono font-semibold transition cursor-pointer"
+                              >
+                                🔴 Discordo/Não se aplica (Tudo 1)
+                              </button>
+                            </div>
+                          </div>
+
+                          <form onSubmit={(e) => handleAdminSubmit(e, studentDetails)} className="space-y-8">
+                            {/* Section 1: Curso */}
+                            <div className="space-y-4">
+                              <h4 className="text-xs font-black uppercase tracking-widest text-slate-600 border-b pb-1.5 font-mono">
+                                I. Avaliação sobre o Curso
+                              </h4>
+                              <div className="divide-y divide-slate-100 space-y-3.5 pt-1">
+                                {CURSO_QUESTIONS.map((q, idx) => (
+                                  <div key={q.key} className="flex flex-col md:flex-row md:items-center justify-between gap-3 pt-3 first:pt-0">
+                                    <span className="text-xs font-bold text-slate-700">
+                                      {idx + 1}. {q.label}
+                                    </span>
+                                    <div className="flex items-center gap-1.5">
+                                      {[
+                                        { val: 5, label: "CP", title: "Concordo Plenamente", bgSel: "bg-emerald-600 border-emerald-600 text-white" },
+                                        { val: 3, label: "CPa", title: "Concordo Parcialmente", bgSel: "bg-sky-600 border-sky-600 text-white" },
+                                        { val: 1, label: "D/NA", title: "Discordo / Não se Aplica", bgSel: "bg-rose-600 border-rose-600 text-white" }
+                                      ].map(({ val, label, title, bgSel }) => {
+                                        const isSelected = adminAnswers[q.key] === val;
+                                        return (
+                                          <button
+                                            key={val}
+                                            type="button"
+                                            title={title}
+                                            onClick={() => setAdminAnswers(prev => ({ ...prev, [q.key]: val }))}
+                                            className={`px-2.5 py-1.5 rounded-lg border text-[11px] font-mono font-bold flex items-center justify-center transition-all cursor-pointer ${
+                                              isSelected
+                                                ? `${bgSel} font-black scale-105 shadow-md`
+                                                : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
+                                            }`}
+                                          >
+                                            {label}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Section 2: Instrutor */}
+                            <div className="space-y-4">
+                              <h4 className="text-xs font-black uppercase tracking-widest text-slate-600 border-b pb-1.5 font-mono">
+                                II. Desempenho do Instrutor
+                              </h4>
+                              <div className="divide-y divide-slate-100 space-y-3.5 pt-1">
+                                {INSTRUTOR_QUESTIONS.map((q, idx) => (
+                                  <div key={q.key} className="flex flex-col md:flex-row md:items-center justify-between gap-3 pt-3 first:pt-0">
+                                    <span className="text-xs font-bold text-slate-700">
+                                      {idx + 1}. {q.label}
+                                    </span>
+                                    <div className="flex items-center gap-1.5">
+                                      {[
+                                        { val: 5, label: "CP", title: "Concordo Plenamente", bgSel: "bg-emerald-600 border-emerald-600 text-white" },
+                                        { val: 3, label: "CPa", title: "Concordo Parcialmente", bgSel: "bg-sky-600 border-sky-600 text-white" },
+                                        { val: 1, label: "D/NA", title: "Discordo / Não se Aplica", bgSel: "bg-rose-600 border-rose-600 text-white" }
+                                      ].map(({ val, label, title, bgSel }) => {
+                                        const isSelected = adminAnswers[q.key] === val;
+                                        return (
+                                          <button
+                                            key={val}
+                                            type="button"
+                                            title={title}
+                                            onClick={() => setAdminAnswers(prev => ({ ...prev, [q.key]: val }))}
+                                            className={`px-2.5 py-1.5 rounded-lg border text-[11px] font-mono font-bold flex items-center justify-center transition-all cursor-pointer ${
+                                              isSelected
+                                                ? `${bgSel} font-black scale-105 shadow-md`
+                                                : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
+                                            }`}
+                                          >
+                                            {label}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Section 3: Auto & Infra */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-2">
+                              {/* Autoavaliação */}
+                              <div className="space-y-4">
+                                <h4 className="text-xs font-black uppercase tracking-widest text-slate-600 border-b pb-1.5 font-mono">
+                                  III. Autoavaliação do Aluno
+                                </h4>
+                                <div className="space-y-3 pt-1">
+                                  {AUTO_QUESTIONS.map((q, idx) => (
+                                    <div key={q.key} className="flex flex-col gap-1.5">
+                                      <span className="text-xs font-bold text-slate-700">
+                                        {idx + 1}. {q.label}
+                                      </span>
+                                      <div className="flex items-center gap-1.5">
+                                        {[
+                                          { val: 5, label: "CP", title: "Concordo Plenamente", bgSel: "bg-emerald-600 border-emerald-600 text-white" },
+                                          { val: 3, label: "CPa", title: "Concordo Parcialmente", bgSel: "bg-sky-600 border-sky-600 text-white" },
+                                          { val: 1, label: "D/NA", title: "Discordo / Não se Aplica", bgSel: "bg-rose-600 border-rose-600 text-white" }
+                                        ].map(({ val, label, title, bgSel }) => {
+                                          const isSelected = adminAnswers[q.key] === val;
+                                          return (
+                                            <button
+                                              key={val}
+                                              type="button"
+                                              title={title}
+                                              onClick={() => setAdminAnswers(prev => ({ ...prev, [q.key]: val }))}
+                                              className={`px-2.5 py-1.5 rounded-lg border text-[11px] font-mono font-bold flex items-center justify-center transition-all cursor-pointer ${
+                                                isSelected
+                                                  ? `${bgSel} font-black scale-105 shadow-md`
+                                                  : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
+                                              }`}
+                                            >
+                                              {label}
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+
+                              {/* Infraestrutura */}
+                              <div className="space-y-4">
+                                <h4 className="text-xs font-black uppercase tracking-widest text-slate-600 border-b pb-1.5 font-mono">
+                                  IV. Infraestrutura de Ensino
+                                </h4>
+                                <div className="space-y-3 pt-1">
+                                  {INFRA_QUESTIONS.map((q, idx) => (
+                                    <div key={q.key} className="flex flex-col gap-1.5">
+                                      <span className="text-xs font-bold text-slate-700">
+                                        {idx + 1}. {q.label}
+                                      </span>
+                                      <div className="flex items-center gap-1.5">
+                                        {[
+                                          { val: 5, label: "CP", title: "Concordo Plenamente", bgSel: "bg-emerald-600 border-emerald-600 text-white" },
+                                          { val: 3, label: "CPa", title: "Concordo Parcialmente", bgSel: "bg-sky-600 border-sky-600 text-white" },
+                                          { val: 1, label: "D/NA", title: "Discordo / Não se Aplica", bgSel: "bg-rose-600 border-rose-600 text-white" }
+                                        ].map(({ val, label, title, bgSel }) => {
+                                          const isSelected = adminAnswers[q.key] === val;
+                                          return (
+                                            <button
+                                              key={val}
+                                              type="button"
+                                              title={title}
+                                              onClick={() => setAdminAnswers(prev => ({ ...prev, [q.key]: val }))}
+                                              className={`px-2.5 py-1.5 rounded-lg border text-[11px] font-mono font-bold flex items-center justify-center transition-all cursor-pointer ${
+                                                isSelected
+                                                  ? `${bgSel} font-black scale-105 shadow-md`
+                                                  : "bg-slate-50 border-slate-200 text-slate-650 hover:bg-slate-100"
+                                              }`}
+                                            >
+                                              {label}
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Section 4: Comentários */}
+                            <div className="space-y-4 pt-2">
+                              <h4 className="text-xs font-black uppercase tracking-widest text-slate-600 border-b pb-1.5 font-mono">
+                                V. Comentários, Elogios e Críticas (Opcional)
+                              </h4>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                                <div className="space-y-1">
+                                  <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider font-mono">Sugestões de Melhoria</label>
+                                  <textarea
+                                    value={adminComments.sugestoes_melhoria}
+                                    onChange={(e) => setAdminComments(prev => ({ ...prev, sugestoes_melhoria: e.target.value }))}
+                                    rows={3}
+                                    className="w-full text-xs text-slate-800 bg-slate-50 border border-slate-200 rounded-lg p-2.5 focus:bg-white focus:ring-1 focus:ring-slate-800 focus:outline-none"
+                                    placeholder="O que pode ser aprimorado..."
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider font-mono">Críticas Construtivas</label>
+                                  <textarea
+                                    value={adminComments.criticas_construtivas}
+                                    onChange={(e) => setAdminComments(prev => ({ ...prev, criticas_construtivas: e.target.value }))}
+                                    rows={3}
+                                    className="w-full text-xs text-slate-800 bg-slate-50 border border-slate-200 rounded-lg p-2.5 focus:bg-white focus:ring-1 focus:ring-slate-800 focus:outline-none"
+                                    placeholder="Obstáculos ou falhas apontadas..."
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider font-mono">Elogios ao Curso/Instrutor</label>
+                                  <textarea
+                                    value={adminComments.elogios}
+                                    onChange={(e) => setAdminComments(prev => ({ ...prev, elogios: e.target.value }))}
+                                    rows={3}
+                                    className="w-full text-xs text-slate-800 bg-slate-50 border border-slate-200 rounded-lg p-2.5 focus:bg-white focus:ring-1 focus:ring-slate-800 focus:outline-none"
+                                    placeholder="Pontos de excelência observados..."
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider font-mono">Outros Comentários Gerais</label>
+                                  <textarea
+                                    value={adminComments.comentarios_adicionais}
+                                    onChange={(e) => setAdminComments(prev => ({ ...prev, comentarios_adicionais: e.target.value }))}
+                                    rows={3}
+                                    className="w-full text-xs text-slate-800 bg-slate-50 border border-slate-200 rounded-lg p-2.5 focus:bg-white focus:ring-1 focus:ring-slate-800 focus:outline-none"
+                                    placeholder="Análise complementar..."
+                                  />
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Assinatura */}
+                            <div className="bg-slate-50 rounded-xl p-5 border border-slate-200 space-y-3">
+                              <h4 className="text-xs font-bold text-slate-900 uppercase font-mono flex items-center gap-1.5">
+                                <Signature className="h-4 w-4 text-slate-600" />
+                                Assinatura de Validade Administrativa
+                              </h4>
+                              <p className="text-xs text-slate-500 leading-relaxed font-sans">
+                                Este questionário está sendo preenchido administrativamente. Ao prescrever sua assinatura abaixo, você certifica e concede que as informações aqui coletadas correspondem aos fatos observados para fins estatísticos oficiais acadêmicos.
+                              </p>
+                              <div>
+                                <input
+                                  type="text"
+                                  value={adminSignature}
+                                  onChange={(e) => setAdminSignature(e.target.value)}
+                                  className="w-full bg-white border border-slate-200 text-xs rounded-lg px-3 py-2.5 focus:ring-1 focus:ring-slate-800 focus:outline-none font-bold uppercase placeholder-slate-400 text-slate-800"
+                                  placeholder="DIGITE SEU NOME PARA ATUAR COMO ASSINATURA"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="flex justify-end gap-3 border-t pt-5">
+                              <button
+                                type="button"
+                                onClick={() => setIsAdminFilling(false)}
+                                className="bg-white border text-xs px-5 py-2.5 rounded-lg text-slate-600 font-semibold hover:bg-slate-50 transition cursor-pointer"
+                              >
+                                Cancelar
+                              </button>
+                            <button
+                              type="submit"
+                              disabled={adminSubmitting}
+                              className="bg-slate-900 text-white text-xs px-6 py-2.5 rounded-lg font-bold hover:bg-slate-800 transition disabled:opacity-50 flex items-center gap-2 cursor-pointer"
+                            >
+                              {adminSubmitting ? "Salvando..." : (studentSub ? "Salvar Alterações" : "Enviar Questionário pelo Admin")}
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    );
+                  }
+
+                  if (!studentSub) {
+                    return (
+                      <div className="bg-white border border-slate-200 rounded-xl p-8 text-center max-w-xl mx-auto shadow-sm space-y-5">
                         <div className="w-16 h-16 bg-amber-50 border border-amber-200 rounded-2xl flex items-center justify-center mx-auto shadow-sm">
                           <AlertTriangle className="h-6 w-6 text-amber-600 animate-pulse" />
                         </div>
@@ -1165,6 +1958,16 @@ function RelatorioAvaliacaoAdminContent() {
                           <p><strong>OM:</strong> {studentDetails?.om || "Não disponível"}</p>
                           <p><strong>Frequência:</strong> Dependente de envio</p>
                         </div>
+                        <div className="pt-2 border-t border-slate-100 flex justify-center">
+                          <button
+                            type="button"
+                            onClick={() => setIsAdminFilling(true)}
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-5 py-2.5 rounded-lg shadow-sm transition flex items-center gap-2 cursor-pointer"
+                          >
+                            <Edit3 className="h-4 w-4" />
+                            Preencher Questionário como Admin
+                          </button>
+                        </div>
                       </div>
                     );
                   }
@@ -1177,9 +1980,21 @@ function RelatorioAvaliacaoAdminContent() {
                       {/* Identity profile card */}
                       <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="md:col-span-2 space-y-4">
-                          <div className="flex items-center gap-3">
-                            <Building className="h-5 w-5 text-slate-500" />
-                            <h3 className="text-base font-bold text-slate-900">{studentSub.aluno?.nome}</h3>
+                          <div className="flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-3">
+                              <Building className="h-5 w-5 text-slate-500" />
+                              <h3 className="text-base font-bold text-slate-900">{studentSub.aluno?.nome}</h3>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                handleSelectAndEditAction(studentSub.aluno_id, studentSub.turma_id);
+                              }}
+                              className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs px-3.5 py-2 rounded-lg font-bold border border-indigo-200 transition flex items-center gap-1.5 cursor-pointer font-sans"
+                            >
+                              <Edit3 className="h-3.5 w-3.5" />
+                              EDITAR COMO ADMIN
+                            </button>
                           </div>
                           
                           <div className="grid grid-cols-2 gap-4 text-xs font-mono">
