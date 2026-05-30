@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
     const smtpPort = parseInt(process.env.SMTP_PORT || '587');
     const smtpUser = process.env.SMTP_USER;
     const smtpPass = process.env.SMTP_PASS;
-    const smtpFrom = process.env.SMTP_FROM || 'Escola Digital <noreply@escola.digital>';
+    const smtpFrom = process.env.SMTP_FROM || 'Coordenador de Cursos <noreply@escola.digital>';
     const smtpSecure = process.env.SMTP_SECURE === 'true'; // true for 465, false for other ports
 
     if (!smtpHost || !smtpUser || !smtpPass) {
@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; padding: 40px 20px; color: #1e293b; margin: 0;">
         <div style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 32px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
           <div style="text-align: center; margin-bottom: 24px;">
-            <h2 style="color: #2563eb; margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.025em;">Escola Digital</h2>
+            <h2 style="color: #2563eb; margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.025em;">Coordenador de Cursos</h2>
             <p style="color: #64748b; margin: 6px 0 0 0; font-size: 14px;">Olá, <strong>${student.nome}</strong>!</p>
           </div>
           
@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
           </div>
 
           <div style="text-align: center; border-top: 1px solid #f1f5f9; padding-top: 16px; margin-top: 24px;">
-            <p style="font-size: 11px; color: #94a3b8; margin: 0;">Esta é uma mensagem automática gerada pela Escola Digital. Por favor, não responda diretamente a este e-mail.</p>
+            <p style="font-size: 11px; color: #94a3b8; margin: 0;">Esta é uma mensagem automática gerada pelo Coordenador de Cursos. Por favor, não responda diretamente a este e-mail.</p>
           </div>
         </div>
       </div>
@@ -117,7 +117,7 @@ export async function POST(req: NextRequest) {
     await transporter.sendMail({
       from: smtpFrom,
       to: student.email,
-      subject: `🗝️ Seu Código de Acesso - Escola Digital`,
+      subject: `🗝️ Seu Código de Acesso - Coordenador de Cursos`,
       html: htmlContent,
     });
 

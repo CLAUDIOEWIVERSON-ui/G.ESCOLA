@@ -42,7 +42,7 @@ export async function GET() {
     const smtpPort = process.env.SMTP_PORT || '587';
     const smtpUser = process.env.SMTP_USER || '';
     const smtpPass = process.env.SMTP_PASS || '';
-    const smtpFrom = process.env.SMTP_FROM || 'Escola Digital <noreply@escola.digital>';
+    const smtpFrom = process.env.SMTP_FROM || 'Coordenador de Cursos <noreply@escola.digital>';
     const smtpSecure = process.env.SMTP_SECURE === 'true';
 
     const isConfigured = !!(smtpHost && smtpUser && smtpPass);
@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
     const smtpPort = parseInt(process.env.SMTP_PORT || '587');
     const smtpUser = process.env.SMTP_USER;
     const smtpPass = process.env.SMTP_PASS;
-    const smtpFrom = process.env.SMTP_FROM || 'Escola Digital <noreply@escola.digital>';
+    const smtpFrom = process.env.SMTP_FROM || 'Coordenador de Cursos <noreply@escola.digital>';
     const smtpSecure = process.env.SMTP_SECURE === 'true';
 
     if (!smtpHost || !smtpUser || !smtpPass) {
@@ -137,7 +137,7 @@ export async function POST(req: NextRequest) {
             ✅ Conexão SMTP Sucedida!
           </h2>
           <p style="font-size: 14px; line-height: 1.6; color: #4b5563;">
-            Este e-mail é um teste do servidor de envio automático de códigos de acesso da <strong>Escola Digital</strong>.
+            Este e-mail é um teste do servidor de envio automático de códigos de acesso do <strong>Coordenador de Cursos</strong>.
           </p>
           <div style="margin: 24px 0; background-color: #f9fafb; border-left: 4px solid #10b981; padding: 16px; border-radius: 4px;">
             <p style="margin: 0; font-family: monospace; font-size: 13px; color: #374151;">
@@ -157,7 +157,7 @@ export async function POST(req: NextRequest) {
     await transporter.sendMail({
       from: smtpFrom,
       to: testEmail,
-      subject: `🧪 Teste de Conexão SMTP - Escola Digital`,
+      subject: `🧪 Teste de Conexão SMTP - Coordenador de Cursos`,
       html: testHtml,
     });
 
