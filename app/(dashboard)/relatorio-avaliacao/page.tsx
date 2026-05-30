@@ -125,7 +125,7 @@ function RelatorioAvaliacaoAdminContent() {
   const [adminSubmitting, setAdminSubmitting] = useState(false);
 
   // Exit form if tab changes
-  const changeTab = (tab: string) => {
+  const changeTab = (tab: 'aluno' | 'curso' | 'instrutor' | 'geral') => {
     setActiveTab(tab);
     if (tab !== 'aluno') {
       setIsAdminFilling(false);
