@@ -98,6 +98,7 @@ function RelatorioAvaliacaoAdminContent() {
   const [cursos, setCursos] = useState<any[]>([]);
   const [turmas, setTurmas] = useState<any[]>([]);
   const [instructorsList, setInstructorsList] = useState<string[]>([]);
+  const [allStudents, setAllStudents] = useState<any[]>([]);
   
   // Active Filter states
   const [selectedCurso, setSelectedCurso] = useState('ALL');
@@ -123,6 +124,13 @@ function RelatorioAvaliacaoAdminContent() {
       // Fetch Turmas with registered instructor field
       const { data: turmasData } = await supabase.from('turmas').select('id, nome, curso_id, periodo, instrutor').is('deleted_at', null);
       if (turmasData) setTurmas(turmasData);
+
+      // Fetch Alunos
+      const { data: alunosData } = await supabase
+        .from('alunos')
+        .select('id, nome, turma_id, posto_graduacao, om, matricula')
+        .is('deleted_at', null);
+      if (alunosData) setAllStudents(alunosData);
 
       // Fetch Questionarios joined with relation metrics
       const { data: qData, error: qErr } = await supabase
@@ -266,16 +274,49 @@ function RelatorioAvaliacaoAdminContent() {
 
   // Filter specific students based on selected turma
   const studentsFilteredByTurma = useMemo(() => {
-    const studentMap = new Map<string, any>();
+    if (selectedTurma === 'ALL') {
+      return [];
+    }
+    
+    const studentsMap = new Map<string, any>();
+    
+    // 1. Add all students belonging to this class
+    allStudents.forEach(stud => {
+      if (stud.turma_id === selectedTurma) {
+        studentsMap.set(stud.id, {
+          id: stud.id,
+          nome: stud.nome,
+          posto_graduacao: stud.posto_graduacao,
+          om: stud.om,
+          matricula: stud.matricula,
+          turma_id: stud.turma_id,
+          responded: false
+        });
+      }
+    });
+    
+    // 2. Mark who has responded based on conclusion feedback submissions
     submissions.forEach(sub => {
-      if (sub.aluno) {
-        if (selectedTurma === 'ALL' || sub.turma_id === selectedTurma) {
-          studentMap.set(sub.aluno_id, sub.aluno);
+      if (sub.aluno && sub.turma_id === selectedTurma) {
+        const existing = studentsMap.get(sub.aluno_id);
+        if (existing) {
+          existing.responded = true;
+        } else {
+          studentsMap.set(sub.aluno_id, {
+            id: sub.aluno_id,
+            nome: sub.aluno.nome,
+            posto_graduacao: sub.aluno.posto_graduacao,
+            om: sub.aluno.om,
+            matricula: sub.aluno.matricula,
+            turma_id: sub.turma_id,
+            responded: true
+          });
         }
       }
     });
-    return Array.from(studentMap.values()).sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
-  }, [submissions, selectedTurma]);
+    
+    return Array.from(studentsMap.values()).sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
+  }, [allStudents, submissions, selectedTurma]);
 
   const hasActiveFilter = selectedTurma !== 'ALL' || 
                          selectedInstructor !== 'ALL' || 
@@ -284,15 +325,21 @@ function RelatorioAvaliacaoAdminContent() {
 
   // Auto set defaults for focused elements when data loads
   useEffect(() => {
-    if (filteredSubmissions.length > 0) {
-      const activeIds = filteredSubmissions.map(x => x.aluno_id);
-      if (!activeIds.includes(focusedStudent)) {
+    if (studentsFilteredByTurma.length > 0) {
+      const ids = studentsFilteredByTurma.map(x => x.id);
+      if (!ids.includes(focusedStudent)) {
         setTimeout(() => {
-          setFocusedStudent(activeIds[0]);
+          setFocusedStudent(ids[0]);
+        }, 0);
+      }
+    } else {
+      if (focusedStudent !== '') {
+        setTimeout(() => {
+          setFocusedStudent('');
         }, 0);
       }
     }
-  }, [filteredSubmissions, focusedStudent]);
+  }, [studentsFilteredByTurma, focusedStudent]);
 
   const clearAllFilters = () => {
     setSelectedCurso('ALL');
@@ -528,12 +575,21 @@ function RelatorioAvaliacaoAdminContent() {
             <select
               value={selectedStudent}
               onChange={(e) => setSelectedStudent(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 text-xs rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-sky-500 text-slate-300"
+              disabled={selectedTurma === 'ALL'}
+              className="w-full bg-slate-950 border border-slate-800 text-xs rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-sky-500 text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              <option value="ALL">Todos os Alunos ({studentsFilteredByTurma.length} disponíveis)</option>
-              {studentsFilteredByTurma.map(stud => (
-                <option key={stud.id} value={stud.id}>{stud.nome}</option>
-              ))}
+              {selectedTurma === 'ALL' ? (
+                <option value="ALL">Selecione uma turma primeiro</option>
+              ) : (
+                <>
+                  <option value="ALL">Todos os Alunos ({studentsFilteredByTurma.length} disponíveis)</option>
+                  {studentsFilteredByTurma.map(stud => (
+                    <option key={stud.id} value={stud.id}>
+                      {stud.responded ? "✅" : "⚠️ (Pendente)"} {stud.nome}
+                    </option>
+                  ))}
+                </>
+              )}
             </select>
           </div>
 
@@ -1066,22 +1122,52 @@ function RelatorioAvaliacaoAdminContent() {
                     <h3 className="text-sm font-bold text-slate-800 font-mono uppercase">Selecionar Estudante para Avaliar</h3>
                     <p className="text-xs text-slate-500">Veja o boletim de autoavaliação, notas de infraestrutura e comentários assinados.</p>
                   </div>
-                  <select
-                    value={focusedStudent}
-                    onChange={(e) => setFocusedStudent(e.target.value)}
-                    className="bg-slate-100 border text-xs px-3 py-2 rounded-lg font-semibold focus:outline-none focus:ring-1 text-slate-800 w-full md:w-64"
-                  >
-                    {filteredSubmissions.map(sub => (
-                      <option key={sub.id} value={sub.aluno_id}>{sub.aluno?.nome || sub.aluno_id}</option>
-                    ))}
-                  </select>
+                  {selectedTurma === 'ALL' ? (
+                    <span className="text-xs text-rose-600 font-semibold bg-rose-50 border border-rose-100 px-3 py-1.5 rounded-lg font-mono">
+                      ⚠️ Selecione uma turma nos filtros do topo primeiro
+                    </span>
+                  ) : (
+                    <select
+                      value={focusedStudent}
+                      onChange={(e) => setFocusedStudent(e.target.value)}
+                      className="bg-slate-100 border text-xs px-3 py-2 rounded-lg font-semibold focus:outline-none focus:ring-1 text-slate-800 w-full md:w-64"
+                    >
+                      <option value="">Selecione um aluno...</option>
+                      {studentsFilteredByTurma.map(stud => (
+                        <option key={stud.id} value={stud.id}>
+                          {stud.responded ? "✅" : "⚠️ (Pendente)"} {stud.nome}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
               </div>
 
               {focusedStudent ? (
                 (() => {
                   const studentSub = submissions.find(sub => sub.aluno_id === focusedStudent);
-                  if (!studentSub) return null;
+                  
+                  if (!studentSub) {
+                    const studentDetails = allStudents.find(stud => stud.id === focusedStudent);
+                    return (
+                      <div className="bg-white border border-slate-200 rounded-xl p-8 text-center max-w-xl mx-auto shadow-sm space-y-4">
+                        <div className="w-16 h-16 bg-amber-50 border border-amber-200 rounded-2xl flex items-center justify-center mx-auto shadow-sm">
+                          <AlertTriangle className="h-6 w-6 text-amber-600 animate-pulse" />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest font-mono">Avaliação Pendente</h3>
+                          <p className="text-slate-500 text-xs mt-1.5 leading-relaxed">
+                            O aluno <strong className="text-slate-900">{studentDetails?.nome || "Selecionado"}</strong> ({studentDetails?.posto_graduacao || "Posto/Graduação"}) ainda não enviou as respostas do questionário de conclusão.
+                          </p>
+                        </div>
+                        <div className="bg-slate-50 rounded-lg p-3.5 border text-xs text-slate-600 font-mono text-left space-y-1 max-w-xs mx-auto">
+                          <p><strong>Matrícula:</strong> {studentDetails?.matricula || "Não disponível"}</p>
+                          <p><strong>OM:</strong> {studentDetails?.om || "Não disponível"}</p>
+                          <p><strong>Frequência:</strong> Dependente de envio</p>
+                        </div>
+                      </div>
+                    );
+                  }
 
                   const studentAllScores = [...courseAvgKeys, ...instAvgKeys, ...autoAvgKeys, ...infraAvgKeys];
                   const studentAvg = calculateAverage([studentSub], studentAllScores);
