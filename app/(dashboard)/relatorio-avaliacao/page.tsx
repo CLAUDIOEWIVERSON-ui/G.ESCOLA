@@ -30,6 +30,7 @@ import {
   Signature
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { generateQuestionnairePDF } from '@/lib/generateQuestionnairePDF';
 
 // Scaling text helper matches CP: 5, CPa: 3, D/NA: 1
 const getScaleLabel = (val: number) => {
@@ -806,7 +807,24 @@ function RelatorioAvaliacaoAdminContent() {
           <p className="text-xs text-slate-600 mt-1">Estatísticas, índices de qualidade acadêmica, rankings de instrutores e autoavaliação.</p>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 print:hidden">
+          <button
+            onClick={() => {
+              try {
+                generateQuestionnairePDF();
+                toast.success("Modelo em branco do Questionário de Avaliação Pós-Curso baixado com sucesso!");
+              } catch (error) {
+                console.error("Erro ao gerar PDF:", error);
+                toast.error("Ocorreu um erro ao gerar o PDF do questionário.");
+              }
+            }}
+            className="flex items-center gap-1.5 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition shadow-sm cursor-pointer border border-sky-500"
+            title="Download do modelo PDF oficial do Questionário de Avaliação Pós-Curso"
+          >
+            <Download className="h-3.5 w-3.5" />
+            Baixar Modelo PDF (A4)
+          </button>
+
           <button
             onClick={handlePrint}
             className="flex items-center gap-1.5 bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 text-xs font-bold px-4 py-2.5 rounded-lg transition shadow-sm cursor-pointer"
@@ -1331,6 +1349,36 @@ function RelatorioAvaliacaoAdminContent() {
                     Cômputo baseado em {filteredSubmissions.length} formulários
                   </div>
                 </div>
+              </div>
+
+              {/* Card download of physical blank forms */}
+              <div className="bg-sky-50 border border-sky-100 rounded-xl p-5 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4 print:hidden">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1.5 text-[10px] text-sky-850 font-bold uppercase tracking-wider font-mono">
+                    <FileText className="h-4 w-4 text-sky-600" />
+                    Modelo Físico de Avaliação (Papel / Off-line)
+                  </div>
+                  <h4 className="text-sm font-bold text-slate-800 uppercase tracking-wide font-sans">Questionário de Avaliação Pós-Curso Oficial (A4)</h4>
+                  <p className="text-xs text-slate-605 max-w-3xl">
+                    Precisa aplicar o questionário acadêmico de forma física por escrito? Baixe o modelo oficial em formato PDF de duas páginas, com a escala de pontuação (CP, CPa, NC/NA) e campos para comentários, conforme o padrão oficial da Missão de Assessoria Naval do Brasil.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    try {
+                      generateQuestionnairePDF();
+                      toast.success("Modelo em branco do Questionário de Avaliação Pós-Curso baixado com sucesso!");
+                    } catch (error) {
+                      console.error("Erro ao gerar PDF:", error);
+                      toast.error("Ocorreu um erro ao gerar o PDF do questionário.");
+                    }
+                  }}
+                  className="w-full md:w-auto bg-sky-650 hover:bg-sky-700 text-white font-extrabold text-[11px] px-5 py-3 rounded-lg transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer shrink-0 border border-sky-600 font-mono tracking-wider"
+                >
+                  <Download className="h-4 w-4" />
+                  BAIXAR FORMULÁRIO (PDF)
+                </button>
               </div>
 
               {/* Card List of Pending Questionnaires on the General Tab */}
