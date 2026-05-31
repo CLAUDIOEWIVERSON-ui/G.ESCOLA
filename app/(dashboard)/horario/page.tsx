@@ -55,6 +55,7 @@ export default function HorarioPage() {
   const [turmas, setTurmas] = useState<any[]>([]);
   const [disciplinas, setDisciplinas] = useState<any[]>([]);
   const [instrutores, setInstrutores] = useState<any[]>([]);
+  const [materias, setMaterias] = useState<any[]>([]);
   const [selectedCursoId, setSelectedCursoId] = useState('');
   const [selectedTurmaId, setSelectedTurmaId] = useState('');
 
@@ -239,6 +240,8 @@ export default function HorarioPage() {
       if (tu) setTurmas(tu);
       const { data: d } = await supabase.from('disciplinas').select('*').is('deleted_at', null).order('nome');
       if (d) setDisciplinas(d);
+      const { data: mm } = await supabase.from('materias_modulos').select('*').is('deleted_at', null).order('nome');
+      if (mm) setMaterias(mm);
       const { data: i } = await supabase.from('profiles').select('*').eq('role', 'instrutor');
       
       const combinedInstructors: any[] = [];
@@ -934,6 +937,10 @@ export default function HorarioPage() {
                                 ? turmas.filter(tu => tu.curso_id === selectedCursoId)
                                 : turmas;
                               
+                              const cellTopics = cell.subjectId
+                                ? materias.filter(m => m.disciplina_id === cell.subjectId)
+                                : [];
+                              
                               if (holiday) {
                                 return (
                                   <td key={day.key} className="px-3 py-3 border-r border-slate-100 last:border-r-0 bg-neutral-50">
@@ -959,7 +966,11 @@ export default function HorarioPage() {
                                       <div className="space-y-2.5">
                                         <select 
                                           value={cell.subjectId || ''}
-                                          onChange={(e) => updateCell(slot.id, day.key, 'subjectId', e.target.value)}
+                                          onChange={(e) => {
+                                            updateCell(slot.id, day.key, 'subjectId', e.target.value);
+                                            updateCell(slot.id, day.key, 'topicId', '');
+                                            updateCell(slot.id, day.key, 'topic', '');
+                                          }}
                                           className="w-full text-[10px] font-black text-neutral-950 bg-transparent border-none focus:ring-0 p-0 cursor-pointer block truncate"
                                         >
                                           <option value="">{t.schedule.subject}</option>
@@ -967,6 +978,46 @@ export default function HorarioPage() {
                                             <option key={d.id} value={d.id}>{d.nome}</option>
                                           ))}
                                         </select>
+
+                                        {cell.subjectId && (
+                                          <div className="space-y-1 pl-1.5 border-l border-blue-100">
+                                            {cellTopics.length > 0 && (
+                                              <select
+                                                value={cell.topicId || ''}
+                                                onChange={(e) => {
+                                                  const selectedObj = cellTopics.find(ct => ct.id === e.target.value);
+                                                  updateCell(slot.id, day.key, 'topicId', e.target.value);
+                                                  if (selectedObj) {
+                                                    updateCell(slot.id, day.key, 'topic', selectedObj.nome);
+                                                  }
+                                                }}
+                                                className="w-full text-[9px] font-bold text-slate-500 bg-transparent border-none focus:ring-0 p-0 cursor-pointer block truncate"
+                                              >
+                                                <option value="">{language === 'pt' ? 'Selecionar Tópico' : 'Select Topic'}</option>
+                                                {cellTopics.map(m => (
+                                                  <option key={m.id} value={m.id}>{m.nome}</option>
+                                                ))}
+                                              </select>
+                                            )}
+                                            <div className="flex items-center gap-1">
+                                              <Book size={10} className="text-slate-300 shrink-0" />
+                                              <input 
+                                                value={cell.topic || ''}
+                                                onChange={(e) => {
+                                                  updateCell(slot.id, day.key, 'topic', e.target.value);
+                                                  const matches = cellTopics.find(ct => ct.nome === e.target.value);
+                                                  if (!matches) {
+                                                    updateCell(slot.id, day.key, 'topicId', '');
+                                                  } else {
+                                                    updateCell(slot.id, day.key, 'topicId', matches.id);
+                                                  }
+                                                }}
+                                                placeholder={t.schedule.topic || 'Tópico'}
+                                                className="w-full text-[9px] font-bold text-slate-500 bg-transparent border-none focus:ring-0 p-0 placeholder:text-slate-300 block truncate"
+                                              />
+                                            </div>
+                                          </div>
+                                        )}
 
                                         <select 
                                           value={cell.instructorId || ''}
@@ -1005,13 +1056,23 @@ export default function HorarioPage() {
                                         <div className="space-y-2 flex-1 flex flex-col">
                                           <div className="space-y-1">
                                             <div className="flex items-center gap-1.5 text-neutral-950">
-                                              <BookOpen size={10} />
+                                              <BookOpen size={10} className="shrink-0" />
                                               <span className="text-[11px] font-black leading-tight uppercase tracking-tight">
                                                 {disciplinas.find(d => d.id === cell.subjectId)?.nome || 'Disciplina'}
                                               </span>
                                             </div>
+                                            
+                                            {(cell.topic || cell.topicId) && (
+                                              <div className="flex items-start gap-1.5 text-slate-600 pl-0.5 my-0.5">
+                                                <Book size={10} className="text-slate-400 shrink-0 mt-0.5" />
+                                                <span className="text-[10px] font-bold leading-tight uppercase tracking-tight text-slate-600 line-clamp-2">
+                                                  {cell.topic || materias.find(m => m.id === cell.topicId)?.nome || ''}
+                                                </span>
+                                              </div>
+                                            )}
+
                                             <div className="flex items-center gap-1.5 text-neutral-500">
-                                              <User size={10} />
+                                              <User size={10} className="shrink-0" />
                                               <span className="text-[10px] font-bold">
                                                 {instrutores.find(i => i.id === cell.instructorId)?.full_name || cell.instructorId || 'Instrutor'}
                                               </span>

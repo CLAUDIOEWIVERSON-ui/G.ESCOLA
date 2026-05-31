@@ -267,6 +267,7 @@ export const translations = {
       period: "Período",
       subject: "Disciplina",
       room: "Sala",
+      topic: "Tópico",
       footerDocGenerated: "Documento gerado em",
       footerVersion: "VERSÃO PARA IMPRESSÃO - GESTOR DE CURSOS",
       holiday: "Feriado",
