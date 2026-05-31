@@ -980,42 +980,22 @@ export default function HorarioPage() {
                                         </select>
 
                                         {cell.subjectId && (
-                                          <div className="space-y-1 pl-1.5 border-l border-blue-100">
-                                            {cellTopics.length > 0 && (
-                                              <select
-                                                value={cell.topicId || ''}
-                                                onChange={(e) => {
-                                                  const selectedObj = cellTopics.find(ct => ct.id === e.target.value);
-                                                  updateCell(slot.id, day.key, 'topicId', e.target.value);
-                                                  if (selectedObj) {
-                                                    updateCell(slot.id, day.key, 'topic', selectedObj.nome);
-                                                  }
-                                                }}
-                                                className="w-full text-[9px] font-bold text-slate-500 bg-transparent border-none focus:ring-0 p-0 cursor-pointer block truncate"
-                                              >
-                                                <option value="">{language === 'pt' ? 'Selecionar Tópico' : 'Select Topic'}</option>
-                                                {cellTopics.map(m => (
-                                                  <option key={m.id} value={m.id}>{m.nome}</option>
-                                                ))}
-                                              </select>
-                                            )}
-                                            <div className="flex items-center gap-1">
-                                              <Book size={10} className="text-slate-300 shrink-0" />
-                                              <input 
-                                                value={cell.topic || ''}
-                                                onChange={(e) => {
-                                                  updateCell(slot.id, day.key, 'topic', e.target.value);
-                                                  const matches = cellTopics.find(ct => ct.nome === e.target.value);
-                                                  if (!matches) {
-                                                    updateCell(slot.id, day.key, 'topicId', '');
-                                                  } else {
-                                                    updateCell(slot.id, day.key, 'topicId', matches.id);
-                                                  }
-                                                }}
-                                                placeholder={t.schedule.topic || 'Tópico'}
-                                                className="w-full text-[9px] font-bold text-slate-500 bg-transparent border-none focus:ring-0 p-0 placeholder:text-slate-300 block truncate"
-                                              />
-                                            </div>
+                                          <div className="flex items-center gap-1 pl-1 border-l border-blue-100">
+                                            <Book size={10} className="text-slate-300 shrink-0" />
+                                            <input 
+                                              value={cell.topic || ''}
+                                              onChange={(e) => {
+                                                updateCell(slot.id, day.key, 'topic', e.target.value);
+                                                const matches = cellTopics.find(ct => ct.nome === e.target.value);
+                                                if (!matches) {
+                                                  updateCell(slot.id, day.key, 'topicId', '');
+                                                } else {
+                                                  updateCell(slot.id, day.key, 'topicId', matches.id);
+                                                }
+                                              }}
+                                              placeholder={t.schedule.topic || 'Tópico'}
+                                              className="w-full text-[9px] font-bold text-slate-500 bg-transparent border-none focus:ring-0 p-0 placeholder:text-slate-300 block truncate"
+                                            />
                                           </div>
                                         )}
 
@@ -1031,13 +1011,22 @@ export default function HorarioPage() {
                                         </select>
 
                                         <select 
-                                          value={cell.turmaId || ''}
-                                          onChange={(e) => updateCell(slot.id, day.key, 'turmaId', e.target.value)}
-                                          className="w-full text-[10px] font-bold text-blue-600 bg-transparent border-none focus:ring-0 p-0 cursor-pointer block truncate"
+                                          value={cell.topicId || ''}
+                                          onChange={(e) => {
+                                            const selectedObj = cellTopics.find(ct => ct.id === e.target.value);
+                                            updateCell(slot.id, day.key, 'topicId', e.target.value);
+                                            if (selectedObj) {
+                                              updateCell(slot.id, day.key, 'topic', selectedObj.nome);
+                                            } else {
+                                              updateCell(slot.id, day.key, 'topic', '');
+                                            }
+                                          }}
+                                          disabled={!cell.subjectId}
+                                          className="w-full text-[10px] font-bold text-blue-600 bg-transparent border-none focus:ring-0 p-0 cursor-pointer block truncate disabled:opacity-40"
                                         >
-                                          <option value="">{language === 'pt' ? 'Turma' : 'Class'}</option>
-                                          {displayTurmas.map(tu => (
-                                            <option key={tu.id} value={tu.id}>{tu.nome}</option>
+                                          <option value="">{language === 'pt' ? 'Tópico' : 'Topic'}</option>
+                                          {cellTopics.map(m => (
+                                            <option key={m.id} value={m.id}>{m.nome}</option>
                                           ))}
                                         </select>
 
@@ -1080,10 +1069,12 @@ export default function HorarioPage() {
                                           </div>
                                           
                                           <div className="mt-auto pt-2 flex flex-col gap-1 border-t border-slate-100">
-                                            <div className="flex items-center gap-1 text-[9px] font-black text-blue-600 uppercase tracking-widest">
-                                              <Shield size={8} />
-                                              <span>{turmas.find(tu => tu.id === cell.turmaId)?.nome || selectedTurma?.nome}</span>
-                                            </div>
+                                            {(cell.topic || cell.topicId) && (
+                                              <div className="flex items-center gap-1 text-[9px] font-black text-blue-600 uppercase tracking-widest leading-none">
+                                                <Book size={8} className="shrink-0" />
+                                                <span className="truncate">{cell.topic || materias.find(m => m.id === cell.topicId)?.nome || ''}</span>
+                                              </div>
+                                            )}
                                             <div className="flex items-center gap-1.5 text-neutral-400">
                                               <MapPin size={10} />
                                               <span className="text-[9px] font-black uppercase tracking-tight">{cell.room || 'N/A'}</span>
