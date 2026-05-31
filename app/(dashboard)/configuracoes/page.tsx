@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
@@ -20,7 +20,14 @@ import {
   CheckCircle,
   AlertTriangle,
   Send,
-  RefreshCw
+  RefreshCw,
+  Database,
+  Copy,
+  ChevronDown,
+  ChevronUp,
+  Check,
+  ExternalLink,
+  FileText
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
@@ -52,7 +59,13 @@ export default function ConfiguracoesPage() {
   const [testEmail, setTestEmail] = useState('');
   const [sendingTest, setSendingTest] = useState(false);
 
-  const fetchSmtpStatus = async () => {
+  // Database migrations/integrity status
+  const [dbStatus, setDbStatus] = useState<any>(null);
+  const [dbLoading, setDbLoading] = useState(false);
+  const [expandedMig, setExpandedMig] = useState<string | null>(null);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+
+  const fetchSmtpStatus = useCallback(async () => {
     if (!isAdmin) return;
     setSmtpLoading(true);
     try {
@@ -66,6 +79,31 @@ export default function ConfiguracoesPage() {
     } finally {
       setSmtpLoading(false);
     }
+  }, [isAdmin]);
+
+  const fetchDbIntegrity = useCallback(async () => {
+    if (!isAdmin) return;
+    setDbLoading(true);
+    try {
+      const res = await fetch('/api/admin/migrations');
+      if (res.ok) {
+        const data = await res.json();
+        setDbStatus(data);
+      }
+    } catch (err) {
+      console.error('Error checking DB integrity:', err);
+    } finally {
+      setDbLoading(false);
+    }
+  }, [isAdmin]);
+
+  const handleCopySql = (sql: string, key: string) => {
+    navigator.clipboard.writeText(sql);
+    setCopiedKey(key);
+    toast.success('SQL copiado com sucesso para a área de transferência!');
+    setTimeout(() => {
+      setCopiedKey(null);
+    }, 2000);
   };
 
   useEffect(() => {
@@ -73,13 +111,14 @@ export default function ConfiguracoesPage() {
     const timer = setTimeout(() => {
       if (isAdmin && active) {
         fetchSmtpStatus();
+        fetchDbIntegrity();
       }
     }, 50);
     return () => {
       active = false;
       clearTimeout(timer);
     };
-  }, [isAdmin]);
+  }, [isAdmin, fetchSmtpStatus, fetchDbIntegrity]);
 
   const handleSendTestEmail = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -519,6 +558,132 @@ export default function ConfiguracoesPage() {
           ) : (
             <div className="text-center py-4 text-xs italic text-slate-400 font-mono">
               Não foi possível sincronizar informações do servidor SMTP.
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Integridade do Banco de Dados Card */}
+      {isAdmin && (
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-50 pb-4 gap-4">
+            <div className="flex items-center gap-3">
+               <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
+                  <Database size={20} />
+               </div>
+               <div>
+                  <h2 className="font-bold text-slate-800 font-sans">Integridade de Tabelas Supabase</h2>
+                  <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold font-sans">Verificação do esquema do banco de dados e migrações SQL</p>
+               </div>
+            </div>
+            <button
+              onClick={fetchDbIntegrity}
+              disabled={dbLoading}
+              className="p-2 hover:bg-slate-50 rounded-lg border border-slate-200 text-slate-500 hover:text-slate-700 transition cursor-pointer flex items-center gap-1 text-xs font-bold"
+              title="Atualizar verificação"
+            >
+              <RefreshCw size={14} className={dbLoading ? "animate-spin" : ""} />
+              {dbLoading ? "Verificando..." : "Atualizar Verificação"}
+            </button>
+          </div>
+
+          {dbLoading && !dbStatus ? (
+            <div className="py-8 flex flex-col justify-center items-center gap-2 text-slate-500 text-xs font-mono">
+              <Loader2 size={16} className="animate-spin text-indigo-600" />
+              Sondando relações de tabelas e integridade do Supabase...
+            </div>
+          ) : dbStatus?.results ? (
+            <div className="space-y-6">
+              <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100 text-xs text-slate-600 leading-relaxed font-sans">
+                ℹ️ **Gestor de Migrações:** Esta seção monitora de forma inteligente o banco de dados do Supabase. Se algum recurso estiver desativado ou exibir **Ausente**, copie e execute a migração correspondente no console do Supabase para restabelecer o pleno funcionamento do sistema.
+              </div>
+
+              <div className="divide-y divide-slate-100">
+                {dbStatus.results.map((item: any) => (
+                  <div key={item.key} className="py-4 first:pt-0 last:pb-0 space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 font-sans">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-mono text-xs font-black text-slate-800">{item.tableName}{item.isColumn && `.${item.columnName}`}</span>
+                          <span className="text-[9px] font-semibold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded font-mono">{item.fileName}</span>
+                        </div>
+                        <p className="text-xs text-slate-500 max-w-2xl font-medium">{item.description}</p>
+                      </div>
+
+                      <div className="flex items-center gap-2 self-start sm:self-center">
+                        {item.status === 'valid' ? (
+                          <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-800 border border-emerald-100 rounded-full text-[10px] font-black uppercase tracking-wider">
+                            <CheckCircle size={12} className="text-emerald-600" />
+                            Integridade OK
+                          </div>
+                        ) : item.status === 'missing' ? (
+                          <div className="flex items-center gap-1.5 px-3 py-1 bg-rose-50 text-rose-800 border border-rose-100 rounded-full text-[10px] font-black uppercase tracking-wider animate-pulse">
+                            <AlertTriangle size={12} className="text-rose-600" />
+                            {item.isColumn ? 'Coluna Ausente' : 'Tabela Ausente'}
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-800 border border-amber-100 rounded-full text-[10px] font-black uppercase tracking-wider">
+                            <AlertTriangle size={12} className="text-amber-600" />
+                            Erro de Validação
+                          </div>
+                        )}
+
+                        <button
+                          onClick={() => setExpandedMig(expandedMig === item.key ? null : item.key)}
+                          className="p-1 px-2 hover:bg-slate-100 rounded-lg border border-slate-200 text-slate-500 hover:text-slate-800 flex items-center gap-1 text-[10px] font-bold transition cursor-pointer"
+                        >
+                          SQL
+                          {expandedMig === item.key ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+                        </button>
+                      </div>
+                    </div>
+
+                    {item.errorMessage && (
+                      <div className="p-3 bg-red-50 border border-red-100 rounded-xl font-mono text-[10px] text-red-600 leading-relaxed overflow-x-auto">
+                        ⚠️ **Log Técnico:** {item.errorMessage}
+                      </div>
+                    )}
+
+                    {expandedMig === item.key && (
+                      <div className="bg-slate-900 rounded-xl p-4 space-y-4 shadow-inner text-slate-200 border border-slate-800 font-sans">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] uppercase font-bold tracking-widest text-slate-400 font-mono flex items-center gap-1">
+                            <FileText size={10} />
+                            Migração SQL — {item.fileName}
+                          </span>
+                          <button
+                            onClick={() => handleCopySql(item.sql, item.key)}
+                            className="flex items-center gap-1 bg-slate-800 hover:bg-slate-700 active:scale-95 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition-all cursor-pointer border border-slate-700"
+                          >
+                            {copiedKey === item.key ? <Check size={11} className="text-emerald-500" /> : <Copy size={11} />}
+                            {copiedKey === item.key ? 'Copiado!' : 'Copiar SQL'}
+                          </button>
+                        </div>
+                        
+                        <pre className="relative font-mono text-[11px] leading-relaxed bg-slate-950 p-3 rounded-lg overflow-x-auto max-h-60 border border-slate-800 text-emerald-400 whitespace-pre">
+                          <code>{item.sql}</code>
+                        </pre>
+
+                        <div className="text-[10px] text-slate-400 bg-slate-800/30 p-3 rounded-lg space-y-1">
+                          <p className="font-bold text-slate-300">💡 Como executar esta migração no Supabase:</p>
+                          <ol className="list-decimal pl-4 space-y-1.5 mt-1 font-sans">
+                            <li>Clique no botão **Copiar SQL** acima.</li>
+                            <li>Acesse seu **Supabase Dashboard** do projeto (onde o banco de dados está sincronizado).</li>
+                            <li>No painel lateral esquerdo, selecione a aba **SQL Editor** (representada pelo ícone de terminal <code className="bg-slate-800 px-1 rounded">&gt;_</code>).</li>
+                            <li>Clique em **+ New Query** no topo esquerdo da página.</li>
+                            <li>Cole o código SQL na área de texto e clique no botão verde **Run** (ou pressione <code className="bg-slate-800 px-1 rounded">Ctrl + Enter</code>).</li>
+                            <li>Após ver a mensagem de sucesso, retorne a esta página e clique no botão **Atualizar Verificação** no topo para renovar as tabelas!</li>
+                          </ol>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-6 text-xs italic text-slate-400 font-mono">
+              Nenhuma informação de integridade do banco de dados recebida do servidor.
             </div>
           )}
         </div>
