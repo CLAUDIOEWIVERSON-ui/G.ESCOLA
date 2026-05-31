@@ -396,15 +396,17 @@ export default function BoletimPage() {
               {language === 'pt' ? 'Consulte as suas notas individuais e aproveitamento acadêmico' : 'Check your individual grades and academic performance.'}
             </p>
           </div>
-          <div className="flex gap-2 print:hidden">
-            <button 
-              onClick={handlePrint}
-              className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-all shadow-sm cursor-pointer"
-            >
-              <Printer size={18} />
-              {t.reportCard.print}
-            </button>
-          </div>
+          {profile?.role !== 'aluno' && (
+            <div className="flex gap-2 print:hidden">
+              <button 
+                onClick={handlePrint}
+                className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-all shadow-sm cursor-pointer"
+              >
+                <Printer size={18} />
+                {t.reportCard.print}
+              </button>
+            </div>
+          )}
         </div>
 
         {loadingReport || !reportData ? (
@@ -991,20 +993,22 @@ export default function BoletimPage() {
                           </h3>
                         </div>
                         <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => {
-                              try {
-                                window.print();
-                              } catch (err) {
-                                console.error("Window print error", err);
-                              }
-                            }}
-                            disabled={loadingReport || !reportData}
-                            className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md shadow-blue-500/10 cursor-pointer"
-                          >
-                            <Printer size={14} />
-                            <span>{language === 'pt' ? 'Imprimir' : 'Print'}</span>
-                          </button>
+                          {profile?.role !== 'aluno' && (
+                            <button
+                              onClick={() => {
+                                try {
+                                  window.print();
+                                } catch (err) {
+                                  console.error("Window print error", err);
+                                }
+                              }}
+                              disabled={loadingReport || !reportData}
+                              className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md shadow-blue-500/10 cursor-pointer"
+                            >
+                              <Printer size={14} />
+                              <span>{language === 'pt' ? 'Imprimir' : 'Print'}</span>
+                            </button>
+                          )}
                           <button
                             onClick={() => setSelectedStudentForReport(null)}
                             className="p-2 hover:bg-slate-800 rounded-xl text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
