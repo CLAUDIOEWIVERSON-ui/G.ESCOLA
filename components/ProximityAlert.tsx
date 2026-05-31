@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/LanguageContext';
+import { useUser } from '@/lib/auth/UserContext';
 import { Bell, Calendar, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import Link from 'next/link';
@@ -10,6 +11,7 @@ import { cn } from '@/lib/utils';
 
 export function ProximityAlert() {
   const { t } = useI18n();
+  const { isAluno } = useUser();
   const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
   const [isVisible, setIsVisible] = useState(false);
 
@@ -22,15 +24,26 @@ export function ProximityAlert() {
         const nextWeek = new Date();
         nextWeek.setDate(today.getDate() + 3); // Check next 3 days for alert
         
-        const { data, error } = await supabase
+        // Select including 'exibir_aluno' safely
+        let { data, error } = await supabase
           .from('eventos')
-          .select('*')
+          .select('id, titulo, descricao, data, cor, exibir_aluno')
           .gte('data', today.toISOString().split('T')[0])
           .lte('data', nextWeek.toISOString().split('T')[0])
           .order('data', { ascending: true });
 
-        if (error) {
-          // If table doesn't exist yet, we just ignore it for now
+        if (error && (error.message.includes('exibir_aluno') || error.code === 'PGRST204' || error.hint?.includes('exibir_aluno'))) {
+          // Fallback if the column exibir_aluno doesn't exist yet
+          const { data: fallbackData, error: fallbackError } = await supabase
+            .from('eventos')
+            .select('id, titulo, descricao, data, cor')
+            .gte('data', today.toISOString().split('T')[0])
+            .lte('data', nextWeek.toISOString().split('T')[0])
+            .order('data', { ascending: true });
+            
+          if (fallbackError) throw fallbackError;
+          data = fallbackData;
+        } else if (error) {
           if (error.code === '42P01' || error.code === 'PGRST205') {
             console.warn('Aviso: Tabela "eventos" não encontrada. Execute a migração SQL para habilitar este recurso.');
             return;
@@ -39,14 +52,24 @@ export function ProximityAlert() {
         }
         
         if (data && data.length > 0) {
-          setUpcomingEvents(data);
-          setIsVisible(true);
-          
-          // Auto hide after 10 seconds
-          const timer = setTimeout(() => {
-            setIsVisible(false);
-          }, 10000);
-          return () => clearTimeout(timer);
+          // Filter out if the user is Aluno and exibir_aluno is explicitly false
+          const filtered = data.filter(evt => {
+            if (isAluno) {
+              return evt.exibir_aluno !== false;
+            }
+            return true;
+          });
+
+          if (filtered.length > 0) {
+            setUpcomingEvents(filtered);
+            setIsVisible(true);
+            
+            // Auto hide after 10 seconds
+            const timer = setTimeout(() => {
+              setIsVisible(false);
+            }, 10000);
+            return () => clearTimeout(timer);
+          }
         }
       } catch (error) {
         console.error('Error checking proximity events:', JSON.stringify(error, null, 2) === '{}' ? error : JSON.stringify(error, null, 2));
@@ -54,7 +77,7 @@ export function ProximityAlert() {
     };
 
     checkEvents();
-  }, []);
+  }, [isAluno]);
 
   if (!isVisible || upcomingEvents.length === 0) return null;
 

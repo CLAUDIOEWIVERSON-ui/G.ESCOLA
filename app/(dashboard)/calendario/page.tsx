@@ -26,12 +26,13 @@ interface Evento {
   descricao: string;
   data: string;
   cor: string;
+  exibir_aluno?: boolean;
   created_at: string;
 }
 
 export default function CalendarPage() {
   const { t } = useI18n();
-  const { isAdmin } = useUser();
+  const { isAdmin, isAluno } = useUser();
   const isReadOnly = !isAdmin;
   
   const [eventos, setEventos] = useState<Evento[]>([]);
@@ -45,7 +46,8 @@ export default function CalendarPage() {
     titulo: '',
     descricao: '',
     data: new Date().toISOString().split('T')[0],
-    cor: 'bg-blue-600'
+    cor: 'bg-blue-600',
+    exibir_aluno: false
   });
 
   const fetchEventos = async () => {
@@ -104,29 +106,52 @@ export default function CalendarPage() {
     // Ensure we send a valid timestamp to Postgres
     const timestamp = new Date(`${formData.data}T12:00:00`).toISOString();
 
+    const eventPayload: any = {
+      titulo: formData.titulo,
+      descricao: formData.descricao,
+      data: timestamp,
+      cor: formData.cor,
+      exibir_aluno: formData.exibir_aluno
+    };
+
     try {
       if (editingEvent) {
         const { error } = await supabase
           .from('eventos')
-          .update({
-            titulo: formData.titulo,
-            descricao: formData.descricao,
-            data: timestamp,
-            cor: formData.cor
-          })
+          .update(eventPayload)
           .eq('id', editingEvent.id);
-        if (error) throw error;
+        
+        if (error) {
+          // Fallback if db column doesn't exist yet
+          if (error.message.includes('exibir_aluno') || error.hint?.includes('exibir_aluno') || error.code === 'PGRST204') {
+            const { exibir_aluno, ...fallbackPayload } = eventPayload;
+            const { error: fallbackErr } = await supabase
+              .from('eventos')
+              .update(fallbackPayload)
+              .eq('id', editingEvent.id);
+            if (fallbackErr) throw fallbackErr;
+          } else {
+            throw error;
+          }
+        }
         toast.success(t.calendar.eventUpdated);
       } else {
         const { error } = await supabase
           .from('eventos')
-          .insert([{
-            titulo: formData.titulo,
-            descricao: formData.descricao,
-            data: timestamp,
-            cor: formData.cor
-          }]);
-        if (error) throw error;
+          .insert([eventPayload]);
+
+        if (error) {
+          // Fallback if db column doesn't exist yet
+          if (error.message.includes('exibir_aluno') || error.hint?.includes('exibir_aluno') || error.code === 'PGRST204') {
+            const { exibir_aluno, ...fallbackPayload } = eventPayload;
+            const { error: fallbackErr } = await supabase
+              .from('eventos')
+              .insert([fallbackPayload]);
+            if (fallbackErr) throw fallbackErr;
+          } else {
+            throw error;
+          }
+        }
         toast.success(t.calendar.eventAdded);
       }
 
@@ -136,7 +161,8 @@ export default function CalendarPage() {
         titulo: '',
         descricao: '',
         data: new Date().toISOString().split('T')[0],
-        cor: 'bg-blue-600'
+        cor: 'bg-blue-600',
+        exibir_aluno: false
       });
       fetchEventos();
     } catch (error: any) {
@@ -173,7 +199,8 @@ export default function CalendarPage() {
       titulo: evento.titulo,
       descricao: evento.descricao,
       data: evento.data.split('T')[0],
-      cor: evento.cor
+      cor: evento.cor,
+      exibir_aluno: evento.exibir_aluno !== false
     });
     setIsModalOpen(true);
   };
@@ -182,10 +209,13 @@ export default function CalendarPage() {
     setViewingEvent(evento);
   };
 
-  const filteredEventos = eventos.filter(e => 
-    e.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (e.descricao || '').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredEventos = eventos.filter(e => {
+    if (isAluno && e.exibir_aluno === false) {
+      return false;
+    }
+    return e.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (e.descricao || '').toLowerCase().includes(searchTerm.toLowerCase());
+  });
 
   const colors = [
     { name: 'Azul', value: 'bg-blue-600' },
@@ -211,7 +241,8 @@ export default function CalendarPage() {
                 titulo: '',
                 descricao: '',
                 data: new Date().toISOString().split('T')[0],
-                cor: 'bg-blue-600'
+                cor: 'bg-blue-600',
+                exibir_aluno: false
               });
               setIsModalOpen(true);
             }}
@@ -511,6 +542,24 @@ export default function CalendarPage() {
                           <option key={c.value} value={c.value}>{c.name}</option>
                         ))}
                       </select>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3 p-3.5 bg-slate-50 border border-slate-200/60 rounded-xl mt-2 select-none">
+                    <input 
+                      type="checkbox"
+                      id="exibir_aluno"
+                      checked={formData.exibir_aluno}
+                      onChange={(e) => setFormData(prev => ({ ...prev, exibir_aluno: e.target.checked }))}
+                      className="mt-0.5 w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500 cursor-pointer"
+                    />
+                    <div className="flex flex-col">
+                      <label htmlFor="exibir_aluno" className="text-xs font-bold text-slate-700 cursor-pointer">
+                        Exibir para Alunos
+                      </label>
+                      <span className="text-[10px] text-slate-500 leading-normal">
+                        Quando marcado, o aluno poderá ver este evento na barra de avisos animada, no alerta de proximidade e no calendário.
+                      </span>
                     </div>
                   </div>
                 </div>

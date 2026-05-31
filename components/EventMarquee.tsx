@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
+import { useUser } from '@/lib/auth/UserContext';
 import { motion } from 'motion/react';
-import { Calendar, Bell } from 'lucide-react';
+import { Bell } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface Evento {
@@ -11,9 +12,11 @@ interface Evento {
   titulo: string;
   data: string;
   cor: string;
+  exibir_aluno?: boolean;
 }
 
 export function EventMarquee() {
+  const { isAluno } = useUser();
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -23,20 +26,34 @@ export function EventMarquee() {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        const { data, error } = await supabase
+        let query = supabase
           .from('eventos')
-          .select('id, titulo, data, cor')
+          .select('id, titulo, data, cor, exibir_aluno')
           .gte('data', today.toISOString())
           .order('data', { ascending: true })
-          .limit(8);
+          .limit(15);
         
-        if (error) {
+        let { data, error } = await query;
+        
+        // Dynamic fallback if the exibir_aluno column doesn't exist yet
+        if (error && (error.message.includes('exibir_aluno') || error.code === 'PGRST204' || error.hint?.includes('exibir_aluno'))) {
+          const { data: fallbackData, error: fallbackError } = await supabase
+            .from('eventos')
+            .select('id, titulo, data, cor')
+            .gte('data', today.toISOString())
+            .order('data', { ascending: true })
+            .limit(15);
+          
+          if (fallbackError) throw fallbackError;
+          data = fallbackData;
+        } else if (error) {
           if (error.code === '42P01') {
             setEventos([]);
             return;
           }
           throw error;
         }
+
         if (data) setEventos(data);
       } catch (error) {
         console.error('Error fetching marquee events:', error);
@@ -50,7 +67,17 @@ export function EventMarquee() {
     return () => clearInterval(interval);
   }, []);
 
-  if (loading || eventos.length === 0) return null;
+  const filteredEventos = eventos.filter(evento => {
+    if (isAluno) {
+      // If the admin has chosen to hide it from students or not selected it, hide it.
+      // If the column 'exibir_aluno' is undefined (meaning the database migration hasn't been run yet), 
+      // fallback to true to prevent a blank state until mig is run.
+      return evento.exibir_aluno !== false;
+    }
+    return true;
+  });
+
+  if (loading || filteredEventos.length === 0) return null;
 
   return (
     <div className="w-full bg-slate-900 text-white overflow-hidden h-9 flex items-center border-b border-white/10 relative z-50 shrink-0">
@@ -71,7 +98,7 @@ export function EventMarquee() {
         >
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={`set-${i}`} className="inline-flex items-center gap-16">
-              {eventos.map((evento) => (
+              {filteredEventos.map((evento) => (
                 <div key={`${evento.id}-${i}`} className="flex items-center gap-3">
                   <div className={cn("w-1.5 h-1.5 rounded-full shrink-0", evento.cor)} />
                   <span className="text-xs font-bold text-slate-100 whitespace-nowrap">
