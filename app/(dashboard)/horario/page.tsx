@@ -621,61 +621,63 @@ export default function HorarioPage() {
           <p className="text-slate-500 font-medium ml-11">{t.reportCard.subtitle}</p>
         </div>
         
-        <div className="flex items-center gap-3">
-          {!isNifStudent && (
-            <button
-              onClick={handleToggleEdit}
-              disabled={isSaving || !selectedTurmaId}
-              className={cn(
-                "flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-black uppercase tracking-widest transition-all shadow-lg disabled:opacity-50",
-                isEditMode 
-                  ? "bg-emerald-600 text-white shadow-emerald-200 hover:bg-emerald-700" 
-                  : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 shadow-slate-100"
-              )}
-            >
-              {isSaving ? <Loader2 size={18} className="animate-spin" /> : (isEditMode ? <Check size={18} /> : <Edit3 size={18} />)}
-              {isEditMode ? (language === 'pt' ? 'Salvar' : 'Save') : (language === 'pt' ? 'Editar' : 'Edit')}
-            </button>
-          )}
+        {profile?.role !== 'aluno' && (
+          <div className="flex items-center gap-3">
+            {!isNifStudent && (
+              <button
+                onClick={handleToggleEdit}
+                disabled={isSaving || !selectedTurmaId}
+                className={cn(
+                  "flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-black uppercase tracking-widest transition-all shadow-lg disabled:opacity-50",
+                  isEditMode 
+                    ? "bg-emerald-600 text-white shadow-emerald-200 hover:bg-emerald-700" 
+                    : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 shadow-slate-100"
+                )}
+              >
+                {isSaving ? <Loader2 size={18} className="animate-spin" /> : (isEditMode ? <Check size={18} /> : <Edit3 size={18} />)}
+                {isEditMode ? (language === 'pt' ? 'Salvar' : 'Save') : (language === 'pt' ? 'Editar' : 'Edit')}
+              </button>
+            )}
 
-          {selectedTurmaId && !isEditMode && (
-            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-2xl border border-slate-200 shadow-inner">
-              <button
-                type="button"
-                onClick={() => setPrintOrientation('portrait')}
-                className={cn(
-                  "px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer select-none",
-                  printOrientation === 'portrait' 
-                    ? "bg-neutral-950 text-white shadow-sm" 
-                    : "text-slate-500 hover:text-slate-800"
-                )}
-              >
-                {language === 'pt' ? 'Retrato' : 'Portrait'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setPrintOrientation('landscape')}
-                className={cn(
-                  "px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer select-none",
-                  printOrientation === 'landscape' 
-                    ? "bg-neutral-950 text-white shadow-sm" 
-                    : "text-slate-500 hover:text-slate-800"
-                )}
-              >
-                {language === 'pt' ? 'Paisagem' : 'Landscape'}
-              </button>
-            </div>
-          )}
-          
-          <button 
-            onClick={handlePrint}
-            disabled={isEditMode || !selectedTurmaId}
-            className="flex items-center gap-2 bg-[#0f172a] text-white px-5 py-2.5 rounded-2xl text-sm font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 disabled:opacity-50 disabled:grayscale"
-          >
-            <Printer size={18} />
-            {t.schedule.print}
-          </button>
-        </div>
+            {selectedTurmaId && !isEditMode && (
+              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-2xl border border-slate-200 shadow-inner">
+                <button
+                  type="button"
+                  onClick={() => setPrintOrientation('portrait')}
+                  className={cn(
+                    "px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer select-none",
+                    printOrientation === 'portrait' 
+                      ? "bg-neutral-950 text-white shadow-sm" 
+                      : "text-slate-500 hover:text-slate-800"
+                  )}
+                >
+                  {language === 'pt' ? 'Retrato' : 'Portrait'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPrintOrientation('landscape')}
+                  className={cn(
+                    "px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer select-none",
+                    printOrientation === 'landscape' 
+                      ? "bg-neutral-950 text-white shadow-sm" 
+                      : "text-slate-500 hover:text-slate-800"
+                  )}
+                >
+                  {language === 'pt' ? 'Paisagem' : 'Landscape'}
+                </button>
+              </div>
+            )}
+            
+            <button 
+              onClick={handlePrint}
+              disabled={isEditMode || !selectedTurmaId}
+              className="flex items-center gap-2 bg-[#0f172a] text-white px-5 py-2.5 rounded-2xl text-sm font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 disabled:opacity-50 disabled:grayscale"
+            >
+              <Printer size={18} />
+              {t.schedule.print}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Selectors */}
@@ -687,10 +689,18 @@ export default function HorarioPage() {
             </span>
             <div className="flex flex-wrap gap-3 items-center mt-1">
               <span className="px-4 py-2 bg-blue-50 text-blue-700 font-extrabold text-xs md:text-sm rounded-2xl border border-blue-100 uppercase tracking-wider">
-                Curso: {selectedCurso?.nome || '...'}
+                {selectedCurso?.nome 
+                  ? (selectedCurso.nome.toLowerCase().startsWith('curso') 
+                      ? selectedCurso.nome 
+                      : `Curso: ${selectedCurso.nome}`) 
+                  : '...'}
               </span>
               <span className="px-4 py-2 bg-emerald-50 text-emerald-700 font-extrabold text-xs md:text-sm rounded-2xl border border-emerald-100 uppercase tracking-wider">
-                Turma: {selectedTurma?.nome || '...'}
+                {selectedTurma?.nome 
+                  ? (selectedTurma.nome.toLowerCase().startsWith('turma') 
+                      ? selectedTurma.nome 
+                      : `Turma: ${selectedTurma.nome}`) 
+                  : '...'}
               </span>
             </div>
           </div>
