@@ -33,7 +33,9 @@ export function EventMarquee() {
           .order('data', { ascending: true })
           .limit(15);
         
-        let { data, error } = await query;
+        let data: any[] | null = null;
+        let { data: primaryData, error } = await query;
+        data = primaryData;
         
         // Dynamic fallback if the exibir_aluno column doesn't exist yet
         if (error && (error.message.includes('exibir_aluno') || error.code === 'PGRST204' || error.hint?.includes('exibir_aluno'))) {

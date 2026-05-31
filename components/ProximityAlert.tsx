@@ -25,12 +25,14 @@ export function ProximityAlert() {
         nextWeek.setDate(today.getDate() + 3); // Check next 3 days for alert
         
         // Select including 'exibir_aluno' safely
-        let { data, error } = await supabase
+        let data: any[] | null = null;
+        let { data: primaryData, error } = await supabase
           .from('eventos')
           .select('id, titulo, descricao, data, cor, exibir_aluno')
           .gte('data', today.toISOString().split('T')[0])
           .lte('data', nextWeek.toISOString().split('T')[0])
           .order('data', { ascending: true });
+        data = primaryData;
 
         if (error && (error.message.includes('exibir_aluno') || error.code === 'PGRST204' || error.hint?.includes('exibir_aluno'))) {
           // Fallback if the column exibir_aluno doesn't exist yet
