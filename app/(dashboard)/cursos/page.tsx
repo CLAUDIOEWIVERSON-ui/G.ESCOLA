@@ -587,16 +587,18 @@ export default function CursosPage() {
                     </div>
                   </div>
 
-                  <button 
-                    onClick={() => {
-                      setManageDisciplinasCurso(curso);
-                      setLoadingDisciplinas(true);
-                    }}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 text-slate-700 border border-slate-200 hover:bg-blue-600 hover:text-white hover:border-blue-600 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-300 shadow-sm shrink-0 cursor-pointer"
-                  >
-                    <BookMarked size={12} />
-                    {t.nav.subjects}
-                  </button>
+                  {!curso.internacional && (
+                    <button 
+                      onClick={() => {
+                        setManageDisciplinasCurso(curso);
+                        setLoadingDisciplinas(true);
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 text-slate-700 border border-slate-200 hover:bg-blue-600 hover:text-white hover:border-blue-600 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-300 shadow-sm shrink-0 cursor-pointer"
+                    >
+                      <BookMarked size={12} />
+                      {t.nav.subjects}
+                    </button>
+                  )}
                 </div>
               </motion.div>
             ))}
