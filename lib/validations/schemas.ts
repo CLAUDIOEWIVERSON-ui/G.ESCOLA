@@ -10,6 +10,7 @@ export const cursoSchema = z.object({
   categoria: z.enum(['Expedito', 'Especial', 'Carreira', 'EaD']).optional().nullable(),
   internacional: z.boolean().optional(),
   localizacao: z.string().optional().nullable(),
+  grupo_responsavel: z.enum(['MAN', 'GAT']).optional().nullable(),
 });
 
 export const turmaSchema = z.object({
@@ -24,6 +25,7 @@ export const turmaSchema = z.object({
   data_fim: z.string().optional().nullable(),
   internacional: z.boolean().optional(),
   localizacao: z.string().optional().nullable(),
+  grupo_responsavel: z.enum(['MAN', 'GAT']).optional().nullable(),
 });
 
 export const alunoSchema = z.object({

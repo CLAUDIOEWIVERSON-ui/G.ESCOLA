@@ -96,6 +96,51 @@ export async function GET() {
             .limit(1);
           return error;
         }
+      },
+      {
+        key: 'grupo_responsavel_cursos',
+        tableName: 'cursos',
+        columnName: 'grupo_responsavel',
+        fileName: '30_add_grupo_responsavel_to_cursos_turmas.sql',
+        description: 'Coluna grupo_responsavel na tabela de cursos para segmentar os cursos entre os grupos MAN e GAT.',
+        isColumn: true,
+        checkFn: async () => {
+          const { error } = await supabaseAdmin
+            .from('cursos')
+            .select('grupo_responsavel')
+            .limit(1);
+          return error;
+        }
+      },
+      {
+        key: 'grupo_responsavel_turmas',
+        tableName: 'turmas',
+        columnName: 'grupo_responsavel',
+        fileName: '30_add_grupo_responsavel_to_cursos_turmas.sql',
+        description: 'Coluna grupo_responsavel na tabela de turmas para segmentar as turmas entre os grupos MAN e GAT.',
+        isColumn: true,
+        checkFn: async () => {
+          const { error } = await supabaseAdmin
+            .from('turmas')
+            .select('grupo_responsavel')
+            .limit(1);
+          return error;
+        }
+      },
+      {
+        key: 'grupo_responsavel_profiles',
+        tableName: 'profiles',
+        columnName: 'grupo_responsavel',
+        fileName: '30_add_grupo_responsavel_to_cursos_turmas.sql',
+        description: 'Coluna grupo_responsavel na tabela de perfis de usuário, definindo a qual grupo (MAN ou GAT) o instrutor pertence.',
+        isColumn: true,
+        checkFn: async () => {
+          const { error } = await supabaseAdmin
+            .from('profiles')
+            .select('grupo_responsavel')
+            .limit(1);
+          return error;
+        }
       }
     ];
 

@@ -31,6 +31,7 @@ export async function GET() {
         email: user.email,
         full_name: profile?.full_name || user.user_metadata?.full_name || '',
         role: profile?.role || user.user_metadata?.role || 'aluno',
+        grupo_responsavel: profile?.grupo_responsavel || user.user_metadata?.grupo_responsavel || null,
         has_changed_password: profile?.has_changed_password || false,
         created_at: user.created_at
       };
@@ -47,14 +48,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Supabase Admin not configured. Please set SUPABASE_SERVICE_ROLE_KEY in Secrets.' }, { status: 500 });
   }
   try {
-    const { email, password, full_name, role } = await request.json();
+    const { email, password, full_name, role, grupo_responsavel } = await request.json();
 
     // 1. Create auth user
     const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
-      user_metadata: { full_name, role }
+      user_metadata: { full_name, role, grupo_responsavel }
     });
 
     if (authError) {
@@ -71,7 +72,8 @@ export async function POST(request: Request) {
       .upsert({
         id: authUser.user.id,
         full_name: full_name || email.split('@')[0],
-        role: role || 'aluno'
+        role: role || 'aluno',
+        grupo_responsavel: grupo_responsavel || null
       }, {
         onConflict: 'id'
       });
@@ -93,7 +95,7 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: 'Supabase Admin not configured. Please set SUPABASE_SERVICE_ROLE_KEY in Secrets.' }, { status: 500 });
   }
   try {
-    const { id, email, password, full_name, role } = await request.json();
+    const { id, email, password, full_name, role, grupo_responsavel } = await request.json();
 
     if (!id) {
       return NextResponse.json({ error: 'ID do usuário é obrigatório para atualização.' }, { status: 400 });
@@ -107,7 +109,8 @@ export async function PUT(request: Request) {
     // Merge existing metadata if possible or just set new ones
     updateData.user_metadata = { 
       full_name: full_name,
-      role: role
+      role: role,
+      grupo_responsavel: grupo_responsavel
     };
     
     // Auth updates
@@ -124,7 +127,8 @@ export async function PUT(request: Request) {
     // 2. Update profile
     const profileUpdateData: any = { 
       full_name, 
-      role 
+      role,
+      grupo_responsavel: grupo_responsavel || null
     };
     if (password) {
       profileUpdateData.has_changed_password = false;

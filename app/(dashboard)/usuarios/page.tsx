@@ -67,6 +67,7 @@ export default function UsuariosPage() {
       email: '',
       password: '',
       role: 'aluno', 
+      grupo_responsavel: null,
     });
     setIsModalOpen(true);
   };
@@ -251,15 +252,22 @@ export default function UsuariosPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={cn(
-                        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
-                        user.role === 'admin' ? "bg-purple-50 text-purple-700 border border-purple-100" : 
-                        user.role === 'instrutor' ? "bg-amber-50 text-amber-700 border border-amber-100" :
-                        "bg-blue-50 text-blue-700 border border-blue-100"
-                      )}>
-                        {user.role === 'admin' ? <Shield size={12} /> : <User size={12} />}
-                        {user.role === 'admin' ? t.users.admin : user.role === 'instrutor' ? t.users.instrutor : t.users.aluno}
-                      </span>
+                      <div className="flex flex-col gap-1">
+                        <span className={cn(
+                          "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider w-fit",
+                          user.role === 'admin' ? "bg-purple-50 text-purple-700 border border-purple-100" : 
+                          user.role === 'instrutor' ? "bg-amber-50 text-amber-700 border border-amber-100" :
+                          "bg-blue-50 text-blue-700 border border-blue-100"
+                        )}>
+                          {user.role === 'admin' ? <Shield size={12} /> : <User size={12} />}
+                          {user.role === 'admin' ? t.users.admin : user.role === 'instrutor' ? t.users.instrutor : t.users.aluno}
+                        </span>
+                        {user.grupo_responsavel && (
+                          <span className="inline-flex items-center justify-center font-mono text-[9px] font-black text-indigo-600 bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 rounded w-fit uppercase">
+                            Grupo: {user.grupo_responsavel}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4">
                       {user.has_changed_password ? (
@@ -356,6 +364,23 @@ export default function UsuariosPage() {
               <option value="aluno">{t.users.aluno}</option>
             </select>
           </div>
+
+          {currentUser?.role === 'instrutor' && (
+            <div className="space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-200">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">
+                {language === 'pt' ? 'Grupo Responsável' : 'Responsible Group'}
+              </label>
+              <select
+                value={currentUser?.grupo_responsavel || ''}
+                onChange={(e) => setCurrentUser({ ...currentUser, grupo_responsavel: e.target.value || null })}
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition-all font-sans font-medium"
+              >
+                <option value="">{language === 'pt' ? '-- Selecione o Grupo --' : '-- Select Group --'}</option>
+                <option value="MAN">MAN</option>
+                <option value="GAT">GAT</option>
+              </select>
+            </div>
+          )}
 
           <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl">
             <p className="text-[10px] text-blue-700 font-bold uppercase tracking-wider mb-1 flex items-center gap-1.5">

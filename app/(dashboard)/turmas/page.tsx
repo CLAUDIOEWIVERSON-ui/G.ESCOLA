@@ -723,7 +723,8 @@ function TurmasContent() {
         data_inicio: currentTurma.internacional ? null : (typeof currentTurma.data_inicio === 'string' ? currentTurma.data_inicio.trim() || null : null),
         data_fim: currentTurma.internacional ? null : (typeof currentTurma.data_fim === 'string' ? currentTurma.data_fim.trim() || null : null),
         internacional: currentTurma.internacional || false,
-        localizacao: currentTurma.localizacao || ''
+        localizacao: currentTurma.localizacao || '',
+        grupo_responsavel: currentTurma.grupo_responsavel || null
       };
 
       if (currentTurma.id) {
@@ -975,6 +976,11 @@ function TurmasContent() {
                     <span className="flex items-center gap-1.5 text-[8px] font-bold text-purple-600 bg-purple-50 px-2.5 py-1 rounded-md uppercase tracking-wider border border-purple-100">
                       <MapPin size={10} />
                       {t.courses.international}
+                    </span>
+                  )}
+                  {turma.grupo_responsavel && (
+                    <span className="flex items-center gap-1.5 text-[8px] font-black text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-md uppercase tracking-wider border border-indigo-100">
+                      Grupo: {turma.grupo_responsavel}
                     </span>
                   )}
                 </div>
@@ -1236,6 +1242,21 @@ function TurmasContent() {
                 <option value="ativa">{t.classes.active}</option>
                 <option value="concluída">{t.classes.completed}</option>
                 <option value="cancelada">{t.classes.cancelled}</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">
+                {language === 'pt' ? 'Grupo Responsável' : 'Responsible Group'}
+              </label>
+              <select
+                value={currentTurma?.grupo_responsavel || ''}
+                onChange={(e) => setCurrentTurma({ ...currentTurma, grupo_responsavel: e.target.value || null })}
+                className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-sm font-bold text-slate-800 appearance-none cursor-pointer shadow-sm"
+              >
+                <option value="">{language === 'pt' ? 'Selecione um Grupo (Opcional)' : 'Select Group (Optional)'}</option>
+                <option value="MAN">MAN</option>
+                <option value="GAT">GAT</option>
               </select>
             </div>
 

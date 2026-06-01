@@ -76,6 +76,7 @@ export default function CursosPage() {
       categoria: null,
       internacional: false,
       localizacao: '',
+      grupo_responsavel: null,
     }
   });
 
@@ -95,7 +96,8 @@ export default function CursosPage() {
         qtd_modulos: data.qtd_modulos,
         categoria: data.categoria,
         internacional: data.internacional || false,
-        localizacao: data.localizacao || ''
+        localizacao: data.localizacao || '',
+        grupo_responsavel: data.grupo_responsavel || null
       };
 
       if (editingCurso) {
@@ -556,6 +558,11 @@ export default function CursosPage() {
                         {curso.localizacao}
                       </span>
                     )}
+                    {curso.grupo_responsavel && (
+                      <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 text-[9px] font-black uppercase rounded-md border border-indigo-100">
+                        Grupo: {curso.grupo_responsavel}
+                      </span>
+                    )}
                   </div>
 
                   {/* Description */}
@@ -729,6 +736,20 @@ export default function CursosPage() {
                     placeholder={language === 'pt' ? 'Ex: Luanda, Paris, EaD' : 'E.g., Luanda, Paris, Remote'}
                     className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
                   />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-sm font-semibold text-slate-700">
+                    {language === 'pt' ? 'Grupo Responsável' : 'Responsible Group'}
+                  </label>
+                  <select
+                    {...register('grupo_responsavel')}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors text-sm font-medium"
+                  >
+                    <option value="">{language === 'pt' ? 'Sem Grupo (Opcional)' : 'No Group (Optional)'}</option>
+                    <option value="MAN">MAN</option>
+                    <option value="GAT">GAT</option>
+                  </select>
                 </div>
 
                 <div className="flex gap-3 pt-6">
