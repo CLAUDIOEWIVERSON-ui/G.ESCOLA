@@ -43,10 +43,7 @@ export function useCursos() {
         };
       });
     },
-    {
-      ...DEFAULT_SWR_OPTIONS,
-      fallbackData: [],
-    }
+    DEFAULT_SWR_OPTIONS
   );
 
   return {
@@ -73,10 +70,7 @@ export function useTurmas() {
       if (dbError) throw dbError;
       return dbData || [];
     },
-    {
-      ...DEFAULT_SWR_OPTIONS,
-      fallbackData: [],
-    }
+    DEFAULT_SWR_OPTIONS
   );
 
   return {
@@ -103,10 +97,7 @@ export function useDisciplinas() {
       if (dbError) throw dbError;
       return dbData || [];
     },
-    {
-      ...DEFAULT_SWR_OPTIONS,
-      fallbackData: [],
-    }
+    DEFAULT_SWR_OPTIONS
   );
 
   return {
@@ -162,10 +153,7 @@ export function useAlunos() {
       if (dbError) throw dbError;
       return dbData || [];
     },
-    {
-      ...DEFAULT_SWR_OPTIONS,
-      fallbackData: [],
-    }
+    DEFAULT_SWR_OPTIONS
   );
 
   return {

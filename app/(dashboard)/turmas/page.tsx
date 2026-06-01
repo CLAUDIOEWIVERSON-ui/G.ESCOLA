@@ -1133,8 +1133,9 @@ function TurmasContent() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={currentTurma?.id ? t.common.edit : t.classes.add}
+        className="max-w-2xl"
       >
-        <form onSubmit={handleSave} className="space-y-6">
+        <form onSubmit={handleSave} className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="md:col-span-2">
               <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{t.classes.name}</label>
