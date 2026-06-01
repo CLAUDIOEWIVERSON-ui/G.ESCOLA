@@ -224,6 +224,14 @@ export default function CalendarPage() {
     { name: 'Amarelo', value: 'bg-amber-500' },
     { name: 'Vermelho', value: 'bg-rose-600' },
     { name: 'Indigo', value: 'bg-indigo-600' },
+    { name: 'Laranja', value: 'bg-orange-500' },
+    { name: 'Rosa', value: 'bg-pink-500' },
+    { name: 'Verde-Azulado (Teal)', value: 'bg-teal-600' },
+    { name: 'Ciano', value: 'bg-cyan-500' },
+    { name: 'Verde-Limão', value: 'bg-lime-500' },
+    { name: 'Fúcsia', value: 'bg-fuchsia-600' },
+    { name: 'Azul Céu (Sky)', value: 'bg-sky-500' },
+    { name: 'Cinza Mineral (Slate)', value: 'bg-slate-600' },
   ];
 
   return (

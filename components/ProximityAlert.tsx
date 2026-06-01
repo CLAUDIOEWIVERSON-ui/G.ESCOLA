@@ -9,6 +9,39 @@ import { motion, AnimatePresence } from 'motion/react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
+const playBellSound = () => {
+  try {
+    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    const now = ctx.currentTime;
+    
+    const fundamental = 880; // A5
+    const harmonics = [1, 1.5, 2, 2.5, 3];
+    const gains = [0.4, 0.2, 0.1, 0.05, 0.02];
+    
+    harmonics.forEach((ratio, i) => {
+      const osc = ctx.createOscillator();
+      const gainNode = ctx.createGain();
+      
+      osc.type = i === 0 ? 'sine' : 'triangle';
+      osc.frequency.setValueAtTime(fundamental * ratio, now);
+      
+      const decay = 2.0 / (ratio * 0.9);
+      gainNode.gain.setValueAtTime(gains[i] * 0.25, now);
+      gainNode.gain.exponentialRampToValueAtTime(0.0001, now + decay);
+      
+      osc.connect(gainNode);
+      gainNode.connect(ctx.destination);
+      
+      osc.start(now);
+      osc.stop(now + decay);
+    });
+  } catch (err) {
+    console.warn('Erro ao tocar som de sino nos alertas:', err);
+  }
+};
+
 export function ProximityAlert() {
   const { t } = useI18n();
   const { isAluno } = useUser();
@@ -65,6 +98,21 @@ export function ProximityAlert() {
           if (filtered.length > 0) {
             setUpcomingEvents(filtered);
             setIsVisible(true);
+            
+            // Tocar som de sino uma vez ao dia no primeiro acesso, se a preferência estiver ativa
+            try {
+              const playPref = localStorage.getItem('school_config_play_alert_bell');
+              if (playPref !== 'false') {
+                const todayStr = new Date().toISOString().split('T')[0];
+                const lastPlayed = localStorage.getItem('school_alert_bell_last_played_date');
+                if (lastPlayed !== todayStr) {
+                  playBellSound();
+                  localStorage.setItem('school_alert_bell_last_played_date', todayStr);
+                }
+              }
+            } catch (err) {
+              console.warn('Erro ao disparar som de sino:', err);
+            }
             
             // Auto hide after 10 seconds
             const timer = setTimeout(() => {

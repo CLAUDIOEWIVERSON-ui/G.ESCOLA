@@ -27,7 +27,8 @@ import {
   ChevronUp,
   Check,
   ExternalLink,
-  FileText
+  FileText,
+  Bell
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
@@ -40,6 +41,58 @@ export default function ConfiguracoesPage() {
   const isReadOnly = !isAdmin;
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  
+  const [playBell, setPlayBell] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('school_config_play_alert_bell');
+      return saved !== 'false';
+    }
+    return true;
+  });
+
+  const playBellSound = () => {
+    try {
+      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContext) return;
+      const ctx = new AudioContext();
+      const now = ctx.currentTime;
+      
+      const fundamental = 880; // A5
+      const harmonics = [1, 1.5, 2, 2.5, 3];
+      const gains = [0.4, 0.2, 0.1, 0.05, 0.02];
+      
+      harmonics.forEach((ratio, i) => {
+        const osc = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+        
+        osc.type = i === 0 ? 'sine' : 'triangle';
+        osc.frequency.setValueAtTime(fundamental * ratio, now);
+        
+        const decay = 2.0 / (ratio * 0.9);
+        gainNode.gain.setValueAtTime(gains[i] * 0.25, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, now + decay);
+        
+        osc.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        
+        osc.start(now);
+        osc.stop(now + decay);
+      });
+    } catch (err) {
+      console.warn('Erro ao tocar sino:', err);
+    }
+  };
+
+  const handleTogglePlayBell = (checked: boolean) => {
+    setPlayBell(checked);
+    localStorage.setItem('school_config_play_alert_bell', checked ? 'true' : 'false');
+    if (checked) {
+      playBellSound();
+      toast.success('Sino de avisos ativado com sucesso!');
+    } else {
+      toast.info('Sino de avisos desativado.');
+    }
+  };
   
   // Personal password change states
   const [newPassword, setNewPassword] = useState('');
@@ -450,6 +503,53 @@ export default function ConfiguracoesPage() {
             </div>
           </form>
         )}
+      </div>
+
+      {/* Alertas e Som de Notificações Card */}
+      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+        <div className="flex items-center gap-3 border-b border-slate-50 pb-4">
+           <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600">
+              <Bell size={20} className="animate-bounce" />
+           </div>
+           <div>
+              <h2 className="font-bold text-slate-800 font-sans">Alertas e Som de Notificações</h2>
+              <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold font-sans">Personalize se deseja receber seus alertas com sons</p>
+           </div>
+        </div>
+
+        <div className="space-y-4 max-w-xl font-sans">
+          <div className="flex items-start gap-4 p-4 bg-slate-50 border border-slate-200/60 rounded-xl select-none">
+            <input 
+              type="checkbox"
+              id="sound_alert_preference"
+              checked={playBell}
+              onChange={(e) => handleTogglePlayBell(e.target.checked)}
+              className="mt-1 w-4.5 h-4.5 text-amber-600 border-slate-300 rounded focus:ring-amber-500 cursor-pointer"
+            />
+            <div className="flex-1 space-y-1">
+              <label htmlFor="sound_alert_preference" className="text-sm font-bold text-slate-700 cursor-pointer flex items-center gap-2">
+                Tocar sino nos avisos pop-up no primeiro acesso do dia
+              </label>
+              <p className="text-xs text-slate-500 leading-relaxed font-semibold">
+                Quando ativado, os avisos pop-up emitirão um som suave de sino na primeira abertura do sistema no dia, caso existam novos compromissos ou eventos agendados nos próximos 3 dias.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 pt-2">
+            <button
+              type="button"
+              onClick={playBellSound}
+              className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 shadow-md shadow-amber-500/20"
+            >
+              <Bell size={14} className="animate-pulse" />
+              Testar Som de Sino
+            </button>
+            <span className="text-[10px] text-slate-400 font-medium">
+              Clique para testar o som do sino escolar no seu navegador.
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* Servidor de E-mails Card */}
