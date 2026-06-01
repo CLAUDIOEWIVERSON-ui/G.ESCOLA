@@ -189,65 +189,44 @@ export default function DashboardPage() {
       <motion.div
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 text-white p-6 sm:p-8 shadow-xl border border-slate-700/50"
+        className="relative overflow-hidden rounded-2xl bg-slate-50 border border-slate-200/60 p-4 sm:p-5 shadow-sm"
       >
-        {/* Decorative ambient glowing backdrops */}
-        <div className="absolute top-0 right-0 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none -mr-16 -mt-16" />
-        <div className="absolute bottom-0 left-0 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none -ml-16 -mb-16" />
-
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="flex-1 space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                  <Quote size={16} />
-                </span>
-                <span className="text-xs font-black uppercase tracking-widest text-indigo-300">
-                  Semente Diária • Pensamento do Dia
-                </span>
-              </div>
-              
-              <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-300">
-                <span className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10 uppercase">
-                  🏛️ Filosofia
-                </span>
-                <span className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10 uppercase">
-                  ✨ Incentivo
-                </span>
-                <span className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10 uppercase">
-                  🌿 Fé
-                </span>
-              </div>
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex-1 space-y-2">
+            <div className="flex items-center gap-2">
+              <Quote size={13} className="text-indigo-500" />
+              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                Semente Diária • Pensamento do Dia
+              </span>
             </div>
 
             {loadingPensamento ? (
-              <div className="space-y-3 py-4 animate-pulse">
-                <div className="h-4 bg-slate-700 rounded w-3/4" />
-                <div className="h-4 bg-slate-700 rounded w-1/2" />
-                <div className="h-3 bg-slate-700 rounded w-1/4 mt-4" />
+              <div className="space-y-2 py-1 animate-pulse">
+                <div className="h-3 bg-slate-200/80 rounded w-3/4" />
+                <div className="h-2.5 bg-slate-200/80 rounded w-1/4" />
               </div>
             ) : pensamento ? (
-              <div className="space-y-4 py-2">
-                <blockquote className="text-lg sm:text-xl font-medium italic text-slate-100 font-serif leading-relaxed">
-                  &ldquo; {pensamento.texto} &rdquo;
+              <div className="space-y-1">
+                <blockquote className="text-sm sm:text-base font-serif italic text-slate-700 leading-relaxed">
+                  &ldquo;{pensamento.texto}&rdquo;
                 </blockquote>
-                <div className="flex items-center gap-2">
-                  <div className="w-5 h-0.5 bg-indigo-400 rounded-full" />
-                  <cite className="not-italic text-sm font-bold text-indigo-300 font-sans">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3.5 h-[1.5px] bg-slate-300 rounded-full" />
+                  <cite className="not-italic text-xs font-semibold text-slate-500 font-sans">
                     {pensamento.autor}
                   </cite>
                 </div>
               </div>
             ) : (
-              <p className="text-slate-400 italic">Eis que uma nova reflexão está sendo colhida...</p>
+              <p className="text-xs text-slate-400 italic">Uma nova reflexão está sendo colhida...</p>
             )}
 
             {/* If table missing warning for admin */}
             {pensamento?.isDemo && profile?.role === 'admin' && (
-              <div className="mt-2 text-xs bg-amber-500/10 border border-amber-500/30 text-amber-300 rounded-lg p-2.5 flex items-start gap-2">
-                <span className="font-extrabold uppercase text-[9px] bg-amber-500 text-slate-900 px-1 py-0.5 rounded shrink-0">Aviso da Base</span>
-                <div className="leading-relaxed">
-                  A tabela <code className="font-mono bg-slate-900 px-1 py-0.5 text-[11px] rounded text-amber-400">pensamento_dia</code> ainda não está instalada no Supabase. O pensamento gerado de hoje é demonstrativo e expirará. Vá em <strong>Configurações</strong> e execute a migração <code className="font-mono bg-slate-900 px-1 py-0.5 text-[11px] rounded text-amber-400">31_create_pensamento_dia.sql</code> para ativar de forma permanente para todos!
+              <div className="mt-1 text-[10px] bg-amber-500/5 border border-amber-500/20 text-amber-700 rounded-lg p-2 flex items-start gap-1.5">
+                <span className="font-extrabold uppercase text-[8px] bg-amber-500 text-slate-900 px-1 py-0.5 rounded shrink-0">Aviso</span>
+                <div className="leading-normal">
+                  Tabela <code className="font-mono bg-slate-100 px-1 text-[10px] rounded text-slate-700">pensamento_dia</code> ausente. O pensamento de hoje expirará. Vá em <strong>Configurações</strong> e execute a migração <code className="font-mono bg-slate-100 px-1 text-[10px] rounded text-slate-700">31_create_pensamento_dia.sql</code>.
                 </div>
               </div>
             )}
@@ -255,28 +234,28 @@ export default function DashboardPage() {
 
           {/* Controls for Admin Roles */}
           {profile?.role === 'admin' && (
-            <div className="flex flex-row md:flex-col gap-2 shrink-0 self-start md:self-center">
+            <div className="flex flex-row md:flex-col items-center md:items-end gap-2 shrink-0 self-start md:self-center">
               <button
                 type="button"
                 onClick={() => setIsEditingPensamento(true)}
-                className="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 active:scale-95 text-white text-xs font-bold px-3.5 py-2.5 rounded-xl transition-all border border-white/10 shadow-md whitespace-nowrap"
+                className="flex items-center gap-1 bg-white hover:bg-slate-50 active:scale-95 text-slate-700 hover:text-slate-950 text-[11px] font-bold px-3 py-1.5 rounded-lg transition-all border border-slate-200 shadow-sm whitespace-nowrap"
               >
-                <Pencil size={12} />
-                Escrever Pensamento
+                <Pencil size={11} className="text-slate-500" />
+                Editar
               </button>
 
               <button
                 type="button"
                 disabled={regeneratingPensamento}
                 onClick={() => fetchPensamento(true)}
-                className="flex items-center gap-1.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 active:scale-95 disabled:opacity-50 text-white text-xs font-bold px-3.5 py-2.5 rounded-xl transition-all shadow-md shadow-indigo-500/20 whitespace-nowrap"
+                className="flex items-center gap-1 bg-indigo-50/50 hover:bg-indigo-50 active:scale-95 disabled:opacity-50 text-indigo-700 hover:text-indigo-850 text-[11px] font-bold px-3 py-1.5 rounded-lg transition-all border border-indigo-100 shadow-sm whitespace-nowrap"
               >
                 {regeneratingPensamento ? (
-                  <Loader2 size={12} className="animate-spin" />
+                  <Loader2 size={11} className="animate-spin text-indigo-500" />
                 ) : (
-                  <Sparkles size={12} />
+                  <Sparkles size={11} className="text-indigo-500" />
                 )}
-                Renovar com IA (Gemini)
+                Renovar com IA
               </button>
             </div>
           )}
