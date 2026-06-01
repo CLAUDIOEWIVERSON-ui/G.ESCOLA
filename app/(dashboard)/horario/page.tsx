@@ -235,9 +235,31 @@ export default function HorarioPage() {
   useEffect(() => {
     async function fetchData() {
       const { data: c } = await supabase.from('cursos').select('*').is('deleted_at', null).order('nome');
-      if (c) setCursos(c);
+      let filteredCuts = c || [];
+      if (profile?.role === 'instrutor' && profile?.grupo_responsavel) {
+        if (profile.grupo_responsavel === 'MAN') {
+          filteredCuts = filteredCuts.filter((item: any) => item.grupo_responsavel === 'MAN');
+        } else if (profile.grupo_responsavel === 'GAT') {
+          filteredCuts = filteredCuts.filter((item: any) => item.grupo_responsavel === 'GAT');
+        } else if (profile.grupo_responsavel === 'AMBOS') {
+          filteredCuts = filteredCuts.filter((item: any) => item.grupo_responsavel === 'MAN' || item.grupo_responsavel === 'GAT');
+        }
+      }
+      setCursos(filteredCuts);
+
       const { data: tu } = await supabase.from('turmas').select('*').is('deleted_at', null).order('nome');
-      if (tu) setTurmas(tu);
+      let filteredCls = tu || [];
+      if (profile?.role === 'instrutor' && profile?.grupo_responsavel) {
+        if (profile.grupo_responsavel === 'MAN') {
+          filteredCls = filteredCls.filter((item: any) => item.grupo_responsavel === 'MAN');
+        } else if (profile.grupo_responsavel === 'GAT') {
+          filteredCls = filteredCls.filter((item: any) => item.grupo_responsavel === 'GAT');
+        } else if (profile.grupo_responsavel === 'AMBOS') {
+          filteredCls = filteredCls.filter((item: any) => item.grupo_responsavel === 'MAN' || item.grupo_responsavel === 'GAT');
+        }
+      }
+      setTurmas(filteredCls);
+
       const { data: d } = await supabase.from('disciplinas').select('*').is('deleted_at', null).order('nome');
       if (d) setDisciplinas(d);
       const { data: mm } = await supabase.from('materias_modulos').select('*').is('deleted_at', null).order('nome');
@@ -276,7 +298,7 @@ export default function HorarioPage() {
       setInstrutores(combinedInstructors);
     }
     fetchData();
-  }, []);
+  }, [profile]);
 
   const handlePrint = () => {
     if (!selectedTurmaId) return;

@@ -378,6 +378,7 @@ export default function UsuariosPage() {
                 <option value="">{language === 'pt' ? '-- Selecione o Grupo --' : '-- Select Group --'}</option>
                 <option value="MAN">MAN</option>
                 <option value="GAT">GAT</option>
+                <option value="AMBOS">{language === 'pt' ? 'AMBOS (MAN e GAT)' : 'BOTH (MAN and GAT)'}</option>
               </select>
             </div>
           )}

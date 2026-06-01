@@ -21,7 +21,7 @@ import { toast } from 'sonner';
 
 export default function NotasPage() {
   const { t, language } = useI18n();
-  const { isAdmin } = useUser();
+  const { profile, isAdmin } = useUser();
   const isReadOnly = !isAdmin;
   const [notas, setNotas] = useState<any[]>([]);
   const [alunos, setAlunos] = useState<any[]>([]);
@@ -117,18 +117,38 @@ export default function NotasPage() {
       if (alunosData) setAlunos(alunosData);
 
       // Fetch Cursos
-      const { data: cursosData } = await supabase.from('cursos').select('*').is('deleted_at', null).order('nome');
-      if (cursosData) setCursos(cursosData.filter((c: any) => !c.internacional));
+      const { data: cursosData } = await supabase.from('cursos').select('id, nome, categoria, internacional, grupo_responsavel').is('deleted_at', null).order('nome');
+      let filteredCuts = cursosData || [];
+      if (profile?.role === 'instrutor' && profile?.grupo_responsavel) {
+        if (profile.grupo_responsavel === 'MAN') {
+          filteredCuts = filteredCuts.filter((c: any) => c.grupo_responsavel === 'MAN');
+        } else if (profile.grupo_responsavel === 'GAT') {
+          filteredCuts = filteredCuts.filter((c: any) => c.grupo_responsavel === 'GAT');
+        } else if (profile.grupo_responsavel === 'AMBOS') {
+          filteredCuts = filteredCuts.filter((c: any) => c.grupo_responsavel === 'MAN' || c.grupo_responsavel === 'GAT');
+        }
+      }
+      if (cursosData) setCursos(filteredCuts.filter((c: any) => !c.internacional));
 
       // Fetch Turmas
-      const { data: turmasData } = await supabase.from('turmas').select('id, nome, curso_id, internacional').is('deleted_at', null).order('nome');
-      if (turmasData) setTurmas(turmasData.filter((t: any) => !t.internacional));
+      const { data: turmasData } = await supabase.from('turmas').select('id, nome, curso_id, internacional, grupo_responsavel').is('deleted_at', null).order('nome');
+      let filteredCls = turmasData || [];
+      if (profile?.role === 'instrutor' && profile?.grupo_responsavel) {
+        if (profile.grupo_responsavel === 'MAN') {
+          filteredCls = filteredCls.filter((t: any) => t.grupo_responsavel === 'MAN');
+        } else if (profile.grupo_responsavel === 'GAT') {
+          filteredCls = filteredCls.filter((t: any) => t.grupo_responsavel === 'GAT');
+        } else if (profile.grupo_responsavel === 'AMBOS') {
+          filteredCls = filteredCls.filter((t: any) => t.grupo_responsavel === 'MAN' || t.grupo_responsavel === 'GAT');
+        }
+      }
+      if (turmasData) setTurmas(filteredCls.filter((t: any) => !t.internacional));
       
       setLoading(false);
     };
 
     fetchData();
-  }, []);
+  }, [profile]);
 
   useEffect(() => {
     const fetchDisciplinasForTurma = async () => {

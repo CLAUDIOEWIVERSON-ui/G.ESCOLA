@@ -2,6 +2,7 @@
 
 import useSWR, { mutate } from 'swr';
 import { supabase } from '@/lib/supabase/client';
+import { useUser } from '@/lib/auth/UserContext';
 
 // Standard SWR options to limit aggressive polling and focus revalidation, 
 // keeping network operations light and professional.
@@ -15,8 +16,12 @@ const DEFAULT_SWR_OPTIONS = {
  * Fetch and decode courses list with strict caching
  */
 export function useCursos() {
+  const { profile } = useUser();
+  const role = profile?.role;
+  const grupoResponsavel = profile?.grupo_responsavel;
+
   const { data, error, isLoading, mutate: swrMutate } = useSWR(
-    'supabase:cursos',
+    ['supabase:cursos', role, grupoResponsavel],
     async () => {
       const { data: dbData, error: dbError } = await supabase
         .from('cursos')
@@ -27,8 +32,19 @@ export function useCursos() {
       if (dbError) throw dbError;
       if (!dbData) return [];
 
+      let filteredData = dbData;
+      if (role === 'instrutor' && grupoResponsavel) {
+        if (grupoResponsavel === 'MAN') {
+          filteredData = dbData.filter((c: any) => c.grupo_responsavel === 'MAN');
+        } else if (grupoResponsavel === 'GAT') {
+          filteredData = dbData.filter((c: any) => c.grupo_responsavel === 'GAT');
+        } else if (grupoResponsavel === 'AMBOS') {
+          filteredData = dbData.filter((c: any) => c.grupo_responsavel === 'MAN' || c.grupo_responsavel === 'GAT');
+        }
+      }
+
       const units = ['dia', 'semana', 'mes', 'ano'];
-      return dbData.map((item: any) => {
+      return filteredData.map((item: any) => {
         const dbVal = item.ano_inicio || 13; // default 1 year (1 * 10 + 3)
         const val = Math.floor(dbVal / 10);
         const unitIdx = dbVal % 10;
@@ -58,8 +74,12 @@ export function useCursos() {
  * Fetch turmas with automatic join for courses names and strict caching
  */
 export function useTurmas() {
+  const { profile } = useUser();
+  const role = profile?.role;
+  const grupoResponsavel = profile?.grupo_responsavel;
+
   const { data, error, isLoading, mutate: swrMutate } = useSWR(
-    'supabase:turmas',
+    ['supabase:turmas', role, grupoResponsavel],
     async () => {
       const { data: dbData, error: dbError } = await supabase
         .from('turmas')
@@ -68,7 +88,20 @@ export function useTurmas() {
         .order('nome');
 
       if (dbError) throw dbError;
-      return dbData || [];
+      if (!dbData) return [];
+
+      let filteredData = dbData;
+      if (role === 'instrutor' && grupoResponsavel) {
+        if (grupoResponsavel === 'MAN') {
+          filteredData = dbData.filter((t: any) => t.grupo_responsavel === 'MAN');
+        } else if (grupoResponsavel === 'GAT') {
+          filteredData = dbData.filter((t: any) => t.grupo_responsavel === 'GAT');
+        } else if (grupoResponsavel === 'AMBOS') {
+          filteredData = dbData.filter((t: any) => t.grupo_responsavel === 'MAN' || t.grupo_responsavel === 'GAT');
+        }
+      }
+
+      return filteredData;
     },
     DEFAULT_SWR_OPTIONS
   );
@@ -331,8 +364,8 @@ export function useDashboardStats() {
  */
 export async function revalidateAllCaches() {
   const mutators = [
-    mutate('supabase:cursos'),
-    mutate('supabase:turmas'),
+    mutate((key: any) => Array.isArray(key) ? key[0] === 'supabase:cursos' : key === 'supabase:cursos'),
+    mutate((key: any) => Array.isArray(key) ? key[0] === 'supabase:turmas' : key === 'supabase:turmas'),
     mutate('supabase:disciplinas'),
     mutate('supabase:configuracoes'),
     mutate('supabase:alunos'),

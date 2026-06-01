@@ -14,6 +14,7 @@ interface UserProfile {
   isNifStudent?: boolean;
   student_id?: string;
   turma_id?: string;
+  grupo_responsavel?: string | null;
 }
 
 interface UserContextType {

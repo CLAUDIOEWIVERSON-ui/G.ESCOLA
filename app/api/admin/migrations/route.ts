@@ -143,6 +143,21 @@ export async function GET() {
         }
       },
       {
+        key: 'grupo_responsavel_profiles_ambos',
+        tableName: 'profiles',
+        columnName: 'grupo_responsavel',
+        fileName: '32_add_ambos_to_grupo_responsavel.sql',
+        description: 'Atualiza a restrição do campo grupo_responsavel na tabela de perfis de usuário para permitir o valor AMBOS para instrutores vinculados a ambos os departamentos.',
+        isColumn: true,
+        checkFn: async () => {
+          const { error } = await supabaseAdmin
+            .from('profiles')
+            .select('grupo_responsavel')
+            .limit(1);
+          return error;
+        }
+      },
+      {
         key: 'pensamento_dia',
         tableName: 'pensamento_dia',
         fileName: '31_create_pensamento_dia.sql',
