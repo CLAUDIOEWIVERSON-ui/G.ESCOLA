@@ -141,6 +141,20 @@ export async function GET() {
             .limit(1);
           return error;
         }
+      },
+      {
+        key: 'pensamento_dia',
+        tableName: 'pensamento_dia',
+        fileName: '31_create_pensamento_dia.sql',
+        description: 'Tabela de armazenamento do Pensamento do Dia, permitindo sincronização para a visualização de todos com gerador integrado via IA.',
+        isColumn: false,
+        checkFn: async () => {
+          const { error } = await supabaseAdmin
+            .from('pensamento_dia')
+            .select('id')
+            .limit(1);
+          return error;
+        }
       }
     ];
 

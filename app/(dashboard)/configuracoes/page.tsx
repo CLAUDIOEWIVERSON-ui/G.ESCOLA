@@ -38,7 +38,8 @@ import {
   saveCardColorSettings, 
   PRESET_THEMES, 
   CardColorSettings, 
-  ColorSelection 
+  ColorSelection,
+  COLOR_BG_PRESETS
 } from '@/lib/cardColors';
 
 import { Toaster, toast } from 'sonner';
@@ -66,15 +67,20 @@ export default function ConfiguracoesPage() {
   };
 
   const handleApplyColorPreset = (themeName: keyof typeof PRESET_THEMES) => {
-    const preset = PRESET_THEMES[themeName];
+    const color = themeName as string;
     const updated = {
       ...colorSettings,
-      categories: { ...colorSettings.categories, ...preset.categories },
-      groups: { ...colorSettings.groups, ...preset.groups }
+      categories: {
+        expedito: color === 'slate' ? 'amber' : color,
+        especial: color === 'slate' ? 'purple' : color,
+        ead: color === 'slate' ? 'cyan' : color,
+        carreira: color === 'slate' ? 'emerald' : color,
+        exterior: color === 'slate' ? 'blue' : color
+      }
     };
     setColorSettings(updated);
     saveCardColorSettings(updated);
-    toast.success(`Preset "${themeName}" aplicado com sucesso!`);
+    toast.success(`Preset "${themeName.charAt(0).toUpperCase() + themeName.slice(1)}" aplicado com sucesso!`);
   };
   
   const [playBell, setPlayBell] = useState<boolean>(() => {
@@ -613,10 +619,7 @@ export default function ConfiguracoesPage() {
                     onClick={() => handleApplyColorPreset(tName)}
                     className="px-3.5 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 text-slate-700 text-xs font-black rounded-xl transition-all cursor-pointer flex items-center gap-2 shadow-sm"
                   >
-                    <span className="w-2.5 h-2.5 rounded-full block" style={{
-                      backgroundColor: PRESET_THEMES[tName].categories.expedito === 'amber' ? '#f59e0b' : 
-                                       PRESET_THEMES[tName].categories.ead === 'cyan' ? '#06b6d4' : '#6366f1'
-                    }} />
+                    <span className={cn("w-2.5 h-2.5 rounded-full block shadow-sm border border-black/5", COLOR_BG_PRESETS[tName])} />
                     Predefinição {themeName.charAt(0).toUpperCase() + themeName.slice(1)}
                   </button>
                 );

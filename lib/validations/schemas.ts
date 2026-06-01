@@ -7,10 +7,10 @@ export const cursoSchema = z.object({
   duracao_unidade: z.enum(['dia', 'semana', 'mes', 'ano']),
   ativo: z.boolean(),
   qtd_modulos: z.number().int().min(1).max(10),
-  categoria: z.enum(['Expedito', 'Especial', 'Carreira', 'EaD']).optional().nullable(),
+  categoria: z.preprocess((val) => (val === "" ? null : val), z.enum(['Expedito', 'Especial', 'Carreira', 'EaD']).optional().nullable()),
   internacional: z.boolean().optional(),
   localizacao: z.string().optional().nullable(),
-  grupo_responsavel: z.enum(['MAN', 'GAT']).optional().nullable(),
+  grupo_responsavel: z.preprocess((val) => (val === "" ? null : val), z.enum(['MAN', 'GAT']).optional().nullable()),
 });
 
 export const turmaSchema = z.object({
@@ -25,7 +25,7 @@ export const turmaSchema = z.object({
   data_fim: z.string().optional().nullable(),
   internacional: z.boolean().optional(),
   localizacao: z.string().optional().nullable(),
-  grupo_responsavel: z.enum(['MAN', 'GAT']).optional().nullable(),
+  grupo_responsavel: z.preprocess((val) => (val === "" ? null : val), z.enum(['MAN', 'GAT']).optional().nullable()),
 });
 
 export const alunoSchema = z.object({

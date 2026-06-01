@@ -642,9 +642,9 @@ export default function CursosPage() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl p-8 overflow-hidden"
+              className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl p-6 sm:p-8 flex flex-col max-h-[90vh] overflow-hidden"
             >
-              <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center justify-between mb-6 shrink-0">
                 <h3 className="text-xl font-bold text-slate-900">
                   {editingCurso ? t.common.edit : t.courses.add}
                 </h3>
@@ -653,120 +653,137 @@ export default function CursosPage() {
                 </button>
               </div>
 
-              <form id="course-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                <div className="space-y-1">
-                  <label className="text-sm font-semibold text-slate-700">{t.courses.name}</label>
-                  <input
-                    {...register('nome')}
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
-                    placeholder="Engenharia de Software"
-                  />
-                  {errors.nome && <p className="text-xs text-red-500 mt-1">{errors.nome.message}</p>}
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-sm font-semibold text-slate-700">{t.courses.description}</label>
-            <textarea
-              {...register('descricao')}
-              rows={2}
-              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
-              placeholder={language === 'pt' ? "Descrição breve do curso..." : "Brief description of the course..."}
-            />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
+              <form 
+                id="course-form" 
+                onSubmit={handleSubmit(
+                  onSubmit, 
+                  (errors) => {
+                    console.error('Validation errors:', errors);
+                    toast.error(language === 'pt' 
+                      ? 'Não foi possível salvar o curso. Verifique se preencheu os campos obrigatórios corretamente!' 
+                      : 'Could not save the course. Please check if you filled the required fields correctly!'
+                    );
+                  }
+                )} 
+                className="flex flex-col flex-1 overflow-hidden"
+              >
+                <div className="flex-1 overflow-y-auto pr-2 space-y-4 custom-scrollbar">
                   <div className="space-y-1">
-                    <label className="text-sm font-semibold text-slate-700">{t.courses.durationValue}</label>
+                    <label className="text-sm font-semibold text-slate-700">{t.courses.name}</label>
+                    <input
+                      {...register('nome')}
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
+                      placeholder="Engenharia de Software"
+                    />
+                    {errors.nome && <p className="text-xs text-red-500 mt-1">{errors.nome.message}</p>}
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-sm font-semibold text-slate-700">{t.courses.description}</label>
+                    <textarea
+                      {...register('descricao')}
+                      rows={2}
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
+                      placeholder={language === 'pt' ? "Descrição breve do curso..." : "Brief description of the course..."}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-sm font-semibold text-slate-700">{t.courses.durationValue}</label>
+                      <input
+                        type="number"
+                        {...register('duracao', { valueAsNumber: true })}
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
+                      />
+                      {errors.duracao && <p className="text-xs text-red-500 mt-1">{errors.duracao.message}</p>}
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-sm font-semibold text-slate-700">{t.courses.durationUnit}</label>
+                      <select
+                        {...register('duracao_unidade')}
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
+                      >
+                        <option value="dia">{t.courses.days}</option>
+                        <option value="semana">{t.courses.weeks}</option>
+                        <option value="mes">{t.courses.months}</option>
+                        <option value="ano">{t.courses.years}</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-sm font-semibold text-slate-700">Número de Módulos (Máx 10)</label>
                     <input
                       type="number"
-                      {...register('duracao', { valueAsNumber: true })}
+                      min="1"
+                      max="10"
+                      {...register('qtd_modulos', { valueAsNumber: true })}
                       className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
                     />
-                    {errors.duracao && <p className="text-xs text-red-500 mt-1">{errors.duracao.message}</p>}
+                    {errors.qtd_modulos && <p className="text-xs text-red-500 mt-1">{errors.qtd_modulos.message}</p>}
                   </div>
+
+                  <div className="hidden">
+                    <input type="checkbox" {...register('ativo')} />
+                  </div>
+
                   <div className="space-y-1">
-                    <label className="text-sm font-semibold text-slate-700">{t.courses.durationUnit}</label>
+                    <label className="text-sm font-semibold text-slate-700">{t.courses.category}</label>
                     <select
-                      {...register('duracao_unidade')}
+                      {...register('categoria')}
                       className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
                     >
-                      <option value="dia">{t.courses.days}</option>
-                      <option value="semana">{t.courses.weeks}</option>
-                      <option value="mes">{t.courses.months}</option>
-                      <option value="ano">{t.courses.years}</option>
+                      <option value="">Selecione uma categoria</option>
+                      <option value="Expedito">{t.courses.categoryExpedito}</option>
+                      <option value="Especial">{t.courses.categoryEspecial}</option>
+                      <option value="Carreira">{t.courses.categoryCarreira}</option>
+                      <option value="EaD">{t.courses.categoryEad}</option>
                     </select>
+                    {errors.categoria && <p className="text-xs text-red-500 mt-1">{errors.categoria.message}</p>}
+                  </div>
+
+                  <div className="flex items-center gap-2 py-2">
+                    <input
+                      id="checkbox-internacional"
+                      type="checkbox"
+                      {...register('internacional')}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded cursor-pointer"
+                    />
+                    <label htmlFor="checkbox-internacional" className="text-sm font-semibold text-slate-700 cursor-pointer">
+                      {language === 'pt' ? 'Curso realizado no Exterior (Internacional)' : 'Course conducted Abroad (International)'}
+                    </label>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-sm font-semibold text-slate-700">
+                      {language === 'pt' ? 'Localização' : 'Location'}
+                    </label>
+                    <input
+                      type="text"
+                      {...register('localizacao')}
+                      placeholder={language === 'pt' ? 'Ex: Luanda, Paris, EaD' : 'E.g., Luanda, Paris, Remote'}
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-sm font-semibold text-slate-700">
+                      {language === 'pt' ? 'Grupo Responsável' : 'Responsible Group'}
+                    </label>
+                    <select
+                      {...register('grupo_responsavel')}
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors text-sm font-medium"
+                    >
+                      <option value="">{language === 'pt' ? 'Sem Grupo (Opcional)' : 'No Group (Optional)'}</option>
+                      <option value="MAN">MAN</option>
+                      <option value="GAT">GAT</option>
+                    </select>
+                    {errors.grupo_responsavel && <p className="text-xs text-red-500 mt-1">{errors.grupo_responsavel.message}</p>}
                   </div>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-sm font-semibold text-slate-700">Número de Módulos (Máx 10)</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="10"
-                    {...register('qtd_modulos', { valueAsNumber: true })}
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
-                  />
-                  {errors.qtd_modulos && <p className="text-xs text-red-500 mt-1">{errors.qtd_modulos.message}</p>}
-                </div>
-
-                <div className="hidden">
-                  <input type="checkbox" {...register('ativo')} />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-sm font-semibold text-slate-700">{t.courses.category}</label>
-                  <select
-                    {...register('categoria')}
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
-                  >
-                    <option value="">Selecione uma categoria</option>
-                    <option value="Expedito">{t.courses.categoryExpedito}</option>
-                    <option value="Especial">{t.courses.categoryEspecial}</option>
-                    <option value="Carreira">{t.courses.categoryCarreira}</option>
-                    <option value="EaD">{t.courses.categoryEad}</option>
-                  </select>
-                </div>
-
-                <div className="flex items-center gap-2 py-2">
-                  <input
-                    id="checkbox-internacional"
-                    type="checkbox"
-                    {...register('internacional')}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded cursor-pointer"
-                  />
-                  <label htmlFor="checkbox-internacional" className="text-sm font-semibold text-slate-700 cursor-pointer">
-                    {language === 'pt' ? 'Curso realizado no Exterior (Internacional)' : 'Course conducted Abroad (International)'}
-                  </label>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-sm font-semibold text-slate-700">
-                    {language === 'pt' ? 'Localização' : 'Location'}
-                  </label>
-                  <input
-                    type="text"
-                    {...register('localizacao')}
-                    placeholder={language === 'pt' ? 'Ex: Luanda, Paris, EaD' : 'E.g., Luanda, Paris, Remote'}
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-sm font-semibold text-slate-700">
-                    {language === 'pt' ? 'Grupo Responsável' : 'Responsible Group'}
-                  </label>
-                  <select
-                    {...register('grupo_responsavel')}
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors text-sm font-medium"
-                  >
-                    <option value="">{language === 'pt' ? 'Sem Grupo (Opcional)' : 'No Group (Optional)'}</option>
-                    <option value="MAN">MAN</option>
-                    <option value="GAT">GAT</option>
-                  </select>
-                </div>
-
-                <div className="flex gap-3 pt-6">
+                <div className="flex gap-3 pt-4 border-t border-slate-100 mt-4 shrink-0 bg-white">
                   <button
                     type="button"
                     onClick={() => setModalOpen(false)}
@@ -1229,7 +1246,7 @@ export default function CursosPage() {
                     {selectedCursoDetails.duracao} {
                       selectedCursoDetails.duracao === 1 
                         ? (selectedCursoDetails.duracao_unidade === 'dia' ? t.courses.day : selectedCursoDetails.duracao_unidade === 'semana' ? t.courses.week : selectedCursoDetails.duracao_unidade === 'mes' ? t.courses.month : t.courses.year)
-                        : (selectedCursoDetails.duracao_unidade === 'dia' ? t.courses.days : selectedCursoDetails.duracao_unidade === 'semana' ? t.courses.weeks : selectedCursoDetails.duracao_unidade === 'mes' ? t.courses.months : selectedCursoDetails.duracao_unidade === 'years')
+                        : (selectedCursoDetails.duracao_unidade === 'dia' ? t.courses.days : selectedCursoDetails.duracao_unidade === 'semana' ? t.courses.weeks : selectedCursoDetails.duracao_unidade === 'mes' ? t.courses.months : t.courses.years)
                     }
                   </div>
                 </div>

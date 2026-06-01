@@ -162,6 +162,8 @@ export const COLOR_BG_PRESETS: Record<string, string> = {
   indigo: 'bg-indigo-500'
 };
 
+export type ColorSelection = 'blue' | 'amber' | 'purple' | 'cyan' | 'emerald' | 'rose' | 'orange' | 'lime' | 'fuchsia' | 'sky' | 'slate' | 'indigo';
+
 export interface CardColorSettings {
   categories: Record<string, string>; // e.g. { expedito: 'amber', especial: 'purple', ... }
   groups: Record<string, string>;     // e.g. { 'CIABA': 'rose', ... }
