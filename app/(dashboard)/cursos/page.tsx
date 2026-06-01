@@ -97,10 +97,10 @@ export default function CursosPage() {
         ano_inicio: encodedDuration, // stores both value and unit encoded
         ativo: data.ativo,
         qtd_modulos: data.qtd_modulos,
-        categoria: data.categoria,
+        categoria: data.categoria === "" ? null : data.categoria,
         internacional: data.internacional || false,
         localizacao: data.localizacao || '',
-        grupo_responsavel: data.grupo_responsavel || null
+        grupo_responsavel: (data.grupo_responsavel === "" || !data.grupo_responsavel) ? null : data.grupo_responsavel
       };
 
       if (editingCurso) {

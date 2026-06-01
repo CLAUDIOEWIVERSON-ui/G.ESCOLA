@@ -68,40 +68,48 @@ export async function GET(req: NextRequest) {
     // No quote for today, let's generate one dynamically using the Gemini API!
     let generatedQuote = { texto: '', autor: '' };
 
-    try {
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.5-flash',
-        contents: 'Gere um belo pensamento do dia que se enquadre em um dos seguintes temas: religioso, motivacional/incentivação ou filosófico. Varie os autores e temas. Retorne estritamente em formato JSON estruturado com os campos "texto" (o pensamento) e "autor".',
-        config: {
-          systemInstruction: 'Você é um curador literário e espiritual de alto refinamento. Elabore frases profundas em português com o respectivo autor histórico ou religioso consagrado (sempre com autor real ou creditado, como passagens bíblicas, filósofos gregos ou pensadores modernos).',
-          responseMimeType: 'application/json',
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              texto: {
-                type: Type.STRING,
-                description: 'A frase ou pensamento inspirador do dia em português.'
-              },
-              autor: {
-                type: Type.STRING,
-                description: 'O nome do autor do pensamento.'
-              }
-            },
-            required: ['texto', 'autor']
-          }
-        }
-      });
-
-      if (response && response.text) {
-        generatedQuote = JSON.parse(response.text.trim());
-      } else {
-        throw new Error('Retorno vazio da API do Gemini.');
-      }
-    } catch (apiError) {
-      console.error('[Gemini API Error] Falling back to offline quotes catalog:', apiError);
-      // Pick random fallback catalog item
+    if (!process.env.GEMINI_API_KEY) {
+      console.warn('[Gemini API] GEMINI_API_KEY is not defined. Falling back to preloaded thoughts catalog.');
       const randomIndex = Math.floor(Math.random() * fallbackQuotes.length);
       generatedQuote = fallbackQuotes[randomIndex];
+    } else {
+      try {
+        const response = await ai.models.generateContent({
+          model: 'gemini-3.5-flash',
+          contents: 'Gere um belo pensamento do dia que se enquadre em um dos seguintes temas: religioso, motivacional/incentivação ou filosófico. Varie os autores e temas. Retorne estritamente em formato JSON estruturado com os campos "texto" (o pensamento) e "autor".',
+          config: {
+            systemInstruction: 'Você é um curador literário e espiritual de alto refinamento. Elabore frases profundas em português com o respectivo autor histórico ou religioso consagrado (sempre com autor real ou creditado, como passagens bíblicas, filósofos gregos ou pensadores modernos).',
+            responseMimeType: 'application/json',
+            responseSchema: {
+              type: Type.OBJECT,
+              properties: {
+                texto: {
+                  type: Type.STRING,
+                  description: 'A frase ou pensamento inspirador do dia em português.'
+                },
+                autor: {
+                  type: Type.STRING,
+                  description: 'O nome do autor do pensamento.'
+                }
+              },
+              required: ['texto', 'autor']
+            }
+          }
+        });
+
+        if (response && response.text) {
+          generatedQuote = JSON.parse(response.text.trim());
+        } else {
+          console.warn('[Gemini API] Empty response returned from dynamic generator. Falling back.');
+          const randomIndex = Math.floor(Math.random() * fallbackQuotes.length);
+          generatedQuote = fallbackQuotes[randomIndex];
+        }
+      } catch (apiError: any) {
+        console.warn('[Gemini API Error] Falling back to preloaded thoughts catalog gracefully. Reason:', apiError?.message || apiError);
+        // Pick random fallback catalog item
+        const randomIndex = Math.floor(Math.random() * fallbackQuotes.length);
+        generatedQuote = fallbackQuotes[randomIndex];
+      }
     }
 
     if (!generatedQuote.texto || !generatedQuote.autor) {

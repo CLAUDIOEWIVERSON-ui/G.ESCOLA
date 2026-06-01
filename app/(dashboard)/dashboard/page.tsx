@@ -185,81 +185,65 @@ export default function DashboardPage() {
         </motion.div>
       )}
 
-      {/* PENSAMENTO DO DIA CARD */}
+      {/* PENSAMENTO DO DIA (SUBLIME & DISCRETO) */}
       <motion.div
-        initial={{ opacity: 0, y: 15 }}
+        initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-2xl bg-slate-50 border border-slate-200/60 p-4 sm:p-5 shadow-sm"
+        className="relative flex flex-col md:flex-row md:items-center justify-between gap-3 p-3 bg-slate-50/70 border border-slate-200/50 rounded-xl text-slate-600 text-xs"
       >
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex-1 space-y-2">
-            <div className="flex items-center gap-2">
-              <Quote size={13} className="text-indigo-500" />
-              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
-                Semente Diária • Pensamento do Dia
-              </span>
-            </div>
-
+        <div className="flex items-start md:items-center gap-2.5 flex-1 min-w-0">
+          <Quote size={12} className="text-indigo-500/70 shrink-0 mt-0.5 md:mt-0" />
+          <div className="flex-1 min-w-0 leading-relaxed text-slate-600 font-sans">
             {loadingPensamento ? (
-              <div className="space-y-2 py-1 animate-pulse">
-                <div className="h-3 bg-slate-200/80 rounded w-3/4" />
-                <div className="h-2.5 bg-slate-200/80 rounded w-1/4" />
-              </div>
+              <span className="animate-pulse bg-slate-200 h-3 w-48 inline-block rounded" />
             ) : pensamento ? (
-              <div className="space-y-1">
-                <blockquote className="text-sm sm:text-base font-serif italic text-slate-700 leading-relaxed">
+              <span className="text-xs">
+                <span className="font-bold text-[10px] text-slate-400 uppercase tracking-wider mr-2 select-none">
+                  Semente Diária:
+                </span>
+                <span className="font-serif italic text-slate-700 font-medium leading-normal">
                   &ldquo;{pensamento.texto}&rdquo;
-                </blockquote>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-3.5 h-[1.5px] bg-slate-300 rounded-full" />
-                  <cite className="not-italic text-xs font-semibold text-slate-500 font-sans">
-                    {pensamento.autor}
-                  </cite>
-                </div>
-              </div>
+                </span>
+                <span className="text-[11px] text-slate-500 font-medium ml-1.5 not-italic select-all">— {pensamento.autor}</span>
+                {pensamento?.isDemo && profile?.role === 'admin' && (
+                  <span className="text-[9px] text-amber-600 font-bold ml-2 inline-flex items-center gap-0.5 bg-amber-50 px-1 py-0.2 rounded border border-amber-200/40" title="Tabela pensamento_dia ausente. O pensamento de hoje expirará. Vá em Configurações e execute a migração 31_create_pensamento_dia.sql.">
+                    ⚠️ Demo
+                  </span>
+                )}
+              </span>
             ) : (
-              <p className="text-xs text-slate-400 italic">Uma nova reflexão está sendo colhida...</p>
-            )}
-
-            {/* If table missing warning for admin */}
-            {pensamento?.isDemo && profile?.role === 'admin' && (
-              <div className="mt-1 text-[10px] bg-amber-500/5 border border-amber-500/20 text-amber-700 rounded-lg p-2 flex items-start gap-1.5">
-                <span className="font-extrabold uppercase text-[8px] bg-amber-500 text-slate-900 px-1 py-0.5 rounded shrink-0">Aviso</span>
-                <div className="leading-normal">
-                  Tabela <code className="font-mono bg-slate-100 px-1 text-[10px] rounded text-slate-700">pensamento_dia</code> ausente. O pensamento de hoje expirará. Vá em <strong>Configurações</strong> e execute a migração <code className="font-mono bg-slate-100 px-1 text-[10px] rounded text-slate-700">31_create_pensamento_dia.sql</code>.
-                </div>
-              </div>
+              <span className="italic text-slate-400 text-xs">Uma nova reflexão está sendo colhida...</span>
             )}
           </div>
-
-          {/* Controls for Admin Roles */}
-          {profile?.role === 'admin' && (
-            <div className="flex flex-row md:flex-col items-center md:items-end gap-2 shrink-0 self-start md:self-center">
-              <button
-                type="button"
-                onClick={() => setIsEditingPensamento(true)}
-                className="flex items-center gap-1 bg-white hover:bg-slate-50 active:scale-95 text-slate-700 hover:text-slate-950 text-[11px] font-bold px-3 py-1.5 rounded-lg transition-all border border-slate-200 shadow-sm whitespace-nowrap"
-              >
-                <Pencil size={11} className="text-slate-500" />
-                Editar
-              </button>
-
-              <button
-                type="button"
-                disabled={regeneratingPensamento}
-                onClick={() => fetchPensamento(true)}
-                className="flex items-center gap-1 bg-indigo-50/50 hover:bg-indigo-50 active:scale-95 disabled:opacity-50 text-indigo-700 hover:text-indigo-850 text-[11px] font-bold px-3 py-1.5 rounded-lg transition-all border border-indigo-100 shadow-sm whitespace-nowrap"
-              >
-                {regeneratingPensamento ? (
-                  <Loader2 size={11} className="animate-spin text-indigo-500" />
-                ) : (
-                  <Sparkles size={11} className="text-indigo-500" />
-                )}
-                Renovar com IA
-              </button>
-            </div>
-          )}
         </div>
+
+        {/* Controls for Admin Roles */}
+        {profile?.role === 'admin' && (
+          <div className="flex items-center gap-1.5 shrink-0 self-end md:self-center">
+            <button
+              type="button"
+              onClick={() => setIsEditingPensamento(true)}
+              className="flex items-center gap-1 bg-white hover:bg-slate-50 text-slate-500 hover:text-slate-800 text-[10px] font-bold px-2.5 py-1 rounded-md transition-all border border-slate-200/60 shadow-none active:scale-95"
+            >
+              <Pencil size={10} className="text-slate-400" />
+              Editar
+            </button>
+
+            <button
+              type="button"
+              disabled={regeneratingPensamento}
+              onClick={() => fetchPensamento(true)}
+              className="flex items-center gap-1 bg-indigo-50/40 hover:bg-indigo-50 text-indigo-600 hover:text-indigo-800 text-[10px] font-bold px-2.5 py-1 rounded-md transition-all border border-indigo-100/40 shadow-none active:scale-95 disabled:opacity-50"
+            >
+              {regeneratingPensamento ? (
+                <Loader2 size={10} className="animate-spin text-indigo-400" />
+              ) : (
+                <Sparkles size={10} className="text-indigo-400" />
+              )}
+              IA
+            </button>
+          </div>
+        )}
       </motion.div>
 
       {/* EDIT MODAL */}
