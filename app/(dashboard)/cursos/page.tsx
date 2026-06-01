@@ -28,6 +28,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Modal from '@/components/Modal';
 import { cn } from '@/lib/utils';
+import { getCardStyleForItem, getCardColorSettings, CardColorSettings } from '@/lib/cardColors';
 
 import { Toaster, toast } from 'sonner';
 
@@ -46,6 +47,8 @@ export default function CursosPage() {
   const [editingCurso, setEditingCurso] = useState<Curso | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [selectedCursoDetails, setSelectedCursoDetails] = useState<Curso | null>(null);
+  const [colorSettings, setColorSettings] = useState<CardColorSettings>(() => getCardColorSettings());
   
   // Discipline Management State
   const [manageDisciplinasCurso, setManageDisciplinasCurso] = useState<Curso | null>(null);
@@ -478,137 +481,143 @@ export default function CursosPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredCursos.map((curso) => (
-              <motion.div
-                key={curso.id}
-                layout
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.98 }}
-                className={cn(
-                  "rounded-2xl border p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between group relative overflow-hidden",
-                  curso.internacional
-                    ? "bg-blue-50/30 hover:bg-blue-50/60 border-blue-200/80 hover:border-blue-400/80 shadow-blue-500/5"
-                    : curso.categoria === 'Expedito'
-                    ? "bg-amber-50/30 hover:bg-amber-50/60 border-amber-200/80 hover:border-amber-400/80 shadow-amber-500/5"
-                    : curso.categoria === 'Especial'
-                    ? "bg-purple-50/30 hover:bg-purple-50/60 border-purple-200/80 hover:border-purple-400/80 shadow-purple-500/5"
-                    : curso.categoria === 'EaD'
-                    ? "bg-cyan-50/30 hover:bg-cyan-50/60 border-cyan-200/80 hover:border-cyan-400/80 shadow-cyan-500/5"
-                    : curso.categoria === 'Carreira'
-                    ? "bg-emerald-50/30 hover:bg-emerald-50/60 border-emerald-200/80 hover:border-emerald-400/80 shadow-emerald-500/5"
-                    : "bg-white border-slate-200 hover:border-slate-300"
-                )}
-              >
-                <div className={cn(
-                  "absolute top-0 left-0 right-0 h-1.5",
-                  curso.internacional ? 'bg-blue-600' :
-                  curso.categoria === 'Expedito' ? 'bg-amber-500' :
-                  curso.categoria === 'Especial' ? 'bg-purple-500' :
-                  curso.categoria === 'EaD' ? 'bg-cyan-500' :
-                  curso.categoria === 'Carreira' ? 'bg-emerald-500' : 'bg-slate-300'
-                )} />
+            {filteredCursos.map((curso) => {
+              const cardStyle = getCardStyleForItem({
+                categoria: curso.categoria,
+                internacional: curso.internacional,
+                grupo_responsavel: curso.grupo_responsavel
+              }, colorSettings);
 
-                <div>
-                  <div className="flex items-start justify-between gap-3 mb-3 mt-1">
-                    <h3 className="font-bold text-slate-900 text-base sm:text-lg tracking-tight leading-snug line-clamp-2">
-                      {curso.nome}
-                    </h3>
-                    
-                    {!isReadOnly && (
-                      <div className="opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity flex items-center gap-1 shrink-0">
-                        <button 
-                          onClick={() => { setEditingCurso(curso); reset(curso); setModalOpen(true); }}
-                          className="p-1.5 bg-slate-50 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-slate-400 cursor-pointer"
-                          title={t.common.edit}
-                        >
-                          <Edit2 size={13} />
-                        </button>
-                        <button 
-                          onClick={() => deleteCurso(curso.id)}
-                          className="p-1.5 bg-slate-50 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors text-slate-400 cursor-pointer"
-                          title={t.common.delete}
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      </div>
-                    )}
-                  </div>
+              const catStyle = getCardStyleForItem({ categoria: curso.categoria }, colorSettings);
+              const groupStyle = curso.grupo_responsavel ? getCardStyleForItem({ grupo_responsavel: curso.grupo_responsavel }, colorSettings) : null;
 
-                  {/* Badge Section */}
-                  <div className="flex flex-wrap gap-1.5 mb-4">
-                    {curso.categoria && (
-                      <span className={cn(
-                        "px-2 py-0.5 text-[9px] font-bold uppercase rounded-md border",
-                        curso.categoria === 'Expedito' ? 'bg-amber-50 text-amber-700 border-amber-100' :
-                        curso.categoria === 'Especial' ? 'bg-purple-50 text-purple-700 border-purple-100' :
-                        curso.categoria === 'EaD' ? 'bg-cyan-50 text-cyan-700 border-cyan-100' :
-                        'bg-emerald-50 text-emerald-700 border-emerald-100'
-                      )}>
-                        {curso.categoria}
-                      </span>
-                    )}
-                    {curso.internacional && (
-                      <span className="px-2 py-0.5 bg-blue-50 text-blue-700 text-[9px] font-bold uppercase rounded-md border border-blue-100">
-                        {language === 'pt' ? 'Exterior' : 'Abroad'}
-                      </span>
-                    )}
-                    {curso.localizacao && (
-                      <span className="px-2 py-0.5 bg-slate-50 text-slate-600 text-[9px] font-bold uppercase rounded-md border border-slate-150">
-                        {curso.localizacao}
-                      </span>
-                    )}
-                    {curso.grupo_responsavel && (
-                      <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 text-[9px] font-black uppercase rounded-md border border-indigo-100">
-                        Grupo: {curso.grupo_responsavel}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Description */}
-                  {curso.descricao ? (
-                    <p className="text-slate-500 text-xs leading-relaxed mb-4 line-clamp-3">
-                      {curso.descricao}
-                    </p>
-                  ) : (
-                    <p className="text-slate-350 italic text-xs mb-4">
-                      {language === 'pt' ? 'Sem descrição cadastrada' : 'No description provided'}
-                    </p>
+              return (
+                <motion.div
+                  key={curso.id}
+                  layout
+                  initial={{ opacity: 0, scale: 0.98 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.98 }}
+                  onClick={() => setSelectedCursoDetails(curso)}
+                  className={cn(
+                    "rounded-2xl border p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between group relative overflow-hidden cursor-pointer",
+                    cardStyle.bg,
+                    cardStyle.hoverBg,
+                    cardStyle.border,
+                    cardStyle.hoverBorder,
+                    "shadow-slate-500/5"
                   )}
-                </div>
+                >
+                  <div className={cn(
+                    "absolute top-0 left-0 right-0 h-1.5",
+                    cardStyle.line
+                  )} />
 
-                <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-3 mt-auto">
-                  <div className="flex items-center gap-1.5 text-slate-500 shrink-0">
-                    <Clock size={14} className="text-slate-400" />
-                    <div className="flex flex-col select-none">
-                      <span className="text-xs font-semibold text-slate-700 leading-tight">
-                        {curso.duracao} {
-                          curso.duracao === 1 
-                            ? (curso.duracao_unidade === 'dia' ? t.courses.day : curso.duracao_unidade === 'semana' ? t.courses.week : curso.duracao_unidade === 'mes' ? t.courses.month : t.courses.year)
-                            : (curso.duracao_unidade === 'dia' ? t.courses.days : curso.duracao_unidade === 'semana' ? t.courses.weeks : curso.duracao_unidade === 'mes' ? t.courses.months : t.courses.years)
-                        }
-                      </span>
-                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                        {curso.qtd_modulos || 4} {t.grades.module}s
-                      </span>
+                  <div>
+                    <div className="flex items-start justify-between gap-3 mb-3 mt-1">
+                      <h3 className="font-bold text-slate-900 text-base sm:text-lg tracking-tight leading-snug line-clamp-2">
+                        {curso.nome}
+                      </h3>
+                      
+                      {!isReadOnly && (
+                        <div className="opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity flex items-center gap-1 shrink-0">
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); setEditingCurso(curso); reset(curso); setModalOpen(true); }}
+                            className="p-1.5 bg-slate-50 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-slate-400 cursor-pointer"
+                            title={t.common.edit}
+                          >
+                            <Edit2 size={13} />
+                          </button>
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); deleteCurso(curso.id); }}
+                            className="p-1.5 bg-slate-50 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors text-slate-400 cursor-pointer"
+                            title={t.common.delete}
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      )}
                     </div>
+
+                    {/* Badge Section */}
+                    <div className="flex flex-wrap gap-1.5 mb-4">
+                      {curso.categoria && (
+                        <span className={cn(
+                          "px-2 py-0.5 text-[9px] font-bold uppercase rounded-md border",
+                          catStyle.badge
+                        )}>
+                          {curso.categoria}
+                        </span>
+                      )}
+                      {curso.internacional && (
+                        <span className={cn(
+                          "px-2 py-0.5 text-[9px] font-bold uppercase rounded-md border",
+                          getCardStyleForItem({ internacional: true }, colorSettings).badge
+                        )}>
+                          {language === 'pt' ? 'Exterior' : 'Abroad'}
+                        </span>
+                      )}
+                      {curso.localizacao && (
+                        <span className="px-2 py-0.5 bg-slate-50 text-slate-600 text-[9px] font-bold uppercase rounded-md border border-slate-150">
+                          {curso.localizacao}
+                        </span>
+                      )}
+                      {curso.grupo_responsavel && (
+                        <span className={cn(
+                          "px-2 py-0.5 text-[9px] font-black uppercase rounded-md border",
+                          groupStyle ? groupStyle.badge : "bg-indigo-50 text-indigo-700 border-indigo-100"
+                        )}>
+                          Grupo: {curso.grupo_responsavel}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Description */}
+                    {curso.descricao ? (
+                      <p className="text-slate-500 text-xs leading-relaxed mb-4 line-clamp-3">
+                        {curso.descricao}
+                      </p>
+                    ) : (
+                      <p className="text-slate-350 italic text-xs mb-4">
+                        {language === 'pt' ? 'Sem descrição cadastrada' : 'No description provided'}
+                      </p>
+                    )}
                   </div>
 
-                  {!curso.internacional && (
-                    <button 
-                      onClick={() => {
-                        setManageDisciplinasCurso(curso);
-                        setLoadingDisciplinas(true);
-                      }}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 text-slate-700 border border-slate-200 hover:bg-blue-600 hover:text-white hover:border-blue-600 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-300 shadow-sm shrink-0 cursor-pointer"
-                    >
-                      <BookMarked size={12} />
-                      {t.nav.subjects}
-                    </button>
-                  )}
-                </div>
-              </motion.div>
-            ))}
+                  <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-3 mt-auto">
+                    <div className="flex items-center gap-1.5 text-slate-500 shrink-0">
+                      <Clock size={14} className="text-slate-400" />
+                      <div className="flex flex-col select-none">
+                        <span className="text-xs font-semibold text-slate-700 leading-tight">
+                          {curso.duracao} {
+                            curso.duracao === 1 
+                              ? (curso.duracao_unidade === 'dia' ? t.courses.day : curso.duracao_unidade === 'semana' ? t.courses.week : curso.duracao_unidade === 'mes' ? t.courses.month : t.courses.year)
+                              : (curso.duracao_unidade === 'dia' ? t.courses.days : curso.duracao_unidade === 'semana' ? t.courses.weeks : curso.duracao_unidade === 'mes' ? t.courses.months : t.courses.years)
+                          }
+                        </span>
+                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                          {curso.qtd_modulos || 4} {t.grades.module}s
+                        </span>
+                      </div>
+                    </div>
+
+                    {!curso.internacional && (
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setManageDisciplinasCurso(curso);
+                          setLoadingDisciplinas(true);
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 text-slate-700 border border-slate-200 hover:bg-blue-600 hover:text-white hover:border-blue-600 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-300 shadow-sm shrink-0 cursor-pointer"
+                      >
+                        <BookMarked size={12} />
+                        {t.nav.subjects}
+                      </button>
+                    )}
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -1130,6 +1139,124 @@ export default function CursosPage() {
             </button>
           </div>
         </form>
+      </Modal>
+
+      {/* Modal de Detalhes e Descrição do Curso */}
+      <Modal
+        isOpen={!!selectedCursoDetails}
+        onClose={() => setSelectedCursoDetails(null)}
+        title={selectedCursoDetails?.nome || ''}
+        className="max-w-xl"
+      >
+        {selectedCursoDetails && (
+          <div className="space-y-6 font-sans">
+            {/* Badges/Category list */}
+            <div className="flex flex-wrap gap-2">
+              {selectedCursoDetails.categoria && (() => {
+                const catStyle = getCardStyleForItem({ categoria: selectedCursoDetails.categoria }, colorSettings);
+                return (
+                  <span className={cn(
+                    "px-3 py-1 text-xs font-bold uppercase rounded-md border",
+                    catStyle.badge
+                  )}>
+                    {selectedCursoDetails.categoria}
+                  </span>
+                );
+              })()}
+              {selectedCursoDetails.internacional && (() => {
+                const extStyle = getCardStyleForItem({ internacional: true }, colorSettings);
+                return (
+                  <span className={cn(
+                    "px-3 py-1 text-xs font-bold uppercase rounded-md border",
+                    extStyle.badge
+                  )}>
+                    {language === 'pt' ? 'Exterior' : 'Abroad'}
+                  </span>
+                );
+              })()}
+              {selectedCursoDetails.localizacao && (
+                <span className="px-3 py-1 bg-slate-50 text-slate-600 text-xs font-bold uppercase rounded-md border border-slate-150">
+                  {selectedCursoDetails.localizacao}
+                </span>
+              )}
+              {selectedCursoDetails.grupo_responsavel && (() => {
+                const grpStyle = getCardStyleForItem({ grupo_responsavel: selectedCursoDetails.grupo_responsavel }, colorSettings);
+                return (
+                  <span className={cn(
+                    "px-3 py-1 text-xs font-black uppercase rounded-md border",
+                    grpStyle.badge
+                  )}>
+                    Grupo: {selectedCursoDetails.grupo_responsavel}
+                  </span>
+                );
+              })()}
+            </div>
+
+            {/* Complete Description box */}
+            <div className="space-y-2">
+              <h4 className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                {language === 'pt' ? 'Descrição Completa' : 'Full Description'}
+              </h4>
+              <div className="bg-slate-50 p-4 border border-slate-100 rounded-xl max-h-[300px] overflow-y-auto">
+                {selectedCursoDetails.descricao ? (
+                  <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-line">
+                    {selectedCursoDetails.descricao}
+                  </p>
+                ) : (
+                  <p className="text-slate-400 italic text-sm">
+                    {language === 'pt' ? 'Nenhuma descrição cadastrada para este curso.' : 'No description registered for this course.'}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Course statistics grid */}
+            <div className="grid grid-cols-2 gap-4 border-t border-slate-100 pt-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-500">
+                  <Clock size={20} />
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">
+                    {language === 'pt' ? 'Duração' : 'Duration'}
+                  </div>
+                  <div className="text-sm font-semibold text-slate-800">
+                    {selectedCursoDetails.duracao} {
+                      selectedCursoDetails.duracao === 1 
+                        ? (selectedCursoDetails.duracao_unidade === 'dia' ? t.courses.day : selectedCursoDetails.duracao_unidade === 'semana' ? t.courses.week : selectedCursoDetails.duracao_unidade === 'mes' ? t.courses.month : t.courses.year)
+                        : (selectedCursoDetails.duracao_unidade === 'dia' ? t.courses.days : selectedCursoDetails.duracao_unidade === 'semana' ? t.courses.weeks : selectedCursoDetails.duracao_unidade === 'mes' ? t.courses.months : selectedCursoDetails.duracao_unidade === 'years')
+                    }
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-500">
+                  <BookOpen size={20} />
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">
+                    {language === 'pt' ? 'Estrutura' : 'Structure'}
+                  </div>
+                  <div className="text-sm font-semibold text-slate-800">
+                    {selectedCursoDetails.qtd_modulos || 4} {t.grades.module}s
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer action */}
+            <div className="flex justify-end pt-4 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setSelectedCursoDetails(null)}
+                className="px-6 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-sm font-bold transition-all active:scale-95 cursor-pointer"
+              >
+                {language === 'pt' ? 'Fechar' : 'Close'}
+              </button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );

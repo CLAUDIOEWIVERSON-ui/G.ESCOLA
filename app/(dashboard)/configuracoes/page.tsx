@@ -28,10 +28,18 @@ import {
   Check,
   ExternalLink,
   FileText,
-  Bell
+  Bell,
+  Palette
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
+import { 
+  getCardColorSettings, 
+  saveCardColorSettings, 
+  PRESET_THEMES, 
+  CardColorSettings, 
+  ColorSelection 
+} from '@/lib/cardColors';
 
 import { Toaster, toast } from 'sonner';
 
@@ -41,6 +49,33 @@ export default function ConfiguracoesPage() {
   const isReadOnly = !isAdmin;
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  const [colorSettings, setColorSettings] = useState<CardColorSettings>(() => getCardColorSettings());
+
+  const handleSaveColorSelection = (type: 'categories' | 'groups', key: string, color: ColorSelection) => {
+    const updated = {
+      ...colorSettings,
+      [type]: {
+        ...colorSettings[type],
+        [key]: color
+      }
+    };
+    setColorSettings(updated);
+    saveCardColorSettings(updated);
+    toast.success('Paleta de cores atualizada com sucesso!');
+  };
+
+  const handleApplyColorPreset = (themeName: keyof typeof PRESET_THEMES) => {
+    const preset = PRESET_THEMES[themeName];
+    const updated = {
+      ...colorSettings,
+      categories: { ...colorSettings.categories, ...preset.categories },
+      groups: { ...colorSettings.groups, ...preset.groups }
+    };
+    setColorSettings(updated);
+    saveCardColorSettings(updated);
+    toast.success(`Preset "${themeName}" aplicado com sucesso!`);
+  };
   
   const [playBell, setPlayBell] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
@@ -548,6 +583,143 @@ export default function ConfiguracoesPage() {
             <span className="text-[10px] text-slate-400 font-medium">
               Clique para testar o som do sino escolar no seu navegador.
             </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Paleta de Cores de Cartões Card */}
+      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+        <div className="flex items-center gap-3 border-b border-slate-50 pb-4">
+           <div className="w-10 h-10 rounded-lg bg-pink-50 flex items-center justify-center text-pink-600">
+              <Palette size={20} />
+           </div>
+           <div>
+              <h2 className="font-bold text-slate-800 font-sans">Paleta de Cores Personalizada</h2>
+              <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold font-sans">Defina as cores de destaque dos cartões de Cursos e Turmas</p>
+           </div>
+        </div>
+
+        <div className="space-y-6 font-sans">
+          {/* Preset Themes List */}
+          <div>
+            <span className="block text-xs font-bold text-slate-700 mb-2.5">Temas e Presets Prontos</span>
+            <div className="flex flex-wrap gap-2">
+              {Object.keys(PRESET_THEMES).map((themeName) => {
+                const tName = themeName as keyof typeof PRESET_THEMES;
+                return (
+                  <button
+                    key={themeName}
+                    type="button"
+                    onClick={() => handleApplyColorPreset(tName)}
+                    className="px-3.5 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 text-slate-700 text-xs font-black rounded-xl transition-all cursor-pointer flex items-center gap-2 shadow-sm"
+                  >
+                    <span className="w-2.5 h-2.5 rounded-full block" style={{
+                      backgroundColor: PRESET_THEMES[tName].categories.expedito === 'amber' ? '#f59e0b' : 
+                                       PRESET_THEMES[tName].categories.ead === 'cyan' ? '#06b6d4' : '#6366f1'
+                    }} />
+                    Predefinição {themeName.charAt(0).toUpperCase() + themeName.slice(1)}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-2">
+            {/* Categorias Mappings */}
+            <div className="space-y-4">
+              <span className="block text-xs font-black text-slate-600 uppercase tracking-wider">Cores por Categoria de Cursos/Turmas</span>
+              
+              <div className="space-y-3.5">
+                {[
+                  { key: 'expedito', label: 'Curso Expedito' },
+                  { key: 'especial', label: 'Curso Especial' },
+                  { key: 'ead', label: 'Curso EaD (Online)' },
+                  { key: 'carreira', label: 'Curso de Carreira (Oficiais/Praças)' },
+                  { key: 'exterior', label: 'Curso do Exterior (Internacional)' }
+                ].map((item) => {
+                  const currentValue = colorSettings.categories[item.key as keyof CardColorSettings['categories']] || 'slate';
+                  return (
+                    <div key={item.key} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-slate-50 border border-slate-200/60 rounded-xl">
+                      <span className="text-xs font-bold text-slate-800">{item.label}</span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {['amber', 'purple', 'cyan', 'emerald', 'blue', 'rose', 'indigo', 'slate'].map((color) => (
+                          <button
+                            key={color}
+                            type="button"
+                            onClick={() => handleSaveColorSelection('categories', item.key, color as ColorSelection)}
+                            className={cn(
+                              "w-6 h-6 rounded-full border transition-all cursor-pointer flex items-center justify-center text-[10px]",
+                              color === 'amber' ? "bg-amber-500 border-amber-600/20 text-white" :
+                              color === 'purple' ? "bg-purple-500 border-purple-600/20 text-white" :
+                              color === 'cyan' ? "bg-cyan-500 border-cyan-600/20 text-white" :
+                              color === 'emerald' ? "bg-emerald-500 border-emerald-600/20 text-white" :
+                              color === 'blue' ? "bg-blue-500 border-blue-600/20 text-white" :
+                              color === 'rose' ? "bg-rose-500 border-rose-600/20 text-white" :
+                              color === 'indigo' ? "bg-indigo-500 border-indigo-600/20 text-white" :
+                              "bg-slate-400 border-slate-500/20 text-white",
+                              currentValue === color ? "ring-2 ring-blue-500 ring-offset-2 scale-110 font-bold" : "hover:scale-105 opacity-80"
+                            )}
+                            title={color}
+                          >
+                            {currentValue === color && "✓"}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Grupos Responsáveis Mappings */}
+            <div className="space-y-4">
+              <span className="block text-xs font-black text-slate-600 uppercase tracking-wider">Cores por Grupo Responsável</span>
+              <p className="text-xs text-slate-500 leading-relaxed font-semibold">
+                Caso os cursos tenham um &quot;Grupo Responsável&quot; preenchido, você pode designar uma cor específica que prevalecerá sobre a categoria, agrupando visualmente o departamento ou equipe gestora.
+              </p>
+
+              <div className="space-y-3.5">
+                {[
+                  { key: 'Grupo Alfa', label: 'Grupo Alfa (ou correspondente)' },
+                  { key: 'Grupo Bravo', label: 'Grupo Bravo (ou correspondente)' },
+                  { key: 'Grupo Charlie', label: 'Grupo Charlie (ou correspondente)' }
+                ].map((item) => {
+                  const currentValue = colorSettings.groups[item.key] || 'slate';
+                  return (
+                    <div key={item.key} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-slate-50 border border-slate-200/60 rounded-xl">
+                      <div className="flex flex-col">
+                        <span className="text-xs font-bold text-slate-800">{item.key}</span>
+                        <span className="text-[10px] text-slate-400 font-medium">{item.label}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {['amber', 'purple', 'cyan', 'emerald', 'blue', 'rose', 'indigo', 'slate'].map((color) => (
+                          <button
+                            key={color}
+                            type="button"
+                            onClick={() => handleSaveColorSelection('groups', item.key, color as ColorSelection)}
+                            className={cn(
+                              "w-6 h-6 rounded-full border transition-all cursor-pointer flex items-center justify-center text-[10px]",
+                              color === 'amber' ? "bg-amber-500 border-amber-600/20 text-white" :
+                              color === 'purple' ? "bg-purple-500 border-purple-600/20 text-white" :
+                              color === 'cyan' ? "bg-cyan-500 border-cyan-600/20 text-white" :
+                              color === 'emerald' ? "bg-emerald-500 border-emerald-600/20 text-white" :
+                              color === 'blue' ? "bg-blue-500 border-blue-600/20 text-white" :
+                              color === 'rose' ? "bg-rose-500 border-rose-600/20 text-white" :
+                              color === 'indigo' ? "bg-indigo-500 border-indigo-600/20 text-white" :
+                              "bg-slate-400 border-slate-500/20 text-white",
+                              currentValue === color ? "ring-2 ring-blue-500 ring-offset-2 scale-110 font-bold" : "hover:scale-105 opacity-80"
+                            )}
+                            title={color}
+                          >
+                            {currentValue === color && "✓"}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
       </div>

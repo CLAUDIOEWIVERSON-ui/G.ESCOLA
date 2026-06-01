@@ -10,6 +10,7 @@ import { Plus, Search, Layers as LayersIcon, Library, Calendar, Clock, MapPin, P
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import Modal from '@/components/Modal';
+import { getCardStyleForItem, getCardColorSettings, CardColorSettings } from '@/lib/cardColors';
 import Image from 'next/image';
 import maleAvatar from '@/src/assets/images/avatar_male_1778977230783.png';
 import femaleAvatar from '@/src/assets/images/avatar_female_1778977246051.png';
@@ -28,6 +29,8 @@ function TurmasContent() {
   const { turmas, loading: loadingTurmas, mutate: revalidateTurmas } = useTurmas();
   const { cursos, loading: loadingCursos } = useCursos();
   const loading = loadingTurmas || loadingCursos;
+
+  const [colorSettings, setColorSettings] = useState<CardColorSettings>(() => getCardColorSettings());
   const [refreshing, setRefreshing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentTurma, setCurrentTurma] = useState<any>(null);
@@ -914,77 +917,76 @@ function TurmasContent() {
             </div>
           ))
         ) : filteredTurmas.length > 0 ? (
-          filteredTurmas.map((turma, i) => (
-            <motion.div 
-              key={turma.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05, ease: [0.23, 1, 0.32, 1] }}
-              onClick={() => handleViewStudents(turma)}
-              className={cn(
-                "rounded-3xl border shadow-sm relative overflow-hidden group hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer flex flex-col p-6",
-                turma.internacional
-                  ? "bg-blue-50/30 hover:bg-blue-50/60 border-blue-200/80 hover:border-blue-400 shadow-blue-500/5 hover:shadow-blue-500/10"
-                  : turma.categoria === 'expedito'
-                  ? "bg-amber-50/30 hover:bg-amber-50/60 border-amber-200/80 hover:border-amber-400 shadow-amber-500/5 hover:shadow-amber-500/10"
-                  : turma.categoria === 'especial'
-                  ? "bg-purple-50/30 hover:bg-purple-50/60 border-purple-200/80 hover:border-purple-400 shadow-purple-500/5 hover:shadow-purple-500/10"
-                  : turma.categoria === 'ead'
-                  ? "bg-cyan-50/30 hover:bg-cyan-50/60 border-cyan-200/80 hover:border-cyan-400 shadow-cyan-500/5 hover:shadow-cyan-500/10"
-                  : turma.categoria === 'carreira'
-                  ? "bg-emerald-50/30 hover:bg-emerald-50/60 border-emerald-200/80 hover:border-emerald-400 shadow-emerald-500/5 hover:shadow-emerald-500/10"
-                  : "bg-white border-slate-100 hover:border-slate-300"
-              )}
-            >
-              {/* Category Indicator Line */}
-              <div className={cn(
-                "absolute top-0 left-0 w-full h-1.5",
-                turma.internacional ? "bg-blue-600" :
-                turma.categoria === 'expedito' ? "bg-amber-500" :
-                turma.categoria === 'especial' ? "bg-purple-500" :
-                turma.categoria === 'carreira' ? "bg-emerald-500" :
-                turma.categoria === 'ead' ? "bg-cyan-500" : "bg-slate-300"
-              )} />
+          filteredTurmas.map((turma, i) => {
+            const cardStyle = getCardStyleForItem({
+              categoria: turma.categoria,
+              internacional: turma.internacional,
+              grupo_responsavel: turma.grupo_responsavel
+            }, colorSettings);
 
-              <div className="flex justify-between items-start mb-6">
+            return (
+              <motion.div 
+                key={turma.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05, ease: [0.23, 1, 0.32, 1] }}
+                onClick={() => handleViewStudents(turma)}
+                className={cn(
+                  "rounded-3xl border shadow-sm relative overflow-hidden group hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer flex flex-col p-6",
+                  cardStyle.bg,
+                  cardStyle.hoverBg,
+                  cardStyle.border,
+                  cardStyle.hoverBorder,
+                  "shadow-slate-500/5 hover:shadow-slate-500/10"
+                )}
+              >
+                {/* Category Indicator Line */}
                 <div className={cn(
-                  "w-14 h-14 rounded-2xl flex items-center justify-center transition-colors shadow-inner",
-                  turma.internacional ? "bg-blue-100 text-blue-600" :
-                  turma.categoria === 'expedito' ? "bg-amber-100 text-amber-600" :
-                  turma.categoria === 'especial' ? "bg-purple-100 text-purple-600" :
-                  turma.categoria === 'carreira' ? "bg-emerald-100 text-emerald-600" :
-                  turma.categoria === 'ead' ? "bg-cyan-100 text-cyan-600" : "bg-slate-100 text-slate-500"
-                )}>
-                  {turma.internacional ? <Globe size={28} /> :
-                   turma.categoria === 'expedito' ? <LayersIcon size={28} /> :
-                   turma.categoria === 'especial' ? <GraduationCap size={28} /> :
-                   turma.categoria === 'carreira' ? <Library size={28} /> :
-                   turma.categoria === 'ead' ? <Monitor size={28} /> : <Library size={28} />}
-                </div>
-                
-                <div className="flex flex-col items-end gap-2">
-                  <span className={cn(
-                    "text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border",
-                    turma.status === 'concluída' ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
-                    turma.status === 'cancelada' ? "bg-red-50 text-red-600 border-red-100" :
-                    "bg-blue-50 text-blue-600 border-blue-100"
+                  "absolute top-0 left-0 w-full h-1.5",
+                  cardStyle.line
+                )} />
+
+                <div className="flex justify-between items-start mb-6">
+                  <div className={cn(
+                    "w-14 h-14 rounded-2xl flex items-center justify-center transition-colors shadow-inner",
+                    cardStyle.avatarBg
                   )}>
-                    {turma.status === 'concluída' ? t.classes.completed : 
-                     turma.status === 'cancelada' ? t.classes.cancelled : t.classes.active}
-                  </span>
-                  {turma.internacional && (
-                    <span className="flex items-center gap-1.5 text-[8px] font-bold text-purple-600 bg-purple-50 px-2.5 py-1 rounded-md uppercase tracking-wider border border-purple-100">
-                      <MapPin size={10} />
-                      {t.courses.international}
+                    {turma.internacional ? <Globe size={28} /> :
+                     turma.categoria === 'expedito' ? <LayersIcon size={28} /> :
+                     turma.categoria === 'especial' ? <GraduationCap size={28} /> :
+                     turma.categoria === 'carreira' ? <Library size={28} /> :
+                     turma.categoria === 'ead' ? <Monitor size={28} /> : <Library size={28} />}
+                  </div>
+                  
+                  <div className="flex flex-col items-end gap-2">
+                    <span className={cn(
+                      "text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border",
+                      turma.status === 'concluída' ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
+                      turma.status === 'cancelada' ? "bg-red-50 text-red-600 border-red-100" :
+                      "bg-blue-50 text-blue-600 border-blue-100"
+                    )}>
+                      {turma.status === 'concluída' ? t.classes.completed : 
+                       turma.status === 'cancelada' ? t.classes.cancelled : t.classes.active}
                     </span>
-                  )}
-                  {turma.grupo_responsavel && (
-                    <span className="flex items-center gap-1.5 text-[8px] font-black text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-md uppercase tracking-wider border border-indigo-100">
-                      Grupo: {turma.grupo_responsavel}
-                    </span>
-                  )}
+                    {turma.internacional && (
+                      <span className={cn(
+                        "flex items-center gap-1.5 text-[8px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider border",
+                        getCardStyleForItem({ internacional: true }, colorSettings).badge
+                      )}>
+                        <MapPin size={10} />
+                        {t.courses.international}
+                      </span>
+                    )}
+                    {turma.grupo_responsavel && (
+                      <span className={cn(
+                        "flex items-center gap-1.5 text-[8px] font-black px-2.5 py-1 rounded-md uppercase tracking-wider border",
+                        cardStyle.badge
+                      )}>
+                        Grupo: {turma.grupo_responsavel}
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
 
               <div className="flex-1 min-w-0 mb-6">
                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mb-1 truncate">{turma.curso?.nome}</p>
@@ -1108,7 +1110,7 @@ function TurmasContent() {
                 </div>
               )}
             </motion.div>
-          ))
+          )})
         ) : (
           <div className="col-span-full py-32 flex flex-col items-center justify-center text-center bg-white rounded-[40px] border border-dashed border-slate-200">
             <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mb-6 text-slate-200">
