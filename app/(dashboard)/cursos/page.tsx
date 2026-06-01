@@ -572,16 +572,21 @@ export default function CursosPage() {
                       )}
                     </div>
 
-                    {/* Description */}
-                    {curso.descricao ? (
-                      <p className="text-slate-500 text-xs leading-relaxed mb-4 line-clamp-3">
-                        {curso.descricao}
-                      </p>
-                    ) : (
-                      <p className="text-slate-350 italic text-xs mb-4">
-                        {language === 'pt' ? 'Sem descrição cadastrada' : 'No description provided'}
-                      </p>
-                    )}
+                    {/* Description with Scrollbar */}
+                    <div 
+                      onClick={(e) => e.stopPropagation()} 
+                      className="h-16 overflow-y-auto pr-1 mb-4 custom-scrollbar"
+                    >
+                      {curso.descricao ? (
+                        <p className="text-slate-500 text-xs leading-relaxed whitespace-pre-line">
+                          {curso.descricao}
+                        </p>
+                      ) : (
+                        <p className="text-slate-350 italic text-xs">
+                          {language === 'pt' ? 'Sem descrição cadastrada' : 'No description provided'}
+                        </p>
+                      )}
+                    </div>
                   </div>
 
                   <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-3 mt-auto">
