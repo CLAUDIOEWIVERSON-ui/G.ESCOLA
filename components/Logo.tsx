@@ -85,18 +85,18 @@ export function Logo({
           {userRole && (
             <div className="mt-2 shrink-0">
               <span className={cn(
-                "inline-flex items-center px-2 py-0.5 text-[9px] font-black tracking-widest rounded uppercase border transition-colors",
+                "inline-flex items-center px-2.5 py-0.5 text-[9px] font-black tracking-widest rounded-full uppercase transition-all duration-300 select-none",
                 userRole.toLowerCase() === 'administrador' || userRole.toLowerCase() === 'administrator' || userRole.toLowerCase() === 'admin'
                   ? dark 
-                    ? "bg-blue-50 border-blue-200 text-blue-700" 
-                    : "bg-blue-500/10 border-blue-500/20 text-blue-400"
+                    ? "bg-gradient-to-b from-blue-50 to-blue-100/50 border-t border-t-white border-x border-x-blue-100/80 border-b-2 border-b-blue-300/80 text-blue-700 shadow-[0_2px_3px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.8)]" 
+                    : "bg-gradient-to-b from-blue-500/25 to-blue-600/5 border-t border-t-blue-400/40 border-x border-x-blue-500/20 border-b-2 border-b-blue-600/50 text-blue-300 shadow-[0_2.5px_4px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.15)]"
                   : userRole.toLowerCase() === 'instrutor' || userRole.toLowerCase() === 'instructor'
                     ? dark 
-                      ? "bg-amber-50 border-amber-200 text-amber-700" 
-                      : "bg-amber-500/10 border-amber-500/20 text-amber-400"
+                      ? "bg-gradient-to-b from-amber-50 to-amber-100/50 border-t border-t-white border-x border-x-amber-100/80 border-b-2 border-b-amber-300/80 text-amber-700 shadow-[0_2px_3px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.8)]" 
+                      : "bg-gradient-to-b from-amber-500/25 to-amber-600/5 border-t border-t-amber-400/40 border-x border-x-amber-500/20 border-b-2 border-b-amber-600/50 text-amber-300 shadow-[0_2.5px_4px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.15)]"
                     : dark 
-                      ? "bg-slate-100 border-slate-300 text-slate-700" 
-                      : "bg-slate-500/10 border-slate-500/20 text-slate-400"
+                      ? "bg-gradient-to-b from-slate-100 to-slate-200/50 border-t border-t-white border-x border-x-slate-200/80 border-b-2 border-b-slate-300 text-slate-700 shadow-[0_2px_3px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.8)]" 
+                      : "bg-gradient-to-b from-slate-500/25 to-slate-600/5 border-t border-t-slate-400/30 border-x border-x-slate-500/10 border-b-2 border-b-slate-600/50 text-slate-300 shadow-[0_2.5px_4px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.1)]"
               )}>
                 {userRole}
               </span>
