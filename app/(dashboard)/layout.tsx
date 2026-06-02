@@ -183,6 +183,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const secondGroup = isNifStudent ? navItems : navItems.slice(4);
 
   const userInitials = profile?.full_name ? profile.full_name.slice(0, 2).toUpperCase() : 'US';
+  const roleName = profile?.role === 'admin' 
+    ? t.users.admin 
+    : profile?.role === 'instrutor' 
+      ? t.users.instrutor 
+      : profile?.role === 'aluno' 
+        ? t.users.aluno 
+        : '';
 
   return (
     <div className="flex min-h-screen bg-slate-50 font-sans text-slate-900">
@@ -208,7 +215,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       >
         <div className="flex flex-col h-full">
           <div className={cn("px-4 py-3 flex items-center border-b border-white/5 bg-white/[0.02] overflow-hidden transition-all duration-300", sidebarOpen ? "h-28" : "h-16 justify-center")}>
-            <Logo collapsed={!sidebarOpen} size="md" orientation="horizontal" />
+            <Logo collapsed={!sidebarOpen} size="md" orientation="horizontal" userRole={roleName} />
           </div>
 
           <div className="flex-1 flex flex-col min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar">

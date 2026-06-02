@@ -47,6 +47,8 @@ export function ProximityAlert() {
   const { isAluno } = useUser();
   const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
   const [isVisible, setIsVisible] = useState(false);
+  const [secondsLeft, setSecondsLeft] = useState(12);
+  const [isHovered, setIsHovered] = useState(false);
 
   useEffect(() => {
     const checkEvents = async () => {
@@ -97,6 +99,7 @@ export function ProximityAlert() {
 
           if (filtered.length > 0) {
             setUpcomingEvents(filtered);
+            setSecondsLeft(12);
             setIsVisible(true);
             
             // Tocar som de sino uma vez ao dia no primeiro acesso, se a preferência estiver ativa
@@ -113,12 +116,6 @@ export function ProximityAlert() {
             } catch (err) {
               console.warn('Erro ao disparar som de sino:', err);
             }
-            
-            // Auto hide after 10 seconds
-            const timer = setTimeout(() => {
-              setIsVisible(false);
-            }, 10000);
-            return () => clearTimeout(timer);
           }
         }
       } catch (error) {
@@ -129,6 +126,24 @@ export function ProximityAlert() {
     checkEvents();
   }, [isAluno]);
 
+  useEffect(() => {
+    if (!isVisible || upcomingEvents.length === 0) return;
+
+    const interval = setInterval(() => {
+      if (!isHovered) {
+        setSecondsLeft((prev) => {
+          if (prev <= 1) {
+            setIsVisible(false);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isVisible, upcomingEvents, isHovered]);
+
   if (!isVisible || upcomingEvents.length === 0) return null;
 
   return (
@@ -137,51 +152,83 @@ export function ProximityAlert() {
         initial={{ opacity: 0, y: 50, scale: 0.9 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, scale: 0.9 }}
-        whileHover={{ y: -4 }}
-        className="fixed bottom-8 right-8 z-[100] max-w-sm w-full bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden cursor-pointer group"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        className="fixed bottom-8 right-8 z-[100] max-w-[calc(100vw-2rem)] sm:max-w-md w-full bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden text-slate-800 transition-all duration-300 group"
       >
-        <Link href="/calendario" className="block">
-          <div className="p-1 bg-amber-500 animate-pulse" />
-          <div className="p-5">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 text-amber-600 mb-1">
-                  <Bell size={16} className="animate-bounce" />
-                  <span className="text-[10px] font-black uppercase tracking-widest">{t.calendar.proximityAlert}</span>
-                </div>
-                <h4 className="text-sm font-bold text-slate-800 mb-1 group-hover:text-amber-600 transition-colors">
-                  {upcomingEvents.length === 1 
-                    ? 'Você tem um evento próximo!' 
-                    : `Você tem ${upcomingEvents.length} eventos próximos!`}
-                </h4>
-                <div className="space-y-2 mt-3">
-                  {upcomingEvents.slice(0, 3).map((event) => (
-                    <div key={event.id} className="flex items-center gap-3 p-2 bg-slate-50 rounded-lg border border-slate-100 group-hover:bg-amber-50 group-hover:border-amber-100 transition-colors">
-                      <div className={cn("w-2 h-8 rounded-full", event.cor)} />
-                      <div className="flex-1 overflow-hidden">
-                        <p className="text-xs font-bold text-slate-700 truncate">{event.titulo}</p>
-                        <p className="text-[10px] text-slate-500 flex items-center gap-1">
-                          <Calendar size={10} />
-                          {new Date(event.data).toLocaleDateString('pt-BR')}
+        <div className="p-1 bg-amber-500 animate-pulse w-full" />
+        <div className="p-5 flex flex-col">
+          {/* Header */}
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-3 shrink-0">
+            <div className="flex items-center gap-2 text-amber-600">
+              <Bell size={18} className="animate-bounce" />
+              <span className="text-xs font-black uppercase tracking-widest">{t.calendar.proximityAlert || 'Alerta de Proximidade'}</span>
+            </div>
+            <button 
+              onClick={() => setIsVisible(false)}
+              className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+              title="Fechar"
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          {/* Body */}
+          <div className="flex-1">
+            <h4 className="text-sm font-extrabold text-slate-900 leading-snug mb-3">
+              {upcomingEvents.length === 1 
+                ? 'Você tem um evento próximo!' 
+                : `Você tem ${upcomingEvents.length} eventos próximos!`}
+            </h4>
+            <div className="space-y-3 max-h-[250px] overflow-y-auto pr-1">
+              {upcomingEvents.slice(0, 3).map((event) => (
+                <Link 
+                  key={event.id}
+                  href="/calendario" 
+                  className="block text-left transition-transform hover:scale-[1.01] focus:outline-none"
+                >
+                  <div className="flex items-start gap-3 p-3 bg-slate-50 hover:bg-amber-50 rounded-xl border border-slate-100 hover:border-amber-200 transition-all">
+                    <div className={cn("w-2 h-10 rounded-full shrink-0", event.cor || "bg-amber-500")} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-slate-800 break-words whitespace-normal leading-tight">
+                        {event.titulo}
+                      </p>
+                      {event.descricao && (
+                        <p className="text-[10px] text-slate-500 mt-1 break-words whitespace-normal leading-relaxed">
+                          {event.descricao}
                         </p>
-                      </div>
+                      )}
+                      <p className="text-[10px] text-slate-500 flex items-center gap-1 mt-1.5 font-medium">
+                        <Calendar size={11} className="text-slate-400" />
+                        {new Date(event.data).toLocaleDateString('pt-BR')}
+                      </p>
                     </div>
-                  ))}
-                </div>
-              </div>
-              <button 
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setIsVisible(false);
-                }}
-                className="p-1 hover:bg-slate-100 rounded text-slate-400 transition-colors relative z-10"
-              >
-                <X size={16} />
-              </button>
+                  </div>
+                </Link>
+              ))}
             </div>
           </div>
-        </Link>
+
+          {/* Action Close Button */}
+          <button 
+            type="button"
+            onClick={() => setIsVisible(false)}
+            className="w-full mt-4 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs tracking-wider uppercase transition-all duration-200 active:scale-95 shadow-md flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <X size={14} />
+            Fechar Alerta {secondsLeft > 0 && `(${secondsLeft}s)`}
+          </button>
+        </div>
+
+        {/* Progress Countdown Bar */}
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-slate-100 pointer-events-none">
+          <motion.div 
+            className="h-full bg-amber-500"
+            initial={{ width: "100%" }}
+            animate={{ width: isHovered ? "100%" : `${(secondsLeft / 12) * 100}%` }}
+            transition={{ duration: isHovered ? 0.2 : 1, ease: "linear" }}
+          />
+        </div>
       </motion.div>
     </AnimatePresence>
   );

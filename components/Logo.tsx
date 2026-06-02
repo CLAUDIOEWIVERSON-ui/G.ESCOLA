@@ -11,6 +11,7 @@ interface LogoProps {
   dark?: boolean;
   size?: 'sm' | 'md' | 'lg';
   orientation?: 'horizontal' | 'vertical';
+  userRole?: string;
 }
 
 export function Logo({ 
@@ -18,7 +19,8 @@ export function Logo({
   collapsed = false, 
   dark = false,
   size = 'lg',
-  orientation = 'vertical'
+  orientation = 'vertical',
+  userRole
 }: LogoProps) {
   
   const iconSizes = {
@@ -80,6 +82,26 @@ export function Logo({
           )}>
             GESTÃO ESCOLAR
           </span>
+          {userRole && (
+            <div className="mt-2 shrink-0">
+              <span className={cn(
+                "inline-flex items-center px-2 py-0.5 text-[9px] font-black tracking-widest rounded uppercase border transition-colors",
+                userRole.toLowerCase() === 'administrador' || userRole.toLowerCase() === 'administrator' || userRole.toLowerCase() === 'admin'
+                  ? dark 
+                    ? "bg-blue-50 border-blue-200 text-blue-700" 
+                    : "bg-blue-500/10 border-blue-500/20 text-blue-400"
+                  : userRole.toLowerCase() === 'instrutor' || userRole.toLowerCase() === 'instructor'
+                    ? dark 
+                      ? "bg-amber-50 border-amber-200 text-amber-700" 
+                      : "bg-amber-500/10 border-amber-500/20 text-amber-400"
+                    : dark 
+                      ? "bg-slate-100 border-slate-300 text-slate-700" 
+                      : "bg-slate-500/10 border-slate-500/20 text-slate-400"
+              )}>
+                {userRole}
+              </span>
+            </div>
+          )}
         </motion.div>
       )}
     </div>
