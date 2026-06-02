@@ -47,7 +47,7 @@ export function Logo({
         <motion.div 
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="relative w-full h-full bg-white rounded-full p-2 border border-slate-200/40 shadow-sm flex items-center justify-center overflow-hidden"
+          className="relative w-full h-full bg-white rounded-full p-[2px] border border-slate-200/40 shadow-sm flex items-center justify-center overflow-hidden"
         >
           <div className="relative w-full h-full">
             <Image
