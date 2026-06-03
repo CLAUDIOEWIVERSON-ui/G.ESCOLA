@@ -370,16 +370,19 @@ export default function UsuariosPage() {
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">
                 {language === 'pt' ? 'Grupo Responsável' : 'Responsible Group'}
               </label>
-              <select
+              <input
+                type="text"
+                list="grupos-responsavel-usuarios"
+                placeholder={language === 'pt' ? 'Digite ou selecione o grupo (Ex: MAN, GAT, AMBOS)' : 'Type or select group (E.g.: MAN, GAT, AMBOS)'}
                 value={currentUser?.grupo_responsavel || ''}
                 onChange={(e) => setCurrentUser({ ...currentUser, grupo_responsavel: e.target.value || null })}
                 className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition-all font-sans font-medium"
-              >
-                <option value="">{language === 'pt' ? '-- Selecione o Grupo --' : '-- Select Group --'}</option>
-                <option value="MAN">MAN</option>
-                <option value="GAT">GAT</option>
-                <option value="AMBOS">{language === 'pt' ? 'AMBOS (MAN e GAT)' : 'BOTH (MAN and GAT)'}</option>
-              </select>
+              />
+              <datalist id="grupos-responsavel-usuarios">
+                <option value="MAN" />
+                <option value="GAT" />
+                <option value="AMBOS" />
+              </datalist>
             </div>
           )}
 

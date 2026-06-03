@@ -158,6 +158,21 @@ export async function GET() {
         }
       },
       {
+        key: 'grupo_responsavel_remove_checks',
+        tableName: 'cursos',
+        columnName: 'grupo_responsavel',
+        fileName: '33_remove_grupo_responsavel_check_constraints.sql',
+        description: 'Remove restrições rígidas (CHECK constraints) da coluna grupo_responsavel para permitir a inserção e edição de qualquer nome de grupo personalizado nas tabelas de cursos, turmas e perfis.',
+        isColumn: true,
+        checkFn: async () => {
+          const { error } = await supabaseAdmin
+            .from('cursos')
+            .select('grupo_responsavel')
+            .limit(1);
+          return error;
+        }
+      },
+      {
         key: 'pensamento_dia',
         tableName: 'pensamento_dia',
         fileName: '31_create_pensamento_dia.sql',

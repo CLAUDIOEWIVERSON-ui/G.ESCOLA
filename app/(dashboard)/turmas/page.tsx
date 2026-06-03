@@ -1314,15 +1314,19 @@ function TurmasContent() {
               <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">
                 {language === 'pt' ? 'Grupo Responsável' : 'Responsible Group'}
               </label>
-              <select
+              <input
+                type="text"
+                list="grupos-responsavel-turmas"
+                placeholder={language === 'pt' ? 'Digite ou selecione o grupo (Ex: MAN, GAT, AMBOS)' : 'Type or select group (E.g.: MAN, GAT, AMBOS)'}
                 value={currentTurma?.grupo_responsavel || ''}
                 onChange={(e) => setCurrentTurma({ ...currentTurma, grupo_responsavel: e.target.value || null })}
-                className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-sm font-bold text-slate-800 appearance-none cursor-pointer shadow-sm"
-              >
-                <option value="">{language === 'pt' ? 'Selecione um Grupo (Opcional)' : 'Select Group (Optional)'}</option>
-                <option value="MAN">MAN</option>
-                <option value="GAT">GAT</option>
-              </select>
+                className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-sm font-bold text-slate-800 shadow-sm"
+              />
+              <datalist id="grupos-responsavel-turmas">
+                <option value="MAN" />
+                <option value="GAT" />
+                <option value="AMBOS" />
+              </datalist>
             </div>
 
             {!currentTurma?.internacional && (

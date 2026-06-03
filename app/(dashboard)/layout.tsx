@@ -31,6 +31,7 @@ import { useUser } from '@/lib/auth/UserContext';
 import { ProximityAlert } from '@/components/ProximityAlert';
 import { EventMarquee } from '@/components/EventMarquee';
 import { HeaderClock } from '@/components/HeaderClock';
+import { FormGuidanceAssistant } from '@/components/FormGuidanceAssistant';
 
 // Isolated search bar component to avoid CSR bailout in layout.tsx
 function HeaderSearchBar() {
@@ -470,6 +471,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </AnimatePresence>
         </main>
         <ProximityAlert />
+        <FormGuidanceAssistant />
       </div>
 
       {/* Bottom Nav for Mobile */}

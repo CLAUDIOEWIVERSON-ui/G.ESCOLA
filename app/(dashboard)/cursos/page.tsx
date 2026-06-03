@@ -771,14 +771,18 @@ export default function CursosPage() {
                     <label className="text-sm font-semibold text-slate-700">
                       {language === 'pt' ? 'Grupo Responsável' : 'Responsible Group'}
                     </label>
-                    <select
+                    <input
+                      type="text"
+                      list="grupos-responsavel"
+                      placeholder={language === 'pt' ? 'Digite ou selecione o grupo (Ex: MAN, GAT, AMBOS)' : 'Type or select group (E.g.: MAN, GAT, AMBOS)'}
                       {...register('grupo_responsavel')}
                       className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors text-sm font-medium"
-                    >
-                      <option value="">{language === 'pt' ? 'Sem Grupo (Opcional)' : 'No Group (Optional)'}</option>
-                      <option value="MAN">MAN</option>
-                      <option value="GAT">GAT</option>
-                    </select>
+                    />
+                    <datalist id="grupos-responsavel">
+                      <option value="MAN" />
+                      <option value="GAT" />
+                      <option value="AMBOS" />
+                    </datalist>
                     {errors.grupo_responsavel && <p className="text-xs text-red-500 mt-1">{errors.grupo_responsavel.message}</p>}
                   </div>
                 </div>
