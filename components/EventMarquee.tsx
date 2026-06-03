@@ -15,10 +15,35 @@ interface Evento {
   exibir_aluno?: boolean;
 }
 
-export function EventMarquee() {
+interface EventMarqueeProps {
+  thought?: { texto: string; autor: string } | null;
+}
+
+export function EventMarquee({ thought }: EventMarqueeProps = {}) {
   const { isAluno } = useUser();
   const [eventos, setEventos] = useState<Evento[]>([]);
+  const [pensamento, setPensamento] = useState<{ texto: string; autor: string } | null>(null);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (thought) return;
+    const fetchPensamento = async () => {
+      try {
+        const res = await fetch('/api/v1/pensamento-dia');
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && json.data && json.data.texto) {
+            setPensamento(json.data);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching thought of the day for marquee:', err);
+      }
+    };
+    fetchPensamento();
+  }, [thought]);
+
+  const activeThought = thought || pensamento;
 
   useEffect(() => {
     const fetchEventos = async () => {
@@ -79,7 +104,8 @@ export function EventMarquee() {
     return true;
   });
 
-  if (loading || filteredEventos.length === 0) return null;
+  if (loading) return null;
+  if (filteredEventos.length === 0 && !activeThought) return null;
 
   return (
     <div className="w-full bg-slate-900 text-white overflow-hidden h-9 flex items-center border-b border-white/10 relative z-50 shrink-0">
@@ -90,9 +116,9 @@ export function EventMarquee() {
       
       <div className="flex-1 overflow-hidden">
         <motion.div
-          animate={{ x: [0, -1500] }}
+          animate={{ x: [0, -2500] }}
           transition={{ 
-            duration: 35, 
+            duration: 55, 
             repeat: Infinity, 
             ease: "linear" 
           }}
@@ -100,6 +126,19 @@ export function EventMarquee() {
         >
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={`set-${i}`} className="inline-flex items-center gap-16">
+              {activeThought && (
+                <div key={`pensamento-${i}`} className="flex items-center gap-2 bg-blue-500/10 py-0.5 px-3 rounded-full border border-blue-500/20 mr-2">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-blue-400 whitespace-nowrap">
+                    💡 Pensamento do Dia:
+                  </span>
+                  <span className="text-xs font-medium text-slate-200 italic whitespace-nowrap select-all">
+                    &ldquo;{activeThought.texto}&rdquo;
+                  </span>
+                  <span className="text-[10px] font-bold text-slate-400 not-italic whitespace-nowrap">
+                    — {activeThought.autor}
+                  </span>
+                </div>
+              )}
               {filteredEventos.map((evento) => (
                 <div key={`${evento.id}-${i}`} className="flex items-center gap-3">
                   <div className={cn("w-1.5 h-1.5 rounded-full shrink-0", evento.cor)} />
