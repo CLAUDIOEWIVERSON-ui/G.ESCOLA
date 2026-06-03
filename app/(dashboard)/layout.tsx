@@ -417,6 +417,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <LogOut size={16} className="shrink-0 transition-transform group-hover:-translate-x-1" />
               <span className={cn("transition-opacity whitespace-nowrap", !sidebarOpen && "hidden")}>{t.common.logout}</span>
             </button>
+            {sidebarOpen && (
+              <div id="sidebar-footer-credit" className="mt-4 pt-3 border-t border-white/5 text-[9px] text-slate-500 text-center font-medium leading-normal tracking-wide normal-case">
+                Made by &ldquo;an old sailor radar operator&rdquo;<br />advisory mission of 2025.
+              </div>
+            )}
           </div>
         </div>
       </aside>
