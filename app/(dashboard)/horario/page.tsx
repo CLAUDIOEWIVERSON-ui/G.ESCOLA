@@ -1001,37 +1001,6 @@ export default function HorarioPage() {
                                           ))}
                                         </select>
 
-                                        {cell.subjectId && (
-                                          <div className="flex items-center gap-1 pl-1 border-l border-blue-100">
-                                            <Book size={10} className="text-slate-300 shrink-0" />
-                                            <input 
-                                              value={cell.topic || ''}
-                                              onChange={(e) => {
-                                                updateCell(slot.id, day.key, 'topic', e.target.value);
-                                                const matches = cellTopics.find(ct => ct.nome === e.target.value);
-                                                if (!matches) {
-                                                  updateCell(slot.id, day.key, 'topicId', '');
-                                                } else {
-                                                  updateCell(slot.id, day.key, 'topicId', matches.id);
-                                                }
-                                              }}
-                                              placeholder={t.schedule.topic || 'Tópico'}
-                                              className="w-full text-[9px] font-bold text-slate-500 bg-transparent border-none focus:ring-0 p-0 placeholder:text-slate-300 block truncate"
-                                            />
-                                          </div>
-                                        )}
-
-                                        <select 
-                                          value={cell.instructorId || ''}
-                                          onChange={(e) => updateCell(slot.id, day.key, 'instructorId', e.target.value)}
-                                          className="w-full text-[10px] font-bold text-slate-600 bg-transparent border-none focus:ring-0 p-0 cursor-pointer block truncate"
-                                        >
-                                          <option value="">{t.schedule.instructor}</option>
-                                          {displayInstrutores.map(i => (
-                                            <option key={i.id} value={i.id}>{i.full_name}</option>
-                                          ))}
-                                        </select>
-
                                         <select 
                                           value={cell.topicId || ''}
                                           onChange={(e) => {
@@ -1049,6 +1018,17 @@ export default function HorarioPage() {
                                           <option value="">{language === 'pt' ? 'Tópico' : 'Topic'}</option>
                                           {cellTopics.map(m => (
                                             <option key={m.id} value={m.id}>{m.nome}</option>
+                                          ))}
+                                        </select>
+
+                                        <select 
+                                          value={cell.instructorId || ''}
+                                          onChange={(e) => updateCell(slot.id, day.key, 'instructorId', e.target.value)}
+                                          className="w-full text-[10px] font-bold text-slate-600 bg-transparent border-none focus:ring-0 p-0 cursor-pointer block truncate"
+                                        >
+                                          <option value="">{t.schedule.instructor}</option>
+                                          {displayInstrutores.map(i => (
+                                            <option key={i.id} value={i.id}>{i.full_name}</option>
                                           ))}
                                         </select>
 
