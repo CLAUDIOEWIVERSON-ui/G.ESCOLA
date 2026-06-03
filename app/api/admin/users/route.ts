@@ -51,18 +51,75 @@ export async function POST(request: Request) {
     const { email, password, full_name, role, grupo_responsavel } = await request.json();
 
     // 1. Create auth user
-    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: { full_name, role, grupo_responsavel }
-    });
+    let authUser: any = null;
+    let authError: any = null;
+
+    try {
+      const result = await supabaseAdmin.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: { full_name, role, grupo_responsavel }
+      });
+      authUser = result.data;
+      authError = result.error;
+    } catch (err: any) {
+      authError = err;
+    }
 
     if (authError) {
-      if (authError.message.includes('Invalid API key') || authError.message.includes('service_role')) {
+      if (authError.message?.includes('Invalid API key') || authError.message?.includes('service_role')) {
         return NextResponse.json({ error: 'Erro de Configuração: Chave de API Inválida.' }, { status: 401 });
       }
-      throw authError;
+      
+      // Let's check if the email has already been registered
+      const isAlreadyRegistered = 
+        authError.message?.includes('already been registered') || 
+        authError.message?.includes('email_exists') || 
+        authError.status === 422 || 
+        String(authError).includes('already been registered');
+        
+      if (isAlreadyRegistered) {
+        // Find existing user proactively
+        let page = 1;
+        let foundUser: any = null;
+        while (true) {
+          const { data: uList, error: listError } = await supabaseAdmin.auth.admin.listUsers({
+            page: page,
+            perPage: 1000
+          });
+          if (listError || !uList?.users || uList.users.length === 0) {
+            break;
+          }
+          const found = uList.users.find(u => u.email?.toLowerCase() === email.toLowerCase());
+          if (found) {
+            foundUser = found;
+            break;
+          }
+          if (uList.users.length < 1000) {
+            break;
+          }
+          page++;
+        }
+
+        if (foundUser) {
+          console.log(`[admin/users] Found existing user with email ${email}, updating instead of creating.`);
+          // Update the existing auth user
+          const updateData: any = {
+            user_metadata: { full_name, role, grupo_responsavel }
+          };
+          if (password) {
+            updateData.password = password;
+          }
+          const { data: updatedAuthUser, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(foundUser.id, updateData);
+          if (updateError) throw updateError;
+          authUser = { user: updatedAuthUser.user };
+        } else {
+          throw authError;
+        }
+      } else {
+        throw authError;
+      }
     }
 
     // 2. Create profile

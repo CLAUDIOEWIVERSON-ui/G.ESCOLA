@@ -2,15 +2,25 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { GoogleGenAI, Type } from '@google/genai';
 
-// Initialize Gemini on the server side
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY,
-  httpOptions: {
-    headers: {
-      'User-Agent': 'aistudio-build',
+// Initialize Gemini on the server side lazily only when needed
+let aiInstance: GoogleGenAI | null = null;
+function getGeminiAI() {
+  if (!aiInstance) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error('GEMINI_API_KEY is not defined');
     }
+    aiInstance = new GoogleGenAI({
+      apiKey: apiKey,
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build',
+        }
+      }
+    });
   }
-});
+  return aiInstance;
+}
 
 // A robust list of offline quotes to fall back on in extreme cases (e.g., API limits or offline mode)
 const fallbackQuotes = [
@@ -74,7 +84,7 @@ export async function GET(req: NextRequest) {
       generatedQuote = fallbackQuotes[randomIndex];
     } else {
       try {
-        const response = await ai.models.generateContent({
+        const response = await getGeminiAI().models.generateContent({
           model: 'gemini-3.5-flash',
           contents: 'Gere um belo pensamento do dia que se enquadre em um dos seguintes temas: religioso, motivacional/incentivação ou filosófico. Varie os autores e temas. Retorne estritamente em formato JSON estruturado com os campos "texto" (o pensamento) e "autor".',
           config: {

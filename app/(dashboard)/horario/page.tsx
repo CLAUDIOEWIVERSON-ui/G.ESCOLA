@@ -276,7 +276,8 @@ export default function HorarioPage() {
             seenNames.add(name.toLowerCase());
             combinedInstructors.push({
               id: prof.id,
-              full_name: prof.full_name
+              full_name: prof.full_name,
+              grupo_responsavel: prof.grupo_responsavel
             });
           }
         });
@@ -940,16 +941,20 @@ export default function HorarioPage() {
                               
                               const cellTurmaId = cell.turmaId || selectedTurmaId;
                               const cellTurmaObj = turmas.find(t => t.id === cellTurmaId);
-                              const cellTurmaInstrutor = cellTurmaObj?.instrutor?.trim();
-                              
-                              const cellFilteredInstrutores = cellTurmaInstrutor
-                                ? instrutores.filter(i => {
-                                    const instName = (i.full_name || '').toLowerCase();
-                                    const instId = String(i.id).toLowerCase();
-                                    const searchStr = cellTurmaInstrutor.toLowerCase();
-                                    return instName === searchStr || instId === searchStr;
-                                  })
-                                : instrutores;
+                              const cellCursoObj = cellTurmaObj ? cursos.find(c => c.id === cellTurmaObj.curso_id) : undefined;
+                              const courseGroup = cellCursoObj?.grupo_responsavel || cellTurmaObj?.grupo_responsavel;
+
+                              const cellFilteredInstrutores = instrutores.filter(i => {
+                                if (cell.instructorId && String(i.id) === String(cell.instructorId)) return true;
+                                if (!courseGroup) return true;
+                                if (courseGroup === 'MAN') {
+                                  return i.grupo_responsavel === 'MAN' || i.grupo_responsavel === 'AMBOS';
+                                }
+                                if (courseGroup === 'GAT') {
+                                  return i.grupo_responsavel === 'GAT' || i.grupo_responsavel === 'AMBOS';
+                                }
+                                return true;
+                              });
 
                               const displayInstrutores = cellFilteredInstrutores.length > 0 
                                 ? cellFilteredInstrutores 
