@@ -27,9 +27,9 @@ export function Logo({
 }: LogoProps) {
   
   const iconSizes = {
-    sm: isInternal ? 'w-32 h-32' : 'w-16 h-16',
-    md: isInternal ? 'w-40 h-40' : 'w-20 h-20',
-    lg: isInternal ? 'w-88 h-88' : 'w-44 h-44'
+    sm: isInternal ? 'w-24 h-24' : 'w-16 h-16',
+    md: isInternal ? 'w-28 h-28' : 'w-20 h-20',
+    lg: isInternal ? 'w-36 h-36' : 'w-44 h-44'
   };
 
   // If collapsed, always horizontal (just the icon) and smaller if it's in a sidebar
@@ -38,7 +38,7 @@ export function Logo({
   
   const isVertical = finalOrientation === 'vertical';
   const finalSizeClass = collapsed 
-    ? (isInternal ? 'w-[64px] h-[64px]' : 'w-[42px] h-[42px]') 
+    ? (isInternal ? 'w-[52px] h-[52px]' : 'w-[42px] h-[42px]') 
     : iconSizes[finalSize];
 
   return (
