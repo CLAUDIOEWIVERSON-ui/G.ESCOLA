@@ -4,6 +4,7 @@ import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import schoolLogo from '@/src/assets/images/school_logo_1778971528475.png';
+import internalLogo from '@/src/assets/images/brazil_shield_logo_1780469604695.png';
 
 interface LogoProps {
   className?: string;
@@ -12,6 +13,7 @@ interface LogoProps {
   size?: 'sm' | 'md' | 'lg';
   orientation?: 'horizontal' | 'vertical';
   userRole?: string;
+  isInternal?: boolean;
 }
 
 export function Logo({ 
@@ -20,13 +22,14 @@ export function Logo({
   dark = false,
   size = 'lg',
   orientation = 'vertical',
-  userRole
+  userRole,
+  isInternal = false
 }: LogoProps) {
   
   const iconSizes = {
-    sm: 'w-16 h-16',
-    md: 'w-20 h-20',
-    lg: 'w-44 h-44'
+    sm: isInternal ? 'w-32 h-32' : 'w-16 h-16',
+    md: isInternal ? 'w-40 h-40' : 'w-20 h-20',
+    lg: isInternal ? 'w-88 h-88' : 'w-44 h-44'
   };
 
   // If collapsed, always horizontal (just the icon) and smaller if it's in a sidebar
@@ -34,7 +37,9 @@ export function Logo({
   const finalSize = collapsed && size === 'lg' ? 'md' : size;
   
   const isVertical = finalOrientation === 'vertical';
-  const finalSizeClass = collapsed ? 'w-[42px] h-[42px]' : iconSizes[finalSize];
+  const finalSizeClass = collapsed 
+    ? (isInternal ? 'w-[64px] h-[64px]' : 'w-[42px] h-[42px]') 
+    : iconSizes[finalSize];
 
   return (
     <div className={cn(
@@ -43,15 +48,20 @@ export function Logo({
       className
     )}>
       <div className={cn("relative shrink-0 group", finalSizeClass)}>
-        {/* Emblem Container with high-contrast white background circular badge */}
+        {/* Emblem Container with high-contrast background (circular badge when external, transparent when internal) */}
         <motion.div 
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="relative w-full h-full bg-white rounded-full p-[2px] border border-slate-200/40 shadow-sm flex items-center justify-center overflow-hidden"
+          className={cn(
+            "relative w-full h-full flex items-center justify-center overflow-hidden transition-all duration-300",
+            isInternal 
+              ? "bg-transparent rounded-2xl shadow-md" 
+              : "bg-white rounded-full p-[2px] border border-slate-200/40 shadow-sm"
+          )}
         >
           <div className="relative w-full h-full">
             <Image
-              src={schoolLogo}
+              src={isInternal ? internalLogo : schoolLogo}
               alt="School Logo"
               fill
               className="object-contain"
