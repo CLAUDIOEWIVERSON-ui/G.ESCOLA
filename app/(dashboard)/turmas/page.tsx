@@ -50,6 +50,24 @@ function TurmasContent() {
   const [loadingAlunos, setLoadingAlunos] = useState(false);
   const [expandedPhoto, setExpandedPhoto] = useState<{url: string, name: string} | null>(null);
   const [studentAccess, setStudentAccess] = useState<any>(null);
+  const [allInstructors, setAllInstructors] = useState<any[]>([]);
+
+  useEffect(() => {
+    async function loadInstructors() {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, full_name, grupo_responsavel, role')
+          .eq('role', 'instrutor');
+        if (!error && data) {
+          setAllInstructors(data);
+        }
+      } catch (err) {
+        console.error('Error loading instructors:', err);
+      }
+    }
+    loadInstructors();
+  }, []);
   
   const isCiabaOrCiaga = viewingTurma?.nome ? (viewingTurma.nome.toUpperCase().includes('CIABA') || viewingTurma.nome.toUpperCase().includes('CIAGA') || viewingTurma.internacional) : false;
   
@@ -1168,13 +1186,57 @@ function TurmasContent() {
 
             <div>
               <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{t.classes.instructor}</label>
-              <input
-                type="text"
-                value={currentTurma?.instrutor || ''}
-                onChange={(e) => setCurrentTurma({ ...currentTurma, instrutor: e.target.value })}
-                className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-sm font-bold text-slate-800 placeholder:text-slate-300 shadow-sm"
-                placeholder="Ex: Cel Sobrenome"
-              />
+              {(() => {
+                const selectedCourse = cursos.find((c: any) => c.id === currentTurma?.curso_id);
+                const courseGroup = selectedCourse?.grupo_responsavel || currentTurma?.grupo_responsavel;
+
+                const filteredInstructors = allInstructors.filter((inst: any) => {
+                  if (!courseGroup) return true;
+                  if (courseGroup === 'MAN') {
+                    return inst.grupo_responsavel === 'MAN' || inst.grupo_responsavel === 'AMBOS';
+                  }
+                  if (courseGroup === 'GAT') {
+                    return inst.grupo_responsavel === 'GAT' || inst.grupo_responsavel === 'AMBOS';
+                  }
+                  return true;
+                });
+
+                const isCustomInstructor = currentTurma?.instrutor && currentTurma.instrutor !== '' && currentTurma.instrutor !== 'Novo' && !filteredInstructors.some(inst => inst.full_name === currentTurma.instrutor);
+
+                return (
+                  <div className="space-y-2">
+                    <select
+                      value={isCustomInstructor ? 'custom_input' : (currentTurma?.instrutor || '')}
+                      onChange={(e) => {
+                        if (e.target.value === 'custom_input') {
+                          setCurrentTurma({ ...currentTurma, instrutor: 'Novo' });
+                        } else {
+                          setCurrentTurma({ ...currentTurma, instrutor: e.target.value });
+                        }
+                      }}
+                      className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-sm font-bold text-slate-800 appearance-none cursor-pointer shadow-sm"
+                    >
+                      <option value="">{language === 'pt' ? 'Selecione um Instrutor' : 'Select an Instructor'}</option>
+                      {filteredInstructors.map(inst => (
+                        <option key={inst.id} value={inst.full_name}>
+                          {inst.full_name} ({inst.grupo_responsavel || 'Sem Grupo'})
+                        </option>
+                      ))}
+                      <option value="custom_input">{language === 'pt' ? 'Outro (Digitar Nome)' : 'Other (Type Name)'}</option>
+                    </select>
+
+                    {(isCustomInstructor || currentTurma?.instrutor === 'Novo') && (
+                      <input
+                        type="text"
+                        value={currentTurma?.instrutor === 'Novo' ? '' : (currentTurma?.instrutor || '')}
+                        onChange={(e) => setCurrentTurma({ ...currentTurma, instrutor: e.target.value })}
+                        placeholder={language === 'pt' ? 'Ex: Cel Sobrenome' : 'Ex: Col Surname'}
+                        className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-sm font-bold text-slate-800 placeholder:text-slate-300 shadow-sm animate-fadeIn"
+                      />
+                    )}
+                  </div>
+                );
+              })()}
             </div>
 
             <div className="md:col-span-2">
