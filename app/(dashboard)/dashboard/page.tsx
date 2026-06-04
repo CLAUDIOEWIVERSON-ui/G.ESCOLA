@@ -19,7 +19,8 @@ import {
   Sparkles,
   Pencil,
   Check,
-  Loader2
+  Loader2,
+  ChevronDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import Image from 'next/image';
@@ -42,16 +43,23 @@ export default function DashboardPage() {
   const [editAutor, setEditAutor] = useState('');
   const [savingPensamento, setSavingPensamento] = useState(false);
   const [regeneratingPensamento, setRegeneratingPensamento] = useState(false);
+  const [categorySelectorOpen, setCategorySelectorOpen] = useState(false);
+  const [selectedIaCategory, setSelectedIaCategory] = useState('');
+  const [generatingModalPensamento, setGeneratingModalPensamento] = useState(false);
 
   // Fetch Thought
-  const fetchPensamento = async (forceRegenerate = false) => {
+  const fetchPensamento = async (forceRegenerate = false, category = '') => {
     try {
       if (forceRegenerate) {
         setRegeneratingPensamento(true);
       } else {
         setLoadingPensamento(true);
       }
-      const res = await fetch(`/api/v1/pensamento-dia${forceRegenerate ? '?force=true' : ''}`);
+      let url = `/api/v1/pensamento-dia${forceRegenerate ? '?force=true' : ''}`;
+      if (forceRegenerate && category) {
+        url += `&category=${category}`;
+      }
+      const res = await fetch(url);
       const json = await res.json();
       if (json.success && json.data) {
         setPensamento(json.data);
@@ -69,6 +77,26 @@ export default function DashboardPage() {
     } finally {
       setLoadingPensamento(false);
       setRegeneratingPensamento(false);
+    }
+  };
+
+  const gerarPensamentoComIa = async () => {
+    try {
+      setGeneratingModalPensamento(true);
+      const res = await fetch(`/api/v1/pensamento-dia?force=true&category=${selectedIaCategory}`);
+      const json = await res.json();
+      if (json.success && json.data) {
+        setEditTexto(json.data.texto);
+        setEditAutor(json.data.autor);
+        toast.success('Sugestão gerada com sucesso! Você pode editar ou salvar.');
+      } else {
+        toast.error('Não foi possível gerar sugestão da IA.');
+      }
+    } catch (err) {
+      console.error('Error generating thought suggestion:', err);
+      toast.error('Erro ao conectar com a IA.');
+    } finally {
+      setGeneratingModalPensamento(false);
     }
   };
 
@@ -219,29 +247,86 @@ export default function DashboardPage() {
 
         {/* Controls for Admin Roles */}
         {profile?.role === 'admin' && (
-          <div className="flex items-center gap-1.5 shrink-0 self-end md:self-center">
+          <div className="flex items-center gap-1.5 shrink-0 self-end md:self-center relative">
             <button
               type="button"
-              onClick={() => setIsEditingPensamento(true)}
+              onClick={() => {
+                setSelectedIaCategory('');
+                setIsEditingPensamento(true);
+              }}
               className="flex items-center gap-1 bg-white hover:bg-slate-50 text-slate-500 hover:text-slate-800 text-[10px] font-bold px-2.5 py-1 rounded-md transition-all border border-slate-200/60 shadow-none active:scale-95"
             >
               <Pencil size={10} className="text-slate-400" />
               Editar
             </button>
 
-            <button
-              type="button"
-              disabled={regeneratingPensamento}
-              onClick={() => fetchPensamento(true)}
-              className="flex items-center gap-1 bg-indigo-50/40 hover:bg-indigo-50 text-indigo-600 hover:text-indigo-800 text-[10px] font-bold px-2.5 py-1 rounded-md transition-all border border-indigo-100/40 shadow-none active:scale-95 disabled:opacity-50"
-            >
-              {regeneratingPensamento ? (
-                <Loader2 size={10} className="animate-spin text-indigo-400" />
-              ) : (
-                <Sparkles size={10} className="text-indigo-400" />
+            <div className="relative">
+              <button
+                type="button"
+                disabled={regeneratingPensamento}
+                onClick={() => setCategorySelectorOpen(!categorySelectorOpen)}
+                className="flex items-center gap-1 bg-indigo-50/40 hover:bg-indigo-50 text-indigo-600 hover:text-indigo-800 text-[10px] font-bold px-2.5 py-1 rounded-md transition-all border border-indigo-100/40 shadow-none active:scale-95 disabled:opacity-50"
+              >
+                {regeneratingPensamento ? (
+                  <Loader2 size={10} className="animate-spin text-indigo-400" />
+                ) : (
+                  <Sparkles size={10} className="text-indigo-400" />
+                )}
+                Renovar com IA
+                <ChevronDown size={8} className="text-indigo-400 ml-0.5" />
+              </button>
+
+              {categorySelectorOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setCategorySelectorOpen(false)} />
+                  <div className="absolute right-0 bottom-full mb-1.5 z-50 w-44 bg-white border border-slate-200 rounded-lg shadow-xl py-1 flex flex-col text-[10px] text-slate-705 font-sans">
+                    <div className="px-2.5 py-1 text-[8px] font-black uppercase text-slate-400 tracking-wider border-b border-slate-100 mb-1">
+                      Escolher Categoria IA
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCategorySelectorOpen(false);
+                        fetchPensamento(true, '');
+                      }}
+                      className="w-full text-left px-2.5 py-1.5 hover:bg-slate-50 flex items-center gap-1.5 font-semibold text-slate-650 transition-colors"
+                    >
+                      <span>🎲</span> Padrão / Qualquer tema
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCategorySelectorOpen(false);
+                        fetchPensamento(true, 'religioso');
+                      }}
+                      className="w-full text-left px-2.5 py-1.5 hover:bg-slate-50 flex items-center gap-1.5 font-semibold text-slate-650 transition-colors"
+                    >
+                      <span>⛪</span> Religioso / Espiritual
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCategorySelectorOpen(false);
+                        fetchPensamento(true, 'motivacional');
+                      }}
+                      className="w-full text-left px-2.5 py-1.5 hover:bg-slate-50 flex items-center gap-1.5 font-semibold text-slate-650 transition-colors"
+                    >
+                      <span>💪</span> Motivacional
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCategorySelectorOpen(false);
+                        fetchPensamento(true, 'filosofico');
+                      }}
+                      className="w-full text-left px-2.5 py-1.5 hover:bg-slate-50 flex items-center gap-1.5 font-semibold text-slate-650 transition-colors"
+                    >
+                      <span>📜</span> Filosófico
+                    </button>
+                  </div>
+                </>
               )}
-              IA
-            </button>
+            </div>
           </div>
         )}
       </motion.div>
@@ -276,6 +361,51 @@ export default function DashboardPage() {
                 <p className="text-xs text-slate-500 leading-relaxed">
                   Insira o pensamento inspirador de hoje. O pensamento será compartilhado na tela inicial (Dashboard) de todos os instrutores e alunos em tempo real.
                 </p>
+
+                {/* AI Recommendation Generator Panel */}
+                <div className="p-3 bg-indigo-50/30 border border-indigo-100/35 rounded-xl space-y-2">
+                  <div className="flex items-center gap-1 text-[11px] font-bold text-indigo-950">
+                    <Sparkles size={11} className="text-indigo-600" />
+                    Gerador de Sugestão de IA
+                  </div>
+                  <p className="text-[10px] text-slate-550 select-none font-medium leading-relaxed">
+                    Prefere uma inspiração elaborada por IA? Selecione uma categoria e clique para preencher o formulário:
+                  </p>
+                  <div className="flex flex-wrap gap-1">
+                    {[
+                      { id: '', label: '🎲 Qualquer' },
+                      { id: 'religioso', label: '⛪ Religioso' },
+                      { id: 'motivacional', label: '💪 Motivacional' },
+                      { id: 'filosofico', label: '📜 Filosófico' }
+                    ].map((cat) => (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => setSelectedIaCategory(cat.id)}
+                        className={`text-[9px] font-bold px-2 py-1 rounded-md border transition-all ${
+                          selectedIaCategory === cat.id
+                            ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm'
+                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                        }`}
+                      >
+                        {cat.label}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    disabled={generatingModalPensamento}
+                    onClick={gerarPensamentoComIa}
+                    className="w-full py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-55 text-white font-bold text-[9px] rounded-lg transition-all shadow-sm flex items-center justify-center gap-1 border-0"
+                  >
+                    {generatingModalPensamento ? (
+                      <Loader2 size={10} className="animate-spin text-white" />
+                    ) : (
+                      <Sparkles size={10} className="text-white" />
+                    )}
+                    Gerar Pensamento Sugerido
+                  </button>
+                </div>
 
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">

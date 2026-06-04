@@ -28,23 +28,28 @@ function getGeminiAI() {
 const fallbackQuotes = [
   {
     texto: "Tudo posso naquele que me fortalece.",
-    autor: "Apóstolo Paulo (Filipenses 4:13)"
+    autor: "Apóstolo Paulo (Filipenses 4:13)",
+    categoria: "religioso"
   },
   {
     texto: "O único modo de fazer um excelente trabalho é amar o que você faz.",
-    autor: "Steve Jobs"
+    autor: "Steve Jobs",
+    categoria: "motivacional"
   },
   {
     texto: "Conhece-te a ti mesmo e conhecerás o universo e os deuses.",
-    autor: "Sócrates"
+    autor: "Sócrates",
+    categoria: "filosofico"
   },
   {
     texto: "A fé é dar o primeiro passo, mesmo quando você não vê toda a escada.",
-    autor: "Martin Luther King Jr."
+    autor: "Martin Luther King Jr.",
+    categoria: "religioso"
   },
   {
     texto: "O segredo de progredir é começar.",
-    autor: "Mark Twain"
+    autor: "Mark Twain",
+    categoria: "motivacional"
   }
 ];
 
@@ -52,6 +57,7 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const force = searchParams.get('force') === 'true';
+    const category = searchParams.get('category') || ''; // 'religioso', 'motivacional', 'filosofico'
     const supabase = await createClient();
     const todayStr = new Date().toISOString().split('T')[0];
 
@@ -82,15 +88,33 @@ export async function GET(req: NextRequest) {
 
     if (!process.env.GEMINI_API_KEY) {
       console.warn('[Gemini API] GEMINI_API_KEY is not defined. Falling back to preloaded thoughts catalog.');
-      const randomIndex = Math.floor(Math.random() * fallbackQuotes.length);
-      generatedQuote = fallbackQuotes[randomIndex];
+      const filteredFallbacks = category 
+        ? fallbackQuotes.filter(q => q.categoria === category)
+        : fallbackQuotes;
+      const candidates = filteredFallbacks.length > 0 ? filteredFallbacks : fallbackQuotes;
+      const randomIndex = Math.floor(Math.random() * candidates.length);
+      generatedQuote = candidates[randomIndex];
     } else {
       try {
+        let themePrompt = 'Gere um belo pensamento do dia que se enquadre em um dos seguintes temas: religioso, motivacional/incentivação ou filosófico.';
+        let systemInstruction = 'Você é um curador literário e espiritual de alto refinamento. Elabore frases profundas em português com o respectivo autor histórico ou religioso consagrado (sempre com autor real ou creditado, como passagens bíblicas, filósofos gregos ou pensadores modernos).';
+
+        if (category === 'religioso') {
+          themePrompt = 'Gere um belo pensamento do dia estritamente focado em espiritualidade, ensinamentos bíblicos, fé ou comunhão religiosa.';
+          systemInstruction = 'Você é um teólogo e curador espiritual de alto refinamento. Elabore frases de profunda inspiração religiosa ou espiritual em português com o respectivo autor consagrado (ex: passagens bíblicas reais, santos, teólogos, líderes religiosos de renome).';
+        } else if (category === 'motivacional') {
+          themePrompt = 'Gere uma bela frase ou pensamento do dia focado em motivação, superação, incentivo aos estudos, resiliência ou desenvolvimento de carreira.';
+          systemInstruction = 'Você é um especialista em desenvolvimento humano e alta performance de refinada elegância. Escreva uma frase inspiradora e altamente motivacional em português que impulsione a persistência e a evolução acadêmica e pessoal, citando o autor correspondente (ex: pensadores modernos, inventores, empreendedores ou líderes de alto impacto).';
+        } else if (category === 'filosofico') {
+          themePrompt = 'Gere um belo pensamento do dia estritamente filosófico, focado em sabedoria, ética, autoconhecimento ou reflexão existencial.';
+          systemInstruction = 'Você é um filósofo acadêmico e pensador existencial refinado. Escreva uma frase profunda e reflexiva em português sobre ética, autoconhecimento, tempo ou sabedoria humana, citando o autor grego, romano, oriental ou moderno correspondente.';
+        }
+
         const response = await getGeminiAI().models.generateContent({
           model: 'gemini-3.5-flash',
-          contents: 'Gere um belo pensamento do dia que se enquadre em um dos seguintes temas: religioso, motivacional/incentivação ou filosófico. Varie os autores e temas. Retorne estritamente em formato JSON estruturado com os campos "texto" (o pensamento) e "autor".',
+          contents: `${themePrompt} Varie os autores e temas. Retorne estritamente em formato JSON estruturado com os campos "texto" (o pensamento) e "autor".`,
           config: {
-            systemInstruction: 'Você é um curador literário e espiritual de alto refinamento. Elabore frases profundas em português com o respectivo autor histórico ou religioso consagrado (sempre com autor real ou creditado, como passagens bíblicas, filósofos gregos ou pensadores modernos).',
+            systemInstruction,
             responseMimeType: 'application/json',
             responseSchema: {
               type: Type.OBJECT,
@@ -113,14 +137,22 @@ export async function GET(req: NextRequest) {
           generatedQuote = JSON.parse(response.text.trim());
         } else {
           console.warn('[Gemini API] Empty response returned from dynamic generator. Falling back.');
-          const randomIndex = Math.floor(Math.random() * fallbackQuotes.length);
-          generatedQuote = fallbackQuotes[randomIndex];
+          const filteredFallbacks = category 
+            ? fallbackQuotes.filter(q => q.categoria === category)
+            : fallbackQuotes;
+          const candidates = filteredFallbacks.length > 0 ? filteredFallbacks : fallbackQuotes;
+          const randomIndex = Math.floor(Math.random() * candidates.length);
+          generatedQuote = candidates[randomIndex];
         }
       } catch (apiError: any) {
         console.warn('[Gemini API Error] Falling back to preloaded thoughts catalog gracefully. Reason:', apiError?.message || apiError);
         // Pick random fallback catalog item
-        const randomIndex = Math.floor(Math.random() * fallbackQuotes.length);
-        generatedQuote = fallbackQuotes[randomIndex];
+        const filteredFallbacks = category 
+          ? fallbackQuotes.filter(q => q.categoria === category)
+          : fallbackQuotes;
+        const candidates = filteredFallbacks.length > 0 ? filteredFallbacks : fallbackQuotes;
+        const randomIndex = Math.floor(Math.random() * candidates.length);
+        generatedQuote = candidates[randomIndex];
       }
     }
 
