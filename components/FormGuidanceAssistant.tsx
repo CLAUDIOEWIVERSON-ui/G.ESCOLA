@@ -197,8 +197,8 @@ export function FormGuidanceAssistant() {
       }
     }
     // 3. Fallback placeholder
-    if (el.placeholder) {
-      return el.placeholder;
+    if ('placeholder' in el && (el as any).placeholder) {
+      return (el as any).placeholder;
     }
     // 4. Fallback name
     if (el.name) {

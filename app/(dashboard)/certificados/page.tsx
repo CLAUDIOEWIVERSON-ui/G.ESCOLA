@@ -71,6 +71,7 @@ interface IssuedCertificate {
   aluno_id: string;
   turma_id: string;
   curso_id: string;
+  template_id?: string;
   tipo: 'certificado' | 'diploma';
   valores_mapeados: Record<string, string>;
   codigo_validacao: string;
