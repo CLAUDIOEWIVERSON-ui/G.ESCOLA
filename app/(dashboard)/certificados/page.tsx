@@ -1246,7 +1246,7 @@ export default function CertificadosPage() {
                         {language === 'pt' ? 'Inserir Campos da Mala Direta' : 'Insert Mail Merge Tokens'}
                       </label>
                       
-                      <div className="flex gap-1.5 mb-1.5">
+                      <div className="flex flex-col gap-1.5 mb-1.5">
                         <button
                           onClick={() => {
                             const list = canvasSide === 'frente' ? [...(tplForm.campos_frente || [])] : [...(tplForm.campos_verso || [])];
@@ -1272,6 +1272,28 @@ export default function CertificadosPage() {
                           <Plus size={10} className="text-amber-600 shrink-0" />
                           {language === 'pt' ? 'Adicionar Bloco de Texto Customizável' : 'Add Customizable Text Block'}
                         </button>
+
+                        {canvasSide === 'verso' && (
+                          <button
+                            onClick={() => {
+                              setTplForm(prev => ({
+                                ...prev,
+                                background_verso_url: '#fcf8ec',
+                                campos_verso: [
+                                  { id: 'b1', key: 'verso_title', text: 'HISTÓRICO ACADÊMICO & REGISTRO DE NOTAS', x: 50, y: 15, fontSize: 18, color: '#334155', fontWeight: 'bold', align: 'center', fontStyle: 'normal' },
+                                  { id: 'b2', key: 'verso_meta', text: 'Matrícula: {{matricula}} | CPF: {{cpf}} | Código de Rastreamento Único: {{codigo_validacao}}', x: 50, y: 28, fontSize: 10, color: '#64748b', fontWeight: 'normal', align: 'center', fontStyle: 'normal' },
+                                  { id: 'b3', key: 'verso_body', text: 'Disciplinas Cursadas e Integralizadas:\n- Grade curricular básica do curso com nota de aproveitamento: {{nota_final}} (Conceito: {{conceito}}).\n- Registo de presenças regulamentares de acordo com as planilhas oficiais de controle.', x: 50, y: 45, fontSize: 11, color: '#475569', fontWeight: 'normal', align: 'center', fontStyle: 'normal' },
+                                  { id: 'b4', key: 'verso_legal', text: 'Registrado sob o número de protocolo institucional único de conformidade digital devido na data de {{data_emissao}}.', x: 50, y: 75, fontSize: 9, color: '#94a3b8', fontWeight: 'normal', align: 'center', fontStyle: 'italic' }
+                                ]
+                              }));
+                              toast.success(language === 'pt' ? 'Histórico do verso padrão gerado!' : 'Standard back academic layout generated!');
+                            }}
+                            className="w-full py-1.5 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-[9px] font-black text-indigo-800 rounded-lg flex items-center justify-center gap-1 cursor-pointer"
+                          >
+                            <Award size={10} className="text-indigo-600 shrink-0" />
+                            {language === 'pt' ? 'Gerar Histórico Verso Padrão' : 'Generate Standard Back Academic'}
+                          </button>
+                        )}
                       </div>
 
                       <div className="grid grid-cols-2 gap-1.5 max-h-48 overflow-y-auto pr-1">
