@@ -1,6 +1,25 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies, headers } from 'next/headers';
 
+const cleanUrl = (url: string | undefined): string => {
+  if (!url) return 'https://placeholder.supabase.co';
+  
+  let formattedUrl = url.trim();
+  
+  // Ensure it starts with https://
+  if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
+    formattedUrl = `https://${formattedUrl}`;
+  }
+  
+  // Remove trailing slashes
+  formattedUrl = formattedUrl.replace(/\/+$/, '');
+  
+  // Remove /rest/v1 if the user pasted the API endpoint instead of the project URL
+  formattedUrl = formattedUrl.replace(/\/rest\/v1$/, '');
+  
+  return formattedUrl;
+};
+
 export async function createClient() {
   const cookieStore = await cookies();
 
@@ -20,9 +39,19 @@ export async function createClient() {
     globalHeaders['Authorization'] = `Bearer ${token}`;
   }
 
+  const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const rawKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  const url = cleanUrl(rawUrl);
+  const key = (rawKey || 'placeholder').trim();
+
+  if (!rawUrl || !rawKey) {
+    console.warn('Supabase credentials missing or invalid in server client. Using placeholder configuration.');
+  }
+
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    url,
+    key,
     {
       global: {
         headers: token ? globalHeaders : undefined,
