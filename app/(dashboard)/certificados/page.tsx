@@ -55,7 +55,6 @@ interface CertificateTemplate {
     x: number;
     y: number;
     size: number;
-    side?: 'frente' | 'verso' | 'ambos';
   };
   created_at?: string;
 }
@@ -191,27 +190,11 @@ export default function CertificadosPage() {
     background_verso_url: '',
     campos_frente: [],
     campos_verso: [],
-    qrcode_config: { enabled: true, x: 80, y: 80, size: 80, side: 'frente' }
+    qrcode_config: { enabled: true, x: 80, y: 80, size: 80 }
   });
 
   const selectedField = useMemo(() => {
     if (!selectedFieldId) return null;
-    if (selectedFieldId === 'qrcode') {
-      const qr = tplForm.qrcode_config || { enabled: true, x: 80, y: 80, size: 80, side: 'frente' };
-      return {
-        id: 'qrcode',
-        type: 'qrcode',
-        key: 'qrcode',
-        text: 'QR Code de Validação',
-        x: qr.x ?? 80,
-        y: qr.y ?? 80,
-        width: qr.size ?? 80,
-        height: qr.size ?? 80,
-        align: 'center',
-        color: '#000000',
-        fontSize: 10
-      };
-    }
     const sideKey = canvasSide === 'frente' ? 'campos_frente' : 'campos_verso';
     return (tplForm[sideKey] || []).find((f: any) => f.id === selectedFieldId) || null;
   }, [selectedFieldId, canvasSide, tplForm]);
@@ -453,18 +436,6 @@ export default function CertificadosPage() {
     const newX = Math.round(Math.max(0, Math.min(100, dragStartPos.fieldX + deltaX)));
     const newY = Math.round(Math.max(0, Math.min(100, dragStartPos.fieldY + deltaY)));
     
-    if (dragFieldId === 'qrcode') {
-      setTplForm(prev => ({
-        ...prev,
-        qrcode_config: {
-          ...(prev.qrcode_config || { enabled: true, size: 80, side: 'frente' }),
-          x: newX,
-          y: newY
-        }
-      }));
-      return;
-    }
-
     const sideKey = canvasSide === 'frente' ? 'campos_frente' : 'campos_verso';
     setTplForm(prev => {
       const list = [...(prev[sideKey] || [])];
@@ -498,36 +469,8 @@ export default function CertificadosPage() {
     }
   };
 
-  const handleQrCodeMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setSelectedFieldId('qrcode');
-    setDragFieldId('qrcode');
-    
-    const qr = tplForm.qrcode_config || { enabled: true, x: 80, y: 80, size: 80, side: 'frente' };
-    setDragStartPos({
-      x: e.clientX,
-      y: e.clientY,
-      fieldX: qr.x ?? 80,
-      fieldY: qr.y ?? 80
-    });
-  };
-
   const updateSelectedField = (props: any) => {
     if (!selectedFieldId) return;
-    if (selectedFieldId === 'qrcode') {
-      setTplForm(prev => {
-        const qr = prev.qrcode_config || { enabled: true, x: 80, y: 80, size: 80, side: 'frente' };
-        const updatedQr = { ...qr };
-        if (props.width !== undefined) updatedQr.size = props.width;
-        if (props.x !== undefined) updatedQr.x = props.x;
-        if (props.y !== undefined) updatedQr.y = props.y;
-        if (props.enabled !== undefined) updatedQr.enabled = props.enabled;
-        if (props.side !== undefined) updatedQr.side = props.side;
-        return { ...prev, qrcode_config: updatedQr };
-      });
-      return;
-    }
     const sideKey = canvasSide === 'frente' ? 'campos_frente' : 'campos_verso';
     const fields = [...(tplForm[sideKey] || [])];
     const idx = fields.findIndex(f => f.id === selectedFieldId);
@@ -539,20 +482,10 @@ export default function CertificadosPage() {
 
   const deleteSelectedField = () => {
     if (!selectedFieldId) return;
-    if (selectedFieldId === 'qrcode') {
-      setTplForm(prev => ({
-        ...prev,
-        qrcode_config: { ...(prev.qrcode_config || { enabled: true, x: 80, y: 80, size: 80, side: 'frente' }), enabled: false }
-      }));
-      setSelectedFieldId(null);
-      toast.success(language === 'pt' ? 'Módulo QR Code ocultado!' : 'QR Code module hidden!');
-      return;
-    }
     const sideKey = canvasSide === 'frente' ? 'campos_frente' : 'campos_verso';
     const fields = [...(tplForm[sideKey] || [])].filter(f => f.id !== selectedFieldId);
     setTplForm(prev => ({ ...prev, [sideKey]: fields }));
     setSelectedFieldId(null);
-    toast.success(language === 'pt' ? 'Elemento removido!' : 'Element deleted!');
   };
 
   // Signatures library action
@@ -772,11 +705,10 @@ export default function CertificadosPage() {
             `;
           }).join('')}
           
-          <!-- QR Code Validation badge (rendered on selected page side if enabled) -->
-          ${(((side === 'frente' && (!tpl.qrcode_config?.side || tpl.qrcode_config?.side === 'frente' || tpl.qrcode_config?.side === 'ambos')) ||
-              (side === 'verso' && (tpl.qrcode_config?.side === 'verso' || tpl.qrcode_config?.side === 'ambos'))) && tpl.qrcode_config?.enabled) ? `
-            <div style="position: absolute; top: ${tpl.qrcode_config?.y ?? 80}%; left: ${tpl.qrcode_config?.x ?? 80}%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 4px; background: white; padding: 6px; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-              <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent((typeof window !== 'undefined' ? window.location.origin : 'https://ais-pre-s7c4hmf25vbtxcluo43jrl-711113335692.europe-west2.run.app') + '/validar/' + cert.codigo_validacao)}" style="width: ${tpl.qrcode_config?.size ?? 80}px; height: ${tpl.qrcode_config?.size ?? 80}px;" />
+          <!-- QR Code Validation badge (rendered on front page if enabled) -->
+          ${side === 'frente' && tpl.qrcode_config?.enabled ? `
+            <div style="position: absolute; bottom: 15mm; right: 15mm; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent('https://ais-pre-s7c4hmf25vbtxcluo43jrl-711113335692.europe-west2.run.app/validar/' + cert.codigo_validacao)}" style="width: 24mm; height: 24mm;" />
               <span style="font-size: 8px; font-weight: bold; color: #64748b; font-family: monospace;">REGISTRO: ${cert.codigo_validacao}</span>
             </div>
           ` : ''}
@@ -1249,50 +1181,6 @@ export default function CertificadosPage() {
                       </div>
                     </div>
 
-                    {/* QR Code Validation Control */}
-                    <div className="space-y-2">
-                      <label className="block text-[10px] font-black tracking-widest text-slate-400 uppercase">
-                        {language === 'pt' ? 'Módulo de Validação e Autenticidade' : 'Security QR Validation'}
-                      </label>
-                      <button
-                        onClick={() => {
-                          setTplForm(p => {
-                            const newStatus = !p.qrcode_config?.enabled;
-                            return {
-                              ...p,
-                              qrcode_config: {
-                                ...(p.qrcode_config || { enabled: true, x: 80, y: 80, size: 80, side: 'frente' }),
-                                enabled: newStatus
-                              }
-                            };
-                          });
-                          setSelectedFieldId(tplForm.qrcode_config?.enabled ? null : 'qrcode');
-                          toast.success(
-                            !tplForm.qrcode_config?.enabled
-                              ? (language === 'pt' ? 'QR Code de segurança habilitado!' : 'QR Code verification badge enabled!')
-                              : (language === 'pt' ? 'QR Code de segurança desabilitado!' : 'QR Code verification badge disabled!')
-                          );
-                        }}
-                        className={cn(
-                          "w-full py-2 px-3 border rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer",
-                          tplForm.qrcode_config?.enabled
-                            ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-800"
-                            : "bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100"
-                        )}
-                      >
-                        <div className="flex items-center gap-2">
-                          <QrCode size={14} className={tplForm.qrcode_config?.enabled ? "text-emerald-600" : "text-slate-400"} />
-                          <span>{language === 'pt' ? 'QR Code de Autenticidade' : 'Verification QR Code'}</span>
-                        </div>
-                        <span className={cn(
-                          "px-2 py-0.5 rounded text-[9px] font-bold uppercase",
-                          tplForm.qrcode_config?.enabled ? "bg-emerald-500 text-white" : "bg-slate-200 text-slate-600"
-                        )}>
-                          {tplForm.qrcode_config?.enabled ? (language === 'pt' ? 'Ativo' : 'ON') : (language === 'pt' ? 'Inativo' : 'OFF')}
-                        </span>
-                      </button>
-                    </div>
-
                     {/* Logos & Carimbos Upload and authorized library database selection */}
                     <div className="space-y-2">
                       <label className="block text-[10px] font-black tracking-widest text-slate-400 uppercase">
@@ -1459,61 +1347,31 @@ export default function CertificadosPage() {
                           </div>
                         )}
 
-                        {/* Stamp image dimensions vs QR Code vs Text font size */}
-                        {selectedField.type === 'image' || selectedField.type === 'qrcode' ? (
+                        {/* Stamp image dimensions vs Text font size */}
+                        {selectedField.type === 'image' ? (
                           <div className="space-y-2.5">
                             <div className="space-y-1">
-                              <span className="text-[9px] font-bold text-slate-450">
-                                {selectedField.type === 'qrcode' 
-                                  ? (language === 'pt' ? 'Tamanho do QR Code (px)' : 'QR Code Size (px)') 
-                                  : (language === 'pt' ? 'Largura (px)' : 'Width (px)')} ({selectedField.width || 100}px)
-                              </span>
+                              <span className="text-[9px] font-bold text-slate-450">{language === 'pt' ? 'Largura (px)' : 'Width (px)'} ({selectedField.width || 100}px)</span>
                               <input 
                                 type="range" 
-                                min="30" 
-                                max="300" 
+                                min="20" 
+                                max="400" 
                                 className="w-full accent-slate-950" 
                                 value={selectedField.width || 100}
                                 onChange={(e) => updateSelectedField({ width: parseInt(e.target.value) })}
                               />
                             </div>
-                            {selectedField.type === 'qrcode' ? (
-                              <div className="space-y-1">
-                                <span className="text-[9px] font-bold text-slate-450">{language === 'pt' ? 'Exibir no Lado:' : 'Render on Side:'}</span>
-                                <div className="grid grid-cols-3 gap-1">
-                                  {[
-                                    { key: 'frente', label: language === 'pt' ? 'Frente' : 'Front' },
-                                    { key: 'verso', label: language === 'pt' ? 'Verso' : 'Back' },
-                                    { key: 'ambos', label: language === 'pt' ? 'Ambos' : 'Both' }
-                                  ].map((opt) => (
-                                    <button
-                                      key={opt.key}
-                                      onClick={() => updateSelectedField({ side: opt.key })}
-                                      className={cn(
-                                        "p-1 text-[9px] font-bold rounded border cursor-pointer text-center",
-                                        (tplForm.qrcode_config?.side || 'frente') === opt.key
-                                          ? "bg-slate-900 text-white"
-                                          : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
-                                      )}
-                                    >
-                                      {opt.label}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="space-y-1">
-                                <span className="text-[9px] font-bold text-slate-450">{language === 'pt' ? 'Altura (px)' : 'Height (px)'} ({selectedField.height || 60}px)</span>
-                                <input 
-                                  type="range" 
-                                  min="20" 
-                                  max="400" 
-                                  className="w-full accent-slate-950" 
-                                  value={selectedField.height || 60}
-                                  onChange={(e) => updateSelectedField({ height: parseInt(e.target.value) })}
-                                />
-                              </div>
-                            )}
+                            <div className="space-y-1">
+                              <span className="text-[9px] font-bold text-slate-450">{language === 'pt' ? 'Altura (px)' : 'Height (px)'} ({selectedField.height || 60}px)</span>
+                              <input 
+                                type="range" 
+                                min="20" 
+                                max="400" 
+                                className="w-full accent-slate-950" 
+                                value={selectedField.height || 60}
+                                onChange={(e) => updateSelectedField({ height: parseInt(e.target.value) })}
+                              />
+                            </div>
                           </div>
                         ) : (
                           <div className="space-y-1">
@@ -1710,33 +1568,11 @@ export default function CertificadosPage() {
                         );
                       })}
 
-                      {/* Dynamic visual placeholder for validation and QR code badge */}
-                      {tplForm.qrcode_config?.enabled && (
-                        ((canvasSide === 'frente' && (!tplForm.qrcode_config?.side || tplForm.qrcode_config?.side === 'frente' || tplForm.qrcode_config?.side === 'ambos')) ||
-                         (canvasSide === 'verso' && (tplForm.qrcode_config?.side === 'verso' || tplForm.qrcode_config?.side === 'ambos')))
-                      ) && (
-                        <div 
-                          onMouseDown={handleQrCodeMouseDown}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedFieldId('qrcode');
-                          }}
-                          className={cn(
-                            "absolute cursor-move select-none p-1.5 border bg-white flex flex-col items-center justify-center gap-1.5 shadow-sm rounded-xl transition-all",
-                            selectedFieldId === 'qrcode' 
-                              ? "border-slate-900 bg-amber-50 ring-2 ring-slate-900/15" 
-                              : "border-slate-250 hover:border-slate-350 hover:bg-slate-55/40"
-                          )}
-                          style={{
-                            top: `${tplForm.qrcode_config?.y ?? 80}%`,
-                            left: `${tplForm.qrcode_config?.x ?? 80}%`,
-                            transform: 'translate(-50%, -50%)',
-                            width: `${tplForm.qrcode_config?.size ?? 80}px`,
-                            height: `${tplForm.qrcode_config?.size ?? 80}px`
-                          }}
-                        >
-                          <QrCode size={(tplForm.qrcode_config?.size ?? 80) * 0.45} className="text-slate-800 shrink-0" />
-                          <span className="text-[6px] text-slate-450 font-bold uppercase tracking-wider" style={{ fontSize: `${Math.max(5, (tplForm.qrcode_config?.size ?? 80) * 0.08)}px` }}>REGISTRO</span>
+                      {/* Hardcoded visual placeholder for validation and QR code badge */}
+                      {canvasSide === 'frente' && tplForm.qrcode_config?.enabled && (
+                        <div className="absolute bottom-[10%] right-[10%] border border-slate-300 bg-white p-2 flex flex-col items-center justify-center gap-1.5 shadow-sm rounded-xl">
+                          <QrCode size={40} className="text-slate-800" />
+                          <span className="text-[7px] text-slate-450 font-bold uppercase tracking-wider">REG.: CODE-2026</span>
                         </div>
                       )}
                     </div>
