@@ -185,6 +185,20 @@ export async function GET() {
             .limit(1);
           return error;
         }
+      },
+      {
+        key: 'certificates_system',
+        tableName: 'certificate_templates',
+        fileName: '34_create_certificates_system.sql',
+        description: 'Módulo acadêmico profissional para criação, edição de layouts, assinaturas e emissão de certificados/diplomas em lote com malas diretas e verificação QR Code.',
+        isColumn: false,
+        checkFn: async () => {
+          const { error } = await supabaseAdmin
+            .from('certificate_templates')
+            .select('id')
+            .limit(1);
+          return error;
+        }
       }
     ];
 
