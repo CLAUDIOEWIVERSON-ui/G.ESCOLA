@@ -148,6 +148,26 @@ export default function HorarioPage() {
   };
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
 
+  // Synchronize currentDate with course/class period
+  useEffect(() => {
+    if (selectedTurma && selectedTurma.data_inicio) {
+      // Use T00:00:00 to parse in local time to avoid timezone offset shifts
+      const startDate = new Date(selectedTurma.data_inicio + 'T00:00:00');
+      const endDate = selectedTurma.data_fim ? new Date(selectedTurma.data_fim + 'T00:00:00') : null;
+      const today = new Date();
+      
+      if (!isNaN(startDate.getTime())) {
+        if (endDate && !isNaN(endDate.getTime()) && today >= startDate && today <= endDate) {
+          // If today is within course dates, use today as current date
+          setCurrentDate(today);
+        } else {
+          // Otherwise default to course start date
+          setCurrentDate(startDate);
+        }
+      }
+    }
+  }, [selectedTurmaId, selectedTurma]);
+
   const weekStart = useMemo(() => startOfWeek(currentDate, { weekStartsOn: 1 }), [currentDate]);
   const weekEnd = useMemo(() => addDays(weekStart, 4), [weekStart]);
   const weekPeriodFormatted = useMemo(() => `${format(weekStart, "dd/MM")} a ${format(weekEnd, "dd/MM/yyyy")}`, [weekStart, weekEnd]);
@@ -164,21 +184,51 @@ export default function HorarioPage() {
 
   const weekOptions = useMemo(() => {
     const options = [];
-    const baseToday = new Date();
-    const baseWeekStart = startOfWeek(baseToday, { weekStartsOn: 1 });
-    // Generate from 4 weeks back to 8 weeks ahead
-    for (let i = -4; i <= 8; i++) {
-      const s = addDays(baseWeekStart, i * 7);
-      const e = addDays(s, 4);
-      const label = `${format(s, "dd/MM")} a ${format(e, "dd/MM/yyyy")}`;
-      options.push({
-        date: s,
-        label: i === 0 ? `${label} (${language === 'pt' ? 'Semana Atual' : 'Current Week'})` : label,
-        isCurrent: i === 0
-      });
+    
+    // Determine base dates based on course period if available
+    let start = selectedTurma?.data_inicio ? new Date(selectedTurma.data_inicio + 'T00:00:00') : new Date();
+    let end = selectedTurma?.data_fim ? new Date(selectedTurma.data_fim + 'T00:00:00') : null;
+    
+    if (isNaN(start.getTime())) start = new Date();
+    
+    const baseWeekStart = startOfWeek(start, { weekStartsOn: 1 });
+    
+    if (end && !isNaN(end.getTime())) {
+      // Generate options for all weeks from start date to end date
+      const endWeekStart = startOfWeek(end, { weekStartsOn: 1 });
+      let current = new Date(baseWeekStart);
+      let idx = 1;
+      
+      // Limit to reasonable max weeks to prevent rendering too many options or causing infinite loops
+      const maxWeeks = 60;
+      while (current <= endWeekStart && idx <= maxWeeks) {
+        const s = new Date(current);
+        const e = addDays(s, 4);
+        const label = `${format(s, "dd/MM")} a ${format(e, "dd/MM/yyyy")}`;
+        options.push({
+          date: s,
+          label: `${language === 'pt' ? 'Semana' : 'Week'} ${idx} (${label})`,
+          isCurrent: format(currentDate, 'yyyy-MM-dd') === format(s, 'yyyy-MM-dd')
+        });
+        current.setDate(current.getDate() + 7);
+        idx++;
+      }
+    } else {
+      // Default fallback: generate 4 weeks back and 12 weeks ahead from the starting week
+      for (let i = -4; i <= 12; i++) {
+        const s = addDays(baseWeekStart, i * 7);
+        const e = addDays(s, 4);
+        const label = `${format(s, "dd/MM")} a ${format(e, "dd/MM/yyyy")}`;
+        options.push({
+          date: s,
+          label: i === 0 ? `${label} (${language === 'pt' ? 'Semana Atual' : 'Current Week'})` : label,
+          isCurrent: i === 0
+        });
+      }
     }
+    
     return options;
-  }, [language]);
+  }, [selectedTurma, language, currentDate]);
 
   // Generate 50min class + 10min break slots from 08:00 to 16:00
   const slots = useMemo(() => {

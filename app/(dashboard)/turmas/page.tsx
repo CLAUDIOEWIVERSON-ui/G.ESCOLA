@@ -82,8 +82,19 @@ function TurmasContent() {
   const handleOpenPrintAttendance = (turma: any) => {
     setPrintProfessorName(turma.instrutor || '');
     setPrintClassName(turma.nome || '');
-    const currentMonthYear = `${String(new Date().getMonth() + 1).padStart(2, '0')}/${new Date().getFullYear()}`;
-    setPrintPeriod(currentMonthYear);
+    
+    let defaultMonthYear = '';
+    if (turma.data_inicio) {
+      const parts = turma.data_inicio.split('-');
+      if (parts.length >= 2) {
+        defaultMonthYear = `${parts[1]}/${parts[0]}`;
+      }
+    }
+    if (!defaultMonthYear) {
+      defaultMonthYear = `${String(new Date().getMonth() + 1).padStart(2, '0')}/${new Date().getFullYear()}`;
+    }
+    
+    setPrintPeriod(defaultMonthYear);
     setSelectedWeekIndex(null);
     setIsPrintAttendanceOpen(true);
   };
@@ -107,8 +118,19 @@ function TurmasContent() {
       // Auto open print modal
       setPrintProfessorName(turma.instrutor || '');
       setPrintClassName(turma.nome || '');
-      const currentMonthYear = `${String(new Date().getMonth() + 1).padStart(2, '0')}/${new Date().getFullYear()}`;
-      setPrintPeriod(currentMonthYear);
+      
+      let defaultMonthYear = '';
+      if (turma.data_inicio) {
+        const parts = turma.data_inicio.split('-');
+        if (parts.length >= 2) {
+          defaultMonthYear = `${parts[1]}/${parts[0]}`;
+        }
+      }
+      if (!defaultMonthYear) {
+        defaultMonthYear = `${String(new Date().getMonth() + 1).padStart(2, '0')}/${new Date().getFullYear()}`;
+      }
+      
+      setPrintPeriod(defaultMonthYear);
       setIsPrintAttendanceOpen(true);
     } catch (err: any) {
       console.error('Error fetching students for print:', err.message);
