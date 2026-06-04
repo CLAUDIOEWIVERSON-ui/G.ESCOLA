@@ -836,7 +836,7 @@ export default function HorarioPage() {
               <select
                 value={format(weekStart, 'yyyy-MM-dd')}
                 onChange={(e) => {
-                  const selectedD = new Date(e.target.value);
+                  const selectedD = new Date(e.target.value + 'T00:00:00');
                   setCurrentDate(selectedD);
                 }}
                 disabled={!selectedTurmaId}
