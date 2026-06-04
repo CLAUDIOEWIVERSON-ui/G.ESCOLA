@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server';
 import { supabaseAdmin, isSupabaseAdminConfigured } from '@/lib/supabase/admin';
 import nodemailer from 'nodemailer';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const supabase = await createClient();

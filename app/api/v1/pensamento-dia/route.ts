@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { GoogleGenAI, Type } from '@google/genai';
 
+export const dynamic = 'force-dynamic';
+
 // Initialize Gemini on the server side lazily only when needed
 let aiInstance: GoogleGenAI | null = null;
 function getGeminiAI() {

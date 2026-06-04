@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
+export const dynamic = 'force-dynamic';
+
 async function getAuthUser(supabase: any) {
   try {
     const { data, error } = await supabase.auth.getUser();
