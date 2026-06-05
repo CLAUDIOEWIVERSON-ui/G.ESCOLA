@@ -953,6 +953,95 @@ function RelatorioAvaliacaoAdminContent() {
         </div>
       </div>
 
+      {/* SEÇÃO QR CODE ÚNICO DA TURMA (SE SELECIONADO TURMA) */}
+      {selectedTurma !== 'ALL' && (
+        (() => {
+          const selectedTurmaObj = turmas.find(t => t.id === selectedTurma);
+          if (!selectedTurmaObj) return null;
+          const selectedTurmaStudents = allStudents.filter(s => s.turma_id === selectedTurma);
+          const selectedTurmaSubmissions = submissions.filter(sub => sub.turma_id === selectedTurma);
+          
+          return (
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-6 bg-slate-50 border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col md:flex-row items-center gap-6 print:hidden"
+            >
+              <div className="flex-shrink-0 flex flex-col items-center bg-white p-3 border border-slate-200 rounded-xl shadow-xs">
+                {selectedTurma && typeof window !== 'undefined' && (
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
+                      `${window.location.protocol}//${window.location.host}/avaliacao?turmaId=${selectedTurma}`
+                    )}`}
+                    alt="QR Code de Avaliação"
+                    className="w-36 h-36"
+                  />
+                )}
+                <span className="text-[10px] font-mono text-slate-500 font-bold uppercase tracking-wider mt-2">QR Code Único</span>
+              </div>
+
+              <div className="flex-1 space-y-4 text-center md:text-left w-full">
+                <div>
+                  <span className="text-[10px] bg-slate-900 text-white font-mono font-bold px-2 py-0.5 rounded uppercase tracking-wider">Acesso Livre - Sem Login</span>
+                  <h3 className="text-base font-bold text-slate-900 mt-2 font-mono">
+                    Avaliação da Turma: {selectedTurmaObj.nome}
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-1 max-w-xl">
+                    Os alunos podem acessar e preencher a avaliação digital de forma direta escaneando este QR CODE único, sem necessidade de usuário, matrícula ou senha.
+                  </p>
+                </div>
+
+                {/* PROGRESSO DE VAGAS */}
+                <div className="bg-white border rounded-lg p-3 max-w-xl text-slate-900">
+                  <div className="flex justify-between items-center text-xs mb-1.5 font-mono">
+                    <span className="text-slate-500">Respostas da Turma:</span>
+                    <span className="font-bold">
+                      {selectedTurmaSubmissions.length} de {selectedTurmaStudents.length} matriculados
+                    </span>
+                  </div>
+                  <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                    <div 
+                      className="bg-slate-900 h-full rounded-full transition-all duration-500"
+                      style={{ 
+                        width: `${selectedTurmaStudents.length > 0 
+                          ? Math.min(100, (selectedTurmaSubmissions.length / selectedTurmaStudents.length) * 100) 
+                          : 0}%` 
+                      }}
+                    />
+                  </div>
+                  <p className="text-[10px] text-slate-450 font-mono mt-1.5 leading-tight">
+                    * Qualquer pessoa com o link pode responder de forma livre. O sistema limita as respostas automaticamente à quantidade de alunos matriculados na turma ({selectedTurmaStudents.length}).
+                  </p>
+                </div>
+
+                {/* BOTÕES DE OPERAÇÃO */}
+                <div className="flex flex-wrap gap-2 justify-center md:justify-start">
+                  <button
+                    onClick={() => {
+                      if (typeof navigator !== 'undefined') {
+                        navigator.clipboard.writeText(`${window.location.protocol}//${window.location.host}/avaliacao?turmaId=${selectedTurma}`);
+                        toast.success("Link exclusivo da turma copiado para a área de transferência!");
+                      }
+                    }}
+                    className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-4 py-2 rounded-lg transition"
+                  >
+                    Copiar Link da Turma
+                  </button>
+                  <a
+                    href={`/avaliacao?turmaId=${selectedTurma}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold px-4 py-2 rounded-lg transition"
+                  >
+                    Abrir Questionário da Turma
+                  </a>
+                </div>
+              </div>
+            </motion.div>
+          );
+        })()
+      )}
+
       {!hasActiveFilter ? (
         <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center shadow-sm max-w-xl mx-auto my-8 space-y-4">
           <div className="w-16 h-16 bg-slate-50 border rounded-2xl flex items-center justify-center mx-auto shadow-sm">

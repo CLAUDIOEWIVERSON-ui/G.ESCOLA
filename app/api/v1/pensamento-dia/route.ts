@@ -1,11 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { GoogleGenAI, Type } from '@google/genai';
+import { GoogleGenAI } from '@google/genai';
 
 export const dynamic = 'force-dynamic';
 
 // Initialize Gemini on the server side lazily only when needed
 let aiInstance: GoogleGenAI | null = null;
+
+// Modular global cache to avoid repetitive database reads and Gemini API requests in the same container session
+let thoughtCache: {
+  data_exibicao: string;
+  data: any;
+} | null = null;
+
+// Cool-down timestamp to respect the Gemini API rate limits/quota (429) and avoid spamming/retrying when blocked.
+let geminiBlockedUntil = 0;
+
 function getGeminiAI() {
   if (!aiInstance) {
     const apiKey = process.env.GEMINI_API_KEY;
@@ -58,19 +68,34 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const force = searchParams.get('force') === 'true';
     const category = searchParams.get('category') || ''; // 'religioso', 'motivacional', 'filosofico'
-    const supabase = await createClient();
     const todayStr = new Date().toISOString().split('T')[0];
 
-    // Attempt to query today's thought from the database if not forced to regenerate
-    if (!force) {
-      const { data, error } = await supabase
-        .from('pensamento_dia')
-        .select('*')
-        .eq('data_exibicao', todayStr)
-        .maybeSingle();
+    // 1. Check in-memory session cache first to prevent redundant DB reads or API requests under load
+    if (!force && thoughtCache && thoughtCache.data_exibicao === todayStr) {
+      return NextResponse.json({ success: true, data: thoughtCache.data });
+    }
 
-      if (data) {
-        return NextResponse.json({ success: true, data });
+    const supabase = await createClient();
+
+    // 2. Attempt to query today's thought from the database if not forced to regenerate
+    if (!force) {
+      try {
+        const { data, error } = await supabase
+          .from('pensamento_dia')
+          .select('*')
+          .eq('data_exibicao', todayStr)
+          .maybeSingle();
+
+        if (data && !error) {
+          // Cache in memory for today
+          thoughtCache = {
+            data_exibicao: todayStr,
+            data
+          };
+          return NextResponse.json({ success: true, data });
+        }
+      } catch (dbReadErr) {
+        console.warn('[DB Read Warning] Failed reading pensée from DB:', dbReadErr);
       }
     }
 
@@ -88,6 +113,14 @@ export async function GET(req: NextRequest) {
 
     if (!process.env.GEMINI_API_KEY) {
       console.warn('[Gemini API] GEMINI_API_KEY is not defined. Falling back to preloaded thoughts catalog.');
+      const filteredFallbacks = category 
+        ? fallbackQuotes.filter(q => q.categoria === category)
+        : fallbackQuotes;
+      const candidates = filteredFallbacks.length > 0 ? filteredFallbacks : fallbackQuotes;
+      const randomIndex = Math.floor(Math.random() * candidates.length);
+      generatedQuote = candidates[randomIndex];
+    } else if (Date.now() < geminiBlockedUntil) {
+      console.warn(`[Gemini API Cooldown] Skipping Gemini API call because it was previously rate-limited. Falls back immediately to preloaded list. Time left: ${Math.round((geminiBlockedUntil - Date.now()) / 1000)}s`);
       const filteredFallbacks = category 
         ? fallbackQuotes.filter(q => q.categoria === category)
         : fallbackQuotes;
@@ -117,14 +150,14 @@ export async function GET(req: NextRequest) {
             systemInstruction,
             responseMimeType: 'application/json',
             responseSchema: {
-              type: Type.OBJECT,
+              type: 'OBJECT' as any,
               properties: {
                 texto: {
-                  type: Type.STRING,
+                  type: 'STRING' as any,
                   description: 'A frase ou pensamento inspirador do dia em português.'
                 },
                 autor: {
-                  type: Type.STRING,
+                  type: 'STRING' as any,
                   description: 'O nome do autor do pensamento.'
                 }
               },
@@ -146,6 +179,14 @@ export async function GET(req: NextRequest) {
         }
       } catch (apiError: any) {
         console.warn('[Gemini API Error] Falling back to preloaded thoughts catalog gracefully. Reason:', apiError?.message || apiError);
+        
+        // Cooldown mechanism: block the Gemini API calls for 10 minutes if we hit a 429 rate limit or quota issue
+        const errMsg = String(apiError?.message || apiError?.status || apiError || '').toLowerCase();
+        if (errMsg.includes('429') || errMsg.includes('quota') || errMsg.includes('resource_exhausted')) {
+          console.warn('[Gemini API Cooldown] Quota exceeded. Cooldown active for 10 minutes.');
+          geminiBlockedUntil = Date.now() + 10 * 60 * 1000;
+        }
+
         // Pick random fallback catalog item
         const filteredFallbacks = category 
           ? fallbackQuotes.filter(q => q.categoria === category)
@@ -173,7 +214,12 @@ export async function GET(req: NextRequest) {
           .select('*')
           .maybeSingle();
 
-        if (insertedData) {
+        if (insertedData && !insertError) {
+          // Cache the inserted thought
+          thoughtCache = {
+            data_exibicao: todayStr,
+            data: insertedData
+          };
           return NextResponse.json({ success: true, data: insertedData });
         } else {
           console.warn('[insert warning]', insertError);
@@ -184,16 +230,24 @@ export async function GET(req: NextRequest) {
     }
 
     // If table doesn't exist yet or DB insert failed, return dynamic quote with helper flags
+    const fallbackResponse = {
+      id: 'temp-id',
+      texto: generatedQuote.texto,
+      autor: generatedQuote.autor,
+      data_exibicao: todayStr,
+      isDemo: true,
+      reason: isTableMissing ? 'table_missing' : 'insert_failed'
+    };
+
+    // Cache the fallback thought so that subsequent requests don't hit Supabase or Gemini
+    thoughtCache = {
+      data_exibicao: todayStr,
+      data: fallbackResponse
+    };
+
     return NextResponse.json({
       success: true,
-      data: {
-        id: 'temp-id',
-        texto: generatedQuote.texto,
-        autor: generatedQuote.autor,
-        data_exibicao: todayStr,
-        isDemo: true,
-        reason: isTableMissing ? 'table_missing' : 'insert_failed'
-      }
+      data: fallbackResponse
     });
 
   } catch (error: any) {
@@ -241,6 +295,14 @@ export async function POST(req: NextRequest) {
         }, { status: 400 });
       }
       return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    if (data) {
+      // Keep memory cache updated on manual changes
+      thoughtCache = {
+        data_exibicao: todayStr,
+        data
+      };
     }
 
     return NextResponse.json({ success: true, data });

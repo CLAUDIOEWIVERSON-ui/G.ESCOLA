@@ -252,7 +252,7 @@ export function FormGuidanceAssistant() {
     });
 
     setEmptyFields(emptyList);
-  }, [language, getLabelOrPlaceholder, getFieldGuidanceAndConsequences]);
+  }, [getLabelOrPlaceholder, getFieldGuidanceAndConsequences]);
 
   // Run on layout mounts
   useEffect(() => {

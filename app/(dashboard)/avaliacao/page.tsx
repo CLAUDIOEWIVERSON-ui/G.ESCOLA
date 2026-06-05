@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { useUser } from '@/lib/auth/UserContext';
 import { motion, AnimatePresence } from 'motion/react';
@@ -65,8 +66,11 @@ const INFRA_QUESTIONS = [
   { key: "infra_q5", label: "Ambiente de ensino" }
 ];
 
-export default function AvaliacaoAlunoPage() {
+function AvaliacaoAlunoForm() {
   const { profile, loading: userLoading } = useUser();
+  const searchParams = useSearchParams();
+  const qrTurmaId = searchParams ? searchParams.get('turmaId') : null;
+
   const [loading, setLoading] = useState(true);
   const [studentDetails, setStudentDetails] = useState<any | null>(null);
   const [existingSubmission, setExistingSubmission] = useState<any | null>(null);
@@ -85,6 +89,102 @@ export default function AvaliacaoAlunoPage() {
   const [signature, setSignature] = useState('');
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [isPrintingBlank, setIsPrintingBlank] = useState(false);
+
+  // QR-Code specific tracking
+  const [studentCount, setStudentCount] = useState<number>(0);
+  const [submissionCount, setSubmissionCount] = useState<number>(0);
+  const [limitReached, setLimitReached] = useState<boolean>(false);
+
+  const fetchClassAndEvaluationQR = async (tId: string) => {
+    try {
+      setLoading(true);
+
+      // 1. Fetch Class with associated Course details
+      const { data: classObj, error: classErr } = await supabase
+        .from('turmas')
+        .select(`
+          id,
+          nome,
+          instrutor,
+          data_fim,
+          curso_id,
+          curso:cursos(
+            id,
+            nome
+          )
+        `)
+        .eq('id', tId)
+        .maybeSingle();
+
+      if (classErr) throw classErr;
+      if (!classObj) {
+        toast.error('Turma não encontrada para esta avaliação.');
+        setLoading(false);
+        return;
+      }
+
+      // 2. Fetch Alunos (students enrolled)
+      const { data: students, error: studErr } = await supabase
+        .from('alunos')
+        .select('id, nome, posto_graduacao, om, matricula')
+        .eq('turma_id', tId)
+        .is('deleted_at', null);
+
+      if (studErr) throw studErr;
+      const enrolledCount = students?.length || 0;
+      setStudentCount(enrolledCount);
+
+      // 3. Fetch Existing submissions
+      const { data: existingEvals, error: evalErr } = await supabase
+        .from('questionarios_conclusao')
+        .select('id, aluno_id')
+        .eq('turma_id', tId);
+
+      if (evalErr) throw evalErr;
+      const finishedSubmissions = existingEvals?.length || 0;
+      setSubmissionCount(finishedSubmissions);
+
+      // Check limit vs enrolled
+      if (enrolledCount > 0 && finishedSubmissions >= enrolledCount) {
+        setLimitReached(true);
+        setLoading(false);
+        return;
+      }
+
+      // Find an unsubmitted student to bypass DB unique constraints
+      const unusedStudent = students?.find(st => !existingEvals?.some(sub => sub.aluno_id === st.id));
+      if (!unusedStudent) {
+        setLimitReached(true);
+        setLoading(false);
+        return;
+      }
+
+      setStudentDetails({
+        id: unusedStudent.id,
+        nome: "Aluno da Turma - Entrada via QR Code",
+        posto_graduacao: "Não especificado",
+        om: "Não especificada",
+        matricula: "QR-Code",
+        turma_id: tId,
+        turma: {
+          id: tId,
+          nome: classObj.nome,
+          instrutor: classObj.instrutor || "Não cadastrado",
+          data_fim: classObj.data_fim,
+          curso: {
+            id: classObj.curso?.id || classObj.curso_id,
+            nome: classObj.curso?.nome || "Curso Acadêmico"
+          }
+        }
+      });
+
+    } catch (err: any) {
+      console.error('Error loading QR class details:', err);
+      toast.error('Erro ao processar as informações da turma.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchStudentAndEvaluation = async (studentId: string) => {
     try {
@@ -127,7 +227,7 @@ export default function AvaliacaoAlunoPage() {
           .maybeSingle();
 
         if (evalErr) {
-          console.warn('Evaluation table check error (possibly not created yet):', evalErr);
+          console.warn('Evaluation table check error :', evalErr);
         }
 
         if (evaluation) {
@@ -143,7 +243,11 @@ export default function AvaliacaoAlunoPage() {
   };
 
   useEffect(() => {
-    if (!userLoading) {
+    if (qrTurmaId) {
+      setTimeout(() => {
+        fetchClassAndEvaluationQR(qrTurmaId);
+      }, 0);
+    } else if (!userLoading) {
       const studentId = profile?.student_id;
       if (studentId) {
         setTimeout(() => {
@@ -155,7 +259,7 @@ export default function AvaliacaoAlunoPage() {
         }, 0);
       }
     }
-  }, [profile?.student_id, userLoading]);
+  }, [qrTurmaId, profile?.student_id, userLoading]);
 
   const handleSelectAnswer = (key: string, value: number) => {
     setAnswers(prev => ({ ...prev, [key]: value }));
@@ -276,20 +380,83 @@ export default function AvaliacaoAlunoPage() {
         assinatura_digital: digitalSignatureText
       };
 
-      const { data, error } = await supabase
-        .from('questionarios_conclusao')
-        .insert(payload)
-        .select()
-        .single();
+      let data: any = null;
+      let insertError: any = null;
 
-      if (error) {
-        // Encontra erro de tabela inexistente
-        const errorMsg = (error.message || '').toLowerCase();
-        if (errorMsg.includes('relation') && (errorMsg.includes('does not exist') || errorMsg.includes('missing'))) {
-          toast.error('Erro: A tabela "questionarios_conclusao" não existe. Por favor execute a migração SQL 25_create_questionario_conclusao.sql para provisioná-la.');
+      if (qrTurmaId) {
+        let attempts = 0;
+        const maxAttempts = 5;
+        let success = false;
+        const currentPayload = { ...payload };
+
+        while (attempts < maxAttempts && !success) {
+          attempts++;
+          const result = await supabase
+            .from('questionarios_conclusao')
+            .insert(currentPayload)
+            .select()
+            .maybeSingle();
+
+          if (!result.error) {
+            data = result.data;
+            success = true;
+          } else {
+            insertError = result.error;
+            const errMsg = (result.error.message || '').toLowerCase();
+            const errCode = result.error.code;
+            
+            // Check for unique constraint violation or duplicate key
+            if (errMsg.includes('unique') || errMsg.includes('duplicate') || errMsg.includes('already exists') || errCode === '23505') {
+              console.warn(`Tentativa ${attempts} falhou por duplicidade de aluno_id. Tentando realocar outro aluno...`);
+              
+              // Re-fetch submissions and students to find another slot
+              const { data: latestEvals } = await supabase
+                .from('questionarios_conclusao')
+                .select('aluno_id')
+                .eq('turma_id', studentDetails.turma_id);
+
+              const { data: latestStudents } = await supabase
+                .from('alunos')
+                .select('id')
+                .eq('turma_id', studentDetails.turma_id)
+                .is('deleted_at', null);
+
+              const nextUnused = latestStudents?.find(st => !latestEvals?.some(sub => sub.aluno_id === st.id));
+              if (nextUnused) {
+                currentPayload.aluno_id = nextUnused.id;
+              } else {
+                toast.error('Limite máximo de avaliações preenchidas para esta turma foi atingido.');
+                throw result.error;
+              }
+            } else {
+              // Relation doesn't exist under Supabase: notify user to run migrations
+              if (errMsg.includes('relation') && (errMsg.includes('does not exist') || errMsg.includes('missing'))) {
+                toast.error('Erro: A tabela "questionarios_conclusao" não existe. Por favor execute a migração SQL 25_create_questionario_conclusao.sql.');
+              }
+              throw result.error;
+            }
+          }
+        }
+
+        if (!success && insertError) {
+          throw insertError;
+        }
+      } else {
+        const { data: singleData, error } = await supabase
+          .from('questionarios_conclusao')
+          .insert(payload)
+          .select()
+          .single();
+
+        if (error) {
+          const errorMsg = (error.message || '').toLowerCase();
+          if (errorMsg.includes('relation') && (errorMsg.includes('does not exist') || errorMsg.includes('missing'))) {
+            toast.error('Erro: A tabela "questionarios_conclusao" não existe. Por favor execute a migração SQL 25_create_questionario_conclusao.sql para provisioná-la.');
+            throw error;
+          }
           throw error;
         }
-        throw error;
+        data = singleData;
       }
 
       toast.success('Avaliação enviada com sucesso! Obrigado pela colaboração.');
@@ -317,13 +484,28 @@ export default function AvaliacaoAlunoPage() {
     );
   }
 
-  if (!profile || profile.role !== 'aluno') {
+  if (limitReached) {
+    return (
+      <div className="max-w-xl mx-auto my-12 p-8 bg-white border border-slate-200 rounded-xl shadow-sm text-center">
+        <AlertCircle className="h-12 w-12 text-rose-500 mx-auto mb-4" />
+        <h2 className="text-xl font-bold text-slate-900 mb-2">Limite de Avaliações Atingido</h2>
+        <p className="text-slate-600 text-sm mb-4">
+          Esta turma possui <strong>{studentCount}</strong> alunos matriculados e o sistema já recebeu as <strong>{submissionCount}</strong> respostas correspondentes.
+        </p>
+        <p className="text-xs text-slate-400 font-mono">
+          Nenhuma resposta adicional pode ser enviada por este QR-Code para preservar a integridade das vagas da turma.
+        </p>
+      </div>
+    );
+  }
+
+  if (!qrTurmaId && (!profile || profile.role !== 'aluno')) {
     return (
       <div className="max-w-xl mx-auto my-12 p-8 bg-white border border-slate-200 rounded-xl shadow-sm text-center">
         <ShieldCheck className="h-12 w-12 text-slate-400 mx-auto mb-4" />
         <h2 className="text-xl font-bold text-slate-900 mb-2">Acesso Restrito a Alunos</h2>
         <p className="text-slate-600 text-sm mb-4">
-          Esta tela está disponível somente para contas cadastradas como alunos vinculados a uma turma.
+          Esta tela está disponível somente para contas acadêmicas de alunos vinculadas a uma turma, ou através de um QR Code Único de Turma válido.
         </p>
       </div>
     );
@@ -748,6 +930,12 @@ export default function AvaliacaoAlunoPage() {
           <span className="text-[10px] text-sky-400 font-bold uppercase tracking-wider font-mono">AVALIAÇÃO POST-CURSO</span>
           <h1 className="text-xl md:text-2xl font-bold tracking-tight">Questionário pós-conclusão</h1>
           <p className="text-xs text-slate-400 mt-1">Sua resposta orienta nossos critérios de qualidade pedagógica.</p>
+          {qrTurmaId && (
+            <div className="bg-sky-500/20 border border-sky-400/20 text-sky-300 rounded-lg p-2.5 text-xs mt-3 max-w-md font-sans leading-relaxed">
+              <span className="font-extrabold text-[10px] uppercase font-mono block text-sky-400">Acesso Livre via Código QR</span>
+              Turma: <strong className="text-white">{studentDetails?.turma?.nome}</strong> &bull; Respostas recebidas: <strong className="text-white">{submissionCount} de {studentCount}</strong> matriculados.
+            </div>
+          )}
         </div>
 
         {/* Floating Steps Indicator */}
@@ -1198,5 +1386,20 @@ export default function AvaliacaoAlunoPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function AvaliacaoAlunoPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-[70vh] items-center justify-center bg-slate-50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
+          <span className="text-sm text-slate-500 font-mono">Carregando formulário de avaliação...</span>
+        </div>
+      </div>
+    }>
+      <AvaliacaoAlunoForm />
+    </Suspense>
   );
 }

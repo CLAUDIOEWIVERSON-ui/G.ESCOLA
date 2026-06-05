@@ -68,19 +68,23 @@ BEGIN
         );
     END IF;
 
-    IF NOT EXISTS (
-        SELECT 1 FROM pg_policies WHERE tablename = 'questionarios_conclusao' AND policyname = 'Students can insert their own response'
-    ) THEN
-        CREATE POLICY "Students can insert their own response" ON public.questionarios_conclusao FOR INSERT WITH CHECK (
-            auth.role() = 'authenticated'
-        );
-    END IF;
+    DROP POLICY IF EXISTS "Students can insert their own response" ON public.questionarios_conclusao;
+    CREATE POLICY "Students can insert their own response" ON public.questionarios_conclusao FOR INSERT WITH CHECK (
+        true
+    );
 
-    IF NOT EXISTS (
-        SELECT 1 FROM pg_policies WHERE tablename = 'questionarios_conclusao' AND policyname = 'Students can view their own response'
-    ) THEN
-        CREATE POLICY "Students can view their own response" ON public.questionarios_conclusao FOR SELECT USING (
-            auth.role() = 'authenticated'
-        );
-    END IF;
+    DROP POLICY IF EXISTS "Students can view their own response" ON public.questionarios_conclusao;
+    CREATE POLICY "Students can view their own response" ON public.questionarios_conclusao FOR SELECT USING (
+        true
+    );
+
+    -- Allow public SELECT access for cursos, turmas, and alunos to support QR code evaluation flows
+    DROP POLICY IF EXISTS "Anyone can read cursos" ON public.cursos;
+    CREATE POLICY "Anyone can read cursos" ON public.cursos FOR SELECT USING (true);
+
+    DROP POLICY IF EXISTS "Anyone can read turmas" ON public.turmas;
+    CREATE POLICY "Anyone can read turmas" ON public.turmas FOR SELECT USING (true);
+
+    DROP POLICY IF EXISTS "Anyone can read alunos" ON public.alunos;
+    CREATE POLICY "Anyone can read alunos" ON public.alunos FOR SELECT USING (true);
 END $$;
