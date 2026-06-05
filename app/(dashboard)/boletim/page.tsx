@@ -477,32 +477,32 @@ export default function BoletimPage() {
 
               {/* Personal Info Grid */}
               <div className="border border-slate-200 rounded-lg p-5 bg-slate-50/50 print-bg-gray text-left">
-                <h3 className="text-[11px] font-black text-slate-400 tracking-[0.15em] uppercase mb-4 pb-1 border-b border-slate-200">
+                <h3 className="text-[11px] font-black text-slate-600 tracking-[0.15em] uppercase mb-4 pb-1 border-b border-slate-200">
                   {reportT[language as "pt" | "en"].studentInfo}
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-y-3 gap-x-6 text-sm">
                   <div className="flex flex-col gap-0.5 col-span-2 md:col-span-1">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as "pt" | "en"].fullName}</span>
+                    <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">{reportT[language as "pt" | "en"].fullName}</span>
                     <span className="font-extrabold text-slate-900 uppercase text-xs lg:text-sm">{reportData.student.nome}</span>
                   </div>
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as "pt" | "en"].rank}</span>
+                    <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">{reportT[language as "pt" | "en"].rank}</span>
                     <span className="font-bold text-slate-800 uppercase">{reportData.student.posto_graduacao || (language === 'pt' ? 'Não declarado' : 'Not declared')}</span>
                   </div>
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Matrícula</span>
+                    <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Matrícula</span>
                     <span className="font-bold font-mono text-slate-800">#{reportData.student.matricula}</span>
                   </div>
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as "pt" | "en"].course}</span>
+                    <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">{reportT[language as "pt" | "en"].course}</span>
                     <span className="font-bold text-slate-800">{reportData.courseObj?.nome || (language === 'pt' ? 'Não disponível' : 'Not available')}</span>
                   </div>
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as "pt" | "en"].class}</span>
+                    <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">{reportT[language as "pt" | "en"].class}</span>
                     <span className="font-bold text-slate-800">{reportData.classObj?.nome || (language === 'pt' ? 'Não disponível' : 'Not available')}</span>
                   </div>
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as "pt" | "en"].period}</span>
+                    <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">{reportT[language as "pt" | "en"].period}</span>
                     <span className="font-bold text-slate-800 capitalize">
                       {reportData.classObj?.periodo === 'manhã' ? t.common.morning :
                        reportData.classObj?.periodo === 'tarde' ? t.common.afternoon :
@@ -510,7 +510,7 @@ export default function BoletimPage() {
                     </span>
                   </div>
                   <div className="flex flex-col gap-0.5 col-span-2">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as "pt" | "en"].status}</span>
+                    <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">{reportT[language as "pt" | "en"].status}</span>
                     <span className="font-bold flex items-center gap-1.5 text-slate-800">
                       <span className={cn("w-2 h-2 rounded-full", reportData.classObj?.status === 'concluida' || reportData.classObj?.status === 'finalizada' ? 'bg-emerald-500' : 'bg-blue-500')} />
                       {reportData.classObj?.status === 'concluida' || reportData.classObj?.status === 'finalizada' 
@@ -523,7 +523,7 @@ export default function BoletimPage() {
 
               {/* Academic Performance Map */}
               <div className="space-y-3 font-sans">
-                <h3 className="text-[11px] font-black text-slate-400 tracking-[0.15em] uppercase pb-1 border-b border-slate-200 text-left">
+                <h3 className="text-[11px] font-black text-slate-600 tracking-[0.15em] uppercase pb-1 border-b border-slate-200 text-left">
                   {reportT[language as "pt" | "en"].academicMap}
                 </h3>
                 <div className="overflow-x-auto">
@@ -597,7 +597,7 @@ export default function BoletimPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
                 {/* Attendance Summary */}
                 <div className="border border-slate-200 rounded-lg p-4 flex flex-col gap-3 text-left">
-                  <h3 className="text-[11px] font-black text-slate-400 tracking-[0.1em] uppercase border-b border-slate-200 pb-1">
+                  <h3 className="text-[11px] font-black text-slate-600 tracking-[0.1em] uppercase border-b border-slate-200 pb-1">
                     {reportT[language as "pt" | "en"].attendanceReg}
                   </h3>
                   
@@ -620,15 +620,15 @@ export default function BoletimPage() {
                       <div className="flex flex-col gap-2.5 text-left">
                         <div className="grid grid-cols-3 gap-2 text-center text-xs">
                           <div className="p-2 bg-slate-50 print-bg-gray rounded border border-slate-100 flex flex-col gap-0.5">
-                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as "pt" | "en"].totalLectures}</span>
+                            <span className="text-[8px] font-bold text-slate-600 uppercase tracking-wider">{reportT[language as "pt" | "en"].totalLectures}</span>
                             <span className="text-sm font-black text-slate-800">{totalAulas || '-'}</span>
                           </div>
                           <div className="p-2 bg-slate-50 print-bg-gray rounded border border-slate-100 flex flex-col gap-0.5">
-                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as "pt" | "en"].attendances}</span>
+                            <span className="text-[8px] font-bold text-slate-600 uppercase tracking-wider">{reportT[language as "pt" | "en"].attendances}</span>
                             <span className="text-sm font-black text-emerald-600">{totalAulas ? presencas : '-'}</span>
                           </div>
                           <div className="p-2 bg-slate-50 print-bg-gray rounded border border-slate-100 flex flex-col gap-0.5">
-                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as "pt" | "en"].absences}</span>
+                            <span className="text-[8px] font-bold text-slate-600 uppercase tracking-wider">{reportT[language as "pt" | "en"].absences}</span>
                             <span className="text-sm font-black text-rose-600">{totalAulas ? faltas : '-'}</span>
                           </div>
                         </div>
@@ -647,7 +647,7 @@ export default function BoletimPage() {
                         {/* Tiny timeline of latest attendance dates */}
                         {reportData.attendance && reportData.attendance.length > 0 && (
                           <div className="flex flex-col gap-1.5 mt-1 pt-1.5 border-t border-dashed border-slate-200">
-                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                            <span className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">
                               {language === 'pt' ? 'Histórico de Presenças (Últimas 10):' : 'Attendance Record (Last 10):'}
                             </span>
                             <div className="flex flex-wrap gap-1">
@@ -676,7 +676,7 @@ export default function BoletimPage() {
                 {/* Performance & Summary */}
                 <div className="border border-slate-200 rounded-lg p-4 flex flex-col justify-between text-left">
                   <div className="flex flex-col gap-3">
-                    <h3 className="text-[11px] font-black text-slate-400 tracking-[0.1em] uppercase border-b border-slate-200 pb-1">
+                    <h3 className="text-[11px] font-black text-slate-600 tracking-[0.1em] uppercase border-b border-slate-200 pb-1">
                       {language === 'pt' ? 'DESEMPENHO GLOBAL' : 'GLOBAL PERFORMANCE'}
                     </h3>
                     
@@ -1096,32 +1096,32 @@ export default function BoletimPage() {
 
                               {/* Personal Info Grid */}
                               <div className="border border-slate-200 rounded-lg p-5 bg-slate-50/50 print-bg-gray text-left">
-                                <h3 className="text-[11px] font-black text-slate-400 tracking-[0.15em] uppercase mb-4 pb-1 border-b border-slate-200">
+                                <h3 className="text-[11px] font-black text-slate-600 tracking-[0.15em] uppercase mb-4 pb-1 border-b border-slate-200">
                                   {reportT[language as "pt" | "en"].studentInfo}
                                 </h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-y-3 gap-x-6 text-sm">
                                   <div className="flex flex-col gap-0.5 col-span-2 md:col-span-1">
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as "pt" | "en"].fullName}</span>
+                                    <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">{reportT[language as "pt" | "en"].fullName}</span>
                                     <span className="font-extrabold text-slate-900 uppercase text-xs lg:text-sm">{reportData.student.nome}</span>
                                   </div>
                                   <div className="flex flex-col gap-0.5">
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as "pt" | "en"].rank}</span>
+                                    <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">{reportT[language as "pt" | "en"].rank}</span>
                                     <span className="font-bold text-slate-800 uppercase">{reportData.student.posto_graduacao || (language === 'pt' ? 'Não declarado' : 'Not declared')}</span>
                                   </div>
                                   <div className="flex flex-col gap-0.5">
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Matrícula</span>
+                                    <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Matrícula</span>
                                     <span className="font-bold font-mono text-slate-800">#{reportData.student.matricula}</span>
                                   </div>
                                   <div className="flex flex-col gap-0.5">
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as "pt" | "en"].course}</span>
+                                    <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">{reportT[language as "pt" | "en"].course}</span>
                                     <span className="font-bold text-slate-800">{reportData.courseObj?.nome || (language === 'pt' ? 'Não disponível' : 'Not available')}</span>
                                   </div>
                                   <div className="flex flex-col gap-0.5">
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as "pt" | "en"].class}</span>
+                                    <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">{reportT[language as "pt" | "en"].class}</span>
                                     <span className="font-bold text-slate-800">{reportData.classObj?.nome || (language === 'pt' ? 'Não disponível' : 'Not available')}</span>
                                   </div>
                                   <div className="flex flex-col gap-0.5">
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as "pt" | "en"].period}</span>
+                                    <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">{reportT[language as "pt" | "en"].period}</span>
                                     <span className="font-bold text-slate-800 capitalize">
                                       {reportData.classObj?.periodo === 'manhã' ? t.common.morning :
                                        reportData.classObj?.periodo === 'tarde' ? t.common.afternoon :
@@ -1129,7 +1129,7 @@ export default function BoletimPage() {
                                     </span>
                                   </div>
                                   <div className="flex flex-col gap-0.5 col-span-2">
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as "pt" | "en"].status}</span>
+                                    <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">{reportT[language as "pt" | "en"].status}</span>
                                     <span className="font-bold flex items-center gap-1.5 text-slate-800">
                                       <span className={cn("w-2 h-2 rounded-full", reportData.classObj?.status === 'concluida' || reportData.classObj?.status === 'finalizada' ? 'bg-emerald-500' : 'bg-blue-500')} />
                                       {reportData.classObj?.status === 'concluida' || reportData.classObj?.status === 'finalizada' 
@@ -1142,7 +1142,7 @@ export default function BoletimPage() {
 
                               {/* Academic Performance Map */}
                               <div className="space-y-3 font-sans">
-                                <h3 className="text-[11px] font-black text-slate-400 tracking-[0.15em] uppercase pb-1 border-b border-slate-200 text-left">
+                                <h3 className="text-[11px] font-black text-slate-600 tracking-[0.15em] uppercase pb-1 border-b border-slate-200 text-left">
                                   {reportT[language as "pt" | "en"].academicMap}
                                 </h3>
                                 <div className="overflow-x-auto">
@@ -1216,7 +1216,7 @@ export default function BoletimPage() {
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
                                 {/* Attendance Summary */}
                                 <div className="border border-slate-200 rounded-lg p-4 flex flex-col gap-3 text-left">
-                                  <h3 className="text-[11px] font-black text-slate-400 tracking-[0.1em] uppercase border-b border-slate-200 pb-1">
+                                  <h3 className="text-[11px] font-black text-slate-600 tracking-[0.1em] uppercase border-b border-slate-200 pb-1">
                                     {reportT[language as "pt" | "en"].attendanceReg}
                                   </h3>
                                   
@@ -1240,15 +1240,15 @@ export default function BoletimPage() {
                                       <div className="flex flex-col gap-2.5 text-left">
                                         <div className="grid grid-cols-3 gap-2 text-center text-xs">
                                           <div className="p-2 bg-slate-50 print-bg-gray rounded border border-slate-100 flex flex-col gap-0.5">
-                                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as "pt" | "en"].totalLectures}</span>
+                                            <span className="text-[8px] font-bold text-slate-600 uppercase tracking-wider">{reportT[language as "pt" | "en"].totalLectures}</span>
                                             <span className="text-sm font-black text-slate-800">{totalAulas || '-'}</span>
                                           </div>
                                           <div className="p-2 bg-slate-50 print-bg-gray rounded border border-slate-100 flex flex-col gap-0.5">
-                                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as "pt" | "en"].attendances}</span>
+                                            <span className="text-[8px] font-bold text-slate-600 uppercase tracking-wider">{reportT[language as "pt" | "en"].attendances}</span>
                                             <span className="text-sm font-black text-emerald-600">{totalAulas ? presencas : '-'}</span>
                                           </div>
                                           <div className="p-2 bg-slate-50 print-bg-gray rounded border border-slate-100 flex flex-col gap-0.5">
-                                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">{reportT[language as "pt" | "en"].absences}</span>
+                                            <span className="text-[8px] font-bold text-slate-600 uppercase tracking-wider">{reportT[language as "pt" | "en"].absences}</span>
                                             <span className="text-sm font-black text-rose-600">{totalAulas ? faltas : '-'}</span>
                                           </div>
                                         </div>
@@ -1267,7 +1267,7 @@ export default function BoletimPage() {
                                         {/* Tiny timeline of latest attendance dates */}
                                         {reportData.attendance && reportData.attendance.length > 0 && (
                                           <div className="flex flex-col gap-1.5 mt-1 pt-1.5 border-t border-dashed border-slate-200">
-                                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                                            <span className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">
                                               {language === 'pt' ? 'Histórico de Presenças (Últimas 10):' : 'Attendance Record (Last 10):'}
                                             </span>
                                             <div className="flex flex-wrap gap-1">
@@ -1295,7 +1295,7 @@ export default function BoletimPage() {
 
                                 {/* Performance & Summary */}
                                 <div className="border border-slate-200 rounded-lg p-4 flex flex-col gap-3 text-left">
-                                  <h3 className="text-[11px] font-black text-slate-400 tracking-[0.1em] uppercase border-b border-slate-200 pb-1">
+                                  <h3 className="text-[11px] font-black text-slate-600 tracking-[0.1em] uppercase border-b border-slate-200 pb-1">
                                     {language === 'pt' ? 'DESEMPENHO GLOBAL' : 'GLOBAL PERFORMANCE'}
                                   </h3>
                                   
