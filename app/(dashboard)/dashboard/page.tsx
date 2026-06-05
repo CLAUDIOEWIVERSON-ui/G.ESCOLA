@@ -166,7 +166,7 @@ export default function DashboardPage() {
       color: 'bg-blue-600',
       shouldShow: stats.studentsEspeciais > 0
     },
-  ].filter(card => card.shouldShow);
+  ].filter((card: any) => card.shouldShow);
 
   return (
     <div className="space-y-6">
@@ -377,7 +377,7 @@ export default function DashboardPage() {
                       { id: 'religioso', label: '⛪ Religioso' },
                       { id: 'motivacional', label: '💪 Motivacional' },
                       { id: 'filosofico', label: '📜 Filosófico' }
-                    ].map((cat) => (
+                    ].map((cat: any) => (
                       <button
                         key={cat.id}
                         type="button"
@@ -465,7 +465,7 @@ export default function DashboardPage() {
 
       {statCards.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {statCards.map((card, i) => (
+          {statCards.map((card: any, i: number) => (
             <motion.div
               key={card.name}
               initial={{ opacity: 0, y: 10 }}
@@ -514,7 +514,7 @@ export default function DashboardPage() {
                   </td>
                 </tr>
               ) : (
-                alunosExterior.slice(0, 15).map((aluno) => {
+                alunosExterior.slice(0, 15).map((aluno: any) => {
                   const turmaData = Array.isArray((aluno as any).turma) ? (aluno as any).turma[0] : (aluno as any).turma;
                   const curso = Array.isArray(turmaData?.curso) ? turmaData.curso[0] : turmaData?.curso;
                   return (

@@ -136,7 +136,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     };
     init();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: any, session: any) => {
       if (session) {
         setLoading(true);
         fetchProfile();

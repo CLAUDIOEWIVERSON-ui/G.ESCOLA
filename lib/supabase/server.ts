@@ -42,12 +42,50 @@ export async function createClient() {
   const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const rawKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  const url = cleanUrl(rawUrl);
-  const key = (rawKey || 'placeholder').trim();
+  const isConfigured = !!rawUrl && !!rawKey && !rawUrl.includes('placeholder');
 
-  if (!rawUrl || !rawKey) {
-    console.warn('Supabase credentials missing or invalid in server client. Using placeholder configuration.');
+  if (!isConfigured) {
+    console.warn('Supabase credentials missing or invalid in server client. Returning mock client.');
+    const mockAuth = {
+      getSession: async () => ({ data: { session: null }, error: null }),
+      getUser: async () => ({ data: { user: null }, error: null }),
+      signOut: async () => ({ error: null }),
+      onAuthStateChange: () => ({
+        data: {
+          subscription: {
+            unsubscribe: () => {}
+          }
+        }
+      }),
+    };
+
+    const mockQueryBuilder = () => {
+      const builder: any = {
+        select: () => builder,
+        eq: () => builder,
+        neq: () => builder,
+        is: () => builder,
+        order: () => builder,
+        limit: () => builder,
+        single: async () => ({ data: null, error: { message: 'Supabase is not configured yet', code: 'PGRST116' } }),
+        maybeSingle: async () => ({ data: null, error: null }),
+        insert: () => builder,
+        update: () => builder,
+        upsert: () => builder,
+        delete: () => builder,
+        then: (resolve: any) => resolve({ data: [], error: null }),
+      };
+      return builder;
+    };
+
+    return {
+      auth: mockAuth,
+      from: mockQueryBuilder,
+    } as any;
   }
+
+  const url = cleanUrl(rawUrl);
+  const key = rawKey.trim();
 
   return createServerClient(
     url,

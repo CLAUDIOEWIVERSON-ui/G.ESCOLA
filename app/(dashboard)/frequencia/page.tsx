@@ -113,10 +113,10 @@ export default function FrequenciaPage() {
         if (recError) throw recError;
 
         const records: Record<string, { presente: boolean, id?: string }> = {};
-        alunoData?.forEach(a => {
+        alunoData?.forEach((a: any) => {
           records[a.id] = { presente: true };
         });
-        recData?.forEach(r => {
+        recData?.forEach((r: any) => {
           records[r.aluno_id] = { presente: r.presente, id: r.id };
         });
         setAttendanceRecords(records);
@@ -256,8 +256,8 @@ export default function FrequenciaPage() {
     }
   };
 
-  const filteredTurmas = selectedCurso ? turmas.filter(t => t.curso_id === selectedCurso) : turmas;
-  const filteredDisciplinas = selectedCurso ? disciplinas.filter(d => d.curso_id === selectedCurso) : disciplinas;
+  const filteredTurmas = selectedCurso ? turmas.filter((t: any) => t.curso_id === selectedCurso) : turmas;
+  const filteredDisciplinas = selectedCurso ? disciplinas.filter((d: any) => d.curso_id === selectedCurso) : disciplinas;
 
   useEffect(() => {
     const fetchFilters = async () => {
@@ -296,7 +296,7 @@ export default function FrequenciaPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState<'all' | 'absent'>('all');
 
-  const filteredStudents = students.filter(student => {
+  const filteredStudents = students.filter((student: any) => {
     const matchesSearch = student.nome.toLowerCase().includes(searchTerm.toLowerCase()) || 
                          student.matricula?.toLowerCase().includes(searchTerm.toLowerCase());
     
@@ -307,8 +307,8 @@ export default function FrequenciaPage() {
     return matchesSearch;
   });
 
-  const totalPresent = Object.values(attendanceRecords).filter(r => r.presente).length;
-  const totalAbsent = Object.values(attendanceRecords).filter(r => !r.presente).length;
+  const totalPresent = Object.values(attendanceRecords).filter((r: any) => r.presente).length;
+  const totalAbsent = Object.values(attendanceRecords).filter((r: any) => !r.presente).length;
   const presencePercentage = students.length > 0 ? Math.round((totalPresent / students.length) * 100) : 0;
 
   return (

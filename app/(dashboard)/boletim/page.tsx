@@ -253,10 +253,10 @@ export default function BoletimPage() {
     setLoading(true);
     try {
       // Find course modules count
-      const turma = turmas.find(t => t.id === selectedTurma);
+      const turma = turmas.find((t: any) => t.id === selectedTurma);
       const cursoId = turma?.curso_id;
       if (cursoId) {
-        const curso = cursos.find(c => c.id === cursoId);
+        const curso = cursos.find((c: any) => c.id === cursoId);
         if (curso) {
           setCourseModules(Math.min(curso.qtd_modulos || 4, 10));
         }
@@ -288,8 +288,8 @@ export default function BoletimPage() {
 
       // 3. Merged list: only include students who are actually enrolled in the class!
       // This synchronizes lists and tables, excluding non-enrolled students like "Abdul Lima Quaresma".
-      const mergedData = (students || []).map(student => {
-        const existingGrade = (grades || []).find(g => g.aluno_id === student.id);
+      const mergedData = (students || []).map((student: any) => {
+        const existingGrade = (grades || []).find((g: any) => g.aluno_id === student.id);
         if (existingGrade) {
           return {
             ...existingGrade,
@@ -337,7 +337,7 @@ export default function BoletimPage() {
 
       setBoletimData(sortedMergedData);
       
-      const totalGrades = mergedData.reduce((acc, curr) => acc + (Number(curr.nota_final) || 0), 0);
+      const totalGrades = mergedData.reduce((acc: number, curr: any) => acc + (Number(curr.nota_final) || 0), 0);
       const avg = mergedData.length > 0 ? totalGrades / mergedData.length : 0;
       setClassStats({ avg, total: mergedData.length });
     } catch (err: any) {
@@ -375,15 +375,15 @@ export default function BoletimPage() {
     };
   };
 
-  const filteredTurmas = turmas.filter(t => {
+  const filteredTurmas = turmas.filter((t: any) => {
     const matchCurso = selectedCurso ? t.curso_id === selectedCurso : true;
     const matchAno = selectedAno ? t.ano === parseInt(selectedAno) : true;
     return matchCurso && matchAno;
   });
-  const filteredDisciplinas = selectedCurso ? disciplinas.filter(d => d.curso_id === selectedCurso) : disciplinas;
+  const filteredDisciplinas = selectedCurso ? disciplinas.filter((d: any) => d.curso_id === selectedCurso) : disciplinas;
 
   const maxAvgInBoletim = boletimData.length > 0 
-    ? Math.max(...boletimData.map(r => Number(r.nota_final)).filter(n => !isNaN(n)), -1) 
+    ? Math.max(...boletimData.map((r: any) => Number(r.nota_final)).filter((n: any) => !isNaN(n)), -1) 
     : -1;
 
   if (isNifStudent) {
@@ -797,10 +797,10 @@ export default function BoletimPage() {
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{t.reportCard.title}</h1>
           <p className="text-slate-500 text-sm">
             {t.reportCard.subtitle}
-            {selectedTurma && turmas.find(t => t.id === selectedTurma)?.data_inicio && (
+            {selectedTurma && turmas.find((t: any) => t.id === selectedTurma)?.data_inicio && (
               <span className="ml-2 px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-[10px] font-bold uppercase tracking-widest border border-blue-100">
-                {format(new Date(turmas.find(t => t.id === selectedTurma).data_inicio), 'dd/MM/yyyy')} 
-                {turmas.find(t => t.id === selectedTurma).data_fim ? ` - ${format(new Date(turmas.find(t => t.id === selectedTurma).data_fim), 'dd/MM/yyyy')}` : ''}
+                {format(new Date(turmas.find((t: any) => t.id === selectedTurma).data_inicio), 'dd/MM/yyyy')} 
+                {turmas.find((t: any) => t.id === selectedTurma).data_fim ? ` - ${format(new Date(turmas.find((t: any) => t.id === selectedTurma).data_fim), 'dd/MM/yyyy')}` : ''}
               </span>
             )}
           </p>
@@ -833,7 +833,7 @@ export default function BoletimPage() {
               className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm appearance-none"
             >
               <option value="">{t.common.all} {t.nav.courses}</option>
-              {cursos.map(curso => (
+              {cursos.map((curso: any) => (
                 <option key={curso.id} value={curso.id}>{curso.nome}</option>
               ))}
             </select>
@@ -848,7 +848,7 @@ export default function BoletimPage() {
               className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm appearance-none"
             >
               <option value="">{t.common.all}</option>
-              {anos.map(ano => (
+              {anos.map((ano: any) => (
                 <option key={ano} value={ano}>{ano}</option>
               ))}
             </select>
@@ -863,7 +863,7 @@ export default function BoletimPage() {
               className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm appearance-none"
             >
               <option value="">{t.grades.selectClass}</option>
-              {filteredTurmas.map(turma => (
+              {filteredTurmas.map((turma: any) => (
                 <option key={turma.id} value={turma.id}>{turma.nome}</option>
               ))}
             </select>
@@ -878,7 +878,7 @@ export default function BoletimPage() {
               className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm appearance-none"
             >
               <option value="">{t.grades.selectSubject}</option>
-              {filteredDisciplinas.map(disciplina => (
+              {filteredDisciplinas.map((disciplina: any) => (
                 <option key={disciplina.id} value={disciplina.id}>{disciplina.nome}</option>
               ))}
             </select>
@@ -932,7 +932,7 @@ export default function BoletimPage() {
                         </td>
                      </tr>
                    ) : (
-                     boletimData.map((row, idx) => {
+                     boletimData.map((row: any, idx: number) => {
                        const status = getStatus(row.nota_final, row.frequencia);
                        const StatusIcon = status.icon;
                        return (

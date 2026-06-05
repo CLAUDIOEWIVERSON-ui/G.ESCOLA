@@ -26,8 +26,8 @@ export async function GET() {
     if (profileError) throw profileError;
 
     // Merge data
-    const mergedUsers = authUsers.map(user => {
-      const profile = profiles.find(p => p.id === user.id);
+    const mergedUsers = authUsers.map((user: any) => {
+      const profile = profiles.find((p: any) => p.id === user.id);
       return {
         id: user.id,
         email: user.email,
@@ -93,7 +93,7 @@ export async function POST(request: Request) {
           if (listError || !uList?.users || uList.users.length === 0) {
             break;
           }
-          const found = uList.users.find(u => u.email?.toLowerCase() === email.toLowerCase());
+          const found = uList.users.find((u: any) => u.email?.toLowerCase() === email.toLowerCase());
           if (found) {
             foundUser = found;
             break;

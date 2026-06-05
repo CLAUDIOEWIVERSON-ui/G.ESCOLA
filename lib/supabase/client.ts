@@ -35,17 +35,63 @@ const rawKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const supabaseUrl = cleanUrl(rawUrl);
 const supabaseAnonKey = (rawKey || 'placeholder').trim();
 
-if (!rawUrl || !rawKey || !isUrlValid(rawUrl)) {
+const isConfigured = !!rawUrl && !!rawKey && isUrlValid(rawUrl) && !rawUrl.includes('placeholder');
+
+if (!isConfigured) {
   console.warn('Supabase credentials missing or invalid. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in the Secrets panel.');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true
-  }
-});
+const createMockSupabase = () => {
+  const mockAuth = {
+    getSession: async () => ({ data: { session: null }, error: null }),
+    signOut: async () => ({ error: null }),
+    onAuthStateChange: (callback: any) => {
+      return {
+        data: {
+          subscription: {
+            unsubscribe: () => {}
+          }
+        }
+      };
+    },
+    signInWithPassword: async () => ({ data: { user: null, session: null }, error: new Error('Supabase is not configured yet') }),
+    signUp: async () => ({ data: { user: null, session: null }, error: new Error('Supabase is not configured yet') }),
+  };
+
+  const mockQueryBuilder = () => {
+    const builder: any = {
+      select: () => builder,
+      eq: () => builder,
+      neq: () => builder,
+      is: () => builder,
+      order: () => builder,
+      limit: () => builder,
+      single: async () => ({ data: null, error: { message: 'Supabase is not configured yet', code: 'PGRST116' } }),
+      maybeSingle: async () => ({ data: null, error: null }),
+      insert: () => builder,
+      update: () => builder,
+      upsert: () => builder,
+      delete: () => builder,
+      then: (resolve: any) => resolve({ data: [], error: null }),
+    };
+    return builder;
+  };
+
+  return {
+    auth: mockAuth,
+    from: mockQueryBuilder,
+  } as any;
+};
+
+export const supabase = isConfigured
+  ? createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true
+      }
+    })
+  : createMockSupabase();
 
 // Clear all local storage, session storage, and cookies that might contain an invalid refresh token to prevent infinite loops
 export const clearSupabaseCookiesAndStorage = () => {

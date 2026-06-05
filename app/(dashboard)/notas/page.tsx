@@ -61,7 +61,7 @@ export default function NotasPage() {
         } else if (selectedCurso) {
           // Join with turmas to get students of this course
           const { data: turmaIds } = await supabase.from('turmas').select('id, internacional').eq('curso_id', selectedCurso).is('deleted_at', null);
-          const ids = turmaIds?.filter(t => !t.internacional).map(t => t.id) || [];
+          const ids = turmaIds?.filter((t: any) => !t.internacional).map((t: any) => t.id) || [];
           if (ids.length > 0) {
             studentsFetch = studentsFetch.in('turma_id', ids);
           } else {
@@ -80,7 +80,7 @@ export default function NotasPage() {
           gradesFetch = gradesFetch.eq('turma_id', selectedTurma);
         } else if (selectedCurso) {
           const { data: turmaIds } = await supabase.from('turmas').select('id, internacional').eq('curso_id', selectedCurso).is('deleted_at', null);
-          const ids = turmaIds?.filter(t => !t.internacional).map(t => t.id) || [];
+          const ids = turmaIds?.filter((t: any) => !t.internacional).map((t: any) => t.id) || [];
           if (ids.length > 0) {
             gradesFetch = gradesFetch.in('turma_id', ids);
           }
@@ -89,7 +89,7 @@ export default function NotasPage() {
         const { data: grades } = await gradesFetch;
         
         const gradesMap: Record<string, Record<string, any>> = {};
-        grades?.forEach(g => {
+        grades?.forEach((g: any) => {
           if (!gradesMap[g.aluno_id]) gradesMap[g.aluno_id] = {};
           gradesMap[g.aluno_id][g.disciplina_id] = g;
         });
@@ -246,7 +246,7 @@ export default function NotasPage() {
 
     setSavingRows(prev => ({ ...prev, [alunoId]: true }));
     try {
-      const dataToUpsert = Object.values(studentGrades).map(gradeData => {
+      const dataToUpsert = Object.values(studentGrades).map((gradeData: any) => {
         const cleaned = { ...gradeData };
         delete cleaned.id;
         
@@ -292,7 +292,7 @@ export default function NotasPage() {
         setBulkNotas(prev => {
           const updated = { ...prev };
           const studentMap: Record<string, any> = {};
-          newGrades.forEach(g => {
+          newGrades.forEach((g: any) => {
             studentMap[g.disciplina_id] = g;
           });
           updated[alunoId] = studentMap;
@@ -314,7 +314,7 @@ export default function NotasPage() {
       const allGrades = Object.values(bulkNotas).flatMap(studentMap => Object.values(studentMap));
       if (allGrades.length === 0) return;
 
-      const dataToUpsert = allGrades.map(e => {
+      const dataToUpsert = allGrades.map((e: any) => {
         const cleaned = { ...e };
         delete cleaned.id;
         
@@ -389,7 +389,7 @@ export default function NotasPage() {
               className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-sm font-medium"
             >
               <option value="">{t.courses.selectCourse}</option>
-              {cursos.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+              {cursos.map((c: any) => <option key={c.id} value={c.id}>{c.nome}</option>)}
             </select>
           </div>
 
@@ -401,7 +401,7 @@ export default function NotasPage() {
                 const turmaId = e.target.value;
                 setSelectedTurma(turmaId);
                 if (turmaId) {
-                  const turma = turmas.find(t => t.id === turmaId);
+                  const turma = turmas.find((t: any) => t.id === turmaId);
                   if (turma?.curso_id) setSelectedCurso(turma.curso_id);
                 }
               }}
@@ -409,8 +409,8 @@ export default function NotasPage() {
             >
               <option value="">{t.grades.selectTurma}</option>
               {turmas
-                .filter(t => !selectedCurso || t.curso_id === selectedCurso)
-                .map(t => <option key={t.id} value={t.id}>{t.nome}</option>)}
+                .filter((t: any) => !selectedCurso || t.curso_id === selectedCurso)
+                .map((t: any) => <option key={t.id} value={t.id}>{t.nome}</option>)}
             </select>
           </div>
         </div>
@@ -462,7 +462,7 @@ export default function NotasPage() {
                 <tbody className="divide-y divide-slate-50">
                   {(() => {
                     const maxAvgValue = turmaAlunos.length > 0 
-                      ? Math.max(...turmaAlunos.map(a => {
+                      ? Math.max(...turmaAlunos.map((a: any) => {
                           const sGrades = bulkNotas[a.id] || {};
                           const fdId = disciplinas[0]?.id;
                           const gData = sGrades[fdId] || {};
@@ -471,11 +471,11 @@ export default function NotasPage() {
                             const v = gData[`nota${i}`];
                             if (v !== null && v !== undefined) scs.push(v);
                           }
-                          return scs.length > 0 ? scs.reduce((x, y) => x + y, 0) / scs.length : null;
+                          return scs.length > 0 ? scs.reduce((x: any, y: any) => x + y, 0) / scs.length : null;
                         }).filter((a): a is number => a !== null), -1)
                       : -1;
 
-                    return turmaAlunos.map((aluno, index) => {
+                    return turmaAlunos.map((aluno: any, index: number) => {
                       const studentGrades = bulkNotas[aluno.id] || {};
                       const isSavingRow = savingRows[aluno.id];
                       const firstDiscId = disciplinas[0].id;

@@ -353,7 +353,7 @@ function RelatorioAvaliacaoAdminContent() {
       
       // 1. From classes (turmas)
       if (turmasData) {
-        turmasData.forEach(t => {
+        turmasData.forEach((t: any) => {
           if (t.instrutor && t.instrutor.trim()) {
             uniqueInstructorsSet.add(t.instrutor.trim());
           }
@@ -361,7 +361,7 @@ function RelatorioAvaliacaoAdminContent() {
       }
 
       // 2. From submissions
-      activeSubmissions.forEach(sub => {
+      activeSubmissions.forEach((sub: any) => {
         if (sub.instrutor_nome && sub.instrutor_nome.trim()) {
           uniqueInstructorsSet.add(sub.instrutor_nome.trim());
         } else if (sub.turma?.instrutor && sub.turma.instrutor.trim()) {

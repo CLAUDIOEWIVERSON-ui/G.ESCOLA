@@ -118,7 +118,7 @@ export async function POST(req: NextRequest) {
         if (listError || !uList?.users || uList.users.length === 0) {
           break;
         }
-        const found = uList.users.find(u => u.email?.toLowerCase() === email.toLowerCase());
+        const found = uList.users.find((u: any) => u.email?.toLowerCase() === email.toLowerCase());
         if (found) {
           foundUser = found;
           break;
@@ -190,7 +190,7 @@ export async function POST(req: NextRequest) {
               if (listError || !uList?.users || uList.users.length === 0) {
                 break;
               }
-              const found = uList.users.find(u => u.email?.toLowerCase() === email.toLowerCase());
+              const found = uList.users.find((u: any) => u.email?.toLowerCase() === email.toLowerCase());
               if (found) {
                 foundUser = found;
                 break;

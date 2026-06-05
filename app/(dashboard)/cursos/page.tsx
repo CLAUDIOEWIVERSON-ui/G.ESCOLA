@@ -375,7 +375,7 @@ export default function CursosPage() {
     }
   };
 
-  const filteredCursos = cursos.filter(c => {
+  const filteredCursos = cursos.filter((c: any) => {
     const matchesSearch = c.nome.toLowerCase().includes(searchTerm.toLowerCase());
     if (activeCategory === 'Exterior') {
       return matchesSearch && c.internacional === true;
@@ -481,7 +481,7 @@ export default function CursosPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredCursos.map((curso) => {
+            {filteredCursos.map((curso: any) => {
               const cardStyle = getCardStyleForItem({
                 categoria: curso.categoria,
                 internacional: curso.internacional,
@@ -837,7 +837,7 @@ export default function CursosPage() {
                 {t.subjects.noSubjects}
               </div>
             ) : (
-              disciplinas.map((d) => (
+              disciplinas.map((d: any) => (
                 <div key={d.id} className="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-xl hover:border-slate-200 hover:shadow-sm transition-all group">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-slate-50 rounded-lg flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
@@ -1012,14 +1012,14 @@ export default function CursosPage() {
               <div className="flex justify-center py-8 text-slate-400">
                 <Loader2 size={24} className="animate-spin" />
               </div>
-            ) : materiasModulos.filter(m => m.modulo_index === activeModuloIndex).length === 0 ? (
+            ) : materiasModulos.filter((m: any) => m.modulo_index === activeModuloIndex).length === 0 ? (
               <div className="text-center py-12 text-slate-400 text-sm italic bg-slate-50 rounded-xl border-2 border-dashed border-slate-100">
                 {t.subjects.noTopics}
               </div>
             ) : (
               materiasModulos
-                .filter(m => m.modulo_index === activeModuloIndex)
-                .map((m) => (
+                .filter((m: any) => m.modulo_index === activeModuloIndex)
+                .map((m: any) => (
                   <div key={m.id} className="p-4 bg-white border border-slate-100 rounded-xl hover:border-slate-200 transition-all group">
                     <div className="flex items-start justify-between">
                       <div>

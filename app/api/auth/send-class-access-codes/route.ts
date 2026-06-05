@@ -102,7 +102,7 @@ export async function POST(req: NextRequest) {
         continue;
       }
 
-      const record = accessRecords?.find(r => r.student_id === student.id);
+      const record = accessRecords?.find((r: any) => r.student_id === student.id);
       if (!record?.access_code) {
         skippedCount++;
         failures.push({

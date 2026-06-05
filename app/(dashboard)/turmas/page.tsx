@@ -470,7 +470,7 @@ function TurmasContent() {
         .select('*')
         .eq('student_id', aluno.id)
         .maybeSingle()
-        .then(({ data, error }) => {
+        .then(({ data, error }: { data: any, error: any }) => {
           if (!error && data) {
             setStudentAccess(data);
           }
@@ -868,7 +868,7 @@ function TurmasContent() {
 
   const q = searchParams ? (searchParams.get('q')?.toLowerCase() || '') : '';
 
-  const filteredTurmas = turmas.filter(t => {
+  const filteredTurmas = turmas.filter((t: any) => {
     if (q) {
       const nomeMatch = t.nome?.toLowerCase().includes(q);
       const cursoMatch = t.curso?.nome?.toLowerCase().includes(q);
@@ -957,7 +957,7 @@ function TurmasContent() {
             </div>
           ))
         ) : filteredTurmas.length > 0 ? (
-          filteredTurmas.map((turma, i) => {
+          filteredTurmas.map((turma: any, i: number) => {
             const cardStyle = getCardStyleForItem({
               categoria: turma.categoria,
               internacional: turma.internacional,
@@ -1270,7 +1270,7 @@ function TurmasContent() {
                 className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-sm font-bold text-slate-800 appearance-none cursor-pointer shadow-sm"
               >
                 <option value="">{t.courses.selectCourse}</option>
-                {cursos.map(curso => (
+                {cursos.map((curso: any) => (
                   <option key={curso.id} value={curso.id}>{curso.nome}</option>
                 ))}
               </select>
