@@ -234,23 +234,39 @@ export default function FrequenciaPage() {
     setSaving(true);
     const loadingToast = toast.loading(t.common.loading || 'Salvando...');
     try {
-      const recordsToUpsert = Object.entries(attendanceRecords).map(([alunoId, data]) => {
-        const record: any = {
-          aluno_id: alunoId,
-          turma_id: selectedTurma,
-          disciplina_id: selectedDisciplina || null,
-          data: selectedDate,
-          presente: data.presente
-        };
-        if (data.id) record.id = data.id;
-        return record;
-      });
-
-      const { error } = await supabase
+      // First, delete existing entries to prevent duplicates and satisfy the partial index constraints smoothly
+      let deleteQuery = supabase
         .from('frequencia')
-        .upsert(recordsToUpsert, { onConflict: 'aluno_id, turma_id, disciplina_id, data' });
+        .delete()
+        .eq('turma_id', selectedTurma)
+        .eq('data', selectedDate);
 
-      if (error) throw error;
+      if (selectedDisciplina) {
+        deleteQuery = deleteQuery.eq('disciplina_id', selectedDisciplina);
+      } else {
+        deleteQuery = deleteQuery.is('disciplina_id', null);
+      }
+
+      const { error: deleteError } = await deleteQuery;
+      if (deleteError) throw deleteError;
+
+      // Now, insert the current selected options
+      const recordsToInsert = Object.entries(attendanceRecords).map(([alunoId, data]) => ({
+        aluno_id: alunoId,
+        turma_id: selectedTurma,
+        disciplina_id: selectedDisciplina || null,
+        data: selectedDate,
+        presente: data.presente
+      }));
+
+      if (recordsToInsert.length > 0) {
+        const { error: insertError } = await supabase
+          .from('frequencia')
+          .insert(recordsToInsert);
+
+        if (insertError) throw insertError;
+      }
+
       toast.success(t.attendance.saveSuccess, { id: loadingToast });
       fetchAttendance();
     } catch (err: any) {
@@ -407,7 +423,16 @@ export default function FrequenciaPage() {
             <input
               type="date"
               value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
+              onChange={(e) => {
+                const newDate = e.target.value;
+                setSelectedDate(newDate);
+                if (newDate) {
+                  const parsed = new Date(newDate + 'T12:00:00');
+                  if (!isNaN(parsed.getTime())) {
+                    setCurrentMapDate(parsed);
+                  }
+                }
+              }}
               className="w-full pl-14 pr-5 py-3.5 bg-slate-50/50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 outline-none text-base font-semibold transition-all cursor-pointer group-hover:bg-slate-50"
             />
           </div>
@@ -859,7 +884,11 @@ export default function FrequenciaPage() {
                             end: mapGranularity === 'week' ? endOfWeek(currentMapDate, { weekStartsOn: 1 }) : endOfMonth(currentMapDate)
                           }).map(day => {
                             const dayStr = format(day, 'yyyy-MM-dd');
-                            const rec = mapData.find(r => r.aluno_id === student.id && r.data.startsWith(dayStr));
+                            const rec = mapData.find(r => {
+                              if (!r.data) return false;
+                              const dbDateStr = typeof r.data === 'string' ? r.data.substring(0, 10) : format(new Date(r.data), 'yyyy-MM-dd');
+                              return r.aluno_id === student.id && dbDateStr === dayStr;
+                            });
                             const isWeekend = [0, 6].includes(day.getDay());
                             
                             return (
