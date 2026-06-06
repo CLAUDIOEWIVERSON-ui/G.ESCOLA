@@ -356,9 +356,12 @@ function LoginContent() {
                 <canvas ref={canvasRef} className="hidden" />
 
                 {scanError && (
-                  <div className="absolute inset-0 bg-slate-900/90 flex flex-col items-center justify-center p-4 text-center">
-                    <AlertCircle size={24} className="text-red-500 mb-1" />
-                    <span className="text-[10px] text-white font-medium">{scanError}</span>
+                  <div className="absolute inset-0 bg-slate-900/95 flex flex-col items-center justify-center p-4 text-center space-y-1.5 overflow-y-auto">
+                    <AlertCircle size={24} className="text-red-500 shrink-0" />
+                    <span className="text-[11px] text-white font-bold leading-tight">{scanError}</span>
+                    <p className="text-[9px] text-slate-300 leading-normal max-w-[170px]">
+                      Dica: Se estiver usando o preview, clique no botão <span className="font-semibold text-blue-400">"Abrir aplicativo em nova aba"</span> no canto superior direito para dar permissão de câmera com segurança.
+                    </p>
                   </div>
                 )}
               </div>

@@ -152,7 +152,7 @@ function AvaliacaoAlunoForm() {
       }
 
       // Find an unsubmitted student to bypass DB unique constraints
-      const unusedStudent = students?.find(st => !existingEvals?.some(sub => sub.aluno_id === st.id));
+      const unusedStudent = students?.find((st: any) => !existingEvals?.some((sub: any) => sub.aluno_id === st.id));
       if (!unusedStudent) {
         setLimitReached(true);
         setLoading(false);
@@ -421,7 +421,7 @@ function AvaliacaoAlunoForm() {
                 .eq('turma_id', studentDetails.turma_id)
                 .is('deleted_at', null);
 
-              const nextUnused = latestStudents?.find(st => !latestEvals?.some(sub => sub.aluno_id === st.id));
+              const nextUnused = latestStudents?.find((st: any) => !latestEvals?.some((sub: any) => sub.aluno_id === st.id));
               if (nextUnused) {
                 currentPayload.aluno_id = nextUnused.id;
               } else {
