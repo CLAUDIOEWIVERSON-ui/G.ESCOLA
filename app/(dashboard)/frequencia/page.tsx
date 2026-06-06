@@ -51,8 +51,8 @@ import { ptBR, enUS } from 'date-fns/locale';
 
 export default function FrequenciaPage() {
   const { t, language } = useI18n();
-  const { profile, isAdmin } = useUser();
-  const isReadOnly = !isAdmin;
+  const { profile, isAdmin, isInstrutor } = useUser();
+  const isReadOnly = !isAdmin && !isInstrutor;
   const dateLocale = language === 'pt' ? ptBR : enUS;
 
   const [loading, setLoading] = useState(false);
@@ -197,14 +197,16 @@ export default function FrequenciaPage() {
 
   const handleToggleAttendance = (alunoId: string) => {
     if (isReadOnly) return;
-    const { isValid, isExpired } = getTurmaPeriodStatus();
-    if (isExpired) {
-      toast.error(language === 'pt' ? 'O período desta turma já expirou. Não é permitido marcar frequência.' : 'The period for this class has expired. Attendance marking is not allowed.');
-      return;
-    }
-    if (!isValid) {
-      toast.error(language === 'pt' ? 'A data selecionada está fora do período da turma.' : 'The selected date is outside the class period.');
-      return;
+    if (!isAdmin) {
+      const { isValid, isExpired } = getTurmaPeriodStatus();
+      if (isExpired) {
+        toast.error(language === 'pt' ? 'O período desta turma já expirou. Não é permitido marcar frequência.' : 'The period for this class has expired. Attendance marking is not allowed.');
+        return;
+      }
+      if (!isValid) {
+        toast.error(language === 'pt' ? 'A data selecionada está fora do período da turma.' : 'The selected date is outside the class period.');
+        return;
+      }
     }
     setAttendanceRecords(prev => ({
       ...prev,
@@ -218,14 +220,16 @@ export default function FrequenciaPage() {
       toast.error(language === 'pt' ? 'Por favor, selecione uma data válida.' : 'Please select a valid date.');
       return;
     }
-    const { isValid, isExpired } = getTurmaPeriodStatus();
-    if (isExpired) {
-      toast.error(language === 'pt' ? 'Impossível salvar. O período da turma já expirou.' : 'Cannot save. The class period has already expired.');
-      return;
-    }
-    if (!isValid) {
-      toast.error(language === 'pt' ? 'Impossível salvar. A data selecionada está fora do período da turma.' : 'Cannot save. Selected date is outside the class period.');
-      return;
+    if (!isAdmin) {
+      const { isValid, isExpired } = getTurmaPeriodStatus();
+      if (isExpired) {
+        toast.error(language === 'pt' ? 'Impossível salvar. O período da turma já expirou.' : 'Cannot save. The class period has already expired.');
+        return;
+      }
+      if (!isValid) {
+        toast.error(language === 'pt' ? 'Impossível salvar. A data selecionada está fora do período da turma.' : 'Cannot save. Selected date is outside the class period.');
+        return;
+      }
     }
     setSaving(true);
     const loadingToast = toast.loading(t.common.loading || 'Salvando...');
@@ -439,7 +443,7 @@ export default function FrequenciaPage() {
                 <div className="text-xs font-semibold">
                   <p className="font-bold">⚠️ Período da Turma Expirado!</p>
                   <p className="font-normal mt-0.5">
-                    O período letivo definido para esta turma ({data_inicio ? data_inicio.split('-').reverse().join('/') : 'N/A'} a {data_fim ? data_fim.split('-').reverse().join('/') : 'N/A'}) já encerrou. As alterações de presença, falta ou atraso estão bloqueadas.
+                    O período letivo definido para esta turma ({data_inicio ? data_inicio.split('-').reverse().join('/') : 'N/A'} a {data_fim ? data_fim.split('-').reverse().join('/') : 'N/A'}) já encerrou. {isAdmin ? 'Como administrador, você pode realizar alterações.' : 'As alterações de presença, falta ou atraso estão bloqueadas.'}
                   </p>
                 </div>
               </div>
@@ -452,7 +456,7 @@ export default function FrequenciaPage() {
                 <div className="text-xs font-semibold">
                   <p className="font-bold">📅 Data selecionada anterior ao início das aulas!</p>
                   <p className="font-normal mt-0.5">
-                    O período letivo desta turma inicia em {data_inicio ? data_inicio.split('-').reverse().join('/') : 'N/A'}. A gravação de frequências para esta data está bloqueada.
+                    O período letivo desta turma inicia em {data_inicio ? data_inicio.split('-').reverse().join('/') : 'N/A'}. {isAdmin ? 'Como administrador, você pode realizar alterações.' : 'A gravação de frequências para esta data está bloqueada.'}
                   </p>
                 </div>
               </div>
@@ -524,7 +528,7 @@ export default function FrequenciaPage() {
             {!isReadOnly && (
               <button
                 onClick={handleSaveAttendance}
-                disabled={saving || !selectedTurma || getTurmaPeriodStatus().isExpired || !getTurmaPeriodStatus().isValid}
+                disabled={saving || !selectedTurma || (!isAdmin && (getTurmaPeriodStatus().isExpired || !getTurmaPeriodStatus().isValid))}
                 className="flex items-center justify-center gap-3 bg-blue-900 text-white px-8 py-3.5 rounded-2xl text-sm font-black hover:bg-blue-800 transition-all shadow-xl shadow-blue-900/20 disabled:opacity-50 active:scale-95"
               >
                 <Save size={20} className={cn(saving && "animate-spin")} />
@@ -602,47 +606,47 @@ export default function FrequenciaPage() {
                           <td className="px-6 py-4">
                             <div className="flex items-center justify-center gap-2">
                               <button
-                                onClick={() => !getTurmaPeriodStatus().isExpired && !attendanceRecords[student.id]?.presente && handleToggleAttendance(student.id)}
-                                disabled={getTurmaPeriodStatus().isExpired || isReadOnly}
+                                onClick={() => (isAdmin || getTurmaPeriodStatus().isValid) && !attendanceRecords[student.id]?.presente && handleToggleAttendance(student.id)}
+                                disabled={(!isAdmin && !getTurmaPeriodStatus().isValid) || isReadOnly}
                                 className={cn(
                                   "w-10 h-10 rounded-xl flex items-center justify-center transition-all shadow-sm",
                                   attendanceRecords[student.id]?.presente 
                                     ? "bg-blue-100 text-blue-600 ring-2 ring-blue-500/20" 
                                     : "bg-slate-50 text-slate-400 hover:bg-slate-100",
-                                  getTurmaPeriodStatus().isExpired && "opacity-40 cursor-not-allowed"
+                                  !isAdmin && !getTurmaPeriodStatus().isValid && "opacity-40 cursor-not-allowed"
                                 )}
-                                title={getTurmaPeriodStatus().isExpired ? "Período Expirado" : "Presente"}
+                                title={!isAdmin && !getTurmaPeriodStatus().isValid ? (language === 'pt' ? "Fora do Período" : "Outside Period") : "Presente"}
                               >
                                 <CheckCircle2 size={20} />
                               </button>
                               <button
-                                onClick={() => !getTurmaPeriodStatus().isExpired && attendanceRecords[student.id]?.presente && handleToggleAttendance(student.id)}
-                                disabled={getTurmaPeriodStatus().isExpired || isReadOnly}
+                                onClick={() => (isAdmin || getTurmaPeriodStatus().isValid) && attendanceRecords[student.id]?.presente && handleToggleAttendance(student.id)}
+                                disabled={(!isAdmin && !getTurmaPeriodStatus().isValid) || isReadOnly}
                                 className={cn(
                                   "w-10 h-10 rounded-xl flex items-center justify-center transition-all shadow-sm",
                                   !attendanceRecords[student.id]?.presente 
                                     ? "bg-rose-100 text-rose-600 ring-2 ring-rose-500/20" 
                                     : "bg-slate-50 text-slate-400 hover:bg-slate-100",
-                                  getTurmaPeriodStatus().isExpired && "opacity-40 cursor-not-allowed"
+                                  !isAdmin && !getTurmaPeriodStatus().isValid && "opacity-40 cursor-not-allowed"
                                 )}
-                                title={getTurmaPeriodStatus().isExpired ? "Período Expirado" : "Falta"}
+                                title={!isAdmin && !getTurmaPeriodStatus().isValid ? (language === 'pt' ? "Fora do Período" : "Outside Period") : "Falta"}
                               >
                                 <XCircle size={20} />
                               </button>
                               <button
                                 onClick={() => {
-                                  if (getTurmaPeriodStatus().isExpired) {
-                                    toast.error(language === 'pt' ? 'O período desta turma já expirou. Não é permitido marcar atraso.' : 'The class period has expired. Marking delay is not allowed.');
+                                  if (!isAdmin && !getTurmaPeriodStatus().isValid) {
+                                    toast.error(language === 'pt' ? 'O período desta turma já expirou ou é inválido. Não é permitido marcar atraso.' : 'The class period has expired or is invalid. Marking delay is not allowed.');
                                     return;
                                   }
                                   toast.info(language === 'pt' ? 'Registro de atraso não disponível no momento.' : 'Delay registration not available at this moment.');
                                 }}
-                                disabled={getTurmaPeriodStatus().isExpired}
+                                disabled={(!isAdmin && !getTurmaPeriodStatus().isValid)}
                                 className={cn(
                                   "w-10 h-10 rounded-xl flex items-center justify-center transition-all bg-slate-50 text-slate-400 hover:bg-orange-50 hover:text-orange-600 hover:ring-2 hover:ring-orange-500/20 shadow-sm",
-                                  getTurmaPeriodStatus().isExpired && "opacity-40 cursor-not-allowed"
+                                  !isAdmin && !getTurmaPeriodStatus().isValid && "opacity-40 cursor-not-allowed"
                                 )}
-                                title={getTurmaPeriodStatus().isExpired ? "Período Expirado" : "Atraso"}
+                                title={!isAdmin && !getTurmaPeriodStatus().isValid ? (language === 'pt' ? "Fora do Período" : "Outside Period") : "Atraso"}
                               >
                                 <Clock size={20} />
                               </button>
