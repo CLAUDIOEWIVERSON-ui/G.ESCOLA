@@ -1,15 +1,16 @@
 'use client';
 /* eslint-disable react-hooks/set-state-in-effect */
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
 import { Logo } from '@/components/Logo';
-import { LogIn, Mail, Lock, AlertCircle, FileText } from 'lucide-react';
+import { LogIn, Mail, Lock, AlertCircle, FileText, QrCode, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
+import jsQR from 'jsqr';
 
 function LoginContent() {
   const router = useRouter();
@@ -24,12 +25,202 @@ function LoginContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // QR Reader state
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
+  const [scanSuccess, setScanSuccess] = useState<string | null>(null);
+
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const requestRef = useRef<number | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
   useEffect(() => {
     if (searchParams && searchParams.get('blocked') === 'true') {
       setError('Seu acesso foi encerrado porque sua turma foi concluída. Em caso de dúvidas, procure a administração.');
       setLoginType('aluno');
     }
   }, [searchParams]);
+
+  // Clean raw media stream when unmounting
+  useEffect(() => {
+    return () => {
+      if (requestRef.current) {
+        cancelAnimationFrame(requestRef.current);
+      }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, []);
+
+  const startScan = async () => {
+    setIsScanning(true);
+    setScanError(null);
+    setScanSuccess(null);
+    setError(null);
+
+    // Minor delay to ensure component and dynamic ref mounts in the DOM
+    setTimeout(async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment' }
+        });
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.setAttribute('playsinline', 'true');
+          videoRef.current.play();
+          requestRef.current = requestAnimationFrame(tick);
+        }
+      } catch (err: any) {
+        console.error('[Camera Access Error]:', err);
+        setScanError('Câmera indisponível ou permissão negada.');
+      }
+    }, 150);
+  };
+
+  const stopScan = () => {
+    setIsScanning(false);
+    setScanError(null);
+    if (requestRef.current) {
+      cancelAnimationFrame(requestRef.current);
+      requestRef.current = null;
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+  };
+
+  const tick = () => {
+    if (videoRef.current && videoRef.current.readyState === videoRef.current.HAVE_ENOUGH_DATA) {
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          canvas.height = videoRef.current.videoHeight;
+          canvas.width = videoRef.current.videoWidth;
+          ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          
+          // Use internal jsqr library
+          const decoded = jsQR(imageData.data, imageData.width, imageData.height, {
+            inversionAttempts: 'dontInvert',
+          });
+
+          if (decoded) {
+            handleQRCodeDecoded(decoded.data);
+            return; // Exit recursion
+          }
+        }
+      }
+    }
+    requestRef.current = requestAnimationFrame(tick);
+  };
+
+  const handleQRCodeDecoded = async (text: string) => {
+    // 1. Immediately kill media tracks and animation loop
+    setIsScanning(false);
+    if (requestRef.current) {
+      cancelAnimationFrame(requestRef.current);
+      requestRef.current = null;
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+
+    // 2. Play beautiful successful scan chime
+    try {
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      osc.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      osc.frequency.setValueAtTime(800, audioCtx.currentTime); // Standard high frequency beep
+      gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.12);
+    } catch (_) {
+      // Ignored if blocked by gesture restriction
+    }
+
+    setScanSuccess('QR Code lido com sucesso!');
+
+    // 3. Fallback smart parsing algorithms for barcode scan codes
+    let codeValue = text.trim();
+    let passValue = '123'; // Standard student password default
+
+    try {
+      if (text.startsWith('{') && text.endsWith('}')) {
+        const parsed = JSON.parse(text);
+        if (parsed.accessCode || parsed.codigo || parsed.code) {
+          codeValue = String(parsed.accessCode || parsed.codigo || parsed.code).trim().toUpperCase();
+        }
+        if (parsed.password || parsed.senha || parsed.pass) {
+          passValue = String(parsed.password || parsed.senha || parsed.pass).trim();
+        }
+      } else if (text.includes(':')) {
+        const parts = text.split(':');
+        if (parts.length >= 2) {
+          codeValue = parts[0].trim().toUpperCase();
+          passValue = parts[1].trim();
+        }
+      } else if (text.includes(';')) {
+        const parts = text.split(';');
+        if (parts.length >= 2) {
+          codeValue = parts[0].trim().toUpperCase();
+          passValue = parts[1].trim();
+        }
+      } else if (text.includes('?')) {
+        const urlParams = new URLSearchParams(text.split('?')[1] || text);
+        const codeParam = urlParams.get('accessCode') || urlParams.get('code') || urlParams.get('codigo');
+        const passParam = urlParams.get('password') || urlParams.get('pass') || urlParams.get('senha');
+        if (codeParam) codeValue = codeParam.trim().toUpperCase();
+        if (passParam) passValue = passParam.trim();
+      }
+    } catch (_) {
+      // Fall back to literal trimmed string value
+    }
+
+    setAccessCode(codeValue);
+    setPassword(passValue);
+    setLoginType('aluno');
+
+    // 4. Kick-start auto-login process
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/auth/student-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accessCode: codeValue, password: passValue })
+      });
+      
+      const data = await response.json();
+      if (!response.ok || data.error) {
+        throw new Error(data.error || 'Erro ao realizar login.');
+      }
+
+      // Authenticate inside client-side Supabase helper
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: data.password
+      });
+      
+      if (signInError) throw signInError;
+
+      await refreshProfile();
+      router.push('/boletim');
+    } catch (err: any) {
+      setError(err.message || 'Código lido, mas houve um erro ao realizar o login automático. Digite sua senha.');
+      setScanSuccess(null);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -117,128 +308,240 @@ function LoginContent() {
   };
 
   return (
-    <div className="w-full max-w-sm bg-white rounded-xl shadow-xl shadow-slate-200/50 p-8 border border-slate-200">
-      <div className="flex flex-col items-center mb-6">
-        <Logo className="mb-0" dark={true} />
-      </div>
+    <div className="w-full max-w-sm bg-white rounded-xl shadow-xl shadow-slate-200/50 p-8 border border-slate-200 overflow-hidden min-h-[420px] flex flex-col justify-between">
+      <div>
+        <div className="flex flex-col items-center mb-6">
+          <Logo className="mb-0" dark={true} />
+        </div>
 
-      {/* Access Role Tabs */}
-      <div className="flex bg-slate-100 p-1 rounded-xl mb-6">
-        <button
-          type="button"
-          onClick={() => {
-            setLoginType('staff');
-            setError(null);
-          }}
-          className={cn(
-            "flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer",
-            loginType === 'staff' 
-              ? "bg-white text-blue-600 shadow-sm" 
-              : "text-slate-500 hover:text-slate-800"
-          )}
-        >
-          Gestão / Instrutor
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setLoginType('aluno');
-            setError(null);
-          }}
-          className={cn(
-            "flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer",
-            loginType === 'aluno' 
-              ? "bg-white text-blue-600 shadow-sm" 
-              : "text-slate-500 hover:text-slate-800"
-          )}
-        >
-          Aluno (Código)
-        </button>
-      </div>
-
-      <form id="auth-form" onSubmit={handleAuth} className="space-y-4">
         <AnimatePresence mode="wait">
-          {error && (
-            <motion.div 
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="bg-red-50 border border-red-100 text-red-600 p-3 rounded-lg text-xs flex items-center gap-2"
+          {isScanning ? (
+            <motion.div
+              key="scanner"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="flex flex-col items-center"
             >
-              <AlertCircle size={14} className="shrink-0" />
-              <span className="leading-relaxed">{error}</span>
+              <div className="text-center mb-4">
+                <span className="text-xs font-bold text-slate-700 block uppercase tracking-wide">Leitor de QR Code</span>
+                <span className="text-[11px] text-slate-400">Aponte a câmera da carteirinha escolar</span>
+              </div>
+
+              {/* Viewfinder block */}
+              <div className="relative w-full aspect-square max-w-[220px] rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 shadow-xl flex items-center justify-center">
+                <video
+                  ref={videoRef}
+                  className="absolute inset-0 w-full h-full object-cover"
+                  style={{ display: 'block' }}
+                  playsInline
+                  muted
+                />
+                
+                {/* Laser scan lines */}
+                <div className="absolute inset-4 pointer-events-none flex flex-col justify-between">
+                  <div className="flex justify-between">
+                    <div className="w-5 h-5 border-t-4 border-l-4 border-blue-500 rounded-tl-sm"></div>
+                    <div className="w-5 h-5 border-t-4 border-r-4 border-blue-500 rounded-tr-sm"></div>
+                  </div>
+                  
+                  <div className="w-full h-0.5 bg-blue-500 shadow-[0_0_8px_2px_rgba(59,130,246,0.8)] animate-bounce"></div>
+
+                  <div className="flex justify-between">
+                    <div className="w-5 h-5 border-b-4 border-l-4 border-blue-500 rounded-bl-sm"></div>
+                    <div className="w-5 h-5 border-b-4 border-r-4 border-blue-500 rounded-br-sm"></div>
+                  </div>
+                </div>
+
+                <canvas ref={canvasRef} className="hidden" />
+
+                {scanError && (
+                  <div className="absolute inset-0 bg-slate-900/90 flex flex-col items-center justify-center p-4 text-center">
+                    <AlertCircle size={24} className="text-red-500 mb-1" />
+                    <span className="text-[10px] text-white font-medium">{scanError}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Cancel Button */}
+              <div className="flex gap-2 w-full max-w-[220px] mt-4">
+                <button
+                  type="button"
+                  onClick={stopScan}
+                  className="flex-1 py-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 border border-slate-200 hover:bg-slate-50 rounded-lg cursor-pointer transition-all"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    stopScan();
+                    startScan();
+                  }}
+                  className="p-1.5 hover:bg-slate-50 border border-slate-200 text-slate-500 hover:text-slate-700 rounded-lg cursor-pointer transition-all flex items-center justify-center"
+                  title="Recarregar"
+                >
+                  <RefreshCw size={14} />
+                </button>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="form"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              className="space-y-4"
+            >
+              {/* Access Role Tabs */}
+              <div className="flex bg-slate-100 p-1 rounded-xl mb-6">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLoginType('staff');
+                    setError(null);
+                  }}
+                  className={cn(
+                    "flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer",
+                    loginType === 'staff' 
+                      ? "bg-white text-blue-600 shadow-sm" 
+                      : "text-slate-500 hover:text-slate-800"
+                  )}
+                >
+                  Gestão / Instrutor
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLoginType('aluno');
+                    setError(null);
+                  }}
+                  className={cn(
+                    "flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer",
+                    loginType === 'aluno' 
+                      ? "bg-white text-blue-600 shadow-sm" 
+                      : "text-slate-500 hover:text-slate-800"
+                  )}
+                >
+                  Aluno (Código)
+                </button>
+              </div>
+
+              <form id="auth-form" onSubmit={handleAuth} className="space-y-4">
+                <AnimatePresence mode="wait">
+                  {error && (
+                    <motion.div 
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="bg-red-50 border border-red-100 text-red-600 p-3 rounded-lg text-xs flex items-center gap-2"
+                    >
+                      <AlertCircle size={14} className="shrink-0" />
+                      <span className="leading-relaxed">{error}</span>
+                    </motion.div>
+                  )}
+                  {scanSuccess && (
+                    <motion.div 
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="bg-emerald-50 border border-emerald-100 text-emerald-600 p-3 rounded-lg text-xs flex items-center gap-2"
+                    >
+                      <span className="leading-relaxed">{scanSuccess}</span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {loginType === 'staff' ? (
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">{t.auth.email}</label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                      <input
+                        id="email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition-all"
+                        placeholder={t.auth.emailPlaceholder}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {/* Quick QR Reader Trigger */}
+                    <button
+                      type="button"
+                      onClick={startScan}
+                      className="w-full py-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md shadow-blue-200 active:scale-[0.98]"
+                    >
+                      <QrCode size={16} />
+                      Entrar via QR Code da Carteirinha
+                    </button>
+
+                    <div className="relative flex py-1 items-center">
+                      <div className="flex-grow border-t border-slate-150"></div>
+                      <span className="flex-shrink mx-3 text-[10px] text-slate-400 font-bold uppercase tracking-wider">ou digite os dados</span>
+                      <div className="flex-grow border-t border-slate-150"></div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">Código de Acesso do Aluno</label>
+                      <div className="relative">
+                        <FileText className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                        <input
+                          id="accessCode"
+                          type="text"
+                          value={accessCode}
+                          onChange={(e) => setAccessCode(e.target.value)}
+                          required
+                          placeholder="Ex: 2026-T05-0001"
+                          className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition-all font-mono"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">
+                    {loginType === 'aluno' ? 'Senha do Aluno (padrão 123)' : t.auth.password}
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                    <input
+                      id="password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition-all"
+                      placeholder="••••••••"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  id="auth-submit"
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-2.5 bg-blue-600 text-white rounded-lg font-bold text-sm flex items-center justify-center gap-2 hover:bg-blue-700 transition-all active:scale-[0.98] disabled:opacity-70 shadow-sm shadow-blue-200 cursor-pointer mt-2"
+                >
+                  {loading ? (
+                    <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  ) : (
+                    <>
+                      <LogIn size={16} />
+                      {t.auth.login}
+                    </>
+                  )}
+                </button>
+              </form>
             </motion.div>
           )}
         </AnimatePresence>
-
-        {loginType === 'staff' ? (
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">{t.auth.email}</label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition-all"
-                placeholder={t.auth.emailPlaceholder}
-              />
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">Código de Acesso do Aluno</label>
-            <div className="relative">
-              <FileText className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-              <input
-                id="accessCode"
-                type="text"
-                value={accessCode}
-                onChange={(e) => setAccessCode(e.target.value)}
-                required
-                placeholder="Ex: 2026-T05-0001"
-                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition-all font-mono"
-              />
-            </div>
-          </div>
-        )}
-
-        <div className="space-y-1.5">
-          <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">
-            {loginType === 'aluno' ? 'Senha do Aluno (padrão 123)' : t.auth.password}
-          </label>
-          <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition-all"
-              placeholder="••••••••"
-            />
-          </div>
-        </div>
-
-        <button
-          id="auth-submit"
-          type="submit"
-          disabled={loading}
-          className="w-full py-2.5 bg-blue-600 text-white rounded-lg font-bold text-sm flex items-center justify-center gap-2 hover:bg-blue-700 transition-all active:scale-[0.98] disabled:opacity-70 shadow-sm shadow-blue-200 cursor-pointer mt-2"
-        >
-          {loading ? (
-            <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-          ) : (
-            <>
-              <LogIn size={16} />
-              {t.auth.login}
-            </>
-          )}
-        </button>
-      </form>
+      </div>
     </div>
   );
 }

@@ -1,7 +1,9 @@
 {
   "name": "SISTEMA DE GESTÃO ESCOLAR",
   "description": "Plataforma completa para gerenciamento de cursos, turmas, instrutores, alunos e notas com suporte multi-idioma e autenticação segura.",
-  "requestFramePermissions": [],
+  "requestFramePermissions": [
+    "camera"
+  ],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
   ]
