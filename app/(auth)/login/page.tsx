@@ -75,7 +75,13 @@ function LoginContent() {
         }
       } catch (err: any) {
         console.error('[Camera Access Error]:', err);
-        setScanError('Câmera indisponível ou permissão negada.');
+        const errMsg = err?.message || '';
+        const errName = err?.name || '';
+        if (errName === 'NotAllowedError' || errMsg.toLowerCase().includes('not allowed') || errMsg.toLowerCase().includes('permission')) {
+          setScanError('Acesso bloqueado pelo navegador. Por favor, clique em "Abrir aplicativo em nova aba" acima para permitir o uso da câmera.');
+        } else {
+          setScanError('Câmera indisponível ou permissão negada.');
+        }
       }
     }, 150);
   };
@@ -215,7 +221,7 @@ function LoginContent() {
       await refreshProfile();
       router.push('/boletim');
     } catch (err: any) {
-      setError(err.message || 'Código lido, mas houve um erro ao realizar o login automático. Digite sua senha.');
+      setError(err.message || 'Código lido, mas houve um erro ao realizar o login automático. Tente novamente ou verifique se o QR Code está correto.');
       setScanSuccess(null);
     } finally {
       setLoading(false);
@@ -360,7 +366,7 @@ function LoginContent() {
                     <AlertCircle size={24} className="text-red-500 shrink-0" />
                     <span className="text-[11px] text-white font-bold leading-tight">{scanError}</span>
                     <p className="text-[9px] text-slate-300 leading-normal max-w-[170px]">
-                      Dica: Se estiver usando o preview, clique no botão <span className="font-semibold text-blue-400">"Abrir aplicativo em nova aba"</span> no canto superior direito para dar permissão de câmera com segurança.
+                      Dica: Se estiver usando o preview, clique no botão <span className="font-semibold text-blue-400">&quot;Abrir aplicativo em nova aba&quot;</span> no canto superior direito para dar permissão de câmera com segurança.
                     </p>
                   </div>
                 )}
@@ -480,66 +486,48 @@ function LoginContent() {
                       className="w-full py-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md shadow-blue-200 active:scale-[0.98]"
                     >
                       <QrCode size={16} />
-                      Entrar via QR Code da Carteirinha
+                      Acessar o &quot;Questionário via QR Code&quot;
                     </button>
-
-                    <div className="relative flex py-1 items-center">
-                      <div className="flex-grow border-t border-slate-150"></div>
-                      <span className="flex-shrink mx-3 text-[10px] text-slate-400 font-bold uppercase tracking-wider">ou digite os dados</span>
-                      <div className="flex-grow border-t border-slate-150"></div>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">Código de Acesso do Aluno</label>
-                      <div className="relative">
-                        <FileText className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                        <input
-                          id="accessCode"
-                          type="text"
-                          value={accessCode}
-                          onChange={(e) => setAccessCode(e.target.value)}
-                          required
-                          placeholder="Ex: 2026-T05-0001"
-                          className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition-all font-mono"
-                        />
-                      </div>
-                    </div>
                   </div>
                 )}
 
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">
-                    {loginType === 'aluno' ? 'Senha do Aluno (padrão 123)' : t.auth.password}
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                    <input
-                      id="password"
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition-all"
-                      placeholder="••••••••"
-                    />
-                  </div>
-                </div>
+                {loginType === 'staff' && (
+                  <>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">
+                        {t.auth.password}
+                      </label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                        <input
+                          id="password"
+                          type="password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          required
+                          className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition-all"
+                          placeholder="••••••••"
+                        />
+                      </div>
+                    </div>
 
-                <button
-                  id="auth-submit"
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-2.5 bg-blue-600 text-white rounded-lg font-bold text-sm flex items-center justify-center gap-2 hover:bg-blue-700 transition-all active:scale-[0.98] disabled:opacity-70 shadow-sm shadow-blue-200 cursor-pointer mt-2"
-                >
-                  {loading ? (
-                    <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  ) : (
-                    <>
-                      <LogIn size={16} />
-                      {t.auth.login}
-                    </>
-                  )}
-                </button>
+                    <button
+                      id="auth-submit"
+                      type="submit"
+                      disabled={loading}
+                      className="w-full py-2.5 bg-blue-600 text-white rounded-lg font-bold text-sm flex items-center justify-center gap-2 hover:bg-blue-700 transition-all active:scale-[0.98] disabled:opacity-70 shadow-sm shadow-blue-200 cursor-pointer mt-2"
+                    >
+                      {loading ? (
+                        <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      ) : (
+                        <>
+                          <LogIn size={16} />
+                          {t.auth.login}
+                        </>
+                      )}
+                    </button>
+                  </>
+                )}
               </form>
             </motion.div>
           )}

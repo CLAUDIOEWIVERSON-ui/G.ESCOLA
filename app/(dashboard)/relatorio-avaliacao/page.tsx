@@ -621,6 +621,47 @@ function RelatorioAvaliacaoAdminContent() {
     handleSelectAndEditAction(studentId, turmaId);
   };
 
+  const handlePrintQRCode = (studentName: string, accessCode: string, turmaNome: string) => {
+    const w = window.open('', '_blank');
+    if (w) {
+      w.document.write(`
+        <html>
+          <head>
+            <title>QR Code de Acesso - ${studentName}</title>
+            <style>
+              body { font-family: sans-serif; padding: 40px; color: #334155; text-align: center; background: #f8fafc; }
+              .card { border: 2.5px dashed #1e3a8a; padding: 30px; border-radius: 16px; max-width: 380px; margin: 40px auto; text-align: center; background: white; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+              h2 { margin: 0 0 5px 0; color: #1e3a8a; font-size: 22px; }
+              p { line-height: 1.5; margin: 6px 0; font-size: 14px; color: #475569; }
+              .qr-container { margin: 20px 0; }
+              .code { font-family: monospace; font-size: 20px; font-weight: bold; background: #f1f5f9; padding: 8px 16px; display: inline-block; border-radius: 6px; border: 1px solid #cbd5e1; color: #1d4ed8; letter-spacing: 1px; }
+              .footer { font-size: 11px; color: #64748b; margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 15px; }
+              @media print {
+                body { background: white; padding: 0; }
+                .card { margin: 0 auto; box-shadow: none; border-color: #334155; }
+              }
+            </style>
+          </head>
+          <body onload="window.print()">
+            <div class="card">
+              <h2>CARTEIRINHA ESCOLAR</h2>
+              <p style="text-transform: uppercase; font-size: 10px; font-weight: bold; letter-spacing: 1px; color: #475569; margin-bottom: 20px;">Área do Aluno • Login por QR Code</p>
+              <p><strong>Aluno:</strong> ${studentName}</p>
+              <p><strong>Turma:</strong> ${turmaNome}</p>
+              <div class="qr-container">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(accessCode)}" alt="QR Code" style="width: 140px; height: 140px; border: 1px solid #e2e8f0; padding: 6px; border-radius: 8px; background: white;" />
+              </div>
+              <div class="code">${accessCode}</div>
+              <p style="font-size: 11px; color: #64748b; margin-top: 15px;">Aponte o leitor de QR Code para esta imagem para entrar.</p>
+              <div class="footer">Escola Digital © ${new Date().getFullYear()}</div>
+            </div>
+          </body>
+        </html>
+      `);
+      w.document.close();
+    }
+  };
+
   const hasActiveFilter = selectedTurma !== 'ALL' || 
                          selectedInstructor !== 'ALL' || 
                          selectedStudent !== 'ALL' || 
@@ -1170,28 +1211,27 @@ function RelatorioAvaliacaoAdminContent() {
                             if (!stud.id) return;
                             toast.promise(
                               (async () => {
-                                const res = await fetch('/api/auth/send-access-code', {
-                                  method: 'POST',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({ studentId: stud.id })
-                                });
-                                const data = await res.json();
-                                if (!res.ok) {
-                                  throw new Error(data.error || 'Erro ao enviar e-mail.');
-                                }
+                                const { data, error } = await supabase
+                                  .from('student_access_codes')
+                                  .select('access_code')
+                                  .eq('student_id', stud.id)
+                                  .single();
+                                if (error) throw error;
+                                if (!data?.access_code) throw new Error('Código de acesso não encontrado.');
+                                handlePrintQRCode(stud.nome, data.access_code, stud.turma_nome);
                                 return data;
                               })(),
                               {
-                                loading: 'Reenviando código de acesso...',
-                                success: () => `Código reenviado com sucesso para ${stud.email || 'o e-mail do aluno'}!`,
-                                error: (err: any) => `${err.message || 'Erro ao enviar.'}`
+                                loading: 'Gerando QR Code da carteirinha...',
+                                success: 'Carteirinha gerada!',
+                                error: (err: any) => `${err.message || 'Erro ao gerar.'}`
                               }
                             );
                           }}
-                          className="bg-emerald-50 hover:bg-emerald-100/80 text-emerald-700 text-[10px] font-bold px-3 py-1.5 rounded-lg border border-emerald-250 transition flex items-center justify-center gap-1 cursor-pointer font-mono"
-                          title="Reenviar código de acesso via SMTP"
+                          className="bg-blue-50 hover:bg-blue-105/80 text-blue-700 text-[10px] font-bold px-3 py-1.5 rounded-lg border border-blue-200 transition flex items-center justify-center gap-1 cursor-pointer font-mono"
+                          title="Visualizar e Imprimir Carteirinha QR do Aluno"
                         >
-                          ✉️ REENVIAR CÓD
+                          🖨️ CARTEIRINHA QR
                         </button>
 
                         <button
@@ -1211,28 +1251,27 @@ function RelatorioAvaliacaoAdminContent() {
                             if (!stud.id) return;
                             toast.promise(
                               (async () => {
-                                const res = await fetch('/api/auth/send-access-code', {
-                                  method: 'POST',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({ studentId: stud.id })
-                                });
-                                const data = await res.json();
-                                if (!res.ok) {
-                                  throw new Error(data.error || 'Erro ao enviar e-mail.');
-                                }
+                                const { data, error } = await supabase
+                                  .from('student_access_codes')
+                                  .select('access_code')
+                                  .eq('student_id', stud.id)
+                                  .single();
+                                if (error) throw error;
+                                if (!data?.access_code) throw new Error('Código de acesso não encontrado.');
+                                handlePrintQRCode(stud.nome, data.access_code, stud.turma_nome);
                                 return data;
                               })(),
                               {
-                                loading: 'Enviando código de acesso...',
-                                success: () => `Código enviado com sucesso para ${stud.email || 'o e-mail do aluno'}!`,
-                                error: (err: any) => `${err.message || 'Erro ao enviar.'}`
+                                loading: 'Gerando QR Code da carteirinha...',
+                                success: 'Carteirinha gerada!',
+                                error: (err: any) => `${err.message || 'Erro ao gerar.'}`
                               }
                             );
                           }}
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition flex items-center justify-center gap-1 cursor-pointer border border-emerald-500 font-mono"
-                          title="Enviar código de acesso via SMTP"
+                          className="bg-blue-50 hover:bg-blue-105/80 text-blue-700 text-[10px] font-bold px-3 py-1.5 rounded-lg border border-blue-200 transition flex items-center justify-center gap-1 cursor-pointer font-mono"
+                          title="Visualizar e Imprimir Carteirinha QR do Aluno"
                         >
-                          ✉️ ENVIAR CÓD
+                          🖨️ CARTEIRINHA QR
                         </button>
 
                         <button
@@ -1519,28 +1558,27 @@ function RelatorioAvaliacaoAdminContent() {
                               if (!stud.id) return;
                               toast.promise(
                                 (async () => {
-                                  const res = await fetch('/api/auth/send-access-code', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ studentId: stud.id })
-                                  });
-                                  const data = await res.json();
-                                  if (!res.ok) {
-                                    throw new Error(data.error || 'Erro ao enviar e-mail.');
-                                  }
+                                  const { data, error } = await supabase
+                                    .from('student_access_codes')
+                                    .select('access_code')
+                                    .eq('student_id', stud.id)
+                                    .single();
+                                  if (error) throw error;
+                                  if (!data?.access_code) throw new Error('Código de acesso não encontrado.');
+                                  handlePrintQRCode(stud.nome, data.access_code, stud.turma_nome);
                                   return data;
                                 })(),
                                 {
-                                  loading: 'Enviando código de acesso...',
-                                  success: () => `Código enviado com sucesso para ${stud.email || 'o e-mail do aluno'}!`,
-                                  error: (err: any) => `${err.message || 'Erro ao enviar.'}`
+                                  loading: 'Gerando QR Code da carteirinha...',
+                                  success: 'Carteirinha gerada!',
+                                  error: (err: any) => `${err.message || 'Erro ao gerar.'}`
                                 }
                               );
                             }}
-                            className="w-1/2 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[9px] py-2 rounded-lg transition flex items-center justify-center gap-1 cursor-pointer font-mono tracking-wider shadow-sm border border-emerald-500"
-                            title="Enviar código de acesso ao aluno por e-mail via SMTP"
+                            className="w-1/2 bg-blue-50 hover:bg-blue-100 text-blue-700 font-extrabold text-[9px] py-2 rounded-lg transition flex items-center justify-center gap-1 cursor-pointer font-mono tracking-wider shadow-sm border border-blue-200"
+                            title="Imprimir Carteirinha com código de acesso QR do Aluno"
                           >
-                            ✉️ ENVIAR CÓD
+                            🖨️ CARTEIRINHA QR
                           </button>
 
                           <button
@@ -1868,31 +1906,84 @@ function RelatorioAvaliacaoAdminContent() {
                           
                           toast.promise(
                             (async () => {
-                              const res = await fetch('/api/auth/send-class-access-codes', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ classId: selectedTurma })
-                              });
-                              const data = await res.json();
-                              if (!res.ok) {
-                                throw new Error(data.error || 'Erro no disparo de e-mails.');
+                              const currentTurmaObj = turmas.find(t => t.id === selectedTurma);
+                              const turmaNome = currentTurmaObj ? currentTurmaObj.nome : 'Turma';
+
+                              const { data, error } = await supabase
+                                .from('student_access_codes')
+                                .select('access_code, student_id')
+                                .in('student_id', studentsFilteredByTurma.map(s => s.id));
+                                
+                              if (error) throw error;
+                              if (!data || data.length === 0) {
+                                throw new Error('Nenhum código de acesso gerado para esta turma.');
                               }
-                              return data;
+
+                              const printWindow = window.open('', '_blank');
+                              if (printWindow) {
+                                const cardsHtml = data.map((codeObj: any) => {
+                                  const student = studentsFilteredByTurma.find((a: any) => a.id === codeObj.student_id);
+                                  const studentName = student ? student.nome : 'Estudante';
+                                  return `
+                                    <div class="card">
+                                      <h3>CARTEIRINHA DE ACESSO</h3>
+                                      <p class="label">Aluno</p>
+                                      <p class="value">${studentName}</p>
+                                      <p class="label">Turma</p>
+                                      <p class="value">${turmaNome}</p>
+                                      <div style="margin: 12px 0;">
+                                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(codeObj.access_code)}" alt="QR Code" style="width: 110px; height: 110px; border: 1px solid #cbd5e1; padding: 4px; border-radius: 6px; background: white;" />
+                                      </div>
+                                      <code class="code">${codeObj.access_code}</code>
+                                    </div>
+                                  `;
+                                }).join('');
+
+                                printWindow.document.write(`
+                                  <html>
+                                    <head>
+                                      <title>Carteirinhas de Acesso QR - ${turmaNome}</title>
+                                      <style>
+                                        body { font-family: sans-serif; padding: 20px; background: #f8fafc; color: #1e293b; }
+                                        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
+                                        .card { border: 1px solid #e2e8f0; padding: 20px; border-radius: 12px; background: white; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); page-break-inside: avoid; }
+                                        h3 { margin: 0 0 8px 0; color: #1e3a8a; font-size: 13px; letter-spacing: 0.5px; border-bottom: 2px solid #ef4444; padding-bottom: 6px; text-transform: uppercase; }
+                                        .label { font-size: 9px; text-transform: uppercase; color: #64748b; margin: 6px 0 2px 0; font-weight: bold; }
+                                        .value { font-size: 12px; font-weight: bold; margin: 0; color: #334155; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+                                        .code { font-family: monospace; font-size: 13px; font-weight: bold; background: #f1f5f9; padding: 3px 8px; display: inline-block; border-radius: 4px; border: 1px solid #cbd5e1; margin-top: 5px; color: #1d4ed8; }
+                                        @media print {
+                                          body { background: white; padding: 0; }
+                                          .grid { gap: 15px; }
+                                          .card { border: 1.5px dashed #475569; box-shadow: none; }
+                                        }
+                                      </style>
+                                    </head>
+                                    <body onload="window.print()">
+                                      <div style="margin-bottom: 20px; border-bottom: 1px solid #cbd5e1; padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+                                        <div>
+                                          <h2 style="margin: 0; font-size: 18px; color: #1e3a8a;">Impressão de Carteirinhas QR da Turma</h2>
+                                          <p style="margin: 4px 0 0 0; font-size: 11px; color: #64748b;">Turma: ${turmaNome} (${data.length} carteirinhas)</p>
+                                        </div>
+                                      </div>
+                                      <div class="grid">${cardsHtml}</div>
+                                    </body>
+                                  </html>
+                                `);
+                                printWindow.document.close();
+                              }
+                              return true;
                             })(),
                             {
-                              loading: 'Disparando e-mails para todos os alunos da turma...',
-                              success: (data: any) => {
-                                const stats = data.stats || {};
-                                return `Processado! Sucesso: ${stats.sent || 0}, Ignorados/Sem Email: ${stats.skipped || 0}, Erros: ${stats.failed || 0}.`;
-                              },
-                              error: (err: any) => `${err.message || 'Erro ao enviar.'}`
+                              loading: 'Gerando carteirinhas QR para impressão...',
+                              success: 'Carteirinhas geradas!',
+                              error: (err: any) => `${err.message || 'Erro ao gerar carteirinhas.'}`
                             }
                           );
                         }}
-                        className="flex items-center justify-center gap-1.5 text-[11px] font-bold uppercase tracking-wider bg-amber-55 hover:bg-amber-100/80 text-amber-805 border border-amber-200 px-3.5 py-2 rounded-lg transition-all cursor-pointer shadow-sm shadow-amber-50"
-                        title="Enviar ou reenviar código de acesso a todos os alunos desta turma via SMTP"
+                        className="flex items-center justify-center gap-1.5 text-[11px] font-bold uppercase tracking-wider bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-3.5 py-2 rounded-lg transition-all cursor-pointer shadow-sm shadow-blue-50"
+                        title="Imprimir carteirinhas com código QR para todos os alunos desta turma"
                       >
-                        📩 Disparar E-mails (Lote)
+                        🖨️ Carteirinhas QR (Lote)
                       </button>
 
                       <select
@@ -2237,27 +2328,30 @@ function RelatorioAvaliacaoAdminContent() {
                               if (!studentDetails?.id) return;
                               toast.promise(
                                 (async () => {
-                                  const res = await fetch('/api/auth/send-access-code', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ studentId: studentDetails.id })
-                                  });
-                                  const data = await res.json();
-                                  if (!res.ok) {
-                                    throw new Error(data.error || 'Erro ao enviar e-mail.');
-                                  }
+                                  const { data, error } = await supabase
+                                    .from('student_access_codes')
+                                    .select('access_code')
+                                    .eq('student_id', studentDetails.id)
+                                    .single();
+                                  if (error) throw error;
+                                  if (!data?.access_code) throw new Error('Código de acesso não encontrado.');
+                                  
+                                  const currentTurmaObj = turmas.find(t => t.id === studentDetails.turma_id);
+                                  const turmaNome = currentTurmaObj ? currentTurmaObj.nome : 'Turma';
+                                  
+                                  handlePrintQRCode(studentDetails.nome, data.access_code, turmaNome);
                                   return data;
                                 })(),
                                 {
-                                  loading: 'Enviando código de acesso ao aluno...',
-                                  success: () => `Código enviado com sucesso para ${studentDetails?.email || 'e-mail do aluno'}!`,
-                                  error: (err: any) => `${err.message || 'Erro ao enviar.'}`
+                                  loading: 'Gerando QR Code da carteirinha...',
+                                  success: 'Carteirinha gerada!',
+                                  error: (err: any) => `${err.message || 'Erro ao gerar.'}`
                                 }
                               );
                             }}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2.5 rounded-lg shadow-sm transition flex items-center justify-center gap-2 cursor-pointer border border-emerald-500"
+                            className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 py-2.5 rounded-lg shadow-sm transition flex items-center justify-center gap-2 cursor-pointer border border-blue-500"
                           >
-                            ✉️ Enviar Código por E-mail
+                            🖨️ CARTEIRINHA QR
                           </button>
                           
                           <button
@@ -2293,27 +2387,30 @@ function RelatorioAvaliacaoAdminContent() {
                                   if (!studentSub.aluno_id) return;
                                   toast.promise(
                                     (async () => {
-                                      const res = await fetch('/api/auth/send-access-code', {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({ studentId: studentSub.aluno_id })
-                                      });
-                                      const data = await res.json();
-                                      if (!res.ok) {
-                                        throw new Error(data.error || 'Erro ao enviar e-mail.');
-                                      }
+                                      const { data, error } = await supabase
+                                        .from('student_access_codes')
+                                        .select('access_code')
+                                        .eq('student_id', studentSub.aluno_id)
+                                        .single();
+                                      if (error) throw error;
+                                      if (!data?.access_code) throw new Error('Código de acesso não encontrado.');
+                                      
+                                      const currentTurmaObj = turmas.find(t => t.id === studentSub.turma_id);
+                                      const turmaNome = currentTurmaObj ? currentTurmaObj.nome : 'Turma';
+                                      
+                                      handlePrintQRCode(studentSub.aluno?.nome || 'Estudante', data.access_code, turmaNome);
                                       return data;
                                     })(),
                                     {
-                                      loading: 'Enviando código de acesso...',
-                                      success: () => `Código reenviado com sucesso para ${studentSub.aluno?.email || 'e-mail do aluno'}!`,
-                                      error: (err: any) => `${err.message || 'Erro ao enviar.'}`
+                                      loading: 'Gerando QR Code da carteirinha...',
+                                      success: 'Carteirinha gerada!',
+                                      error: (err: any) => `${err.message || 'Erro ao gerar.'}`
                                     }
                                   );
                                 }}
-                                className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs px-3 py-2 rounded-lg font-bold border border-emerald-200 transition flex items-center gap-1 cursor-pointer font-sans"
+                                className="bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs px-3 py-2 rounded-lg font-bold border border-blue-200 transition flex items-center gap-1 cursor-pointer font-sans"
                               >
-                                ✉️ REENVIAR CÓDIGO
+                                🖨️ CARTEIRINHA QR
                               </button>
 
                               <button
