@@ -770,6 +770,7 @@ export default function CursosPage() {
                       <option value="CENPEM">CENPEM</option>
                       <option value="ROV">ROV</option>
                       <option value="PGI">PGI</option>
+                      <option value="PEPME">PEPME</option>
                     </select>
                     {errors.documento_criacao && <p className="text-xs text-red-500 mt-1">{errors.documento_criacao.message}</p>}
                   </div>

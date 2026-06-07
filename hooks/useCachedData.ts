@@ -218,6 +218,7 @@ export function useDashboardStats() {
             om,
             foto_url,
             genero,
+            tipo_aluno,
             data_inicio_curso,
             data_fim_curso,
             turma:turmas!inner(

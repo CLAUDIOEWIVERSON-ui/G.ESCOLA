@@ -16,6 +16,8 @@ import { motion } from 'motion/react';
 import Image from 'next/image';
 import maleAvatar from '@/src/assets/images/avatar_male_1778977230783.png';
 import femaleAvatar from '@/src/assets/images/avatar_female_1778977246051.png';
+import militaryMaleAvatar from '@/src/assets/images/avatar_military_male_1779964887322.png';
+import militaryFemaleAvatar from '@/src/assets/images/avatar_military_female_1779964903107.png';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -113,7 +115,7 @@ export default function NotasPage() {
       if (configData) setSettings(configData);
 
       // Fetch Alunos
-      const { data: alunosData } = await supabase.from('alunos').select('id, nome, matricula, foto_url, genero').is('deleted_at', null).order('nome');
+      const { data: alunosData } = await supabase.from('alunos').select('id, nome, matricula, foto_url, genero, tipo_aluno').is('deleted_at', null).order('nome');
       if (alunosData) setAlunos(alunosData);
 
       // Fetch Cursos
@@ -518,7 +520,11 @@ export default function NotasPage() {
                                   />
                                 ) : (
                                   <Image 
-                                    src={aluno.genero === 'feminino' ? femaleAvatar : maleAvatar} 
+                                    src={
+                                      aluno.tipo_aluno === 'civil'
+                                        ? (aluno.genero === 'feminino' ? femaleAvatar : maleAvatar)
+                                        : (aluno.genero === 'feminino' ? militaryFemaleAvatar : militaryMaleAvatar)
+                                    } 
                                     alt={aluno.nome} 
                                     fill 
                                     className="object-cover opacity-50" 

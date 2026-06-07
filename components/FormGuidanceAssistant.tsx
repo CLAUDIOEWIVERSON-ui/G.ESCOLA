@@ -30,6 +30,7 @@ export function FormGuidanceAssistant() {
   const [recentAction, setRecentAction] = useState<string>('');
   const [completionPercent, setCompletionPercent] = useState<number>(0);
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const closedFormRef = useRef<HTMLFormElement | null>(null);
 
   // Define database field mapping, names & exact real-world consequences in PT/EN
   const getFieldGuidanceAndConsequences = useCallback((nameAttr: string, labelText: string): { 
@@ -275,8 +276,13 @@ export function FormGuidanceAssistant() {
         if (formEl) {
           setActiveForm(formEl);
           analyzeFormState(formEl, inputEl);
+          if (closedFormRef.current !== formEl) {
+            setIsExpanded(true);
+            closedFormRef.current = null;
+          }
+        } else {
+          setIsExpanded(true);
         }
-        setIsExpanded(true);
       }
     };
 
@@ -342,7 +348,10 @@ export function FormGuidanceAssistant() {
             initial={{ opacity: 0, scale: 0.9, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 10 }}
-            onClick={() => setIsExpanded(true)}
+            onClick={() => {
+              setIsExpanded(true);
+              closedFormRef.current = null;
+            }}
             className="flex items-center gap-2.5 px-4 py-2.5 bg-slate-900 border border-white/10 text-white rounded-full shadow-2xl hover:bg-slate-800 transition-colors float-right cursor-pointer"
           >
             <Sparkles size={14} className="text-blue-400 animate-pulse" />
@@ -380,7 +389,12 @@ export function FormGuidanceAssistant() {
                 </div>
               </div>
               <button 
-                onClick={() => setIsExpanded(false)}
+                onClick={() => {
+                  setIsExpanded(false);
+                  if (activeForm) {
+                    closedFormRef.current = activeForm;
+                  }
+                }}
                 className="p-1 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-colors cursor-pointer"
               >
                 <ChevronDown size={16} />

@@ -28,6 +28,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import Image from 'next/image';
 import maleAvatar from '@/src/assets/images/avatar_male_1778977230783.png';
 import femaleAvatar from '@/src/assets/images/avatar_female_1778977246051.png';
+import militaryMaleAvatar from '@/src/assets/images/avatar_military_male_1779964887322.png';
+import militaryFemaleAvatar from '@/src/assets/images/avatar_military_female_1779964903107.png';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { 
@@ -87,7 +89,7 @@ export default function FrequenciaPage() {
       // Fetch students in the class
       const { data: alunoData, error: alunoError } = await supabase
         .from('alunos')
-        .select('id, nome, matricula, foto_url, genero')
+        .select('id, nome, matricula, foto_url, genero, tipo_aluno')
         .eq('turma_id', selectedTurma)
         .is('deleted_at', null)
         .order('nome');
@@ -688,7 +690,11 @@ export default function FrequenciaPage() {
                                   />
                                 ) : (
                                   <Image 
-                                    src={student.genero === 'feminino' ? femaleAvatar : maleAvatar} 
+                                    src={
+                                      student.tipo_aluno === 'civil'
+                                        ? (student.genero === 'feminino' ? femaleAvatar : maleAvatar)
+                                        : (student.genero === 'feminino' ? militaryFemaleAvatar : militaryMaleAvatar)
+                                    } 
                                     alt={student.nome} 
                                     fill 
                                     className="object-cover opacity-50" 

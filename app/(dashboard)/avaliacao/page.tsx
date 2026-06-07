@@ -23,7 +23,13 @@ import {
   ShieldCheck,
   Star,
   Info,
-  Clock
+  Clock,
+  Users,
+  ThumbsUp,
+  Lightbulb,
+  AlertTriangle,
+  MessageSquare,
+  Home
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -752,40 +758,61 @@ function AvaliacaoAlunoForm() {
 
           {/* Student details blanks info */}
           <div className="border border-slate-400 p-4 rounded-lg space-y-4 font-sans text-xs">
-            <h3 className="font-bold border-b pb-1 uppercase text-slate-800 text-[11px]">1. Identificação Acadêmica</h3>
+            <h3 className="font-bold border-b pb-1 uppercase text-slate-800 text-[11px] flex items-center gap-1.5">
+              <Info size={12} className="text-slate-700" />
+              1. Identificação Acadêmica
+            </h3>
             <div className="grid grid-cols-2 gap-y-4 gap-x-6">
               <div>
-                <span className="block font-bold text-slate-500 uppercase text-[9px]">Nome do Aluno:</span>
+                <span className="inline-flex items-center gap-1 font-bold text-slate-500 uppercase text-[9px]">
+                  <User size={10} className="text-slate-500" />
+                  Nome do Aluno:
+                </span>
                 <p className="text-xs font-semibold text-slate-900 mt-1 border-b border-dashed border-slate-400 pb-0.5 h-5">
                   {studentDetails?.nome || ""}
                 </p>
               </div>
               <div>
-                <span className="block font-bold text-slate-500 uppercase text-[9px]">Posto / Graduação:</span>
+                <span className="inline-flex items-center gap-1 font-bold text-slate-500 uppercase text-[9px]">
+                  <Star size={10} className="text-slate-500" />
+                  Posto / Graduação:
+                </span>
                 <p className="text-xs font-semibold text-slate-900 mt-1 border-b border-dashed border-slate-400 pb-0.5 h-5">
                   {studentDetails?.posto_graduacao || ""}
                 </p>
               </div>
               <div>
-                <span className="block font-bold text-slate-500 uppercase text-[9px]">Organização Militar (OM):</span>
+                <span className="inline-flex items-center gap-1 font-bold text-slate-500 uppercase text-[9px]">
+                  <Home size={10} className="text-slate-500" />
+                  Organização Militar (OM):
+                </span>
                 <p className="text-xs font-semibold text-slate-900 mt-1 border-b border-dashed border-slate-400 pb-0.5 h-5">
                   {studentDetails?.om || ""}
                 </p>
               </div>
               <div>
-                <span className="block font-bold text-slate-500 uppercase text-[9px]">Curso Realizado:</span>
+                <span className="inline-flex items-center gap-1 font-bold text-slate-500 uppercase text-[9px]">
+                  <BookOpen size={10} className="text-slate-500" />
+                  Curso Realizado:
+                </span>
                 <p className="text-xs font-semibold text-slate-900 mt-1 border-b border-dashed border-slate-400 pb-0.5 h-5">
                   {studentDetails?.turma?.curso?.nome || ""}
                 </p>
               </div>
               <div>
-                <span className="block font-bold text-slate-500 uppercase text-[9px]">Turma:</span>
+                <span className="inline-flex items-center gap-1 font-bold text-slate-500 uppercase text-[9px]">
+                  <Users size={10} className="text-slate-500" />
+                  Turma:
+                </span>
                 <p className="text-xs font-semibold text-slate-900 mt-1 border-b border-dashed border-slate-400 pb-0.5 h-5">
                   {studentDetails?.turma?.nome || ""}
                 </p>
               </div>
               <div>
-                <span className="block font-bold text-slate-500 uppercase text-[9px]">Instrutor Coordenador:</span>
+                <span className="inline-flex items-center gap-1 font-bold text-slate-500 uppercase text-[9px]">
+                  <ShieldCheck size={10} className="text-slate-500" />
+                  Instrutor Coordenador:
+                </span>
                 <p className="text-xs font-semibold text-slate-900 mt-1 border-b border-dashed border-slate-400 pb-0.5 h-5">
                   {studentDetails?.turma?.instrutor || ""}
                 </p>
@@ -904,31 +931,49 @@ function AvaliacaoAlunoForm() {
 
           {/* Section 5: Comments and Remarks (Ruled boxes) */}
           <div className="space-y-4 print:page-break-before pt-6">
-            <h3 className="font-bold text-xs uppercase bg-slate-105 p-2 border border-slate-300 rounded font-sans">6. Comentários, Críticas e Elogios</h3>
+            <h3 className="font-bold text-xs uppercase bg-slate-105 p-2 border border-slate-300 rounded font-sans flex items-center gap-1.5">
+              <MessageSquare size={13} className="text-slate-705" />
+              6. Comentários, Críticas e Elogios
+            </h3>
             
             <div className="space-y-4 font-sans text-xs">
               <div>
-                <span className="font-bold block mb-1">A. Sugestões de Melhorias Pedagógicas ou Administrativas:</span>
+                <span className="font-bold inline-flex items-center gap-1.5 mb-1">
+                  <Lightbulb size={12} className="text-amber-500" />
+                  A. Sugestões de Melhorias Pedagógicas ou Administrativas:
+                </span>
                 <div className="border border-slate-300 h-16 w-full rounded"></div>
               </div>
               
               <div>
-                <span className="font-bold block mb-1">B. Críticas Construtivas Importantes:</span>
+                <span className="font-bold inline-flex items-center gap-1.5 mb-1">
+                  <AlertTriangle size={12} className="text-rose-500" />
+                  B. Críticas Construtivas Importantes:
+                </span>
                 <div className="border border-slate-300 h-16 w-full rounded"></div>
               </div>
 
               <div>
-                <span className="font-bold block mb-1">C. Elogios em Destaque (Curso, Docência, Organização):</span>
+                <span className="font-bold inline-flex items-center gap-1.5 mb-1">
+                  <ThumbsUp size={12} className="text-emerald-500" />
+                  C. Elogios em Destaque (Curso, Docência, Organização):
+                </span>
                 <div className="border border-slate-300 h-16 w-full rounded"></div>
               </div>
 
               <div>
-                <span className="font-bold block mb-1">D. Temas Relevantes Sugeridos para Novos Cursos:</span>
+                <span className="font-bold inline-flex items-center gap-1.5 mb-1">
+                  <BookOpen size={12} className="text-blue-500" />
+                  D. Temas Relevantes Sugeridos para Novos Cursos:
+                </span>
                 <div className="border border-slate-300 h-16 w-full rounded"></div>
               </div>
 
               <div>
-                <span className="font-bold block mb-1">E. Comentários Complementares Adicionais:</span>
+                <span className="font-bold inline-flex items-center gap-1.5 mb-1">
+                  <MessageSquare size={12} className="text-slate-500" />
+                  E. Comentários Complementares Adicionais:
+                </span>
                 <div className="border border-slate-300 h-16 w-full rounded"></div>
               </div>
             </div>

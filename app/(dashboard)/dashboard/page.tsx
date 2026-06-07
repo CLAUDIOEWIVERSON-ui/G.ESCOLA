@@ -27,6 +27,8 @@ import Image from 'next/image';
 import { toast } from 'sonner';
 import maleAvatar from '@/src/assets/images/avatar_male_1778977230783.png';
 import femaleAvatar from '@/src/assets/images/avatar_female_1778977246051.png';
+import militaryMaleAvatar from '@/src/assets/images/avatar_military_male_1779964887322.png';
+import militaryFemaleAvatar from '@/src/assets/images/avatar_military_female_1779964903107.png';
 
 export default function DashboardPage() {
   const { t } = useI18n();
@@ -541,7 +543,11 @@ export default function DashboardPage() {
                           ) : (
                             <div className="w-12 h-16 rounded-lg overflow-hidden border border-slate-200 shrink-0 shadow-sm relative bg-slate-100">
                               <Image 
-                                src={aluno.genero === 'feminino' ? femaleAvatar : maleAvatar} 
+                                src={
+                                  aluno.tipo_aluno === 'civil'
+                                    ? (aluno.genero === 'feminino' ? femaleAvatar : maleAvatar)
+                                    : (aluno.genero === 'feminino' ? militaryFemaleAvatar : militaryMaleAvatar)
+                                } 
                                 alt={aluno.nome} 
                                 fill
                                 className="object-cover opacity-60" 

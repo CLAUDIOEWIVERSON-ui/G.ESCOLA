@@ -14,6 +14,8 @@ import { getCardStyleForItem, getCardColorSettings, CardColorSettings } from '@/
 import Image from 'next/image';
 import maleAvatar from '@/src/assets/images/avatar_male_1778977230783.png';
 import femaleAvatar from '@/src/assets/images/avatar_female_1778977246051.png';
+import militaryMaleAvatar from '@/src/assets/images/avatar_military_male_1779964887322.png';
+import militaryFemaleAvatar from '@/src/assets/images/avatar_military_female_1779964903107.png';
 
 import { toast } from 'sonner';
 
@@ -489,6 +491,7 @@ function TurmasContent() {
       turma_id: viewingTurma?.id || '', 
       status: 'ativo',
       genero: 'masculino',
+      tipo_aluno: 'militar',
       nif: '',
       rg: '',
       om: '',
@@ -570,6 +573,11 @@ function TurmasContent() {
       };
 
       dataToSave.email = (currentAluno.email && currentAluno.email.includes('@')) ? currentAluno.email : null;
+      if (currentAluno.tipo_aluno) {
+        dataToSave.tipo_aluno = currentAluno.tipo_aluno;
+      } else {
+        dataToSave.tipo_aluno = 'militar';
+      }
       if (currentAluno.posto_graduacao) dataToSave.posto_graduacao = currentAluno.posto_graduacao;
       if (currentAluno.rg) dataToSave.rg = currentAluno.rg;
       if (currentAluno.titulo_eleitor) dataToSave.titulo_eleitor = currentAluno.titulo_eleitor;
@@ -1625,7 +1633,11 @@ function TurmasContent() {
                         </>
                       ) : (
                         <Image 
-                          src={aluno.genero === 'feminino' ? femaleAvatar : maleAvatar} 
+                          src={
+                            aluno.tipo_aluno === 'civil'
+                              ? (aluno.genero === 'feminino' ? femaleAvatar : maleAvatar)
+                              : (aluno.genero === 'feminino' ? militaryFemaleAvatar : militaryMaleAvatar)
+                          } 
                           alt={aluno.nome} 
                           fill 
                           className="object-cover opacity-50" 
@@ -1780,7 +1792,11 @@ function TurmasContent() {
                 ) : (
                   <>
                     <Image 
-                      src={currentAluno?.genero === 'feminino' ? femaleAvatar : maleAvatar} 
+                      src={
+                        currentAluno?.tipo_aluno === 'civil'
+                          ? (currentAluno?.genero === 'feminino' ? femaleAvatar : maleAvatar)
+                          : (currentAluno?.genero === 'feminino' ? militaryFemaleAvatar : militaryMaleAvatar)
+                      } 
                       alt="Avatar" 
                       fill 
                       className="object-cover opacity-20 group-hover:opacity-30 transition-opacity" 
@@ -1810,7 +1826,20 @@ function TurmasContent() {
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded focus:ring-2 focus:ring-blue-500/20 outline-none text-sm"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    {language === 'pt' ? 'Militar ou Civil' : 'Military or Civil'}
+                  </label>
+                  <select
+                    value={currentAluno?.tipo_aluno || 'militar'}
+                    onChange={(e) => setCurrentAluno({ ...currentAluno, tipo_aluno: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded text-sm outline-none"
+                  >
+                    <option value="militar">{language === 'pt' ? 'Militar' : 'Military'}</option>
+                    <option value="civil">{language === 'pt' ? 'Civil' : 'Civil'}</option>
+                  </select>
+                </div>
                 <div>
                   <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
                     {t.students.registration}

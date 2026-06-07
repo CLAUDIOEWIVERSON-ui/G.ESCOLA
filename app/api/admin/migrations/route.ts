@@ -216,6 +216,21 @@ export async function GET() {
             .limit(1);
           return error;
         }
+      },
+      {
+        key: 'tipo_aluno_alunos',
+        tableName: 'alunos',
+        columnName: 'tipo_aluno',
+        fileName: '35_add_tipo_aluno_to_alunos.sql',
+        description: 'Coluna tipo_aluno na tabela de alunos para diferenciar estudantes se são Militares ou Civis, definindo seus avatares personalizados.',
+        isColumn: true,
+        checkFn: async () => {
+          const { error } = await supabaseAdmin
+            .from('alunos')
+            .select('tipo_aluno')
+            .limit(1);
+          return error;
+        }
       }
     ];
 
