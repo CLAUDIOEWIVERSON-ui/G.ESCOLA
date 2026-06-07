@@ -276,6 +276,85 @@ export default function FrequenciaPage() {
     }
   };
 
+  const handleToggleMapAttendance = async (studentId: string, dayStr: string, currentRecord: any) => {
+    if (isReadOnly) return;
+
+    if (!isAdmin) {
+      const activeTurma = turmas.find(t => t.id === selectedTurma);
+      if (activeTurma) {
+        const hasStart = !!activeTurma.data_inicio;
+        const hasEnd = !!activeTurma.data_fim;
+        if (hasEnd && dayStr > activeTurma.data_fim) {
+          toast.error(language === 'pt' ? 'Impossível alterar. O período desta turma já expirou.' : 'Cannot modify. The class period has already expired.');
+          return;
+        }
+        if (hasStart && dayStr < activeTurma.data_inicio) {
+          toast.error(language === 'pt' ? 'Impossível alterar. A data selecionada é anterior ao período letivo.' : 'Cannot modify. The selected date is before the class period.');
+          return;
+        }
+      }
+    }
+
+    // Toggle logic: defaults to true if no record exists
+    const wasPresent = currentRecord ? currentRecord.presente : true;
+    const newPresence = !wasPresent;
+
+    const toastId = toast.loading(language === 'pt' ? 'Atualizando presença...' : 'Updating attendance...');
+    try {
+      // First, delete any pre-existing records for this student on this day
+      let deleteQuery = supabase
+        .from('frequencia')
+        .delete()
+        .eq('aluno_id', studentId)
+        .eq('turma_id', selectedTurma)
+        .eq('data', dayStr);
+
+      if (selectedDisciplina) {
+        deleteQuery = deleteQuery.eq('disciplina_id', selectedDisciplina);
+      } else {
+        deleteQuery = deleteQuery.is('disciplina_id', null);
+      }
+
+      const { error: deleteError } = await deleteQuery;
+      if (deleteError) throw deleteError;
+
+      // Insert new record
+      const recordToInsert = {
+        aluno_id: studentId,
+        turma_id: selectedTurma,
+        disciplina_id: selectedDisciplina || null,
+        data: dayStr,
+        presente: newPresence
+      };
+
+      const { data: insertedData, error: insertError } = await supabase
+        .from('frequencia')
+        .insert([recordToInsert])
+        .select();
+
+      if (insertError) throw insertError;
+
+      // Snappy local state update
+      setMapData(prev => {
+        const filtered = prev.filter(r => {
+          const rDate = typeof r.data === 'string' ? r.data.substring(0, 10) : format(new Date(r.data), 'yyyy-MM-dd');
+          const rDis = r.disciplina_id || null;
+          const selDis = selectedDisciplina || null;
+          return !(r.aluno_id === studentId && rDate === dayStr && rDis === selDis);
+        });
+        if (insertedData && insertedData[0]) {
+          return [...filtered, insertedData[0]];
+        }
+        return filtered;
+      });
+
+      toast.success(language === 'pt' ? 'Presença atualizada!' : 'Attendance updated!', { id: toastId });
+    } catch (err: any) {
+      console.error('Error updating map attendance:', err);
+      toast.error(err.message || 'Erro ao salvar alteração.', { id: toastId });
+    }
+  };
+
   const filteredTurmas = selectedCurso ? turmas.filter((t: any) => t.curso_id === selectedCurso) : turmas;
   const filteredDisciplinas = selectedCurso ? disciplinas.filter((d: any) => d.curso_id === selectedCurso) : disciplinas;
 
@@ -896,11 +975,13 @@ export default function FrequenciaPage() {
                                 key={day.toString()} 
                                 className={cn(
                                   "p-0 border-l border-slate-50 cursor-pointer transition-all hover:bg-blue-50/50",
-                                  isWeekend && "bg-slate-50/30"
+                                  isWeekend && "bg-slate-50/30",
+                                  isReadOnly && "cursor-not-allowed opacity-80"
                                 )}
+                                title={isReadOnly ? (language === 'pt' ? "Apenas visualização" : "View only") : (language === 'pt' ? "Clique para alternar presença" : "Click to toggle attendance")}
                                 onClick={() => {
-                                  setSelectedDate(dayStr);
-                                  setView('record');
+                                  if (isReadOnly) return;
+                                  handleToggleMapAttendance(student.id, dayStr, rec);
                                 }}
                               >
                                 <div className="w-full h-14 flex items-center justify-center">
