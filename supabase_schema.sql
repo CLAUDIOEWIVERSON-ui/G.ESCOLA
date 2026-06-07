@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS public.cursos (
   data_inicio DATE,
   data_fim DATE,
   qtd_modulos INTEGER DEFAULT 4,
+  documento_criacao TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   deleted_at TIMESTAMPTZ
 );

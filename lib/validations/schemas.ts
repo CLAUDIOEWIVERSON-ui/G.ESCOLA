@@ -11,6 +11,7 @@ export const cursoSchema = z.object({
   internacional: z.boolean().optional(),
   localizacao: z.string().optional().nullable(),
   grupo_responsavel: z.string().optional().nullable(),
+  documento_criacao: z.string().optional().nullable(),
 });
 
 export const turmaSchema = z.object({

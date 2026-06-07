@@ -83,7 +83,7 @@ export function useTurmas() {
     async () => {
       const { data: dbData, error: dbError } = await supabase
         .from('turmas')
-        .select('*, curso:cursos(nome)')
+        .select('*, curso:cursos(nome, documento_criacao, categoria)')
         .is('deleted_at', null)
         .order('nome');
 

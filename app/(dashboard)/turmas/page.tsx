@@ -1070,7 +1070,14 @@ function TurmasContent() {
                 </div>
 
               <div className="flex-1 min-w-0 mb-6">
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mb-1 truncate">{turma.curso?.nome}</p>
+                <div className="flex flex-wrap items-center gap-2 mb-1">
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] truncate">{turma.curso?.nome}</p>
+                  {turma.curso?.documento_criacao && (
+                    <span className="px-1.5 py-0.5 bg-blue-50 text-blue-700 text-[8px] font-bold uppercase rounded border border-blue-100 flex-shrink-0">
+                      Doc: {turma.curso.documento_criacao}
+                    </span>
+                  )}
+                </div>
                 <h3 className="text-xl font-black text-slate-800 tracking-tight leading-tight group-hover:text-blue-600 transition-colors">{turma.nome}</h3>
                 
                 <div className="mt-4 grid grid-cols-2 gap-y-3 gap-x-2">

@@ -115,6 +115,21 @@ export async function GET() {
         }
       },
       {
+        key: 'documento_criacao_cursos',
+        tableName: 'cursos',
+        columnName: 'documento_criacao',
+        fileName: '34_add_documento_criacao_to_cursos.sql',
+        description: 'Coluna documento_criacao na tabela de cursos para armazenar o tipo de documento de criação do curso (Ordem Interna, CENPEM, ROV ou PGI).',
+        isColumn: true,
+        checkFn: async () => {
+          const { error } = await supabaseAdmin
+            .from('cursos')
+            .select('documento_criacao')
+            .limit(1);
+          return error;
+        }
+      },
+      {
         key: 'grupo_responsavel_turmas',
         tableName: 'turmas',
         columnName: 'grupo_responsavel',

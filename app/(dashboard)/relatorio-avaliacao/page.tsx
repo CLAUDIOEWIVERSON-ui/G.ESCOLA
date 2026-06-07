@@ -301,15 +301,24 @@ function RelatorioAvaliacaoAdminContent() {
       if (cursosData) setCursos(cursosData);
 
       // Fetch Turmas with registered instructor field
-      const { data: turmasData } = await supabase.from('turmas').select('id, nome, curso_id, periodo, instrutor').is('deleted_at', null);
-      if (turmasData) setTurmas(turmasData);
+      const { data: turmasData } = await supabase.from('turmas').select('id, nome, curso_id, periodo, instrutor, internacional').is('deleted_at', null);
+      
+      // Filter out international/exterior classes from the evaluation module
+      const nonInternationalTurmas = (turmasData || []).filter((t: any) => !t.internacional);
+      setTurmas(nonInternationalTurmas);
 
       // Fetch Alunos
       const { data: alunosData } = await supabase
         .from('alunos')
         .select('id, nome, turma_id, posto_graduacao, om, matricula, email')
         .is('deleted_at', null);
-      if (alunosData) setAllStudents(alunosData);
+
+      // Filter out students belonging to international/exterior classes
+      const nonInternationalAlunos = (alunosData || []).filter((al: any) => {
+        const matchingTurma = (turmasData || []).find((t: any) => t.id === al.turma_id);
+        return matchingTurma ? !matchingTurma.internacional : true;
+      });
+      setAllStudents(nonInternationalAlunos);
 
       // Fetch Questionarios joined with relation metrics
       const { data: qData, error: qErr } = await supabase
@@ -329,6 +338,7 @@ function RelatorioAvaliacaoAdminContent() {
             nome,
             instrutor,
             periodo,
+            internacional,
             curso:cursos(
               id,
               nome
@@ -345,20 +355,19 @@ function RelatorioAvaliacaoAdminContent() {
         }
       }
 
-      const activeSubmissions = qData || [];
+      // Filter out submissions belonging to international/exterior classes
+      const activeSubmissions = (qData || []).filter((sub: any) => !sub.turma?.internacional);
       setSubmissions(activeSubmissions);
 
       // Extract unique instructors registered in classes (turmas) and mentioned in submissions
       const uniqueInstructorsSet = new Set<string>();
       
       // 1. From classes (turmas)
-      if (turmasData) {
-        turmasData.forEach((t: any) => {
-          if (t.instrutor && t.instrutor.trim()) {
-            uniqueInstructorsSet.add(t.instrutor.trim());
-          }
-        });
-      }
+      nonInternationalTurmas.forEach((t: any) => {
+        if (t.instrutor && t.instrutor.trim()) {
+          uniqueInstructorsSet.add(t.instrutor.trim());
+        }
+      });
 
       // 2. From submissions
       activeSubmissions.forEach((sub: any) => {
@@ -883,7 +892,7 @@ function RelatorioAvaliacaoAdminContent() {
           <h2 className="text-xs font-black uppercase tracking-wider font-mono">Filtros de Pesquisa e Segmentação</h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Turma Selection */}
           <div>
             <label className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1.5 font-mono">Turma</label>
@@ -928,54 +937,6 @@ function RelatorioAvaliacaoAdminContent() {
                 <option key={inst} value={inst}>{inst}</option>
               ))}
             </select>
-          </div>
-
-          {/* Student selection filter */}
-          <div>
-            <label className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1.5 font-mono">Aluno Específico</label>
-            <select
-              value={selectedStudent}
-              onChange={(e) => setSelectedStudent(e.target.value)}
-              disabled={selectedTurma === 'ALL'}
-              className="w-full bg-slate-950 border border-slate-800 text-xs rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-sky-500 text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {selectedTurma === 'ALL' ? (
-                <option value="ALL">Selecione uma turma primeiro</option>
-              ) : (
-                <>
-                  <option value="ALL">Todos os Alunos ({studentsFilteredByTurma.length} disponíveis)</option>
-                  {studentsFilteredByTurma.map(stud => (
-                    <option key={stud.id} value={stud.id}>
-                      {stud.responded ? "✅" : "⚠️ (Pendente)"} {stud.nome}
-                    </option>
-                  ))}
-                </>
-              )}
-            </select>
-          </div>
-
-          {/* Quick Search */}
-          <div>
-            <label className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1.5 font-mono">Pesquisa rápida</label>
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 h-3.5 w-3.5" />
-              <input
-                type="text"
-                value={qStr}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  const params = new URLSearchParams(searchParams ? searchParams.toString() : '');
-                  if (val) {
-                    params.set('q', val);
-                  } else {
-                    params.delete('q');
-                  }
-                  router.push(`${pathname}?${params.toString()}`);
-                }}
-                placeholder="Buscar palavra..."
-                className="w-full bg-slate-950 border border-slate-800 text-[11px] rounded-lg pl-8 pr-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-sky-500 text-slate-300 placeholder-slate-600 outline-none"
-              />
-            </div>
           </div>
         </div>
 
@@ -1091,393 +1052,90 @@ function RelatorioAvaliacaoAdminContent() {
           <div>
             <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider font-mono">Pesquisa e Relatórios Ocultos</h3>
             <p className="text-slate-500 text-xs mt-1.5 max-w-sm mx-auto leading-relaxed">
-              Os dados e gráficos das avaliações pedagógicas não estão ativos. Ative qualquer um dos filtros acima ou utilize a pesquisa rápida para carregar o dashboard embaixo.
+              Os dados e gráficos das avaliações pedagógicas não estão ativos. Ative qualquer um dos filtros acima para carregar o dashboard embaixo.
             </p>
           </div>
         </div>
       ) : (
         <>
-          {/* DASHBOARD TABS AND CONTENT CONTROLLERS */}
-          <div className="border-b border-slate-200 flex flex-wrap gap-2 print:hidden">
-        <button
-          onClick={() => changeTab('geral')}
-          className={`px-5 py-3 text-xs font-bold transition border-b-2 font-mono ${
-            activeTab === 'geral' 
-              ? "border-slate-900 text-slate-900" 
-              : "border-transparent text-slate-500 hover:text-slate-800"
-          }`}
-        >
-          Visão Geral & Estatísticas
-        </button>
-        <button
-          onClick={() => changeTab('curso')}
-          className={`px-5 py-3 text-xs font-bold transition border-b-2 font-mono ${
-            activeTab === 'curso' 
-              ? "border-slate-900 text-slate-900" 
-              : "border-transparent text-slate-500 hover:text-slate-800"
-          }`}
-        >
-          Relatório do Curso
-        </button>
-        <button
-          onClick={() => changeTab('instrutor')}
-          className={`px-5 py-3 text-xs font-bold transition border-b-2 font-mono ${
-            activeTab === 'instrutor' 
-              ? "border-slate-900 text-slate-900" 
-              : "border-transparent text-slate-500 hover:text-slate-800"
-          }`}
-        >
-          Relatório do Instrutor
-        </button>
-        <button
-          onClick={() => changeTab('aluno')}
-          className={`px-5 py-3 text-xs font-bold transition border-b-2 font-mono ${
-            activeTab === 'aluno' 
-              ? "border-slate-900 text-slate-900" 
-              : "border-transparent text-slate-500 hover:text-slate-800"
-          }`}
-        >
-          Relatório Individual Aluno
-        </button>
-      </div>
-
-      {filteredSubmissions.length === 0 && activeTab !== 'aluno' ? (
-        <div className="bg-white border border-slate-200 rounded-2xl p-8 md:p-12 text-center shadow-sm space-y-8 max-w-3xl mx-auto my-4">
-          <div className="space-y-3">
-            <FilterX className="h-12 w-12 text-slate-400 mx-auto" />
-            <h3 className="text-base font-extrabold text-slate-800 uppercase tracking-wider font-mono">Nenhum registro localizado</h3>
-            <p className="text-slate-500 text-xs max-w-md mx-auto leading-relaxed">
-              Não há avaliações acadêmicas gravadas no banco para o filtro selecionado. Como administrador, você pode preencher o questionário para os alunos pendentes abaixo:
-            </p>
-          </div>
-
-          {/* List of all students in this selected class, or overall if no class selected, marking responded/pending */}
-          <div className="border border-slate-150 rounded-xl overflow-hidden bg-slate-50 text-left">
-            <div className="bg-slate-100 px-4 py-3 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-              <div>
-                <span className="text-xs font-black uppercase tracking-wider text-slate-700 font-mono">
-                  Selecione um Aluno para Preenchimento ou Edição Administrativa
-                </span>
-                <p className="text-[10px] text-slate-450 font-sans">
-                  {selectedTurma !== 'ALL' 
-                    ? `Mostrando todos os alunos nesta turma (${filteredAllStudentsForOperation.length})`
-                    : `Mostrando todos os alunos cadastrados (${filteredAllStudentsForOperation.length})`}
-                </p>
-              </div>
-              <span className="text-[9px] bg-indigo-100 text-indigo-800 font-black px-2.5 py-1 rounded-full font-sans uppercase tracking-wider">
-                Operação Geral Admin
-              </span>
+          {filteredSubmissions.length === 0 ? (
+            <div className="bg-white border border-slate-200 rounded-2xl p-8 md:p-12 text-center shadow-sm space-y-4 max-w-3xl mx-auto my-4">
+              <FilterX className="h-12 w-12 text-slate-400 mx-auto" />
+              <h3 className="text-base font-extrabold text-slate-800 uppercase tracking-wider font-mono">Nenhum registro localizado</h3>
+              <p className="text-slate-500 text-xs max-w-md mx-auto leading-relaxed">
+                Não há avaliações acadêmicas gravadas no banco para o filtro de turma/instrutor selecionado. Divulgue o QR Code da turma acima para coletar respostas de forma anônima.
+              </p>
             </div>
-            
-            {filteredAllStudentsForOperation.length === 0 ? (
-              <div className="p-8 text-center text-slate-400 italic text-xs font-mono">
-                🎉 Nenhum aluno localizado no filtro atual!
-              </div>
-            ) : (
-              <div className="divide-y divide-slate-100 max-h-80 overflow-y-auto custom-scrollbar">
-                {filteredAllStudentsForOperation.map((stud) => (
-                  <div key={stud.id} className="p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-100/50 transition">
-                    <div>
-                      <div className="text-xs font-black text-slate-800 flex items-center gap-1.5 font-mono">
-                        {stud.posto_graduacao ? (
-                          <span className="bg-slate-200/80 text-slate-700 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase font-mono">
-                            {stud.posto_graduacao}
-                          </span>
-                        ) : null}
-                        {stud.nome}
-                        {stud.responded ? (
-                          <span className="text-[9px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-bold uppercase">
-                            Respondido
-                          </span>
-                        ) : (
-                          <span className="text-[9px] bg-amber-105 text-amber-800 px-1.5 py-0.5 rounded font-bold uppercase">
-                            Pendente
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-[10px] text-slate-500 font-mono flex flex-wrap gap-2 mt-1">
-                        <span>OM: <strong>{stud.om || 'Não especificada'}</strong></span>
-                        <span className="text-slate-305">•</span>
-                        <span>Matrícula: <strong>{stud.matricula || '-'}</strong></span>
-                        <span className="text-slate-305">•</span>
-                        <span>Turma: <strong className="text-indigo-650">{stud.turma_nome}</strong></span>
-                      </div>
-                    </div>
-                    {stud.responded ? (
-                      <div className="flex flex-col sm:flex-row gap-2 self-end sm:self-center shrink-0">
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            if (!stud.id) return;
-                            toast.promise(
-                              (async () => {
-                                const { data, error } = await supabase
-                                  .from('student_access_codes')
-                                  .select('access_code')
-                                  .eq('student_id', stud.id)
-                                  .single();
-                                if (error) throw error;
-                                if (!data?.access_code) throw new Error('Código de acesso não encontrado.');
-                                handlePrintQRCode(stud.nome, data.access_code, stud.turma_nome);
-                                return data;
-                              })(),
-                              {
-                                loading: 'Gerando QR Code da carteirinha...',
-                                success: 'Carteirinha gerada!',
-                                error: (err: any) => `${err.message || 'Erro ao gerar.'}`
-                              }
-                            );
-                          }}
-                          className="bg-blue-50 hover:bg-blue-105/80 text-blue-700 text-[10px] font-bold px-3 py-1.5 rounded-lg border border-blue-200 transition flex items-center justify-center gap-1 cursor-pointer font-mono"
-                          title="Visualizar e Imprimir Carteirinha QR do Aluno"
-                        >
-                          🖨️ CARTEIRINHA QR
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => handleSelectAndEditAction(stud.id, stud.turma_id)}
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[10px] px-3.5 py-1.5 rounded-lg shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer font-sans tracking-wide border border-emerald-500 font-mono"
-                        >
-                          <Edit3 className="h-3 w-3" />
-                          EDITAR RESPOSTAS
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col sm:flex-row gap-2 self-end sm:self-center shrink-0">
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            if (!stud.id) return;
-                            toast.promise(
-                              (async () => {
-                                const { data, error } = await supabase
-                                  .from('student_access_codes')
-                                  .select('access_code')
-                                  .eq('student_id', stud.id)
-                                  .single();
-                                if (error) throw error;
-                                if (!data?.access_code) throw new Error('Código de acesso não encontrado.');
-                                handlePrintQRCode(stud.nome, data.access_code, stud.turma_nome);
-                                return data;
-                              })(),
-                              {
-                                loading: 'Gerando QR Code da carteirinha...',
-                                success: 'Carteirinha gerada!',
-                                error: (err: any) => `${err.message || 'Erro ao gerar.'}`
-                              }
-                            );
-                          }}
-                          className="bg-blue-50 hover:bg-blue-105/80 text-blue-700 text-[10px] font-bold px-3 py-1.5 rounded-lg border border-blue-200 transition flex items-center justify-center gap-1 cursor-pointer font-mono"
-                          title="Visualizar e Imprimir Carteirinha QR do Aluno"
-                        >
-                          🖨️ CARTEIRINHA QR
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => handleSelectAndFillPending(stud.id, stud.turma_id)}
-                          className="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-[10px] px-3.5 py-1.5 rounded-lg shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer font-sans tracking-wide border border-indigo-500 font-mono"
-                        >
-                          <Edit3 className="h-3 w-3" />
-                          PREENCHER
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-8">
-          
-          {/* TAB 1: GERAL & ESTATÍSTICAS */}
-          {activeTab === 'geral' && (
+          ) : (
             <div className="space-y-8">
+              
+              {/* TAB 1: GERAL & ESTATÍSTICAS */}
+              {activeTab === 'geral' && (
+                <div className="space-y-8">
               {/* Bento Grid High Level Metrics */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* Score average overall */}
-                <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center justify-between">
-                  <div className="space-y-1">
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider font-mono">Média Geral Escola</span>
-                    <p className="text-3xl font-black text-slate-900 tracking-tight">{overallAverage.toFixed(2)}/5.00</p>
-                    <span className="text-[10px] text-slate-500 block font-medium font-mono">{getScaleLabel(overallAverage)}</span>
-                  </div>
-                  <div className="w-12 h-12 bg-slate-50 rounded-lg flex items-center justify-center border">
-                    <Award className="h-6 w-6 text-slate-700" />
-                  </div>
-                </div>
+              {(() => {
+                const enrolledStudents = selectedTurma === 'ALL' ? allStudents : allStudents.filter(s => s.turma_id === selectedTurma);
+                const numInscritos = enrolledStudents.length;
+                const numPreenchidos = selectedTurma === 'ALL' ? submissions.length : submissions.filter(sub => enrolledStudents.some(s => s.id === sub.aluno_id)).length;
+                const numFalta = Math.max(0, numInscritos - numPreenchidos);
+                const fillingPercent = numInscritos > 0 ? (numPreenchidos / numInscritos) * 100 : 0;
 
-                {/* Rating courses */}
-                <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center justify-between">
-                  <div className="space-y-1">
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider font-mono">Índice do Curso</span>
-                    <p className="text-3xl font-black text-emerald-700 tracking-tight">{courseSatisfactionIndex.toFixed(2)}/5</p>
-                    <span className="text-[10px] text-slate-500 block font-medium font-mono">Conteúdo e Organização</span>
-                  </div>
-                  <div className="w-12 h-12 bg-emerald-50 rounded-lg flex items-center justify-center border border-emerald-100">
-                    <BookOpen className="h-6 w-6 text-emerald-600" />
-                  </div>
-                </div>
-
-                {/* Ratings Instructor */}
-                <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center justify-between">
-                  <div className="space-y-1">
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1.5 block font-mono">Índice do Instrutor</span>
-                    <p className="text-3xl font-black text-indigo-700 tracking-tight">{instructorIndex.toFixed(2)}/5</p>
-                    <span className="text-[10px] text-slate-500 block font-medium font-mono">Didática e Condução</span>
-                  </div>
-                  <div className="w-12 h-12 bg-indigo-50 rounded-lg flex items-center justify-center border border-indigo-100">
-                    <Users className="h-6 w-6 text-indigo-600" />
-                  </div>
-                </div>
-
-                {/* General satisfaction ring */}
-                <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center justify-between">
-                  <div className="space-y-1">
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1.5 block font-mono">Concordância Plena (CP)</span>
-                    <p className="text-3xl font-black text-emerald-700 tracking-tight">{satisfactionPercentage.toFixed(1)}%</p>
-                    <span className="text-[10px] text-slate-500 block font-medium font-mono">Índice Geral de Votos CP (Nota 5)</span>
-                  </div>
-                  <div className="w-12 h-12 bg-emerald-50 border border-emerald-100 rounded-lg flex items-center justify-center">
-                    <TrendingUp className="h-6 w-6 text-emerald-600" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Graphical Analysis & Comparison panel */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
-                {/* Left side: Pure CSS Bar comparison metrics */}
-                <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm col-span-2 space-y-6">
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider border-b pb-2 mb-4 font-mono flex items-center gap-2">
-                      <Target className="h-4 w-4 text-slate-650" />
-                      Índices Consolidados por Segmento Acadêmico
-                    </h3>
-
-                    {/* Progress Segment list */}
-                    <div className="space-y-5">
-                      {/* 1. CURSO */}
-                      <div className="space-y-1.5">
-                        <div className="flex justify-between text-xs">
-                          <span className="font-semibold text-slate-700 font-mono">I. Avaliação do Curso Geral (Expectativas, Organização)</span>
-                          <span className="font-bold text-slate-900">{courseSatisfactionIndex.toFixed(2)} / 5.0 ({(courseSatisfactionIndex * 20).toFixed(0)}%)</span>
+                return (
+                  <div className="space-y-6 animate-fade-in">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* Metric 1: Enrolled */}
+                      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center justify-between">
+                        <div className="space-y-1">
+                          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider font-mono">Inscritos na Turma</span>
+                          <p className="text-3xl font-black text-slate-900 tracking-tight">{numInscritos}</p>
+                          <span className="text-[10px] text-slate-500 block font-medium font-mono">Total de Alunos Matriculados</span>
                         </div>
-                        <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-emerald-500 transition-all duration-500 rounded-full"
-                            style={{ width: `${(courseSatisfactionIndex / 5) * 100}%` }}
-                          />
+                        <div className="w-12 h-12 bg-slate-50 rounded-lg flex items-center justify-center border">
+                          <Users className="h-6 w-6 text-slate-700" />
                         </div>
                       </div>
 
-                      {/* 2. INSTRUTOR */}
-                      <div className="space-y-1.5">
-                        <div className="flex justify-between text-xs">
-                          <span className="font-semibold text-slate-700 font-mono">II. Qualidade do Instrutor (Conhecimento, Clareza, Atividades)</span>
-                          <span className="font-bold text-slate-900">{instructorIndex.toFixed(2)} / 5.0 ({(instructorIndex * 20).toFixed(0)}%)</span>
+                      {/* Metric 2: Filled */}
+                      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center justify-between">
+                        <div className="space-y-1">
+                          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider font-mono text-emerald-800">Questionários Preenchidos</span>
+                          <p className="text-3xl font-black text-emerald-700 tracking-tight">{numPreenchidos}</p>
+                          <span className="text-[10px] text-emerald-600 block font-medium font-mono">Respostas Recebidas ({fillingPercent.toFixed(1)}%)</span>
                         </div>
-                        <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-indigo-500 transition-all duration-500 rounded-full"
-                            style={{ width: `${(instructorIndex / 5) * 100}%` }}
-                          />
+                        <div className="w-12 h-12 bg-emerald-50 rounded-lg flex items-center justify-center border border-emerald-100">
+                          <CheckCircle className="h-6 w-6 text-emerald-600" />
                         </div>
                       </div>
 
-                      {/* 3. AUTOAVALIAÇÃO */}
-                      <div className="space-y-1.5">
-                        <div className="flex justify-between text-xs">
-                          <span className="font-semibold text-slate-700 font-mono">III. Dedicação e Autoavaliação do Aluno (Interesse, Aproveitamento)</span>
-                          <span className="font-bold text-slate-900">{studentSelfIndex.toFixed(2)} / 5.0 ({(studentSelfIndex * 20).toFixed(0)}%)</span>
+                      {/* Metric 3: Lack of filling */}
+                      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center justify-between">
+                        <div className="space-y-1">
+                          <span className="text-[10px] text-slate-450 font-bold uppercase tracking-wider font-mono text-rose-800">Falta Preencher</span>
+                          <p className="text-3xl font-black text-rose-700 tracking-tight">{numFalta}</p>
+                          <span className="text-[10px] text-rose-500 block font-medium font-mono">Questionários Pendentes</span>
                         </div>
-                        <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-sky-500 transition-all duration-500 rounded-full"
-                            style={{ width: `${(studentSelfIndex / 5) * 100}%` }}
-                          />
-                        </div>
-                      </div>
-
-                      {/* 4. INFRAESTRUTURA */}
-                      <div className="space-y-1.5">
-                        <div className="flex justify-between text-xs">
-                          <span className="font-semibold text-slate-700 font-mono">IV. Infraestrutura e Equipamentos (Sala de Aula, Ambientação)</span>
-                          <span className="font-bold text-slate-900">{infraIndex.toFixed(2)} / 5.0 ({(infraIndex * 20).toFixed(0)}%)</span>
-                        </div>
-                        <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-amber-500 transition-all duration-500 rounded-full"
-                            style={{ width: `${(infraIndex / 5) * 100}%` }}
-                          />
+                        <div className="w-12 h-12 bg-rose-50 rounded-lg flex items-center justify-center border border-rose-150">
+                          <AlertTriangle className="h-6 w-6 text-rose-600" />
                         </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="bg-slate-50 rounded-lg p-4 border border-slate-200/55 text-xs text-slate-600 flex gap-2">
-                    <Info className="h-4 w-4 text-sky-500 mt-0.5 shrink-0" />
-                    <p>A escala é baseada em três níveis: 5 (Concordo Plenamente), 3 (Concordo Parcialmente) e 1 (Discordo / Não se Aplica). Um índice geral superior a 4.0 indica ótimo alinhamento e conformidade com as metas de excelência pedagógica.</p>
-                  </div>
-                </div>
-
-                {/* Right side: Satisfaction ranking or comparative table */}
-                <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col justify-between">
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider border-b pb-2 mb-4 font-mono">
-                      Subdivisão de Votações (%)
-                    </h3>
-
-                    <div className="space-y-4">
-                      {/* Percent boxes */}
-                      {[5, 3, 1].map((score) => {
-                        // Calculate percentage of this specific score in the entire dataset
-                        let totalElements = 0;
-                        let matchedElements = 0;
-                        filteredSubmissions.forEach(sub => {
-                          allKeys.forEach(k => {
-                            if (sub[k] !== undefined && sub[k] !== null) {
-                              totalElements++;
-                              if (Number(sub[k]) === score) matchedElements++;
-                            }
-                          });
-                        });
-                        const percentage = totalElements > 0 ? (matchedElements / totalElements) * 100 : 0;
-                        
-                        return (
-                          <div key={score} className="space-y-1">
-                            <div className="flex justify-between text-xs">
-                              <span className="font-semibold text-slate-700">
-                                {score === 5 
-                                  ? "Concordo Plenamente - CP (5)" 
-                                  : score === 3 
-                                    ? "Concordo Parcialmente - CPa (3)" 
-                                    : "Discordo / Não se Aplica - D/NA (1)"}
-                              </span>
-                              <span className="font-bold text-slate-900">{percentage.toFixed(1)}%</span>
-                            </div>
-                            <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                              <div 
-                                className={`h-full transition-all duration-300 rounded-full ${
-                                  score === 5 ? "bg-emerald-500" : score === 3 ? "bg-sky-500" : "bg-rose-500"
-                                }`}
-                                style={{ width: `${percentage}%` }}
-                              />
-                            </div>
-                          </div>
-                        );
-                      })}
+                    {/* Simple completion bar indicator */}
+                    <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                      <div className="flex justify-between items-center text-xs mb-2 font-mono">
+                        <span className="font-bold text-slate-700">Progresso de Preenchimento da Turma</span>
+                        <span className="font-black text-slate-900">{numPreenchidos} / {numInscritos} ({fillingPercent.toFixed(1)}%)</span>
+                      </div>
+                      <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-emerald-500 transition-all duration-500 rounded-full"
+                          style={{ width: `${fillingPercent}%` }}
+                        />
+                      </div>
                     </div>
                   </div>
-
-                  <div className="mt-6 pt-4 border-t text-[10px] text-slate-500 font-mono text-center">
-                    Cômputo baseado em {filteredSubmissions.length} formulários
-                  </div>
-                </div>
-              </div>
+                );
+              })()}
 
               {/* Card download of physical blank forms */}
               <div className="bg-sky-50 border border-sky-100 rounded-xl p-5 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4 print:hidden">
@@ -1640,11 +1298,15 @@ function RelatorioAvaliacaoAdminContent() {
 
                         <button
                           type="button"
-                          onClick={() => handleSelectAndEditAction(stud.id, stud.turma_id)}
-                          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[10px] py-2 rounded-lg transition flex items-center justify-center gap-1.5 cursor-pointer font-mono tracking-wider shadow-sm border border-emerald-500"
+                          onClick={() => {
+                            setSelectedTurma(stud.turma_id);
+                            setFocusedStudent(stud.id);
+                            setIsAdminFilling(false);
+                            setActiveTab('aluno');
+                          }}
+                          className="w-full bg-sky-50 hover:bg-sky-100 text-sky-700 font-extrabold text-[10px] py-2 rounded-lg border border-sky-200 transition flex items-center justify-center gap-1.5 cursor-pointer font-mono tracking-wider shadow-sm"
                         >
-                          <Edit3 className="h-3.5 w-3.5" />
-                          EDITAR RESPOSTAS
+                          👁️ VISUALIZAR RESPOSTAS
                         </button>
                       </div>
                     ))}
@@ -2413,16 +2075,7 @@ function RelatorioAvaliacaoAdminContent() {
                                 🖨️ CARTEIRINHA QR
                               </button>
 
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  handleSelectAndEditAction(studentSub.aluno_id, studentSub.turma_id);
-                                }}
-                                className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs px-3.5 py-2 rounded-lg font-bold border border-indigo-200 transition flex items-center gap-1.5 cursor-pointer font-sans"
-                              >
-                                <Edit3 className="h-3.5 w-3.5" />
-                                EDITAR COMO ADMIN
-                              </button>
+                              {/* EDITAR COMO ADMIN removido para retirar o acesso à alteração de questionários preenchidos */}
                             </div>
                           </div>
                           

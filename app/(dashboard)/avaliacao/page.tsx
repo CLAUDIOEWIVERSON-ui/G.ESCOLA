@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { useUser } from '@/lib/auth/UserContext';
 import { motion, AnimatePresence } from 'motion/react';
+import { format, startOfWeek, addDays } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { 
   FileText, 
   CheckCircle, 
@@ -20,7 +22,8 @@ import {
   ArrowRight,
   ShieldCheck,
   Star,
-  Info
+  Info,
+  Clock
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -89,6 +92,71 @@ function AvaliacaoAlunoForm() {
   const [signature, setSignature] = useState('');
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [isPrintingBlank, setIsPrintingBlank] = useState(false);
+
+  // Schedule state for students / QR Code access
+  const [showWeeklySchedule, setShowWeeklySchedule] = useState(false);
+  const [scheduleData, setScheduleData] = useState<Record<string, any>>({});
+  const [disciplinas, setDisciplinas] = useState<any[]>([]);
+  const [instrutores, setInstrutores] = useState<any[]>([]);
+  const [scheduleLoading, setScheduleLoading] = useState(false);
+  const [currentScheduleDate, setCurrentScheduleDate] = useState<Date>(new Date());
+
+  const fetchScheduleForTurma = async (tId: string) => {
+    try {
+      setScheduleLoading(true);
+      const { data: hData } = await supabase
+        .from('horarios')
+        .select('*')
+        .eq('turma_id', tId)
+        .maybeSingle();
+
+      if (hData && hData.data) {
+        setScheduleData(hData.data);
+      } else {
+        setScheduleData({});
+      }
+
+      const { data: dData } = await supabase
+        .from('disciplinas')
+        .select('*')
+        .is('deleted_at', null);
+      if (dData) setDisciplinas(dData);
+
+      const { data: iData } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .eq('role', 'instrutor');
+      
+      const combinedInstructors: any[] = [];
+      const seenNames = new Set<string>();
+      
+      if (iData) {
+        iData.forEach((prof: any) => {
+          const name = (prof.full_name || '').trim();
+          if (name) {
+            seenNames.add(name.toLowerCase());
+            combinedInstructors.push({
+              id: prof.id,
+              full_name: prof.full_name
+            });
+          }
+        });
+      }
+      setInstrutores(combinedInstructors);
+    } catch (err) {
+      console.error('Error fetching schedule details:', err);
+    } finally {
+      setScheduleLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (studentDetails?.turma_id) {
+      setTimeout(() => {
+        fetchScheduleForTurma(studentDetails.turma_id);
+      }, 0);
+    }
+  }, [studentDetails?.turma_id]);
 
   // QR-Code specific tracking
   const [studentCount, setStudentCount] = useState<number>(0);
@@ -245,6 +313,9 @@ function AvaliacaoAlunoForm() {
   useEffect(() => {
     if (qrTurmaId) {
       setTimeout(() => {
+        setCurrentStep(2);
+      }, 0);
+      setTimeout(() => {
         fetchClassAndEvaluationQR(qrTurmaId);
       }, 0);
     } else if (!userLoading) {
@@ -306,6 +377,7 @@ function AvaliacaoAlunoForm() {
   };
 
   const handlePrev = () => {
+    if (qrTurmaId && currentStep <= 2) return;
     setCurrentStep(prev => Math.max(prev - 1, 1));
   };
 
@@ -527,154 +599,115 @@ function AvaliacaoAlunoForm() {
   if (existingSubmission) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-8 md:py-12">
-        <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden print:border-none print:shadow-none">
-          {/* Receipt Header */}
-          <div className="bg-slate-900 text-white p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 print:bg-white print:text-black print:border-b print:p-4">
-            <div>
-              <div className="inline-flex items-center gap-2 bg-emerald-500/20 text-emerald-300 px-3 py-1 rounded-full text-xs font-semibold mb-2 print:border print:border-green-500 print:text-green-800">
-                <CheckCircle className="h-3 w-3" />
-                Avaliação Enviada com Sucesso
-              </div>
-              <h1 className="text-xl md:text-2xl font-bold tracking-tight">Comprovante de Avaliação Pós-Curso</h1>
-              <p className="text-xs text-slate-400 mt-1 print:text-slate-600">ID da Avaliação: {existingSubmission.id}</p>
-            </div>
-            
-            <div className="flex flex-col sm:flex-row gap-2 print:hidden">
-              <button
-                onClick={handlePrintReceipt}
-                className="flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white text-xs font-semibold px-4 py-2.5 rounded-lg border border-white/10 transition-colors cursor-pointer"
-              >
-                <Printer className="h-3.5 w-3.5" />
-                Imprimir Comprovante (A4)
-              </button>
-              <button
-                onClick={() => setIsPrintingBlank(true)}
-                className="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold px-4 py-2.5 rounded-lg border border-slate-700 transition-colors cursor-pointer"
-              >
-                <Printer className="h-3.5 w-3.5" />
-                Imprimir Ficha em Branco (Manual)
-              </button>
-            </div>
+        <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden p-6 md:p-8 space-y-6">
+          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-6 text-center space-y-4 max-w-xl mx-auto">
+            <CheckCircle className="h-12 w-12 text-emerald-600 mx-auto" />
+            <h2 className="text-xl font-bold text-slate-800 uppercase tracking-wide font-mono">Avaliação Enviada com Sucesso</h2>
+            <p className="text-sm text-slate-600 leading-relaxed">
+              Obrigado! Sua avaliação foi gravada de forma anônima e desvinculada para fins estatísticos de qualidade acadêmica da turma <strong className="text-slate-900">{studentDetails?.turma?.nome || "em curso"}</strong>.
+            </p>
+            <span className="inline-block text-[10px] uppercase font-mono font-bold bg-slate-100 text-slate-500 px-3 py-1 rounded">
+              Código de Confirmação: {existingSubmission.id?.substring(0, 8)}...
+            </span>
           </div>
 
-          <div className="p-6 md:p-8 space-y-8">
-            {/* Header Data Section */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 bg-slate-50 p-6 rounded-lg border border-slate-200/60 print:grid-cols-2 print:bg-white print:border-slate-300">
-              <div>
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider font-mono">Nome Completo</span>
-                <p className="text-sm font-semibold text-slate-900 mt-0.5">{studentDetails.nome}</p>
-              </div>
-              <div>
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider font-mono font-mono">Graduação / Posto</span>
-                <p className="text-sm font-semibold text-slate-900 mt-0.5">{studentDetails.posto_graduacao || "Não Especificado"}</p>
-              </div>
-              <div>
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider font-mono">Organização Militar (OM)</span>
-                <p className="text-sm font-semibold text-slate-900 mt-0.5">{studentDetails.om || "Não Especificada"}</p>
-              </div>
-              <div>
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider font-mono">Turma</span>
-                <p className="text-sm font-semibold text-slate-900 mt-0.5">{studentDetails.turma?.nome}</p>
-              </div>
-              <div>
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider font-mono">Curso Realizado</span>
-                <p className="text-sm font-semibold text-slate-900 mt-0.5">{studentDetails.turma?.curso?.nome}</p>
-              </div>
-              <div>
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider font-mono">Instrutor</span>
-                <p className="text-sm font-semibold text-slate-900 mt-0.5">{studentDetails.turma?.instrutor || "Não Cadastrado"}</p>
-              </div>
-            </div>
+          {/* Show weekly schedule even after submitting for QR Code, as requested! */}
+          <div className="pt-6 border-t border-slate-100 text-left">
+            <h3 className="text-xs font-bold text-slate-705 font-mono flex items-center gap-1.5 mb-4">
+              <Clock className="h-4 w-4 text-indigo-650" />
+              DETALHE SEMANAL DE AULAS COMPLETO (SÁBADO/DOMINGO LIVRE)
+            </h3>
+            
+            {(() => {
+              const weekStart = startOfWeek(currentScheduleDate, { weekStartsOn: 1 });
+              const weekEnd = addDays(weekStart, 4);
+              const weekPeriodFormatted = `${format(weekStart, "dd/MM")} a ${format(weekEnd, "dd/MM/yyyy")}`;
+              
+              const weekDays = [
+                { key: 'monday', label: 'Segunda-feira', date: weekStart },
+                { key: 'tuesday', label: 'Terça-feira', date: addDays(weekStart, 1) },
+                { key: 'wednesday', label: 'Quarta-feira', date: addDays(weekStart, 2) },
+                { key: 'thursday', label: 'Quinta-feira', date: addDays(weekStart, 3) },
+                { key: 'friday', label: 'Sexta-feira', date: addDays(weekStart, 4) },
+              ];
 
-            {/* Submissions Stats Snapshot */}
-            <div>
-              <h2 className="text-base font-bold text-slate-900 border-b pb-2 mb-4 font-mono">1. Médias Atribuídas pelo Aluno</h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                <div className="border border-slate-200 rounded-lg p-4 bg-slate-50/50">
-                  <span className="text-xs text-slate-500 font-medium">Sobre o Curso</span>
-                  <p className="text-2xl font-black text-slate-800 mt-1">
-                    {((existingSubmission.curso_q1 + existingSubmission.curso_q2 + existingSubmission.curso_q3 + existingSubmission.curso_q4 + existingSubmission.curso_q5 + existingSubmission.curso_q6) / 6).toFixed(1)} / 5
-                  </p>
-                </div>
-                <div className="border border-slate-200 rounded-lg p-4 bg-slate-50/50">
-                  <span className="text-xs text-slate-500 font-medium font-mono">Do Instrutor</span>
-                  <p className="text-2xl font-black text-slate-800 mt-1">
-                    {((existingSubmission.instrutor_q1 + existingSubmission.instrutor_q2 + existingSubmission.instrutor_q3 + existingSubmission.instrutor_q4 + existingSubmission.instrutor_q5 + existingSubmission.instrutor_q6 + existingSubmission.instrutor_q7) / 7).toFixed(1)} / 5
-                  </p>
-                </div>
-                <div className="border border-slate-200 rounded-lg p-4 bg-slate-50/50">
-                  <span className="text-xs text-slate-500 font-medium font-mono font-mono">Autoavaliação</span>
-                  <p className="text-2xl font-black text-slate-800 mt-1">
-                    {((existingSubmission.auto_q1 + existingSubmission.auto_q2 + existingSubmission.auto_q3 + existingSubmission.auto_q4 + existingSubmission.auto_q5) / 5).toFixed(1)} / 5
-                  </p>
-                </div>
-                <div className="border border-slate-200 rounded-lg p-4 bg-slate-50/50">
-                  <span className="text-xs text-slate-500 font-medium">Infraestrutura</span>
-                  <p className="text-2xl font-black text-slate-800 mt-1">
-                    {((existingSubmission.infra_q1 + existingSubmission.infra_q2 + existingSubmission.infra_q3 + existingSubmission.infra_q4 + existingSubmission.infra_q5) / 5).toFixed(1)} / 5
-                  </p>
-                </div>
-              </div>
-            </div>
+              const slots = [
+                { id: "class-08:00", time: "08:00 - 08:50" },
+                { id: "class-09:00", time: "09:00 - 09:50" },
+                { id: "class-10:00", time: "10:00 - 10:50" },
+                { id: "class-11:00", time: "11:00 - 11:50" },
+                { id: "class-12:00", text: "12:00 - 12:50", time: "12:00 - 12:50" },
+                { id: "class-13:00", time: "13:00 - 13:50" },
+                { id: "class-14:00", time: "14:00 - 14:50" },
+                { id: "class-15:00", time: "15:00 - 15:50" }
+              ];
 
-            {/* Suggestions, Feedback summary and remarks */}
-            {(existingSubmission.sugestoes_melhoria || existingSubmission.criticas_construtivas || existingSubmission.elogios || existingSubmission.necessidades_novos_cursos || existingSubmission.comentarios_adicionais) && (
-              <div>
-                <h2 className="text-base font-bold text-slate-900 border-b pb-2 mb-4 font-mono">2. Considerações e Sugestões do Aluno</h2>
+              const getCellData = (slotId: string, dayKey: string) => {
+                const weekKey = format(weekStart, 'yyyy-MM-dd');
+                return scheduleData[`${weekKey}_${slotId}-${dayKey}`] || 
+                       scheduleData[`${slotId}-${dayKey}`] || 
+                       { subjectId: '', instructorId: '', room: '', courseId: '' };
+              };
+
+              return (
                 <div className="space-y-4">
-                  {existingSubmission.sugestoes_melhoria && (
-                    <div className="bg-slate-50 p-4 border border-slate-200 rounded-lg">
-                      <span className="text-xs font-bold text-slate-600 block mb-1">Critério: Sugestões de Melhorias</span>
-                      <p className="text-sm text-slate-700 whitespace-pre-wrap">{existingSubmission.sugestoes_melhoria}</p>
-                    </div>
-                  )}
-                  {existingSubmission.criticas_construtivas && (
-                    <div className="bg-slate-50 p-4 border border-slate-200 rounded-lg">
-                      <span className="text-xs font-bold text-slate-600 block mb-1">Critério: Críticas Construtivas</span>
-                      <p className="text-sm text-slate-700 whitespace-pre-wrap">{existingSubmission.criticas_construtivas}</p>
-                    </div>
-                  )}
-                  {existingSubmission.elogios && (
-                    <div className="bg-slate-50 p-4 border border-slate-200 rounded-lg">
-                      <span className="text-xs font-bold text-slate-600 block mb-1">Critério: Elogios</span>
-                      <p className="text-sm text-slate-700 whitespace-pre-wrap">{existingSubmission.elogios}</p>
-                    </div>
-                  )}
-                  {existingSubmission.necessidades_novos_cursos && (
-                    <div className="bg-slate-50 p-4 border border-slate-200 rounded-lg">
-                      <span className="text-xs font-bold text-slate-600 block mb-1">Critério: Necessidades de Novos Cursos</span>
-                      <p className="text-sm text-slate-700 whitespace-pre-wrap">{existingSubmission.necessidades_novos_cursos}</p>
-                    </div>
-                  )}
-                  {existingSubmission.comentarios_adicionais && (
-                    <div className="bg-slate-50 p-4 border border-slate-200 rounded-lg">
-                      <span className="text-xs font-bold text-slate-600 block mb-1">Comentários Adicionais</span>
-                      <p className="text-sm text-slate-700 whitespace-pre-wrap">{existingSubmission.comentarios_adicionais}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
+                  <div className="flex justify-between items-center bg-slate-50 border border-slate-150 rounded-xl p-3 font-mono text-xs">
+                    <button 
+                      type="button" 
+                      onClick={() => setCurrentScheduleDate(addDays(currentScheduleDate, -7))}
+                      className="bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 px-2.5 py-1.5 rounded-lg font-bold transition cursor-pointer"
+                    >
+                      ◀ Anterior
+                    </button>
+                    <span className="font-extrabold text-slate-800 uppercase tracking-widest">{weekPeriodFormatted}</span>
+                    <button 
+                      type="button"
+                      onClick={() => setCurrentScheduleDate(addDays(currentScheduleDate, 7))}
+                      className="bg-white hover:bg-slate-105 text-slate-800 border border-slate-200 px-2.5 py-1.5 rounded-lg font-bold transition cursor-pointer"
+                    >
+                      Próxima ▶
+                    </button>
+                  </div>
 
-            {/* Signature Validation Footer */}
-            <div className="border-t pt-8 mt-12 flex flex-col md:flex-row justify-between items-center gap-4 bg-slate-50 p-4 rounded-lg print:bg-white print:border-slate-300">
-              <div className="flex items-center gap-3">
-                <ShieldCheck className="h-10 w-10 text-emerald-600" />
-                <div>
-                  <h4 className="text-sm font-bold text-slate-800">Assinatura Eletrônica Confirmada</h4>
-                  <p className="text-xs text-slate-500 mt-0.5">Enviado e gravado no histórico acadêmico permanente.</p>
-                </div>
-              </div>
-              <div className="border-l pl-4 font-mono text-center md:text-right print:border-l-0">
-                <span className="text-xs font-bold text-slate-400 block uppercase tracking-wider">Chave da Assinatura</span>
-                <p className="text-xs font-semibold text-slate-700 mt-1">{existingSubmission.assinatura_digital || "Não disponível"}</p>
-                <p className="text-[10px] text-slate-400 mt-1">Data: {new Date(existingSubmission.created_at).toLocaleDateString('pt-BR')}</p>
-              </div>
-            </div>
+                  <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                    {weekDays.map(day => {
+                      const filledSlots = slots.map(slot => {
+                        const cell = getCellData(slot.id, day.key);
+                        return { slot, cell };
+                      }).filter(item => item.cell.subjectId || item.cell.room);
 
-            <div className="text-center text-slate-400 text-xs mt-12 hidden print:block">
-              <p>Escola Digital Mil-Acadêmica - Impresso via portal acadêmico do aluno</p>
-            </div>
+                      return (
+                        <div key={day.key} className="border border-slate-150 rounded-lg p-3 bg-slate-50/50 hover:bg-slate-100/35 transition flex flex-col justify-start">
+                          <span className="text-[10px] font-black font-mono text-indigo-700 uppercase tracking-wider block mb-2 pb-1 border-b border-indigo-100">
+                            {day.label} <span className="text-slate-500 font-semibold">({format(day.date, 'dd/MM')})</span>
+                          </span>
+                          {filledSlots.length === 0 ? (
+                            <p className="text-[10px] italic text-slate-400 py-2">Sem programação de aulas</p>
+                          ) : (
+                            <div className="space-y-2">
+                              {filledSlots.map(({ slot, cell }) => {
+                                const subjectName = disciplinas.find(d => d.id === cell.subjectId)?.nome || cell.subjectId;
+                                const instructorName = instrutores.find(i => i.id === cell.instructorId)?.full_name || cell.instructorId || "Instrutor";
+                                return (
+                                  <div key={slot.id} className="bg-white border border-slate-150 rounded-lg p-2 shadow-xs text-[10px] space-y-1">
+                                    <div className="flex justify-between items-center gap-1.5 border-b pb-1 mb-1.5 border-slate-100">
+                                      <span className="bg-slate-150 text-slate-700 text-[8.5px] font-bold px-1 py-0.5 rounded font-mono">{slot.time}</span>
+                                      {cell.room && <span className="text-[8px] bg-slate-100 text-slate-600 font-mono px-1 rounded truncate max-w-16">Sala: {cell.room}</span>}
+                                    </div>
+                                    <p className="font-extrabold text-slate-800 leading-tight block">{subjectName}</p>
+                                    <p className="text-[8.5px] text-slate-500 font-mono">Prof.: {instructorName}</p>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
       </div>
@@ -940,7 +973,7 @@ function AvaliacaoAlunoForm() {
 
         {/* Floating Steps Indicator */}
         <div className="flex items-center gap-2">
-          {[1, 2, 3, 4, 5].map((step) => (
+          {(qrTurmaId ? [2, 3, 4, 5] : [1, 2, 3, 4, 5]).map((step) => (
             <div 
               key={step} 
               className={`w-8 h-8 rounded-full flex items-center justify-center font-bold font-mono text-xs border transition-all duration-300 ${
@@ -951,7 +984,7 @@ function AvaliacaoAlunoForm() {
                     : "bg-slate-950 text-slate-600 border-slate-800"
               }`}
             >
-              {step}
+              {qrTurmaId ? step - 1 : step}
             </div>
           ))}
         </div>
@@ -1017,6 +1050,127 @@ function AvaliacaoAlunoForm() {
                   </div>
                   <p className="text-sm font-bold text-slate-800 mt-1">{studentDetails.turma?.instrutor || "A definir"}</p>
                 </div>
+              </div>
+
+              {/* Collapsible section for Student Weekly Class Schedule */}
+              <div className="border border-slate-200 rounded-xl overflow-hidden mt-6 bg-slate-50/20 shadow-xs">
+                <button
+                  type="button"
+                  onClick={() => setShowWeeklySchedule(!showWeeklySchedule)}
+                  className="w-full flex items-center justify-between bg-slate-100/75 hover:bg-slate-100 p-4 font-mono text-xs font-bold text-slate-700 transition cursor-pointer select-none border-b border-slate-200"
+                >
+                  <span className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-indigo-600 animate-pulse" />
+                    👁️ VISUALIZAR DETALHE SEMANAL DE AULAS (SÁBADO/DOMINGO LIVRE)
+                  </span>
+                  <span className="text-[10px] bg-slate-250 text-slate-800 px-2 py-0.5 rounded font-black font-mono">
+                    {showWeeklySchedule ? "RECOLHER ▲" : "EXPANDIR ▼"}
+                  </span>
+                </button>
+                
+                {showWeeklySchedule && (
+                  <div className="p-4 bg-white space-y-4">
+                    {scheduleLoading ? (
+                      <p className="text-xs text-slate-500 italic animate-pulse font-mono py-4 text-center">Carregando cronograma das aulas...</p>
+                    ) : Object.keys(scheduleData).length === 0 ? (
+                      <p className="text-xs text-slate-500 italic font-mono py-4 text-center text-amber-600">Nenhum quadro de horários cadastrado para esta turma nesta semana.</p>
+                    ) : (
+                      <>
+                        {/* Weekly period navigation */}
+                        {(() => {
+                          const weekStart = startOfWeek(currentScheduleDate, { weekStartsOn: 1 });
+                          const weekEnd = addDays(weekStart, 4);
+                          const weekPeriodFormatted = `${format(weekStart, "dd/MM")} a ${format(weekEnd, "dd/MM/yyyy")}`;
+                          
+                          const weekDays = [
+                            { key: 'monday', label: 'Segunda-feira', date: weekStart },
+                            { key: 'tuesday', label: 'Terça-feira', date: addDays(weekStart, 1) },
+                            { key: 'wednesday', label: 'Quarta-feira', date: addDays(weekStart, 2) },
+                            { key: 'thursday', label: 'Quinta-feira', date: addDays(weekStart, 3) },
+                            { key: 'friday', label: 'Sexta-feira', date: addDays(weekStart, 4) },
+                          ];
+
+                          const slots = [
+                            { id: "class-08:00", time: "08:00 - 08:50" },
+                            { id: "class-09:00", time: "09:00 - 09:50" },
+                            { id: "class-10:00", time: "10:00 - 10:50" },
+                            { id: "class-11:00", time: "11:00 - 11:50" },
+                            { id: "class-12:00", time: "12:00 - 12:50" },
+                            { id: "class-13:00", time: "13:00 - 13:50" },
+                            { id: "class-14:00", time: "14:00 - 14:50" },
+                            { id: "class-15:00", time: "15:00 - 15:50" }
+                          ];
+
+                          const getCellData = (slotId: string, dayKey: string) => {
+                            const weekKey = format(weekStart, 'yyyy-MM-dd');
+                            return scheduleData[`${weekKey}_${slotId}-${dayKey}`] || 
+                                   scheduleData[`${slotId}-${dayKey}`] || 
+                                   { subjectId: '', instructorId: '', room: '', courseId: '' };
+                          };
+
+                          return (
+                            <div className="space-y-4">
+                              <div className="flex justify-between items-center bg-slate-50 border border-slate-150 rounded-xl p-3 font-mono text-xs">
+                                <button 
+                                  type="button" 
+                                  onClick={() => setCurrentScheduleDate(addDays(currentScheduleDate, -7))}
+                                  className="bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 px-2.5 py-1.5 rounded-lg font-bold transition cursor-pointer"
+                                >
+                                  ◀ Anterior
+                                </button>
+                                <span className="font-extrabold text-slate-800 uppercase tracking-widest">{weekPeriodFormatted}</span>
+                                <button 
+                                  type="button"
+                                  onClick={() => setCurrentScheduleDate(addDays(currentScheduleDate, 7))}
+                                  className="bg-white hover:bg-slate-101 text-slate-800 border border-slate-200 px-2.5 py-1.5 rounded-lg font-bold transition cursor-pointer"
+                                >
+                                  Próxima ▶
+                                </button>
+                              </div>
+
+                              <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                                {weekDays.map(day => {
+                                  const filledSlots = slots.map(slot => {
+                                    const cell = getCellData(slot.id, day.key);
+                                    return { slot, cell };
+                                  }).filter(item => item.cell.subjectId || item.cell.room);
+
+                                  return (
+                                    <div key={day.key} className="border border-slate-150 rounded-lg p-3 bg-slate-50/50 hover:bg-slate-100/35 transition flex flex-col justify-start">
+                                      <span className="text-[10px] font-black font-mono text-indigo-700 uppercase tracking-wider block mb-2 pb-1 border-b border-indigo-100">
+                                        {day.label} <span className="text-slate-500 font-semibold">({format(day.date, 'dd/MM')})</span>
+                                      </span>
+                                      {filledSlots.length === 0 ? (
+                                        <p className="text-[10px] italic text-slate-400 py-2">Sem programação de aulas</p>
+                                      ) : (
+                                        <div className="space-y-2">
+                                          {filledSlots.map(({ slot, cell }) => {
+                                            const subjectName = disciplinas.find(d => d.id === cell.subjectId)?.nome || cell.subjectId;
+                                            const instructorName = instrutores.find(i => i.id === cell.instructorId)?.full_name || cell.instructorId || "Instrutor";
+                                            return (
+                                              <div key={slot.id} className="bg-white border border-slate-150 rounded-lg p-2 shadow-xs text-[10px] space-y-1">
+                                                <div className="flex justify-between items-center gap-1.5 border-b pb-1 mb-1.5 border-slate-100">
+                                                  <span className="bg-slate-150 text-slate-705 text-[8.5px] font-bold px-1 py-0.5 rounded font-mono">{slot.time}</span>
+                                                  {cell.room && <span className="text-[8px] bg-slate-100 text-slate-600 font-mono px-1 rounded truncate max-w-16">Sala: {cell.room}</span>}
+                                                </div>
+                                                <p className="font-extrabold text-slate-800 leading-tight block">{subjectName}</p>
+                                                <p className="text-[8.5px] text-slate-505 font-mono">Prof.: {instructorName}</p>
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="bg-amber-50 text-amber-900 border border-amber-200 rounded-lg p-4 text-xs leading-relaxed mt-6">

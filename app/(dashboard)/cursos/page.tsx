@@ -67,7 +67,7 @@ export default function CursosPage() {
   const [savingMateria, setSavingMateria] = useState(false);
   const [activeModuloIndex, setActiveModuloIndex] = useState(1);
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<z.infer<typeof cursoSchema>>({
+  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<z.infer<typeof cursoSchema>>({
     resolver: zodResolver(cursoSchema),
     defaultValues: {
       nome: '',
@@ -80,6 +80,7 @@ export default function CursosPage() {
       internacional: false,
       localizacao: '',
       grupo_responsavel: null,
+      documento_criacao: null,
     }
   });
 
@@ -100,7 +101,8 @@ export default function CursosPage() {
         categoria: data.categoria === "" ? null : data.categoria,
         internacional: data.internacional || false,
         localizacao: data.localizacao || '',
-        grupo_responsavel: (data.grupo_responsavel === "" || !data.grupo_responsavel) ? null : data.grupo_responsavel
+        grupo_responsavel: (data.grupo_responsavel === "" || !data.grupo_responsavel) ? null : data.grupo_responsavel,
+        documento_criacao: data.documento_criacao === "" ? null : data.documento_criacao
       };
 
       if (editingCurso) {
@@ -570,6 +572,11 @@ export default function CursosPage() {
                           Grupo: {curso.grupo_responsavel}
                         </span>
                       )}
+                      {curso.documento_criacao && (
+                        <span className="px-2 py-0.5 bg-sky-50 text-sky-700 text-[9px] font-bold uppercase rounded-md border border-sky-100">
+                          Doc: {curso.documento_criacao}
+                        </span>
+                      )}
                     </div>
 
                     {/* Description with Scrollbar */}
@@ -731,7 +738,14 @@ export default function CursosPage() {
                   <div className="space-y-1">
                     <label className="text-sm font-semibold text-slate-700">{t.courses.category}</label>
                     <select
-                      {...register('categoria')}
+                      {...register('categoria', {
+                        onChange: (e) => {
+                          const val = e.target.value;
+                          if (val === 'EaD') {
+                            setValue('documento_criacao', 'PGI');
+                          }
+                        }
+                      })}
                       className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
                     >
                       <option value="">Selecione uma categoria</option>
@@ -741,6 +755,23 @@ export default function CursosPage() {
                       <option value="EaD">{t.courses.categoryEad}</option>
                     </select>
                     {errors.categoria && <p className="text-xs text-red-500 mt-1">{errors.categoria.message}</p>}
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-sm font-semibold text-slate-700">
+                      {language === 'pt' ? 'Documento de Criação do Curso' : 'Course Creation Document'}
+                    </label>
+                    <select
+                      {...register('documento_criacao')}
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
+                    >
+                      <option value="">{language === 'pt' ? 'Selecione um documento' : 'Select a document'}</option>
+                      <option value="Ordem Interna">Ordem Interna</option>
+                      <option value="CENPEM">CENPEM</option>
+                      <option value="ROV">ROV</option>
+                      <option value="PGI">PGI</option>
+                    </select>
+                    {errors.documento_criacao && <p className="text-xs text-red-500 mt-1">{errors.documento_criacao.message}</p>}
                   </div>
 
                   <div className="flex items-center gap-2 py-2">
@@ -1216,6 +1247,11 @@ export default function CursosPage() {
                   </span>
                 );
               })()}
+              {selectedCursoDetails.documento_criacao && (
+                <span className="px-3 py-1 bg-sky-50 text-sky-700 text-xs font-bold uppercase rounded-md border border-sky-150">
+                  {language === 'pt' ? 'Documento: ' : 'Document: '}{selectedCursoDetails.documento_criacao}
+                </span>
+              )}
             </div>
 
             {/* Complete Description box */}
