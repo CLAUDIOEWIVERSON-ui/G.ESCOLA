@@ -115,7 +115,7 @@ export default function NotasPage() {
       if (configData) setSettings(configData);
 
       // Fetch Alunos
-      const { data: alunosData } = await supabase.from('alunos').select('id, nome, matricula, foto_url, genero, tipo_aluno').is('deleted_at', null).order('nome');
+      const { data: alunosData } = await supabase.from('alunos').select('id, nome, matricula, foto_url, genero').is('deleted_at', null).order('nome');
       if (alunosData) setAlunos(alunosData);
 
       // Fetch Cursos

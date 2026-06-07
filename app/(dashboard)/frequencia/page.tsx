@@ -89,7 +89,7 @@ export default function FrequenciaPage() {
       // Fetch students in the class
       const { data: alunoData, error: alunoError } = await supabase
         .from('alunos')
-        .select('id, nome, matricula, foto_url, genero, tipo_aluno')
+        .select('id, nome, matricula, foto_url, genero')
         .eq('turma_id', selectedTurma)
         .is('deleted_at', null)
         .order('nome');

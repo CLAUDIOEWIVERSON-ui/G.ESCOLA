@@ -1826,15 +1826,15 @@ function TurmasContent() {
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded focus:ring-2 focus:ring-blue-500/20 outline-none text-sm"
                 />
               </div>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 gap-2">
                 <div>
                   <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
-                    {language === 'pt' ? 'Militar ou Civil' : 'Military or Civil'}
+                    {language === 'pt' ? 'Militar / Civil' : 'Military / Civil'}
                   </label>
                   <select
                     value={currentAluno?.tipo_aluno || 'militar'}
                     onChange={(e) => setCurrentAluno({ ...currentAluno, tipo_aluno: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded text-sm outline-none"
+                    className="w-full px-2 py-2 bg-slate-50 border border-slate-200 rounded text-sm outline-none"
                   >
                     <option value="militar">{language === 'pt' ? 'Militar' : 'Military'}</option>
                     <option value="civil">{language === 'pt' ? 'Civil' : 'Civil'}</option>
@@ -1848,7 +1848,7 @@ function TurmasContent() {
                     type="text"
                     value={currentAluno?.matricula || ''}
                     onChange={(e) => setCurrentAluno({ ...currentAluno, matricula: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded text-sm"
+                    className="w-full px-2 py-2 bg-slate-50 border border-slate-200 rounded text-sm"
                     placeholder="Auto"
                   />
                 </div>
@@ -1859,7 +1859,7 @@ function TurmasContent() {
                   <select
                     value={currentAluno?.genero || 'masculino'}
                     onChange={(e) => setCurrentAluno({ ...currentAluno, genero: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded text-sm outline-none"
+                    className="w-full px-2 py-2 bg-slate-50 border border-slate-200 rounded text-sm outline-none"
                   >
                     <option value="masculino">{t.students.male}</option>
                     <option value="feminino">{t.students.female}</option>
