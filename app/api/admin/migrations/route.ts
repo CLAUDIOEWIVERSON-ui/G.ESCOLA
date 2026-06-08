@@ -231,6 +231,21 @@ export async function GET() {
             .limit(1);
           return error;
         }
+      },
+      {
+        key: 'uniforme_dia_eventos',
+        tableName: 'eventos',
+        columnName: 'uniforme_dia',
+        fileName: '36_add_uniforme_dia_to_eventos.sql',
+        description: 'Coluna uniforme_dia na tabela de eventos para exibir as orientações de fardamento do dia no painel do aluno e na barra de avisos.',
+        isColumn: true,
+        checkFn: async () => {
+          const { error } = await supabaseAdmin
+            .from('eventos')
+            .select('uniforme_dia')
+            .limit(1);
+          return error;
+        }
       }
     ];
 

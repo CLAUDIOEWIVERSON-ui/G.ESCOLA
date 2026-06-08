@@ -294,6 +294,7 @@ CREATE TABLE IF NOT EXISTS public.eventos (
   data TIMESTAMPTZ NOT NULL,
   cor TEXT DEFAULT 'bg-blue-600',
   exibir_aluno BOOLEAN DEFAULT false,
+  uniforme_dia TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   deleted_at TIMESTAMPTZ
 );

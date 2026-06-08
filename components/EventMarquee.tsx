@@ -13,6 +13,7 @@ interface Evento {
   data: string;
   cor: string;
   exibir_aluno?: boolean;
+  uniforme_dia?: string;
 }
 
 interface EventMarqueeProps {
@@ -53,7 +54,7 @@ export function EventMarquee({ thought }: EventMarqueeProps = {}) {
 
         let query = supabase
           .from('eventos')
-          .select('id, titulo, data, cor, exibir_aluno')
+          .select('id, titulo, data, cor, exibir_aluno, uniforme_dia')
           .gte('data', today.toISOString())
           .order('data', { ascending: true })
           .limit(15);
@@ -62,23 +63,46 @@ export function EventMarquee({ thought }: EventMarqueeProps = {}) {
         let { data: primaryData, error } = await query;
         data = primaryData;
         
-        // Dynamic fallback if the exibir_aluno column doesn't exist yet
-        if (error && (error.message.includes('exibir_aluno') || error.code === 'PGRST204' || error.hint?.includes('exibir_aluno'))) {
-          const { data: fallbackData, error: fallbackError } = await supabase
-            .from('eventos')
-            .select('id, titulo, data, cor')
-            .gte('data', today.toISOString())
-            .order('data', { ascending: true })
-            .limit(15);
+        // Dynamic fallback with multi-column grace handling if columns doesn't exist yet
+        if (error) {
+          const isUniformError = error.message.includes('uniforme_dia') || error.hint?.includes('uniforme_dia') || error.code === 'PGRST204';
+          const isExibirError = error.message.includes('exibir_aluno') || error.hint?.includes('exibir_aluno') || error.code === 'PGRST204';
           
-          if (fallbackError) throw fallbackError;
-          data = fallbackData;
-        } else if (error) {
-          if (error.code === '42P01') {
-            setEventos([]);
-            return;
+          if (isUniformError || isExibirError) {
+            let columnsToSelect = 'id, titulo, data, cor';
+            if (!isExibirError) {
+              columnsToSelect += ', exibir_aluno';
+            }
+            if (!isUniformError) {
+              columnsToSelect += ', uniforme_dia';
+            }
+            
+            const { data: fallbackData, error: fallbackError } = await supabase
+              .from('eventos')
+              .select(columnsToSelect)
+              .gte('data', today.toISOString())
+              .order('data', { ascending: true })
+              .limit(15);
+            
+            if (fallbackError) {
+              const { data: minData, error: minError } = await supabase
+                .from('eventos')
+                .select('id, titulo, data, cor')
+                .gte('data', today.toISOString())
+                .order('data', { ascending: true })
+                .limit(15);
+              if (minError) throw minError;
+              data = minData;
+            } else {
+              data = fallbackData;
+            }
+          } else {
+            if (error.code === '42P01') {
+              setEventos([]);
+              return;
+            }
+            throw error;
           }
-          throw error;
         }
 
         if (data) setEventos(data);
@@ -145,6 +169,11 @@ export function EventMarquee({ thought }: EventMarqueeProps = {}) {
                   <span className="text-xs font-bold text-slate-100 whitespace-nowrap">
                     {evento.titulo}
                   </span>
+                  {evento.uniforme_dia && (
+                    <span className="text-[10px] font-black bg-blue-500/20 text-blue-300 border border-blue-500/30 px-2 py-0.5 rounded uppercase tracking-widest whitespace-nowrap">
+                      🥋 Uniforme: {evento.uniforme_dia}
+                    </span>
+                  )}
                   <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest whitespace-nowrap">
                     {new Date(evento.data).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
                   </span>

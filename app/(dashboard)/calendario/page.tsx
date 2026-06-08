@@ -27,6 +27,7 @@ interface Evento {
   data: string;
   cor: string;
   exibir_aluno?: boolean;
+  uniforme_dia?: string;
   created_at: string;
 }
 
@@ -47,7 +48,8 @@ export default function CalendarPage() {
     descricao: '',
     data: new Date().toISOString().split('T')[0],
     cor: 'bg-blue-600',
-    exibir_aluno: false
+    exibir_aluno: false,
+    uniforme_dia: ''
   });
 
   const fetchEventos = async () => {
@@ -111,7 +113,8 @@ export default function CalendarPage() {
       descricao: formData.descricao,
       data: timestamp,
       cor: formData.cor,
-      exibir_aluno: formData.exibir_aluno
+      exibir_aluno: formData.exibir_aluno,
+      uniforme_dia: formData.uniforme_dia || null
     };
 
     try {
@@ -122,14 +125,32 @@ export default function CalendarPage() {
           .eq('id', editingEvent.id);
         
         if (error) {
-          // Fallback if db column doesn't exist yet
-          if (error.message.includes('exibir_aluno') || error.hint?.includes('exibir_aluno') || error.code === 'PGRST204') {
-            const { exibir_aluno, ...fallbackPayload } = eventPayload;
+          // Fallback if db columns don't exist yet
+          const isUniformErr = error.message.includes('uniforme_dia') || error.hint?.includes('uniforme_dia') || error.code === 'PGRST204';
+          const isExibirErr = error.message.includes('exibir_aluno') || error.hint?.includes('exibir_aluno') || error.code === 'PGRST204';
+          
+          if (isUniformErr || isExibirErr) {
+            const fallbackPayload = { ...eventPayload };
+            if (isUniformErr) delete fallbackPayload.uniforme_dia;
+            if (isExibirErr) delete fallbackPayload.exibir_aluno;
+
             const { error: fallbackErr } = await supabase
               .from('eventos')
               .update(fallbackPayload)
               .eq('id', editingEvent.id);
-            if (fallbackErr) throw fallbackErr;
+            if (fallbackErr) {
+              const minPayload = {
+                titulo: eventPayload.titulo,
+                descricao: eventPayload.descricao,
+                data: eventPayload.data,
+                cor: eventPayload.cor
+              };
+              const { error: minErr } = await supabase
+                .from('eventos')
+                .update(minPayload)
+                .eq('id', editingEvent.id);
+              if (minErr) throw minErr;
+            }
           } else {
             throw error;
           }
@@ -141,13 +162,30 @@ export default function CalendarPage() {
           .insert([eventPayload]);
 
         if (error) {
-          // Fallback if db column doesn't exist yet
-          if (error.message.includes('exibir_aluno') || error.hint?.includes('exibir_aluno') || error.code === 'PGRST204') {
-            const { exibir_aluno, ...fallbackPayload } = eventPayload;
+          // Fallback if db columns don't exist yet
+          const isUniformErr = error.message.includes('uniforme_dia') || error.hint?.includes('uniforme_dia') || error.code === 'PGRST204';
+          const isExibirErr = error.message.includes('exibir_aluno') || error.hint?.includes('exibir_aluno') || error.code === 'PGRST204';
+          
+          if (isUniformErr || isExibirErr) {
+            const fallbackPayload = { ...eventPayload };
+            if (isUniformErr) delete fallbackPayload.uniforme_dia;
+            if (isExibirErr) delete fallbackPayload.exibir_aluno;
+
             const { error: fallbackErr } = await supabase
               .from('eventos')
               .insert([fallbackPayload]);
-            if (fallbackErr) throw fallbackErr;
+            if (fallbackErr) {
+              const minPayload = {
+                titulo: eventPayload.titulo,
+                descricao: eventPayload.descricao,
+                data: eventPayload.data,
+                cor: eventPayload.cor
+              };
+              const { error: minErr } = await supabase
+                .from('eventos')
+                .insert([minPayload]);
+              if (minErr) throw minErr;
+            }
           } else {
             throw error;
           }
@@ -162,7 +200,8 @@ export default function CalendarPage() {
         descricao: '',
         data: new Date().toISOString().split('T')[0],
         cor: 'bg-blue-600',
-        exibir_aluno: false
+        exibir_aluno: false,
+        uniforme_dia: ''
       });
       fetchEventos();
     } catch (error: any) {
@@ -200,7 +239,8 @@ export default function CalendarPage() {
       descricao: evento.descricao,
       data: evento.data.split('T')[0],
       cor: evento.cor,
-      exibir_aluno: evento.exibir_aluno !== false
+      exibir_aluno: evento.exibir_aluno !== false,
+      uniforme_dia: evento.uniforme_dia || ''
     });
     setIsModalOpen(true);
   };
@@ -250,7 +290,8 @@ export default function CalendarPage() {
                 descricao: '',
                 data: new Date().toISOString().split('T')[0],
                 cor: 'bg-blue-600',
-                exibir_aluno: false
+                exibir_aluno: false,
+                uniforme_dia: ''
               });
               setIsModalOpen(true);
             }}
@@ -367,6 +408,11 @@ export default function CalendarPage() {
                     </div>
 
                     <h4 className="text-lg font-bold text-slate-800 mb-2 truncate">{evento.titulo}</h4>
+                    {evento.uniforme_dia && (
+                      <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-blue-50 border border-blue-100 text-blue-700 text-[10px] font-black w-fit mb-2.5 uppercase tracking-wide">
+                        🥋 Uniforme: {evento.uniforme_dia}
+                      </div>
+                    )}
                     <p className="text-sm text-slate-600 line-clamp-2 mb-4 h-10">{evento.descricao || t.common.noneFound}</p>
 
                     <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-50">
@@ -429,6 +475,21 @@ export default function CalendarPage() {
                 </div>
 
                 <div className="space-y-6">
+                  {viewingEvent.uniforme_dia && (
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] block mb-2">
+                        Uniforme do Dia
+                      </label>
+                      <div className="flex items-center gap-3 py-3 px-4 bg-teal-50 border border-teal-100/50 rounded-xl">
+                        <span className="text-xl">🥋</span>
+                        <div className="flex flex-col">
+                          <span className="text-[10px] font-black text-teal-800 uppercase tracking-widest leading-none mb-1">Uniforme Orientado</span>
+                          <span className="text-xs font-bold text-teal-700 uppercase leading-none">{viewingEvent.uniforme_dia}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <div>
                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] block mb-3">
                       {t.calendar.eventDescription || 'Descrição'}
@@ -524,6 +585,17 @@ export default function CalendarPage() {
                       onChange={(e) => setFormData(prev => ({ ...prev, descricao: e.target.value }))}
                       rows={3}
                       className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/10 outline-none resize-none"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider font-sans">Uniforme do Dia</label>
+                    <input 
+                      type="text"
+                      placeholder="Ex: TAF, 7º B, Educação Física"
+                      value={formData.uniforme_dia || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, uniforme_dia: e.target.value }))}
+                      className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/10 outline-none placeholder:text-slate-300"
                     />
                   </div>
 
