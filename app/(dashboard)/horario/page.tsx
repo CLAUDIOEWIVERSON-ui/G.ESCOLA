@@ -478,18 +478,18 @@ export default function HorarioPage() {
             height: auto !important;
             min-height: auto !important;
             overflow: visible !important;
-            page-break-after: avoid !important;
-            page-break-before: avoid !important;
-            page-break-inside: avoid !important;
+            page-break-after: auto !important;
+            page-break-before: auto !important;
+            page-break-inside: auto !important;
           }
 
-          /* Avoid dividing rows and tables weirdly across pages */
+          /* Avoid dividing individual rows weirdly across pages but allow the table itself to split */
           tr { 
             page-break-inside: avoid !important; 
             page-break-after: auto !important;
           }
           table {
-            page-break-inside: avoid !important;
+            page-break-inside: auto !important;
             width: 100% !important;
             border-collapse: collapse !important;
           }
@@ -497,61 +497,89 @@ export default function HorarioPage() {
           .print-container, .print-container * {
             border-radius: 0 !important;
           }
-          .print-header {
-            border-bottom: 2px solid #000000 !important;
+
+          /* Differentiate top header and bottom footer block elements */
+          .print-header-top {
+            border-bottom: 2px solid #cbd5e1 !important;
+          }
+          .print-header-bottom {
+            border-top: 2px solid #cbd5e1 !important;
+            border-bottom: none !important;
           }
 
           /* Portrait or Landscape specific layout scaling */
           ${printOrientation === 'landscape' ? `
             /* LANDSCAPE PRESENTATION */
             .print-container {
-              padding: 10mm 12mm !important;
+              padding: 6mm 8mm !important;
               height: auto !important;
-              min-height: 210mm !important;
+              min-height: auto !important;
               max-height: none !important;
               justify-content: flex-start !important;
             }
-            .print-header {
-              padding: 14px 20px !important;
+            .print-header-top {
+              padding: 8px 14px 10px 14px !important;
               background-color: #ffffff !important;
               color: #000000 !important;
-              border-bottom: 2px solid #e2e8f0 !important;
+            }
+            .print-header-bottom {
+              padding: 8px 14px !important;
+              background-color: #ffffff !important;
+              color: #000000 !important;
             }
             .print-header h2 {
-              font-size: 26px !important;
+              font-size: 22px !important;
               line-height: 1.1 !important;
+            }
+            .print-header-grid {
+              gap: 12px !important;
+            }
+            .print-header-title-container > * + * {
+              margin-top: 2px !important;
+            }
+            .print-period-badge {
+              padding: 4px 10px !important;
+              border-radius: 8px !important;
+              border-color: #cbd5e1 !important;
+            }
+            .print-period-badge span:first-child {
+              font-size: 13px !important;
+            }
+            .print-period-badge span:last-child {
+              font-size: 7px !important;
+              margin-top: 1px !important;
             }
             .print-content {
               padding: 0 !important;
               background: white !important;
-              margin-top: 8px !important;
-              margin-bottom: 8px !important;
+              margin-top: 4px !important;
+              margin-bottom: 4px !important;
             }
             .print-content th {
-              padding: 6px 4px !important;
+              padding: 4px 2px !important;
               background-color: #f8fafc !important;
               border-bottom: 2px solid #cbd5e1 !important;
             }
             .print-content th span {
-              font-size: 9px !important;
+              font-size: 8px !important;
             }
             .print-content td {
-              padding: 2px !important;
+              padding: 1.5px !important;
               height: auto !important;
             }
             /* First/Time column scaling */
             .print-content td:first-child {
-              padding: 2px !important;
-              width: 70px !important;
+              padding: 1.5px !important;
+              width: 60px !important;
             }
             .print-content td:first-child div {
-              font-size: 10px !important;
+              font-size: 9px !important;
             }
             /* Grid schedule cards inside td elements */
             .print-content .min-h-\\[140px\\] {
-              min-height: 55px !important;
+              min-height: 48px !important;
               height: auto !important;
-              padding: 4px 6px !important;
+              padding: 3px 5px !important;
               border-radius: 4px !important;
               background-color: #f8fafc !important;
               border: 1px solid #e2e8f0 !important;
@@ -563,7 +591,7 @@ export default function HorarioPage() {
             .print-content .min-h-\\[140px\\] p,
             .print-content .min-h-\\[140px\\] div {
               font-size: 8px !important;
-              line-height: 1.1 !important;
+              line-height: 1.05 !important;
               white-space: normal !important;
               word-break: break-word !important;
               overflow: visible !important;
@@ -578,62 +606,84 @@ export default function HorarioPage() {
             }
             /* Interval/Lunch slot compact presentation */
             .print-content tr[class*="bg-slate-50"] td {
-              padding: 3px !important;
+              padding: 2px !important;
             }
             .print-content tr[class*="bg-slate-50"] span {
               font-size: 8px !important;
-              letter-spacing: 0.3em !important;
+              letter-spacing: 0.25em !important;
             }
           ` : `
             /* PORTRAIT PRESENTATION */
             .print-container {
-              padding: 12mm 15mm !important;
+              padding: 8mm 10mm !important;
               height: auto !important;
-              min-height: 297mm !important;
+              min-height: auto !important;
               max-height: none !important;
               justify-content: flex-start !important;
             }
-            .print-header {
-              padding: 18px 24px !important;
+            .print-header-top {
+              padding: 10px 18px 12px 18px !important;
               background-color: #ffffff !important;
               color: #000000 !important;
-              border-bottom: 2px solid #e2e8f0 !important;
+            }
+            .print-header-bottom {
+              padding: 10px 18px !important;
+              background-color: #ffffff !important;
+              color: #000000 !important;
             }
             .print-header h2 {
-              font-size: 32px !important;
+              font-size: 26px !important;
               line-height: 1.1 !important;
+            }
+            .print-header-grid {
+              gap: 16px !important;
+            }
+            .print-header-title-container > * + * {
+              margin-top: 3px !important;
+            }
+            .print-period-badge {
+              padding: 6px 12px !important;
+              border-radius: 8px !important;
+              border-color: #cbd5e1 !important;
+            }
+            .print-period-badge span:first-child {
+              font-size: 15px !important;
+            }
+            .print-period-badge span:last-child {
+              font-size: 8px !important;
+              margin-top: 1.5px !important;
             }
             .print-content {
               padding: 0 !important;
               background: white !important;
-              margin-top: 12px !important;
-              margin-bottom: 12px !important;
+              margin-top: 6px !important;
+              margin-bottom: 6px !important;
             }
             .print-content th {
-              padding: 8px 4px !important;
+              padding: 6px 3px !important;
               background-color: #f8fafc !important;
               border-bottom: 2px solid #cbd5e1 !important;
             }
             .print-content th span {
-              font-size: 11px !important;
+              font-size: 10px !important;
             }
             .print-content td {
-              padding: 3px !important;
+              padding: 2.5px !important;
               height: auto !important;
             }
             /* First/Time column scaling */
             .print-content td:first-child {
-              padding: 3px !important;
-              width: 85px !important;
+              padding: 2.5px !important;
+              width: 75px !important;
             }
             .print-content td:first-child div {
-              font-size: 11px !important;
+              font-size: 10px !important;
             }
             /* Grid schedule cards inside td elements */
             .print-content .min-h-\\[140px\\] {
-              min-height: 85px !important;
+              min-height: 70px !important;
               height: auto !important;
-              padding: 6px 8px !important;
+              padding: 5px 6px !important;
               border-radius: 4px !important;
               background-color: #f8fafc !important;
               border: 1px solid #e2e8f0 !important;
@@ -644,8 +694,8 @@ export default function HorarioPage() {
             .print-content .min-h-\\[140px\\] span,
             .print-content .min-h-\\[140px\\] p,
             .print-content .min-h-\\[140px\\] div {
-              font-size: 9px !important;
-              line-height: 1.2 !important;
+              font-size: 8.5px !important;
+              line-height: 1.15 !important;
               white-space: normal !important;
               word-break: break-word !important;
               overflow: visible !important;
@@ -655,16 +705,16 @@ export default function HorarioPage() {
               line-clamp: unset !important;
             }
             .print-content .min-h-\\[140px\\] svg {
-              width: 10px !important;
-              height: 10px !important;
+              width: 9px !important;
+              height: 9px !important;
             }
             /* Interval/Lunch slot compact presentation */
             .print-content tr[class*="bg-slate-50"] td {
-              padding: 4px !important;
+              padding: 3px !important;
             }
             .print-content tr[class*="bg-slate-50"] span {
-              font-size: 9px !important;
-              letter-spacing: 0.4em !important;
+              font-size: 8.5px !important;
+              letter-spacing: 0.3em !important;
             }
           `}
 
@@ -886,9 +936,9 @@ export default function HorarioPage() {
               className="w-full max-w-[1200px] bg-white rounded-[3rem] shadow-2xl border border-slate-100 overflow-hidden flex flex-col font-sans mb-10 print-container"
             >
               {/* Specialized Header */}
-              <div className="bg-white p-12 text-slate-800 relative overflow-hidden print-header border-b border-slate-200">
-                <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-12">
-                  <div className="col-span-2 space-y-3">
+              <div className="bg-white p-12 text-slate-800 relative overflow-hidden print-header print-header-top border-b border-slate-200">
+                <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-12 print-header-grid">
+                  <div className="col-span-2 space-y-3 print-header-title-container">
                     <div className="flex items-center">
                       <span className="text-xs font-black text-blue-600 uppercase tracking-widest">
                         {selectedCurso?.nome}
@@ -903,7 +953,7 @@ export default function HorarioPage() {
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{t.schedule.period.toUpperCase()}</p>
                     
                     {/* Beautiful, static/read-only period badge for both Screen and Print */}
-                    <div className="bg-slate-50 border border-slate-200 px-6 py-3 rounded-2xl flex flex-col md:items-end shadow-sm">
+                    <div className="bg-slate-50 border border-slate-200 px-6 py-3 rounded-2xl flex flex-col md:items-end shadow-sm print-period-badge">
                       <span className="text-xl md:text-2xl font-black text-slate-800 tracking-tight leading-none">{weekPeriodFormatted}</span>
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1.5 leading-none">
                         {format(weekStart, 'MMMM yyyy', { locale: ptBR })}
@@ -1163,7 +1213,7 @@ export default function HorarioPage() {
                   </table>
                 </div>
                          {/* Footer */}
-              <div className="px-12 py-8 bg-white flex items-center justify-between print-header border-t border-slate-200">
+              <div className="px-12 py-8 bg-white flex items-center justify-between print-header print-header-bottom border-t border-slate-200">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center">
                     <Shield size={20} className="text-slate-700" />
