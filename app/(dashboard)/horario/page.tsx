@@ -447,7 +447,7 @@ export default function HorarioPage() {
 
           /* Neutralize containers, motion divs and layout components to allow print-container to pin perfectly at 0,0 */
           main, 
-          div, 
+          div:not(.print-container):not(.print-container *), 
           section, 
           .col-print-style,
           [class*="bg-slate-950"], 
@@ -466,6 +466,8 @@ export default function HorarioPage() {
             min-height: 0 !important;
             box-shadow: none !important;
             border: none !important;
+            display: block !important;
+            overflow: visible !important;
           }
 
           /* Pin the schedule directly at top-left of the page viewport using absolute positioning */
