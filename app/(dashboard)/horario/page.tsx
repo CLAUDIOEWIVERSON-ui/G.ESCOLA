@@ -411,18 +411,18 @@ export default function HorarioPage() {
             box-shadow: none !important;
           }
 
-          /* Hide all surrounding page layers completely */
-          aside, header, nav, button, .print\:hidden, .no-print {
+          /* Hide absolutely everything that is not the print container or one of its ancestors */
+          *:not(:has(.print-container)):not(.print-container):not(.print-container *) {
             display: none !important;
             width: 0 !important;
             height: 0 !important;
-            opacity: 0 !important;
-            visibility: hidden !important;
             margin: 0 !important;
             padding: 0 !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
           }
 
-          /* Reset html, body, and all structural wrappers to eliminate any offsets, margins, paddings, and transforms */
+          /* Reset html, body and ancestors of .print-container to be clean block structures with no padding/margin/flex/box-shadow/transforms */
           html, body {
             background: white !important;
             width: 100% !important;
@@ -432,26 +432,13 @@ export default function HorarioPage() {
             padding: 0 !important;
             overflow: visible !important;
             position: relative !important;
+            display: block !important;
           }
 
-          /* General hide rule for all descendants to prevent duplicating any content on print */
-          body * {
-            visibility: hidden !important;
-          }
-
-          /* Explicitly make only the printable schedule container and its descendants visible */
-          .print-container,
-          .print-container * {
-            visibility: visible !important;
-          }
-
-          /* Neutralize containers, motion divs and layout components to allow print-container to pin perfectly at 0,0 */
-          main, 
-          div:not(.print-container):not(.print-container *), 
-          section, 
-          .col-print-style,
-          [class*="bg-slate-950"], 
-          [class*="flex-1"] {
+          div:has(.print-container),
+          main:has(.print-container),
+          section:has(.print-container),
+          .col-print-style {
             margin: 0 !important;
             margin-top: 0 !important;
             padding: 0 !important;
@@ -470,18 +457,17 @@ export default function HorarioPage() {
             overflow: visible !important;
           }
 
-          /* Pin the schedule directly at top-left of the page viewport using absolute positioning */
+          /* Ensure .print-container fits perfectly in normal flow without absolute shifts */
           .print-container {
-            position: absolute !important;
-            left: 0 !important;
-            top: 0 !important;
-            margin-top: 0 !important;
-            padding-top: 0 !important;
+            position: relative !important;
+            left: auto !important;
+            top: auto !important;
             transform: none !important;
             width: 100% !important;
             max-width: 100% !important;
             min-width: 100% !important;
             margin: 0 !important;
+            padding: 0 !important;
             border: none !important;
             border-radius: 0 !important;
             box-shadow: none !important;
@@ -489,9 +475,9 @@ export default function HorarioPage() {
             flex-direction: column !important;
             background: white !important;
             box-sizing: border-box !important;
-            z-index: 99999999 !important;
             height: auto !important;
             min-height: auto !important;
+            overflow: visible !important;
             page-break-after: avoid !important;
             page-break-before: avoid !important;
             page-break-inside: avoid !important;
