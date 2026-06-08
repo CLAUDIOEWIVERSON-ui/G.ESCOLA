@@ -562,17 +562,27 @@ export default function HorarioPage() {
             /* Grid schedule cards inside td elements */
             .print-content .min-h-\\[140px\\] {
               min-height: 55px !important;
-              height: 55px !important;
+              height: auto !important;
               padding: 4px 6px !important;
               border-radius: 4px !important;
               background-color: #f8fafc !important;
               border: 1px solid #e2e8f0 !important;
+              display: flex !important;
+              flex-direction: column !important;
+              overflow: visible !important;
             }
             .print-content .min-h-\\[140px\\] span,
             .print-content .min-h-\\[140px\\] p,
             .print-content .min-h-\\[140px\\] div {
               font-size: 8px !important;
               line-height: 1.1 !important;
+              white-space: normal !important;
+              word-break: break-word !important;
+              overflow: visible !important;
+              text-overflow: clip !important;
+              display: block !important;
+              -webkit-line-clamp: unset !important;
+              line-clamp: unset !important;
             }
             .print-content .min-h-\\[140px\\] svg {
               width: 8px !important;
@@ -634,17 +644,27 @@ export default function HorarioPage() {
             /* Grid schedule cards inside td elements */
             .print-content .min-h-\\[140px\\] {
               min-height: 85px !important;
-              height: 85px !important;
+              height: auto !important;
               padding: 6px 8px !important;
               border-radius: 4px !important;
               background-color: #f8fafc !important;
               border: 1px solid #e2e8f0 !important;
+              display: flex !important;
+              flex-direction: column !important;
+              overflow: visible !important;
             }
             .print-content .min-h-\\[140px\\] span,
             .print-content .min-h-\\[140px\\] p,
             .print-content .min-h-\\[140px\\] div {
               font-size: 9px !important;
               line-height: 1.2 !important;
+              white-space: normal !important;
+              word-break: break-word !important;
+              overflow: visible !important;
+              text-overflow: clip !important;
+              display: block !important;
+              -webkit-line-clamp: unset !important;
+              line-clamp: unset !important;
             }
             .print-content .min-h-\\[140px\\] svg {
               width: 10px !important;
