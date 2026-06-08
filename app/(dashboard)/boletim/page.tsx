@@ -254,9 +254,10 @@ export default function BoletimPage() {
     try {
       // Find course modules count
       const turma = turmas.find((t: any) => t.id === selectedTurma);
-      const cursoId = turma?.curso_id;
-      if (cursoId) {
-        const curso = cursos.find((c: any) => c.id === cursoId);
+      if (turma?.curso?.qtd_modulos) {
+        setCourseModules(Math.min(turma.curso.qtd_modulos, 10));
+      } else if (turma?.curso_id) {
+        const curso = cursos.find((c: any) => c.id === turma.curso_id);
         if (curso) {
           setCourseModules(Math.min(curso.qtd_modulos || 4, 10));
         }

@@ -30,6 +30,7 @@ export default function NotasPage() {
   const [disciplinas, setDisciplinas] = useState<any[]>([]);
   const [turmas, setTurmas] = useState<any[]>([]);
   const [cursos, setCursos] = useState<any[]>([]);
+  const [allCursos, setAllCursos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCurso, setSelectedCurso] = useState('');
   const [selectedTurma, setSelectedTurma] = useState('');
@@ -42,7 +43,7 @@ export default function NotasPage() {
   // Derive effective modules
   const selectedTurmaObj = turmas.find(t => t.id === selectedTurma);
   const currentCursoId = selectedCurso || selectedTurmaObj?.curso_id;
-  const selectedCursoObj = cursos.find(c => c.id === currentCursoId);
+  const selectedCursoObj = allCursos.find(c => c.id === currentCursoId);
   const effectiveModules = Math.min(selectedCursoObj?.qtd_modulos || 4, 10);
 
   useEffect(() => {
@@ -115,11 +116,11 @@ export default function NotasPage() {
       if (configData) setSettings(configData);
 
       // Fetch Alunos
-      const { data: alunosData } = await supabase.from('alunos').select('id, nome, matricula, foto_url, genero').is('deleted_at', null).order('nome');
+      const { data: alunosData } = await supabase.from('alunos').select('id, nome, matricula, foto_url, genero, tipo_aluno').is('deleted_at', null).order('nome');
       if (alunosData) setAlunos(alunosData);
 
       // Fetch Cursos
-      const { data: cursosData } = await supabase.from('cursos').select('id, nome, categoria, internacional, grupo_responsavel').is('deleted_at', null).order('nome');
+      const { data: cursosData } = await supabase.from('cursos').select('id, nome, categoria, internacional, grupo_responsavel, qtd_modulos').is('deleted_at', null).order('nome');
       let filteredCuts = cursosData || [];
       if (profile?.role === 'instrutor' && profile?.grupo_responsavel) {
         if (profile.grupo_responsavel === 'MAN') {
@@ -130,7 +131,10 @@ export default function NotasPage() {
           filteredCuts = filteredCuts.filter((c: any) => c.grupo_responsavel === 'MAN' || c.grupo_responsavel === 'GAT');
         }
       }
-      if (cursosData) setCursos(filteredCuts.filter((c: any) => !c.internacional));
+      if (cursosData) {
+        setAllCursos(cursosData);
+        setCursos(filteredCuts.filter((c: any) => !c.internacional));
+      }
 
       // Fetch Turmas
       const { data: turmasData } = await supabase.from('turmas').select('id, nome, curso_id, internacional, grupo_responsavel').is('deleted_at', null).order('nome');
