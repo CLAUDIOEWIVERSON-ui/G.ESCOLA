@@ -285,7 +285,7 @@ export default function HorarioPage() {
   useEffect(() => {
     async function fetchData() {
       const { data: c } = await supabase.from('cursos').select('*').is('deleted_at', null).order('nome');
-      let filteredCuts = c || [];
+      let filteredCuts = (c || []).filter((item: any) => !item.internacional);
       if (profile?.role === 'instrutor' && profile?.grupo_responsavel) {
         if (profile.grupo_responsavel === 'MAN') {
           filteredCuts = filteredCuts.filter((item: any) => item.grupo_responsavel === 'MAN');
@@ -298,7 +298,7 @@ export default function HorarioPage() {
       setCursos(filteredCuts);
 
       const { data: tu } = await supabase.from('turmas').select('*').is('deleted_at', null).order('nome');
-      let filteredCls = tu || [];
+      let filteredCls = (tu || []).filter((item: any) => !item.internacional);
       if (profile?.role === 'instrutor' && profile?.grupo_responsavel) {
         if (profile.grupo_responsavel === 'MAN') {
           filteredCls = filteredCls.filter((item: any) => item.grupo_responsavel === 'MAN');
