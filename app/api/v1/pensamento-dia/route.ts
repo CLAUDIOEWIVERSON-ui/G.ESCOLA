@@ -147,28 +147,56 @@ export async function GET(req: NextRequest) {
             systemInstruction = 'Você é um filósofo acadêmico e pensador existencial refinado. Escreva uma frase profunda e reflexiva em português sobre ética, autoconhecimento, tempo ou sabedoria humana, citando o autor grego, romano, oriental ou moderno correspondente.';
           }
 
-          const response = await getGeminiAI().models.generateContent({
-            model: 'gemini-3.5-flash',
-            contents: `${themePrompt} Varie os autores e temas. Retorne estritamente em formato JSON estruturado com os campos "texto" (o pensamento) e "autor".`,
-            config: {
-              systemInstruction,
-              responseMimeType: 'application/json',
-              responseSchema: {
-                type: 'OBJECT' as any,
-                properties: {
-                  texto: {
-                    type: 'STRING' as any,
-                    description: 'A frase ou pensamento inspirador do dia em português.'
+          let response;
+          try {
+            response = await getGeminiAI().models.generateContent({
+              model: 'gemini-3.5-flash',
+              contents: `${themePrompt} Varie os autores e temas. Retorne estritamente em formato JSON estruturado com os campos "texto" (o pensamento) e "autor".`,
+              config: {
+                systemInstruction,
+                responseMimeType: 'application/json',
+                responseSchema: {
+                  type: 'OBJECT' as any,
+                  properties: {
+                    texto: {
+                      type: 'STRING' as any,
+                      description: 'A frase ou pensamento inspirador do dia em português.'
+                    },
+                    autor: {
+                      type: 'STRING' as any,
+                      description: 'O nome do autor do pensamento.'
+                    }
                   },
-                  autor: {
-                    type: 'STRING' as any,
-                    description: 'O nome do autor do pensamento.'
-                  }
-                },
-                required: ['texto', 'autor']
+                  required: ['texto', 'autor']
+                }
               }
-            }
-          });
+            });
+          } catch (primaryError: any) {
+            console.warn('[Gemini API Primary Model Error] Main model gemini-3.5-flash returned error. Retrying with fallback model gemini-3.1-flash-lite. Reason:', primaryError?.message || primaryError);
+            // Try with the robust lite model
+            response = await getGeminiAI().models.generateContent({
+              model: 'gemini-3.1-flash-lite',
+              contents: `${themePrompt} Varie os autores e temas. Retorne estritamente em formato JSON estruturado com os campos "texto" (o pensamento) e "autor".`,
+              config: {
+                systemInstruction,
+                responseMimeType: 'application/json',
+                responseSchema: {
+                  type: 'OBJECT' as any,
+                  properties: {
+                    texto: {
+                      type: 'STRING' as any,
+                      description: 'A frase ou pensamento inspirador do dia em português.'
+                    },
+                    autor: {
+                      type: 'STRING' as any,
+                      description: 'O nome do autor do pensamento.'
+                    }
+                  },
+                  required: ['texto', 'autor']
+                }
+              }
+            });
+          }
 
           if (response && response.text) {
             generatedQuote = JSON.parse(response.text.trim());

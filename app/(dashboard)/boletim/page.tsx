@@ -111,10 +111,18 @@ export default function BoletimPage() {
   const isNifStudent = profile?.role === 'aluno' && (profile as any).isNifStudent;
 
   const [loading, setLoading] = useState(false);
-  const { cursos } = useCursos();
-  const { turmas } = useTurmas();
+  const { cursos: rawCursos } = useCursos();
+  const { turmas: rawTurmas } = useTurmas();
   const { disciplinas } = useDisciplinas();
   const { configuracoes } = useConfiguracoes();
+
+  const cursos = useMemo(() => {
+    return (rawCursos || []).filter((c: any) => !c.internacional);
+  }, [rawCursos]);
+
+  const turmas = useMemo(() => {
+    return (rawTurmas || []).filter((t: any) => !t.internacional);
+  }, [rawTurmas]);
 
   const anos = useMemo(() => {
     return Array.from(new Set(turmas.map((t: any) => t.ano))).sort((a: any, b: any) => b - a);
