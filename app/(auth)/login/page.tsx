@@ -15,7 +15,7 @@ import jsQR from 'jsqr';
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { t } = useI18n();
+  const { t, language, setLanguage } = useI18n();
   const { refreshProfile } = useUser();
   const [loginType, setLoginType] = useState<'staff' | 'aluno'>('staff');
   const [isLogin, setIsLogin] = useState(true);
@@ -316,8 +316,36 @@ function LoginContent() {
   return (
     <div className="w-full max-w-sm bg-white rounded-xl shadow-xl shadow-slate-200/50 p-8 border border-slate-200 overflow-hidden min-h-[420px] flex flex-col justify-between">
       <div>
-        <div className="flex flex-col items-center mb-6">
+        <div className="flex flex-col items-center mb-4">
           <Logo className="mb-0" dark={true} />
+        </div>
+
+        {/* Language selector toggle */}
+        <div className="flex justify-center gap-2 mb-6">
+          <button
+            type="button"
+            onClick={() => setLanguage('pt')}
+            className={cn(
+              "px-3 py-1 text-[10px] font-black rounded-lg border transition-all cursor-pointer",
+              language === 'pt' 
+                ? "bg-slate-900 text-white border-slate-900 shadow-sm" 
+                : "bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100"
+            )}
+          >
+            Português (PT)
+          </button>
+          <button
+            type="button"
+            onClick={() => setLanguage('en')}
+            className={cn(
+              "px-3 py-1 text-[10px] font-black rounded-lg border transition-all cursor-pointer",
+              language === 'en' 
+                ? "bg-slate-900 text-white border-slate-900 shadow-sm" 
+                : "bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100"
+            )}
+          >
+            English (EN)
+          </button>
         </div>
 
         <AnimatePresence mode="wait">
@@ -417,7 +445,7 @@ function LoginContent() {
                       : "text-slate-500 hover:text-slate-800"
                   )}
                 >
-                  Gestão / Instrutor
+                  {language === 'pt' ? 'Gestão / Instrutor' : 'Staff / Instructor'}
                 </button>
                 <button
                   type="button"
@@ -432,7 +460,7 @@ function LoginContent() {
                       : "text-slate-500 hover:text-slate-800"
                   )}
                 >
-                  Aluno (Código)
+                  {language === 'pt' ? 'Aluno (Código)' : 'Student (Code)'}
                 </button>
               </div>
 
@@ -462,37 +490,23 @@ function LoginContent() {
                 </AnimatePresence>
 
                 {loginType === 'staff' ? (
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">{t.auth.email}</label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                      <input
-                        id="email"
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                        className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition-all"
-                        placeholder={t.auth.emailPlaceholder}
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {/* Quick QR Reader Trigger */}
-                    <button
-                      type="button"
-                      onClick={startScan}
-                      className="w-full py-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md shadow-blue-200 active:scale-[0.98]"
-                    >
-                      <QrCode size={16} />
-                      Acessar o &quot;Questionário via QR Code&quot;
-                    </button>
-                  </div>
-                )}
-
-                {loginType === 'staff' && (
                   <>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">{t.auth.email}</label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                        <input
+                          id="email"
+                          type="email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          required
+                          className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition-all"
+                          placeholder={t.auth.emailPlaceholder}
+                        />
+                      </div>
+                    </div>
+
                     <div className="space-y-1.5">
                       <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">
                         {t.auth.password}
@@ -527,6 +541,81 @@ function LoginContent() {
                       )}
                     </button>
                   </>
+                ) : (
+                  <div className="space-y-4">
+                    {/* Quick QR Reader Trigger */}
+                    <button
+                      type="button"
+                      onClick={startScan}
+                      className="w-full py-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md shadow-blue-200 active:scale-[0.98]"
+                    >
+                      <QrCode size={16} />
+                      {language === 'pt' ? 'Acessar via QR Code' : 'Access via QR Code'}
+                    </button>
+
+                    {/* Divider for Password Form */}
+                    <div className="relative flex py-2 items-center">
+                      <div className="flex-grow border-t border-slate-200"></div>
+                      <span className="flex-shrink mx-4 text-slate-450 text-[10px] font-bold uppercase tracking-wider">
+                        {language === 'pt' ? 'Ou com senha' : 'Or with password'}
+                      </span>
+                      <div className="flex-grow border-t border-slate-200"></div>
+                    </div>
+
+                    {/* Manual Access Code */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">
+                        {language === 'pt' ? 'Código de Acesso / Matrícula' : 'Access Code / Registration'}
+                      </label>
+                      <div className="relative">
+                        <QrCode className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                        <input
+                          id="accessCode"
+                          type="text"
+                          value={accessCode}
+                          onChange={(e) => setAccessCode(e.target.value)}
+                          required
+                          className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition-all uppercase"
+                          placeholder={language === 'pt' ? 'Ex: MAT001' : 'E.g.: MAT001'}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Manual Student Password */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">
+                        {t.auth.password}
+                      </label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                        <input
+                          id="student-password"
+                          type="password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          required
+                          className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition-all"
+                          placeholder="••••••••"
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      id="student-auth-submit"
+                      type="submit"
+                      disabled={loading}
+                      className="w-full py-2.5 bg-blue-600 text-white rounded-lg font-bold text-sm flex items-center justify-center gap-2 hover:bg-blue-700 transition-all active:scale-[0.98] disabled:opacity-70 shadow-sm shadow-blue-200 cursor-pointer mt-2"
+                    >
+                      {loading ? (
+                        <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      ) : (
+                        <>
+                          <LogIn size={16} />
+                          {t.auth.login}
+                        </>
+                      )}
+                    </button>
+                  </div>
                 )}
               </form>
             </motion.div>

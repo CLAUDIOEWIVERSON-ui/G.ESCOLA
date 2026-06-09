@@ -68,7 +68,7 @@ function HeaderSearchBar() {
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { t, language } = useI18n();
+  const { t, language, setLanguage } = useI18n();
   const { profile, isAdmin, isAluno, isInstrutor, loading: authLoading } = useUser();
   const isReadOnly = !isAdmin;
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -454,7 +454,27 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                </Suspense>
             </div>
             <HeaderClock />
-            {/* Language toggle removed as per user request */}
+            {/* Language toggle */}
+            <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 p-0.5 rounded-lg shadow-inner">
+              <button
+                onClick={() => setLanguage('pt')}
+                className={cn(
+                  "px-2 py-1 text-[9px] font-black rounded-md transition-all cursor-pointer",
+                  language === 'pt' ? "bg-white text-blue-600 shadow-xs" : "text-slate-400 hover:text-slate-600"
+                )}
+              >
+                PT
+              </button>
+              <button
+                onClick={() => setLanguage('en')}
+                className={cn(
+                  "px-2 py-1 text-[9px] font-black rounded-md transition-all cursor-pointer",
+                  language === 'en' ? "bg-white text-blue-600 shadow-xs" : "text-slate-400 hover:text-slate-600"
+                )}
+              >
+                EN
+              </button>
+            </div>
           </div>
         </header>
 

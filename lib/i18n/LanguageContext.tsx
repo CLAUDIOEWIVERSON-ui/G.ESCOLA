@@ -14,19 +14,31 @@ interface LanguageContextType {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const language: Language = 'pt';
+  const [language, setLanguageState] = useState<Language>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('app-language') as Language;
+      if (saved && (saved === 'pt' || saved === 'en')) {
+        return saved;
+      }
+    }
+    return 'pt';
+  });
 
   const handleSetLanguage = (lang: Language) => {
-    // Language is locked to PT
+    setLanguageState(lang);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('app-language', lang);
+      document.cookie = `app-language=${lang}; path=/; max-age=31536000; SameSite=Lax`;
+    }
   };
 
-  const t = translations[language];
+  const t = translations[language] || translations.pt;
 
   const value = React.useMemo(() => ({ 
     language, 
     setLanguage: handleSetLanguage, 
     t 
-  }), [t]);
+  }), [language, t]);
 
   return (
     <LanguageContext.Provider value={value}>
