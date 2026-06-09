@@ -219,6 +219,19 @@ export default function BoletimPage() {
           discList = dData || [];
         }
 
+        let topicsList: any[] = [];
+        if (discList.length > 0) {
+          const discIds = discList.map((d: any) => d.id);
+          const { data: tData } = await supabase
+            .from('materias_modulos')
+            .select('*')
+            .in('disciplina_id', discIds)
+            .is('deleted_at', null)
+            .order('modulo_index', { ascending: true })
+            .order('ordem', { ascending: true });
+          topicsList = tData || [];
+        }
+
         const { data: gradesData } = await supabase
           .from('notas')
           .select('*')
@@ -238,7 +251,8 @@ export default function BoletimPage() {
           courseObj,
           disciplines: discList,
           grades: gradesData || [],
-          attendance: attendanceData || []
+          attendance: attendanceData || [],
+          topics: topicsList
         });
       } catch (err: any) {
         console.error("Error generating student report:", err);
@@ -536,69 +550,145 @@ export default function BoletimPage() {
                   {reportT[language as "pt" | "en"].academicMap}
                 </h3>
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left report-table border border-slate-200 bg-white">
-                    <thead>
-                      <tr className="bg-slate-100 print-bg-gray text-[10px] font-extrabold text-slate-600 uppercase tracking-wider border-b border-slate-200">
-                        <th className="px-4 py-3 border-r border-slate-200">{reportT[language as "pt" | "en"].discipline}</th>
-                        {Array.from({ length: courseModules }).map((_, idx) => (
-                          <th key={idx} className="px-3 py-3 text-center border-r border-slate-200 font-mono">MOD {idx + 1}</th>
-                        ))}
-                        <th className="px-3 py-3 text-center border-r border-slate-200 font-mono">{reportT[language as "pt" | "en"].finalGrade}</th>
-                        <th className="px-4 py-3 text-right">{reportT[language as "pt" | "en"].situation}</th>
-                      </tr>
-                    </thead>
-                    <tbody className="text-xs text-left">
-                      {reportData.disciplines.length === 0 ? (
-                        <tr>
-                          <td colSpan={3 + courseModules} className="text-center py-6 text-slate-400 font-bold bg-white">
-                            {language === 'pt' ? 'Nenhuma disciplina cadastrada.' : 'No disciplines registered.'}
-                          </td>
-                        </tr>
-                      ) : (
-                        reportData.disciplines.map((disc: any) => {
-                          const grade = reportData.grades.find((g: any) => g.disciplina_id === disc.id);
-                          const finalGradeValue = grade ? grade.nota_final : null;
-                          const freqValue = grade ? grade.frequencia : null;
-                          const finalGradeFormatted = finalGradeValue !== null && finalGradeValue !== undefined ? Number(finalGradeValue).toFixed(1) : '-';
-                          
-                          // Determine status
-                          let statusLabel = '';
-                          let statusClass = 'text-slate-400';
-                          if (finalGradeValue === null || finalGradeValue === undefined) {
-                            statusLabel = reportT[language as "pt" | "en"].pending;
-                          } else if (finalGradeValue >= settings.media_aprovacao && (freqValue === null || freqValue >= settings.frequencia_minima)) {
-                            statusLabel = reportT[language as "pt" | "en"].approved;
-                            statusClass = 'text-emerald-600 font-extrabold';
-                          } else if (freqValue !== null && freqValue < settings.frequencia_minima) {
-                            statusLabel = language === 'pt' ? 'FALTA FREQ.' : 'LOW FREQ.';
-                            statusClass = 'text-orange-600 font-extrabold';
-                          } else if (finalGradeValue >= settings.media_recuperacao) {
-                            statusLabel = reportT[language as "pt" | "en"].retake;
-                            statusClass = 'text-yellow-600 font-extrabold';
-                          } else {
-                            statusLabel = reportT[language as "pt" | "en"].reproved;
-                            statusClass = 'text-rose-600 font-extrabold';
-                          }
+                  {(() => {
+                    const reportRows = (() => {
+                      const rows: any[] = [];
+                      if (!reportData || !reportData.disciplines) return [];
+                      
+                      const sortedDisciplines = [...reportData.disciplines].sort((a: any, b: any) => {
+                        const mDiff = (a.modulo_index || 1) - (b.modulo_index || 1);
+                        if (mDiff !== 0) return mDiff;
+                        return a.nome.localeCompare(b.nome);
+                      });
 
-                          return (
-                            <tr key={disc.id} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors bg-white">
-                              <td className="px-4 py-2.5 font-bold text-slate-800 border-r border-slate-200 text-left bg-white">{disc.nome}</td>
-                              {Array.from({ length: courseModules }).map((_, idx) => {
-                                const nVal = grade ? grade[`nota${idx + 1}`] : null;
-                                return (
-                                  <td key={idx} className="px-3 py-2.5 text-center font-mono border-r border-slate-200 bg-white">
-                                    {nVal !== null && nVal !== undefined ? Number(nVal).toFixed(1) : '-'}
-                                  </td>
-                                );
-                              })}
-                              <td className="px-3 py-2.5 text-center font-black font-mono border-r border-slate-200 text-slate-900 bg-white">{finalGradeFormatted}</td>
-                              <td className={cn("px-4 py-2.5 text-right font-black bg-white", statusClass)}>{statusLabel}</td>
+                      sortedDisciplines.forEach((disc: any) => {
+                        const discTopics = (reportData.topics || []).filter((t: any) => t.disciplina_id === disc.id);
+                        const grade = reportData.grades.find((g: any) => g.disciplina_id === disc.id);
+                        const finalGradeValue = grade ? grade.nota_final : null;
+                        const freqValue = grade ? grade.frequencia : null;
+                        const finalGradeFormatted = finalGradeValue !== null && finalGradeValue !== undefined ? Number(finalGradeValue).toFixed(1) : '-';
+
+                        let statusLabel = '';
+                        let statusClass = 'text-slate-400';
+                        if (finalGradeValue === null || finalGradeValue === undefined) {
+                          statusLabel = reportT[language as "pt" | "en"].pending;
+                        } else if (finalGradeValue >= settings.media_aprovacao && (freqValue === null || freqValue >= settings.frequencia_minima)) {
+                          statusLabel = reportT[language as "pt" | "en"].approved;
+                          statusClass = 'text-emerald-600 font-extrabold';
+                        } else if (freqValue !== null && freqValue < settings.frequencia_minima) {
+                          statusLabel = language === 'pt' ? 'FALTA FREQ.' : 'LOW FREQ.';
+                          statusClass = 'text-orange-600 font-extrabold';
+                        } else if (finalGradeValue >= settings.media_recuperacao) {
+                          statusLabel = reportT[language as "pt" | "en"].retake;
+                          statusClass = 'text-yellow-600 font-extrabold';
+                        } else {
+                          statusLabel = reportT[language as "pt" | "en"].reproved;
+                          statusClass = 'text-rose-600 font-extrabold';
+                        }
+
+                        if (discTopics.length === 0) {
+                          rows.push({
+                            id: `${disc.id}-empty`,
+                            modulo: `Módulo ${disc.modulo_index || 1}`,
+                            disciplina: disc.nome,
+                            topico: '-',
+                            nota: finalGradeFormatted,
+                            situacao: statusLabel,
+                            statusClass,
+                          });
+                        } else {
+                          discTopics.forEach((topic: any, tIdx: number) => {
+                            rows.push({
+                              id: topic.id,
+                              modulo: `Módulo ${disc.modulo_index || 1}`,
+                              disciplina: disc.nome,
+                              topico: topic.nome,
+                              nota: finalGradeFormatted,
+                              situacao: statusLabel,
+                              statusClass,
+                            });
+                          });
+                        }
+                      });
+
+                      const rowsWithSpans: any[] = [];
+                      for (let i = 0; i < rows.length; i++) {
+                        const row = { ...rows[i], moduloSpan: 0, disciplinaSpan: 0 };
+                        
+                        if (i === 0 || rows[i].modulo !== rows[i - 1].modulo) {
+                          let span = 1;
+                          while (i + span < rows.length && rows[i + span].modulo === rows[i].modulo) {
+                            span++;
+                          }
+                          row.moduloSpan = span;
+                        }
+                        
+                        if (i === 0 || rows[i].disciplina !== rows[i - 1].disciplina) {
+                          let span = 1;
+                          while (i + span < rows.length && rows[i + span].disciplina === rows[i].disciplina) {
+                            span++;
+                          }
+                          row.disciplinaSpan = span;
+                        }
+                        
+                        rowsWithSpans.push(row);
+                      }
+                      return rowsWithSpans;
+                    })();
+
+                    return (
+                      <table className="w-full text-left report-table border border-slate-200 bg-white">
+                        <thead>
+                          <tr className="bg-slate-100 print-bg-gray text-[10px] font-extrabold text-slate-600 uppercase tracking-wider border-b border-slate-200">
+                            <th className="px-4 py-3 border-r border-slate-200">{language === 'pt' ? 'Módulo' : 'Module'}</th>
+                            <th className="px-4 py-3 border-r border-slate-200">{language === 'pt' ? 'Disciplina' : 'Discipline'}</th>
+                            <th className="px-4 py-3 border-r border-slate-200">{language === 'pt' ? 'Tópico' : 'Topic'}</th>
+                            <th className="px-3 py-3 text-center border-r border-slate-200 font-mono w-28">{reportT[language as "pt" | "en"].finalGrade}</th>
+                            <th className="px-4 py-3 text-right w-36">{reportT[language as "pt" | "en"].situation}</th>
+                          </tr>
+                        </thead>
+                        <tbody className="text-xs text-left">
+                          {reportData.disciplines.length === 0 ? (
+                            <tr>
+                              <td colSpan={5} className="text-center py-6 text-slate-400 font-bold bg-white">
+                                {language === 'pt' ? 'Nenhuma disciplina cadastrada.' : 'No disciplines registered.'}
+                              </td>
                             </tr>
-                          );
-                        })
-                      )}
-                    </tbody>
-                  </table>
+                          ) : (
+                            reportRows.map((row: any) => {
+                              return (
+                                <tr key={row.id} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors bg-white">
+                                  {row.moduloSpan > 0 && (
+                                    <td rowSpan={row.moduloSpan} className="px-4 py-2.5 font-bold text-slate-900 border-r border-slate-200 text-left bg-white align-middle">
+                                      {row.modulo}
+                                    </td>
+                                  )}
+                                  {row.disciplinaSpan > 0 && (
+                                    <td rowSpan={row.disciplinaSpan} className="px-4 py-2.5 font-extrabold text-slate-800 border-r border-slate-200 text-left bg-white align-middle">
+                                      {row.disciplina}
+                                    </td>
+                                  )}
+                                  <td className="px-4 py-2.5 text-slate-600 border-r border-slate-200 text-left bg-white font-medium">
+                                    {row.topico}
+                                  </td>
+                                  {row.disciplinaSpan > 0 && (
+                                    <td rowSpan={row.disciplinaSpan} className="px-3 py-2.5 text-center font-black font-mono border-r border-slate-200 text-slate-900 bg-white align-middle animate-fade-in">
+                                      {row.nota}
+                                    </td>
+                                  )}
+                                  {row.disciplinaSpan > 0 && (
+                                    <td rowSpan={row.disciplinaSpan} className={cn("px-4 py-2.5 text-right font-black bg-white align-middle", row.statusClass)}>
+                                      {row.situacao}
+                                    </td>
+                                  )}
+                                </tr>
+                              );
+                            })
+                          )}
+                        </tbody>
+                      </table>
+                    );
+                  })()}
                 </div>
               </div>
 
@@ -1154,70 +1244,146 @@ export default function BoletimPage() {
                                 <h3 className="text-[11px] font-black text-slate-600 tracking-[0.15em] uppercase pb-1 border-b border-slate-200 text-left">
                                   {reportT[language as "pt" | "en"].academicMap}
                                 </h3>
-                                <div className="overflow-x-auto">
-                                  <table className="w-full text-left report-table border border-slate-200 bg-white">
-                                    <thead>
-                                      <tr className="bg-slate-100 print-bg-gray text-[10px] font-extrabold text-slate-600 uppercase tracking-wider border-b border-slate-200">
-                                        <th className="px-4 py-3 border-r border-slate-200">{reportT[language as 'pt' | 'en'].discipline}</th>
-                                         {Array.from({ length: courseModules }).map((_, idx) => (
-                                           <th key={idx} className="px-3 py-3 text-center border-r border-slate-200 font-mono">MOD {idx + 1}</th>
-                                         ))}
-                                        <th className="px-3 py-3 text-center border-r border-slate-200 font-mono">{reportT[language as "pt" | "en"].finalGrade}</th>
-                                        <th className="px-4 py-3 text-right">{reportT[language as "pt" | "en"].situation}</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody className="text-xs text-left">
-                                      {reportData.disciplines.length === 0 ? (
-                                        <tr>
-                                          <td colSpan={3 + courseModules} className="text-center py-6 text-slate-400 font-bold bg-white">
-                                            {language === 'pt' ? 'Nenhuma disciplina cadastrada.' : 'No disciplines registered.'}
-                                          </td>
-                                        </tr>
-                                      ) : (
-                                        reportData.disciplines.map((disc: any) => {
-                                          const grade = reportData.grades.find((g: any) => g.disciplina_id === disc.id);
-                                          const finalGradeValue = grade ? grade.nota_final : null;
-                                          const freqValue = grade ? grade.frequencia : null;
-                                          const finalGradeFormatted = finalGradeValue !== null && finalGradeValue !== undefined ? Number(finalGradeValue).toFixed(1) : '-';
-                                          
-                                          // Determine status
-                                          let statusLabel = '';
-                                          let statusClass = 'text-slate-400';
-                                          if (finalGradeValue === null || finalGradeValue === undefined) {
-                                            statusLabel = reportT[language as "pt" | "en"].pending;
-                                          } else if (finalGradeValue >= settings.media_aprovacao && (freqValue === null || freqValue >= settings.frequencia_minima)) {
-                                            statusLabel = reportT[language as "pt" | "en"].approved;
-                                            statusClass = 'text-emerald-600 font-extrabold';
-                                          } else if (freqValue !== null && freqValue < settings.frequencia_minima) {
-                                            statusLabel = language === 'pt' ? 'FALTA FREQ.' : 'LOW FREQ.';
-                                            statusClass = 'text-orange-600 font-extrabold';
-                                          } else if (finalGradeValue >= settings.media_recuperacao) {
-                                            statusLabel = reportT[language as "pt" | "en"].retake;
-                                            statusClass = 'text-yellow-600 font-extrabold';
-                                          } else {
-                                            statusLabel = reportT[language as "pt" | "en"].reproved;
-                                            statusClass = 'text-rose-600 font-extrabold';
-                                          }
+                                 <div className="overflow-x-auto">
+                                  {(() => {
+                                    const reportRows = (() => {
+                                      const rows: any[] = [];
+                                      if (!reportData || !reportData.disciplines) return [];
+                                      
+                                      const sortedDisciplines = [...reportData.disciplines].sort((a: any, b: any) => {
+                                        const mDiff = (a.modulo_index || 1) - (b.modulo_index || 1);
+                                        if (mDiff !== 0) return mDiff;
+                                        return a.nome.localeCompare(b.nome);
+                                      });
 
-                                          return (
-                                            <tr key={disc.id} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors bg-white">
-                                              <td className="px-4 py-2.5 font-bold text-slate-800 border-r border-slate-200 text-left bg-white">{disc.nome}</td>
-                                               {Array.from({ length: courseModules }).map((_, idx) => {
-                                                 const nVal = grade ? grade[`nota${idx + 1}`] : null;
-                                                 return (
-                                                   <td key={idx} className="px-3 py-2.5 text-center font-mono border-r border-slate-200 bg-white">
-                                                     {nVal !== null && nVal !== undefined ? Number(nVal).toFixed(1) : '-'}
-                                                   </td>
-                                                 );
-                                               })}
-                                              <td className="px-3 py-2.5 text-center font-black font-mono border-r border-slate-200 text-slate-900 bg-white">{finalGradeFormatted}</td>
-                                              <td className={cn("px-4 py-2.5 text-right font-black bg-white", statusClass)}>{statusLabel}</td>
+                                      sortedDisciplines.forEach((disc: any) => {
+                                        const discTopics = (reportData.topics || []).filter((t: any) => t.disciplina_id === disc.id);
+                                        const grade = reportData.grades.find((g: any) => g.disciplina_id === disc.id);
+                                        const finalGradeValue = grade ? grade.nota_final : null;
+                                        const freqValue = grade ? grade.frequencia : null;
+                                        const finalGradeFormatted = finalGradeValue !== null && finalGradeValue !== undefined ? Number(finalGradeValue).toFixed(1) : '-';
+
+                                        let statusLabel = '';
+                                        let statusClass = 'text-slate-400';
+                                        if (finalGradeValue === null || finalGradeValue === undefined) {
+                                          statusLabel = reportT[language as "pt" | "en"].pending;
+                                        } else if (finalGradeValue >= settings.media_aprovacao && (freqValue === null || freqValue >= settings.frequencia_minima)) {
+                                          statusLabel = reportT[language as "pt" | "en"].approved;
+                                          statusClass = 'text-emerald-600 font-extrabold';
+                                        } else if (freqValue !== null && freqValue < settings.frequencia_minima) {
+                                          statusLabel = language === 'pt' ? 'FALTA FREQ.' : 'LOW FREQ.';
+                                          statusClass = 'text-orange-600 font-extrabold';
+                                        } else if (finalGradeValue >= settings.media_recuperacao) {
+                                          statusLabel = reportT[language as "pt" | "en"].retake;
+                                          statusClass = 'text-yellow-600 font-extrabold';
+                                        } else {
+                                          statusLabel = reportT[language as "pt" | "en"].reproved;
+                                          statusClass = 'text-rose-600 font-extrabold';
+                                        }
+
+                                        if (discTopics.length === 0) {
+                                          rows.push({
+                                            id: `${disc.id}-empty`,
+                                            modulo: `Módulo ${disc.modulo_index || 1}`,
+                                            disciplina: disc.nome,
+                                            topico: '-',
+                                            nota: finalGradeFormatted,
+                                            situacao: statusLabel,
+                                            statusClass,
+                                          });
+                                        } else {
+                                          discTopics.forEach((topic: any, tIdx: number) => {
+                                            rows.push({
+                                              id: topic.id,
+                                              modulo: `Módulo ${disc.modulo_index || 1}`,
+                                              disciplina: disc.nome,
+                                              topico: topic.nome,
+                                              nota: finalGradeFormatted,
+                                              situacao: statusLabel,
+                                              statusClass,
+                                            });
+                                          });
+                                        }
+                                      });
+
+                                      const rowsWithSpans: any[] = [];
+                                      for (let i = 0; i < rows.length; i++) {
+                                        const row = { ...rows[i], moduloSpan: 0, disciplinaSpan: 0 };
+                                        
+                                        if (i === 0 || rows[i].modulo !== rows[i - 1].modulo) {
+                                          let span = 1;
+                                          while (i + span < rows.length && rows[i + span].modulo === rows[i].modulo) {
+                                            span++;
+                                          }
+                                          row.moduloSpan = span;
+                                        }
+                                        
+                                        if (i === 0 || rows[i].disciplina !== rows[i - 1].disciplina) {
+                                          let span = 1;
+                                          while (i + span < rows.length && rows[i + span].disciplina === rows[i].disciplina) {
+                                            span++;
+                                          }
+                                          row.disciplinaSpan = span;
+                                        }
+                                        
+                                        rowsWithSpans.push(row);
+                                      }
+                                      return rowsWithSpans;
+                                    })();
+
+                                    return (
+                                      <table className="w-full text-left report-table border border-slate-200 bg-white">
+                                        <thead>
+                                          <tr className="bg-slate-100 print-bg-gray text-[10px] font-extrabold text-slate-600 uppercase tracking-wider border-b border-slate-200">
+                                            <th className="px-4 py-3 border-r border-slate-200">{language === 'pt' ? 'Módulo' : 'Module'}</th>
+                                            <th className="px-4 py-3 border-r border-slate-200">{language === 'pt' ? 'Disciplina' : 'Discipline'}</th>
+                                            <th className="px-4 py-3 border-r border-slate-200">{language === 'pt' ? 'Tópico' : 'Topic'}</th>
+                                            <th className="px-3 py-3 text-center border-r border-slate-200 font-mono w-28">{reportT[language as "pt" | "en"].finalGrade}</th>
+                                            <th className="px-4 py-3 text-right w-36">{reportT[language as "pt" | "en"].situation}</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody className="text-xs text-left">
+                                          {reportData.disciplines.length === 0 ? (
+                                            <tr>
+                                              <td colSpan={5} className="text-center py-6 text-slate-400 font-bold bg-white">
+                                                {language === 'pt' ? 'Nenhuma disciplina cadastrada.' : 'No disciplines registered.'}
+                                              </td>
                                             </tr>
-                                          );
-                                        })
-                                      )}
-                                    </tbody>
-                                  </table>
+                                          ) : (
+                                            reportRows.map((row: any) => {
+                                              return (
+                                                <tr key={row.id} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors bg-white">
+                                                  {row.moduloSpan > 0 && (
+                                                    <td rowSpan={row.moduloSpan} className="px-4 py-2.5 font-bold text-slate-900 border-r border-slate-200 text-left bg-white align-middle">
+                                                      {row.modulo}
+                                                    </td>
+                                                  )}
+                                                  {row.disciplinaSpan > 0 && (
+                                                    <td rowSpan={row.disciplinaSpan} className="px-4 py-2.5 font-extrabold text-slate-800 border-r border-slate-200 text-left bg-white align-middle">
+                                                      {row.disciplina}
+                                                    </td>
+                                                  )}
+                                                  <td className="px-4 py-2.5 text-slate-600 border-r border-slate-200 text-left bg-white font-medium">
+                                                    {row.topico}
+                                                  </td>
+                                                  {row.disciplinaSpan > 0 && (
+                                                    <td rowSpan={row.disciplinaSpan} className="px-3 py-2.5 text-center font-black font-mono border-r border-slate-200 text-slate-900 bg-white align-middle">
+                                                      {row.nota}
+                                                    </td>
+                                                  )}
+                                                  {row.disciplinaSpan > 0 && (
+                                                    <td rowSpan={row.disciplinaSpan} className={cn("px-4 py-2.5 text-right font-black bg-white align-middle", row.statusClass)}>
+                                                      {row.situacao}
+                                                    </td>
+                                                  )}
+                                                </tr>
+                                              );
+                                            })
+                                          )}
+                                        </tbody>
+                                      </table>
+                                    );
+                                  })()}
                                 </div>
                               </div>
 

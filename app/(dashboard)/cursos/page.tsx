@@ -57,6 +57,7 @@ export default function CursosPage() {
   const [isDisciplinaModalOpen, setIsDisciplinaModalOpen] = useState(false);
   const [currentDisciplina, setCurrentDisciplina] = useState<any>(null);
   const [savingDisciplina, setSavingDisciplina] = useState(false);
+  const [activeDisciplinaModuloIndex, setActiveDisciplinaModuloIndex] = useState(1);
 
   // Materias Modulos State
   const [manageMateriasDisciplina, setManageMateriasDisciplina] = useState<any | null>(null);
@@ -166,21 +167,22 @@ export default function CursosPage() {
 
   const handleOpenDisciplinaModal = (disciplina: any = null) => {
     if (isReadOnly) return;
-    setCurrentDisciplina(disciplina || { nome: '', codigo: '', carga_horaria: 60, curso_id: manageDisciplinasCurso?.id });
+    setCurrentDisciplina(disciplina || { nome: '', codigo: '', carga_horaria: 60, curso_id: manageDisciplinasCurso?.id, modulo_index: activeDisciplinaModuloIndex });
     setIsDisciplinaModalOpen(true);
   };
 
   const handleSaveDisciplina = async (e: React.FormEvent) => {
-    e.preventDefault();
     if (!manageDisciplinasCurso || isReadOnly) return;
+    e.preventDefault();
     setSavingDisciplina(true);
 
     try {
-      const dataToSave = {
+      const dataToSave: any = {
         nome: currentDisciplina.nome,
         codigo: currentDisciplina.codigo,
         carga_horaria: currentDisciplina.carga_horaria,
-        curso_id: manageDisciplinasCurso.id
+        curso_id: manageDisciplinasCurso.id,
+        modulo_index: currentDisciplina.modulo_index || 1
       };
 
       if (currentDisciplina.id) {
@@ -188,12 +190,35 @@ export default function CursosPage() {
           .from('disciplinas')
           .update(dataToSave)
           .eq('id', currentDisciplina.id);
-        if (error) throw error;
+        
+        if (error) {
+          if (error.message?.includes('modulo_index') || error.code === 'PGRST204') {
+            const { modulo_index, ...fallbackData } = dataToSave;
+            const { error: fallbackError } = await supabase
+              .from('disciplinas')
+              .update(fallbackData)
+              .eq('id', currentDisciplina.id);
+            if (fallbackError) throw fallbackError;
+          } else {
+            throw error;
+          }
+        }
       } else {
         const { error } = await supabase
           .from('disciplinas')
           .insert([dataToSave]);
-        if (error) throw error;
+        
+        if (error) {
+          if (error.message?.includes('modulo_index') || error.code === 'PGRST204') {
+            const { modulo_index, ...fallbackData } = dataToSave;
+            const { error: fallbackError } = await supabase
+              .from('disciplinas')
+              .insert([fallbackData]);
+            if (fallbackError) throw fallbackError;
+          } else {
+            throw error;
+          }
+        }
       }
 
       await fetchDisciplinas(manageDisciplinasCurso.id);
@@ -846,8 +871,27 @@ export default function CursosPage() {
         title={`${t.nav.subjects}: ${manageDisciplinasCurso?.nome}`}
       >
         <div className="space-y-6">
+          <div className="flex bg-slate-100 p-1 rounded-xl gap-1">
+            {Array.from({ length: manageDisciplinasCurso?.qtd_modulos || 4 }).map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setActiveDisciplinaModuloIndex(i + 1)}
+                className={cn(
+                  "flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all",
+                  activeDisciplinaModuloIndex === i + 1 
+                    ? "bg-white text-blue-600 shadow-sm" 
+                    : "text-slate-400 hover:text-slate-600"
+                )}
+              >
+                {language === 'pt' ? `Módulo ${i + 1}` : `Module ${i + 1}`}
+              </button>
+            ))}
+          </div>
+
           <div className="flex items-center justify-between">
-            <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">{t.subjects.list}</div>
+            <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+              {language === 'pt' ? 'Módulo' : 'Module'} {activeDisciplinaModuloIndex}
+            </div>
             {!isReadOnly && (
               <button 
                 onClick={() => handleOpenDisciplinaModal()}
@@ -864,75 +908,77 @@ export default function CursosPage() {
               <div className="flex justify-center py-8 text-slate-400">
                 <Loader2 size={24} className="animate-spin" />
               </div>
-            ) : disciplinas.length === 0 ? (
+            ) : disciplinas.filter((d: any) => (d.modulo_index || 1) === activeDisciplinaModuloIndex).length === 0 ? (
               <div className="text-center py-12 text-slate-400 text-sm italic bg-slate-50 rounded-xl border-2 border-dashed border-slate-100">
-                {t.subjects.noSubjects}
+                {language === 'pt' ? 'Nenhuma disciplina neste módulo.' : 'No subjects in this module.'}
               </div>
             ) : (
-              disciplinas.map((d: any) => (
-                <div key={d.id} className="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-xl hover:border-slate-200 hover:shadow-sm transition-all group">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-slate-50 rounded-lg flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
-                      <GraduationCap size={18} />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-slate-800 text-sm">{d.nome}</h4>
-                      <div className="flex items-center gap-3 mt-0.5">
-                        <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">{d.codigo}</span>
-                        <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400 uppercase">
-                          <Clock size={12} className="opacity-50" />
-                          {d.carga_horaria}H
+              disciplinas
+                .filter((d: any) => (d.modulo_index || 1) === activeDisciplinaModuloIndex)
+                .map((d: any) => (
+                  <div key={d.id} className="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-xl hover:border-slate-200 hover:shadow-sm transition-all group">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-slate-50 rounded-lg flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
+                        <GraduationCap size={18} />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-slate-800 text-sm">{d.nome}</h4>
+                        <div className="flex items-center gap-3 mt-0.5">
+                          <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">{d.codigo}</span>
+                          <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400 uppercase">
+                            <Clock size={12} className="opacity-50" />
+                            {d.carga_horaria}H
+                          </div>
                         </div>
                       </div>
                     </div>
+                    {!isReadOnly && (
+                      <div className="flex gap-1 items-center">
+                        <button 
+                          onClick={() => setManageMateriasDisciplina(d)}
+                          className="px-2 py-1.5 bg-slate-50 border border-slate-100 hover:bg-emerald-50 hover:text-emerald-600 rounded-lg text-slate-400 transition-all shadow-sm flex items-center gap-1.5 min-w-[80px] justify-center mr-2"
+                        >
+                          <BookOpen size={14} />
+                          <span className="text-[10px] font-bold uppercase">Tópicos</span>
+                        </button>
+                        {!confirmDeleteDisciplinaId || confirmDeleteDisciplinaId !== d.id ? (
+                          <>
+                            <button 
+                              onClick={() => handleOpenDisciplinaModal(d)}
+                              className="p-2 bg-slate-50 border border-slate-100 hover:bg-blue-50 hover:text-blue-600 rounded-lg text-slate-400 transition-all shadow-sm"
+                            >
+                              <Edit2 size={14} />
+                            </button>
+                            <button 
+                              onClick={() => setConfirmDeleteDisciplinaId(d.id)}
+                              className="p-2 bg-slate-50 border border-slate-100 hover:bg-red-50 hover:text-red-600 rounded-lg text-slate-400 transition-all shadow-sm"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </>
+                        ) : (
+                          <div className="flex gap-1 animate-in fade-in zoom-in duration-200">
+                            <button 
+                              onClick={() => setConfirmDeleteDisciplinaId(null)}
+                              disabled={deletingDisciplinaId === d.id}
+                              className="px-2 py-1 bg-slate-100 text-slate-600 rounded-md text-[10px] font-bold uppercase hover:bg-slate-200 transition-all"
+                            >
+                              {t.common.cancel}
+                            </button>
+                            <button 
+                              onClick={() => deleteDisciplina(d.id)}
+                              disabled={deletingDisciplinaId === d.id}
+                              className="px-2 py-1 bg-red-600 text-white rounded-md text-[10px] font-bold uppercase hover:bg-red-700 transition-all flex items-center gap-1"
+                            >
+                              {deletingDisciplinaId === d.id ? <Loader2 size={10} className="animate-spin" /> : <Trash2 size={10} />}
+                              {t.common.confirm}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  {!isReadOnly && (
-                    <div className="flex gap-1 items-center">
-                      <button 
-                        onClick={() => setManageMateriasDisciplina(d)}
-                        className="px-2 py-1.5 bg-slate-50 border border-slate-100 hover:bg-emerald-50 hover:text-emerald-600 rounded-lg text-slate-400 transition-all shadow-sm flex items-center gap-1.5 min-w-[80px] justify-center mr-2"
-                      >
-                        <BookOpen size={14} />
-                        <span className="text-[10px] font-bold uppercase">Tópicos</span>
-                      </button>
-                      {!confirmDeleteDisciplinaId || confirmDeleteDisciplinaId !== d.id ? (
-                        <>
-                          <button 
-                            onClick={() => handleOpenDisciplinaModal(d)}
-                            className="p-2 bg-slate-50 border border-slate-100 hover:bg-blue-50 hover:text-blue-600 rounded-lg text-slate-400 transition-all shadow-sm"
-                          >
-                            <Edit2 size={14} />
-                          </button>
-                          <button 
-                            onClick={() => setConfirmDeleteDisciplinaId(d.id)}
-                            className="p-2 bg-slate-50 border border-slate-100 hover:bg-red-50 hover:text-red-600 rounded-lg text-slate-400 transition-all shadow-sm"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </>
-                      ) : (
-                        <div className="flex gap-1 animate-in fade-in zoom-in duration-200">
-                          <button 
-                            onClick={() => setConfirmDeleteDisciplinaId(null)}
-                            disabled={deletingDisciplinaId === d.id}
-                            className="px-2 py-1 bg-slate-100 text-slate-600 rounded-md text-[10px] font-bold uppercase hover:bg-slate-200 transition-all"
-                          >
-                            {t.common.cancel}
-                          </button>
-                          <button 
-                            onClick={() => deleteDisciplina(d.id)}
-                            disabled={deletingDisciplinaId === d.id}
-                            className="px-2 py-1 bg-red-600 text-white rounded-md text-[10px] font-bold uppercase hover:bg-red-700 transition-all flex items-center gap-1"
-                          >
-                            {deletingDisciplinaId === d.id ? <Loader2 size={10} className="animate-spin" /> : <Trash2 size={10} />}
-                            {t.common.confirm}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))
+                ))
             )}
           </div>
         </div>
@@ -954,6 +1000,21 @@ export default function CursosPage() {
               className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors text-sm font-medium"
               placeholder={t.subjects.name}
             />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{language === 'pt' ? 'Módulo' : 'Module'}</label>
+            <select
+              value={currentDisciplina?.modulo_index || 1}
+              onChange={(e) => setCurrentDisciplina({ ...currentDisciplina, modulo_index: parseInt(e.target.value) })}
+              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-905 transition-colors text-sm font-medium"
+            >
+              {Array.from({ length: manageDisciplinasCurso?.qtd_modulos || 4 }).map((_, i) => (
+                <option key={i} value={i + 1}>
+                  {language === 'pt' ? `Módulo ${i + 1}` : `Module ${i + 1}`}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -1007,31 +1068,15 @@ export default function CursosPage() {
         title={`${t.subjects.subjectsPerModule}: ${manageMateriasDisciplina?.nome}`}
       >
         <div className="space-y-6">
-          <div className="flex bg-slate-100 p-1 rounded-xl gap-1">
-            {Array.from({ length: manageDisciplinasCurso?.qtd_modulos || 4 }).map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setActiveModuloIndex(i + 1)}
-                className={cn(
-                  "flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all",
-                  activeModuloIndex === i + 1 
-                    ? "bg-white text-blue-600 shadow-sm" 
-                    : "text-slate-400 hover:text-slate-600"
-                )}
-              >
-                {t.subjects.module} {i + 1}
-              </button>
-            ))}
-          </div>
-
           <div className="flex items-center justify-between">
-            <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-              {t.subjects.module} {activeModuloIndex}
+            <div className="text-xs font-bold text-slate-400 uppercase tracking-widest animate-pulse flex items-center gap-1">
+              <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
+              {language === 'pt' ? 'Tópicos da Disciplina' : 'Subject Topics'}
             </div>
             {!isReadOnly && (
               <button 
                 onClick={() => handleOpenMateriaModal()}
-                className="flex items-center gap-2 text-emerald-600 hover:text-emerald-700 text-xs font-bold uppercase transition-colors"
+                className="flex items-center gap-2 text-emerald-600 hover:text-emerald-700 text-xs font-bold uppercase transition-colors sm:translate-y-0"
               >
                 <Plus size={14} />
                 {t.subjects.addSubjectTopic}
@@ -1044,39 +1089,40 @@ export default function CursosPage() {
               <div className="flex justify-center py-8 text-slate-400">
                 <Loader2 size={24} className="animate-spin" />
               </div>
-            ) : materiasModulos.filter((m: any) => m.modulo_index === activeModuloIndex).length === 0 ? (
-              <div className="text-center py-12 text-slate-400 text-sm italic bg-slate-50 rounded-xl border-2 border-dashed border-slate-100">
+            ) : materiasModulos.length === 0 ? (
+              <div className="text-center py-12 text-slate-400 text-sm italic bg-slate-50 rounded-xl border-2 border-dashed border-slate-100 animate-in fade-in duration-300">
                 {t.subjects.noTopics}
               </div>
             ) : (
-              materiasModulos
-                .filter((m: any) => m.modulo_index === activeModuloIndex)
-                .map((m: any) => (
-                  <div key={m.id} className="p-4 bg-white border border-slate-100 rounded-xl hover:border-slate-200 transition-all group">
-                    <div className="flex items-start justify-between">
-                      <div>
+              materiasModulos.map((m: any, index: number) => (
+                <div key={m.id} className="p-4 bg-white border border-slate-100 rounded-xl hover:border-slate-200 transition-all group">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-[10px] bg-slate-100 text-slate-500 rounded px-1.5 py-0.5">{index + 1}</span>
                         <h4 className="font-bold text-slate-800 text-sm">{m.nome}</h4>
-                        {m.descricao && <p className="text-xs text-slate-500 mt-1 line-clamp-2">{m.descricao}</p>}
                       </div>
-                      {!isReadOnly && (
-                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button 
-                            onClick={() => handleOpenMateriaModal(m)}
-                            className="p-1.5 text-slate-400 hover:text-blue-600 transition-colors"
-                          >
-                            <Edit2 size={14} />
-                          </button>
-                          <button 
-                            onClick={() => deleteMateria(m.id)}
-                            className="p-1.5 text-slate-400 hover:text-red-600 transition-colors"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      )}
+                      {m.descricao && <p className="text-xs text-slate-500 mt-1.5 pl-6">{m.descricao}</p>}
                     </div>
+                    {!isReadOnly && (
+                      <div className="flex gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button 
+                          onClick={() => handleOpenMateriaModal(m)}
+                          className="p-1.5 text-slate-400 hover:text-blue-600 transition-colors"
+                        >
+                          <Edit2 size={14} />
+                        </button>
+                        <button 
+                          onClick={() => deleteMateria(m.id)}
+                          className="p-1.5 text-slate-400 hover:text-red-600 transition-colors"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    )}
                   </div>
-                ))
+                </div>
+              ))
             )}
           </div>
         </div>

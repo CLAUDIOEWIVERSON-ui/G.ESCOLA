@@ -246,6 +246,21 @@ export async function GET() {
             .limit(1);
           return error;
         }
+      },
+      {
+        key: 'modulo_index_disciplinas',
+        tableName: 'disciplinas',
+        columnName: 'modulo_index',
+        fileName: '37_reorganize_modules_and_disciplines.sql',
+        description: 'Coluna modulo_index na tabela de disciplinas para gerenciar a hierarquia educacional corrigida (Curso -> Módulo -> Disciplina -> Tópico).',
+        isColumn: true,
+        checkFn: async () => {
+          const { error } = await supabaseAdmin
+            .from('disciplinas')
+            .select('modulo_index')
+            .limit(1);
+          return error;
+        }
       }
     ];
 
