@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useUser } from '@/lib/auth/UserContext';
-import { useI18n } from '@/lib/i18n/LanguageContext';
 import { motion } from 'motion/react';
 import { Bell } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -23,7 +22,6 @@ interface EventMarqueeProps {
 
 export function EventMarquee({ thought }: EventMarqueeProps = {}) {
   const { isAluno } = useUser();
-  const { language } = useI18n();
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [pensamento, setPensamento] = useState<{ texto: string; autor: string } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -34,13 +32,16 @@ export function EventMarquee({ thought }: EventMarqueeProps = {}) {
       try {
         const res = await fetch('/api/v1/pensamento-dia');
         if (res.ok) {
-          const json = await res.json();
-          if (json.success && json.data && json.data.texto) {
-            setPensamento(json.data);
+          const contentType = res.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const json = await res.json();
+            if (json.success && json.data && json.data.texto) {
+              setPensamento(json.data);
+            }
           }
         }
       } catch (err) {
-        console.error('Error fetching thought of the day for marquee:', err);
+        // Quietly failover during transitionary server reload phases
       }
     };
     fetchPensamento();
@@ -137,9 +138,7 @@ export function EventMarquee({ thought }: EventMarqueeProps = {}) {
     <div className="w-full bg-slate-900 text-white overflow-hidden h-9 flex items-center border-b border-white/10 relative z-50 shrink-0">
       <div className="absolute left-0 top-0 bottom-0 px-4 bg-blue-600 flex items-center gap-2 z-20 shadow-[4px_0_15px_rgba(0,0,0,0.3)]">
         <Bell size={14} className="animate-pulse text-white" />
-        <span className="text-[10px] font-black uppercase tracking-tighter whitespace-nowrap">
-          {language === 'pt' ? 'Eventos Próximos' : 'Upcoming Events'}
-        </span>
+        <span className="text-[10px] font-black uppercase tracking-tighter whitespace-nowrap">Eventos Próximos</span>
       </div>
       
       <div className="flex-1 overflow-hidden">
@@ -157,7 +156,7 @@ export function EventMarquee({ thought }: EventMarqueeProps = {}) {
               {activeThought && (
                 <div key={`pensamento-${i}`} className="flex items-center gap-2 bg-blue-500/10 py-0.5 px-3 rounded-full border border-blue-500/20 mr-2">
                   <span className="text-[9px] font-black uppercase tracking-widest text-blue-400 whitespace-nowrap">
-                    {language === 'pt' ? '💡 Pensamento do Dia:' : '💡 Thought of the Day:'}
+                    💡 Pensamento do Dia:
                   </span>
                   <span className="text-xs font-medium text-slate-200 italic whitespace-nowrap select-all">
                     &ldquo;{activeThought.texto}&rdquo;
@@ -175,11 +174,11 @@ export function EventMarquee({ thought }: EventMarqueeProps = {}) {
                   </span>
                   {evento.uniforme_dia && (
                     <span className="text-[10px] font-black bg-blue-500/20 text-blue-300 border border-blue-500/30 px-2 py-0.5 rounded uppercase tracking-widest whitespace-nowrap">
-                      {language === 'pt' ? `🥋 Uniforme: ${evento.uniforme_dia}` : `🥋 Uniform: ${evento.uniforme_dia}`}
+                      🥋 Uniforme: {evento.uniforme_dia}
                     </span>
                   )}
                   <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest whitespace-nowrap">
-                    {new Date(evento.data).toLocaleDateString(language === 'pt' ? 'pt-BR' : 'en-US', { day: '2-digit', month: 'short' })}
+                    {new Date(evento.data).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
                   </span>
                 </div>
               ))}

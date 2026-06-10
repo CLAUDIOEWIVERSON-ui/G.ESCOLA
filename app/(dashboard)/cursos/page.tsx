@@ -36,8 +36,23 @@ type Curso = z.infer<typeof cursoSchema> & { id: string };
 
 export default function CursosPage() {
   const { t, language } = useI18n();
-  const { isAdmin } = useUser();
-  const isReadOnly = !isAdmin;
+  const { isAdmin, profile } = useUser();
+  const isInstrutor = profile?.role === 'instrutor';
+  const canEditCurso = useCallback((curso: any) => {
+    if (isAdmin) return true;
+    if (isInstrutor && profile?.grupo_responsavel) {
+      if (!curso) return true; // allow new course modal open
+      const courseGroup = curso.grupo_responsavel;
+      if (!courseGroup) return false;
+      if (profile.grupo_responsavel === 'AMBOS') {
+        return courseGroup === 'MAN' || courseGroup === 'GAT' || courseGroup === 'AMBOS';
+      }
+      return profile.grupo_responsavel === courseGroup;
+    }
+    return false;
+  }, [isAdmin, isInstrutor, profile]);
+
+  const isReadOnly = !isAdmin && !isInstrutor;
   const { cursos, loading, mutate: revalidateCursos } = useCursos();
   const [modalOpen, setModalOpen] = useState(false);
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
@@ -88,9 +103,26 @@ export default function CursosPage() {
   const onSubmit = async (data: z.infer<typeof cursoSchema>) => {
     if (isReadOnly) return;
     try {
+      if (editingCurso) {
+        if (!canEditCurso(editingCurso)) {
+          toast.error(language === 'pt' ? 'Você não tem permissão para editar este curso.' : 'You do not have permission to edit this course.');
+          return;
+        }
+      }
+
       const units = ['dia', 'semana', 'mes', 'ano'];
       const unitIdx = units.indexOf(data.duracao_unidade);
       const encodedDuration = (data.duracao * 10) + (unitIdx === -1 ? 3 : unitIdx);
+
+      // Force group for instructor
+      let targetGroup = (data.grupo_responsavel === "" || !data.grupo_responsavel) ? null : data.grupo_responsavel;
+      if (isInstrutor && profile?.grupo_responsavel) {
+        if (profile.grupo_responsavel !== 'AMBOS') {
+          targetGroup = profile.grupo_responsavel;
+        } else if (!targetGroup || (targetGroup !== 'MAN' && targetGroup !== 'GAT' && targetGroup !== 'AMBOS')) {
+          targetGroup = 'AMBOS';
+        }
+      }
 
       // Map our logic field back to database field
       const cleanedData = {
@@ -102,7 +134,7 @@ export default function CursosPage() {
         categoria: data.categoria === "" ? null : data.categoria,
         internacional: data.internacional || false,
         localizacao: data.localizacao || '',
-        grupo_responsavel: (data.grupo_responsavel === "" || !data.grupo_responsavel) ? null : data.grupo_responsavel,
+        grupo_responsavel: targetGroup,
         documento_criacao: data.documento_criacao === "" ? null : data.documento_criacao
       };
 
@@ -130,6 +162,11 @@ export default function CursosPage() {
 
   const deleteCurso = async (id: string) => {
     if (isReadOnly) return;
+    const cursoObj = cursos.find((c: any) => c.id === id);
+    if (!canEditCurso(cursoObj)) {
+      toast.error(language === 'pt' ? 'Você não tem permissão para remover este curso.' : 'You do not have permission to remove this course.');
+      return;
+    }
     const { error } = await supabase
       .from('cursos')
       .update({ deleted_at: new Date().toISOString() })
@@ -546,7 +583,7 @@ export default function CursosPage() {
                         {curso.nome}
                       </h3>
                       
-                      {!isReadOnly && (
+                      {canEditCurso(curso) && (
                         <div className="opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity flex items-center gap-1 shrink-0">
                           <button 
                             onClick={(e) => { e.stopPropagation(); setEditingCurso(curso); reset(curso); setModalOpen(true); }}
@@ -892,7 +929,7 @@ export default function CursosPage() {
             <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">
               {language === 'pt' ? 'Módulo' : 'Module'} {activeDisciplinaModuloIndex}
             </div>
-            {!isReadOnly && (
+            {canEditCurso(manageDisciplinasCurso) && (
               <button 
                 onClick={() => handleOpenDisciplinaModal()}
                 className="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-xs font-bold uppercase transition-colors"
@@ -932,7 +969,7 @@ export default function CursosPage() {
                         </div>
                       </div>
                     </div>
-                    {!isReadOnly && (
+                    {canEditCurso(manageDisciplinasCurso) && (
                       <div className="flex gap-1 items-center">
                         <button 
                           onClick={() => setManageMateriasDisciplina(d)}
@@ -1073,7 +1110,7 @@ export default function CursosPage() {
               <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
               {language === 'pt' ? 'Tópicos da Disciplina' : 'Subject Topics'}
             </div>
-            {!isReadOnly && (
+            {canEditCurso(manageDisciplinasCurso) && (
               <button 
                 onClick={() => handleOpenMateriaModal()}
                 className="flex items-center gap-2 text-emerald-600 hover:text-emerald-700 text-xs font-bold uppercase transition-colors sm:translate-y-0"
@@ -1104,7 +1141,7 @@ export default function CursosPage() {
                       </div>
                       {m.descricao && <p className="text-xs text-slate-500 mt-1.5 pl-6">{m.descricao}</p>}
                     </div>
-                    {!isReadOnly && (
+                    {canEditCurso(manageDisciplinasCurso) && (
                       <div className="flex gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
                         <button 
                           onClick={() => handleOpenMateriaModal(m)}

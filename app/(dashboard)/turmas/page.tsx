@@ -26,11 +26,26 @@ function TurmasContent() {
   const pathname = usePathname();
   const categoryParam = searchParams.get('cat');
   
-  const { isAdmin } = useUser();
+  const { isAdmin, profile } = useUser();
   const isReadOnly = !isAdmin;
   const { turmas, loading: loadingTurmas, mutate: revalidateTurmas } = useTurmas();
   const { cursos, loading: loadingCursos } = useCursos();
   const loading = loadingTurmas || loadingCursos;
+
+  const canEditTurma = useCallback((turma: any) => {
+    if (isAdmin) return true;
+    if (profile?.role === 'instrutor' && profile?.grupo_responsavel) {
+      const selectedCourse = cursos.find((c: any) => c.id === turma.curso_id);
+      const courseGroup = selectedCourse?.grupo_responsavel || turma.grupo_responsavel;
+
+      if (!courseGroup) return false;
+      if (profile.grupo_responsavel === 'AMBOS') {
+        return courseGroup === 'MAN' || courseGroup === 'GAT';
+      }
+      return profile.grupo_responsavel === courseGroup;
+    }
+    return false;
+  }, [isAdmin, profile, cursos]);
 
   const [colorSettings, setColorSettings] = useState<CardColorSettings>(() => getCardColorSettings());
   const [refreshing, setRefreshing] = useState(false);
@@ -53,6 +68,8 @@ function TurmasContent() {
   const [expandedPhoto, setExpandedPhoto] = useState<{url: string, name: string} | null>(null);
   const [studentAccess, setStudentAccess] = useState<any>(null);
   const [allInstructors, setAllInstructors] = useState<any[]>([]);
+
+  const canEditViewingTurma = viewingTurma ? (isAdmin || canEditTurma(viewingTurma)) : false;
 
   useEffect(() => {
     async function loadInstructors() {
@@ -441,7 +458,17 @@ function TurmasContent() {
   };
 
   const handleOpenModal = (turma: any = null) => {
-    if (isReadOnly) return;
+    if (turma) {
+      if (!isAdmin && !canEditTurma(turma)) {
+        toast.error(language === 'pt' ? 'Você não tem permissão para editar esta turma.' : 'You do not have permission to edit this class.');
+        return;
+      }
+    } else {
+      if (!isAdmin) {
+        toast.error(language === 'pt' ? 'Apenas administradores podem criar turmas.' : 'Only administrators can create classes.');
+        return;
+      }
+    }
     setCurrentTurma(turma || { 
       nome: '', 
       curso_id: '', 
@@ -482,7 +509,7 @@ function TurmasContent() {
   };
 
   const handleOpenStudentModal = (aluno: any = null) => {
-    if (isReadOnly) return;
+    if (!canEditViewingTurma) return;
     setStudentAccess(null);
     const mockOrRealAluno = aluno || { 
       nome: '', 
@@ -553,7 +580,7 @@ function TurmasContent() {
 
   const handleSaveStudent = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isReadOnly) return;
+    if (!canEditViewingTurma) return;
     setSavingStudent(true);
 
     try {
@@ -647,7 +674,7 @@ function TurmasContent() {
   };
 
   const handleDeleteStudent = async (id: string) => {
-    if (isReadOnly) return;
+    if (!canEditViewingTurma) return;
     setConfirmConfig({
       isOpen: true,
       title: t.common.delete,
@@ -677,7 +704,7 @@ function TurmasContent() {
   };
 
   const handleDeleteAllStudents = async () => {
-    if (!viewingTurma || alunosInTurma.length === 0 || isReadOnly) return;
+    if (!viewingTurma || alunosInTurma.length === 0 || !canEditViewingTurma) return;
     
     setConfirmConfig({
       isOpen: true,
@@ -708,7 +735,7 @@ function TurmasContent() {
 
   const handleBulkSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!bulkData.trim() || !viewingTurma || isReadOnly) return;
+    if (!bulkData.trim() || !viewingTurma || !canEditViewingTurma) return;
     setSavingStudent(true);
 
     try {
@@ -794,12 +821,28 @@ function TurmasContent() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isReadOnly) return;
+    const canSave = currentTurma?.id 
+      ? (isAdmin || canEditTurma(currentTurma)) 
+      : (isAdmin || (profile?.role === 'instrutor' && profile?.grupo_responsavel));
+    if (!canSave) {
+      toast.error(language === 'pt' ? 'Você não tem permissão para salvar esta turma.' : 'You do not have permission to save this class.');
+      return;
+    }
     setSaving(true);
 
     try {
       if (!currentTurma.curso_id) {
         throw new Error(language === 'pt' ? 'Por favor, selecione um curso.' : 'Please select a course.');
+      }
+
+      const selectedCourse = cursos.find((c: any) => c.id === currentTurma.curso_id);
+      let targetGroup = currentTurma.grupo_responsavel || (selectedCourse ? selectedCourse.grupo_responsavel : null);
+      if (profile?.role === 'instrutor' && profile?.grupo_responsavel) {
+        if (profile.grupo_responsavel !== 'AMBOS') {
+          targetGroup = profile.grupo_responsavel;
+        } else if (!targetGroup || (targetGroup !== 'MAN' && targetGroup !== 'GAT' && targetGroup !== 'AMBOS')) {
+          targetGroup = 'AMBOS';
+        }
       }
 
       const payload = {
@@ -816,7 +859,7 @@ function TurmasContent() {
         data_fim: currentTurma.internacional ? null : (typeof currentTurma.data_fim === 'string' ? currentTurma.data_fim.trim() || null : null),
         internacional: currentTurma.internacional || false,
         localizacao: currentTurma.localizacao || '',
-        grupo_responsavel: currentTurma.grupo_responsavel || null
+        grupo_responsavel: targetGroup
       };
 
       if (currentTurma.id) {
@@ -846,7 +889,11 @@ function TurmasContent() {
   };
 
   const handleDelete = async (id: string) => {
-    if (isReadOnly) return;
+    const turmaObj = turmas.find((t: any) => t.id === id);
+    if (!isAdmin && !canEditTurma(turmaObj)) {
+      toast.error(language === 'pt' ? 'Você não tem permissão para remover esta turma.' : 'You do not have permission to remove this class.');
+      return;
+    }
     setConfirmConfig({
       isOpen: true,
       title: t.common.delete,
@@ -1183,7 +1230,7 @@ function TurmasContent() {
               </div>
 
               {/* Hover Actions Bar */}
-              {!isReadOnly && (
+              {(isAdmin || canEditTurma(turma)) && (
                 <div 
                   className="absolute bottom-4 right-4 flex items-center gap-1 opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 pointer-events-none group-hover:pointer-events-auto" 
                   onClick={(e) => e.stopPropagation()}
@@ -1195,14 +1242,16 @@ function TurmasContent() {
                   >
                     <Pencil size={14} strokeWidth={2.5} />
                   </button>
-                  <button 
-                    disabled={deleting === turma.id}
-                    onClick={() => handleDelete(turma.id)}
-                    className="p-2.5 bg-white text-red-600 rounded-xl shadow-lg border border-red-50 hover:bg-red-600 hover:text-white transition-all transform hover:scale-110 disabled:opacity-50"
-                    title={t.common.delete}
-                  >
-                    {deleting === turma.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} strokeWidth={2.5} />}
-                  </button>
+                  {isAdmin && (
+                    <button 
+                      disabled={deleting === turma.id}
+                      onClick={() => handleDelete(turma.id)}
+                      className="p-2.5 bg-white text-red-600 rounded-xl shadow-lg border border-red-50 hover:bg-red-600 hover:text-white transition-all transform hover:scale-110 disabled:opacity-50"
+                      title={t.common.delete}
+                    >
+                      {deleting === turma.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} strokeWidth={2.5} />}
+                    </button>
+                  )}
                 </div>
               )}
             </motion.div>
@@ -1499,7 +1548,7 @@ function TurmasContent() {
                 {language === 'pt' ? 'Folha de Frequência' : 'Attendance Sheet'}
               </button>
             )}
-            {!isReadOnly && (
+            {canEditViewingTurma && (
               <>
                 <button
                   onClick={async () => {
@@ -1679,7 +1728,7 @@ function TurmasContent() {
                     </div>
                   </div>
                     <div className="flex items-center gap-2">
-                      {!isReadOnly && (
+                      {canEditViewingTurma && (
                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button 
                             onClick={() => handleOpenStudentModal(aluno)}
@@ -1713,7 +1762,7 @@ function TurmasContent() {
           >
             {t.common.close}
           </button>
-          {!isReadOnly && alunosInTurma.length > 0 && (
+          {canEditViewingTurma && alunosInTurma.length > 0 && (
             <button
               disabled={deletingAll}
               onClick={handleDeleteAllStudents}

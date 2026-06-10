@@ -1184,12 +1184,6 @@ export default function HorarioPage() {
                                           </div>
                                           
                                           <div className="mt-auto pt-2 flex flex-col gap-1 border-t border-slate-100">
-                                            {(cell.topic || cell.topicId) && (
-                                              <div className="flex items-center gap-1 text-[9px] font-black text-blue-600 uppercase tracking-widest leading-none">
-                                                <Book size={8} className="shrink-0" />
-                                                <span className="truncate">{cell.topic || materias.find(m => m.id === cell.topicId)?.nome || ''}</span>
-                                              </div>
-                                            )}
                                             <div className="flex items-center gap-1.5 text-neutral-400">
                                               <MapPin size={10} />
                                               <span className="text-[9px] font-black uppercase tracking-tight">{cell.room || 'N/A'}</span>

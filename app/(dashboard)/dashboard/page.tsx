@@ -62,16 +62,21 @@ export default function DashboardPage() {
         url += `&category=${category}`;
       }
       const res = await fetch(url);
-      const json = await res.json();
-      if (json.success && json.data) {
-        setPensamento(json.data);
-        setEditTexto(json.data.texto);
-        setEditAutor(json.data.autor);
-        if (forceRegenerate) {
-          toast.success('Pensamento renovado com IA com sucesso!');
+      const contentType = res.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const json = await res.json();
+        if (json.success && json.data) {
+          setPensamento(json.data);
+          setEditTexto(json.data.texto);
+          setEditAutor(json.data.autor);
+          if (forceRegenerate) {
+            toast.success('Pensamento renovado com IA com sucesso!');
+          }
+        } else {
+          toast.error('Não foi possível obter o pensamento do dia.');
         }
       } else {
-        toast.error('Não foi possível obter o pensamento do dia.');
+        toast.error('O servidor retornou uma resposta inválida. Tente novamente mais tarde.');
       }
     } catch (err) {
       console.error('Error fetching thought:', err);

@@ -37,6 +37,24 @@ function getGeminiAI() {
   return aiInstance;
 }
 
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error('TIMEOUT'));
+    }, timeoutMs);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        clearTimeout(timer);
+        reject(err);
+      }
+    );
+  });
+}
+
 // A robust list of offline quotes to fall back on in extreme cases (e.g., API limits or offline mode)
 const fallbackQuotes = [
   {
@@ -149,53 +167,59 @@ export async function GET(req: NextRequest) {
 
           let response;
           try {
-            response = await getGeminiAI().models.generateContent({
-              model: 'gemini-3.5-flash',
-              contents: `${themePrompt} Varie os autores e temas. Retorne estritamente em formato JSON estruturado com os campos "texto" (o pensamento) e "autor".`,
-              config: {
-                systemInstruction,
-                responseMimeType: 'application/json',
-                responseSchema: {
-                  type: 'OBJECT' as any,
-                  properties: {
-                    texto: {
-                      type: 'STRING' as any,
-                      description: 'A frase ou pensamento inspirador do dia em português.'
+            response = await withTimeout(
+              getGeminiAI().models.generateContent({
+                model: 'gemini-3.5-flash',
+                contents: `${themePrompt} Varie os autores e temas. Retorne estritamente em formato JSON estruturado com os campos "texto" (o pensamento) e "autor".`,
+                config: {
+                  systemInstruction,
+                  responseMimeType: 'application/json',
+                  responseSchema: {
+                    type: 'OBJECT' as any,
+                    properties: {
+                      texto: {
+                        type: 'STRING' as any,
+                        description: 'A frase ou pensamento inspirador do dia em português.'
+                      },
+                      autor: {
+                        type: 'STRING' as any,
+                        description: 'O nome do autor do pensamento.'
+                      }
                     },
-                    autor: {
-                      type: 'STRING' as any,
-                      description: 'O nome do autor do pensamento.'
-                    }
-                  },
-                  required: ['texto', 'autor']
+                    required: ['texto', 'autor']
+                  }
                 }
-              }
-            });
+              }),
+              2500
+            );
           } catch (primaryError: any) {
-            console.warn('[Gemini API Primary Model Error] Main model gemini-3.5-flash returned error. Retrying with fallback model gemini-3.1-flash-lite. Reason:', primaryError?.message || primaryError);
-            // Try with the robust lite model
-            response = await getGeminiAI().models.generateContent({
-              model: 'gemini-3.1-flash-lite',
-              contents: `${themePrompt} Varie os autores e temas. Retorne estritamente em formato JSON estruturado com os campos "texto" (o pensamento) e "autor".`,
-              config: {
-                systemInstruction,
-                responseMimeType: 'application/json',
-                responseSchema: {
-                  type: 'OBJECT' as any,
-                  properties: {
-                    texto: {
-                      type: 'STRING' as any,
-                      description: 'A frase ou pensamento inspirador do dia em português.'
+            console.warn('[Gemini API Primary Model Error or Timeout] Main model gemini-3.5-flash failed or timed out. Retrying with fallback model gemini-3.1-flash-lite. Reason:', primaryError?.message || primaryError);
+            // Try with the robust lite model with 2000ms timeout
+            response = await withTimeout(
+              getGeminiAI().models.generateContent({
+                model: 'gemini-3.1-flash-lite',
+                contents: `${themePrompt} Varie os autores e temas. Retorne estritamente em formato JSON estruturado com os campos "texto" (o pensamento) e "autor".`,
+                config: {
+                  systemInstruction,
+                  responseMimeType: 'application/json',
+                  responseSchema: {
+                    type: 'OBJECT' as any,
+                    properties: {
+                      texto: {
+                        type: 'STRING' as any,
+                        description: 'A frase ou pensamento inspirador do dia em português.'
+                      },
+                      autor: {
+                        type: 'STRING' as any,
+                        description: 'O nome do autor do pensamento.'
+                      }
                     },
-                    autor: {
-                      type: 'STRING' as any,
-                      description: 'O nome do autor do pensamento.'
-                    }
-                  },
-                  required: ['texto', 'autor']
+                    required: ['texto', 'autor']
+                  }
                 }
-              }
-            });
+              }),
+              2000
+            );
           }
 
           if (response && response.text) {
@@ -210,12 +234,12 @@ export async function GET(req: NextRequest) {
             generatedQuote = candidates[randomIndex];
           }
         } catch (apiError: any) {
-          console.warn('[Gemini API Error] Falling back to preloaded thoughts catalog gracefully. Reason:', apiError?.message || apiError);
+          console.warn('[Gemini API Error or Timeout] Falling back to preloaded thoughts catalog gracefully. Reason:', apiError?.message || apiError);
           
-          // Cooldown mechanism: block the Gemini API calls for 10 minutes if we hit a 429 rate limit or quota issue
+          // Cooldown mechanism: block the Gemini API calls for 10 minutes if we hit a 429 rate limit, quota issue, or a timeout!
           const errMsg = String(apiError?.message || apiError?.status || apiError || '').toLowerCase();
-          if (errMsg.includes('429') || errMsg.includes('quota') || errMsg.includes('resource_exhausted')) {
-            console.warn('[Gemini API Cooldown] Quota exceeded. Cooldown active for 10 minutes.');
+          if (errMsg.includes('429') || errMsg.includes('quota') || errMsg.includes('resource_exhausted') || errMsg.includes('timeout')) {
+            console.warn('[Gemini API Cooldown] Quota exceeded or limit/timeout hit. Cooldown active for 10 minutes.');
             geminiBlockedUntil = Date.now() + 10 * 60 * 1000;
           }
 

@@ -83,7 +83,7 @@ export function useTurmas() {
     async () => {
       const { data: dbData, error: dbError } = await supabase
         .from('turmas')
-        .select('*, curso:cursos(nome, documento_criacao, categoria, qtd_modulos)')
+        .select('*, curso:cursos(nome, documento_criacao, categoria, qtd_modulos, grupo_responsavel)')
         .is('deleted_at', null)
         .order('nome');
 
@@ -92,13 +92,18 @@ export function useTurmas() {
 
       let filteredData = dbData;
       if (role === 'instrutor' && grupoResponsavel) {
-        if (grupoResponsavel === 'MAN') {
-          filteredData = dbData.filter((t: any) => t.grupo_responsavel === 'MAN');
-        } else if (grupoResponsavel === 'GAT') {
-          filteredData = dbData.filter((t: any) => t.grupo_responsavel === 'GAT');
-        } else if (grupoResponsavel === 'AMBOS') {
-          filteredData = dbData.filter((t: any) => t.grupo_responsavel === 'MAN' || t.grupo_responsavel === 'GAT');
-        }
+        filteredData = dbData.filter((t: any) => {
+          const courseGroup = t.curso?.grupo_responsavel || t.grupo_responsavel;
+          if (!courseGroup) return false;
+          if (grupoResponsavel === 'MAN') {
+            return courseGroup === 'MAN';
+          } else if (grupoResponsavel === 'GAT') {
+            return courseGroup === 'GAT';
+          } else if (grupoResponsavel === 'AMBOS') {
+            return courseGroup === 'MAN' || courseGroup === 'GAT';
+          }
+          return false;
+        });
       }
 
       return filteredData;
@@ -201,8 +206,12 @@ export function useAlunos() {
  * Fetch and compile aggregated dashboard statistics with caching
  */
 export function useDashboardStats() {
+  const { profile } = useUser();
+  const role = profile?.role;
+  const grupoResponsavel = profile?.grupo_responsavel;
+
   const { data, error, isLoading, mutate: swrMutate } = useSWR(
-    'supabase:dashboardStats',
+    ['supabase:dashboardStats', role, grupoResponsavel],
     async () => {
       const [
         alunosExteriorRes,
@@ -228,8 +237,10 @@ export function useDashboardStats() {
               data_fim,
               internacional,
               localizacao,
+              grupo_responsavel,
               curso:cursos(
-                nome
+                nome,
+                grupo_responsavel
               )
             )
           `)
@@ -239,7 +250,7 @@ export function useDashboardStats() {
           .select('id, nome, categoria')
           .is('deleted_at', null),
         supabase.from('turmas')
-          .select('id, nome, curso_id, status')
+          .select('id, nome, curso_id, status, grupo_responsavel, curso:cursos(grupo_responsavel)')
           .is('deleted_at', null),
         supabase.from('alunos')
           .select('id, turma_id')
@@ -256,6 +267,44 @@ export function useDashboardStats() {
       const activeAlunos = alunosRes.data || [];
       const alunosExteriorData = alunosExteriorRes.data || [];
 
+      // Filter active turmas if user is instructor
+      let filteredTurmas = activeTurmas;
+      if (role === 'instrutor' && grupoResponsavel) {
+        filteredTurmas = activeTurmas.filter((t: any) => {
+          const courseGroup = t.curso?.grupo_responsavel || t.grupo_responsavel;
+          if (!courseGroup) return false;
+          if (grupoResponsavel === 'MAN') {
+            return courseGroup === 'MAN';
+          } else if (grupoResponsavel === 'GAT') {
+            return courseGroup === 'GAT';
+          } else if (grupoResponsavel === 'AMBOS') {
+            return courseGroup === 'MAN' || courseGroup === 'GAT';
+          }
+          return false;
+        });
+      }
+
+      // Filter international/exterior students by responsibility group of their class/turma
+      let filteredAlunosExterior = alunosExteriorData;
+      if (role === 'instrutor' && grupoResponsavel) {
+        filteredAlunosExterior = alunosExteriorData.filter((aluno: any) => {
+          const tData = Array.isArray(aluno.turma) ? aluno.turma[0] : aluno.turma;
+          if (!tData) return false;
+          
+          const courseGroup = tData.curso?.grupo_responsavel || tData.grupo_responsavel;
+          if (!courseGroup) return false;
+
+          if (grupoResponsavel === 'MAN') {
+            return courseGroup === 'MAN';
+          } else if (grupoResponsavel === 'GAT') {
+            return courseGroup === 'GAT';
+          } else if (grupoResponsavel === 'AMBOS') {
+            return courseGroup === 'MAN' || courseGroup === 'GAT';
+          }
+          return true;
+        });
+      }
+
       // Map course id to course object
       const courseMap = new Map<string, { id: string; nome: string; categoria: string | null }>();
       activeCursos.forEach((c: any) => {
@@ -264,7 +313,7 @@ export function useDashboardStats() {
 
       // Map turma id to course object with status
       const turmaCoursesMap = new Map<string, { id: string; nome: string; categoria: string | null; status: string | null }>();
-      activeTurmas.forEach((t: any) => {
+      filteredTurmas.forEach((t: any) => {
         if (t.curso_id) {
           const c = courseMap.get(t.curso_id);
           if (c) {
@@ -278,7 +327,7 @@ export function useDashboardStats() {
       let carreiraTurmasCount = 0;
       let especialTurmasCount = 0;
 
-      activeTurmas.forEach((t: any) => {
+      filteredTurmas.forEach((t: any) => {
         const isAtiva = t.status === 'ativa' || !t.status;
         if (isAtiva && t.curso_id) {
           const course = courseMap.get(t.curso_id);
@@ -295,7 +344,7 @@ export function useDashboardStats() {
         }
       });
 
-      // Count students by course category (only for active turmas)
+      // Count students by course category (only for active, responsible turmas)
       let expeditoAlunosCount = 0;
       let carreiraAlunosCount = 0;
       let especialAlunosCount = 0;
@@ -324,7 +373,7 @@ export function useDashboardStats() {
 
       return {
         stats: {
-          alunosExterior: alunosExteriorData.length,
+          alunosExterior: filteredAlunosExterior.length,
           turmasExpedito: expeditoTurmasCount,
           turmasCarreira: carreiraTurmasCount,
           turmasEspeciais: especialTurmasCount,
@@ -332,7 +381,7 @@ export function useDashboardStats() {
           studentsCarreira: carreiraAlunosCount,
           studentsEspeciais: especialAlunosCount,
         },
-        alunosExterior: alunosExteriorData
+        alunosExterior: filteredAlunosExterior
       };
     },
     {
@@ -370,7 +419,7 @@ export async function revalidateAllCaches() {
     mutate('supabase:disciplinas'),
     mutate('supabase:configuracoes'),
     mutate('supabase:alunos'),
-    mutate('supabase:dashboardStats'),
+    mutate((key: any) => Array.isArray(key) ? key[0] === 'supabase:dashboardStats' : key === 'supabase:dashboardStats'),
   ];
   await Promise.all(mutators);
 }
