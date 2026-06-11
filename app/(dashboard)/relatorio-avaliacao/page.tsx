@@ -106,6 +106,18 @@ function RelatorioAvaliacaoAdminContent() {
   const [selectedPeriod, setSelectedPeriod] = useState('ALL');
   const [selectedStudent, setSelectedStudent] = useState('ALL');
 
+  // Filter instructor options depending on selected class/turma
+  const filteredInstructorsList = useMemo(() => {
+    if (selectedTurma === 'ALL') {
+      return instructorsList;
+    }
+    const foundTurma = turmas.find(t => t.id === selectedTurma);
+    if (foundTurma && foundTurma.instrutor && foundTurma.instrutor.trim()) {
+      return [foundTurma.instrutor.trim()];
+    }
+    return [];
+  }, [selectedTurma, instructorsList, turmas]);
+
   // Interactive View states
   const [activeTab, setActiveTab] = useState<'geral' | 'curso' | 'instrutor' | 'aluno'>('geral');
   const [focusedInstructor, setFocusedInstructor] = useState<string>('');
@@ -933,7 +945,7 @@ function RelatorioAvaliacaoAdminContent() {
               className="w-full bg-slate-950 border border-slate-800 text-xs rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-sky-500 text-slate-300"
             >
               <option value="ALL">Todos os Instrutores</option>
-              {instructorsList.map(inst => (
+              {filteredInstructorsList.map(inst => (
                 <option key={inst} value={inst}>{inst}</option>
               ))}
             </select>
