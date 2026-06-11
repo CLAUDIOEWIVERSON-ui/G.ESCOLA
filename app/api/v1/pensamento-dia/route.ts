@@ -190,11 +190,11 @@ export async function GET(req: NextRequest) {
                   }
                 }
               }),
-              10000
+              2500
             );
           } catch (primaryError: any) {
             console.warn('[Gemini API Primary Model Error or Timeout] Main model gemini-3.5-flash failed or timed out. Retrying with fallback model gemini-3.1-flash-lite. Reason:', primaryError?.message || primaryError);
-            // Try with the robust lite model with 8000ms timeout
+            // Try with the robust lite model with 2000ms timeout
             response = await withTimeout(
               getGeminiAI().models.generateContent({
                 model: 'gemini-3.1-flash-lite',
@@ -218,7 +218,7 @@ export async function GET(req: NextRequest) {
                   }
                 }
               }),
-              8000
+              2000
             );
           }
 

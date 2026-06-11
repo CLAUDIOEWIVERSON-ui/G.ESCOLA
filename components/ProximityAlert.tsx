@@ -43,15 +43,12 @@ const playBellSound = () => {
 };
 
 export function ProximityAlert() {
-  const { t, language } = useI18n();
+  const { t } = useI18n();
   const { isAluno } = useUser();
   const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
   const [isVisible, setIsVisible] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(12);
   const [isHovered, setIsHovered] = useState(false);
-
-  const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD local time
-  const hasEventToday = upcomingEvents.some(evt => (evt.data || '').split('T')[0] === todayStr);
 
   useEffect(() => {
     const checkEvents = async () => {
@@ -159,17 +156,13 @@ export function ProximityAlert() {
         onMouseLeave={() => setIsHovered(false)}
         className="fixed bottom-8 right-8 z-[100] max-w-[calc(100vw-2rem)] sm:max-w-md w-full bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden text-slate-800 transition-all duration-300 group"
       >
-        <div className={cn("p-1 w-full animate-pulse", hasEventToday ? "bg-rose-500" : "bg-amber-500")} />
+        <div className="p-1 bg-amber-500 animate-pulse w-full" />
         <div className="p-5 flex flex-col">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-3 shrink-0">
-            <div className={cn("flex items-center gap-2", hasEventToday ? "text-rose-600 animate-pulse" : "text-amber-600")}>
+            <div className="flex items-center gap-2 text-amber-600">
               <Bell size={18} className="animate-bounce" />
-              <span className="text-xs font-black uppercase tracking-widest font-mono">
-                {hasEventToday 
-                  ? (language === 'pt' ? 'Compromisso Hoje!' : 'Event Today!')
-                  : (t.calendar.proximityAlert || 'Alerta de Proximidade')}
-              </span>
+              <span className="text-xs font-black uppercase tracking-widest">{t.calendar.proximityAlert || 'Alerta de Proximidade'}</span>
             </div>
             <button 
               onClick={() => setIsVisible(false)}
@@ -183,62 +176,36 @@ export function ProximityAlert() {
           {/* Body */}
           <div className="flex-1">
             <h4 className="text-sm font-extrabold text-slate-900 leading-snug mb-3">
-              {hasEventToday
-                ? (upcomingEvents.length === 1 
-                  ? 'Você tem um compromisso hoje!' 
-                  : `Você tem ${upcomingEvents.length} compromissos hoje!`)
-                : (upcomingEvents.length === 1 
-                  ? 'Você tem um evento próximo!' 
-                  : `Você tem ${upcomingEvents.length} eventos próximos!`)}
+              {upcomingEvents.length === 1 
+                ? 'Você tem um evento próximo!' 
+                : `Você tem ${upcomingEvents.length} eventos próximos!`}
             </h4>
             <div className="space-y-3 max-h-[250px] overflow-y-auto pr-1">
-              {upcomingEvents.slice(0, 3).map((event) => {
-                const isToday = (event.data || '').split('T')[0] === todayStr;
-                return (
-                  <Link 
-                    key={event.id}
-                    href="/calendario" 
-                    className="block text-left transition-transform hover:scale-[1.01] focus:outline-none"
-                  >
-                    <div className={cn(
-                      "flex items-start gap-3 p-3 rounded-xl border transition-all",
-                      isToday 
-                        ? "bg-rose-50 border-rose-100 hover:bg-rose-100 hover:border-rose-200" 
-                        : "bg-slate-50 border-slate-100 hover:bg-amber-50 hover:border-amber-200"
-                    )}>
-                      <div className={cn(
-                        "w-2 h-10 rounded-full shrink-0", 
-                        isToday ? "bg-rose-500 animate-pulse" : (event.cor || "bg-amber-500")
-                      )} />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-1">
-                          <p className="text-xs font-bold text-slate-800 break-words whitespace-normal leading-tight">
-                            {event.titulo}
-                          </p>
-                          {isToday && (
-                            <span className="shrink-0 inline-block bg-rose-600 text-white font-black text-[9px] px-1.5 py-0.5 rounded-md uppercase tracking-wider animate-pulse font-mono">
-                              {language === 'pt' ? 'Hoje!' : 'Today!'}
-                            </span>
-                          )}
-                        </div>
-                        {event.descricao && (
-                          <p className="text-[10px] text-slate-500 mt-1 break-words whitespace-normal leading-relaxed">
-                            {event.descricao}
-                          </p>
-                        )}
-                        <p className="text-[10px] text-slate-500 flex items-center gap-1 mt-1.5 font-medium">
-                          <Calendar size={11} className={isToday ? "text-rose-450" : "text-slate-400"} />
-                          <span className={cn(isToday ? "text-rose-600 font-bold" : "")}>
-                            {isToday 
-                              ? (language === 'pt' ? 'Hoje!' : 'Today!') 
-                              : new Date(event.data).toLocaleDateString('pt-BR')}
-                          </span>
+              {upcomingEvents.slice(0, 3).map((event) => (
+                <Link 
+                  key={event.id}
+                  href="/calendario" 
+                  className="block text-left transition-transform hover:scale-[1.01] focus:outline-none"
+                >
+                  <div className="flex items-start gap-3 p-3 bg-slate-50 hover:bg-amber-50 rounded-xl border border-slate-100 hover:border-amber-200 transition-all">
+                    <div className={cn("w-2 h-10 rounded-full shrink-0", event.cor || "bg-amber-500")} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-slate-800 break-words whitespace-normal leading-tight">
+                        {event.titulo}
+                      </p>
+                      {event.descricao && (
+                        <p className="text-[10px] text-slate-500 mt-1 break-words whitespace-normal leading-relaxed">
+                          {event.descricao}
                         </p>
-                      </div>
+                      )}
+                      <p className="text-[10px] text-slate-500 flex items-center gap-1 mt-1.5 font-medium">
+                        <Calendar size={11} className="text-slate-400" />
+                        {new Date(event.data).toLocaleDateString('pt-BR')}
+                      </p>
                     </div>
-                  </Link>
-                );
-              })}
+                  </div>
+                </Link>
+              ))}
             </div>
           </div>
 
@@ -256,7 +223,7 @@ export function ProximityAlert() {
         {/* Progress Countdown Bar */}
         <div className="absolute bottom-0 left-0 right-0 h-1 bg-slate-100 pointer-events-none">
           <motion.div 
-            className={cn("h-full", hasEventToday ? "bg-rose-500" : "bg-amber-500")}
+            className="h-full bg-amber-500"
             initial={{ width: "100%" }}
             animate={{ width: isHovered ? "100%" : `${(secondsLeft / 12) * 100}%` }}
             transition={{ duration: isHovered ? 0.2 : 1, ease: "linear" }}
