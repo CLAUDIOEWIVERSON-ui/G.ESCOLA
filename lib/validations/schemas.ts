@@ -6,7 +6,7 @@ export const cursoSchema = z.object({
   duracao: z.number().int().min(1).max(500),
   duracao_unidade: z.enum(['dia', 'semana', 'mes', 'ano']),
   ativo: z.boolean(),
-  qtd_modulos: z.number().int().min(1).max(10),
+  qtd_modulos: z.number().int().min(1).max(20),
   categoria: z.string().optional().nullable(),
   internacional: z.boolean().optional(),
   localizacao: z.string().optional().nullable(),

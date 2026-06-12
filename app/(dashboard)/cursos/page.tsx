@@ -782,11 +782,11 @@ export default function CursosPage() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-sm font-semibold text-slate-700">Número de Módulos (Máx 10)</label>
+                    <label className="text-sm font-semibold text-slate-700">Número de Módulos (Máx 20)</label>
                     <input
                       type="number"
                       min="1"
-                      max="10"
+                      max="20"
                       {...register('qtd_modulos', { valueAsNumber: true })}
                       className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
                     />
