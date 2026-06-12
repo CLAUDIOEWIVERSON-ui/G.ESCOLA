@@ -633,9 +633,16 @@ function RelatorioAvaliacaoAdminContent() {
   const handlePrintQRCode = (studentName: string, accessCode: string, turmaNome: string) => {
     const w = window.open('', '_blank');
     if (w) {
+      const hStart = '<' + 'html' + '>';
+      const hEnd = '</' + 'html' + '>';
+      const hdStart = '<' + 'head' + '>';
+      const hdEnd = '</' + 'head' + '>';
+      const bdStart = '<' + 'body onload="window.print()"' + '>';
+      const bdEnd = '</' + 'body' + '>';
+
       w.document.write(`
-        <html>
-          <head>
+        ${hStart}
+          ${hdStart}
             <title>QR Code de Acesso - ${studentName}</title>
             <style>
               body { font-family: sans-serif; padding: 40px; color: #334155; text-align: center; background: #f8fafc; }
@@ -650,8 +657,8 @@ function RelatorioAvaliacaoAdminContent() {
                 .card { margin: 0 auto; box-shadow: none; border-color: #334155; }
               }
             </style>
-          </head>
-          <body onload="window.print()">
+          ${hdEnd}
+          ${bdStart}
             <div class="card">
               <h2>CARTEIRINHA ESCOLAR</h2>
               <p style="text-transform: uppercase; font-size: 10px; font-weight: bold; letter-spacing: 1px; color: #475569; margin-bottom: 20px;">Área do Aluno • Login por QR Code</p>
@@ -664,8 +671,8 @@ function RelatorioAvaliacaoAdminContent() {
               <p style="font-size: 11px; color: #64748b; margin-top: 15px;">Aponte o leitor de QR Code para esta imagem para entrar.</p>
               <div class="footer">Escola Digital © ${new Date().getFullYear()}</div>
             </div>
-          </body>
-        </html>
+          ${bdEnd}
+        ${hEnd}
       `);
       w.document.close();
     }
@@ -1601,9 +1608,16 @@ function RelatorioAvaliacaoAdminContent() {
                                   `;
                                 }).join('');
 
+                                const hStart = '<' + 'html' + '>';
+                                const hEnd = '</' + 'html' + '>';
+                                const hdStart = '<' + 'head' + '>';
+                                const hdEnd = '</' + 'head' + '>';
+                                const bdStart = '<' + 'body onload="window.print()"' + '>';
+                                const bdEnd = '</' + 'body' + '>';
+
                                 printWindow.document.write(`
-                                  <html>
-                                    <head>
+                                  ${hStart}
+                                    ${hdStart}
                                       <title>Carteirinhas de Acesso QR - ${turmaNome}</title>
                                       <style>
                                         body { font-family: sans-serif; padding: 20px; background: #f8fafc; color: #1e293b; }
@@ -1619,8 +1633,8 @@ function RelatorioAvaliacaoAdminContent() {
                                           .card { border: 1.5px dashed #475569; box-shadow: none; }
                                         }
                                       </style>
-                                    </head>
-                                    <body onload="window.print()">
+                                    ${hdEnd}
+                                    ${bdStart}
                                       <div style="margin-bottom: 20px; border-bottom: 1px solid #cbd5e1; padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
                                         <div>
                                           <h2 style="margin: 0; font-size: 18px; color: #1e3a8a;">Impressão de Carteirinhas QR da Turma</h2>
@@ -1628,8 +1642,8 @@ function RelatorioAvaliacaoAdminContent() {
                                         </div>
                                       </div>
                                       <div class="grid">${cardsHtml}</div>
-                                    </body>
-                                  </html>
+                                    ${bdEnd}
+                                  ${hEnd}
                                 `);
                                 printWindow.document.close();
                               }

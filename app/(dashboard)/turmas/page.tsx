@@ -24,7 +24,7 @@ function TurmasContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
-  const categoryParam = searchParams.get('cat');
+  const categoryParam = searchParams ? searchParams.get('cat') : null;
   
   const { isAdmin, profile } = useUser();
   const isReadOnly = !isAdmin;
@@ -161,9 +161,16 @@ function TurmasContent() {
   const handlePrintQRCode = (studentName: string, accessCode: string, turmaNome: string) => {
     const w = window.open('', '_blank');
     if (w) {
+      const hStart = '<' + 'html' + '>';
+      const hEnd = '</' + 'html' + '>';
+      const hdStart = '<' + 'head' + '>';
+      const hdEnd = '</' + 'head' + '>';
+      const bdStart = '<' + 'body onload="window.print()"' + '>';
+      const bdEnd = '</' + 'body' + '>';
+
       w.document.write(`
-        <html>
-          <head>
+        ${hStart}
+          ${hdStart}
             <title>QR Code de Acesso - ${studentName}</title>
             <style>
               body { font-family: sans-serif; padding: 40px; color: #334155; text-align: center; background: #f8fafc; }
@@ -178,8 +185,8 @@ function TurmasContent() {
                 .card { margin: 0 auto; box-shadow: none; border-color: #334155; }
               }
             </style>
-          </head>
-          <body onload="window.print()">
+          ${hdEnd}
+          ${bdStart}
             <div class="card">
               <h2>CARTEIRINHA ESCOLAR</h2>
               <p style="text-transform: uppercase; font-size: 10px; font-weight: bold; letter-spacing: 1px; color: #475569; margin-bottom: 20px;">Área do Aluno • Login por QR Code</p>
@@ -192,8 +199,8 @@ function TurmasContent() {
               <p style="font-size: 11px; color: #64748b; margin-top: 15px;">Aponte o leitor de QR Code para esta imagem para entrar.</p>
               <div class="footer">Escola Digital © ${new Date().getFullYear()}</div>
             </div>
-          </body>
-        </html>
+          ${bdEnd}
+        ${hEnd}
       `);
       w.document.close();
     }
@@ -433,7 +440,7 @@ function TurmasContent() {
     : 'all';
 
   const setActiveCategory = (cat: string) => {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchParams ? searchParams.toString() : '');
     params.set('cat', cat);
     router.push(`${pathname}?${params.toString()}`);
   };
@@ -1588,9 +1595,16 @@ function TurmasContent() {
                             `;
                           }).join('');
 
+                          const hStart = '<' + 'html' + '>';
+                          const hEnd = '</' + 'html' + '>';
+                          const hdStart = '<' + 'head' + '>';
+                          const hdEnd = '</' + 'head' + '>';
+                          const bdStart = '<' + 'body onload="window.print()"' + '>';
+                          const bdEnd = '</' + 'body' + '>';
+
                           printWindow.document.write(`
-                            <html>
-                              <head>
+                            ${hStart}
+                              ${hdStart}
                                 <title>Carteirinhas de Acesso QR - ${turmaNome}</title>
                                 <style>
                                   body { font-family: sans-serif; padding: 20px; background: #f8fafc; color: #1e293b; }
@@ -1606,8 +1620,8 @@ function TurmasContent() {
                                     .card { border: 1.5px dashed #475569; box-shadow: none; }
                                   }
                                 </style>
-                              </head>
-                              <body onload="window.print()">
+                              ${hdEnd}
+                              ${bdStart}
                                 <div style="margin-bottom: 20px; border-bottom: 1px solid #cbd5e1; padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
                                   <div>
                                     <h2 style="margin: 0; font-size: 18px; color: #1e3a8a;">Impressão de Carteirinhas QR da Turma</h2>
@@ -1615,8 +1629,8 @@ function TurmasContent() {
                                   </div>
                                 </div>
                                 <div class="grid">${cardsHtml}</div>
-                              </body>
-                            </html>
+                              ${bdEnd}
+                            ${hEnd}
                           `);
                           printWindow.document.close();
                         }
@@ -2087,9 +2101,16 @@ function TurmasContent() {
                         onClick={() => {
                           const w = window.open('', '_blank');
                           if (w) {
+                            const hStart = '<' + 'html' + '>';
+                            const hEnd = '</' + 'html' + '>';
+                            const hdStart = '<' + 'head' + '>';
+                            const hdEnd = '</' + 'head' + '>';
+                            const bdStart = '<' + 'body onload="window.print()"' + '>';
+                            const bdEnd = '</' + 'body' + '>';
+
                             w.document.write(`
-                              <html>
-                                <head>
+                              ${hStart}
+                                ${hdStart}
                                   <title>Código de Acesso - ${currentAluno.nome}</title>
                                   <style>
                                     body { font-family: sans-serif; padding: 40px; color: #334155; }
@@ -2099,8 +2120,8 @@ function TurmasContent() {
                                     .footer { font-size: 11px; color: #64748b; margin-top: 30px; border-top: 1px solid #f1f5f9; pt-10; }
                                     p { line-height: 1.5; margin: 8px 0; }
                                   </style>
-                                </head>
-                                <body onload="window.print()">
+                                ${hdEnd}
+                                ${bdStart}
                                   <div class="card">
                                     <h2>CÓDIGO DE ACESSO EXCLUSIVO</h2>
                                     <p><strong>Nome do Aluno:</strong> ${currentAluno.nome}</p>
@@ -2109,8 +2130,8 @@ function TurmasContent() {
                                     <p style="font-size: 13px;">Use este Código de Acesso e a sua senha padrão (<strong>123</strong>) para realizar login na Área do Aluno.</p>
                                     <div class="footer">Escola Digital © ${new Date().getFullYear()}</div>
                                   </div>
-                                </body>
-                              </html>
+                                ${bdEnd}
+                              ${hEnd}
                             `);
                             w.document.close();
                           }

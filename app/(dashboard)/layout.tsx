@@ -132,7 +132,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           checkClassStatus();
         }
 
-        if (isNifStudent && !['/boletim', '/horario', '/avaliacao'].includes(pathname)) {
+        if (isNifStudent && !['/boletim', '/horario', '/avaliacao'].includes(pathname || '')) {
           // Force students logged in via NIF to only access allowed sections
           router.push('/boletim');
         }
