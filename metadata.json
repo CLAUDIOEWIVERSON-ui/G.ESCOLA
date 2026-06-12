@@ -1,6 +1,6 @@
 {
   "name": "SISTEMA DE GESTÃO ESCOLAR",
-  "description": "Plataforma completa para gerenciamento de cursos, turmas, instrutores, alunos e notas com suporte multi-idioma e autenticação segura.",
+  "description": "Plataforma completa para gerenciamento de cursos, turmas, instrutores, alunos, notas e emissão de Histórico Escolar nacional, com suporte multi-idioma e autenticação segura.",
   "requestFramePermissions": [
     "camera"
   ],

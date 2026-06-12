@@ -172,6 +172,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: t.nav.classes, icon: Library, path: '/turmas' },
     { name: t.nav.grades, icon: FileCheck, path: '/notas' },
     { name: t.nav.reportCard, icon: FileText, path: '/boletim' },
+    { name: t.nav.historico, icon: Award, path: '/historico-escolar' },
     { name: t.schedule.title, icon: Calendar, path: '/horario' },
     { name: t.nav.attendance, icon: CalendarDays, path: '/frequencia' },
     { name: t.calendar.title, icon: CalendarDays, path: '/calendario' },
