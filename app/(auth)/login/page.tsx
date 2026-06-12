@@ -460,7 +460,7 @@ function LoginContent() {
                       : "text-slate-500 hover:text-slate-800"
                   )}
                 >
-                  {language === 'pt' ? 'Aluno (Código)' : 'Student (Code)'}
+                  {language === 'pt' ? 'Área do Aluno' : 'Student Area'}
                 </button>
               </div>
 
@@ -542,78 +542,15 @@ function LoginContent() {
                     </button>
                   </>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-4 pt-2">
                     {/* Quick QR Reader Trigger */}
                     <button
                       type="button"
                       onClick={startScan}
-                      className="w-full py-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md shadow-blue-200 active:scale-[0.98]"
+                      className="w-full py-4 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2.5 transition-all cursor-pointer shadow-md shadow-blue-200 active:scale-[0.98]"
                     >
-                      <QrCode size={16} />
+                      <QrCode size={18} />
                       {language === 'pt' ? 'Acessar via QR Code' : 'Access via QR Code'}
-                    </button>
-
-                    {/* Divider for Password Form */}
-                    <div className="relative flex py-2 items-center">
-                      <div className="flex-grow border-t border-slate-200"></div>
-                      <span className="flex-shrink mx-4 text-slate-450 text-[10px] font-bold uppercase tracking-wider">
-                        {language === 'pt' ? 'Ou com senha' : 'Or with password'}
-                      </span>
-                      <div className="flex-grow border-t border-slate-200"></div>
-                    </div>
-
-                    {/* Manual Access Code */}
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">
-                        {language === 'pt' ? 'Código de Acesso / Matrícula' : 'Access Code / Registration'}
-                      </label>
-                      <div className="relative">
-                        <QrCode className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                        <input
-                          id="accessCode"
-                          type="text"
-                          value={accessCode}
-                          onChange={(e) => setAccessCode(e.target.value)}
-                          required
-                          className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition-all uppercase"
-                          placeholder={language === 'pt' ? 'Ex: MAT001' : 'E.g.: MAT001'}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Manual Student Password */}
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">
-                        {t.auth.password}
-                      </label>
-                      <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                        <input
-                          id="student-password"
-                          type="password"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          required
-                          className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition-all"
-                          placeholder="••••••••"
-                        />
-                      </div>
-                    </div>
-
-                    <button
-                      id="student-auth-submit"
-                      type="submit"
-                      disabled={loading}
-                      className="w-full py-2.5 bg-blue-600 text-white rounded-lg font-bold text-sm flex items-center justify-center gap-2 hover:bg-blue-700 transition-all active:scale-[0.98] disabled:opacity-70 shadow-sm shadow-blue-200 cursor-pointer mt-2"
-                    >
-                      {loading ? (
-                        <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                      ) : (
-                        <>
-                          <LogIn size={16} />
-                          {t.auth.login}
-                        </>
-                      )}
                     </button>
                   </div>
                 )}
