@@ -547,11 +547,18 @@ function LoginContent() {
                     <button
                       type="button"
                       onClick={startScan}
-                      className="w-full py-4 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2.5 transition-all cursor-pointer shadow-md shadow-blue-200 active:scale-[0.98]"
+                      className="w-full py-4 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2.5 transition-all cursor-pointer shadow-lg shadow-blue-500/35 hover:shadow-xl hover:shadow-blue-500/50 ring-2 ring-blue-500/15 hover:ring-blue-500/25 active:scale-[0.98]"
                     >
                       <QrCode size={18} />
                       {language === 'pt' ? 'Acessar via QR Code' : 'Access via QR Code'}
                     </button>
+                    
+                    <p className="text-[11px] leading-relaxed text-slate-500 text-center font-medium mt-3 bg-slate-50 border border-slate-100 rounded-lg p-3">
+                      {language === 'pt' 
+                        ? 'O QR CODE É FORNECIDO PELA ADMINISTRAÇÃO DO CURSO, O ALUNO TERA ACESSO AO DETALHE SEMANAL DE AULAS, RELATORIO DO ALUNO E QUESTIONÁRIO PEDAGÓGICO.' 
+                        : 'THE QR CODE IS PROVIDED BY THE COURSE ADMINISTRATION, THE STUDENT WILL HAVE ACCESS TO THE WEEKLY CLASS DETAILS, STUDENT REPORT, AND PEDAGOGICAL QUESTIONNAIRE.'
+                      }
+                    </p>
                   </div>
                 )}
               </form>
