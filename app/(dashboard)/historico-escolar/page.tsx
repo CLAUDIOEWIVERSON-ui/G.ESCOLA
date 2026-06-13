@@ -103,6 +103,7 @@ export default function HistoricoEscolarPage() {
   const [cidade, setCidade] = useState('São Tomé');
   const [dataExpedicao, setDataExpedicao] = useState('');
   const [officerName, setOfficerName] = useState('MISSÃO DE ASSESSORIA NAVAL');
+  const [officerRank, setOfficerRank] = useState('Capitão-Tenente');
   const [officerTitle, setOfficerTitle] = useState('Encarregado da Missão de Assessoria Naval');
   
   // Custom grades state to allow overriding "SAT" vs numeric scores in real time
@@ -260,6 +261,7 @@ export default function HistoricoEscolarPage() {
               setPais(savedData.pais || 'São Tomé e Príncipe');
               setCidade(savedData.cidade || 'São Tomé');
               setOfficerName(savedData.officerName || 'MISSÃO DE ASSESSORIA NAVAL');
+              setOfficerRank(savedData.officerRank || 'Capitão-Tenente');
               setOfficerTitle(savedData.officerTitle || 'Encarregado da Missão de Assessoria Naval');
               hasSavedConfig = true;
             }
@@ -274,6 +276,7 @@ export default function HistoricoEscolarPage() {
           setPais('São Tomé e Príncipe');
           setCidade('São Tomé');
           setOfficerName('MISSÃO DE ASSESSORIA NAVAL');
+          setOfficerRank('Capitão-Tenente');
           setOfficerTitle('Encarregado da Missão de Assessoria Naval');
 
           // Find course info
@@ -455,6 +458,7 @@ export default function HistoricoEscolarPage() {
         pais,
         cidade,
         officerName,
+        officerRank,
         officerTitle,
         savedAt: new Date().toISOString()
       };
@@ -710,6 +714,15 @@ export default function HistoricoEscolarPage() {
                       />
                     </div>
                     <div className="flex flex-col gap-1">
+                      <span className="text-[9px] font-bold uppercase text-slate-400">Assinatura Posto / Patente</span>
+                      <input 
+                        type="text" 
+                        value={officerRank} 
+                        onChange={e => setOfficerRank(e.target.value)} 
+                        className="bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
                       <span className="text-[9px] font-bold uppercase text-slate-400">Assinatura Cargo</span>
                       <input 
                         type="text" 
@@ -843,7 +856,7 @@ export default function HistoricoEscolarPage() {
                 style={{ width: '100%', boxSizing: 'border-box' }}
               >
                 
-                {/* Embedded dynamic style tag to handle pure paper standard isolated margins */}
+                {/* Embedded dynamic style tag to handle pure paper standard isolated margins and start exactly at top of page without white margins or trailing pages */}
                 <style dangerouslySetInnerHTML={{ __html: `
                   @media print {
                     @page {
@@ -856,30 +869,7 @@ export default function HistoricoEscolarPage() {
                       margin: 0 !important;
                       padding: 0 !important;
                       width: 100% !important;
-                      height: auto !important;
-                    }
-                    /* Reset ALL layout wrapper margins, paddings, and background colors to prevent offsets */
-                    main, 
-                    main div,
-                    div.min-h-screen, 
-                    div.flex, 
-                    div.flex-1, 
-                    div.max-w-5xl,
-                    .flex-col,
-                    [role="main"] {
-                      padding: 0 !important;
-                      margin: 0 !important;
-                      min-height: 0 !important;
-                      height: auto !important;
-                      border: none !important;
-                      box-shadow: none !important;
-                      background: transparent !important;
-                    }
-                    /* Hide non-print elements */
-                    .no-print, header, aside, nav, footer, button, .alert {
-                      display: none !important;
-                      width: 0 !important;
-                      height: 0 !important;
+                      height: 297mm !important;
                       overflow: hidden !important;
                     }
                     body * {
@@ -891,18 +881,44 @@ export default function HistoricoEscolarPage() {
                     #historico-print-area {
                       display: flex !important;
                       flex-direction: column !important;
-                      position: relative !important;
+                      position: absolute !important;
                       left: 0 !important;
                       top: 0 !important;
                       width: 210mm !important;
+                      height: 297mm !important;
+                      max-height: 297mm !important;
                       min-height: 297mm !important;
                       box-sizing: border-box !important;
                       border: none !important;
                       border-radius: 0 !important;
                       box-shadow: none !important;
-                      padding: 15mm !important;
-                      margin: 0 auto !important;
+                      padding: 12mm 15mm !important;
+                      margin: 0 !important;
                       background-color: #ffffff !important;
+                      overflow: hidden !important;
+                      page-break-inside: avoid !important;
+                    }
+                    main, 
+                    main div,
+                    div.min-h-screen, 
+                    div.flex, 
+                    div.flex-1, 
+                    div.max-w-5xl,
+                    .flex-col,
+                    [role="main"] {
+                      padding: 0 !important;
+                      margin: 0 !important;
+                      min-height: 0 !important;
+                      height: 0 !important;
+                      border: none !important;
+                      box-shadow: none !important;
+                      background: transparent !important;
+                    }
+                    .no-print, header, aside, nav, footer, button, .alert {
+                      display: none !important;
+                      width: 0 !important;
+                      height: 0 !important;
+                      overflow: hidden !important;
                     }
                   }
                 `}} />
@@ -1077,6 +1093,11 @@ export default function HistoricoEscolarPage() {
                     <p className="text-[11px] font-black text-slate-900 uppercase tracking-wide mt-2">
                       {officerName}
                     </p>
+                    {officerRank && (
+                      <p className="text-[9.5px] font-extrabold text-slate-800 tracking-wide uppercase mt-0.5">
+                        {officerRank}
+                      </p>
+                    )}
                     <p className="text-[9px] font-bold text-slate-500 tracking-wider uppercase mt-0.5">
                       {officerTitle}
                     </p>
