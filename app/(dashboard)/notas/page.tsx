@@ -44,7 +44,7 @@ export default function NotasPage() {
   const selectedTurmaObj = turmas.find(t => t.id === selectedTurma);
   const currentCursoId = selectedCurso || selectedTurmaObj?.curso_id;
   const selectedCursoObj = allCursos.find(c => c.id === currentCursoId);
-  const effectiveModules = Math.min(selectedCursoObj?.qtd_modulos || 4, 10);
+  const effectiveModules = Math.min(selectedCursoObj?.qtd_modulos || 4, 20);
 
   useEffect(() => {
     const fetchTurmaData = async () => {
@@ -257,7 +257,11 @@ export default function NotasPage() {
         delete cleaned.id;
         
         // Ensure values are numbers and validate constraints
-        for (let i = 1; i <= 10; i++) {
+        for (let i = 1; i <= 20; i++) {
+          if (i > effectiveModules) {
+            cleaned[`nota${i}`] = null;
+            continue;
+          }
           const val = cleaned[`nota${i}`];
           if (val !== null && val !== undefined && val !== '') {
             const parsedVal = typeof val === 'string' ? parseFloat(val) : val;
@@ -325,7 +329,11 @@ export default function NotasPage() {
         delete cleaned.id;
         
         // Ensure values are numbers and validate constraints
-        for (let i = 1; i <= 10; i++) {
+        for (let i = 1; i <= 20; i++) {
+          if (i > effectiveModules) {
+            cleaned[`nota${i}`] = null;
+            continue;
+          }
           const val = cleaned[`nota${i}`];
           if (val !== null && val !== undefined && val !== '') {
             const parsedVal = typeof val === 'string' ? parseFloat(val) : val;

@@ -261,6 +261,21 @@ export async function GET() {
             .limit(1);
           return error;
         }
+      },
+      {
+        key: 'nota20_modules',
+        tableName: 'notas',
+        columnName: 'nota20',
+        fileName: '38_add_more_nota_modules_up_to_20.sql',
+        description: 'Adiciona notas do módulo 11 ao 20 para dar suporte ao novo limite máximo de módulos dos cursos configurados no sistema.',
+        isColumn: true,
+        checkFn: async () => {
+          const { error } = await supabaseAdmin
+            .from('notas')
+            .select('nota20')
+            .limit(1);
+          return error;
+        }
       }
     ];
 

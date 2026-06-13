@@ -277,11 +277,11 @@ export default function BoletimPage() {
       // Find course modules count
       const turma = turmas.find((t: any) => t.id === selectedTurma);
       if (turma?.curso?.qtd_modulos) {
-        setCourseModules(Math.min(turma.curso.qtd_modulos, 10));
+        setCourseModules(Math.min(turma.curso.qtd_modulos, 20));
       } else if (turma?.curso_id) {
         const curso = cursos.find((c: any) => c.id === turma.curso_id);
         if (curso) {
-          setCourseModules(Math.min(curso.qtd_modulos || 4, 10));
+          setCourseModules(Math.min(curso.qtd_modulos || 4, 20));
         }
       }
 
@@ -334,6 +334,16 @@ export default function BoletimPage() {
             nota8: null,
             nota9: null,
             nota10: null,
+            nota11: null,
+            nota12: null,
+            nota13: null,
+            nota14: null,
+            nota15: null,
+            nota16: null,
+            nota17: null,
+            nota18: null,
+            nota19: null,
+            nota20: null,
             nota_final: null,
             frequencia: null,
             pago: true,
