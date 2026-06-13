@@ -856,7 +856,7 @@ export default function HistoricoEscolarPage() {
                 style={{ width: '100%', boxSizing: 'border-box' }}
               >
                 
-                {/* Embedded dynamic style tag to handle pure paper standard isolated margins and start exactly at top of page without white margins or trailing pages */}
+                {/* Embedded style tag for professional uniform A4 print with zero margin offsets and precise pixel-perfect positioning */}
                 <style dangerouslySetInnerHTML={{ __html: `
                   @media print {
                     @page {
@@ -864,13 +864,29 @@ export default function HistoricoEscolarPage() {
                       margin: 0 !important;
                     }
                     html, body {
-                      background: white !important;
-                      color: black !important;
+                      background: #ffffff !important;
+                      color: #000000 !important;
                       margin: 0 !important;
                       padding: 0 !important;
-                      width: 100% !important;
+                      width: 210mm !important;
                       height: 297mm !important;
                       overflow: hidden !important;
+                      -webkit-print-color-adjust: exact !important;
+                      print-color-adjust: exact !important;
+                    }
+                    /* Reset parent layout positions and offsets when printing */
+                    main, [role="main"], div, section, article {
+                      position: static !important;
+                      margin: 0 !important;
+                      padding: 0 !important;
+                      width: auto !important;
+                      height: auto !important;
+                      min-height: 0 !important;
+                      border: none !important;
+                      box-shadow: none !important;
+                      background: transparent !important;
+                      background-color: transparent !important;
+                      transform: none !important;
                     }
                     body * {
                       visibility: hidden !important;
@@ -881,7 +897,7 @@ export default function HistoricoEscolarPage() {
                     #historico-print-area {
                       display: flex !important;
                       flex-direction: column !important;
-                      position: absolute !important;
+                      position: fixed !important;
                       left: 0 !important;
                       top: 0 !important;
                       width: 210mm !important;
@@ -892,29 +908,24 @@ export default function HistoricoEscolarPage() {
                       border: none !important;
                       border-radius: 0 !important;
                       box-shadow: none !important;
-                      padding: 12mm 15mm !important;
+                      padding: 15mm 20mm !important;
                       margin: 0 !important;
+                      background: #ffffff !important;
                       background-color: #ffffff !important;
+                      color: #000000 !important;
                       overflow: hidden !important;
                       page-break-inside: avoid !important;
+                      z-index: 99999999 !important;
                     }
-                    main, 
-                    main div,
-                    div.min-h-screen, 
-                    div.flex, 
-                    div.flex-1, 
-                    div.max-w-5xl,
-                    .flex-col,
-                    [role="main"] {
-                      padding: 0 !important;
-                      margin: 0 !important;
-                      min-height: 0 !important;
-                      height: 0 !important;
-                      border: none !important;
-                      box-shadow: none !important;
-                      background: transparent !important;
+                    #historico-print-area span,
+                    #historico-print-area h1,
+                    #historico-print-area h2,
+                    #historico-print-area p,
+                    #historico-print-area td,
+                    #historico-print-area th {
+                      color: #000000 !important;
                     }
-                    .no-print, header, aside, nav, footer, button, .alert {
+                    .no-print, header, aside, nav, footer, button, select, input, .alert {
                       display: none !important;
                       width: 0 !important;
                       height: 0 !important;
