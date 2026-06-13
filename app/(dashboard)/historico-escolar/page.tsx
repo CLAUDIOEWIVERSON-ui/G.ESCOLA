@@ -856,7 +856,7 @@ export default function HistoricoEscolarPage() {
                 style={{ width: '100%', boxSizing: 'border-box' }}
               >
                 
-                {/* Embedded style tag for professional uniform A4 print with zero margin offsets and precise pixel-perfect positioning */}
+                {/* Embedded dynamic style tag to handle pure paper standard isolated margins and start exactly at top of page without white margins or trailing pages */}
                 <style dangerouslySetInnerHTML={{ __html: `
                   @media print {
                     @page {
@@ -864,29 +864,17 @@ export default function HistoricoEscolarPage() {
                       margin: 0 !important;
                     }
                     html, body {
-                      background: #ffffff !important;
-                      color: #000000 !important;
+                      background: white !important;
+                      color: black !important;
                       margin: 0 !important;
                       padding: 0 !important;
                       width: 210mm !important;
                       height: 297mm !important;
+                      max-height: 297mm !important;
+                      min-height: 297mm !important;
                       overflow: hidden !important;
                       -webkit-print-color-adjust: exact !important;
                       print-color-adjust: exact !important;
-                    }
-                    /* Reset parent layout positions and offsets when printing */
-                    main, [role="main"], div, section, article {
-                      position: static !important;
-                      margin: 0 !important;
-                      padding: 0 !important;
-                      width: auto !important;
-                      height: auto !important;
-                      min-height: 0 !important;
-                      border: none !important;
-                      box-shadow: none !important;
-                      background: transparent !important;
-                      background-color: transparent !important;
-                      transform: none !important;
                     }
                     body * {
                       visibility: hidden !important;
@@ -897,7 +885,7 @@ export default function HistoricoEscolarPage() {
                     #historico-print-area {
                       display: flex !important;
                       flex-direction: column !important;
-                      position: fixed !important;
+                      position: absolute !important;
                       left: 0 !important;
                       top: 0 !important;
                       width: 210mm !important;
@@ -908,24 +896,75 @@ export default function HistoricoEscolarPage() {
                       border: none !important;
                       border-radius: 0 !important;
                       box-shadow: none !important;
-                      padding: 15mm 20mm !important;
+                      padding: 10mm 15mm 8mm 15mm !important;
                       margin: 0 !important;
-                      background: #ffffff !important;
                       background-color: #ffffff !important;
-                      color: #000000 !important;
                       overflow: hidden !important;
                       page-break-inside: avoid !important;
-                      z-index: 99999999 !important;
+                      gap: 2mm !important;
                     }
-                    #historico-print-area span,
-                    #historico-print-area h1,
-                    #historico-print-area h2,
-                    #historico-print-area p,
-                    #historico-print-area td,
-                    #historico-print-area th {
-                      color: #000000 !important;
+                    /* Ensure flex direct children never shrink to cause overlapping or stacked text */
+                    #historico-print-area > div {
+                      flex-shrink: 0 !important;
                     }
-                    .no-print, header, aside, nav, footer, button, select, input, .alert {
+                    #historico-print-area table {
+                      width: 100% !important;
+                      border-collapse: collapse !important;
+                    }
+                    /* Compact padding and line-height for tables on A4 */
+                    #historico-print-area th, 
+                    #historico-print-area td {
+                      padding: 1mm 2.5mm !important;
+                      font-size: 8pt !important;
+                      line-height: 1.15 !important;
+                    }
+                    /* Custom sizing for specific small title indicators */
+                    #historico-print-area td span {
+                      font-size: 7.2pt !important;
+                      line-height: 1 !important;
+                    }
+                    /* Section title backgrounds */
+                    #historico-print-area .bg-slate-100 {
+                      font-size: 8.5pt !important;
+                      padding: 0.6mm 2mm !important;
+                      line-height: 1 !important;
+                    }
+                    /* Compact Main Header for space recovery */
+                    #historico-print-area h1 {
+                      font-size: 14pt !important;
+                      margin-top: 0.5mm !important;
+                      padding: 0.8mm 3mm !important;
+                    }
+                    #historico-print-area div.pb-4 {
+                      padding-bottom: 2mm !important;
+                    }
+                    /* Anti-fraud paragraph margin tightening */
+                    #historico-print-area p.italic {
+                      font-size: 7.2pt !important;
+                      margin-top: 1.5mm !important;
+                    }
+                    /* Compact Signature line spacing to prevent splitting to a second page */
+                    .signature-section-print {
+                      margin-top: 3mm !important;
+                      padding-top: 2mm !important;
+                    }
+                    main, 
+                    main div,
+                    div.min-h-screen, 
+                    div.flex, 
+                    div.flex-1, 
+                    div.max-w-5xl,
+                    .flex-col,
+                    [role="main"] {
+                      padding: 0 !important;
+                      margin: 0 !important;
+                      min-height: 0 !important;
+                      height: 0 !important;
+                      border: none !important;
+                      box-shadow: none !important;
+                      background: transparent !important;
+                    }
+                    .no-print, header, aside, nav, footer, button, .alert {
                       display: none !important;
                       width: 0 !important;
                       height: 0 !important;
@@ -1096,7 +1135,7 @@ export default function HistoricoEscolarPage() {
                 </div>
 
                 {/* SIGNATURE AREA SECTION */}
-                <div className="flex flex-col items-center justify-center text-center mt-8 pt-8 border-t border-dashed border-slate-300 relative z-10">
+                <div className="signature-section-print flex flex-col items-center justify-center text-center mt-8 pt-8 border-t border-dashed border-slate-300 relative z-10">
                   <div className="w-[280px]">
                     <div className="border-b border-slate-900 pb-1 flex justify-center items-center">
                       <span className="h-4 block" /> {/* Placeholder for visual spacing */}
