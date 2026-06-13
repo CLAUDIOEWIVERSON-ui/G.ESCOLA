@@ -4,7 +4,7 @@
 DO $$ 
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='notas' AND column_name='nota11') THEN
-        ALTER TABLE public.notas ADD COLUMN nota11 NUMERIC CHECK (nota11 >= 0);
+        ALTER TABLE public.notas ADD COLUMN nota11 \NUMERIC CHECK (nota11 >= 0);
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='notas' AND column_name='nota12') THEN
         ALTER TABLE public.notas ADD COLUMN nota12 NUMERIC CHECK (nota12 >= 0);

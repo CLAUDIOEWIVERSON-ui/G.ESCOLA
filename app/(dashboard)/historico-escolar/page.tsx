@@ -973,8 +973,8 @@ export default function HistoricoEscolarPage() {
               {/* SHEET OF THE PAPER - EXACT PRINT REPLICA OF THE NATIONAL SPECIFICATION */}
               <div 
                 id="historico-print-area"
-                className="bg-white text-slate-900 border border-slate-200 shadow-2xl p-12 rounded-lg max-w-[210mm] min-h-[297mm] mx-auto flex flex-col gap-6 font-serif relative overflow-hidden"
-                style={{ width: '100%', boxSizing: 'border-box' }}
+                className="bg-white text-slate-900 border border-slate-200 shadow-2xl px-[15mm] pt-[10mm] pb-[8mm] rounded-lg w-[210mm] h-[297mm] max-h-[297mm] min-h-[297mm] mx-auto flex flex-col gap-[3mm] font-serif relative overflow-hidden"
+                style={{ width: '210mm', height: '297mm', minHeight: '297mm', maxHeight: '297mm', boxSizing: 'border-box' }}
               >
                 
                 {/* Embedded dynamic style tag to handle pure paper standard isolated margins and start exactly at top of page without white margins or trailing pages */}
@@ -1017,57 +1017,14 @@ export default function HistoricoEscolarPage() {
                       border: none !important;
                       border-radius: 0 !important;
                       box-shadow: none !important;
-                      padding: 10mm 15mm 8mm 15mm !important;
                       margin: 0 !important;
                       background-color: #ffffff !important;
                       overflow: hidden !important;
                       page-break-inside: avoid !important;
-                      gap: 2mm !important;
                     }
                     /* Ensure flex direct children never shrink to cause overlapping or stacked text */
                     #historico-print-area > div {
                       flex-shrink: 0 !important;
-                    }
-                    #historico-print-area table {
-                      width: 100% !important;
-                      border-collapse: collapse !important;
-                    }
-                    /* Compact padding and line-height for tables on A4 */
-                    #historico-print-area th, 
-                    #historico-print-area td {
-                      padding: 1mm 2.5mm !important;
-                      font-size: 8pt !important;
-                      line-height: 1.15 !important;
-                    }
-                    /* Custom sizing for specific small title indicators */
-                    #historico-print-area td span {
-                      font-size: 7.2pt !important;
-                      line-height: 1 !important;
-                    }
-                    /* Section title backgrounds */
-                    #historico-print-area .bg-slate-100 {
-                      font-size: 8.5pt !important;
-                      padding: 0.6mm 2mm !important;
-                      line-height: 1 !important;
-                    }
-                    /* Compact Main Header for space recovery */
-                    #historico-print-area h1 {
-                      font-size: 14pt !important;
-                      margin-top: 0.5mm !important;
-                      padding: 0.8mm 3mm !important;
-                    }
-                    #historico-print-area div.pb-4 {
-                      padding-bottom: 2mm !important;
-                    }
-                    /* Anti-fraud paragraph margin tightening */
-                    #historico-print-area p.italic {
-                      font-size: 7.2pt !important;
-                      margin-top: 1.5mm !important;
-                    }
-                    /* Compact Signature line spacing to prevent splitting to a second page */
-                    .signature-section-print {
-                      margin-top: 3mm !important;
-                      padding-top: 2mm !important;
                     }
                     main, 
                     main div,
@@ -1105,30 +1062,30 @@ export default function HistoricoEscolarPage() {
                 </div>
 
                 {/* Main Header: Joint Naval Mission Brazil & São Tomé */}
-                <div className="flex flex-col items-center justify-center text-center border-b border-slate-800 pb-4 relative z-10 gap-1">
-                  <span className="text-[14px] leading-tight font-bold tracking-wide uppercase text-slate-800">
+                <div className="flex flex-col items-center justify-center text-center border-b border-slate-800 pb-[2mm] relative z-10 gap-0.5">
+                  <span className="text-[11px] leading-tight font-bold tracking-wide uppercase text-slate-800 select-none">
                     Missão de Assessoria Naval do Brasil em São Tomé e Príncipe
                   </span>
-                  <h1 className="text-[20px] font-black tracking-widest uppercase text-slate-900 mt-1 border border-double border-slate-900 px-6 py-1.5">
+                  <h1 className="text-[15px] font-black tracking-widest uppercase text-slate-900 mt-[0.5mm] border border-double border-slate-900 px-[5mm] py-[0.8mm] select-none">
                     Ficha Histórico-Escolar
                   </h1>
                 </div>
 
                 {/* SECTION I IDENTIFICATION */}
                 <div className="relative z-10 text-left">
-                  <div className="bg-slate-100 px-3 py-1 text-[11px] font-black uppercase tracking-wider border border-slate-300">
+                  <div className="bg-slate-100 px-[2.5mm] py-[0.8mm] text-[11.5px] font-black uppercase tracking-wider border border-slate-300 select-none leading-none">
                     I – Identificação do Aluno
                   </div>
-                  <table className="w-full border-collapse border border-slate-300 text-xs">
+                  <table className="w-full border-collapse border border-slate-300 text-[10.5px]">
                     <tbody>
                       <tr>
-                        <td className="border border-slate-300 p-2 w-2/3">
-                          <span className="block text-[9px] font-bold text-slate-500 uppercase tracking-widest">1 – Nome do Aluno</span>
-                          <span className="font-extrabold uppercase text-slate-800">{currentStudentObj?.nome || '-'}</span>
+                        <td className="border border-slate-300 px-[2.5mm] py-[1mm] w-2/3">
+                          <span className="block text-[8.5px] font-bold text-slate-500 uppercase tracking-widest leading-none mb-0.5 select-none">1 – Nome do Aluno</span>
+                          <span className="font-extrabold uppercase text-slate-800 leading-none">{currentStudentObj?.nome || '-'}</span>
                         </td>
-                        <td className="border border-slate-300 p-2 w-1/3">
-                          <span className="block text-[9px] font-bold text-slate-500 uppercase tracking-widest">2 – Graduação</span>
-                          <span className="font-extrabold uppercase text-slate-800">{currentStudentObj?.posto_graduacao || 'Não especificada'}</span>
+                        <td className="border border-slate-300 px-[2.5mm] py-[1mm] w-1/3">
+                          <span className="block text-[8.5px] font-bold text-slate-500 uppercase tracking-widest leading-none mb-0.5 select-none">2 – Graduação</span>
+                          <span className="font-extrabold uppercase text-slate-800 leading-none">{currentStudentObj?.posto_graduacao || 'Não especificada'}</span>
                         </td>
                       </tr>
                     </tbody>
@@ -1137,29 +1094,29 @@ export default function HistoricoEscolarPage() {
 
                 {/* SECTION II ESTABELECIMENTO */}
                 <div className="relative z-10 text-left">
-                  <div className="bg-slate-100 px-3 py-1 text-[11px] font-black uppercase tracking-wider border border-slate-300">
+                  <div className="bg-slate-100 px-[2.5mm] py-[0.8mm] text-[11.5px] font-black uppercase tracking-wider border border-slate-300 select-none leading-none">
                     II – Estabelecimento de Ensino
                   </div>
-                  <table className="w-full border-collapse border border-slate-300 text-xs">
+                  <table className="w-full border-collapse border border-slate-300 text-[10.5px]">
                     <tbody>
                       <tr>
-                        <td className="border border-slate-300 p-2 col-span-3" colSpan={3}>
-                          <span className="block text-[9px] font-bold text-slate-500 uppercase tracking-widest">3 – Nome do Estabelecimento de Ensino</span>
-                          <span className="font-bold uppercase text-slate-800">{establishment || '-'}</span>
+                        <td className="border border-slate-300 px-[2.5mm] py-[1mm]" colSpan={3}>
+                          <span className="block text-[8.5px] font-bold text-slate-500 uppercase tracking-widest leading-none mb-0.5 select-none">3 – Nome do Estabelecimento de Ensino</span>
+                          <span className="font-bold uppercase text-slate-800 leading-none">{establishment || '-'}</span>
                         </td>
                       </tr>
                       <tr>
-                        <td className="border border-slate-300 p-2 w-1/2">
-                          <span className="block text-[9px] font-bold text-slate-500 uppercase tracking-widest">4 – Nome do Curso</span>
-                          <span className="font-bold uppercase text-slate-800">{currentCourseObj?.nome || '-'}</span>
+                        <td className="border border-slate-300 px-[2.5mm] py-[1mm] w-1/2">
+                          <span className="block text-[8.5px] font-bold text-slate-500 uppercase tracking-widest leading-none mb-0.5 select-none">4 – Nome do Curso</span>
+                          <span className="font-bold uppercase text-slate-800 leading-none">{currentCourseObj?.nome || '-'}</span>
                         </td>
-                        <td className="border border-slate-300 p-2 w-1/4">
-                          <span className="block text-[9px] font-bold text-slate-500 uppercase tracking-widest">5 – Sigla do Curso</span>
-                          <span className="font-extrabold font-mono text-slate-800 uppercase">{siglaCurso || '-'}</span>
+                        <td className="border border-slate-300 px-[2.5mm] py-[1mm] w-1/4">
+                          <span className="block text-[8.5px] font-bold text-slate-500 uppercase tracking-widest leading-none mb-0.5 select-none">5 – Sigla do Curso</span>
+                          <span className="font-extrabold font-mono text-slate-800 uppercase leading-none">{siglaCurso || '-'}</span>
                         </td>
-                        <td className="border border-slate-300 p-2 w-1/4">
-                          <span className="block text-[9px] font-bold text-slate-500 uppercase tracking-widest">6 – Turma</span>
-                          <span className="font-bold text-slate-800 uppercase">{turmaNome || '-'}</span>
+                        <td className="border border-slate-300 px-[2.5mm] py-[1mm] w-1/4">
+                          <span className="block text-[8.5px] font-bold text-slate-500 uppercase tracking-widest leading-none mb-0.5 select-none">6 – Turma</span>
+                          <span className="font-bold text-slate-800 uppercase leading-none">{turmaNome || '-'}</span>
                         </td>
                       </tr>
                     </tbody>
@@ -1168,39 +1125,39 @@ export default function HistoricoEscolarPage() {
 
                 {/* SECTION III HISTÓRICO ESCOLAR */}
                 <div className="relative z-10 text-left flex-1 flex flex-col">
-                  <div className="bg-slate-100 px-3 py-1 text-[11px] font-black uppercase tracking-wider border border-slate-300">
+                  <div className="bg-slate-100 px-[2.5mm] py-[0.8mm] text-[11.5px] font-black uppercase tracking-wider border border-slate-300 select-none leading-none">
                     III – Histórico Escolar
                   </div>
                   <div className="overflow-x-auto">
-                    <table className="w-full border-collapse border border-slate-300 text-xs text-left">
+                    <table className="w-full border-collapse border border-slate-300 text-[10.5px] text-left">
                       <thead>
-                        <tr className="bg-slate-50 text-[10px] uppercase font-bold tracking-wide text-slate-700">
-                          <th className="border border-slate-300 px-4 py-2 w-28">Módulo</th>
-                          <th className="border border-slate-300 px-4 py-2">Disciplina</th>
-                          <th className="border border-slate-300 px-4 py-2 text-center w-28">Carga Horária</th>
-                          <th className="border border-slate-300 px-4 py-2 text-center w-28">Nota</th>
+                        <tr className="bg-slate-50 text-[9.5px] uppercase font-bold tracking-wide text-slate-700">
+                          <th className="border border-slate-300 px-[2.5mm] py-[1mm] w-28 select-none">Módulo</th>
+                          <th className="border border-slate-300 px-[2.5mm] py-[1mm] select-none">Disciplina</th>
+                          <th className="border border-slate-300 px-[2.5mm] py-[1mm] text-center w-28 select-none">Carga Horária</th>
+                          <th className="border border-slate-300 px-[2.5mm] py-[1mm] text-center w-28 select-none">Nota</th>
                         </tr>
                       </thead>
                       <tbody>
                         {processedGrades.rows.length === 0 ? (
                           <tr>
-                            <td colSpan={4} className="border border-slate-300 text-center py-8 text-slate-400 font-bold bg-white italic">
+                            <td colSpan={4} className="border border-slate-300 text-center py-8 text-slate-400 font-bold bg-white italic select-none">
                               Nenhuma disciplina cadastrada neste curso.
                             </td>
                           </tr>
                         ) : (
                           processedGrades.rows.map(row => (
                             <tr key={row.id} className="hover:bg-slate-50/25 transition-colors">
-                              <td className="border border-slate-300 px-4 py-2.5 font-bold font-mono text-slate-800 uppercase">
+                              <td className="border border-slate-300 px-[2.5mm] py-[1mm] font-bold font-mono text-slate-800 uppercase leading-normal">
                                 {row.codigo}
                               </td>
-                              <td className="border border-slate-300 px-4 py-2.5 text-slate-800 font-medium">
+                              <td className="border border-slate-300 px-[2.5mm] py-[1mm] text-slate-800 font-medium leading-normal">
                                 {row.disciplina}
                               </td>
-                              <td className="border border-slate-300 px-4 py-2.5 text-center font-bold text-slate-700 font-mono">
+                              <td className="border border-slate-300 px-[2.5mm] py-[1mm] text-center font-bold text-slate-700 font-mono leading-normal">
                                 {row.carga_horaria}h
                               </td>
-                              <td className="border border-slate-300 px-4 py-2.5 text-center font-extrabold text-slate-900 font-mono">
+                              <td className="border border-slate-300 px-[2.5mm] py-[1mm] text-center font-extrabold text-slate-900 font-mono leading-normal">
                                 {row.displayGrade}
                               </td>
                             </tr>
@@ -1211,52 +1168,52 @@ export default function HistoricoEscolarPage() {
                   </div>
 
                   {/* Anti-fraud notation */}
-                  <p className="text-[10px] font-black text-slate-900 text-center leading-relaxed mt-4 italic uppercase tracking-wider select-none">
+                  <p className="text-[9px] font-black text-slate-900 text-center mt-[2mm] italic uppercase tracking-wider select-none leading-none">
                     ESTE DOCUMENTO NÃO SERÁ VÁLIDO SE APRESENTAR EMENDAS, RASURAS OU RESSALVAS.
                   </p>
                 </div>
 
                 {/* SECTION IV EXPEDIÇÃO */}
                 <div className="relative z-10 text-left mt-auto">
-                  <div className="bg-slate-100 px-3 py-1 text-[11px] font-black uppercase tracking-wider border border-slate-300">
+                  <div className="bg-slate-100 px-[2.5mm] py-[0.8mm] text-[11.5px] font-black uppercase tracking-wider border border-slate-300 select-none leading-none">
                     IV – Expedição do Histórico Escolar
                   </div>
-                  <table className="w-full border-collapse border border-slate-300 text-xs text-center">
+                  <table className="w-full border-collapse border border-slate-300 text-[10.5px] text-center">
                     <tbody>
-                      <tr className="bg-slate-50 text-[9px] uppercase font-bold text-slate-500">
-                        <td className="border border-slate-300 p-1 w-1/3">Média Final</td>
-                        <td className="border border-slate-300 p-1 w-1/3">Carga Horária Total</td>
-                        <td className="border border-slate-300 p-1 w-1/3">Período</td>
+                      <tr className="bg-slate-50 text-[8.5px] uppercase font-bold text-slate-500 select-none">
+                        <td className="border border-slate-300 px-[2.5mm] py-[0.5mm] w-1/3">Média Final</td>
+                        <td className="border border-slate-300 px-[2.5mm] py-[0.5mm] w-1/3">Carga Horária Total</td>
+                        <td className="border border-slate-300 px-[2.5mm] py-[0.5mm] w-1/3">Período</td>
                       </tr>
                       <tr>
-                        <td className="border border-slate-300 p-2.5 font-extrabold text-sm text-slate-900 font-mono">
+                        <td className="border border-slate-300 px-[2.5mm] py-[1.2mm] font-extrabold text-[12.5px] text-slate-900 font-mono leading-none">
                           {processedGrades.calculatedAverage !== null 
                             ? processedGrades.calculatedAverage.toFixed(2).replace('.', ',') 
                             : '-'}
                         </td>
-                        <td className="border border-slate-300 p-2.5 font-extrabold text-slate-800 font-mono">
+                        <td className="border border-slate-300 px-[2.5mm] py-[1.2mm] font-extrabold text-slate-800 font-mono leading-none">
                           {processedGrades.totalWorkload}h
                         </td>
-                        <td className="border border-slate-300 p-2.5 font-bold text-slate-800">
+                        <td className="border border-slate-300 px-[2.5mm] py-[1.2mm] font-bold text-slate-800 leading-none">
                           {periodText || '-'}
                         </td>
                       </tr>
-                      <tr className="bg-slate-50 text-[9px] uppercase font-bold text-slate-500">
-                        <td className="border border-slate-300 p-1">País</td>
-                        <td className="border border-slate-300 p-1">Cidade</td>
-                        <td className="border border-slate-300 p-1">Data da Expedição</td>
+                      <tr className="bg-slate-50 text-[8.5px] uppercase font-bold text-slate-500 select-none">
+                        <td className="border border-slate-300 px-[2.5mm] py-[0.5mm]">País</td>
+                        <td className="border border-slate-300 px-[2.5mm] py-[0.5mm]">Cidade</td>
+                        <td className="border border-slate-300 px-[2.5mm] py-[0.5mm]">Data da Expedição</td>
                       </tr>
                       <tr>
-                        <td className="border border-slate-300 p-2.5 font-bold text-slate-800">{pais}</td>
-                        <td className="border border-slate-300 p-2.5 font-bold text-slate-800">{cidade}</td>
-                        <td className="border border-slate-300 p-2.5 font-bold text-slate-800">{dataExpedicao}</td>
+                        <td className="border border-slate-300 px-[2.5mm] py-[1.2mm] font-bold text-slate-800 leading-none">{pais}</td>
+                        <td className="border border-slate-300 px-[2.5mm] py-[1.2mm] font-bold text-slate-800 leading-none">{cidade}</td>
+                        <td className="border border-slate-300 px-[2.5mm] py-[1.2mm] font-bold text-slate-800 leading-none">{dataExpedicao}</td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
 
                 {/* SIGNATURE AREA SECTION */}
-                <div className="signature-section-print flex flex-col items-center justify-center text-center mt-8 pt-8 border-t border-dashed border-slate-300 relative z-10">
+                <div className="signature-section-print flex flex-col items-center justify-center text-center mt-[4mm] pt-[3mm] border-t border-dashed border-slate-300 relative z-10">
                   <div className="w-[280px]">
                     <div className="border-b border-slate-900 pb-1 flex justify-center items-center">
                       <span className="h-4 block" /> {/* Placeholder for visual spacing */}
