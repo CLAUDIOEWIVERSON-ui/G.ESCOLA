@@ -22,7 +22,8 @@ import {
   User,
   Info,
   RefreshCw,
-  Edit2
+  Edit2,
+  ArrowLeft
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
@@ -111,6 +112,7 @@ export default function HistoricoEscolarPage() {
   
   // Checkboxes for locking editing interface or collapsing settings
   const [editingConfig, setEditingConfig] = useState(false);
+  const [autoTriggerPrint, setAutoTriggerPrint] = useState(false);
 
   // Standard defaults for Sao Tome & Principe Navy grading range
   const [config, setConfig] = useState({
@@ -341,17 +343,24 @@ export default function HistoricoEscolarPage() {
           const lName = d.nome.toLowerCase();
           const lCode = (d.codigo || '').toLowerCase();
           
-          // Auto-classify common physical/practical classes to default to SAT
+          const gradeObj = (nData || []).find(g => g.disciplina_id === d.id);
+          const hasNumericGrade = gradeObj && gradeObj.nota_final !== null && gradeObj.nota_final !== undefined;
+
+          // Auto-classify common physical/practical classes to default to SAT ONLY IF they do not have a numeric grade launched!
           if (
-            lName.includes('físico') || 
-            lName.includes('tfm') || 
-            lName.includes('prática') || 
-            lName.includes('bordo') || 
-            lName.includes('ordem unida') || 
-            lName.includes('comportamento') ||
-            lCode.includes('tfm')
+            !hasNumericGrade && (
+              lName.includes('físico') || 
+              lName.includes('tfm') || 
+              lName.includes('prática') || 
+              lName.includes('bordo') || 
+              lName.includes('ordem unida') || 
+              lName.includes('comportamento') ||
+              lCode.includes('tfm')
+            )
           ) {
             initialOverrides[d.id] = 'SAT';
+          } else {
+            initialOverrides[d.id] = 'numeric';
           }
         });
         setCustomGradesOverride(initialOverrides);
@@ -429,6 +438,23 @@ export default function HistoricoEscolarPage() {
       calculatedAverage
     };
   }, [courseDisciplines, studentGrades, customGradesOverride, config]);
+
+  // Auto-trigger printing when loading completes for autoTriggerPrint state
+  useEffect(() => {
+    if (autoTriggerPrint && !loadingTranscript && selectedStudent) {
+      // Small timeout to ensure DOM is fully repainted before printing
+      const timer = setTimeout(() => {
+        try {
+          window.print();
+        } catch (e) {
+          console.error('Auto print failed:', e);
+        } finally {
+          setAutoTriggerPrint(false);
+        }
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [autoTriggerPrint, loadingTranscript, selectedStudent]);
 
   // Trigger print area window print
   const handlePrint = () => {
@@ -816,24 +842,99 @@ export default function HistoricoEscolarPage() {
 
         {/* Right column document view sheet */}
         <div className="flex-1 flex flex-col gap-6">
-          {/* Default Empty State */}
+          {/* Default Empty State / Student List */}
           {!selectedStudent ? (
-            <div className="flex-1 bg-slate-900/30 border-2 border-dashed border-slate-800/80 rounded-3xl p-12 py-20 flex flex-col items-center justify-center text-center gap-4">
-              <div className="p-4 bg-slate-900 rounded-full text-slate-600 border border-slate-800">
-                <FileText size={36} className="text-slate-500" />
+            selectedClass ? (
+              <div className="flex-1 bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6 flex flex-col gap-6 backdrop-blur-md">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+                  <div>
+                    <h3 className="text-base font-bold text-white flex items-center gap-2">
+                      <Users size={18} className="text-emerald-500" />
+                      Emitir Histórico Escolar por Aluno
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-1">
+                      {students.length} {students.length === 1 ? 'aluno encontrado' : 'alunos encontrados'} nesta turma. Ao lado de cada nome já está o atalho para imprimir o arquivo preenchido para PDF.
+                    </p>
+                  </div>
+                </div>
+
+                {students.length === 0 ? (
+                  <div className="py-12 flex flex-col items-center justify-center text-center gap-3">
+                    <div className="p-3 bg-slate-800/40 rounded-full text-slate-500 border border-slate-800">
+                      <Users size={24} />
+                    </div>
+                    <p className="text-xs text-slate-400">Nenhum aluno cadastrado nesta turma.</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-800 text-[10px] font-black uppercase text-slate-400 tracking-wider">
+                          <th className="py-3 px-4">Matrícula</th>
+                          <th className="py-3 px-4">Nome do Aluno</th>
+                          <th className="py-3 px-4">Posto / Graduação</th>
+                          <th className="py-3 px-4 text-right">Ficha em PDF</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/20">
+                        {students.map((s) => (
+                          <tr key={s.id} className="hover:bg-slate-850/40 transition-all group border-b border-slate-800/40">
+                            <td className="py-3 px-4 font-mono text-xs text-emerald-400 font-bold">
+                              #{s.matricula}
+                            </td>
+                            <td className="py-3 px-4 text-xs font-bold text-white group-hover:text-emerald-400 transition-colors">
+                              {s.nome}
+                            </td>
+                            <td className="py-3 px-4 text-xs text-slate-300">
+                              <span className="bg-slate-800/60 border border-slate-700/40 px-2.5 py-0.5 rounded-md text-[10px] font-bold text-slate-300 uppercase tracking-wide">
+                                {s.posto_graduacao || 'Não especificado'}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-right">
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                  onClick={() => setSelectedStudent(s.id)}
+                                  className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-100 hover:text-white border border-slate-700/50 hover:border-slate-600 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer"
+                                >
+                                  Visualizar
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setSelectedStudent(s.id);
+                                    setAutoTriggerPrint(true);
+                                  }}
+                                  className="px-2.5 py-1.5 bg-emerald-600/15 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/20 hover:border-emerald-500 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1 shadow-lg shadow-emerald-500/5 cursor-pointer"
+                                >
+                                  <Printer size={11} />
+                                  Salvar PDF
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
-              <div>
-                <h3 className="text-base font-bold text-white">Visualização da Ficha Histórico-Escolar</h3>
-                <p className="text-xs text-slate-500 max-w-sm mx-auto mt-2 leading-relaxed">
-                  Utilize o painel de seleção acadêmica à esquerda para escolher o curso de carreira nacional, a turma, e o aluno correspondente.
-                </p>
+            ) : (
+              <div className="flex-1 bg-slate-900/30 border-2 border-dashed border-slate-800/80 rounded-3xl p-12 py-20 flex flex-col items-center justify-center text-center gap-4">
+                <div className="p-4 bg-slate-900 rounded-full text-slate-600 border border-slate-800">
+                  <FileText size={36} className="text-slate-500" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">Visualização da Ficha Histórico-Escolar</h3>
+                  <p className="text-xs text-slate-500 max-w-sm mx-auto mt-2 leading-relaxed">
+                    Utilize o painel de seleção acadêmica à esquerda para escolher o curso de carreira nacional e a turma correspondente.
+                  </p>
+                </div>
+                <div className="flex flex-wrap justify-center gap-2 mt-2">
+                  <span className="text-[9px] font-black uppercase text-slate-500 bg-slate-900/60 border border-slate-800 px-3 py-1 rounded-full">Estilo Oficial A4</span>
+                  <span className="text-[9px] font-black uppercase text-slate-500 bg-slate-900/60 border border-slate-800 px-3 py-1 rounded-full">Cálculo de Média Global</span>
+                  <span className="text-[9px] font-black uppercase text-slate-500 bg-slate-900/60 border border-slate-800 px-3 py-1 rounded-full">Suporte SAT / INSAT</span>
+                </div>
               </div>
-              <div className="flex flex-wrap justify-center gap-2 mt-2">
-                <span className="text-[9px] font-black uppercase text-slate-500 bg-slate-900/60 border border-slate-800 px-3 py-1 rounded-full">Estilo Oficial A4</span>
-                <span className="text-[9px] font-black uppercase text-slate-500 bg-slate-900/60 border border-slate-800 px-3 py-1 rounded-full">Cálculo de Média Global</span>
-                <span className="text-[9px] font-black uppercase text-slate-500 bg-slate-900/60 border border-slate-800 px-3 py-1 rounded-full">Suporte SAT / INSAT</span>
-              </div>
-            </div>
+            )
           ) : loadingTranscript ? (
             <div className="flex-1 bg-slate-900/40 border border-slate-800 rounded-3xl py-32 flex flex-col items-center justify-center gap-3">
               <Loader2 className="animate-spin text-emerald-500" size={32} />
@@ -841,6 +942,26 @@ export default function HistoricoEscolarPage() {
             </div>
           ) : (
             <div className="flex flex-col gap-4">
+              {/* Back to List & Quick Print Toolbar */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 no-print bg-slate-900/40 p-4 rounded-2xl border border-slate-800">
+                <button
+                  onClick={() => setSelectedStudent('')}
+                  className="flex items-center justify-center gap-2 text-xs font-bold text-slate-400 hover:text-white bg-slate-900 border border-slate-800 hover:border-slate-700 px-4 py-2.5 rounded-xl transition-all cursor-pointer"
+                >
+                  <ArrowLeft size={14} className="text-slate-500" />
+                  Voltar para Lista de Aluno
+                </button>
+                <div className="flex items-center gap-2 justify-end">
+                  <button
+                    onClick={handlePrint}
+                    className="flex-1 sm:flex-initial flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-wider px-5 py-2.5 rounded-xl transition-all shadow-lg shadow-emerald-600/20 cursor-pointer"
+                  >
+                    <Printer size={14} />
+                    Imprimir Ficha (PDF)
+                  </button>
+                </div>
+              </div>
+
               {/* Printable Info Alert */}
               <div className="bg-blue-500/10 border border-blue-500/20 text-blue-400 p-4 rounded-2xl flex items-start gap-2.5 text-xs no-print">
                 <Info size={16} className="shrink-0 mt-0.5 text-blue-400" />
