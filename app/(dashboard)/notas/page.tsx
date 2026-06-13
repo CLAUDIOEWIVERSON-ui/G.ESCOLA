@@ -469,7 +469,6 @@ export default function NotasPage() {
                     ))}
                     <th className="px-3 lg:px-6 py-4 text-center bg-blue-50/50 text-blue-900 border-l border-slate-100">{t.reportCard.average}</th>
                     <th className="px-3 lg:px-6 py-4 text-center border-l border-slate-100">{t.reportCard.status}</th>
-                    <th className="px-3 lg:px-6 py-4 text-center border-l border-slate-100">Pgto</th>
                     <th className="px-2 lg:px-6 py-4 border-l border-slate-100 rounded-tr-2xl text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t.common.save}</th>
                   </tr>
                 </thead>
@@ -598,21 +597,6 @@ export default function NotasPage() {
                           )}>
                             {status.label}
                           </span>
-                        </td>
-                        <td className="px-6 py-4 text-center border-l border-slate-100">
-                          <button
-                            onClick={() => togglePago(aluno.id)}
-                            disabled={isReadOnly}
-                            className={cn(
-                              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all border",
-                              gradeData.pago 
-                                ? "bg-green-50 text-green-700 border-green-200 hover:bg-green-100" 
-                                : "bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100 hover:text-slate-700"
-                            )}
-                          >
-                            {gradeData.pago ? <Check size={12} /> : <CreditCard size={12} />}
-                            {gradeData.pago ? t.finance?.paid : t.finance?.pending}
-                          </button>
                         </td>
                         <td className="px-4 py-4 text-right border-l border-slate-100">
                           <button

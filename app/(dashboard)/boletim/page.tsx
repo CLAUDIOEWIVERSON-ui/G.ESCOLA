@@ -1059,7 +1059,7 @@ export default function BoletimPage() {
                                )}
                              </div>
                              <div className="text-[10px] font-mono text-slate-400 tracking-tight">#{row.aluno?.matricula}</div>
-                             {row.pago === false && (
+                             {false && (
                                <div className="text-[9px] font-black text-red-500 uppercase tracking-widest mt-1">{language === 'pt' ? 'Pendente de Pgto.' : 'Payment Pending'}</div>
                              )}
                            </td>
