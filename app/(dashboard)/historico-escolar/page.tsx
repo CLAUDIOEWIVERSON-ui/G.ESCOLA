@@ -245,24 +245,56 @@ export default function HistoricoEscolarPage() {
     const fetchTranscriptInformation = async () => {
       setLoadingTranscript(true);
       try {
-        // Find course info
-        const resCourse = courses.find(c => c.id === selectedCourse);
-        if (resCourse) {
-          setSiglaCurso(resCourse.codigo || '');
+        // Check if there are saved settings for this class in localStorage
+        const savedConfigStr = typeof window !== 'undefined' ? localStorage.getItem(`historico_config_${selectedClass}`) : null;
+        let hasSavedConfig = false;
+
+        if (savedConfigStr) {
+          try {
+            const savedData = JSON.parse(savedConfigStr);
+            if (savedData) {
+              setEstablishment(savedData.establishment || 'GUARDA COSTEIRA');
+              setSiglaCurso(savedData.siglaCurso || '');
+              setTurmaNome(savedData.turmaNome || '');
+              setPeriodText(savedData.periodText || '');
+              setPais(savedData.pais || 'São Tomé e Príncipe');
+              setCidade(savedData.cidade || 'São Tomé');
+              setOfficerName(savedData.officerName || 'MISSÃO DE ASSESSORIA NAVAL');
+              setOfficerTitle(savedData.officerTitle || 'Encarregado da Missão de Assessoria Naval');
+              hasSavedConfig = true;
+            }
+          } catch (e) {
+            console.error('Error parsing saved class config:', e);
+          }
         }
 
-        // Find class info
-        const resClass = classes.find(c => c.id === selectedClass);
-        if (resClass) {
-          setTurmaNome(resClass.nome || '');
-          
-          // Construct formatted dates
-          if (resClass.data_inicio && resClass.data_fim) {
-            const di = new Date(resClass.data_inicio).toLocaleDateString('pt-BR');
-            const df = new Date(resClass.data_fim).toLocaleDateString('pt-BR');
-            setPeriodText(`${di} a ${df}`);
-          } else {
-            setPeriodText(`Ano Letivo de ${resClass.ano}`);
+        if (!hasSavedConfig) {
+          // Fallback to database defaults if no custom settings saved
+          setEstablishment('GUARDA COSTEIRA');
+          setPais('São Tomé e Príncipe');
+          setCidade('São Tomé');
+          setOfficerName('MISSÃO DE ASSESSORIA NAVAL');
+          setOfficerTitle('Encarregado da Missão de Assessoria Naval');
+
+          // Find course info
+          const resCourse = courses.find(c => c.id === selectedCourse);
+          if (resCourse) {
+            setSiglaCurso(resCourse.codigo || '');
+          }
+
+          // Find class info
+          const resClass = classes.find(c => c.id === selectedClass);
+          if (resClass) {
+            setTurmaNome(resClass.nome || '');
+            
+            // Construct formatted dates
+            if (resClass.data_inicio && resClass.data_fim) {
+              const di = new Date(resClass.data_inicio).toLocaleDateString('pt-BR');
+              const df = new Date(resClass.data_fim).toLocaleDateString('pt-BR');
+              setPeriodText(`${di} a ${df}`);
+            } else {
+              setPeriodText(`Ano Letivo de ${resClass.ano}`);
+            }
           }
         }
 
@@ -405,6 +437,41 @@ export default function HistoricoEscolarPage() {
       window.print();
     } catch (err) {
       console.error('Print failure:', err);
+    }
+  };
+
+  // Save school history class-wide config parameters to localStorage
+  const handleSaveClassConfig = () => {
+    if (!selectedClass) {
+      toast.warning(language === 'pt' ? 'Selecione uma turma primeiro.' : 'Select a class first.');
+      return;
+    }
+    try {
+      const configData = {
+        establishment,
+        siglaCurso,
+        turmaNome,
+        periodText,
+        pais,
+        cidade,
+        officerName,
+        officerTitle,
+        savedAt: new Date().toISOString()
+      };
+      
+      localStorage.setItem(`historico_config_${selectedClass}`, JSON.stringify(configData));
+      toast.success(
+        language === 'pt' 
+          ? 'Dados gerais da turma salvos com sucesso!' 
+          : 'General class config saved successfully!'
+      );
+    } catch (err) {
+      console.error('Error saving class config:', err);
+      toast.error(
+        language === 'pt' 
+          ? 'Erro ao salvar a configuração da turma.' 
+          : 'Error saving class configuration.'
+      );
     }
   };
 
@@ -676,6 +743,16 @@ export default function HistoricoEscolarPage() {
                   </p>
                 </div>
               )}
+
+              {/* Botão Salvar para persistir os dados gerais da turma */}
+              <button
+                type="button"
+                onClick={handleSaveClassConfig}
+                className="w-full bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/30 hover:border-emerald-500 font-extrabold text-[10px] uppercase tracking-wider py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer mt-3"
+              >
+                <Check size={12} />
+                {language === 'pt' ? 'Salvar Configuração da Turma' : 'Save Class Config'}
+              </button>
             </div>
           )}
 
@@ -771,11 +848,39 @@ export default function HistoricoEscolarPage() {
                   @media print {
                     @page {
                       size: A4;
-                      margin: 15mm;
+                      margin: 0 !important;
                     }
-                    body {
+                    html, body {
                       background: white !important;
                       color: black !important;
+                      margin: 0 !important;
+                      padding: 0 !important;
+                      width: 100% !important;
+                      height: auto !important;
+                    }
+                    /* Reset ALL layout wrapper margins, paddings, and background colors to prevent offsets */
+                    main, 
+                    main div,
+                    div.min-h-screen, 
+                    div.flex, 
+                    div.flex-1, 
+                    div.max-w-5xl,
+                    .flex-col,
+                    [role="main"] {
+                      padding: 0 !important;
+                      margin: 0 !important;
+                      min-height: 0 !important;
+                      height: auto !important;
+                      border: none !important;
+                      box-shadow: none !important;
+                      background: transparent !important;
+                    }
+                    /* Hide non-print elements */
+                    .no-print, header, aside, nav, footer, button, .alert {
+                      display: none !important;
+                      width: 0 !important;
+                      height: 0 !important;
+                      overflow: hidden !important;
                     }
                     body * {
                       visibility: hidden !important;
@@ -784,20 +889,20 @@ export default function HistoricoEscolarPage() {
                       visibility: visible !important;
                     }
                     #historico-print-area {
-                      position: absolute !important;
+                      display: flex !important;
+                      flex-direction: column !important;
+                      position: relative !important;
                       left: 0 !important;
                       top: 0 !important;
-                      width: 100% !important;
-                      max-width: 100% !important;
-                      min-height: 100% !important;
+                      width: 210mm !important;
+                      min-height: 297mm !important;
+                      box-sizing: border-box !important;
                       border: none !important;
+                      border-radius: 0 !important;
                       box-shadow: none !important;
-                      padding: 0 !important;
-                      margin: 0 !important;
+                      padding: 15mm !important;
+                      margin: 0 auto !important;
                       background-color: #ffffff !important;
-                    }
-                    .no-print {
-                      display: none !important;
                     }
                   }
                 `}} />
