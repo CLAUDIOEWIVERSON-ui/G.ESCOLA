@@ -357,12 +357,38 @@ export default function HistoricoEscolarPage() {
     let countNumericGrades = 0;
     const list: any[] = [];
 
-    for (let i = 0; i < courseDisciplines.length; i++) {
-      const d = courseDisciplines[i];
-      // Find grades. Prefer matching the selected class, otherwise fall back to any grade for the student in that discipline.
-      const gradeObj = (studentGrades || []).find(g => g.disciplina_id === d.id && g.turma_id === selectedClass) 
+    // Sort course disciplines to ensure proper matching order (logical progression)
+    const sortedDiscs = [...courseDisciplines].sort((a, b) => {
+      const mDiff = (a.modulo_index || 0) - (b.modulo_index || 0);
+      if (mDiff !== 0) return mDiff;
+      return (a.codigo || '').localeCompare(b.codigo || '', undefined, { numeric: true, sensitivity: 'base' })
+          || a.nome.localeCompare(b.nome);
+    });
+
+    for (let i = 0; i < sortedDiscs.length; i++) {
+      const d = sortedDiscs[i];
+      
+      // Module number is 1-based (i + 1)
+      const moduleNum = i + 1;
+
+      // Find grade record for this exact discipline (fallback/non-unified)
+      const directGradeObj = (studentGrades || []).find(g => g.disciplina_id === d.id && g.turma_id === selectedClass) 
                     || (studentGrades || []).find(g => g.disciplina_id === d.id);
-      const originalValue = gradeObj ? gradeObj.nota_final : null;
+
+      // Find modular grade in the FIRST discipline grade record (modular unified columns)
+      const firstDisc = sortedDiscs[0];
+      const firstGradeObj = firstDisc ? (
+        (studentGrades || []).find(g => g.disciplina_id === firstDisc.id && g.turma_id === selectedClass) ||
+        (studentGrades || []).find(g => g.disciplina_id === firstDisc.id)
+      ) : null;
+
+      let originalValue: number | null = null;
+
+      if (firstGradeObj && firstGradeObj[`nota${moduleNum}`] !== null && firstGradeObj[`nota${moduleNum}`] !== undefined && firstGradeObj[`nota${moduleNum}`] !== '') {
+        originalValue = Number(firstGradeObj[`nota${moduleNum}`]);
+      } else if (directGradeObj && directGradeObj.nota_final !== null && directGradeObj.nota_final !== undefined) {
+        originalValue = Number(directGradeObj.nota_final);
+      }
       
       let displayGrade = '-';
       let numericVal: number | null = null;

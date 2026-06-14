@@ -571,11 +571,37 @@ export default function BoletimPage() {
                         return a.nome.localeCompare(b.nome);
                       });
 
-                      sortedDisciplines.forEach((disc: any) => {
+                      sortedDisciplines.forEach((disc: any, discIdx: number) => {
                         const discTopics = (reportData.topics || []).filter((t: any) => t.disciplina_id === disc.id);
-                        const grade = reportData.grades.find((g: any) => g.disciplina_id === disc.id);
-                        const finalGradeValue = grade ? grade.nota_final : null;
-                        const freqValue = grade ? grade.frequencia : null;
+                        
+                        // Check if modular unified grades are entered under the first discipline
+                        const firstDisc = sortedDisciplines[0];
+                        const firstGrade = firstDisc ? reportData.grades.find((g: any) => g.disciplina_id === firstDisc.id) : null;
+                        const moduleNum = disc.modulo_index || (discIdx + 1);
+
+                        let finalGradeValue = null;
+                        if (firstGrade && moduleNum !== null) {
+                          const modularGradeValue = firstGrade[`nota${moduleNum}`];
+                          if (modularGradeValue !== null && modularGradeValue !== undefined && modularGradeValue !== '') {
+                            finalGradeValue = Number(modularGradeValue);
+                          }
+                        }
+
+                        // Fallback to direct discipline final grade
+                        if (finalGradeValue === null) {
+                          const directGrade = reportData.grades.find((g: any) => g.disciplina_id === disc.id);
+                          finalGradeValue = directGrade ? directGrade.nota_final : null;
+                        }
+
+                        // Determine frequency value, falling back to firstGrade if needed
+                        let freqValue = null;
+                        if (firstGrade && firstGrade.frequencia !== null && firstGrade.frequencia !== undefined) {
+                          freqValue = firstGrade.frequencia;
+                        } else {
+                          const directGrade = reportData.grades.find((g: any) => g.disciplina_id === disc.id);
+                          freqValue = directGrade ? directGrade.frequencia : null;
+                        }
+
                         const finalGradeFormatted = finalGradeValue !== null && finalGradeValue !== undefined ? Number(finalGradeValue).toFixed(1) : '-';
 
                         let statusLabel = '';
@@ -1260,19 +1286,43 @@ export default function BoletimPage() {
                                   {(() => {
                                     const reportRows = (() => {
                                       const rows: any[] = [];
-                                      if (!reportData || !reportData.disciplines) return [];
-                                      
-                                      const sortedDisciplines = [...reportData.disciplines].sort((a: any, b: any) => {
+                                                                         const sortedDisciplines = [...reportData.disciplines].sort((a: any, b: any) => {
                                         const mDiff = (a.modulo_index || 1) - (b.modulo_index || 1);
                                         if (mDiff !== 0) return mDiff;
                                         return a.nome.localeCompare(b.nome);
                                       });
-
-                                      sortedDisciplines.forEach((disc: any) => {
+ 
+                                      sortedDisciplines.forEach((disc: any, discIdx: number) => {
                                         const discTopics = (reportData.topics || []).filter((t: any) => t.disciplina_id === disc.id);
-                                        const grade = reportData.grades.find((g: any) => g.disciplina_id === disc.id);
-                                        const finalGradeValue = grade ? grade.nota_final : null;
-                                        const freqValue = grade ? grade.frequencia : null;
+                                        
+                                        // Check if modular unified grades are entered under the first discipline
+                                        const firstDisc = sortedDisciplines[0];
+                                        const firstGrade = firstDisc ? reportData.grades.find((g: any) => g.disciplina_id === firstDisc.id) : null;
+                                        const moduleNum = disc.modulo_index || (discIdx + 1);
+
+                                        let finalGradeValue = null;
+                                        if (firstGrade && moduleNum !== null) {
+                                          const modularGradeValue = firstGrade[`nota${moduleNum}`];
+                                          if (modularGradeValue !== null && modularGradeValue !== undefined && modularGradeValue !== '') {
+                                            finalGradeValue = Number(modularGradeValue);
+                                          }
+                                        }
+
+                                        // Fallback to direct discipline final grade
+                                        if (finalGradeValue === null) {
+                                          const directGrade = reportData.grades.find((g: any) => g.disciplina_id === disc.id);
+                                          finalGradeValue = directGrade ? directGrade.nota_final : null;
+                                        }
+
+                                        // Determine frequency value, falling back to firstGrade if needed
+                                        let freqValue = null;
+                                        if (firstGrade && firstGrade.frequencia !== null && firstGrade.frequencia !== undefined) {
+                                          freqValue = firstGrade.frequencia;
+                                        } else {
+                                          const directGrade = reportData.grades.find((g: any) => g.disciplina_id === disc.id);
+                                          freqValue = directGrade ? directGrade.frequencia : null;
+                                        }
+
                                         const finalGradeFormatted = finalGradeValue !== null && finalGradeValue !== undefined ? Number(finalGradeValue).toFixed(1) : '-';
 
                                         let statusLabel = '';
