@@ -248,69 +248,63 @@ export default function HistoricoEscolarPage() {
     const fetchTranscriptInformation = async () => {
       setLoadingTranscript(true);
       try {
-        // Check if there are saved settings for this class in localStorage
         const savedConfigStr = typeof window !== 'undefined' ? localStorage.getItem(`historico_config_${selectedClass}`) : null;
-        let hasSavedConfig = false;
 
-        if (savedConfigStr) {
-          try {
-            const savedData = JSON.parse(savedConfigStr);
-            if (savedData) {
-              setEstablishment(savedData.establishment || 'GUARDA COSTEIRA');
-              const courseDefaultSigla = courses.find(c => c.id === selectedCourse)?.codigo || '';
-              setSiglaCurso(savedData.siglaCurso || courseDefaultSigla);
-              setTurmaNome(savedData.turmaNome || '');
-              setPeriodText(savedData.periodText || '');
-              setPais(savedData.pais || 'São Tomé e Príncipe');
-              setCidade(savedData.cidade || 'São Tomé');
-              setOfficerName(savedData.officerName || 'MISSÃO DE ASSESSORIA NAVAL');
-              setOfficerRank(savedData.officerRank || 'Capitão-Tenente');
-              setOfficerTitle(savedData.officerTitle || 'Encarregado da Missão de Assessoria Naval');
-              hasSavedConfig = true;
-            }
-          } catch (e) {
-            console.error('Error parsing saved class config:', e);
-          }
+        // Always extract academic data automatically from database objects (Turma & Curso)
+        setEstablishment('GUARDA COSTEIRA');
+        setPais('São Tomé e Príncipe');
+        setCidade('São Tomé');
+
+        // Find course info from database state
+        const resCourse = courses.find(c => c.id === selectedCourse);
+        if (resCourse) {
+          setSiglaCurso(resCourse.codigo || '');
+        } else {
+          setSiglaCurso('');
         }
 
-        if (!hasSavedConfig) {
-          // Fallback to database defaults if no custom settings saved
-          setEstablishment('GUARDA COSTEIRA');
-          setPais('São Tomé e Príncipe');
-          setCidade('São Tomé');
-          setOfficerName('MISSÃO DE ASSESSORIA NAVAL');
-          setOfficerRank('Capitão-Tenente');
-          setOfficerTitle('Encarregado da Missão de Assessoria Naval');
-
-          // Find course info
-          const resCourse = courses.find(c => c.id === selectedCourse);
-          if (resCourse) {
-            setSiglaCurso(resCourse.codigo || '');
+        // Find class info from database state
+        const resClass = classes.find(c => c.id === selectedClass);
+        if (resClass) {
+          setTurmaNome(resClass.nome || '');
+          
+          if (resClass.data_inicio && resClass.data_fim) {
+            const di = new Date(resClass.data_inicio).toLocaleDateString('pt-BR');
+            const df = new Date(resClass.data_fim).toLocaleDateString('pt-BR');
+            setPeriodText(`${di} a ${df}`);
+          } else {
+            setPeriodText(`Ano Letivo de ${resClass.ano}`);
           }
-
-          // Find class info
-          const resClass = classes.find(c => c.id === selectedClass);
-          if (resClass) {
-            setTurmaNome(resClass.nome || '');
-            
-            // Construct formatted dates
-            if (resClass.data_inicio && resClass.data_fim) {
-              const di = new Date(resClass.data_inicio).toLocaleDateString('pt-BR');
-              const df = new Date(resClass.data_fim).toLocaleDateString('pt-BR');
-              setPeriodText(`${di} a ${df}`);
-            } else {
-              setPeriodText(`Ano Letivo de ${resClass.ano}`);
-            }
-          }
+        } else {
+          setTurmaNome('');
+          setPeriodText('');
         }
 
-        // Default expediting date (today)
+        // Default expediting date is always computed automatically to today's date
         const today = new Date().toLocaleDateString('pt-BR', {
           day: '2-digit',
           month: '2-digit',
           year: 'numeric'
         });
         setDataExpedicao(today);
+
+        // Load signature configurations from localStorage if they exist (customizable per class)
+        setOfficerName('MISSÃO DE ASSESSORIA NAVAL');
+        setOfficerRank('Capitão-Tenente');
+        setOfficerTitle('Encarregado da Missão de Assessoria Naval');
+
+        if (savedConfigStr) {
+          try {
+            const savedData = JSON.parse(savedConfigStr);
+            if (savedData) {
+              if (savedData.officerName) setOfficerName(savedData.officerName);
+              if (savedData.officerRank !== undefined) setOfficerRank(savedData.officerRank);
+              if (savedData.officerTitle) setOfficerTitle(savedData.officerTitle);
+            }
+          } catch (e) {
+            console.error('Error parsing saved class config:', e);
+          }
+        }
 
         // Fetch disciplines/modules
         const { data: dData, error: dErr } = await supabase
@@ -658,79 +652,39 @@ export default function HistoricoEscolarPage() {
 
               {editingConfig ? (
                 <div className="flex flex-col gap-3.5 mt-1">
-                  <div className="flex flex-col gap-1">
-                    <span className="text-[9px] font-bold uppercase text-slate-400">Estabelecimento</span>
-                    <input 
-                      type="text" 
-                      value={establishment} 
-                      onChange={e => setEstablishment(e.target.value)} 
-                      className="bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white uppercase"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="flex flex-col gap-1">
-                      <span className="text-[9px] font-bold uppercase text-slate-400">Sigla Curso</span>
-                      <input 
-                        type="text" 
-                        value={siglaCurso} 
-                        onChange={e => setSiglaCurso(e.target.value)} 
-                        className="bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white uppercase"
-                      />
+                  {/* Informational read-only section of extracted data */}
+                  <div className="p-3 bg-slate-950/40 rounded-xl border border-slate-800/40 flex flex-col gap-2 text-[11px] text-slate-400">
+                    <span className="text-[10px] font-black uppercase text-emerald-500 tracking-wider flex items-center gap-1 leading-none">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      Dados Acadêmicos Extraídos
+                    </span>
+                    <div className="flex justify-between border-b border-slate-900 pb-1 mt-1">
+                      <span className="font-bold">Local:</span>
+                      <span className="uppercase text-slate-300 font-mono">{establishment}</span>
                     </div>
-                    <div className="flex flex-col gap-1">
-                      <span className="text-[9px] font-bold uppercase text-slate-400">Turma</span>
-                      <input 
-                        type="text" 
-                        value={turmaNome} 
-                        onChange={e => setTurmaNome(e.target.value)} 
-                        className="bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white uppercase"
-                      />
+                    <div className="flex justify-between border-b border-slate-900 pb-1">
+                      <span className="font-bold">Sigla do Curso:</span>
+                      <span className="uppercase text-slate-300 font-mono font-bold text-emerald-400">{siglaCurso || 'Não definida'}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-slate-900 pb-1">
+                      <span className="font-bold">Turma:</span>
+                      <span className="uppercase text-slate-300 font-bold">{turmaNome || 'Não definida'}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-slate-900 pb-1">
+                      <span className="font-bold">Período:</span>
+                      <span className="text-slate-300">{periodText || 'Não definido'}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-slate-900 pb-0.5">
+                      <span className="font-bold">Expedição:</span>
+                      <span className="text-slate-300 font-mono">{dataExpedicao}</span>
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-1">
-                    <span className="text-[9px] font-bold uppercase text-slate-400">Período</span>
-                    <input 
-                      type="text" 
-                      value={periodText} 
-                      onChange={e => setPeriodText(e.target.value)} 
-                      className="bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="flex flex-col gap-1">
-                      <span className="text-[9px] font-bold uppercase text-slate-400">País</span>
-                      <input 
-                        type="text" 
-                        value={pais} 
-                        onChange={e => setPais(e.target.value)} 
-                        className="bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <span className="text-[9px] font-bold uppercase text-slate-400">Cidade</span>
-                      <input 
-                        type="text" 
-                        value={cidade} 
-                        onChange={e => setCidade(e.target.value)} 
-                        className="bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-1">
-                    <span className="text-[9px] font-bold uppercase text-slate-400">Data Expedição</span>
-                    <input 
-                      type="text" 
-                      value={dataExpedicao} 
-                      onChange={e => setDataExpedicao(e.target.value)} 
-                      className="bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
-                    />
-                  </div>
-
-                  <div className="border-t border-slate-800/80 pt-2 flex flex-col gap-2">
+                  {/* Editable Signature Block */}
+                  <div className="border-t border-slate-800/80 pt-2.5 flex flex-col gap-2.5">
+                    <span className="text-[10px] font-black uppercase text-slate-300 tracking-wider">
+                      Campos de Assinatura (Editáveis)
+                    </span>
                     <div className="flex flex-col gap-1">
                       <span className="text-[9px] font-bold uppercase text-slate-400">Assinatura Nome</span>
                       <input 
@@ -738,6 +692,7 @@ export default function HistoricoEscolarPage() {
                         value={officerName} 
                         onChange={e => setOfficerName(e.target.value)} 
                         className="bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
+                        placeholder="Nome do Oficinal / Responsável"
                       />
                     </div>
                     <div className="flex flex-col gap-1">
@@ -747,6 +702,7 @@ export default function HistoricoEscolarPage() {
                         value={officerRank} 
                         onChange={e => setOfficerRank(e.target.value)} 
                         className="bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
+                        placeholder="Ex: Capitão-Tenente"
                       />
                     </div>
                     <div className="flex flex-col gap-1">
@@ -756,6 +712,7 @@ export default function HistoricoEscolarPage() {
                         value={officerTitle} 
                         onChange={e => setOfficerTitle(e.target.value)} 
                         className="bg-slate-950 border border-slate-800 rounded-lg p-2 text-[10px] text-white"
+                        placeholder="Ex: Encarregado de Missão"
                       />
                     </div>
                   </div>
@@ -791,52 +748,8 @@ export default function HistoricoEscolarPage() {
                 className="w-full bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/30 hover:border-emerald-500 font-extrabold text-[10px] uppercase tracking-wider py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer mt-3"
               >
                 <Check size={12} />
-                {language === 'pt' ? 'Salvar Configuração da Turma' : 'Save Class Config'}
+                {language === 'pt' ? 'Salvar Assinatura da Turma' : 'Save Signature Config'}
               </button>
-            </div>
-          )}
-
-          {/* Qualitative checklist config */}
-          {selectedStudent && courseDisciplines.length > 0 && (
-            <div className="bg-slate-900/60 border border-slate-800/70 p-5 rounded-2xl flex flex-col gap-2.5 backdrop-blur-md">
-              <h3 className="text-xs font-black text-slate-200 uppercase tracking-wider border-b border-slate-800 pb-2">
-                Ajuste de Avaliação (SAT)
-              </h3>
-              <p className="text-[10px] text-slate-400 leading-relaxed mb-1">
-                Selecione as disciplinas que utilizam avaliação qualitativa e devem exibir <strong>SAT</strong> em vez da nota numérica (elas serão excluídas da média final).
-              </p>
-              <div className="max-h-56 overflow-y-auto space-y-1.5 pr-2 custom-scrollbar">
-                {courseDisciplines.map(d => {
-                  const isChecked = customGradesOverride[d.id] === 'SAT';
-                  return (
-                    <label 
-                      key={d.id} 
-                      className={cn(
-                        "flex items-center gap-2 p-2 rounded-lg border text-left cursor-pointer transition-colors text-[11px]",
-                        isChecked 
-                          ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
-                          : "bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-300"
-                      )}
-                    >
-                      <input 
-                        type="checkbox" 
-                        checked={isChecked}
-                        onChange={(e) => {
-                          setCustomGradesOverride(prev => ({
-                            ...prev,
-                            [d.id]: e.target.checked ? 'SAT' : 'numeric'
-                          }));
-                        }}
-                        className="rounded accent-emerald-500 shrink-0 cursor-pointer"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-bold truncate" title={d.nome}>{d.nome}</p>
-                        <span className="text-[9px] font-mono text-slate-500 select-none uppercase">{d.codigo}</span>
-                      </div>
-                    </label>
-                  );
-                })}
-              </div>
             </div>
           )}
         </div>
