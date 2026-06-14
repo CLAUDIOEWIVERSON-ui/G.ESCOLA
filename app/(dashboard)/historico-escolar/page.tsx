@@ -248,14 +248,12 @@ export default function HistoricoEscolarPage() {
     const fetchTranscriptInformation = async () => {
       setLoadingTranscript(true);
       try {
-        const savedConfigStr = typeof window !== 'undefined' ? localStorage.getItem(`historico_config_${selectedClass}`) : null;
-
-        // Always extract academic data automatically from database objects (Turma & Curso)
+        // Extracted attributes are always read dynamically from database configuration and today's date
         setEstablishment('GUARDA COSTEIRA');
         setPais('São Tomé e Príncipe');
         setCidade('São Tomé');
 
-        // Find course info from database state
+        // Extract class and course info dynamically
         const resCourse = courses.find(c => c.id === selectedCourse);
         if (resCourse) {
           setSiglaCurso(resCourse.codigo || '');
@@ -263,11 +261,9 @@ export default function HistoricoEscolarPage() {
           setSiglaCurso('');
         }
 
-        // Find class info from database state
         const resClass = classes.find(c => c.id === selectedClass);
         if (resClass) {
           setTurmaNome(resClass.nome || '');
-          
           if (resClass.data_inicio && resClass.data_fim) {
             const di = new Date(resClass.data_inicio).toLocaleDateString('pt-BR');
             const df = new Date(resClass.data_fim).toLocaleDateString('pt-BR');
@@ -280,7 +276,7 @@ export default function HistoricoEscolarPage() {
           setPeriodText('');
         }
 
-        // Default expediting date is always computed automatically to today's date
+        // Today's Date dynamically computed
         const today = new Date().toLocaleDateString('pt-BR', {
           day: '2-digit',
           month: '2-digit',
@@ -288,11 +284,13 @@ export default function HistoricoEscolarPage() {
         });
         setDataExpedicao(today);
 
-        // Load signature configurations from localStorage if they exist (customizable per class)
+        // Signatures are fully customizable and saved per class, set standard defaults first
         setOfficerName('MISSÃO DE ASSESSORIA NAVAL');
         setOfficerRank('Capitão-Tenente');
         setOfficerTitle('Encarregado da Missão de Assessoria Naval');
 
+        // Check if there are saved settings for this class in localStorage (just for signatures!)
+        const savedConfigStr = typeof window !== 'undefined' ? localStorage.getItem(`historico_config_${selectedClass}`) : null;
         if (savedConfigStr) {
           try {
             const savedData = JSON.parse(savedConfigStr);
@@ -322,43 +320,14 @@ export default function HistoricoEscolarPage() {
         
         setCourseDisciplines(sortedDisciplines);
 
-        // Fetch students grades
+        // Fetch student's grades of all their enrollments/history to avoid mismatching turma_id
         const { data: nData, error: nErr } = await supabase
           .from('notas')
           .select('*')
-          .eq('aluno_id', selectedStudent)
-          .eq('turma_id', selectedClass);
+          .eq('aluno_id', selectedStudent);
 
         if (nErr) throw nErr;
         setStudentGrades(nData || []);
-
-        // Pre-configure override options for specific qualitative classes (like physical education, onboard practices, order unida)
-        const initialOverrides: Record<string, string> = {};
-        sortedDisciplines.forEach(d => {
-          const lName = d.nome.toLowerCase();
-          const lCode = (d.codigo || '').toLowerCase();
-          
-          const gradeObj = (nData || []).find(g => g.disciplina_id === d.id);
-          const hasNumericGrade = gradeObj && gradeObj.nota_final !== null && gradeObj.nota_final !== undefined;
-
-          // Auto-classify common physical/practical classes to default to SAT ONLY IF they do not have a numeric grade launched!
-          if (
-            !hasNumericGrade && (
-              lName.includes('físico') || 
-              lName.includes('tfm') || 
-              lName.includes('prática') || 
-              lName.includes('bordo') || 
-              lName.includes('ordem unida') || 
-              lName.includes('comportamento') ||
-              lCode.includes('tfm')
-            )
-          ) {
-            initialOverrides[d.id] = 'SAT';
-          } else {
-            initialOverrides[d.id] = 'numeric';
-          }
-        });
-        setCustomGradesOverride(initialOverrides);
 
       } catch (err) {
         console.error('Error fetching academic transcript details:', err);
@@ -390,25 +359,20 @@ export default function HistoricoEscolarPage() {
 
     for (let i = 0; i < courseDisciplines.length; i++) {
       const d = courseDisciplines[i];
-      const gradeObj = studentGrades.find(g => g.disciplina_id === d.id);
+      // Find grades. Prefer matching the selected class, otherwise fall back to any grade for the student in that discipline.
+      const gradeObj = (studentGrades || []).find(g => g.disciplina_id === d.id && g.turma_id === selectedClass) 
+                    || (studentGrades || []).find(g => g.disciplina_id === d.id);
       const originalValue = gradeObj ? gradeObj.nota_final : null;
       
-      const overrideVal = customGradesOverride[d.id];
       let displayGrade = '-';
       let numericVal: number | null = null;
 
-      if (overrideVal === 'SAT') {
-        const isPassed = originalValue === null || originalValue >= config.media_aprovacao;
-        displayGrade = isPassed ? 'SAT' : 'INSAT';
-      } else if (overrideVal === 'custom') {
-        displayGrade = 'SAT';
-      } else {
-        if (originalValue !== null && originalValue !== undefined) {
-          numericVal = Number(originalValue);
-          displayGrade = numericVal.toFixed(2).replace('.', ',');
-          sumNumericGrades += numericVal;
-          countNumericGrades++;
-        }
+      if (originalValue !== null && originalValue !== undefined) {
+        numericVal = Number(originalValue);
+        // Synchronized with bulletin exactly to 1 decimal place with PT-BR comma formatting
+        displayGrade = numericVal.toFixed(1).replace('.', ',');
+        sumNumericGrades += numericVal;
+        countNumericGrades++;
       }
 
       totalWorkload += d.carga_horaria || 0;
@@ -420,7 +384,7 @@ export default function HistoricoEscolarPage() {
         carga_horaria: d.carga_horaria || 0,
         gradeValue: originalValue,
         displayGrade,
-        isQualitative: overrideVal === 'SAT' || overrideVal === 'custom',
+        isQualitative: false,
         numericVal
       });
     }
@@ -432,7 +396,7 @@ export default function HistoricoEscolarPage() {
       totalWorkload,
       calculatedAverage
     };
-  }, [courseDisciplines, studentGrades, customGradesOverride, config]);
+  }, [courseDisciplines, studentGrades, selectedClass]);
 
   // Auto-trigger printing when loading completes for autoTriggerPrint state
   useEffect(() => {
@@ -638,117 +602,87 @@ export default function HistoricoEscolarPage() {
           {selectedStudent && (
             <div className="bg-slate-900/60 border border-slate-800/70 p-5 rounded-2xl flex flex-col gap-4 backdrop-blur-md">
               <div className="flex justify-between items-center border-b border-slate-800 pb-2">
-                <h3 className="text-xs font-black text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+                <h3 className="text-xs font-black text-slate-200 uppercase tracking-wider flex items-center gap-1.5 animate-pulse">
                   <SettingsIcon size={14} className="text-emerald-500" />
-                  Dados do Documento
+                  Assinatura do Documento
                 </h3>
-                <button 
-                  onClick={() => setEditingConfig(!editingConfig)}
-                  className="text-[10px] font-bold text-emerald-400 hover:text-emerald-300 uppercase shrink-0 px-2 py-1 bg-emerald-500/10 rounded-md transition-colors"
-                >
-                  {editingConfig ? 'Ocultar' : 'Ajustar'}
-                </button>
+                <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full uppercase tracking-wider select-none">
+                  Sincronizado
+                </span>
               </div>
 
-              {editingConfig ? (
-                <div className="flex flex-col gap-3.5 mt-1">
-                  {/* Informational read-only section of extracted data */}
-                  <div className="p-3 bg-slate-950/40 rounded-xl border border-slate-800/40 flex flex-col gap-2 text-[11px] text-slate-400">
-                    <span className="text-[10px] font-black uppercase text-emerald-500 tracking-wider flex items-center gap-1 leading-none">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                      Dados Acadêmicos Extraídos
-                    </span>
-                    <div className="flex justify-between border-b border-slate-900 pb-1 mt-1">
-                      <span className="font-bold">Local:</span>
-                      <span className="uppercase text-slate-300 font-mono">{establishment}</span>
-                    </div>
-                    <div className="flex justify-between border-b border-slate-900 pb-1">
-                      <span className="font-bold">Sigla do Curso:</span>
-                      <span className="uppercase text-slate-300 font-mono font-bold text-emerald-400">{siglaCurso || 'Não definida'}</span>
-                    </div>
-                    <div className="flex justify-between border-b border-slate-900 pb-1">
-                      <span className="font-bold">Turma:</span>
-                      <span className="uppercase text-slate-300 font-bold">{turmaNome || 'Não definida'}</span>
-                    </div>
-                    <div className="flex justify-between border-b border-slate-900 pb-1">
-                      <span className="font-bold">Período:</span>
-                      <span className="text-slate-300">{periodText || 'Não definido'}</span>
-                    </div>
-                    <div className="flex justify-between border-b border-slate-900 pb-0.5">
-                      <span className="font-bold">Expedição:</span>
-                      <span className="text-slate-300 font-mono">{dataExpedicao}</span>
-                    </div>
-                  </div>
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-1">
+                  <span className="text-[9px] font-bold uppercase text-slate-400">Nome do Oficial</span>
+                  <input 
+                    type="text" 
+                    value={officerName} 
+                    onChange={e => setOfficerName(e.target.value)} 
+                    className="bg-slate-950 border border-slate-800 focus:border-slate-700 rounded-lg p-2.5 text-xs text-white"
+                    placeholder="Ex: MISSÃO DE ASSESSORIA NAVAL"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-[9px] font-bold uppercase text-slate-400">Posto / Patente</span>
+                  <input 
+                    type="text" 
+                    value={officerRank} 
+                    onChange={e => setOfficerRank(e.target.value)} 
+                    className="bg-slate-950 border border-slate-800 focus:border-slate-700 rounded-lg p-2.5 text-xs text-white"
+                    placeholder="Ex: Capitão-Tenente"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-[9px] font-bold uppercase text-slate-400">Cargo do Assinante</span>
+                  <input 
+                    type="text" 
+                    value={officerTitle} 
+                    onChange={e => setOfficerTitle(e.target.value)} 
+                    className="bg-slate-950 border border-slate-800 focus:border-slate-700 rounded-lg p-2.5 text-xs text-white"
+                    placeholder="Ex: Encarregado da Missão de Assessoria Naval"
+                  />
+                </div>
+              </div>
 
-                  {/* Editable Signature Block */}
-                  <div className="border-t border-slate-800/80 pt-2.5 flex flex-col gap-2.5">
-                    <span className="text-[10px] font-black uppercase text-slate-300 tracking-wider">
-                      Campos de Assinatura (Editáveis)
-                    </span>
-                    <div className="flex flex-col gap-1">
-                      <span className="text-[9px] font-bold uppercase text-slate-400">Assinatura Nome</span>
-                      <input 
-                        type="text" 
-                        value={officerName} 
-                        onChange={e => setOfficerName(e.target.value)} 
-                        className="bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
-                        placeholder="Nome do Oficinal / Responsável"
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <span className="text-[9px] font-bold uppercase text-slate-400">Assinatura Posto / Patente</span>
-                      <input 
-                        type="text" 
-                        value={officerRank} 
-                        onChange={e => setOfficerRank(e.target.value)} 
-                        className="bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white"
-                        placeholder="Ex: Capitão-Tenente"
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <span className="text-[9px] font-bold uppercase text-slate-400">Assinatura Cargo</span>
-                      <input 
-                        type="text" 
-                        value={officerTitle} 
-                        onChange={e => setOfficerTitle(e.target.value)} 
-                        className="bg-slate-950 border border-slate-800 rounded-lg p-2 text-[10px] text-white"
-                        placeholder="Ex: Encarregado de Missão"
-                      />
-                    </div>
+              {/* Informational Read-Only Extracted Data Block */}
+              <div className="border-t border-slate-800/80 pt-3 flex flex-col gap-2">
+                <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Dados Extraídos Automaticamente</span>
+                <div className="grid grid-cols-1 gap-1.5 text-[10px] text-slate-400 bg-slate-950/40 p-3 rounded-xl border border-slate-800/50">
+                  <div className="flex justify-between border-b border-slate-900 pb-1">
+                    <span className="font-semibold text-slate-500">Estabelecimento:</span>
+                    <span className="font-bold text-slate-300 uppercase">{establishment}</span>
+                  </div>
+                  <div className="flex justify-between border-b border-slate-900 pb-1">
+                    <span className="font-semibold text-slate-500">Sigla do Curso:</span>
+                    <span className="font-mono font-bold text-emerald-400 uppercase">{siglaCurso || '-'}</span>
+                  </div>
+                  <div className="flex justify-between border-b border-slate-900 pb-1">
+                    <span className="font-semibold text-slate-500">Turma:</span>
+                    <span className="font-bold text-slate-300 uppercase">{turmaNome || '-'}</span>
+                  </div>
+                  <div className="flex justify-between border-b border-slate-900 pb-1">
+                    <span className="font-semibold text-slate-500">Período:</span>
+                    <span className="font-bold text-slate-300">{periodText || '-'}</span>
+                  </div>
+                  <div className="flex justify-between border-b border-slate-900 pb-1">
+                    <span className="font-semibold text-slate-500">Data de Expedição:</span>
+                    <span className="font-bold text-slate-300">{dataExpedicao || '-'}</span>
+                  </div>
+                  <div className="flex justify-between pt-0.5">
+                    <span className="font-semibold text-slate-500">Média Geral:</span>
+                    <span className="text-emerald-400 font-extrabold">{processedGrades.calculatedAverage !== null ? processedGrades.calculatedAverage.toFixed(1).replace('.', ',') : '-'} / {config.nota_maxima}</span>
                   </div>
                 </div>
-              ) : (
-                <div className="flex flex-col gap-2 mt-1 text-[11px] text-slate-400 leading-normal bg-slate-950/40 p-3 rounded-xl border border-slate-800/50">
-                  <div className="flex justify-between border-b border-slate-900 pb-1">
-                    <span className="font-bold">Local:</span>
-                    <span>{establishment}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-slate-900 pb-1">
-                    <span className="font-bold">Sigla:</span>
-                    <span>{siglaCurso}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-slate-900 pb-1">
-                    <span className="font-bold">País:</span>
-                    <span>{pais}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-slate-900 pb-1">
-                    <span className="font-bold">Média:</span>
-                    <span className="text-emerald-400 font-extrabold">{processedGrades.calculatedAverage !== null ? processedGrades.calculatedAverage.toFixed(2) : '-'} / {config.nota_maxima}</span>
-                  </div>
-                  <p className="text-[9px] text-slate-500 mt-1 hover:text-slate-400 cursor-pointer text-center font-bold uppercase" onClick={() => setEditingConfig(true)}>
-                    Clique em Ajustar para obter controle total das assinaturas e carimbo físico.
-                  </p>
-                </div>
-              )}
+              </div>
 
-              {/* Botão Salvar para persistir os dados gerais da turma */}
+              {/* Save Configuration Button */}
               <button
                 type="button"
                 onClick={handleSaveClassConfig}
-                className="w-full bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/30 hover:border-emerald-500 font-extrabold text-[10px] uppercase tracking-wider py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer mt-3"
+                className="w-full bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/30 hover:border-emerald-500 font-extrabold text-[10px] uppercase tracking-wider py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer mt-1"
               >
                 <Check size={12} />
-                {language === 'pt' ? 'Salvar Assinatura da Turma' : 'Save Signature Config'}
+                {language === 'pt' ? 'Salvar Configuração de Assinatura' : 'Save Signature Config'}
               </button>
             </div>
           )}
@@ -885,11 +819,12 @@ export default function HistoricoEscolarPage() {
               </div>
 
               {/* SHEET OF THE PAPER - EXACT PRINT REPLICA OF THE NATIONAL SPECIFICATION */}
-              <div 
-                id="historico-print-area"
-                className="bg-white text-slate-900 border border-slate-200 shadow-2xl px-[15mm] pt-[12mm] pb-[10mm] rounded-lg w-[210mm] h-[297mm] max-h-[297mm] min-h-[297mm] mx-auto flex flex-col gap-[3mm] font-serif relative overflow-hidden"
-                style={{ width: '210mm', height: '297mm', minHeight: '297mm', maxHeight: '297mm', boxSizing: 'border-box' }}
-              >
+              <div className="w-full overflow-x-auto custom-scrollbar pb-6">
+                <div 
+                  id="historico-print-area"
+                  className="bg-white text-slate-900 border border-slate-200 shadow-2xl px-[15mm] pt-[12mm] pb-[10mm] rounded-lg w-[210mm] h-[297mm] max-h-[297mm] min-h-[297mm] mx-auto flex flex-col gap-[3mm] font-serif relative overflow-hidden shrink-0"
+                  style={{ width: '210mm', height: '297mm', minHeight: '297mm', maxHeight: '297mm', boxSizing: 'border-box' }}
+                >
                 
                 {/* Embedded dynamic style tag to handle pure paper standard isolated margins and start exactly at top of page without white margins or trailing pages */}
                 <style dangerouslySetInnerHTML={{ __html: `
@@ -1046,7 +981,7 @@ export default function HistoricoEscolarPage() {
                     <table className="w-full border-collapse border border-slate-300 text-[10.5px] text-left">
                       <thead>
                         <tr className="bg-slate-50 text-[9.5px] uppercase font-bold tracking-wide text-slate-700">
-                          <th className="border border-slate-300 px-[2.5mm] py-[1mm] w-28 select-none">Módulo</th>
+                          <th className="border border-slate-300 px-[2.5mm] py-[1mm] select-none whitespace-nowrap" style={{ width: '15%', minWidth: '95px' }}>Módulo</th>
                           <th className="border border-slate-300 px-[2.5mm] py-[1mm] select-none">Disciplina</th>
                           <th className="border border-slate-300 px-[2.5mm] py-[1mm] text-center w-28 select-none">Carga Horária</th>
                           <th className="border border-slate-300 px-[2.5mm] py-[1mm] text-center w-28 select-none">Nota</th>
@@ -1062,7 +997,7 @@ export default function HistoricoEscolarPage() {
                         ) : (
                           processedGrades.rows.map(row => (
                             <tr key={row.id} className="hover:bg-slate-50/25 transition-colors">
-                              <td className="border border-slate-300 px-[2.5mm] py-[1mm] font-bold font-mono text-slate-800 uppercase leading-normal">
+                              <td className="border border-slate-300 px-[2.5mm] py-[1mm] font-bold font-mono text-slate-800 uppercase leading-normal whitespace-nowrap" style={{ width: '15%', minWidth: '95px' }}>
                                 {row.codigo}
                               </td>
                               <td className="border border-slate-300 px-[2.5mm] py-[1mm] text-slate-800 font-medium leading-normal">
@@ -1082,7 +1017,7 @@ export default function HistoricoEscolarPage() {
                   </div>
 
                   {/* Anti-fraud notation */}
-                  <p className="text-[9px] font-black text-slate-900 text-center mt-[2mm] italic uppercase tracking-wider select-none leading-none">
+                  <p className="text-[9px] font-black text-slate-900 text-center mt-[0.8mm] italic uppercase tracking-wider select-none leading-none">
                     ESTE DOCUMENTO NÃO SERÁ VÁLIDO SE APRESENTAR EMENDAS, RASURAS OU RESSALVAS.
                   </p>
                 </div>
@@ -1102,7 +1037,7 @@ export default function HistoricoEscolarPage() {
                       <tr>
                         <td className="border border-slate-300 px-[2.5mm] py-[1.2mm] font-extrabold text-[12.5px] text-slate-900 font-mono leading-none">
                           {processedGrades.calculatedAverage !== null 
-                            ? processedGrades.calculatedAverage.toFixed(2).replace('.', ',') 
+                            ? processedGrades.calculatedAverage.toFixed(1).replace('.', ',') 
                             : '-'}
                         </td>
                         <td className="border border-slate-300 px-[2.5mm] py-[1.2mm] font-extrabold text-slate-800 font-mono leading-none">
@@ -1126,21 +1061,21 @@ export default function HistoricoEscolarPage() {
                   </table>
                 </div>
 
-                {/* SIGNATURE AREA SECTION */}
-                <div className="signature-section-print flex justify-end text-center mt-[6mm] relative z-10">
-                  <div className="w-[265px]">
-                    <div className="border-b border-slate-900 pb-[1mm] flex justify-center items-center">
-                      <span className="h-4 block" /> {/* Placeholder for visual spacing */}
+                {/* SIGNATURE AREA SECTION AREA - COMPACTED AND ALIGNED AESTHETICALLY */}
+                <div className="signature-section-print flex justify-end text-center mt-[2.5mm] relative z-10 animate-fade-in">
+                  <div className="w-[240px]">
+                    <div className="border-b border-slate-800 pb-[0.5mm] flex justify-center items-center">
+                      <span className="h-3 block" /> {/* Placeholder for visual signature space */}
                     </div>
-                    <p className="text-[11px] font-black text-slate-900 uppercase tracking-wide mt-2">
+                    <p className="text-[10px] font-black text-slate-900 uppercase tracking-wide mt-1 leading-snug">
                       {officerName}
                     </p>
                     {officerRank && (
-                      <p className="text-[9.5px] font-extrabold text-slate-800 tracking-wide uppercase mt-0.5">
+                      <p className="text-[8.5px] font-extrabold text-slate-800 tracking-wide uppercase mt-0.5 leading-snug">
                         {officerRank}
                       </p>
                     )}
-                    <p className="text-[9px] font-bold text-slate-500 tracking-wider uppercase mt-0.5">
+                    <p className="text-[8px] font-bold text-slate-500 tracking-wider uppercase mt-0.5 leading-snug">
                       {officerTitle}
                     </p>
                   </div>
@@ -1148,7 +1083,8 @@ export default function HistoricoEscolarPage() {
 
               </div>
             </div>
-          )}
+          </div>
+        )}
         </div>
 
       </div>
