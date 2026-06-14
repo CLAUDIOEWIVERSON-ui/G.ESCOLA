@@ -973,7 +973,7 @@ export default function HistoricoEscolarPage() {
               {/* SHEET OF THE PAPER - EXACT PRINT REPLICA OF THE NATIONAL SPECIFICATION */}
               <div 
                 id="historico-print-area"
-                className="bg-white text-slate-900 border border-slate-200 shadow-2xl px-[15mm] pt-[10mm] pb-[8mm] rounded-lg w-[210mm] h-[297mm] max-h-[297mm] min-h-[297mm] mx-auto flex flex-col gap-[3mm] font-serif relative overflow-hidden"
+                className="bg-white text-slate-900 border border-slate-200 shadow-2xl px-[15mm] pt-[12mm] pb-[10mm] rounded-lg w-[210mm] h-[297mm] max-h-[297mm] min-h-[297mm] mx-auto flex flex-col gap-[3mm] font-serif relative overflow-hidden"
                 style={{ width: '210mm', height: '297mm', minHeight: '297mm', maxHeight: '297mm', boxSizing: 'border-box' }}
               >
                 
@@ -982,7 +982,7 @@ export default function HistoricoEscolarPage() {
                   @media print {
                     @page {
                       size: A4;
-                      margin: 0 !important;
+                      margin: 12mm 15mm 10mm 15mm !important;
                     }
                     html, body {
                       background: white !important;
@@ -1005,23 +1005,23 @@ export default function HistoricoEscolarPage() {
                     #historico-print-area, #historico-print-area * {
                       visibility: visible !important;
                     }
-                    /* Posiciona de forma fixa, no topo e esquerda exatos, cobrindo exatamente uma folha A4 */
+                    /* Posiciona de forma absoluta de acordo com as margens configuradas, cobrindo exatamente a regiao util */
                     #historico-print-area {
                       display: flex !important;
                       flex-direction: column !important;
-                      position: fixed !important;
+                      position: absolute !important;
                       left: 0 !important;
                       top: 0 !important;
-                      width: 210mm !important;
-                      height: 297mm !important;
-                      max-height: 297mm !important;
-                      min-height: 297mm !important;
+                      width: 100% !important;
+                      height: 100% !important;
+                      max-height: 100% !important;
+                      min-height: 100% !important;
                       box-sizing: border-box !important;
                       border: none !important;
                       border-radius: 0 !important;
                       box-shadow: none !important;
                       margin: 0 !important;
-                      padding: 12mm 15mm 10mm 15mm !important; /* Margens de 10mm a 15mm estritamente configuradas */
+                      padding: 0 !important; /* Margens controladas puramente pelo @page */
                       background-color: #ffffff !important;
                       overflow: hidden !important;
                       page-break-inside: avoid !important;
@@ -1039,18 +1039,27 @@ export default function HistoricoEscolarPage() {
                       height: 0 !important;
                       overflow: hidden !important;
                     }
+                    /* Reseta os containers pais para evitar paginas em branco e quebras indevidas */
+                    main, 
+                    main div,
+                    div.min-h-screen, 
+                    div.flex, 
+                    div.flex-1, 
+                    div.max-w-5xl,
+                    .flex-col,
+                    [role="main"] {
+                      padding: 0 !important;
+                      margin: 0 !important;
+                      min-height: 0 !important;
+                      height: 0 !important;
+                      border: none !important;
+                      box-shadow: none !important;
+                      background: transparent !important;
+                    }
                   }
                 `}} />
 
-                {/* Elegant decorative watermark - joint mission shield logo faint background */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.04]">
-                  <Image 
-                    src={shieldLogo} 
-                    alt="Missão Naval Escudo Watermark" 
-                    className="w-[420px] h-[420px] object-contain rotate-12" 
-                    placeholder="empty"
-                  />
-                </div>
+                {/* Removed watermark to ensure clean certificate design as requested */}
 
                 {/* Main Header: Joint Naval Mission Brazil & São Tomé */}
                 <div className="flex flex-col items-center justify-center text-center border-b border-slate-800 pb-[1mm] relative z-10 gap-0.5">
