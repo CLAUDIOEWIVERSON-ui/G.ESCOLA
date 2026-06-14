@@ -1053,11 +1053,11 @@ export default function HistoricoEscolarPage() {
                 </div>
 
                 {/* Main Header: Joint Naval Mission Brazil & São Tomé */}
-                <div className="flex flex-col items-center justify-center text-center border-b border-slate-800 pb-[2mm] relative z-10 gap-0.5">
-                  <span className="text-[11px] leading-tight font-bold tracking-wide uppercase text-slate-800 select-none">
+                <div className="flex flex-col items-center justify-center text-center border-b border-slate-800 pb-[1mm] relative z-10 gap-0.5">
+                  <span className="text-[9.5px] leading-tight font-bold tracking-wide uppercase text-slate-800 select-none">
                     Missão de Assessoria Naval do Brasil em São Tomé e Príncipe
                   </span>
-                  <h1 className="text-[15px] font-black tracking-widest uppercase text-slate-900 mt-[0.5mm] border border-double border-slate-900 px-[5mm] py-[0.8mm] select-none">
+                  <h1 className="text-[13px] font-black tracking-widest uppercase text-slate-900 mt-[0.3mm] border border-double border-slate-900 px-[4mm] py-[0.4mm] select-none">
                     Ficha Histórico-Escolar
                   </h1>
                 </div>
