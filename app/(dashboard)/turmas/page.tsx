@@ -1383,7 +1383,9 @@ function TurmasContent() {
               >
                 <option value="">{t.courses.selectCourse}</option>
                 {cursos.map((curso: any) => (
-                  <option key={curso.id} value={curso.id}>{curso.nome}</option>
+                  <option key={curso.id} value={curso.id}>
+                    {curso.nome} {curso.codigo ? `(${curso.codigo})` : ''}
+                  </option>
                 ))}
               </select>
             </div>

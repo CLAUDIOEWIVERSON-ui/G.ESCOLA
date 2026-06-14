@@ -87,6 +87,7 @@ export default function CursosPage() {
     resolver: zodResolver(cursoSchema),
     defaultValues: {
       nome: '',
+      codigo: '',
       descricao: '',
       duracao: 1,
       duracao_unidade: 'ano',
@@ -127,6 +128,7 @@ export default function CursosPage() {
       // Map our logic field back to database field
       const cleanedData = {
         nome: data.nome,
+        codigo: (data.codigo === "" || !data.codigo) ? null : data.codigo,
         descricao: data.descricao,
         ano_inicio: encodedDuration, // stores both value and unit encoded
         ativo: data.ativo,
@@ -406,6 +408,7 @@ export default function CursosPage() {
 
         return {
           nome,
+          codigo: (codigo === "" || !codigo) ? null : codigo,
           descricao: descricao || '',
           ano_inicio: 13, // default duration (1 * 10 + 3 = 1 year)
           ativo: true
@@ -605,6 +608,11 @@ export default function CursosPage() {
 
                     {/* Badge Section */}
                     <div className="flex flex-wrap gap-1.5 mb-4">
+                      {curso.codigo && (
+                        <span className="px-2 py-0.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[9px] font-black uppercase rounded-md border border-amber-500/20">
+                          {curso.codigo}
+                        </span>
+                      )}
                       {curso.categoria && (
                         <span className={cn(
                           "px-2 py-0.5 text-[9px] font-bold uppercase rounded-md border",
@@ -745,6 +753,18 @@ export default function CursosPage() {
                       placeholder="Engenharia de Software"
                     />
                     {errors.nome && <p className="text-xs text-red-500 mt-1">{errors.nome.message}</p>}
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-sm font-semibold text-slate-700">
+                      {language === 'pt' ? 'Sigla do Curso' : 'Course Initials'}
+                    </label>
+                    <input
+                      {...register('codigo')}
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors uppercase font-medium"
+                      placeholder="Ex: CFMN"
+                    />
+                    {errors.codigo && <p className="text-xs text-red-500 mt-1">{errors.codigo.message}</p>}
                   </div>
 
                   <div className="space-y-1">

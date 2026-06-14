@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 export const cursoSchema = z.object({
   nome: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
+  codigo: z.string().max(15, "Sigla deve ter no máximo 15 caracteres").optional().nullable(),
   descricao: z.string().optional().nullable(),
   duracao: z.number().int().min(1).max(500),
   duracao_unidade: z.enum(['dia', 'semana', 'mes', 'ano']),
