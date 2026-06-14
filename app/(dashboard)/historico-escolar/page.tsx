@@ -113,6 +113,7 @@ export default function HistoricoEscolarPage() {
   // Checkboxes for locking editing interface or collapsing settings
   const [editingConfig, setEditingConfig] = useState(false);
   const [autoTriggerPrint, setAutoTriggerPrint] = useState(false);
+  const [zoom, setZoom] = useState<number>(0.68);
 
   // Standard defaults for Sao Tome & Principe Navy grading range
   const [config, setConfig] = useState({
@@ -970,12 +971,64 @@ export default function HistoricoEscolarPage() {
                 </p>
               </div>
 
-              {/* SHEET OF THE PAPER - EXACT PRINT REPLICA OF THE NATIONAL SPECIFICATION */}
+              {/* ZOOM & SCALE FRAME CONTROLLER */}
+              <div className="no-print flex items-center justify-between bg-slate-900/50 p-3 rounded-2xl border border-slate-800/80 gap-4">
+                <div className="flex items-center gap-2">
+                  <div className="p-1 px-2 bg-emerald-500/10 rounded-lg text-emerald-400 font-extrabold text-[10px] uppercase">
+                    Escala
+                  </div>
+                  <span className="text-xs font-bold text-slate-300">
+                    Ajustar Tamanho da Folha
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <button 
+                    onClick={() => setZoom(prev => Math.max(0.4, prev - 0.05))}
+                    className="w-8 h-8 flex items-center justify-center bg-slate-800 hover:bg-slate-700 text-slate-100 rounded-lg text-xs font-black transition-all cursor-pointer border border-slate-700/30 hover:border-slate-700/60"
+                    title="Diminuir"
+                  >
+                    -
+                  </button>
+                  <span className="text-xs font-mono font-bold text-emerald-400 min-w-[54px] text-center bg-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-800/80 select-none">
+                    {Math.round(zoom * 100)}%
+                  </span>
+                  <button 
+                    onClick={() => setZoom(prev => Math.min(1.2, prev + 0.05))}
+                    className="w-8 h-8 flex items-center justify-center bg-slate-800 hover:bg-slate-700 text-slate-100 rounded-lg text-xs font-black transition-all cursor-pointer border border-slate-700/30 hover:border-slate-700/60"
+                    title="Aumentar"
+                  >
+                    +
+                  </button>
+                  <button 
+                    onClick={() => setZoom(0.68)}
+                    className="p-1.5 px-3 bg-emerald-600/15 hover:bg-emerald-600 hover:text-white text-emerald-400 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer border border-emerald-500/20 shadow-sm"
+                  >
+                    Ajuste Ideal
+                  </button>
+                </div>
+              </div>
+
+              {/* SHEET WRAPPER THAT ADAPTS THE OVERFLOW TO MAXIMUM DESKTOP SCREEN VIEWPORT */}
               <div 
-                id="historico-print-area"
-                className="bg-white text-slate-900 border border-slate-200 shadow-2xl px-[15mm] pt-[12mm] pb-[10mm] rounded-lg w-[210mm] h-[297mm] max-h-[297mm] min-h-[297mm] mx-auto flex flex-col gap-[3mm] font-serif relative overflow-hidden"
-                style={{ width: '210mm', height: '297mm', minHeight: '297mm', maxHeight: '297mm', boxSizing: 'border-box' }}
+                className="no-print-scroll-frame overflow-auto flex items-start justify-center p-4 bg-slate-950/60 rounded-3xl border border-slate-800/50 custom-scrollbar relative min-h-[400px]"
+                style={{ maxHeight: '725px' }}
               >
+                <div 
+                  className="origin-top transition-transform duration-150 ease-out"
+                  style={{
+                    transform: `scale(${zoom})`,
+                    width: '210mm',
+                    height: '297mm',
+                    marginBottom: `calc(297mm * (${zoom} - 1))`,
+                    marginRight: `calc(210mm * (${zoom} - 1) / 2)`,
+                    marginLeft: `calc(210mm * (${zoom} - 1) / 2)`,
+                  }}
+                >
+                  <div 
+                    id="historico-print-area"
+                    className="bg-white text-slate-900 border border-slate-200 shadow-2xl px-[15mm] pt-[12mm] pb-[10mm] rounded-lg w-[210mm] h-[297mm] max-h-[297mm] min-h-[297mm] mx-auto flex flex-col gap-[3mm] font-serif relative overflow-hidden"
+                    style={{ width: '210mm', height: '297mm', minHeight: '297mm', maxHeight: '297mm', boxSizing: 'border-box' }}
+                  >
                 
                 {/* Embedded dynamic style tag to handle pure paper standard isolated margins and start exactly at top of page without white margins or trailing pages */}
                 <style dangerouslySetInnerHTML={{ __html: `
@@ -1232,6 +1285,8 @@ export default function HistoricoEscolarPage() {
                   </div>
                 </div>
 
+                  </div>
+                </div>
               </div>
             </div>
           )}
