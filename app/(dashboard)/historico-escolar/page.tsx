@@ -1124,7 +1124,7 @@ export default function HistoricoEscolarPage() {
                 </div>
 
                 {/* SECTION III HISTÓRICO ESCOLAR */}
-                <div className="relative z-10 text-left flex-1 flex flex-col">
+                <div className="relative z-10 text-left">
                   <div className="bg-slate-100 px-[2.5mm] py-[0.8mm] text-[11.5px] font-black uppercase tracking-wider border border-slate-300 select-none leading-none">
                     III – Histórico Escolar
                   </div>
@@ -1174,7 +1174,7 @@ export default function HistoricoEscolarPage() {
                 </div>
 
                 {/* SECTION IV EXPEDIÇÃO */}
-                <div className="relative z-10 text-left mt-auto">
+                <div className="relative z-10 text-left">
                   <div className="bg-slate-100 px-[2.5mm] py-[0.8mm] text-[11.5px] font-black uppercase tracking-wider border border-slate-300 select-none leading-none">
                     IV – Expedição do Histórico Escolar
                   </div>
@@ -1213,7 +1213,7 @@ export default function HistoricoEscolarPage() {
                 </div>
 
                 {/* SIGNATURE AREA SECTION */}
-                <div className="signature-section-print flex flex-col items-center justify-center text-center mt-[4mm] pt-[3mm] border-t border-dashed border-slate-300 relative z-10">
+                <div className="signature-section-print flex flex-col items-center justify-center text-center mt-auto pt-[3mm] border-t border-dashed border-slate-300 relative z-10">
                   <div className="w-[280px]">
                     <div className="border-b border-slate-900 pb-1 flex justify-center items-center">
                       <span className="h-4 block" /> {/* Placeholder for visual spacing */}
