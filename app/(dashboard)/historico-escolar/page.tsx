@@ -1213,9 +1213,9 @@ export default function HistoricoEscolarPage() {
                 </div>
 
                 {/* SIGNATURE AREA SECTION */}
-                <div className="signature-section-print flex flex-col items-center justify-center text-center mt-auto pt-[3mm] border-t border-dashed border-slate-300 relative z-10">
-                  <div className="w-[280px]">
-                    <div className="border-b border-slate-900 pb-1 flex justify-center items-center">
+                <div className="signature-section-print flex justify-end text-center mt-[6mm] relative z-10">
+                  <div className="w-[265px]">
+                    <div className="border-b border-slate-900 pb-[1mm] flex justify-center items-center">
                       <span className="h-4 block" /> {/* Placeholder for visual spacing */}
                     </div>
                     <p className="text-[11px] font-black text-slate-900 uppercase tracking-wide mt-2">
