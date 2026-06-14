@@ -997,16 +997,19 @@ export default function HistoricoEscolarPage() {
                       -webkit-print-color-adjust: exact !important;
                       print-color-adjust: exact !important;
                     }
+                    /* Oculta todos os elementos do corpo da pagina */
                     body * {
                       visibility: hidden !important;
                     }
+                    /* Garante que apenas a area de impressao do historico e seus descendentes sejam visiveis */
                     #historico-print-area, #historico-print-area * {
                       visibility: visible !important;
                     }
+                    /* Posiciona de forma fixa, no topo e esquerda exatos, cobrindo exatamente uma folha A4 */
                     #historico-print-area {
                       display: flex !important;
                       flex-direction: column !important;
-                      position: absolute !important;
+                      position: fixed !important;
                       left: 0 !important;
                       top: 0 !important;
                       width: 210mm !important;
@@ -1018,30 +1021,18 @@ export default function HistoricoEscolarPage() {
                       border-radius: 0 !important;
                       box-shadow: none !important;
                       margin: 0 !important;
+                      padding: 12mm 15mm 10mm 15mm !important; /* Margens de 10mm a 15mm estritamente configuradas */
                       background-color: #ffffff !important;
                       overflow: hidden !important;
                       page-break-inside: avoid !important;
+                      page-break-after: avoid !important;
+                      page-break-before: avoid !important;
                     }
-                    /* Ensure flex direct children never shrink to cause overlapping or stacked text */
+                    /* Evita deformacao ou encolhimento de sub-blocos e garante flex-shrink nulo */
                     #historico-print-area > div {
                       flex-shrink: 0 !important;
                     }
-                    main, 
-                    main div,
-                    div.min-h-screen, 
-                    div.flex, 
-                    div.flex-1, 
-                    div.max-w-5xl,
-                    .flex-col,
-                    [role="main"] {
-                      padding: 0 !important;
-                      margin: 0 !important;
-                      min-height: 0 !important;
-                      height: 0 !important;
-                      border: none !important;
-                      box-shadow: none !important;
-                      background: transparent !important;
-                    }
+                    /* Esconde os controles e paineis nao impressos de forma estrita */
                     .no-print, header, aside, nav, footer, button, .alert {
                       display: none !important;
                       width: 0 !important;
