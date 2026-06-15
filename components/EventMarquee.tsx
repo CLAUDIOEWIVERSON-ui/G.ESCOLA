@@ -14,6 +14,7 @@ interface Evento {
   data: string;
   cor: string;
   exibir_aluno?: boolean;
+  exibir_instrutor?: boolean;
   uniforme_dia?: string;
   creator_id?: string;
   is_exclusive?: boolean;
@@ -61,7 +62,7 @@ export function EventMarquee({ thought }: EventMarqueeProps = {}) {
         let data: any[] | null = null;
         const { data: primaryData, error } = await supabase
           .from('eventos')
-          .select('id, titulo, descricao, data, cor, exibir_aluno, uniforme_dia, creator_id, is_exclusive')
+          .select('id, titulo, descricao, data, cor, exibir_aluno, exibir_instrutor, uniforme_dia, creator_id, is_exclusive')
           .gte('data', today.toISOString())
           .order('data', { ascending: true })
           .limit(15);
@@ -114,6 +115,8 @@ export function EventMarquee({ thought }: EventMarqueeProps = {}) {
     let desc = evt.descricao || '';
     let parsedCreatorId = evt.creator_id || null;
     let parsedIsExclusive = evt.is_exclusive === true;
+    let parsedExibirInstrutor = evt.exibir_instrutor !== false;
+    let parsedExibirAluno = evt.exibir_aluno !== false;
 
     // Try parsing tags
     const creatorMatch = desc.match(/\[creator:([^\]]+)\]/);
@@ -134,15 +137,30 @@ export function EventMarquee({ thought }: EventMarqueeProps = {}) {
       }
     }
 
+    const instrutorMatch = desc.match(/\[exibir_instrutor:([^\]]+)\]/);
+    if (instrutorMatch) {
+      parsedExibirInstrutor = instrutorMatch[1] === 'true';
+      desc = desc.replace(/\[exibir_instrutor:[^\]]+\]/, '');
+    }
+
+    const alunoMatch = desc.match(/\[exibir_aluno:([^\]]+)\]/);
+    if (alunoMatch) {
+      parsedExibirAluno = alunoMatch[1] === 'true';
+      desc = desc.replace(/\[exibir_aluno:[^\]]+\]/, '');
+    }
+
     return {
       ...evt,
       descricao: desc,
       creator_id: parsedCreatorId || undefined,
-      is_exclusive: parsedIsExclusive
+      is_exclusive: parsedIsExclusive,
+      exibir_instrutor: parsedExibirInstrutor,
+      exibir_aluno: parsedExibirAluno
     };
   }).filter(evt => {
     const currentUserId = profile?.id;
     const isOwner = currentUserId && evt.creator_id === currentUserId;
+    const isInstrutor = profile?.role === 'instrutor';
     
     if (isAdmin) {
       if (isOwner) return true;
@@ -151,6 +169,9 @@ export function EventMarquee({ thought }: EventMarqueeProps = {}) {
     } else {
       if (isAluno && !isOwner) {
         if (evt.exibir_aluno === false) return false;
+      }
+      if (isInstrutor && !isOwner) {
+        if (evt.exibir_instrutor === false) return false;
       }
       if (isOwner) return true;
       if (!evt.is_exclusive) return true;

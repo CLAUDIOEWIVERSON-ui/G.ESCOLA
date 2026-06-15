@@ -306,6 +306,21 @@ export async function GET() {
             .limit(1);
           return error;
         }
+      },
+      {
+        key: 'eventos_exibir_instrutor',
+        tableName: 'eventos',
+        columnName: 'exibir_instrutor',
+        fileName: '40_add_exibir_instrutor_to_eventos.sql',
+        description: 'Coluna na tabela de eventos para controlar a visibilidade de avisos e notificações específicas na área do instrutor.',
+        isColumn: true,
+        checkFn: async () => {
+          const { error } = await supabaseAdmin
+            .from('eventos')
+            .select('exibir_instrutor')
+            .limit(1);
+          return error;
+        }
       }
     ];
 
