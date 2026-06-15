@@ -365,22 +365,30 @@ export default function HistoricoEscolarPage() {
           || a.nome.localeCompare(b.nome);
     });
 
+    // To align with the Bulletin (Boletim) and Grades page (NotasPage) database repo locator,
+    // locate the first discipline using the bulletin's sorted order of disciplines.
+    const bulletinsSortedDiscs = [...courseDisciplines].sort((a, b) => {
+      const mDiff = (a.modulo_index || 1) - (b.modulo_index || 1);
+      if (mDiff !== 0) return mDiff;
+      return a.nome.localeCompare(b.nome);
+    });
+    const firstDisc = bulletinsSortedDiscs[0];
+
+    // Find modular grade in the FIRST discipline grade record (modular unified columns)
+    const firstGradeObj = firstDisc ? (
+      (studentGrades || []).find(g => g.disciplina_id === firstDisc.id && g.turma_id === selectedClass) ||
+      (studentGrades || []).find(g => g.disciplina_id === firstDisc.id)
+    ) : null;
+
     for (let i = 0; i < sortedDiscs.length; i++) {
       const d = sortedDiscs[i];
       
-      // Module number is 1-based (i + 1)
-      const moduleNum = i + 1;
+      // Module number matches the discipline's modulo_index, fallback to 1-based list index
+      const moduleNum = d.modulo_index || (i + 1);
 
       // Find grade record for this exact discipline (fallback/non-unified)
       const directGradeObj = (studentGrades || []).find(g => g.disciplina_id === d.id && g.turma_id === selectedClass) 
                     || (studentGrades || []).find(g => g.disciplina_id === d.id);
-
-      // Find modular grade in the FIRST discipline grade record (modular unified columns)
-      const firstDisc = sortedDiscs[0];
-      const firstGradeObj = firstDisc ? (
-        (studentGrades || []).find(g => g.disciplina_id === firstDisc.id && g.turma_id === selectedClass) ||
-        (studentGrades || []).find(g => g.disciplina_id === firstDisc.id)
-      ) : null;
 
       let originalValue: number | null = null;
 
