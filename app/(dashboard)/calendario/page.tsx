@@ -29,11 +29,13 @@ interface Evento {
   exibir_aluno?: boolean;
   uniforme_dia?: string;
   created_at: string;
+  creator_id?: string;
+  is_exclusive?: boolean;
 }
 
 export default function CalendarPage() {
   const { t } = useI18n();
-  const { isAdmin, isAluno } = useUser();
+  const { profile, isAdmin, isAluno } = useUser();
   const isReadOnly = !isAdmin;
   
   const [eventos, setEventos] = useState<Evento[]>([]);
@@ -52,6 +54,67 @@ export default function CalendarPage() {
     uniforme_dia: ''
   });
 
+  const parseAndFilterEventos = (rawList: any[]) => {
+    const currentUserId = profile?.id;
+    
+    const parsed = rawList.map(evt => {
+      let desc = evt.descricao || '';
+      let parsedCreatorId = evt.creator_id || null;
+      let parsedIsExclusive = evt.is_exclusive === true;
+
+      // Extract details from tag suffix if present
+      const creatorMatch = desc.match(/\[creator:([^\]]+)\]/);
+      if (creatorMatch) {
+        parsedCreatorId = creatorMatch[1];
+        desc = desc.replace(/\[creator:[^\]]+\]/, '');
+      }
+
+      const exclusiveMatch = desc.match(/\[exclusive:([^\]]+)\]/);
+      if (exclusiveMatch) {
+        parsedIsExclusive = exclusiveMatch[1] === 'true';
+        desc = desc.replace(/\[exclusive:[^\]]+\]/, '');
+      } else if (creatorMatch) {
+        if (parsedCreatorId === 'admin') {
+          parsedIsExclusive = false;
+        } else {
+          parsedIsExclusive = true;
+        }
+      }
+
+      desc = desc.trim();
+
+      return {
+        ...evt,
+        descricao: desc,
+        creator_id: parsedCreatorId || undefined,
+        is_exclusive: parsedIsExclusive
+      };
+    });
+
+    // Custom filtering rules for customized admin agenda:
+    // 1. Admin sees:
+    //    - General routines (is_exclusive === false)
+    //    - Their own routines
+    //    - Admin NEVER sees other users' exclusive routines!
+    // 2. Regular user (instructor/student) sees:
+    //    - General routines (is_exclusive === false)
+    //    - Their own exclusive routines
+    //    - Regular user NEVER sees other users' exclusive routines!
+    return parsed.filter(evt => {
+      const isOwner = currentUserId && evt.creator_id === currentUserId;
+      
+      if (isAdmin) {
+        if (isOwner) return true;
+        if (evt.is_exclusive) return false;
+        return true;
+      } else {
+        if (isOwner) return true;
+        if (!evt.is_exclusive) return true;
+        return false;
+      }
+    });
+  };
+
   const fetchEventos = async () => {
     try {
       const { data, error } = await supabase
@@ -65,7 +128,7 @@ export default function CalendarPage() {
         }
         throw error;
       }
-      setEventos(data || []);
+      setEventos(parseAndFilterEventos(data || []));
     } catch (error: any) {
       console.error('Error fetching events:', error);
     }
@@ -89,7 +152,7 @@ export default function CalendarPage() {
           }
           throw error;
         }
-        if (isMounted) setEventos(data || []);
+        if (isMounted) setEventos(parseAndFilterEventos(data || []));
       } catch (error: any) {
         console.error('Error fetching events:', error);
       } finally {
@@ -99,95 +162,126 @@ export default function CalendarPage() {
 
     loadData();
     return () => { isMounted = false; };
-  }, []);
+  }, [profile, isAdmin]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isReadOnly) return;
+    if (!profile) {
+      toast.error('Você precisa estar logado para salvar uma rotina.');
+      return;
+    }
+
+    if (editingEvent) {
+      const canEdit = isAdmin || (editingEvent.creator_id === profile.id);
+      if (!canEdit) {
+        toast.error('Você não tem permissão para editar esta rotina.');
+        return;
+      }
+    }
 
     // Ensure we send a valid timestamp to Postgres
     const timestamp = new Date(`${formData.data}T12:00:00`).toISOString();
 
+    const currentUserId = profile.id;
+    const isExclusiveRoutine = !isAdmin; // Admin's routines are general, ordinary users' are exclusive
+    
+    // Add hidden markers at the end of the description to ensure perfect compatibility
+    // with any state of the remote database schema.
+    const cleanDesc = formData.descricao;
+    const tagSuffix = `\n\n[creator:${currentUserId}][exclusive:${isExclusiveRoutine}]`;
+    const fullDescWithTags = cleanDesc + tagSuffix;
+
     const eventPayload: any = {
       titulo: formData.titulo,
-      descricao: formData.descricao,
+      descricao: fullDescWithTags,
       data: timestamp,
       cor: formData.cor,
-      exibir_aluno: formData.exibir_aluno,
-      uniforme_dia: formData.uniforme_dia || null
+      exibir_aluno: isAdmin ? formData.exibir_aluno : false,
+      uniforme_dia: isAdmin ? (formData.uniforme_dia || null) : null,
+      creator_id: currentUserId,
+      is_exclusive: isExclusiveRoutine
     };
 
     try {
       if (editingEvent) {
+        // Try full payload update
         const { error } = await supabase
           .from('eventos')
           .update(eventPayload)
           .eq('id', editingEvent.id);
         
         if (error) {
-          // Fallback if db columns don't exist yet
-          const isUniformErr = error.message.includes('uniforme_dia') || error.hint?.includes('uniforme_dia') || error.code === 'PGRST204';
-          const isExibirErr = error.message.includes('exibir_aluno') || error.hint?.includes('exibir_aluno') || error.code === 'PGRST204';
-          
-          if (isUniformErr || isExibirErr) {
-            const fallbackPayload = { ...eventPayload };
-            if (isUniformErr) delete fallbackPayload.uniforme_dia;
-            if (isExibirErr) delete fallbackPayload.exibir_aluno;
+          // If custom columns (creator_id, is_exclusive, or others) fail, run safe graceful fallback
+          const fallbackPayload = {
+            titulo: eventPayload.titulo,
+            descricao: eventPayload.descricao,
+            data: eventPayload.data,
+            cor: eventPayload.cor
+          } as any;
 
-            const { error: fallbackErr } = await supabase
+          // Try including standard columns if we are admin
+          if (isAdmin) {
+            fallbackPayload.exibir_aluno = eventPayload.exibir_aluno;
+            fallbackPayload.uniforme_dia = eventPayload.uniforme_dia;
+          }
+
+          const { error: fallbackErr } = await supabase
+            .from('eventos')
+            .update(fallbackPayload)
+            .eq('id', editingEvent.id);
+          
+          if (fallbackErr) {
+            // Absolute minimal payload
+            const minPayload = {
+              titulo: eventPayload.titulo,
+              descricao: eventPayload.descricao,
+              data: eventPayload.data,
+              cor: eventPayload.cor
+            };
+            const { error: minErr } = await supabase
               .from('eventos')
-              .update(fallbackPayload)
+              .update(minPayload)
               .eq('id', editingEvent.id);
-            if (fallbackErr) {
-              const minPayload = {
-                titulo: eventPayload.titulo,
-                descricao: eventPayload.descricao,
-                data: eventPayload.data,
-                cor: eventPayload.cor
-              };
-              const { error: minErr } = await supabase
-                .from('eventos')
-                .update(minPayload)
-                .eq('id', editingEvent.id);
-              if (minErr) throw minErr;
-            }
-          } else {
-            throw error;
+            if (minErr) throw minErr;
           }
         }
         toast.success(t.calendar.eventUpdated);
       } else {
+        // Try full payload insert
         const { error } = await supabase
           .from('eventos')
           .insert([eventPayload]);
 
         if (error) {
-          // Fallback if db columns don't exist yet
-          const isUniformErr = error.message.includes('uniforme_dia') || error.hint?.includes('uniforme_dia') || error.code === 'PGRST204';
-          const isExibirErr = error.message.includes('exibir_aluno') || error.hint?.includes('exibir_aluno') || error.code === 'PGRST204';
-          
-          if (isUniformErr || isExibirErr) {
-            const fallbackPayload = { ...eventPayload };
-            if (isUniformErr) delete fallbackPayload.uniforme_dia;
-            if (isExibirErr) delete fallbackPayload.exibir_aluno;
+          // Fallback if custom database columns do not exist yet
+          const fallbackPayload = {
+            titulo: eventPayload.titulo,
+            descricao: eventPayload.descricao,
+            data: eventPayload.data,
+            cor: eventPayload.cor
+          } as any;
 
-            const { error: fallbackErr } = await supabase
+          if (isAdmin) {
+            fallbackPayload.exibir_aluno = eventPayload.exibir_aluno;
+            fallbackPayload.uniforme_dia = eventPayload.uniforme_dia;
+          }
+
+          const { error: fallbackErr } = await supabase
+            .from('eventos')
+            .insert([fallbackPayload]);
+          
+          if (fallbackErr) {
+            // Absolute minimal insertion
+            const minPayload = {
+              titulo: eventPayload.titulo,
+              descricao: eventPayload.descricao,
+              data: eventPayload.data,
+              cor: eventPayload.cor
+            };
+            const { error: minErr } = await supabase
               .from('eventos')
-              .insert([fallbackPayload]);
-            if (fallbackErr) {
-              const minPayload = {
-                titulo: eventPayload.titulo,
-                descricao: eventPayload.descricao,
-                data: eventPayload.data,
-                cor: eventPayload.cor
-              };
-              const { error: minErr } = await supabase
-                .from('eventos')
-                .insert([minPayload]);
-              if (minErr) throw minErr;
-            }
-          } else {
-            throw error;
+              .insert([minPayload]);
+            if (minErr) throw minErr;
           }
         }
         toast.success(t.calendar.eventAdded);
@@ -213,7 +307,15 @@ export default function CalendarPage() {
   const [eventToDelete, setEventToDelete] = useState<string | null>(null);
 
   const handleDelete = async (id: string) => {
-    if (isReadOnly) return;
+    if (!profile) return;
+    
+    const targetEvent = eventos.find(e => e.id === id);
+    const canDelete = isAdmin || (targetEvent?.creator_id === profile.id);
+    if (!canDelete) {
+      toast.error('Você não tem permissão para excluir esta rotina.');
+      return;
+    }
+
     setLoading(true);
     try {
       const { error } = await supabase
@@ -281,7 +383,7 @@ export default function CalendarPage() {
           <h2 className="text-xl font-bold text-blue-600 drop-shadow-[0_0_10px_rgba(37,99,235,0.5)] uppercase tracking-tight">{t.calendar.title}</h2>
           <p className="text-sm text-slate-500">{t.calendar.subtitle}</p>
         </div>
-        {!isReadOnly && (
+        {profile && (
           <button 
             onClick={() => {
               setEditingEvent(null);
@@ -358,7 +460,7 @@ export default function CalendarPage() {
                           </span>
                         </div>
                       </div>
-                      {!isReadOnly && (
+                      {(isAdmin || (profile && evento.creator_id === profile.id)) && (
                         <div className="flex items-center gap-1">
                           {eventToDelete === evento.id ? (
                             <div className="flex items-center gap-1 bg-rose-50 p-1 rounded-lg border border-rose-100">
@@ -523,7 +625,7 @@ export default function CalendarPage() {
                   >
                     {t.common.close || 'Fechar'}
                   </button>
-                  {!isReadOnly && (
+                  {(isAdmin || (profile && viewingEvent.creator_id === profile.id)) && (
                     <button 
                       onClick={() => {
                         const evt = viewingEvent;
@@ -588,16 +690,18 @@ export default function CalendarPage() {
                     />
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider font-sans">Uniforme do Dia</label>
-                    <input 
-                      type="text"
-                      placeholder="Ex: TAF, 7º B, Educação Física"
-                      value={formData.uniforme_dia || ''}
-                      onChange={(e) => setFormData(prev => ({ ...prev, uniforme_dia: e.target.value }))}
-                      className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/10 outline-none placeholder:text-slate-300"
-                    />
-                  </div>
+                  {isAdmin && (
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider font-sans">Uniforme do Dia</label>
+                      <input 
+                        type="text"
+                        placeholder="Ex: TAF, 7º B, Educação Física"
+                        value={formData.uniforme_dia || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, uniforme_dia: e.target.value }))}
+                        className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/10 outline-none placeholder:text-slate-300"
+                      />
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
@@ -625,23 +729,25 @@ export default function CalendarPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-start gap-3 p-3.5 bg-slate-50 border border-slate-200/60 rounded-xl mt-2 select-none">
-                    <input 
-                      type="checkbox"
-                      id="exibir_aluno"
-                      checked={formData.exibir_aluno}
-                      onChange={(e) => setFormData(prev => ({ ...prev, exibir_aluno: e.target.checked }))}
-                      className="mt-0.5 w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500 cursor-pointer"
-                    />
-                    <div className="flex flex-col">
-                      <label htmlFor="exibir_aluno" className="text-xs font-bold text-slate-700 cursor-pointer">
-                        Exibir para Alunos
-                      </label>
-                      <span className="text-[10px] text-slate-500 leading-normal">
-                        Quando marcado, o aluno poderá ver este evento na barra de avisos animada, no alerta de proximidade e no calendário.
-                      </span>
+                  {isAdmin && (
+                    <div className="flex items-start gap-3 p-3.5 bg-slate-50 border border-slate-200/60 rounded-xl mt-2 select-none">
+                      <input 
+                        type="checkbox"
+                        id="exibir_aluno"
+                        checked={formData.exibir_aluno}
+                        onChange={(e) => setFormData(prev => ({ ...prev, exibir_aluno: e.target.checked }))}
+                        className="mt-0.5 w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500 cursor-pointer"
+                      />
+                      <div className="flex flex-col">
+                        <label htmlFor="exibir_aluno" className="text-xs font-bold text-slate-700 cursor-pointer">
+                          Exibir para Alunos
+                        </label>
+                        <span className="text-[10px] text-slate-500 leading-normal">
+                          Quando marcado, o aluno poderá ver este evento na barra de avisos animada, no alerta de proximidade e no calendário.
+                        </span>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 <div className="p-6 bg-slate-50 flex items-center justify-end gap-3 border-t border-slate-100">

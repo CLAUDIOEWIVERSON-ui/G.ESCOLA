@@ -276,6 +276,36 @@ export async function GET() {
             .limit(1);
           return error;
         }
+      },
+      {
+        key: 'eventos_creator_id',
+        tableName: 'eventos',
+        columnName: 'creator_id',
+        fileName: '39_add_creator_id_and_exclusivity_to_eventos.sql',
+        description: 'Coluna creator_id na tabela de eventos para rastrear qual usuário criou a rotina ou evento administrativo.',
+        isColumn: true,
+        checkFn: async () => {
+          const { error } = await supabaseAdmin
+            .from('eventos')
+            .select('creator_id')
+            .limit(1);
+          return error;
+        }
+      },
+      {
+        key: 'eventos_is_exclusive',
+        tableName: 'eventos',
+        columnName: 'is_exclusive',
+        fileName: '39_add_creator_id_and_exclusivity_to_eventos.sql',
+        description: 'Coluna is_exclusive na tabela de eventos para segmentar rotinas exclusivas (personalizadas por usuário) das rotinas de caráter geral.',
+        isColumn: true,
+        checkFn: async () => {
+          const { error } = await supabaseAdmin
+            .from('eventos')
+            .select('is_exclusive')
+            .limit(1);
+          return error;
+        }
       }
     ];
 

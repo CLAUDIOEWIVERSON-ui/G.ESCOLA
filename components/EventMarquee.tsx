@@ -10,10 +10,13 @@ import { cn } from '@/lib/utils';
 interface Evento {
   id: string;
   titulo: string;
+  descricao?: string;
   data: string;
   cor: string;
   exibir_aluno?: boolean;
   uniforme_dia?: string;
+  creator_id?: string;
+  is_exclusive?: boolean;
 }
 
 interface EventMarqueeProps {
@@ -21,7 +24,7 @@ interface EventMarqueeProps {
 }
 
 export function EventMarquee({ thought }: EventMarqueeProps = {}) {
-  const { isAluno } = useUser();
+  const { isAluno, profile, isAdmin } = useUser();
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [pensamento, setPensamento] = useState<{ texto: string; autor: string } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -55,56 +58,42 @@ export function EventMarquee({ thought }: EventMarqueeProps = {}) {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        let query = supabase
+        let data: any[] | null = null;
+        const { data: primaryData, error } = await supabase
           .from('eventos')
-          .select('id, titulo, data, cor, exibir_aluno, uniforme_dia')
+          .select('id, titulo, descricao, data, cor, exibir_aluno, uniforme_dia, creator_id, is_exclusive')
           .gte('data', today.toISOString())
           .order('data', { ascending: true })
           .limit(15);
         
-        let data: any[] | null = null;
-        let { data: primaryData, error } = await query;
         data = primaryData;
-        
-        // Dynamic fallback with multi-column grace handling if columns doesn't exist yet
+
+        // Dynamic fallback with multi-column grace handling if columns don't exist yet
         if (error) {
-          const isUniformError = error.message.includes('uniforme_dia') || error.hint?.includes('uniforme_dia') || error.code === 'PGRST204';
-          const isExibirError = error.message.includes('exibir_aluno') || error.hint?.includes('exibir_aluno') || error.code === 'PGRST204';
+          const { data: fallbackData, error: fallbackError } = await supabase
+            .from('eventos')
+            .select('id, titulo, descricao, data, cor, exibir_aluno, uniforme_dia')
+            .gte('data', today.toISOString())
+            .order('data', { ascending: true })
+            .limit(15);
           
-          if (isUniformError || isExibirError) {
-            let columnsToSelect = 'id, titulo, data, cor';
-            if (!isExibirError) {
-              columnsToSelect += ', exibir_aluno';
-            }
-            if (!isUniformError) {
-              columnsToSelect += ', uniforme_dia';
-            }
-            
-            const { data: fallbackData, error: fallbackError } = await supabase
+          if (fallbackError) {
+            const { data: minData, error: minError } = await supabase
               .from('eventos')
-              .select(columnsToSelect)
+              .select('id, titulo, descricao, data, cor')
               .gte('data', today.toISOString())
               .order('data', { ascending: true })
               .limit(15);
-            
-            if (fallbackError) {
-              const { data: minData, error: minError } = await supabase
-                .from('eventos')
-                .select('id, titulo, data, cor')
-                .gte('data', today.toISOString())
-                .order('data', { ascending: true })
-                .limit(15);
-              if (minError) throw minError;
-              data = minData;
-            } else {
-              data = fallbackData;
+            if (minError) {
+              if (minError.code === '42P01') {
+                setEventos([]);
+                return;
+              }
+              throw minError;
             }
+            data = minData;
           } else {
-            if (error.code === '42P01') {
-              setEventos([]);
-              return;
-            }
-            throw error;
+            data = fallbackData;
           }
         }
 
@@ -121,14 +110,52 @@ export function EventMarquee({ thought }: EventMarqueeProps = {}) {
     return () => clearInterval(interval);
   }, []);
 
-  const filteredEventos = eventos.filter(evento => {
-    if (isAluno) {
-      // If the admin has chosen to hide it from students or not selected it, hide it.
-      // If the column 'exibir_aluno' is undefined (meaning the database migration hasn't been run yet), 
-      // fallback to true to prevent a blank state until mig is run.
-      return evento.exibir_aluno !== false;
+  const filteredEventos = eventos.map(evt => {
+    let desc = evt.descricao || '';
+    let parsedCreatorId = evt.creator_id || null;
+    let parsedIsExclusive = evt.is_exclusive === true;
+
+    // Try parsing tags
+    const creatorMatch = desc.match(/\[creator:([^\]]+)\]/);
+    if (creatorMatch) {
+      parsedCreatorId = creatorMatch[1];
+      desc = desc.replace(/\[creator:[^\]]+\]/, '');
     }
-    return true;
+
+    const exclusiveMatch = desc.match(/\[exclusive:([^\]]+)\]/);
+    if (exclusiveMatch) {
+      parsedIsExclusive = exclusiveMatch[1] === 'true';
+      desc = desc.replace(/\[exclusive:[^\]]+\]/, '');
+    } else if (creatorMatch) {
+      if (parsedCreatorId === 'admin') {
+        parsedIsExclusive = false;
+      } else {
+        parsedIsExclusive = true;
+      }
+    }
+
+    return {
+      ...evt,
+      descricao: desc,
+      creator_id: parsedCreatorId || undefined,
+      is_exclusive: parsedIsExclusive
+    };
+  }).filter(evt => {
+    const currentUserId = profile?.id;
+    const isOwner = currentUserId && evt.creator_id === currentUserId;
+    
+    if (isAdmin) {
+      if (isOwner) return true;
+      if (evt.is_exclusive) return false;
+      return true; // Show general ones
+    } else {
+      if (isAluno && !isOwner) {
+        if (evt.exibir_aluno === false) return false;
+      }
+      if (isOwner) return true;
+      if (!evt.is_exclusive) return true;
+      return false;
+    }
   });
 
   if (loading) return null;

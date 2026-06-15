@@ -523,7 +523,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 "text-[8px] font-black uppercase tracking-widest text-center truncate w-full",
                 isActive ? "text-blue-600" : needsPasswordChange ? "text-amber-500 font-bold" : "text-slate-400"
               )}>
-                {item.path === '/calendario' ? 'CALEND.' : item.name.split(' ')[0]}
+                {item.path === '/calendario' ? 'AGENDA' : item.name.split(' ')[0]}
               </span>
               {isActive && (
                 <motion.div 

@@ -44,7 +44,7 @@ const playBellSound = () => {
 
 export function ProximityAlert() {
   const { t } = useI18n();
-  const { isAluno } = useUser();
+  const { isAluno, profile, isAdmin } = useUser();
   const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
   const [isVisible, setIsVisible] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(12);
@@ -59,42 +59,96 @@ export function ProximityAlert() {
         const nextWeek = new Date();
         nextWeek.setDate(today.getDate() + 3); // Check next 3 days for alert
         
-        // Select including 'exibir_aluno' safely
+        // Select custom attributes safely
         let data: any[] | null = null;
         let { data: primaryData, error } = await supabase
           .from('eventos')
-          .select('id, titulo, descricao, data, cor, exibir_aluno')
+          .select('id, titulo, descricao, data, cor, exibir_aluno, creator_id, is_exclusive')
           .gte('data', today.toISOString().split('T')[0])
           .lte('data', nextWeek.toISOString().split('T')[0])
           .order('data', { ascending: true });
         data = primaryData;
 
-        if (error && (error.message.includes('exibir_aluno') || error.code === 'PGRST204' || error.hint?.includes('exibir_aluno'))) {
-          // Fallback if the column exibir_aluno doesn't exist yet
+        if (error) {
+          // Fallback if the columns do not exist yet
           const { data: fallbackData, error: fallbackError } = await supabase
             .from('eventos')
-            .select('id, titulo, descricao, data, cor')
+            .select('id, titulo, descricao, data, cor, exibir_aluno')
             .gte('data', today.toISOString().split('T')[0])
             .lte('data', nextWeek.toISOString().split('T')[0])
             .order('data', { ascending: true });
             
-          if (fallbackError) throw fallbackError;
-          data = fallbackData;
-        } else if (error) {
-          if (error.code === '42P01' || error.code === 'PGRST205') {
-            console.warn('Aviso: Tabela "eventos" não encontrada. Execute a migração SQL para habilitar este recurso.');
-            return;
+          if (fallbackError) {
+            const { data: minData, error: minError } = await supabase
+              .from('eventos')
+              .select('id, titulo, descricao, data, cor')
+              .gte('data', today.toISOString().split('T')[0])
+              .lte('data', nextWeek.toISOString().split('T')[0])
+              .order('data', { ascending: true });
+            
+            if (minError) {
+              if (minError.code === '42P01' || minError.code === 'PGRST205') {
+                console.warn('Aviso: Tabela "eventos" não encontrada.');
+                return;
+              }
+              throw minError;
+            }
+            data = minData;
+          } else {
+            data = fallbackData;
           }
-          throw error;
         }
         
         if (data && data.length > 0) {
-          // Filter out if the user is Aluno and exibir_aluno is explicitly false
-          const filtered = data.filter(evt => {
-            if (isAluno) {
-              return evt.exibir_aluno !== false;
+          // Parse metadata tags from description
+          const parsed = data.map(evt => {
+            let desc = evt.descricao || '';
+            let parsedCreatorId = evt.creator_id || null;
+            let parsedIsExclusive = evt.is_exclusive === true;
+
+            const creatorMatch = desc.match(/\[creator:([^\]]+)\]/);
+            if (creatorMatch) {
+              parsedCreatorId = creatorMatch[1];
+              desc = desc.replace(/\[creator:[^\]]+\]/, '');
             }
-            return true;
+
+            const exclusiveMatch = desc.match(/\[exclusive:([^\]]+)\]/);
+            if (exclusiveMatch) {
+              parsedIsExclusive = exclusiveMatch[1] === 'true';
+              desc = desc.replace(/\[exclusive:[^\]]+\]/, '');
+            } else if (creatorMatch) {
+              if (parsedCreatorId === 'admin') {
+                parsedIsExclusive = false;
+              } else {
+                parsedIsExclusive = true;
+              }
+            }
+
+            return {
+              ...evt,
+              descricao: desc.trim(),
+              creator_id: parsedCreatorId || undefined,
+              is_exclusive: parsedIsExclusive
+            };
+          });
+
+          // Filter by owner & exclusivity rules
+          const filtered = parsed.filter(evt => {
+            const currentUserId = profile?.id;
+            const isOwner = currentUserId && evt.creator_id === currentUserId;
+            
+            if (isAdmin) {
+              if (isOwner) return true;
+              if (evt.is_exclusive) return false;
+              return true;
+            } else {
+              if (isAluno && !isOwner) {
+                if (evt.exibir_aluno === false) return false;
+              }
+              if (isOwner) return true;
+              if (!evt.is_exclusive) return true;
+              return false;
+            }
           });
 
           if (filtered.length > 0) {
