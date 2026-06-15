@@ -22,8 +22,7 @@ import {
   X,
   Search,
   Calendar,
-  Link2,
-  Award
+  Link2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
@@ -172,7 +171,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: t.nav.classes, icon: Library, path: '/turmas' },
     { name: t.nav.grades, icon: FileCheck, path: '/notas' },
     { name: t.nav.reportCard, icon: FileText, path: '/boletim' },
-    { name: t.nav.historico, icon: Award, path: '/historico-escolar' },
     { name: t.schedule.title, icon: Calendar, path: '/horario' },
     { name: t.nav.attendance, icon: CalendarDays, path: '/frequencia' },
     { name: t.calendar.title, icon: CalendarDays, path: '/calendario' },
