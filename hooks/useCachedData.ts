@@ -250,7 +250,7 @@ export function useDashboardStats() {
           .select('id, nome, categoria')
           .is('deleted_at', null),
         supabase.from('turmas')
-          .select('id, nome, curso_id, status, grupo_responsavel, curso:cursos(grupo_responsavel)')
+          .select('id, nome, ano, data_inicio, data_fim, status, internacional, localizacao, periodo, capacidade_max, instrutor, grupo_responsavel, curso_id, curso:cursos(id, nome, categoria, grupo_responsavel)')
           .is('deleted_at', null),
         supabase.from('alunos')
           .select('id, turma_id')
@@ -322,10 +322,10 @@ export function useDashboardStats() {
         }
       });
 
-      // Count turmas by category of their course - Active only, non-concluded
-      let expeditoTurmasCount = 0;
-      let carreiraTurmasCount = 0;
-      let especialTurmasCount = 0;
+      // Count and compile turmas by category of their course - Active only, non-concluded
+      const expeditoTurmasList: any[] = [];
+      const carreiraTurmasList: any[] = [];
+      const especialTurmasList: any[] = [];
 
       filteredTurmas.forEach((t: any) => {
         const isAtiva = t.status === 'ativa' || !t.status;
@@ -333,12 +333,13 @@ export function useDashboardStats() {
           const course = courseMap.get(t.curso_id);
           if (course) {
             const cat = course.categoria?.toLowerCase();
+            const tWithCourse = { ...t, curso: course };
             if (cat === 'expedito') {
-              expeditoTurmasCount++;
+              expeditoTurmasList.push(tWithCourse);
             } else if (cat === 'carreira') {
-              carreiraTurmasCount++;
+              carreiraTurmasList.push(tWithCourse);
             } else if (cat === 'especial') {
-              especialTurmasCount++;
+              especialTurmasList.push(tWithCourse);
             }
           }
         }
@@ -374,14 +375,17 @@ export function useDashboardStats() {
       return {
         stats: {
           alunosExterior: filteredAlunosExterior.length,
-          turmasExpedito: expeditoTurmasCount,
-          turmasCarreira: carreiraTurmasCount,
-          turmasEspeciais: especialTurmasCount,
+          turmasExpedito: expeditoTurmasList.length,
+          turmasCarreira: carreiraTurmasList.length,
+          turmasEspeciais: especialTurmasList.length,
           studentsExpedito: expeditoAlunosCount,
           studentsCarreira: carreiraAlunosCount,
           studentsEspeciais: especialAlunosCount,
         },
-        alunosExterior: filteredAlunosExterior
+        alunosExterior: filteredAlunosExterior,
+        turmasExpeditoList: expeditoTurmasList,
+        turmasCarreiraList: carreiraTurmasList,
+        turmasEspeciaisList: especialTurmasList,
       };
     },
     {
@@ -396,7 +400,10 @@ export function useDashboardStats() {
           studentsCarreira: 0,
           studentsEspeciais: 0,
         },
-        alunosExterior: []
+        alunosExterior: [],
+        turmasExpeditoList: [],
+        turmasCarreiraList: [],
+        turmasEspeciaisList: []
       }
     }
   );

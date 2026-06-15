@@ -34,7 +34,21 @@ export default function DashboardPage() {
   const { t } = useI18n();
   const { profile } = useUser();
   const { dashboardData, loading } = useDashboardStats();
-  const { stats, alunosExterior } = dashboardData;
+  
+  const { 
+    stats = {
+      alunosExterior: 0,
+      turmasExpedito: 0,
+      turmasCarreira: 0,
+      turmasEspeciais: 0,
+    }, 
+    alunosExterior = [],
+    turmasExpeditoList = [],
+    turmasCarreiraList = [],
+    turmasEspeciaisList = []
+  } = dashboardData || {};
+
+  const [selectedCard, setSelectedCard] = useState<string>('exterior');
   const [expandedPhoto, setExpandedPhoto] = useState<{url: string, name: string} | null>(null);
 
   // States for Thought of the Day
@@ -146,34 +160,38 @@ export default function DashboardPage() {
 
   const statCards = [
     { 
+      id: 'exterior',
       name: t.dashboard.studentsAbroad, 
       value: stats.alunosExterior, 
       icon: GraduationCap, 
       color: 'bg-purple-600',
-      shouldShow: stats.alunosExterior > 0
+      shouldShow: true
     },
     { 
+      id: 'expedito',
       name: t.dashboard.turmasExpedito, 
       value: stats.turmasExpedito, 
       icon: BookOpen, 
       color: 'bg-amber-500',
-      shouldShow: stats.studentsExpedito > 0
+      shouldShow: true
     },
     { 
+      id: 'carreira',
       name: t.dashboard.turmasCarreira, 
       value: stats.turmasCarreira, 
       icon: BookMarked, 
       color: 'bg-emerald-600',
-      shouldShow: stats.studentsCarreira > 0
+      shouldShow: true
     },
     { 
+      id: 'especial',
       name: t.dashboard.turmasEspeciais, 
       value: stats.turmasEspeciais, 
       icon: Award, 
       color: 'bg-blue-600',
-      shouldShow: stats.studentsEspeciais > 0
+      shouldShow: true
     },
-  ].filter((card: any) => card.shouldShow);
+  ];
 
   return (
     <div className="space-y-6">
@@ -472,134 +490,216 @@ export default function DashboardPage() {
 
       {statCards.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {statCards.map((card: any, i: number) => (
-            <motion.div
-              key={card.name}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
-              className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div className={`p-2 rounded-lg ${card.color} text-white`}>
-                  <card.icon size={20} />
+          {statCards.map((card: any, i: number) => {
+            const isSelected = selectedCard === card.id;
+            return (
+              <motion.div
+                key={card.name}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1 }}
+                onClick={() => setSelectedCard(card.id)}
+                className={`p-6 rounded-xl border transition-all cursor-pointer relative overflow-hidden active:scale-[0.98] ${
+                  isSelected 
+                    ? 'bg-white border-slate-900 shadow-md ring-2 ring-slate-950/5' 
+                    : 'bg-white border-slate-200 hover:border-slate-400 shadow-sm'
+                }`}
+              >
+                {/* Visual selected accent pill/glow */}
+                {isSelected && (
+                  <div className={`absolute top-0 left-0 right-0 h-1.5 ${card.color}`} />
+                )}
+                
+                <div className="flex items-center justify-between mb-4">
+                  <div className={`p-2 rounded-lg ${card.color} text-white shadow-sm`}>
+                    <card.icon size={20} />
+                  </div>
+                  {isSelected ? (
+                    <span className="text-[9px] font-black text-slate-800 bg-slate-100 px-2 py-0.5 rounded uppercase tracking-wider">
+                      {t.t === 'pt' ? 'Visualizando' : 'Viewing'}
+                    </span>
+                  ) : (
+                    <span className="text-[9px] font-extrabold text-slate-400 bg-slate-55 px-2 py-0.5 rounded uppercase tracking-wider">
+                      {t.dashboard?.stable || 'Estável'}
+                    </span>
+                  )}
                 </div>
-                <span className="text-[10px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded uppercase">
-                  {t.dashboard.stable}
-                </span>
-              </div>
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">{card.name}</p>
-              <div className="flex items-end justify-between">
-                <span className="text-3xl font-bold text-slate-800">{card.value}</span>
-              </div>
-            </motion.div>
-          ))}
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">{card.name}</p>
+                <div className="flex items-end justify-between">
+                  <span className="text-3xl font-black text-slate-800 tracking-tight">{card.value}</span>
+                  <span className="text-[10px] text-indigo-600 font-bold flex items-center gap-0.5 group">
+                    {t.t === 'pt' ? 'Detalhar' : 'Details'} 
+                    <ArrowRight size={10} className="text-indigo-500 transition-transform group-hover:translate-x-0.5" />
+                  </span>
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
       )}
 
-      <div className="bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col overflow-hidden">
-        <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-          <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
-            <Users size={16} className="text-slate-400" />
-            {t.dashboard.studentsAbroad}
-          </h3>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="text-[10px] font-bold text-slate-400 border-b border-slate-100 uppercase tracking-wider">
-                <th className="px-6 py-4">{t.students.name}</th>
-                <th className="px-6 py-4">{t.dashboard.courseLocation}</th>
-                <th className="px-6 py-4 text-center">{t.dashboard.startEnd}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50 text-sm">
-              {alunosExterior.length === 0 ? (
-                <tr>
-                  <td colSpan={3} className="px-6 py-10 text-center text-slate-400 italic">
-                    {t.common.noInternationalStudents}
-                  </td>
-                </tr>
-              ) : (
-                alunosExterior.slice(0, 15).map((aluno: any) => {
-                  const turmaData = Array.isArray((aluno as any).turma) ? (aluno as any).turma[0] : (aluno as any).turma;
-                  const curso = Array.isArray(turmaData?.curso) ? turmaData.curso[0] : turmaData?.curso;
-                  return (
-                    <tr key={aluno.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          {aluno.foto_url ? (
-                            <div 
-                              className="w-12 h-16 rounded-lg overflow-hidden border border-slate-200 shrink-0 shadow-sm hover:scale-105 transition-transform cursor-pointer relative bg-slate-100 group"
-                              onClick={() => setExpandedPhoto({ url: aluno.foto_url, name: aluno.nome })}
-                            >
-                              <Image 
-                                src={aluno.foto_url} 
-                                alt={aluno.nome} 
-                                fill
-                                className="object-cover" 
-                                referrerPolicy="no-referrer" 
-                                sizes="48px"
-                              />
-                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                                <LayersIcon size={14} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="w-12 h-16 rounded-lg overflow-hidden border border-slate-200 shrink-0 shadow-sm relative bg-slate-100">
-                              <Image 
-                                src={
-                                  aluno.tipo_aluno === 'civil'
-                                    ? (aluno.genero === 'feminino' ? femaleAvatar : maleAvatar)
-                                    : (aluno.genero === 'feminino' ? militaryFemaleAvatar : militaryMaleAvatar)
-                                } 
-                                alt={aluno.nome} 
-                                fill
-                                className="object-cover opacity-60" 
-                                referrerPolicy="no-referrer" 
-                                sizes="48px"
-                              />
-                            </div>
-                          )}
-                          <div>
-                            <div className="font-bold text-slate-800">
-                              {aluno.posto_graduacao ? `${aluno.posto_graduacao} ` : ''}{aluno.nome}
-                            </div>
-                            <div className="text-[10px] text-slate-400 font-mono uppercase">
-                              {aluno.om || '-'}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-slate-600">{curso?.nome || '-'}</div>
-                        <div className="text-[10px] text-slate-400 uppercase font-bold">{turmaData?.localizacao || '-'}</div>
-                      </td>
-                      <td className="px-6 py-4 text-center text-slate-500 font-mono text-xs">
-                        {turmaData?.internacional ? (
-                          <div className="flex flex-col items-center justify-center leading-normal">
-                            <span className="text-slate-800 font-bold whitespace-nowrap">
-                              {aluno.data_inicio_curso ? aluno.data_inicio_curso.split('-').reverse().join('/') : '—'}
-                            </span>
-                            <span className="text-[10px] text-slate-400 font-sans uppercase font-extrabold my-0.5">a</span>
-                            <span className="text-slate-800 font-bold whitespace-nowrap">
-                              {aluno.data_fim_curso ? aluno.data_fim_curso.split('-').reverse().join('/') : '—'}
-                            </span>
-                          </div>
-                        ) : (
-                          <span>
-                            {turmaData?.data_inicio ? new Date(turmaData.data_inicio).getFullYear() : '-'} / {turmaData?.data_fim ? new Date(turmaData.data_fim).getFullYear() : '-'}
-                          </span>
-                        )}
+      <AnimatePresence mode="wait">
+        {selectedCard === 'exterior' && (
+          <motion.div
+            key="exterior"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            transition={{ duration: 0.2 }}
+            className="bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col overflow-hidden"
+          >
+            <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+              <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                <Users size={16} className="text-slate-400" />
+                {t.dashboard.studentsAbroad}
+              </h3>
+              <span className="text-xs text-slate-550 font-bold bg-slate-100 px-3 py-1 rounded-full border border-slate-200/50">
+                {alunosExterior.length} {t.t === 'pt' ? 'Alunos' : 'Students'}
+              </span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="text-[10px] font-bold text-slate-400 border-b border-slate-100 uppercase tracking-wider">
+                    <th className="px-6 py-4">{t.students.name}</th>
+                    <th className="px-6 py-4">{t.dashboard.courseLocation}</th>
+                    <th className="px-6 py-4 text-center">{t.dashboard.startEnd}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50 text-sm">
+                  {alunosExterior.length === 0 ? (
+                    <tr>
+                      <td colSpan={3} className="px-6 py-10 text-center text-slate-400 italic">
+                        {t.common.noInternationalStudents}
                       </td>
                     </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                  ) : (
+                    alunosExterior.slice(0, 15).map((aluno: any) => {
+                      const turmaData = Array.isArray((aluno as any).turma) ? (aluno as any).turma[0] : (aluno as any).turma;
+                      const curso = Array.isArray(turmaData?.curso) ? turmaData.curso[0] : turmaData?.curso;
+                      return (
+                        <tr key={aluno.id} className="hover:bg-slate-50 transition-colors">
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              {aluno.foto_url ? (
+                                <div 
+                                  className="w-12 h-16 rounded-lg overflow-hidden border border-slate-200 shrink-0 shadow-sm hover:scale-105 transition-transform cursor-pointer relative bg-slate-100 group"
+                                  onClick={() => setExpandedPhoto({ url: aluno.foto_url, name: aluno.nome })}
+                                >
+                                  <Image 
+                                    src={aluno.foto_url} 
+                                    alt={aluno.nome} 
+                                    fill
+                                    className="object-cover" 
+                                    referrerPolicy="no-referrer" 
+                                    sizes="48px"
+                                  />
+                                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                                    <LayersIcon size={14} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="w-12 h-16 rounded-lg overflow-hidden border border-slate-200 shrink-0 shadow-sm relative bg-slate-100">
+                                  <Image 
+                                    src={
+                                      aluno.tipo_aluno === 'civil'
+                                        ? (aluno.genero === 'feminino' ? femaleAvatar : maleAvatar)
+                                        : (aluno.genero === 'feminino' ? militaryFemaleAvatar : militaryMaleAvatar)
+                                    } 
+                                    alt={aluno.nome} 
+                                    fill
+                                    className="object-cover opacity-60" 
+                                    referrerPolicy="no-referrer" 
+                                    sizes="48px"
+                                  />
+                                </div>
+                              )}
+                              <div>
+                                <div className="font-bold text-slate-800">
+                                  {aluno.posto_graduacao ? `${aluno.posto_graduacao} ` : ''}{aluno.nome}
+                                </div>
+                                <div className="text-[10px] text-slate-400 font-mono uppercase">
+                                  {aluno.om || '-'}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="text-slate-600">{curso?.nome || '-'}</div>
+                            <div className="text-[10px] text-slate-400 uppercase font-bold">{turmaData?.localizacao || '-'}</div>
+                          </td>
+                          <td className="px-6 py-4 text-center text-slate-500 font-mono text-xs">
+                            {turmaData?.internacional ? (
+                              <div className="flex flex-col items-center justify-center leading-normal">
+                                <span className="text-slate-800 font-bold whitespace-nowrap">
+                                  {aluno.data_inicio_curso ? aluno.data_inicio_curso.split('-').reverse().join('/') : '—'}
+                                </span>
+                                <span className="text-[10px] text-slate-400 font-sans uppercase font-extrabold my-0.5">a</span>
+                                <span className="text-slate-800 font-bold whitespace-nowrap">
+                                  {aluno.data_fim_curso ? aluno.data_fim_curso.split('-').reverse().join('/') : '—'}
+                                </span>
+                              </div>
+                            ) : (
+                              <span>
+                                {turmaData?.data_inicio ? new Date(turmaData.data_inicio).getFullYear() : '-'} / {turmaData?.data_fim ? new Date(turmaData.data_fim).getFullYear() : '-'}
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </motion.div>
+        )}
+
+        {selectedCard === 'expedito' && (
+          <motion.div
+            key="expedito"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            transition={{ duration: 0.2 }}
+          >
+            <TurmasListTable 
+              turmas={turmasExpeditoList} 
+              title={t.dashboard.turmasExpedito} 
+            />
+          </motion.div>
+        )}
+
+        {selectedCard === 'carreira' && (
+          <motion.div
+            key="carreira"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            transition={{ duration: 0.2 }}
+          >
+            <TurmasListTable 
+              turmas={turmasCarreiraList} 
+              title={t.dashboard.turmasCarreira} 
+            />
+          </motion.div>
+        )}
+
+        {selectedCard === 'especial' && (
+          <motion.div
+            key="especial"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            transition={{ duration: 0.2 }}
+          >
+            <TurmasListTable 
+              turmas={turmasEspeciaisList} 
+              title={t.dashboard.turmasEspeciais} 
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {expandedPhoto && (
@@ -645,6 +745,81 @@ export default function DashboardPage() {
           </motion.div>
         )}
       </AnimatePresence>
+    </div>
+  );
+}
+
+function TurmasListTable({ turmas, title }: { turmas: any[], title: string }) {
+  const { t } = useI18n();
+  const isPt = t.t === 'pt';
+  return (
+    <div className="bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col overflow-hidden">
+      <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+        <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
+          <BookOpen size={16} className="text-slate-400" />
+          {title}
+        </h3>
+        <span className="text-xs text-slate-550 font-bold bg-slate-100 px-3 py-1 rounded-full border border-slate-200/50">
+          {turmas.length} {isPt ? 'Ativas' : 'Active'}
+        </span>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="text-[10px] font-bold text-slate-400 border-b border-slate-100 uppercase tracking-wider">
+              <th className="px-6 py-4">{isPt ? 'Identificador da Turma' : 'Class Identifier'}</th>
+              <th className="px-6 py-4">{isPt ? 'Curso Recomendado / Categoria' : 'Course Name / Category'}</th>
+              <th className="px-6 py-4">{isPt ? 'Localização / Período' : 'Location / Period'}</th>
+              <th className="px-6 py-4 text-center">{isPt ? 'Capacidade' : 'Capacity'}</th>
+              <th className="px-6 py-4">{isPt ? 'Instrutor Responsável' : 'Responsible Instructor'}</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-50 text-sm">
+            {turmas.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="px-6 py-10 text-center text-slate-400 italic font-medium">
+                  {isPt ? 'Nenhuma turma ativa encontrada para esta categoria.' : 'No active classes found for this category.'}
+                </td>
+              </tr>
+            ) : (
+              turmas.map((turma) => (
+                <tr key={turma.id} className="hover:bg-slate-50 transition-colors">
+                  <td className="px-6 py-4">
+                    <div className="font-bold text-slate-800">{turma.nome}</div>
+                    <div className="text-[10px] text-slate-400 font-mono uppercase">
+                      ANO: {turma.ano || '-'} {turma.grupo_responsavel ? `• GRUPO: ${turma.grupo_responsavel}` : ''}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="text-slate-700 font-semibold">{turma.curso?.nome || '-'}</div>
+                    <div className="text-[10px] text-slate-400 uppercase font-black tracking-wider">
+                      {turma.curso?.categoria || '-'}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="text-slate-600 font-medium">{turma.localizacao || '-'}</div>
+                    <div className="text-[10px] text-slate-400 uppercase font-bold">
+                      {turma.periodo || '-'}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-center">
+                    <span className="inline-block px-2.5 py-1 text-xs font-bold text-slate-700 bg-slate-100 rounded-lg">
+                      {turma.capacidade_max || 40} {isPt ? 'vagas' : 'seats'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="text-slate-650 font-medium">{turma.instrutor || '-'}</div>
+                    <div className="text-[10px] text-green-600 font-bold uppercase flex items-center gap-1 mt-0.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                      Class {turma.status || 'ativa'}
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
