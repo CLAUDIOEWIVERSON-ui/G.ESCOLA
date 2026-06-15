@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
 import { useDashboardStats } from '@/hooks/useCachedData';
@@ -50,6 +50,14 @@ export default function DashboardPage() {
 
   const [selectedCard, setSelectedCard] = useState<string>('exterior');
   const [expandedPhoto, setExpandedPhoto] = useState<{url: string, name: string} | null>(null);
+  const detailsRef = useRef<HTMLDivElement>(null);
+
+  const handleCardClick = (cardId: string) => {
+    setSelectedCard(cardId);
+    setTimeout(() => {
+      detailsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  };
 
   // States for Thought of the Day
   const [pensamento, setPensamento] = useState<{ texto: string; autor: string; id?: string; isDemo?: boolean } | null>(null);
@@ -498,7 +506,7 @@ export default function DashboardPage() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
-                onClick={() => setSelectedCard(card.id)}
+                onClick={() => handleCardClick(card.id)}
                 className={`p-6 rounded-xl border transition-all cursor-pointer relative overflow-hidden active:scale-[0.98] ${
                   isSelected 
                     ? 'bg-white border-slate-900 shadow-md ring-2 ring-slate-950/5' 
@@ -537,6 +545,8 @@ export default function DashboardPage() {
           })}
         </div>
       )}
+
+      <div ref={detailsRef} className="scroll-mt-24" />
 
       <AnimatePresence mode="wait">
         {selectedCard === 'exterior' && (
