@@ -79,12 +79,139 @@ function AvaliacaoAlunoForm() {
   const { profile, loading: userLoading } = useUser();
   const searchParams = useSearchParams();
   const qrTurmaId = searchParams ? searchParams.get('turmaId') : null;
+  const qrStudentId = searchParams ? searchParams.get('studentId') : null;
+  const qrAccessCode = searchParams ? searchParams.get('code') : null;
 
   const [loading, setLoading] = useState(true);
   const [studentDetails, setStudentDetails] = useState<any | null>(null);
   const [existingSubmission, setExistingSubmission] = useState<any | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [currentStep, setCurrentStep] = useState(1); // 1: Info, 2: Curso, 3: Instrutor, 4: Auto/Infra, 5: Comentários/Sugestões
+
+  // Personalized class messages
+  const [classMessages, setClassMessages] = useState<any[]>([]);
+  const [loadingMessages, setLoadingMessages] = useState(false);
+
+  // Individual Report Card / Bulletin state
+  const [reportData, setReportData] = useState<any | null>(null);
+  const [loadingReport, setLoadingReport] = useState(false);
+
+  const fetchClassMessages = async (tId: string, group: string) => {
+    try {
+      setLoadingMessages(true);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      // Fetch upcoming events for this class
+      const { data, error } = await supabase
+        .from('eventos')
+        .select('id, titulo, descricao, data, cor, exibir_aluno, target_grupo, uniforme_dia')
+        .is('exibir_aluno', true)
+        .gte('data', today.toISOString())
+        .order('data', { ascending: true })
+        .limit(10);
+
+      if (error) throw error;
+
+      if (data) {
+        // Filter by group (GAT, MAN, AMBOS)
+        const filtered = data.filter((evt: any) => {
+          const targetGrp = (evt.target_grupo || 'AMBOS').toUpperCase();
+          const targetGroupInput = (group || 'AMBOS').toUpperCase();
+          if (targetGrp === 'AMBOS') return true;
+          if (targetGroupInput === 'AMBOS') return true;
+          return targetGrp === targetGroupInput;
+        });
+        setClassMessages(filtered);
+      }
+    } catch (err) {
+      console.error('Error fetching class messages:', err);
+    } finally {
+      setLoadingMessages(false);
+    }
+  };
+
+  const fetchStudentReportCard = async (studentId: string, classId: string) => {
+    try {
+      setLoadingReport(true);
+      const { data: student, error: studentErr } = await supabase
+        .from('alunos')
+        .select('*')
+        .eq('id', studentId)
+        .single();
+      if (studentErr) throw studentErr;
+
+      const actualClassId = student.turma_id || classId;
+      if (!actualClassId) return;
+
+      const { data: tData } = await supabase
+        .from('turmas')
+        .select('*')
+        .eq('id', actualClassId)
+        .single();
+      const classObj = tData;
+
+      let courseObj: any = null;
+      if (tData?.curso_id) {
+        const { data: cData } = await supabase
+          .from('cursos')
+          .select('*')
+          .eq('id', tData.curso_id)
+          .single();
+        courseObj = cData;
+      }
+
+      let discList: any[] = [];
+      if (courseObj?.id) {
+        const { data: dData } = await supabase
+          .from('disciplinas')
+          .select('*')
+          .eq('curso_id', courseObj.id)
+          .is('deleted_at', null);
+        discList = dData || [];
+      }
+
+      let topicsList: any[] = [];
+      if (discList.length > 0) {
+        const discIds = discList.map((d: any) => d.id);
+        const { data: mmData } = await supabase
+          .from('materias_modulos')
+          .select('*')
+          .in('disciplina_id', discIds)
+          .is('deleted_at', null)
+          .order('modulo_index', { ascending: true })
+          .order('ordem', { ascending: true });
+        topicsList = mmData || [];
+      }
+
+      const { data: gradesData } = await supabase
+        .from('notas')
+        .select('*')
+        .eq('aluno_id', studentId)
+        .eq('turma_id', actualClassId);
+
+      const { data: attendanceData } = await supabase
+        .from('frequencia')
+        .select('*')
+        .eq('aluno_id', studentId)
+        .eq('turma_id', actualClassId)
+        .order('data', { ascending: false });
+
+      setReportData({
+        student,
+        classObj,
+        courseObj,
+        disciplines: discList,
+        grades: gradesData || [],
+        attendance: attendanceData || [],
+        topics: topicsList
+      });
+    } catch (err) {
+      console.error('Error loading report card:', err);
+    } finally {
+      setLoadingReport(false);
+    }
+  };
 
   // Form states
   const [answers, setAnswers] = useState<Record<string, number>>({});
@@ -182,9 +309,11 @@ function AvaliacaoAlunoForm() {
           instrutor,
           data_fim,
           curso_id,
+          grupo_responsavel,
           curso:cursos(
             id,
-            nome
+            nome,
+            grupo_responsavel
           )
         `)
         .eq('id', tId)
@@ -196,6 +325,10 @@ function AvaliacaoAlunoForm() {
         setLoading(false);
         return;
       }
+
+      // Fetch class messages/announcements
+      const grp = classObj.grupo_responsavel || classObj.curso?.grupo_responsavel || 'AMBOS';
+      fetchClassMessages(tId, grp);
 
       // 2. Fetch Alunos (students enrolled)
       const { data: students, error: studErr } = await supabase
@@ -245,9 +378,11 @@ function AvaliacaoAlunoForm() {
           nome: classObj.nome,
           instrutor: classObj.instrutor || "Não cadastrado",
           data_fim: classObj.data_fim,
+          grupo_responsavel: classObj.grupo_responsavel,
           curso: {
             id: classObj.curso?.id || classObj.curso_id,
-            nome: classObj.curso?.nome || "Curso Acadêmico"
+            nome: classObj.curso?.nome || "Curso Acadêmico",
+            grupo_responsavel: classObj.curso?.grupo_responsavel
           }
         }
       });
@@ -278,9 +413,11 @@ function AvaliacaoAlunoForm() {
             nome,
             instrutor,
             data_fim,
+            grupo_responsavel,
             curso:cursos(
               id,
-              nome
+              nome,
+              grupo_responsavel
             )
           )
         `)
@@ -307,6 +444,11 @@ function AvaliacaoAlunoForm() {
         if (evaluation) {
           setExistingSubmission(evaluation);
         }
+
+        // Fetch class messages/announcements and report card for student
+        const grp = student.turma?.grupo_responsavel || student.turma?.curso?.grupo_responsavel || 'AMBOS';
+        fetchClassMessages(student.turma_id, grp);
+        fetchStudentReportCard(student.id, student.turma_id);
       }
     } catch (err: any) {
       console.error('Error loading student details:', err);
@@ -317,7 +459,33 @@ function AvaliacaoAlunoForm() {
   };
 
   useEffect(() => {
-    if (qrTurmaId) {
+    if (qrAccessCode) {
+      const fetchByCode = async () => {
+        try {
+          setLoading(true);
+          const { data, error } = await supabase
+            .from('student_access_codes')
+            .select('student_id')
+            .eq('access_code', qrAccessCode.trim().toUpperCase())
+            .maybeSingle();
+          
+          if (data?.student_id) {
+            await fetchStudentAndEvaluation(data.student_id);
+          } else {
+            toast.error('Código de acesso individual inválido.');
+            setLoading(false);
+          }
+        } catch (err) {
+          console.error(err);
+          setLoading(false);
+        }
+      };
+      fetchByCode();
+    } else if (qrStudentId) {
+      setTimeout(() => {
+        fetchStudentAndEvaluation(qrStudentId);
+      }, 0);
+    } else if (qrTurmaId) {
       setTimeout(() => {
         setCurrentStep(2);
       }, 0);
@@ -336,7 +504,8 @@ function AvaliacaoAlunoForm() {
         }, 0);
       }
     }
-  }, [qrTurmaId, profile?.student_id, userLoading]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [qrTurmaId, qrStudentId, qrAccessCode, profile?.student_id, userLoading]);
 
   const handleSelectAnswer = (key: string, value: number) => {
     setAnswers(prev => ({ ...prev, [key]: value }));
@@ -1097,6 +1266,42 @@ function AvaliacaoAlunoForm() {
                 </div>
               </div>
 
+              {/* Mensagens / Avisos da Turma */}
+              <div className="bg-slate-900 text-white rounded-xl shadow-md p-5 mt-6">
+                <div className="flex items-center gap-2.5 border-b border-slate-800 pb-3 mb-4">
+                  <div className="h-2 w-2 rounded-full bg-rose-500 animate-ping" />
+                  <h3 className="font-mono text-xs font-bold text-slate-200 tracking-wider uppercase flex items-center gap-1.5">
+                    📢 Mensagens e Comunicados da Turma
+                  </h3>
+                </div>
+                {loadingMessages ? (
+                  <p className="text-xs text-slate-400 italic animate-pulse py-2 font-mono">Carregando avisos personalizados...</p>
+                ) : classMessages.length === 0 ? (
+                  <p className="text-xs text-slate-400 italic py-2">Nenhum aviso ou comunicado cadastrado especificamente para sua turma hoje.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {classMessages.map((msg: any) => (
+                      <div key={msg.id} className="border-l-4 border-indigo-500 pl-3.5 py-1 bg-slate-800/40 rounded-r-lg">
+                        <h4 className="text-xs font-bold text-slate-100 flex items-center gap-2">
+                          <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+                          {msg.titulo}
+                          {msg.uniforme_dia && (
+                            <span className="bg-amber-100/10 text-amber-300 text-[9px] font-black font-mono px-1.5 py-0.5 rounded border border-amber-500/20 uppercase">
+                               Uniforme: {msg.uniforme_dia}
+                            </span>
+                          )}
+                        </h4>
+                        {msg.descricao && <p className="text-xs text-slate-300 mt-1.5 leading-relaxed">{msg.descricao}</p>}
+                        <span className="text-[9px] font-bold font-mono text-slate-400 block mt-1">
+                          Data: {new Date(msg.data).toLocaleDateString('pt-BR')} 
+                          {msg.target_grupo && ` • Alvo: ${msg.target_grupo}`}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               {/* Collapsible section for Student Weekly Class Schedule */}
               <div className="border border-slate-200 rounded-xl overflow-hidden mt-6 bg-slate-50/20 shadow-xs">
                 <button
@@ -1183,7 +1388,7 @@ function AvaliacaoAlunoForm() {
                                   return (
                                     <div key={day.key} className="border border-slate-150 rounded-lg p-3 bg-slate-50/50 hover:bg-slate-100/35 transition flex flex-col justify-start">
                                       <span className="text-[10px] font-black font-mono text-indigo-700 uppercase tracking-wider block mb-2 pb-1 border-b border-indigo-100">
-                                        {day.label} <span className="text-slate-500 font-semibold">({format(day.date, 'dd/MM')})</span>
+                                        {day.label} <span className="text-slate-550 font-semibold">({format(day.date, 'dd/MM')})</span>
                                       </span>
                                       {filledSlots.length === 0 ? (
                                         <p className="text-[10px] italic text-slate-400 py-2">Sem programação de aulas</p>
@@ -1198,8 +1403,8 @@ function AvaliacaoAlunoForm() {
                                                   <span className="bg-slate-150 text-slate-705 text-[8.5px] font-bold px-1 py-0.5 rounded font-mono">{slot.time}</span>
                                                   {cell.room && <span className="text-[8px] bg-slate-100 text-slate-600 font-mono px-1 rounded truncate max-w-16">Sala: {cell.room}</span>}
                                                 </div>
-                                                <p className="font-extrabold text-slate-800 leading-tight block">{subjectName}</p>
-                                                <p className="text-[8.5px] text-slate-505 font-mono">Prof.: {instructorName}</p>
+                                                <p className="font-extrabold text-slate-800 leading-tight block uppercase">{subjectName}</p>
+                                                <p className="text-[8.5px] text-slate-505 font-mono truncate uppercase">Prof.: {instructorName}</p>
                                               </div>
                                             );
                                           })}
@@ -1217,6 +1422,78 @@ function AvaliacaoAlunoForm() {
                   </div>
                 )}
               </div>
+
+              {/* BOLETIM INDIVIDUAL DE NOTAS E FREQUÊNCIAS (only for individual scans) */}
+              {reportData && (
+                <div className="border border-slate-200 rounded-xl overflow-hidden mt-6 bg-slate-50/20 shadow-xs">
+                  <div className="flex items-center gap-2 bg-slate-100/75 p-4 border-b border-slate-200">
+                    <BookOpen className="h-4 w-4 text-emerald-600 animate-pulse" />
+                    <span className="font-mono text-xs font-bold text-slate-705 uppercase">
+                      📊 Boletim Escolar Individual (Notas e Frequências)
+                    </span>
+                  </div>
+                  
+                  <div className="p-4 bg-white space-y-4">
+                    {loadingReport ? (
+                      <p className="text-xs text-slate-500 italic animate-pulse text-center font-mono py-4">Carregando notas do boletim...</p>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs font-sans border-collapse">
+                          <thead>
+                            <tr className="bg-slate-50 border-b border-slate-150 text-slate-600 font-bold font-mono text-[9px] uppercase tracking-wider">
+                              <th className="p-2.5 text-left">Disciplina</th>
+                              <th className="p-2.5 text-center">Mod 1</th>
+                              <th className="p-2.5 text-center">Mod 2</th>
+                              <th className="p-2.5 text-center">Mod 3</th>
+                              <th className="p-2.5 text-center">Mod 4</th>
+                              <th className="p-2.5 text-center">Recup.</th>
+                              <th className="p-2.5 text-center">Média Final</th>
+                              <th className="p-2.5 text-center">Freq. (%)</th>
+                              <th className="p-2.5 text-center">Situação</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {reportData.disciplines.map((disc: any) => {
+                              const grade = reportData.grades.find((g: any) => g.disciplina_id === disc.id) || {};
+                              
+                              const mediaAprovacao = 7;
+                              const isAprovado = (grade.nota_final !== null && grade.nota_final >= mediaAprovacao);
+
+                              return (
+                                <tr key={disc.id} className="hover:bg-slate-50/50">
+                                  <td className="p-2.5 font-bold text-slate-800 uppercase">{disc.nome}</td>
+                                  <td className="p-2.5 text-center font-mono text-slate-600">{grade.nota_u1 !== null ? Number(grade.nota_u1).toFixed(1) : '-'}</td>
+                                  <td className="p-2.5 text-center font-mono text-slate-600">{grade.nota_u2 !== null ? Number(grade.nota_u2).toFixed(1) : '-'}</td>
+                                  <td className="p-2.5 text-center font-mono text-slate-600">{grade.nota_u3 !== null ? Number(grade.nota_u3).toFixed(1) : '-'}</td>
+                                  <td className="p-2.5 text-center font-mono text-slate-600">{grade.nota_u4 !== null ? Number(grade.nota_u4).toFixed(1) : '-'}</td>
+                                  <td className="p-2.5 text-center font-mono text-slate-600">{grade.nota_recuperacao !== null ? Number(grade.nota_recuperacao).toFixed(1) : '-'}</td>
+                                  <td className="p-2.5 text-center font-black font-mono text-slate-900 bg-slate-50/40">
+                                    {grade.nota_final !== null ? Number(grade.nota_final).toFixed(1) : '-'}
+                                  </td>
+                                  <td className="p-2.5 text-center font-mono text-slate-800">
+                                    {grade.frequencia !== null ? `${Number(grade.frequencia).toFixed(0)}%` : '-'}
+                                  </td>
+                                  <td className="p-2.5 text-center">
+                                    {grade.nota_final !== null ? (
+                                      <span className={`inline-block font-mono text-[9px] font-black px-1.5 py-0.5 rounded-md uppercase ${
+                                        isAprovado ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'
+                                      }`}>
+                                        {isAprovado ? 'Aprovado' : 'Reprovado'}
+                                      </span>
+                                    ) : (
+                                      <span className="font-mono text-[9px] text-slate-400 uppercase font-bold">Pendente</span>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               <div className="bg-amber-50 text-amber-900 border border-amber-200 rounded-lg p-4 text-xs leading-relaxed mt-6">
                 <strong>ATENÇÃO:</strong> Ao iniciar, você responderá questões objetivas e comentadas de forma oficial e integrada. Uma vez finalizado, suas opiniões serão armazenadas em banco de dados permanente para fins de melhoria de qualidade de ensino institucional.
@@ -1584,6 +1861,154 @@ function AvaliacaoAlunoForm() {
           </form>
         )}
       </div>
+
+      {/* Supplemental student support panel on steps >= 2 */}
+      {currentStep >= 2 && (
+        <div className="mt-8 space-y-6">
+          <div className="bg-slate-900 text-white rounded-xl shadow-md p-5">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+              <div className="flex items-center gap-2">
+                <Info className="h-4 w-4 text-sky-400" />
+                <h3 className="font-mono text-xs font-bold text-slate-200 uppercase tracking-wider">
+                  📌 Painel de Apoio Acadêmico (Consulta Rápida)
+                </h3>
+              </div>
+              <span className="text-[10px] font-mono bg-slate-800 text-slate-350 px-2.5 py-0.5 rounded font-bold uppercase">
+                Etapa {currentStep} de 5
+              </span>
+            </div>
+
+            <div className="space-y-4">
+              {/* Class Messages inside Support Panel */}
+              <div>
+                <h4 className="text-[11px] font-mono font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                  📢 Comunicados e Avisos da Turma
+                </h4>
+                {loadingMessages ? (
+                  <p className="text-[11px] text-slate-500 italic animate-pulse font-mono">Carregando mensagens...</p>
+                ) : classMessages.length === 0 ? (
+                  <p className="text-[11px] text-slate-500 italic">Nenhum aviso cadastrado para esta turma hoje.</p>
+                ) : (
+                  <div className="grid grid-cols-1 gap-2.5">
+                    {classMessages.map((msg: any) => (
+                      <div key={msg.id} className="bg-slate-800/40 border border-slate-800 p-3 rounded-lg text-xs leading-relaxed">
+                        <div className="flex justify-between items-start gap-2 mb-1">
+                          <span className="font-extrabold text-slate-200 flex items-center gap-1.5 uppercase">
+                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                            {msg.titulo}
+                          </span>
+                          {msg.uniforme_dia && (
+                            <span className="bg-amber-500/10 text-amber-400 text-[8.5px] font-black font-mono px-1.5 py-0.5 rounded border border-amber-500/20 uppercase">
+                              Uniforme: {msg.uniforme_dia}
+                            </span>
+                          )}
+                        </div>
+                        {msg.descricao && <p className="text-slate-300 mb-1">{msg.descricao}</p>}
+                        <span className="text-[9px] font-mono text-slate-500 font-bold block mt-1">
+                          Data: {new Date(msg.data).toLocaleDateString('pt-BR')} 
+                          {msg.target_grupo && ` • Grupo: ${msg.target_grupo}`}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Weekly Schedule Access */}
+              <div className="border-t border-slate-800 pt-4 mt-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-mono font-bold text-slate-400 uppercase tracking-widest">
+                    📅 Quadro de Horários da Turma
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowWeeklySchedule(!showWeeklySchedule)}
+                    className="bg-slate-850 hover:bg-slate-800 text-sky-400 hover:text-sky-300 border border-slate-700 font-mono text-[10px] font-bold px-2.5 py-1 rounded transition cursor-pointer select-none"
+                  >
+                    {showWeeklySchedule ? "OCULTAR CRONOGRAMA ▲" : "VISUALIZAR DETALHES ▼"}
+                  </button>
+                </div>
+
+                {showWeeklySchedule && (
+                  <div className="bg-white text-slate-800 rounded-lg p-3 mt-3 shadow-inner border border-slate-200">
+                    {scheduleLoading ? (
+                      <p className="text-xs text-slate-500 italic animate-pulse font-mono py-2 text-center">Carregando cronograma...</p>
+                    ) : Object.keys(scheduleData).length === 0 ? (
+                      <p className="text-xs text-slate-500 italic py-2 text-center text-amber-600">Nenhum quadro cadastrado nesta semana.</p>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-5 gap-2.5 mt-1.5 text-xs">
+                        {(() => {
+                          const weekStart = startOfWeek(currentScheduleDate, { weekStartsOn: 1 });
+                          const weekDays = [
+                            { key: 'monday', label: 'Segunda', date: weekStart },
+                            { key: 'tuesday', label: 'Terça', date: addDays(weekStart, 1) },
+                            { key: 'wednesday', label: 'Quarta', date: addDays(weekStart, 2) },
+                            { key: 'thursday', label: 'Quinta', date: addDays(weekStart, 3) },
+                            { key: 'friday', label: 'Sexta', date: addDays(weekStart, 4) },
+                          ];
+                          const slots = [
+                            { id: "class-08:00", time: "08:00 - 08:50" },
+                            { id: "class-09:00", time: "09:00 - 09:50" },
+                            { id: "class-10:00", time: "10:00 - 10:50" },
+                            { id: "class-11:00", time: "11:00 - 11:50" },
+                            { id: "class-12:00", time: "12:00 - 12:50" },
+                            { id: "class-13:00", time: "13:00 - 13:50" },
+                            { id: "class-14:00", time: "14:00 - 14:50" },
+                            { id: "class-15:00", time: "15:00 - 15:50" }
+                          ];
+                          const getCell = (slotId: string, dayKey: string) => {
+                            const weekKey = format(weekStart, 'yyyy-MM-dd');
+                            return scheduleData[`${weekKey}_${slotId}-${dayKey}`] || scheduleData[`${slotId}-${dayKey}`] || {};
+                          };
+
+                          return weekDays.map((day) => {
+                            const active = slots.map(slot => ({ slot, cell: getCell(slot.id, day.key) })).filter(x => x.cell.subjectId);
+                            return (
+                              <div key={day.key} className="bg-slate-50 border border-slate-250 p-2 rounded-lg">
+                                <span className="text-[10px] font-bold font-mono text-indigo-700 block mb-1.5 pb-0.5 border-b border-indigo-100 uppercase">
+                                  {day.label} ({format(day.date, 'dd/MM')})
+                                </span>
+                                {active.length === 0 ? (
+                                  <p className="text-[9px] text-slate-400 italic">Sem aulas</p>
+                                ) : (
+                                  <div className="space-y-1">
+                                    {active.map(({ slot, cell }) => {
+                                      const subjectName = disciplinas.find(d => d.id === cell.subjectId)?.nome || cell.subjectId;
+                                      return (
+                                        <div key={slot.id} className="bg-white p-1 rounded-sm border border-slate-150 text-[9px] leading-tight">
+                                          <span className="font-mono bg-slate-100 text-slate-500 px-0.5 rounded text-[8px] font-bold">{slot.time}</span>
+                                          <p className="font-extrabold text-slate-800 mt-0.5 uppercase truncate">{subjectName}</p>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          });
+                        })()}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Boletim Escolar summary widget */}
+              {reportData && (
+                <div className="border-t border-slate-850 pt-3 mt-1 flex items-center justify-between">
+                  <span className="text-[11px] font-mono font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    🎓 Boletim Escolar ({reportData.grades.length} Notas Lançadas)
+                  </span>
+                  <span className="text-[9px] bg-emerald-950/60 text-emerald-300 font-mono border border-emerald-500/20 px-2 py-0.5 rounded font-black uppercase">
+                    Vinculado Ativamente
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

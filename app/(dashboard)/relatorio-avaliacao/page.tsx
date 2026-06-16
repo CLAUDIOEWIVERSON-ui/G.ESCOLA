@@ -978,6 +978,7 @@ function RelatorioAvaliacaoAdminContent() {
             >
               <div className="flex-shrink-0 flex flex-col items-center bg-white p-3 border border-slate-200 rounded-xl shadow-xs">
                 {selectedTurma && typeof window !== 'undefined' && (
+                  /* eslint-disable-next-line @next/next/no-img-element */
                   <img
                     src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
                       `${window.location.protocol}//${window.location.host}/avaliacao?turmaId=${selectedTurma}`

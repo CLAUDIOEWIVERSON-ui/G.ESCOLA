@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
@@ -32,6 +32,7 @@ interface Evento {
   created_at: string;
   creator_id?: string;
   is_exclusive?: boolean;
+  target_grupo?: string;
 }
 
 export default function CalendarPage() {
@@ -46,6 +47,30 @@ export default function CalendarPage() {
   const [editingEvent, setEditingEvent] = useState<Evento | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   
+  const [studentClassGroup, setStudentClassGroup] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (profile?.role === 'aluno' && profile?.turma_id) {
+      const fetchStudentGroup = async () => {
+        try {
+          const { data } = await supabase
+            .from('turmas')
+            .select('grupo_responsavel')
+            .eq('id', profile.turma_id)
+            .maybeSingle();
+          if (data?.grupo_responsavel) {
+            setStudentClassGroup(data.grupo_responsavel);
+          }
+        } catch (e) {
+          console.error('Error fetching student group:', e);
+        }
+      };
+      fetchStudentGroup();
+    }
+  }, [profile?.role, profile?.turma_id]);
+
+  const userGroup = profile?.grupo_responsavel || studentClassGroup || 'AMBOS';
+
   const [formData, setFormData] = useState({
     titulo: '',
     descricao: '',
@@ -53,10 +78,11 @@ export default function CalendarPage() {
     cor: 'bg-blue-600',
     exibir_aluno: true,
     exibir_instrutor: true,
-    uniforme_dia: ''
+    uniforme_dia: '',
+    target_grupo: 'AMBOS'
   });
 
-  const parseAndFilterEventos = (rawList: any[]) => {
+  const parseAndFilterEventos = useCallback((rawList: any[]) => {
     const currentUserId = profile?.id;
     
     const parsed = rawList.map(evt => {
@@ -65,6 +91,7 @@ export default function CalendarPage() {
       let parsedIsExclusive = evt.is_exclusive === true;
       let parsedExibirInstrutor = evt.exibir_instrutor !== false;
       let parsedExibirAluno = evt.exibir_aluno !== false;
+      let parsedTargetGrupo = evt.target_grupo || 'AMBOS';
 
       // Extract details from tag suffix if present
       const creatorMatch = desc.match(/\[creator:([^\]]+)\]/);
@@ -97,6 +124,12 @@ export default function CalendarPage() {
         desc = desc.replace(/\[exibir_aluno:[^\]]+\]/, '');
       }
 
+      const targetGrupoMatch = desc.match(/\[target_grupo:([^\]]+)\]/);
+      if (targetGrupoMatch) {
+        parsedTargetGrupo = targetGrupoMatch[1];
+        desc = desc.replace(/\[target_grupo:[^\]]+\]/, '');
+      }
+
       desc = desc.trim();
 
       return {
@@ -105,7 +138,8 @@ export default function CalendarPage() {
         creator_id: parsedCreatorId || undefined,
         is_exclusive: parsedIsExclusive,
         exibir_instrutor: parsedExibirInstrutor,
-        exibir_aluno: parsedExibirAluno
+        exibir_aluno: parsedExibirAluno,
+        target_grupo: parsedTargetGrupo
       };
     });
 
@@ -125,18 +159,30 @@ export default function CalendarPage() {
       if (isAdmin) {
         return true;
       } else {
+        // Role Visibilidade Check
         if (isAluno && !isOwner) {
           if (evt.exibir_aluno === false) return false;
         }
         if (isInstrutor && !isOwner) {
           if (evt.exibir_instrutor === false) return false;
         }
+
+        // Group Visibilidade Check (GAT, MAN, AMBOS)
+        const eventGroup = evt.target_grupo || 'AMBOS';
+        const userGrp = userGroup || profile?.grupo_responsavel || 'AMBOS';
+
+        if (eventGroup !== 'AMBOS' && userGrp !== 'AMBOS') {
+          if (userGrp !== eventGroup) {
+            return false;
+          }
+        }
+
         if (isOwner) return true;
         if (!evt.is_exclusive) return true;
         return false;
       }
     });
-  };
+  }, [profile, isAdmin, isAluno, userGroup]);
 
   const fetchEventos = async () => {
     try {
@@ -185,7 +231,7 @@ export default function CalendarPage() {
 
     loadData();
     return () => { isMounted = false; };
-  }, [profile, isAdmin]);
+  }, [profile, isAdmin, parseAndFilterEventos]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -211,7 +257,7 @@ export default function CalendarPage() {
     // Add hidden markers at the end of the description to ensure perfect compatibility
     // with any state of the remote database schema.
     const cleanDesc = formData.descricao;
-    const tagSuffix = `\n\n[creator:${currentUserId}][exclusive:${isExclusiveRoutine}][exibir_instrutor:${formData.exibir_instrutor}][exibir_aluno:${formData.exibir_aluno}]`;
+    const tagSuffix = `\n\n[creator:${currentUserId}][exclusive:${isExclusiveRoutine}][exibir_instrutor:${formData.exibir_instrutor}][exibir_aluno:${formData.exibir_aluno}][target_grupo:${formData.target_grupo}]`;
     const fullDescWithTags = cleanDesc + tagSuffix;
 
     const eventPayload: any = {
@@ -223,7 +269,8 @@ export default function CalendarPage() {
       exibir_instrutor: isAdmin ? formData.exibir_instrutor : true,
       uniforme_dia: isAdmin ? (formData.uniforme_dia || null) : null,
       creator_id: currentUserId,
-      is_exclusive: isExclusiveRoutine
+      is_exclusive: isExclusiveRoutine,
+      target_grupo: formData.target_grupo
     };
 
     try {
@@ -248,6 +295,7 @@ export default function CalendarPage() {
             fallbackPayload.exibir_aluno = eventPayload.exibir_aluno;
             fallbackPayload.exibir_instrutor = eventPayload.exibir_instrutor;
             fallbackPayload.uniforme_dia = eventPayload.uniforme_dia;
+            fallbackPayload.target_grupo = eventPayload.target_grupo;
           }
 
           const { error: fallbackErr } = await supabase
@@ -288,7 +336,9 @@ export default function CalendarPage() {
 
           if (isAdmin) {
             fallbackPayload.exibir_aluno = eventPayload.exibir_aluno;
+            fallbackPayload.exibir_instrutor = eventPayload.exibir_instrutor;
             fallbackPayload.uniforme_dia = eventPayload.uniforme_dia;
+            fallbackPayload.target_grupo = eventPayload.target_grupo;
           }
 
           const { error: fallbackErr } = await supabase
@@ -321,7 +371,8 @@ export default function CalendarPage() {
         cor: 'bg-blue-600',
         exibir_aluno: true,
         exibir_instrutor: true,
-        uniforme_dia: ''
+        uniforme_dia: '',
+        target_grupo: 'AMBOS'
       });
       fetchEventos();
     } catch (error: any) {
@@ -369,7 +420,8 @@ export default function CalendarPage() {
       cor: evento.cor,
       exibir_aluno: evento.exibir_aluno !== false,
       exibir_instrutor: evento.exibir_instrutor !== false,
-      uniforme_dia: evento.uniforme_dia || ''
+      uniforme_dia: evento.uniforme_dia || '',
+      target_grupo: evento.target_grupo || 'AMBOS'
     });
     setIsModalOpen(true);
   };
@@ -540,32 +592,44 @@ export default function CalendarPage() {
                     <h4 className="text-lg font-bold text-slate-800 mb-2 truncate">{evento.titulo}</h4>
                     
                     {/* Indicadores de Público-Alvo para o Administrador */}
-                    {isAdmin && (
-                      <div className="flex flex-wrap gap-1.5 mb-2.5">
-                        {evento.is_exclusive ? (
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-slate-600 text-[9px] font-bold uppercase tracking-wider leading-none">
-                            👤 Privada (Autor)
-                          </span>
-                        ) : !evento.exibir_aluno && !evento.exibir_instrutor ? (
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-amber-700 text-[9px] font-bold uppercase tracking-wider leading-none">
-                            🔒 Privada
-                          </span>
-                        ) : (
-                          <>
-                            {evento.exibir_aluno !== false && (
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-blue-50 border border-blue-100 text-blue-600 text-[9px] font-bold uppercase tracking-wider leading-none">
-                                🎓 Alunos
-                              </span>
-                            )}
-                            {evento.exibir_instrutor !== false && (
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-purple-50 border border-purple-100 text-purple-600 text-[9px] font-bold uppercase tracking-wider leading-none">
-                                💼 Instrutores
-                              </span>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    )}
+                    <div className="flex flex-wrap gap-1.5 mb-2.5">
+                      {isAdmin && (
+                        <>
+                          {evento.is_exclusive ? (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-slate-600 text-[9px] font-bold uppercase tracking-wider leading-none">
+                              👤 Privada (Autor)
+                            </span>
+                          ) : !evento.exibir_aluno && !evento.exibir_instrutor ? (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-amber-700 text-[9px] font-bold uppercase tracking-wider leading-none">
+                              🔒 Privada
+                            </span>
+                          ) : (
+                            <>
+                              {evento.exibir_aluno !== false && (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-blue-50 border border-blue-100 text-blue-600 text-[9px] font-bold uppercase tracking-wider leading-none">
+                                  🎓 Alunos
+                                </span>
+                              )}
+                              {evento.exibir_instrutor !== false && (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-purple-50 border border-purple-100 text-purple-600 text-[9px] font-bold uppercase tracking-wider leading-none">
+                                  💼 Instrutores
+                                </span>
+                              )}
+                            </>
+                          )}
+                        </>
+                      )}
+                      {evento.target_grupo && (
+                        <span className={cn(
+                          "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider leading-none border",
+                          evento.target_grupo === 'GAT' ? "bg-teal-50 border-teal-150 text-teal-700" :
+                          evento.target_grupo === 'MAN' ? "bg-indigo-50 border-indigo-150 text-indigo-700" :
+                          "bg-slate-50 border-slate-200 text-slate-500"
+                        )}>
+                          🏢 Grupo: {evento.target_grupo === 'AMBOS' ? 'Ambos (GAT/MAN)' : evento.target_grupo}
+                        </span>
+                      )}
+                    </div>
 
                     {evento.uniforme_dia && (
                       <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-blue-50 border border-blue-100 text-blue-700 text-[10px] font-black w-fit mb-2.5 uppercase tracking-wide">
@@ -680,6 +744,25 @@ export default function CalendarPage() {
                             </div>
                           </div>
                         )}
+                      </div>
+                    </div>
+                  )}
+
+                  {viewingEvent.target_grupo && (
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] block mb-2">
+                        Grupo de Visualização
+                      </label>
+                      <div className="flex items-center gap-2.5 py-2.5 px-4 bg-slate-50 border border-slate-100 rounded-xl w-fit">
+                        <span className="text-base">🏢</span>
+                        <span className={cn(
+                          "px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide border",
+                          viewingEvent.target_grupo === 'GAT' ? "bg-teal-50 border-teal-100 text-teal-700" :
+                          viewingEvent.target_grupo === 'MAN' ? "bg-indigo-50 border-indigo-100 text-indigo-700" :
+                          "bg-slate-100 border-slate-200 text-slate-600"
+                        )}>
+                          {viewingEvent.target_grupo === 'AMBOS' ? 'Ambos (GAT / MAN)' : viewingEvent.target_grupo}
+                        </span>
                       </div>
                     </div>
                   )}
@@ -869,6 +952,30 @@ export default function CalendarPage() {
                             </span>
                           </div>
                         )}
+
+                        {/* Segmented Picker: Grupo Alvo */}
+                        <div className="pt-2.5 border-t border-slate-100">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-2">
+                            Grupo Visualizador (GAT / MAN / AMBOS)
+                          </label>
+                          <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-200/40 rounded-xl">
+                            {['AMBOS', 'GAT', 'MAN'].map((grupo) => (
+                              <button
+                                key={grupo}
+                                type="button"
+                                onClick={() => setFormData(prev => ({ ...prev, target_grupo: grupo }))}
+                                className={cn(
+                                  "py-1.5 text-[10px] font-bold rounded-lg transition-all uppercase tracking-wider",
+                                  formData.target_grupo === grupo 
+                                    ? "bg-white text-slate-800 shadow-sm font-black" 
+                                    : "text-slate-500 hover:text-slate-700 font-medium"
+                                )}
+                              >
+                                {grupo === 'AMBOS' ? 'Ambos' : grupo}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}

@@ -321,6 +321,21 @@ export async function GET() {
             .limit(1);
           return error;
         }
+      },
+      {
+        key: 'eventos_target_grupo',
+        tableName: 'eventos',
+        columnName: 'target_grupo',
+        fileName: '41_add_target_grupo_to_eventos.sql',
+        description: 'Coluna target_grupo na tabela de eventos para segmentar rotinas e mensagens por grupo (GAT, MAN, ou AMBOS).',
+        isColumn: true,
+        checkFn: async () => {
+          const { error } = await supabaseAdmin
+            .from('eventos')
+            .select('target_grupo')
+            .limit(1);
+          return error;
+        }
       }
     ];
 

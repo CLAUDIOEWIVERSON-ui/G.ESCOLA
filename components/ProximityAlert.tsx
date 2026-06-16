@@ -198,6 +198,7 @@ export function ProximityAlert() {
     };
 
     checkEvents();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAluno]);
 
   useEffect(() => {
