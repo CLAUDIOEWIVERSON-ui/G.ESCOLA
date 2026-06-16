@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
 import { QrCode, LogIn, User, Lock, AlertCircle, Loader2, BookOpen, Camera } from 'lucide-react';
@@ -32,33 +32,8 @@ export default function LoginPage() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  // 1. Handle auto login when QR code is scanned / access code is in URL
-  useEffect(() => {
-    if (!searchParams) return;
-
-    const codeParam = searchParams.get('code') || searchParams.get('accessCode');
-    const blockedParam = searchParams.get('blocked') === 'true';
-
-    if (blockedParam) {
-      setError('Seu acesso foi encerrado porque sua turma foi concluída. Em caso de dúvidas, procure a administração.');
-      setLoginType('aluno');
-      return;
-    }
-
-    if (codeParam) {
-      handleAutoLogin(codeParam);
-    }
-  }, [searchParams]);
-
-  // Clean up camera stream on unmount
-  useEffect(() => {
-    return () => {
-      stopCamera();
-    };
-  }, []);
-
   // Automates student login process when QR parameters are scanned
-  const handleAutoLogin = async (code: string) => {
+  const handleAutoLogin = useCallback(async (code: string) => {
     setIsAutoLogin(true);
     setLoading(true);
     setError(null);
@@ -97,7 +72,45 @@ export default function LoginPage() {
       setIsAutoLogin(false);
       setLoading(false);
     }
-  };
+  }, [router]);
+
+  const stopCamera = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    setScanning(false);
+  }, []);
+
+  // 1. Handle auto login when QR code is scanned / access code is in URL
+  useEffect(() => {
+    if (!searchParams) return;
+
+    const codeParam = searchParams.get('code') || searchParams.get('accessCode');
+    const blockedParam = searchParams.get('blocked') === 'true';
+
+    if (blockedParam) {
+      const timer = setTimeout(() => {
+        setError('Seu acesso foi encerrado porque sua turma foi concluída. Em caso de dúvidas, procure a administração.');
+        setLoginType('aluno');
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+
+    if (codeParam) {
+      const timer = setTimeout(() => {
+        handleAutoLogin(codeParam);
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams, handleAutoLogin]);
+
+  // Clean up camera stream on unmount
+  useEffect(() => {
+    return () => {
+      stopCamera();
+    };
+  }, [stopCamera]);
 
   // 2. Standard Manual Logins (Admin/Instructor or Student access code typing)
   const handleSubmit = async (e: React.FormEvent) => {
@@ -129,37 +142,7 @@ export default function LoginPage() {
     }
   };
 
-  // 3. Camera QR code reader implementations
-  const startCamera = async () => {
-    setError(null);
-    setScanning(true);
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' }
-      });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.setAttribute('playsinline', 'true');
-        videoRef.current.play();
-        requestAnimationFrame(tick);
-      }
-    } catch (err) {
-      console.error('Camera Access Error:', err);
-      setError('Não foi possível obter acesso à câmera para ler o QR Code.');
-      setScanning(false);
-    }
-  };
-
-  const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
-    }
-    setScanning(false);
-  };
-
-  const tick = () => {
+  function tick() {
     if (!videoRef.current || !canvasRef.current || !streamRef.current) return;
 
     if (videoRef.current.readyState === videoRef.current.HAVE_ENOUGH_DATA) {
@@ -193,7 +176,29 @@ export default function LoginPage() {
       }
     }
     requestAnimationFrame(tick);
-  };
+  }
+
+  // 3. Camera QR code reader implementations
+  async function startCamera() {
+    setError(null);
+    setScanning(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' }
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.setAttribute('playsinline', 'true');
+        videoRef.current.play();
+        requestAnimationFrame(tick);
+      }
+    } catch (err) {
+      console.error('Camera Access Error:', err);
+      setError('Não foi possível obter acesso à câmera para ler o QR Code.');
+      setScanning(false);
+    }
+  }
 
   if (isAutoLogin && loading) {
     return (
