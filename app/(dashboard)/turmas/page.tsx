@@ -2332,10 +2332,10 @@ function TurmasContent() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[80] bg-slate-900/90 overflow-y-auto custom-scrollbar flex flex-col no-print"
+            className="fixed inset-0 z-[80] bg-slate-900/90 overflow-y-auto custom-scrollbar flex flex-col"
           >
             {/* Top Workspace Bar */}
-            <div className="flex flex-col lg:flex-row items-center justify-between gap-4 p-4 border-b border-white/10 bg-slate-950 sticky top-0 z-50 text-white shadow-xl">
+            <div className="flex flex-col lg:flex-row items-center justify-between gap-4 p-4 border-b border-white/10 bg-slate-950 sticky top-0 z-50 text-white shadow-xl no-print">
               <div className="flex items-center gap-3 w-full lg:w-auto">
                 <button
                   onClick={() => setIsPrintAttendanceOpen(false)}
