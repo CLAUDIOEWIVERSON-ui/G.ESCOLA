@@ -1141,6 +1141,278 @@ function RelatorioAvaliacaoAdminContent() {
                         />
                       </div>
                     </div>
+
+                    {/* DYNAMIC STATISTICAL CHARTS BLOCK */}
+                    {filteredSubmissions.length > 0 && (() => {
+                      // 1. Calculate Score Distribution (Scale 1 to 5) across all answered questions
+                      const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+                      let totalResponses = 0;
+                      
+                      filteredSubmissions.forEach(sub => {
+                        allKeys.forEach(key => {
+                          const val = Number(sub[key]);
+                          if (val >= 1 && val <= 5) {
+                            distribution[val as 1|2|3|4|5]++;
+                            totalResponses++;
+                          }
+                        });
+                      });
+
+                      // 2. Compute highlights (top 3 and bottom 3 questions)
+                      const questionAvgsList = [
+                        ...CURSO_QUESTIONS.map(q => ({ label: q.label, key: q.key, cat: 'Curso', avg: calculateQuestionAverage(filteredSubmissions, q.key) })),
+                        ...INSTRUTOR_QUESTIONS.map(q => ({ label: q.label, key: q.key, cat: 'Instrutor', avg: calculateQuestionAverage(filteredSubmissions, q.key) })),
+                        ...AUTO_QUESTIONS.map(q => ({ label: q.label, key: q.key, cat: 'Autoavaliação', avg: calculateQuestionAverage(filteredSubmissions, q.key) })),
+                        ...INFRA_QUESTIONS.map(q => ({ label: q.label, key: q.key, cat: 'Infraestrutura', avg: calculateQuestionAverage(filteredSubmissions, q.key) }))
+                      ].filter(q => q.avg > 0);
+
+                      const sortedQuestions = [...questionAvgsList].sort((a, b) => b.avg - a.avg);
+                      const highPerforming = sortedQuestions.slice(0, 3);
+                      // Sort ascending for low performing
+                      const lowPerforming = sortedQuestions.length > 3 
+                        ? [...sortedQuestions].sort((a, b) => a.avg - b.avg).filter(q => q.avg < 4.9).slice(0, 3) 
+                        : [];
+
+                      return (
+                        <div className="space-y-6 mt-6 pt-6 border-t border-slate-200/60">
+                          {/* Heading */}
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div>
+                              <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider font-mono flex items-center gap-2">
+                                <BarChart3 className="h-4 w-4 text-slate-800" />
+                                Estatísticas e Gráficos da Turma Selecionada
+                              </h3>
+                              <p className="text-[10px] text-slate-500 font-mono">
+                                Métricas de satisfação agregadas em tempo real com base em {filteredSubmissions.length} avaliações preenchidas.
+                              </p>
+                            </div>
+                            <div className="text-[10px] bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-805 font-bold px-3 py-1.5 rounded-lg font-mono">
+                              Média Geral da Turma: {overallAverage.toFixed(2)} / 5.0
+                            </div>
+                          </div>
+
+                          {/* Grid with Grid 1 (Metrics by category) & Grid 2 (Distribution) */}
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            
+                            {/* Chart 1: Média Detalhada por Categoria */}
+                            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
+                              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                                <h4 className="text-xs font-black text-slate-755 uppercase tracking-wider font-mono">
+                                  1. Média Detalhada por Categoria
+                                </h4>
+                                <span className="text-[9px] text-slate-400 font-bold uppercase font-mono">Escala de 1.0 a 5.0</span>
+                              </div>
+                              
+                              <div className="space-y-4">
+                                {/* Category 1: Curso */}
+                                <div className="space-y-1">
+                                  <div className="flex justify-between items-center text-xs">
+                                    <span className="font-semibold text-slate-700 flex items-center gap-1.5">
+                                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                                      Expectativas sobre o Curso
+                                    </span>
+                                    <span className="font-black text-slate-900 font-mono">{courseSatisfactionIndex.toFixed(2)} / 5.00</span>
+                                  </div>
+                                  <div className="h-3.5 bg-slate-100 rounded-full relative overflow-hidden">
+                                    <div 
+                                      className="h-full bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-full transition-all duration-500" 
+                                      style={{ width: `${(courseSatisfactionIndex / 5) * 100}%` }}
+                                    />
+                                    {/* Overall Class Average Reference Line */}
+                                    <div 
+                                      className="absolute top-0 bottom-0 w-0.5 bg-slate-950 border-l border-white"
+                                      style={{ left: `${(overallAverage / 5) * 100}%` }}
+                                      title={`Média Geral da Turma: ${overallAverage.toFixed(2)}`}
+                                    />
+                                  </div>
+                                </div>
+
+                                {/* Category 2: Instrutor */}
+                                <div className="space-y-1">
+                                  <div className="flex justify-between items-center text-xs">
+                                    <span className="font-semibold text-slate-700 flex items-center gap-1.5">
+                                      <span className="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
+                                      Desempenho do Instrutor
+                                    </span>
+                                    <span className="font-black text-slate-900 font-mono">{instructorIndex.toFixed(2)} / 5.00</span>
+                                  </div>
+                                  <div className="h-3.5 bg-slate-100 rounded-full relative overflow-hidden">
+                                    <div 
+                                      className="h-full bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-full transition-all duration-500" 
+                                      style={{ width: `${(instructorIndex / 5) * 100}%` }}
+                                    />
+                                    <div 
+                                      className="absolute top-0 bottom-0 w-0.5 bg-slate-950 border-l border-white"
+                                      style={{ left: `${(overallAverage / 5) * 100}%` }}
+                                    />
+                                  </div>
+                                </div>
+
+                                {/* Category 3: Autoavaliação */}
+                                <div className="space-y-1">
+                                  <div className="flex justify-between items-center text-xs">
+                                    <span className="font-semibold text-slate-700 flex items-center gap-1.5">
+                                      <span className="w-2.5 h-2.5 rounded-full bg-sky-500"></span>
+                                      Autoavaliação dos Alunos
+                                    </span>
+                                    <span className="font-black text-slate-900 font-mono">{studentSelfIndex.toFixed(2)} / 5.00</span>
+                                  </div>
+                                  <div className="h-3.5 bg-slate-100 rounded-full relative overflow-hidden">
+                                    <div 
+                                      className="h-full bg-gradient-to-r from-sky-500 to-sky-600 rounded-full transition-all duration-500" 
+                                      style={{ width: `${(studentSelfIndex / 5) * 100}%` }}
+                                    />
+                                    <div 
+                                      className="absolute top-0 bottom-0 w-0.5 bg-slate-950 border-l border-white"
+                                      style={{ left: `${(overallAverage / 5) * 100}%` }}
+                                    />
+                                  </div>
+                                </div>
+
+                                {/* Category 4: Infraestrutura */}
+                                <div className="space-y-1">
+                                  <div className="flex justify-between items-center text-xs">
+                                    <span className="font-semibold text-slate-700 flex items-center gap-1.5">
+                                      <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                                      Infraestrutura e Recursos
+                                    </span>
+                                    <span className="font-black text-slate-900 font-mono">{infraIndex.toFixed(2)} / 5.00</span>
+                                  </div>
+                                  <div className="h-3.5 bg-slate-100 rounded-full relative overflow-hidden">
+                                    <div 
+                                      className="h-full bg-gradient-to-r from-rose-500 to-rose-600 rounded-full transition-all duration-500" 
+                                      style={{ width: `${(infraIndex / 5) * 100}%` }}
+                                    />
+                                    <div 
+                                      className="absolute top-0 bottom-0 w-0.5 bg-slate-950 border-l border-white"
+                                      style={{ left: `${(overallAverage / 5) * 100}%` }}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-4 text-[9px] text-slate-500 justify-end pt-2 border-t border-slate-100 font-mono">
+                                <div className="flex items-center gap-1">
+                                  <span className="w-3 h-1 bg-slate-950 inline-block rounded-sm"></span>
+                                  <span>Média Geral da Turma ({overallAverage.toFixed(2)})</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Chart 2: Perfil de Distribuição de Notas */}
+                            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
+                              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                                <h4 className="text-xs font-black text-slate-755 uppercase tracking-wider font-mono">
+                                  2. Distribuição Geral de Respostas
+                                </h4>
+                                <span className="text-[9px] text-slate-400 font-bold uppercase font-mono">{totalResponses} Respotas Registradas</span>
+                              </div>
+
+                              {/* Vertical bars chart for frequencies */}
+                              <div className="flex items-end justify-between h-40 px-2 pt-4">
+                                {([5, 4, 3, 2, 1] as const).map(score => {
+                                  const count = distribution[score];
+                                  const pct = totalResponses > 0 ? (count / totalResponses) * 100 : 0;
+                                  
+                                  // Determine colors
+                                  const barBg = score === 5 
+                                    ? "bg-emerald-500 hover:bg-emerald-600" 
+                                    : score === 4 
+                                      ? "bg-sky-500 hover:bg-sky-600" 
+                                      : score === 3 
+                                        ? "bg-amber-400 hover:bg-amber-500" 
+                                        : score === 2 
+                                          ? "bg-orange-400 hover:bg-orange-500" 
+                                          : "bg-rose-500 hover:bg-rose-600";
+
+                                  return (
+                                    <div key={score} className="flex flex-col items-center flex-1 group">
+                                      <span className="text-[9px] font-black text-slate-700 opacity-0 group-hover:opacity-100 transition-opacity duration-200 mb-1 font-mono">
+                                        {count} ({pct.toFixed(0)}%)
+                                      </span>
+                                      <div className="w-full max-w-[24px] bg-slate-50 border border-slate-100 rounded-t-md h-24 flex flex-col justify-end overflow-hidden">
+                                        <div 
+                                          className={`w-full ${barBg} transition-all duration-500 rounded-t-sm`} 
+                                          style={{ height: `${Math.max(4, pct)}%` }}
+                                        />
+                                      </div>
+                                      <span className="text-[10px] font-black text-slate-800 mt-2 font-mono">
+                                        ★ {score}
+                                      </span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+
+                              <div className="grid grid-cols-5 text-center text-[9px] text-slate-500 font-bold font-mono pt-2 border-t border-slate-100">
+                                <div>CP (5)</div>
+                                <div>CPa (4)</div>
+                                <div>Neutro (3)</div>
+                                <div>DPa (2)</div>
+                                <div>DP (1)</div>
+                              </div>
+                            </div>
+
+                          </div>
+
+                          {/* Highlights cards */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Pontos Fortes */}
+                            <div className="bg-emerald-50/40 border border-emerald-100/70 rounded-xl p-4 space-y-3">
+                              <h5 className="text-[10px] font-black text-emerald-800 uppercase tracking-wider font-mono flex items-center gap-1.5">
+                                <TrendingUp className="h-4 w-4 text-emerald-600" />
+                                Principais Pontos Fortes da Turma
+                              </h5>
+                              <div className="space-y-2">
+                                {highPerforming.map((q) => (
+                                  <div key={q.key} className="flex justify-between items-start text-xs bg-white border border-emerald-100/30 rounded-lg p-2.5 shadow-sm">
+                                    <div className="space-y-0.5 pr-2">
+                                      <span className="text-[8px] font-black text-emerald-700 bg-emerald-50 border border-emerald-100/50 px-1.5 py-0.5 rounded font-mono uppercase">
+                                        {q.cat}
+                                      </span>
+                                      <p className="text-slate-800 font-semibold leading-tight font-sans text-[11px] mt-1.5">{q.label}</p>
+                                    </div>
+                                    <span className="font-black text-emerald-700 font-mono text-[11px] shrink-0 bg-emerald-50 px-2 py-1 rounded border border-emerald-150">
+                                      {q.avg.toFixed(2)}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Pontos a Melhorar */}
+                            <div className="bg-amber-50/40 border border-amber-100/70 rounded-xl p-4 space-y-3">
+                              <h5 className="text-[10px] font-black text-amber-800 uppercase tracking-wider font-mono flex items-center gap-1.5">
+                                <AlertTriangle className="h-4 w-4 text-amber-605" />
+                                Oportunidades de Melhoria Acadêmica
+                              </h5>
+                              <div className="space-y-2">
+                                {lowPerforming.length > 0 ? (
+                                  lowPerforming.map((q) => (
+                                    <div key={q.key} className="flex justify-between items-start text-xs bg-white border border-amber-100/30 rounded-lg p-2.5 shadow-sm">
+                                      <div className="space-y-0.5 pr-2">
+                                        <span className="text-[8px] font-black text-amber-700 bg-amber-50 border border-amber-100/50 px-1.5 py-0.5 rounded font-mono uppercase">
+                                          {q.cat}
+                                        </span>
+                                        <p className="text-slate-800 font-semibold leading-tight font-sans text-[11px] mt-1.5">{q.label}</p>
+                                      </div>
+                                      <span className="font-black text-amber-700 font-mono text-[11px] shrink-0 bg-amber-50 px-2 py-1 rounded border border-amber-150">
+                                        {q.avg.toFixed(2)}
+                                      </span>
+                                    </div>
+                                  ))
+                                ) : (
+                                  <div className="text-center py-6 text-slate-400 italic text-xs font-mono">
+                                    Nenhuma questão obteve média abaixo do ideal. Parabéns!
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                        </div>
+                      );
+                    })()}
                   </div>
                 );
               })()}
