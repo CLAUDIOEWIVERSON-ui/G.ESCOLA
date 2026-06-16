@@ -103,10 +103,41 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         finalProfile.role = 'admin';
       }
 
-      if (session.user.user_metadata?.isNifStudent) {
+      const userEmail = session.user.email || '';
+      const isStudentEmail = userEmail.startsWith('aluno_nif_') && userEmail.endsWith('@aluno.escola.digital');
+
+      if (finalProfile.role === 'aluno' || isStudentEmail || session.user.user_metadata?.isNifStudent) {
+        finalProfile.role = 'aluno';
         finalProfile.isNifStudent = true;
-        finalProfile.student_id = session.user.user_metadata?.student_id;
-        finalProfile.turma_id = session.user.user_metadata?.turma_id;
+        let sId = session.user.user_metadata?.student_id;
+        if (!sId && isStudentEmail) {
+          sId = userEmail.replace('aluno_nif_', '').split('@')[0];
+        }
+        finalProfile.student_id = sId;
+
+        if (sId) {
+          try {
+            const { data: stun, error: stunErr } = await supabase
+              .from('alunos')
+              .select('id, nome, turma_id')
+              .eq('id', sId)
+              .maybeSingle();
+
+            if (stun && !stunErr) {
+              finalProfile.full_name = stun.nome;
+              finalProfile.turma_id = stun.turma_id;
+            } else if (session.user.user_metadata?.turma_id) {
+              finalProfile.turma_id = session.user.user_metadata.turma_id;
+            }
+          } catch (fetchErr) {
+            console.error('Error fetching student details in UserContext:', fetchErr);
+            if (session.user.user_metadata?.turma_id) {
+              finalProfile.turma_id = session.user.user_metadata.turma_id;
+            }
+          }
+        } else if (session.user.user_metadata?.turma_id) {
+          finalProfile.turma_id = session.user.user_metadata.turma_id;
+        }
       }
 
       setProfile(finalProfile);
