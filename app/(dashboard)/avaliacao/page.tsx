@@ -1011,7 +1011,7 @@ function AvaliacaoAlunoForm() {
               <tbody>
                 {CURSO_QUESTIONS.map((q, idx) => (
                   <tr key={q.key} className="hover:bg-slate-50/50">
-                    <td className="border border-slate-300 p-1.5">{idx + 1}. {q.label}</td>
+                    <td className="border border-slate-300 p-1.5 font-bold text-slate-950">{idx + 1}. {q.label}</td>
                     <td className="border border-slate-300 p-1.5 text-center text-slate-300 font-mono">[  ]</td>
                     <td className="border border-slate-300 p-1.5 text-center text-slate-300 font-mono">[  ]</td>
                     <td className="border border-slate-300 p-1.5 text-center text-slate-300 font-mono">[  ]</td>
@@ -1036,7 +1036,7 @@ function AvaliacaoAlunoForm() {
               <tbody>
                 {INSTRUTOR_QUESTIONS.map((q, idx) => (
                   <tr key={q.key} className="hover:bg-slate-50/50">
-                    <td className="border border-slate-300 p-1.5">{idx + 1}. {q.label}</td>
+                    <td className="border border-slate-300 p-1.5 font-bold text-slate-950">{idx + 1}. {q.label}</td>
                     <td className="border border-slate-300 p-1.5 text-center text-slate-300 font-mono">[  ]</td>
                     <td className="border border-slate-300 p-1.5 text-center text-slate-300 font-mono">[  ]</td>
                     <td className="border border-slate-300 p-1.5 text-center text-slate-300 font-mono">[  ]</td>
@@ -1063,7 +1063,7 @@ function AvaliacaoAlunoForm() {
               <tbody>
                 {AUTO_QUESTIONS.map((q, idx) => (
                   <tr key={q.key} className="hover:bg-slate-50/50">
-                    <td className="border border-slate-300 p-1.5">{idx + 1}. {q.label}</td>
+                    <td className="border border-slate-300 p-1.5 font-bold text-slate-950">{idx + 1}. {q.label}</td>
                     <td className="border border-slate-300 p-1.5 text-center text-slate-300 font-mono">[  ]</td>
                     <td className="border border-slate-300 p-1.5 text-center text-slate-300 font-mono">[  ]</td>
                     <td className="border border-slate-300 p-1.5 text-center text-slate-300 font-mono">[  ]</td>
@@ -1088,7 +1088,7 @@ function AvaliacaoAlunoForm() {
               <tbody>
                 {INFRA_QUESTIONS.map((q, idx) => (
                   <tr key={q.key} className="hover:bg-slate-50/50">
-                    <td className="border border-slate-300 p-1.5">{idx + 1}. {q.label}</td>
+                    <td className="border border-slate-300 p-1.5 font-bold text-slate-950">{idx + 1}. {q.label}</td>
                     <td className="border border-slate-300 p-1.5 text-center text-slate-300 font-mono">[  ]</td>
                     <td className="border border-slate-300 p-1.5 text-center text-slate-300 font-mono">[  ]</td>
                     <td className="border border-slate-300 p-1.5 text-center text-slate-300 font-mono">[  ]</td>
@@ -1534,7 +1534,7 @@ function AvaliacaoAlunoForm() {
               <div className="space-y-6">
                 {CURSO_QUESTIONS.map((q, idx) => (
                   <div key={q.key} className="border-b pb-6 last:border-b-0">
-                    <p className="text-sm font-bold text-slate-800 mb-3 font-medium">
+                    <p className="text-sm font-extrabold text-slate-950 mb-3 block">
                       {idx + 1}. {q.label}
                     </p>
                     
@@ -1549,11 +1549,11 @@ function AvaliacaoAlunoForm() {
                             onClick={() => handleSelectAnswer(q.key, opt.value)}
                             className={`px-2 py-2.5 rounded-lg border text-center transition-all ${
                               isSelected 
-                                ? "bg-slate-900 text-white border-slate-900 font-semibold shadow-md scale-102"
-                                : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                                ? "bg-slate-950 text-white border-slate-950 font-black shadow-md scale-102"
+                                : "bg-white text-slate-800 border-slate-350 hover:bg-slate-50 hover:border-slate-400 font-bold"
                             }`}
                           >
-                            <span className="block text-[11px] leading-tight font-medium break-words leading-none">{opt.label}</span>
+                            <span className="block text-[11px] leading-tight font-bold break-words leading-none">{opt.label}</span>
                           </button>
                         );
                       })}
@@ -1594,7 +1594,7 @@ function AvaliacaoAlunoForm() {
               <div className="space-y-6">
                 {INSTRUTOR_QUESTIONS.map((q, idx) => (
                   <div key={q.key} className="border-b pb-6 last:border-b-0">
-                    <p className="text-sm font-bold text-slate-800 mb-3">
+                    <p className="text-sm font-extrabold text-slate-950 mb-3 block">
                       {idx + 1}. {q.label}
                     </p>
                     
@@ -1609,11 +1609,11 @@ function AvaliacaoAlunoForm() {
                             onClick={() => handleSelectAnswer(q.key, opt.value)}
                             className={`px-2 py-2.5 rounded-lg border text-center transition-all ${
                               isSelected 
-                                ? "bg-slate-900 text-white border-slate-900 font-semibold shadow-md scale-102"
-                                : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                                ? "bg-slate-950 text-white border-slate-950 font-black shadow-md scale-102"
+                                : "bg-white text-slate-800 border-slate-350 hover:bg-slate-50 hover:border-slate-400 font-bold"
                             }`}
                           >
-                            <span className="block text-[11px] leading-tight font-medium break-words leading-none">{opt.label}</span>
+                            <span className="block text-[11px] leading-tight font-bold break-words leading-none">{opt.label}</span>
                           </button>
                         );
                       })}
@@ -1655,7 +1655,7 @@ function AvaliacaoAlunoForm() {
                 <div className="space-y-6">
                   {AUTO_QUESTIONS.map((q, idx) => (
                     <div key={q.key} className="border-b pb-6 last:border-b-0">
-                      <p className="text-sm font-bold text-slate-800 mb-3">
+                      <p className="text-sm font-extrabold text-slate-950 mb-3 block">
                         {idx + 1}. {q.label}
                       </p>
                       
@@ -1670,11 +1670,11 @@ function AvaliacaoAlunoForm() {
                               onClick={() => handleSelectAnswer(q.key, opt.value)}
                               className={`px-2 py-2.5 rounded-lg border text-center transition-all ${
                                 isSelected 
-                                  ? "bg-slate-900 text-white border-slate-900 font-semibold shadow-md scale-102"
-                                  : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                                  ? "bg-slate-950 text-white border-slate-950 font-black shadow-md scale-102"
+                                  : "bg-white text-slate-800 border-slate-350 hover:bg-slate-50 hover:border-slate-400 font-bold"
                               }`}
                             >
-                              <span className="block text-[11px] leading-tight font-medium break-words leading-none">{opt.label}</span>
+                              <span className="block text-[11px] leading-tight font-bold break-words leading-none">{opt.label}</span>
                             </button>
                           );
                         })}
@@ -1687,13 +1687,13 @@ function AvaliacaoAlunoForm() {
               <div>
                 <div className="flex items-center gap-3 border-b pb-3 mb-6 mt-6">
                   <MapPin className="h-5 w-5 text-rose-600" />
-                  <h2 className="text-base font-bold text-slate-900 font-mono">4. Infraestrutura e Recursos</h2>
+                  <h2 className="text-base font-bold text-slate-950 font-mono uppercase tracking-wider">4. Infraestrutura e Recursos</h2>
                 </div>
 
                 <div className="space-y-6">
                   {INFRA_QUESTIONS.map((q, idx) => (
                     <div key={q.key} className="border-b pb-6 last:border-b-0">
-                      <p className="text-sm font-bold text-slate-800 mb-3">
+                      <p className="text-sm font-extrabold text-slate-950 mb-3 block">
                         {idx + 1}. {q.label}
                       </p>
                       
@@ -1708,11 +1708,11 @@ function AvaliacaoAlunoForm() {
                               onClick={() => handleSelectAnswer(q.key, opt.value)}
                               className={`px-2 py-2.5 rounded-lg border text-center transition-all ${
                                 isSelected 
-                                  ? "bg-slate-900 text-white border-slate-900 font-semibold shadow-md scale-102"
-                                  : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                                  ? "bg-slate-950 text-white border-slate-950 font-black shadow-md scale-102"
+                                  : "bg-white text-slate-800 border-slate-350 hover:bg-slate-50 hover:border-slate-400 font-bold"
                               }`}
                             >
-                              <span className="block text-[11px] leading-tight font-medium break-words leading-none">{opt.label}</span>
+                              <span className="block text-[11px] leading-tight font-bold break-words leading-none">{opt.label}</span>
                             </button>
                           );
                         })}
@@ -1753,52 +1753,52 @@ function AvaliacaoAlunoForm() {
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 font-mono">Sugestões de Melhoria</label>
+                  <label className="block text-xs font-extrabold text-slate-950 uppercase tracking-wider mb-2 font-mono">Sugestões de Melhoria</label>
                   <textarea 
                     value={comments.sugestoes_melhoria}
                     onChange={(e) => handleCommentChange('sugestoes_melhoria', e.target.value)}
                     placeholder="Quais sugestões você daria para aprimorar esse curso?"
-                    className="w-full border border-slate-200 rounded-lg p-3 text-xs focus:ring-2 focus:ring-slate-900/10 focus:outline-none min-h-[80px]"
+                    className="w-full border border-slate-355 rounded-lg p-3 text-xs focus:ring-2 focus:ring-slate-900/10 focus:outline-none min-h-[80px] font-bold text-slate-900"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 font-mono">Críticas Construtivas</label>
+                  <label className="block text-xs font-extrabold text-slate-955 uppercase tracking-wider mb-2 font-mono font-bold">Críticas Construtivas</label>
                   <textarea 
                     value={comments.criticas_construtivas}
                     onChange={(e) => handleCommentChange('criticas_construtivas', e.target.value)}
                     placeholder="Quais pontos cruciais do curso deveriam ser revistos ou corrigidos?"
-                    className="w-full border border-slate-200 rounded-lg p-3 text-xs focus:ring-2 focus:ring-slate-900/10 focus:outline-none min-h-[80px]"
+                    className="w-full border border-slate-355 rounded-lg p-3 text-xs focus:ring-2 focus:ring-slate-900/10 focus:outline-none min-h-[80px] font-bold text-slate-900"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 font-mono font-mono">Elogios</label>
+                  <label className="block text-xs font-extrabold text-slate-955 uppercase tracking-wider mb-2 font-mono font-bold">Elogios</label>
                   <textarea 
                     value={comments.elogios}
                     onChange={(e) => handleCommentChange('elogios', e.target.value)}
                     placeholder="Quais foram os principais pontos fortes deste curso?"
-                    className="w-full border border-slate-200 rounded-lg p-3 text-xs focus:ring-2 focus:ring-slate-900/10 focus:outline-none min-h-[80px]"
+                    className="w-full border border-slate-355 rounded-lg p-3 text-xs focus:ring-2 focus:ring-slate-900/10 focus:outline-none min-h-[80px] font-bold text-slate-900"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 font-mono">Necessidade de Novos Cursos</label>
+                  <label className="block text-xs font-extrabold text-slate-955 uppercase tracking-wider mb-2 font-mono font-bold">Necessidade de Novos Cursos</label>
                   <textarea 
                     value={comments.necessidades_novos_cursos}
                     onChange={(e) => handleCommentChange('necessidades_novos_cursos', e.target.value)}
                     placeholder="Indique novos temas ou disciplinas que você gostaria de realizar futuramente."
-                    className="w-full border border-slate-200 rounded-lg p-3 text-xs focus:ring-2 focus:ring-slate-900/10 focus:outline-none min-h-[80px]"
+                    className="w-full border border-slate-355 rounded-lg p-3 text-xs focus:ring-2 focus:ring-slate-900/10 focus:outline-none min-h-[80px] font-bold text-slate-900"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 font-mono">Comentários Adicionais</label>
+                  <label className="block text-xs font-extrabold text-slate-955 uppercase tracking-wider mb-2 font-mono font-mono">Comentários Adicionais</label>
                   <textarea 
                     value={comments.comentarios_adicionais}
                     onChange={(e) => handleCommentChange('comentarios_adicionais', e.target.value)}
                     placeholder="Alguma consideração final?"
-                    className="w-full border border-slate-200 rounded-lg p-3 text-xs focus:ring-2 focus:ring-slate-900/10 focus:outline-none min-h-[80px]"
+                    className="w-full border border-slate-355 rounded-lg p-3 text-xs focus:ring-2 focus:ring-slate-900/10 focus:outline-none min-h-[80px] font-bold text-slate-900"
                   />
                 </div>
               </div>

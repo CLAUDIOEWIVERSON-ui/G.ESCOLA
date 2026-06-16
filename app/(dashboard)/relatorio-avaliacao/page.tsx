@@ -1339,8 +1339,8 @@ function RelatorioAvaliacaoAdminContent() {
                       const avg = calculateQuestionAverage(filteredSubmissions, q.key);
                       return (
                         <div key={q.key} className="border border-slate-100 rounded-lg p-5 hover:bg-slate-50/40 transition">
-                          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider font-mono">Questão {idx + 1}</p>
-                          <p className="text-sm font-semibold text-slate-800 mt-1 mb-3">{q.label}</p>
+                          <p className="text-xs font-extrabold text-slate-500 uppercase tracking-wider font-mono">Questão {idx + 1}</p>
+                          <p className="text-sm font-extrabold text-slate-950 mt-1 mb-3">{q.label}</p>
                           
                           <div className="flex items-center justify-between text-xs mb-1">
                             <span className="text-slate-500 font-mono">Média desta Questão</span>
@@ -1486,7 +1486,7 @@ function RelatorioAvaliacaoAdminContent() {
                             {qScores.map((q, idx) => (
                               <div key={q.key} className="space-y-2">
                                 <div className="flex justify-between text-xs">
-                                  <span className="font-semibold text-slate-700">{idx+1}. {q.label}</span>
+                                  <span className="font-extrabold text-slate-950">{idx+1}. {q.label}</span>
                                   <span className="font-bold text-slate-900">{q.score.toFixed(2)} / 5.0</span>
                                 </div>
                                 <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
@@ -1736,7 +1736,7 @@ function RelatorioAvaliacaoAdminContent() {
                               <div className="divide-y divide-slate-100 space-y-3.5 pt-1">
                                 {CURSO_QUESTIONS.map((q, idx) => (
                                   <div key={q.key} className="flex flex-col md:flex-row md:items-center justify-between gap-3 pt-3 first:pt-0">
-                                    <span className="text-xs font-bold text-slate-700">
+                                    <span className="text-xs font-extrabold text-slate-950">
                                       {idx + 1}. {q.label}
                                     </span>
                                     <div className="flex items-center gap-1.5">
@@ -1776,7 +1776,7 @@ function RelatorioAvaliacaoAdminContent() {
                               <div className="divide-y divide-slate-100 space-y-3.5 pt-1">
                                 {INSTRUTOR_QUESTIONS.map((q, idx) => (
                                   <div key={q.key} className="flex flex-col md:flex-row md:items-center justify-between gap-3 pt-3 first:pt-0">
-                                    <span className="text-xs font-bold text-slate-700">
+                                    <span className="text-xs font-extrabold text-slate-955">
                                       {idx + 1}. {q.label}
                                     </span>
                                     <div className="flex items-center gap-1.5">
@@ -1818,7 +1818,7 @@ function RelatorioAvaliacaoAdminContent() {
                                 <div className="space-y-3 pt-1">
                                   {AUTO_QUESTIONS.map((q, idx) => (
                                     <div key={q.key} className="flex flex-col gap-1.5">
-                                      <span className="text-xs font-bold text-slate-700">
+                                      <span className="text-xs font-extrabold text-slate-955">
                                         {idx + 1}. {q.label}
                                       </span>
                                       <div className="flex items-center gap-1.5">
@@ -1858,7 +1858,7 @@ function RelatorioAvaliacaoAdminContent() {
                                 <div className="space-y-3 pt-1">
                                   {INFRA_QUESTIONS.map((q, idx) => (
                                     <div key={q.key} className="flex flex-col gap-1.5">
-                                      <span className="text-xs font-bold text-slate-700">
+                                      <span className="text-xs font-extrabold text-slate-955">
                                         {idx + 1}. {q.label}
                                       </span>
                                       <div className="flex items-center gap-1.5">
