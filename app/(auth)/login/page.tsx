@@ -36,11 +36,54 @@ function LoginContent() {
   const streamRef = useRef<MediaStream | null>(null);
 
   useEffect(() => {
-    if (searchParams && searchParams.get('blocked') === 'true') {
-      setError('Seu acesso foi encerrado porque sua turma foi concluída. Em caso de dúvidas, procure a administração.');
-      setLoginType('aluno');
+    if (searchParams) {
+      if (searchParams.get('blocked') === 'true') {
+        setError('Seu acesso foi encerrado porque sua turma foi concluída. Em caso de dúvidas, procure a administração.');
+        setLoginType('aluno');
+      } else {
+        const codeParam = searchParams.get('code') || searchParams.get('accessCode');
+        const passParam = searchParams.get('password') || searchParams.get('pass') || searchParams.get('senha') || '123';
+        if (codeParam) {
+          setLoginType('aluno');
+          setAccessCode(codeParam.trim().toUpperCase());
+          setPassword(passParam.trim());
+          
+          // Self-executing login function to avoid block loading order issues
+          const autoLogin = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+              const response = await fetch('/api/auth/student-login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ accessCode: codeParam.trim().toUpperCase(), password: passParam.trim() })
+              });
+              
+              const data = await response.json();
+              if (!response.ok || data.error) {
+                throw new Error(data.error || 'Erro ao realizar login.');
+              }
+
+              const { error: signInError } = await supabase.auth.signInWithPassword({
+                email: data.email,
+                password: data.password
+              });
+              
+              if (signInError) throw signInError;
+
+              await refreshProfile();
+              router.push('/boletim');
+            } catch (err: any) {
+              setError(err.message || 'Erro ao realizar login automático.');
+            } finally {
+              setLoading(false);
+            }
+          };
+          autoLogin();
+        }
+      }
     }
-  }, [searchParams]);
+  }, [searchParams, router, refreshProfile]);
 
   // Clean raw media stream when unmounting
   useEffect(() => {

@@ -665,7 +665,7 @@ function RelatorioAvaliacaoAdminContent() {
               <p><strong>Aluno:</strong> ${studentName}</p>
               <p><strong>Turma:</strong> ${turmaNome}</p>
               <div class="qr-container">
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(accessCode)}" alt="QR Code" style="width: 140px; height: 140px; border: 1px solid #e2e8f0; padding: 6px; border-radius: 8px; background: white;" />
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`${window.location.origin}/login?code=${accessCode}`)}" alt="QR Code" style="width: 140px; height: 140px; border: 1px solid #e2e8f0; padding: 6px; border-radius: 8px; background: white;" />
               </div>
               <div class="code">${accessCode}</div>
               <p style="font-size: 11px; color: #64748b; margin-top: 15px;">Aponte o leitor de QR Code para esta imagem para entrar.</p>
@@ -1602,7 +1602,7 @@ function RelatorioAvaliacaoAdminContent() {
                                       <p class="label">Turma</p>
                                       <p class="value">${turmaNome}</p>
                                       <div style="margin: 12px 0;">
-                                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(codeObj.access_code)}" alt="QR Code" style="width: 110px; height: 110px; border: 1px solid #cbd5e1; padding: 4px; border-radius: 6px; background: white;" />
+                                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(`${window.location.origin}/login?code=${codeObj.access_code}`)}" alt="QR Code" style="width: 110px; height: 110px; border: 1px solid #cbd5e1; padding: 4px; border-radius: 6px; background: white;" />
                                       </div>
                                       <code class="code">${codeObj.access_code}</code>
                                     </div>
