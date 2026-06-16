@@ -78,6 +78,80 @@ export default function FrequenciaPage() {
 
   const activeTurma = turmas.find(t => t.id === selectedTurma);
 
+  useEffect(() => {
+    if (activeTurma?.data_inicio) {
+      const [year, month, day] = activeTurma.data_inicio.split('-').map(Number);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCurrentMapDate(new Date(year, month - 1, day));
+    }
+  }, [selectedTurma, activeTurma?.data_inicio]);
+
+  const getFilteredDays = useCallback((days: Date[]) => {
+    if (!activeTurma) return days;
+    return days.filter(day => {
+      const dayStr = format(day, 'yyyy-MM-dd');
+      if (activeTurma.data_inicio && dayStr < activeTurma.data_inicio) {
+        return false;
+      }
+      if (activeTurma.data_fim && dayStr > activeTurma.data_fim) {
+        return false;
+      }
+      return true;
+    });
+  }, [activeTurma]);
+
+  const getFilteredMonths = useCallback((months: Date[]) => {
+    if (!activeTurma) return months;
+    return months.filter(month => {
+      const monthStartStr = format(startOfMonth(month), 'yyyy-MM-dd');
+      const monthEndStr = format(endOfMonth(month), 'yyyy-MM-dd');
+      
+      if (activeTurma.data_inicio && monthEndStr < activeTurma.data_inicio) {
+        return false;
+      }
+      if (activeTurma.data_fim && monthStartStr > activeTurma.data_fim) {
+        return false;
+      }
+      return true;
+    });
+  }, [activeTurma]);
+
+  const canNavigateLeft = useCallback(() => {
+    if (!activeTurma) return true;
+    if (!activeTurma.data_inicio) return true;
+    
+    let targetDate: Date;
+    if (mapGranularity === 'week') targetDate = subWeeks(currentMapDate, 1);
+    else if (mapGranularity === 'year') targetDate = subMonths(currentMapDate, 12);
+    else targetDate = subMonths(currentMapDate, 1);
+    
+    let targetEnd: Date;
+    if (mapGranularity === 'week') targetEnd = endOfWeek(targetDate, { weekStartsOn: 1 });
+    else if (mapGranularity === 'year') targetEnd = endOfYear(targetDate);
+    else targetEnd = endOfMonth(targetDate);
+    
+    const targetEndStr = format(targetEnd, 'yyyy-MM-dd');
+    return targetEndStr >= activeTurma.data_inicio;
+  }, [activeTurma, currentMapDate, mapGranularity]);
+
+  const canNavigateRight = useCallback(() => {
+    if (!activeTurma) return true;
+    if (!activeTurma.data_fim) return true;
+    
+    let targetDate: Date;
+    if (mapGranularity === 'week') targetDate = addWeeks(currentMapDate, 1);
+    else if (mapGranularity === 'year') targetDate = addMonths(currentMapDate, 12);
+    else targetDate = addMonths(currentMapDate, 1);
+    
+    let targetStart: Date;
+    if (mapGranularity === 'week') targetStart = startOfWeek(targetDate, { weekStartsOn: 1 });
+    else if (mapGranularity === 'year') targetStart = startOfYear(targetDate);
+    else targetStart = startOfMonth(targetDate);
+    
+    const targetStartStr = format(targetStart, 'yyyy-MM-dd');
+    return targetStartStr <= activeTurma.data_fim;
+  }, [activeTurma, currentMapDate, mapGranularity]);
+
   const fetchAttendance = useCallback(async () => {
     if (!selectedTurma) {
       setStudents([]);
@@ -788,11 +862,18 @@ export default function FrequenciaPage() {
               <div className="flex items-center gap-4 bg-slate-50 p-2 rounded-2xl border border-slate-100">
                 <button
                   onClick={() => {
+                    if (!canNavigateLeft()) return;
                     if (mapGranularity === 'week') setCurrentMapDate(subWeeks(currentMapDate, 1));
                     else if (mapGranularity === 'year') setCurrentMapDate(subMonths(currentMapDate, 12));
                     else setCurrentMapDate(subMonths(currentMapDate, 1));
                   }}
-                  className="p-2.5 hover:bg-white hover:text-blue-600 hover:shadow-sm rounded-xl transition-all text-slate-500"
+                  disabled={!canNavigateLeft()}
+                  className={cn(
+                    "p-2.5 rounded-xl transition-all",
+                    canNavigateLeft() 
+                      ? "hover:bg-white hover:text-blue-600 hover:shadow-sm text-slate-500 cursor-pointer" 
+                      : "text-slate-350 opacity-40 cursor-not-allowed"
+                  )}
                 >
                   <ChevronLeft size={20} strokeWidth={2.5} />
                 </button>
@@ -809,11 +890,18 @@ export default function FrequenciaPage() {
                 </div>
                 <button
                   onClick={() => {
+                    if (!canNavigateRight()) return;
                     if (mapGranularity === 'week') setCurrentMapDate(addWeeks(currentMapDate, 1));
                     else if (mapGranularity === 'year') setCurrentMapDate(addMonths(currentMapDate, 12));
                     else setCurrentMapDate(addMonths(currentMapDate, 1));
                   }}
-                  className="p-2.5 hover:bg-white hover:text-blue-600 hover:shadow-sm rounded-xl transition-all text-slate-500"
+                  disabled={!canNavigateRight()}
+                  className={cn(
+                    "p-2.5 rounded-xl transition-all",
+                    canNavigateRight() 
+                      ? "hover:bg-white hover:text-blue-600 hover:shadow-sm text-slate-500 cursor-pointer" 
+                      : "text-slate-350 opacity-40 cursor-not-allowed"
+                  )}
                 >
                   <ChevronRight size={20} strokeWidth={2.5} />
                 </button>
@@ -881,10 +969,10 @@ export default function FrequenciaPage() {
                         ALUNO
                       </th>
                       {mapGranularity === 'year' ? (
-                        eachMonthOfInterval({
+                        getFilteredMonths(eachMonthOfInterval({
                           start: startOfYear(currentMapDate),
                           end: endOfYear(currentMapDate)
-                        }).map(month => (
+                        })).map(month => (
                           <th 
                             key={month.toString()} 
                             className="p-4 min-w-[80px] text-center text-[10px] font-black text-slate-500 uppercase tracking-widest border-l border-slate-100"
@@ -893,10 +981,10 @@ export default function FrequenciaPage() {
                           </th>
                         ))
                       ) : (
-                        eachDayOfInterval({
+                        getFilteredDays(eachDayOfInterval({
                           start: mapGranularity === 'week' ? startOfWeek(currentMapDate, { weekStartsOn: 1 }) : startOfMonth(currentMapDate),
                           end: mapGranularity === 'week' ? endOfWeek(currentMapDate, { weekStartsOn: 1 }) : endOfMonth(currentMapDate)
-                        }).map(day => {
+                        })).map(day => {
                           const dayStr = format(day, 'yyyy-MM-dd');
                           const isStartDay = activeTurma?.data_inicio && dayStr === activeTurma.data_inicio;
                           return (
@@ -905,7 +993,7 @@ export default function FrequenciaPage() {
                               className={cn(
                                 "p-3 min-w-[65px] text-center transition-colors border-l border-slate-100",
                                 isStartDay ? "bg-blue-50/70 border-b-2 border-b-blue-500 font-bold" : "",
-                                !isStartDay && [0, 6].includes(day.getDay()) ? "bg-slate-100/50 text-slate-400" : "text-slate-500"
+                                !isStartDay && [0, 6].includes(day.getDay()) ? "bg-slate-105 opacity-60 text-slate-400" : "text-slate-500"
                               )}
                             >
                               <div className="text-[9px] font-bold opacity-60 uppercase mb-1">{format(day, 'EEE', { locale: dateLocale })}</div>
@@ -935,10 +1023,10 @@ export default function FrequenciaPage() {
                           </div>
                         </td>
                         {mapGranularity === 'year' ? (
-                          eachMonthOfInterval({
+                          getFilteredMonths(eachMonthOfInterval({
                             start: startOfYear(currentMapDate),
                             end: endOfYear(currentMapDate)
-                          }).map(month => {
+                          })).map(month => {
                             const monthRecords = mapData.filter(r => 
                               r.aluno_id === student.id && 
                               isSameMonth(new Date(r.data), month)
@@ -967,10 +1055,10 @@ export default function FrequenciaPage() {
                             );
                           })
                         ) : (
-                          eachDayOfInterval({
+                          getFilteredDays(eachDayOfInterval({
                             start: mapGranularity === 'week' ? startOfWeek(currentMapDate, { weekStartsOn: 1 }) : startOfMonth(currentMapDate),
                             end: mapGranularity === 'week' ? endOfWeek(currentMapDate, { weekStartsOn: 1 }) : endOfMonth(currentMapDate)
-                          }).map(day => {
+                          })).map(day => {
                             const dayStr = format(day, 'yyyy-MM-dd');
                             const rec = mapData.find(r => {
                               if (!r.data) return false;
