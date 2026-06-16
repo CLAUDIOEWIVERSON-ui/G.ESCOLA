@@ -73,10 +73,28 @@ export default function DashboardPage() {
 
   // Fetch Thought
   const fetchPensamento = async (forceRegenerate = false, category = '') => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    
+    // Check localStorage first for instant display
+    if (typeof window !== 'undefined' && !forceRegenerate) {
+      try {
+        const cached = localStorage.getItem(`pensamento_dia_custom_${todayStr}`);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          setPensamento(parsed);
+          setEditTexto(parsed.texto);
+          setEditAutor(parsed.autor);
+          setLoadingPensamento(false);
+        }
+      } catch (e) {
+        console.warn('Error reading from localStorage:', e);
+      }
+    }
+
     try {
       if (forceRegenerate) {
         setRegeneratingPensamento(true);
-      } else {
+      } else if (!pensamento) {
         setLoadingPensamento(true);
       }
       let url = `/api/v1/pensamento-dia${forceRegenerate ? '?force=true' : ''}`;
@@ -91,6 +109,11 @@ export default function DashboardPage() {
           setPensamento(json.data);
           setEditTexto(json.data.texto);
           setEditAutor(json.data.autor);
+          
+          if (typeof window !== 'undefined') {
+            localStorage.setItem(`pensamento_dia_custom_${todayStr}`, JSON.stringify(json.data));
+          }
+
           if (forceRegenerate) {
             toast.success('Pensamento renovado com IA com sucesso!');
           }
@@ -102,7 +125,9 @@ export default function DashboardPage() {
       }
     } catch (err) {
       console.error('Error fetching thought:', err);
-      toast.error('Erro de conexão ao carregar pensamento do dia.');
+      if (typeof window !== 'undefined' && !localStorage.getItem(`pensamento_dia_custom_${todayStr}`)) {
+        toast.error('Erro de conexão ao carregar pensamento do dia.');
+      }
     } finally {
       setLoadingPensamento(false);
       setRegeneratingPensamento(false);
@@ -136,6 +161,7 @@ export default function DashboardPage() {
       toast.error('Todos os campos são obrigatórios.');
       return;
     }
+    const todayStr = new Date().toISOString().split('T')[0];
     try {
       setSavingPensamento(true);
       const res = await fetch('/api/v1/pensamento-dia', {
@@ -149,7 +175,16 @@ export default function DashboardPage() {
       if (json.success) {
         setPensamento(json.data);
         setIsEditingPensamento(false);
-        toast.success('Pensamento do dia atualizado para hoje!');
+        
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(`pensamento_dia_custom_${todayStr}`, JSON.stringify(json.data));
+        }
+
+        if (json.warning) {
+          toast.success('Salvo! Atualizado temporariamente para este dispositivo.');
+        } else {
+          toast.success('Pensamento do dia atualizado para hoje!');
+        }
       } else {
         toast.error(json.error || 'Erro ao salvar novo pensamento.');
       }
@@ -312,50 +347,35 @@ export default function DashboardPage() {
               {categorySelectorOpen && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setCategorySelectorOpen(false)} />
-                  <div className="absolute right-0 bottom-full mb-1.5 z-50 w-44 bg-white border border-slate-200 rounded-lg shadow-xl py-1 flex flex-col text-[10px] text-slate-705 font-sans">
-                    <div className="px-2.5 py-1 text-[8px] font-black uppercase text-slate-400 tracking-wider border-b border-slate-100 mb-1">
+                  <div className="absolute right-0 bottom-full mb-1.5 z-50 w-56 bg-white border border-slate-200 rounded-lg shadow-xl py-1 flex flex-col text-[10px] text-slate-700 font-sans max-h-60 overflow-y-auto">
+                    <div className="px-2.5 py-1 text-[8px] font-black uppercase text-slate-400 tracking-wider border-b border-slate-100 mb-1 sticky top-0 bg-white">
                       Escolher Categoria IA
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setCategorySelectorOpen(false);
-                        fetchPensamento(true, '');
-                      }}
-                      className="w-full text-left px-2.5 py-1.5 hover:bg-slate-50 flex items-center gap-1.5 font-semibold text-slate-650 transition-colors"
-                    >
-                      <span>🎲</span> Padrão / Qualquer tema
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setCategorySelectorOpen(false);
-                        fetchPensamento(true, 'religioso');
-                      }}
-                      className="w-full text-left px-2.5 py-1.5 hover:bg-slate-50 flex items-center gap-1.5 font-semibold text-slate-650 transition-colors"
-                    >
-                      <span>⛪</span> Religioso / Espiritual
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setCategorySelectorOpen(false);
-                        fetchPensamento(true, 'motivacional');
-                      }}
-                      className="w-full text-left px-2.5 py-1.5 hover:bg-slate-50 flex items-center gap-1.5 font-semibold text-slate-650 transition-colors"
-                    >
-                      <span>💪</span> Motivacional
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setCategorySelectorOpen(false);
-                        fetchPensamento(true, 'filosofico');
-                      }}
-                      className="w-full text-left px-2.5 py-1.5 hover:bg-slate-50 flex items-center gap-1.5 font-semibold text-slate-650 transition-colors"
-                    >
-                      <span>📜</span> Filosófico
-                    </button>
+                    {[
+                      { id: '', label: '🎲 Padrão / Geral' },
+                      { id: 'religioso', label: '⛪ Religioso / Fé' },
+                      { id: 'motivacional', label: '💪 Motivacional' },
+                      { id: 'filosofico', label: '📜 Filosófico' },
+                      { id: 'estoico', label: '🏛️ Estoico / Resiliência' },
+                      { id: 'lideranca', label: '👔 Liderança / Carreira' },
+                      { id: 'oriental', label: '🌸 Oriental / Zen' },
+                      { id: 'criatividade', label: '💡 Criatividade' },
+                      { id: 'gratidao', label: '🤝 Gratidão' },
+                      { id: 'otimismo', label: '🌅 Otimismo / Esperança' },
+                      { id: 'educacao', label: '📚 Educação / Sabedoria' }
+                    ].map((cat) => (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => {
+                          setCategorySelectorOpen(false);
+                          fetchPensamento(true, cat.id);
+                        }}
+                        className="w-full text-left px-2.5 py-1.5 hover:bg-slate-50 flex items-center gap-1.5 font-semibold text-slate-600 transition-colors"
+                      >
+                        {cat.label}
+                      </button>
+                    ))}
                   </div>
                 </>
               )}
@@ -404,12 +424,19 @@ export default function DashboardPage() {
                   <p className="text-[10px] text-slate-550 select-none font-medium leading-relaxed">
                     Prefere uma inspiração elaborada por IA? Selecione uma categoria e clique para preencher o formulário:
                   </p>
-                  <div className="flex flex-wrap gap-1">
+                  <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto pr-1">
                     {[
-                      { id: '', label: '🎲 Qualquer' },
+                      { id: '', label: '🎲 Geral' },
                       { id: 'religioso', label: '⛪ Religioso' },
-                      { id: 'motivacional', label: '💪 Motivacional' },
-                      { id: 'filosofico', label: '📜 Filosófico' }
+                      { id: 'motivacional', label: '💪 Motivação' },
+                      { id: 'filosofico', label: '📜 Filosofia' },
+                      { id: 'estoico', label: '🏛️ Estoico' },
+                      { id: 'lideranca', label: '👔 Liderança' },
+                      { id: 'oriental', label: '🌸 Oriental' },
+                      { id: 'criatividade', label: '💡 Criatividade' },
+                      { id: 'gratidao', label: '🤝 Gratidão' },
+                      { id: 'otimismo', label: '🌅 Otimismo' },
+                      { id: 'educacao', label: '📚 Educação' }
                     ].map((cat: any) => (
                       <button
                         key={cat.id}

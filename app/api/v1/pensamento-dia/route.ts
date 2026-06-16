@@ -63,8 +63,18 @@ const fallbackQuotes = [
     categoria: "religioso"
   },
   {
+    texto: "A fé é dar o primeiro passo, mesmo quando você não vê toda a escada.",
+    autor: "Martin Luther King Jr.",
+    categoria: "religioso"
+  },
+  {
     texto: "O único modo de fazer um excelente trabalho é amar o que você faz.",
     autor: "Steve Jobs",
+    categoria: "motivacional"
+  },
+  {
+    texto: "O segredo de progredir é começar.",
+    autor: "Mark Twain",
     categoria: "motivacional"
   },
   {
@@ -73,14 +83,89 @@ const fallbackQuotes = [
     categoria: "filosofico"
   },
   {
-    texto: "A fé é dar o primeiro passo, mesmo quando você não vê toda a escada.",
-    autor: "Martin Luther King Jr.",
-    categoria: "religioso"
+    texto: "Não vivemos para pensar, pensamos para viver.",
+    autor: "Ortega y Gasset",
+    categoria: "filosofico"
   },
   {
-    texto: "O segredo de progredir é começar.",
-    autor: "Mark Twain",
-    categoria: "motivacional"
+    texto: "Você tem poder sobre sua mente, não sobre eventos externos. Perceba isso e encontrará força.",
+    autor: "Marco Aurélio",
+    categoria: "estoico"
+  },
+  {
+    texto: "Apressa-te a viver bem e pensa que cada dia, por si só, é uma vida.",
+    autor: "Sêneca",
+    categoria: "estoico"
+  },
+  {
+    texto: "A melhor maneira de prever o futuro é criá-lo.",
+    autor: "Peter Drucker",
+    categoria: "lideranca"
+  },
+  {
+    texto: "O guerreiro de sucesso é o homem comum, com foco de laser.",
+    autor: "Bruce Lee",
+    categoria: "lideranca"
+  },
+  {
+    texto: "A jornada de mil milhas começa com um único passo.",
+    autor: "Lao Tzu",
+    categoria: "oriental"
+  },
+  {
+    texto: "Seja como a água corrente: sem resistência, mas capaz de moldar o mundo.",
+    autor: "Provérbio Zen",
+    categoria: "oriental"
+  },
+  {
+    texto: "A imaginação é mais importante que o conhecimento.",
+    autor: "Albert Einstein",
+    categoria: "criatividade"
+  },
+  {
+    texto: "Não falhei. Apenas descobri 10.000 maneiras que não funcionam.",
+    autor: "Thomas Edison",
+    categoria: "criatividade"
+  },
+  {
+    texto: "A gratidão não é apenas a maior das virtudes, mas a mãe de todas as outras.",
+    autor: "Cícero",
+    categoria: "gratidao"
+  },
+  {
+    texto: "Se a única oração que você disser em toda a sua vida for 'obrigado', isso será suficiente.",
+    autor: "Mestre Eckhart",
+    categoria: "gratidao"
+  },
+  {
+    texto: "Acredite que pode e você já está no meio do caminho.",
+    autor: "Theodore Roosevelt",
+    categoria: "otimismo"
+  },
+  {
+    texto: "Mesmo a noite mais escura terminará com o nascer do sol.",
+    autor: "Victor Hugo",
+    categoria: "otimismo"
+  },
+  {
+    texto: "A educação é a arma mais poderosa que você pode usar para mudar o mundo.",
+    autor: "Nelson Mandela",
+    categoria: "educacao"
+  },
+  {
+    texto: "Feliz aquele que transfere o que sabe e aprende o que ensina.",
+    autor: "Cora Coralina",
+    categoria: "educacao"
+  },
+  {
+    texto: "Comece onde você está. Use o que você tem. Faça o que puder.",
+    autor: "Arthur Ashe",
+    categoria: "geral"
+  },
+  {
+    texto: "O impossível é apenas uma opinião.",
+    autor: "Paulo Coelho",
+    categoria: "geral"
   }
 ];
 
@@ -88,7 +173,7 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const force = searchParams.get('force') === 'true';
-    const category = searchParams.get('category') || ''; // 'religioso', 'motivacional', 'filosofico'
+    const category = searchParams.get('category') || ''; // Theme categories
     const todayStr = new Date().toISOString().split('T')[0];
 
     // 1. Check in-memory session cache first to prevent redundant DB reads or API requests under load
@@ -133,36 +218,71 @@ export async function GET(req: NextRequest) {
       // No quote for today, let's generate one dynamically using the Gemini API!
       let generatedQuote = { texto: '', autor: '' };
 
+      const pickRandomFallback = (cat: string) => {
+        const filteredFallbacks = cat 
+          ? fallbackQuotes.filter(q => q.categoria === cat)
+          : fallbackQuotes;
+        const candidates = filteredFallbacks.length > 0 ? filteredFallbacks : fallbackQuotes;
+        const randomIndex = Math.floor(Math.random() * candidates.length);
+        return candidates[randomIndex];
+      };
+
       if (!process.env.GEMINI_API_KEY) {
         console.warn('[Gemini API] GEMINI_API_KEY is not defined. Falling back to preloaded thoughts catalog.');
-        const filteredFallbacks = category 
-          ? fallbackQuotes.filter(q => q.categoria === category)
-          : fallbackQuotes;
-        const candidates = filteredFallbacks.length > 0 ? filteredFallbacks : fallbackQuotes;
-        const randomIndex = Math.floor(Math.random() * candidates.length);
-        generatedQuote = candidates[randomIndex];
+        generatedQuote = pickRandomFallback(category);
       } else if (Date.now() < geminiBlockedUntil) {
         console.warn(`[Gemini API Cooldown] Skipping Gemini API call because it was previously rate-limited. Falls back immediately to preloaded list. Time left: ${Math.round((geminiBlockedUntil - Date.now()) / 1000)}s`);
-        const filteredFallbacks = category 
-          ? fallbackQuotes.filter(q => q.categoria === category)
-          : fallbackQuotes;
-        const candidates = filteredFallbacks.length > 0 ? filteredFallbacks : fallbackQuotes;
-        const randomIndex = Math.floor(Math.random() * candidates.length);
-        generatedQuote = candidates[randomIndex];
+        generatedQuote = pickRandomFallback(category);
       } else {
         try {
-          let themePrompt = 'Gere um belo pensamento do dia que se enquadre em um dos seguintes temas: religioso, motivacional/incentivação ou filosófico.';
+          let themePrompt = 'Gere um belo pensamento do dia inspirador.';
           let systemInstruction = 'Você é um curador literário e espiritual de alto refinamento. Elabore frases profundas em português com o respectivo autor histórico ou religioso consagrado (sempre com autor real ou creditado, como passagens bíblicas, filósofos gregos ou pensadores modernos).';
 
-          if (category === 'religioso') {
-            themePrompt = 'Gere um belo pensamento do dia estritamente focado em espiritualidade, ensinamentos bíblicos, fé ou comunhão religiosa.';
-            systemInstruction = 'Você é um teólogo e curador espiritual de alto refinamento. Elabore frases de profunda inspiração religiosa ou espiritual em português com o respectivo autor consagrado (ex: passagens bíblicas reais, santos, teólogos, líderes religiosos de renome).';
-          } else if (category === 'motivacional') {
-            themePrompt = 'Gere uma bela frase ou pensamento do dia focado em motivação, superação, incentivo aos estudos, resiliência ou desenvolvimento de carreira.';
-            systemInstruction = 'Você é um especialista em desenvolvimento humano e alta performance de refinada elegância. Escreva uma frase inspiradora e altamente motivacional em português que impulsione a persistência e a evolução acadêmica e pessoal, citando o autor correspondente (ex: pensadores modernos, inventores, empreendedores ou líderes de alto impacto).';
-          } else if (category === 'filosofico') {
-            themePrompt = 'Gere um belo pensamento do dia estritamente filosófico, focado em sabedoria, ética, autoconhecimento ou reflexão existencial.';
-            systemInstruction = 'Você é um filósofo acadêmico e pensador existencial refinado. Escreva uma frase profunda e reflexiva em português sobre ética, autoconhecimento, tempo ou sabedoria humana, citando o autor grego, romano, oriental ou moderno correspondente.';
+          switch (category) {
+            case 'religioso':
+              themePrompt = 'Gere um belo pensamento do dia focado em espiritualidade, ensinamentos bíblicos, fé ou comunhão religiosa.';
+              systemInstruction = 'Você é um teólogo e curador espiritual. Escreva uma frase inspiradora bíblica ou religiosa em português com autor consagrado, passagens bíblicas reais ou teólogos de renome.';
+              break;
+            case 'motivacional':
+              themePrompt = 'Gere um pensamento focado em superação, motivação para vencer, resiliência e dedicação.';
+              systemInstruction = 'Você é um especialista em desenvolvimento de alta performance. Escreva uma profunda frase motivacional em português que impulsione o foco e conquistas, citando autor real correspondente.';
+              break;
+            case 'filosofico':
+              themePrompt = 'Gere um belo pensamento filosófico focado em sabedoria, ética ou reflexão existencial.';
+              systemInstruction = 'Você é um filósofo acadêmico de refinado conhecimento. Escreva uma frase profunda em português sobre ética, autoconhecimento ou sabedoria de vida, atribuída a pensadores reais antigos ou modernos.';
+              break;
+            case 'estoico':
+              themePrompt = 'Gere um ensinamento estoico sobre controle mental, resiliência frente às dificuldades, dicotomia do controle ou foco.';
+              systemInstruction = 'Você é especialista em filosofia estoica. Escreva um conselho de vida ou pensamento estoico baseado nos escritos de Marco Aurélio, Sêneca ou Epicteto.';
+              break;
+            case 'lideranca':
+              themePrompt = 'Gere uma citação inspiradora sobre liderança, ética profissional, foco em equipe, integridade ou visão estratégica.';
+              systemInstruction = 'Você é especialista em governança e desenvolvimento de equipes. Escreva uma lição de liderança ou caráter em português com fonte em autores reais ou líderes históricos renomados.';
+              break;
+            case 'oriental':
+              themePrompt = 'Gere uma citação oriental, pensamento budista, taoísta, ensinamento de Confúcio ou provérbio zen.';
+              systemInstruction = 'Você é especialista em filosofia oriental. Traga uma lição de harmonia, moderação, desapego, fluxo ou paz interior em português bem atribuída.';
+              break;
+            case 'criatividade':
+              themePrompt = 'Gere uma frase sobre inovação, curiosidade intelectual, ciência, quebrar barreiras ou processo criativo.';
+              systemInstruction = 'Você é mestre da ciência e artes do pensamento inventivo. Escreva sobre criatividade e superação de limites intelectuais em português e cite inventores reais.';
+              break;
+            case 'gratidao':
+              themePrompt = 'Gere uma mensagem profunda de gratidão, apreço pela vida, bondade humana ou fraternidade.';
+              systemInstruction = 'Você é defensor do bem e da inteligência interpessoal. Formule um belo pensamento centrado em gratidão sincera de impacto humano positivo.';
+              break;
+            case 'otimismo':
+              themePrompt = 'Gere um pensamento otimista, focado em esperança, amanhã luminoso, superação técnica ou novos começos.';
+              systemInstruction = 'Você é um gerador de esperança realista. Escreva uma frase em português sobre otimismo ou futuro radiante e o poder da esperança humana ativa.';
+              break;
+            case 'educacao':
+              themePrompt = 'Gere uma frase sobre o poder do estudo, valor da educação, professores, crescimento intelectual permanente ou busca de conhecimento.';
+              systemInstruction = 'Você é um educador consagrado. Gere um ensinamento sobre a força transformadora da educação escolar, disciplina de aprendizado e conhecimento.';
+              break;
+            default:
+              themePrompt = 'Gere um belo pensamento do dia que se enquadre em temas gerais de sabedoria, persistência, ética ou fé.';
+              systemInstruction = 'Você é um curador espiritual literário. Traga uma frase reflexiva célebre em português que inspire o dia de estudantes e profissionais.';
+              break;
           }
 
           let response;
@@ -340,6 +460,13 @@ export async function POST(req: NextRequest) {
     }
 
     const todayStr = new Date().toISOString().split('T')[0];
+    const fallbackResponse = {
+      id: 'temp-id',
+      texto,
+      autor,
+      data_exibicao: todayStr,
+      isDemo: true
+    };
 
     // Attempt to upsert the thought for today
     const { data, error } = await supabase
@@ -356,24 +483,28 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
 
     if (error) {
-      console.error('[POST thoughts DB error]', error);
-      if (error.code === '42P01') {
-        return NextResponse.json({ 
-          error: 'A tabela "pensamento_dia" ainda não foi criada no Supabase. Por favor, vá na aba Configurações e aplique o script da migração "31_create_pensamento_dia.sql".' 
-        }, { status: 400 });
-      }
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    if (data) {
-      // Keep memory cache updated on manual changes
+      console.warn('[POST thoughts DB error - falling back to cache]', error);
+      // Keep memory cache updated on manual changes as a fallback
       thoughtCache = {
         data_exibicao: todayStr,
-        data
+        data: fallbackResponse
       };
+      return NextResponse.json({ 
+        success: true, 
+        data: fallbackResponse,
+        warning: 'Salvo em cache temporária (banco de dados offline ou tabela não migrada).'
+      });
     }
 
-    return NextResponse.json({ success: true, data });
+    const savedData = data || fallbackResponse;
+
+    // Keep memory cache updated on manual changes
+    thoughtCache = {
+      data_exibicao: todayStr,
+      data: savedData
+    };
+
+    return NextResponse.json({ success: true, data: savedData });
 
   } catch (error: any) {
     console.error('[POST pensamento-dia error]:', error);
