@@ -68,13 +68,15 @@ export default function FrequenciaPage() {
   
   const [selectedCurso, setSelectedCurso] = useState('');
   const [selectedTurma, setSelectedTurma] = useState('');
-  const [selectedDisciplina, setSelectedDisciplina] = useState('');
+  const selectedDisciplina = '';
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [currentMapDate, setCurrentMapDate] = useState(new Date());
 
   const [students, setStudents] = useState<any[]>([]);
   const [attendanceRecords, setAttendanceRecords] = useState<Record<string, { presente: boolean, id?: string }>>({});
   const [mapData, setMapData] = useState<any[]>([]);
+
+  const activeTurma = turmas.find(t => t.id === selectedTurma);
 
   const fetchAttendance = useCallback(async () => {
     if (!selectedTurma) {
@@ -457,45 +459,28 @@ export default function FrequenciaPage() {
             {/* Top Selection Cards */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
               {/* ... existing card content ... */}
-        <div className="lg:col-span-5 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm transition-all hover:shadow-md">
+        <div className="lg:col-span-4 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm transition-all hover:shadow-md">
           <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3">
-            {t.attendance.selectClass || 'TURMA E DISCIPLINA'}
+            TURMA
           </label>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="relative group">
-              <select
-                value={selectedTurma}
-                onChange={(e) => setSelectedTurma(e.target.value)}
-                className="w-full px-5 py-3.5 bg-slate-50/50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 outline-none text-base font-semibold appearance-none transition-all cursor-pointer group-hover:bg-slate-50"
-              >
-                <option value="">{t.attendance.selectClass}</option>
-                {turmas.map(turma => (
-                  <option key={turma.id} value={turma.id}>{turma.nome}</option>
-                ))}
-              </select>
-              <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-              </div>
-            </div>
-            <div className="relative group">
-              <select
-                value={selectedDisciplina}
-                onChange={(e) => setSelectedDisciplina(e.target.value)}
-                className="w-full px-5 py-3.5 bg-slate-50/50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 outline-none text-base font-semibold appearance-none transition-all cursor-pointer group-hover:bg-slate-50"
-              >
-                <option value="">{t.attendance.allDisciplines || 'Disciplina'}</option>
-                {disciplinas.filter(d => !selectedTurma || turmas.find(t => t.id === selectedTurma)?.curso_id === d.curso_id).map(dis => (
-                  <option key={dis.id} value={dis.id}>{dis.nome}</option>
-                ))}
-              </select>
-              <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-              </div>
+          <div className="relative group">
+            <select
+              value={selectedTurma}
+              onChange={(e) => setSelectedTurma(e.target.value)}
+              className="w-full px-5 py-3.5 bg-slate-50/50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 outline-none text-base font-semibold appearance-none transition-all cursor-pointer group-hover:bg-slate-50"
+            >
+              <option value="">{t.attendance.selectClass}</option>
+              {turmas.map(turma => (
+                <option key={turma.id} value={turma.id}>{turma.nome}</option>
+              ))}
+            </select>
+            <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
             </div>
           </div>
         </div>
 
-        <div className="lg:col-span-3 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm transition-all hover:shadow-md">
+        <div className="lg:col-span-4 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm transition-all hover:shadow-md">
           <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3">
             {t.attendance.date || 'DATA DA CHAMADA'}
           </label>
@@ -877,6 +862,12 @@ export default function FrequenciaPage() {
                     <div className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-sm" />
                     Falta
                   </div>
+                  {activeTurma?.data_inicio && (
+                    <div className="flex items-center gap-2 px-4 py-2.5 bg-blue-50 text-blue-700 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-blue-100">
+                      <div className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-sm" />
+                      Início das Aulas
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -905,18 +896,30 @@ export default function FrequenciaPage() {
                         eachDayOfInterval({
                           start: mapGranularity === 'week' ? startOfWeek(currentMapDate, { weekStartsOn: 1 }) : startOfMonth(currentMapDate),
                           end: mapGranularity === 'week' ? endOfWeek(currentMapDate, { weekStartsOn: 1 }) : endOfMonth(currentMapDate)
-                        }).map(day => (
-                          <th 
-                            key={day.toString()} 
-                            className={cn(
-                              "p-3 min-w-[50px] text-center transition-colors border-l border-slate-100",
-                              [0, 6].includes(day.getDay()) ? "bg-slate-100/50 text-slate-400" : "text-slate-500"
-                            )}
-                          >
-                            <div className="text-[9px] font-bold opacity-60 uppercase mb-1">{format(day, 'EEE', { locale: dateLocale })}</div>
-                            <div className="text-sm font-black">{format(day, 'dd')}</div>
-                          </th>
-                        ))
+                        }).map(day => {
+                          const dayStr = format(day, 'yyyy-MM-dd');
+                          const isStartDay = activeTurma?.data_inicio && dayStr === activeTurma.data_inicio;
+                          return (
+                            <th 
+                              key={day.toString()} 
+                              className={cn(
+                                "p-3 min-w-[65px] text-center transition-colors border-l border-slate-100",
+                                isStartDay ? "bg-blue-50/70 border-b-2 border-b-blue-500 font-bold" : "",
+                                !isStartDay && [0, 6].includes(day.getDay()) ? "bg-slate-100/50 text-slate-400" : "text-slate-500"
+                              )}
+                            >
+                              <div className="text-[9px] font-bold opacity-60 uppercase mb-1">{format(day, 'EEE', { locale: dateLocale })}</div>
+                              <div className="text-sm font-black text-slate-700 flex flex-col items-center justify-center">
+                                <span>{format(day, 'dd')}</span>
+                                {isStartDay && (
+                                  <span className="mt-1 block mx-auto text-[8px] leading-none font-bold bg-blue-100 text-blue-800 px-1 py-0.5 rounded uppercase tracking-wider font-mono scale-90 whitespace-nowrap">
+                                    Início
+                                  </span>
+                                )}
+                              </div>
+                            </th>
+                          );
+                        })
                       )}
                     </tr>
                   </thead>
@@ -975,6 +978,7 @@ export default function FrequenciaPage() {
                               return r.aluno_id === student.id && dbDateStr === dayStr;
                             });
                             const isWeekend = [0, 6].includes(day.getDay());
+                            const isStartDay = activeTurma?.data_inicio && dayStr === activeTurma.data_inicio;
                             
                             return (
                               <td 
@@ -982,6 +986,7 @@ export default function FrequenciaPage() {
                                 className={cn(
                                   "p-0 border-l border-slate-50 cursor-pointer transition-all hover:bg-blue-50/50",
                                   isWeekend && "bg-slate-50/30",
+                                  isStartDay && "bg-blue-50/30 border-x border-blue-100/40",
                                   isReadOnly && "cursor-not-allowed opacity-80"
                                 )}
                                 title={isReadOnly ? (language === 'pt' ? "Apenas visualização" : "View only") : (language === 'pt' ? "Clique para alternar presença" : "Click to toggle attendance")}
