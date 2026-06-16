@@ -1410,6 +1410,97 @@ function RelatorioAvaliacaoAdminContent() {
                             </div>
                           </div>
 
+                          {/* PARECER DE APOIO AO COORDENADOR & SUGESTÕES DO SISTEMA */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                            {/* Card 1: Parecer Técnico de Apoio ao Coordenador */}
+                            <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 shadow-sm space-y-3">
+                              <h5 className="text-[10px] font-black text-slate-800 uppercase tracking-wider font-mono flex items-center gap-1.5">
+                                <Signature className="h-4 w-4 text-slate-600" />
+                                Parecer de Apoio ao Coordenador
+                              </h5>
+                              <div className="space-y-3">
+                                <div className="text-xs text-slate-700 space-y-2">
+                                  <p className="leading-relaxed">
+                                    Com base na apuração geral dos dados da turma, o desempenho médio geral é expressivo em{" "}
+                                    <strong className="text-slate-900 font-bold">{overallAverage.toFixed(2)}/5.00</strong>, o que posiciona a turma na classificação de{" "}
+                                    <span className={`px-1.5 py-0.5 rounded font-black text-[9px] uppercase font-mono ${
+                                      overallAverage >= 4.5 ? 'bg-emerald-100 text-emerald-800' :
+                                      overallAverage >= 4.0 ? 'bg-sky-100 text-sky-800' :
+                                      overallAverage >= 3.0 ? 'bg-amber-100 text-amber-805' :
+                                                              'bg-rose-100 text-rose-800'
+                                    }`}>
+                                      {overallAverage >= 4.5 ? 'Excelente' :
+                                       overallAverage >= 4.0 ? 'Muito Satisfatório' :
+                                       overallAverage >= 3.0 ? 'Regular / Limítrofe' :
+                                                               'Crítico / Atenção'}
+                                    </span>.
+                                  </p>
+                                  <p className="leading-relaxed">
+                                    {instructorIndex >= 4.2 
+                                      ? "O corpo docente demonstrou excelente capilaridade e domínio pedagógico, mantendo o nível técnico e a atenção aos alunos elevados."
+                                      : "O desempenho docente aponta que há espaço para ajustes no ritmo de ensino, garantindo melhor assimilação dos conteúdos de maior complexidade."}
+                                  </p>
+                                  <p className="leading-relaxed">
+                                    {infraIndex >= 4.0 
+                                      ? "A infraestrutura acadêmica de suporte e os recursos didáticos disponibilizados foram robustos e atenderam plenamente aos padrões pedagógicos."
+                                      : "Foram identificadas inconsistências pontuais sobre a infraestrutura escolar física ou de equipamentos de suporte que merecem intervenções de adequação."}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Card 2: Sugestões Dinâmicas do Sistema */}
+                            <div className="bg-indigo-50/35 border border-indigo-100/70 rounded-xl p-5 shadow-sm space-y-3">
+                              <h5 className="text-[10px] font-black text-indigo-900 uppercase tracking-wider font-mono flex items-center gap-1.5">
+                                <Target className="h-4 w-4 text-indigo-600" />
+                                Sugestões Estratégicas do Sistema
+                              </h5>
+                              <div className="space-y-2.5">
+                                <ul className="space-y-2 text-xs text-slate-705">
+                                  {/* Suggestion 1: pedagogical loop */}
+                                  <li className="flex gap-2 items-start animate-fade-in">
+                                    <CheckCircle className="h-3.5 w-3.5 text-indigo-500 shrink-0 mt-0.5" />
+                                    <span className="leading-normal">
+                                      {overallAverage >= 4.3 
+                                        ? "Manter o padrão metodológico atual e planejar trilhas acadêmicas avançadas ou de capacitação continuada para os discentes concluintes."
+                                        : "Promover reuniões rápidas de feedback entre a coordenação pedagógica e a docência antes de iniciar o próximo ciclo escolar para ajustar pontualmente o cronograma."}
+                                    </span>
+                                  </li>
+
+                                  {/* Suggestion 2: Specific category recommendation */}
+                                  <li className="flex gap-2 items-start">
+                                    <CheckCircle className="h-3.5 w-3.5 text-indigo-500 shrink-0 mt-0.5" />
+                                    <span className="leading-normal">
+                                      {courseSatisfactionIndex < 4.0 
+                                        ? "Realizar revisão na ementa ou na bibliografia complementar para aproximar o escopo prático do curso às expectativas dos alunos discentes."
+                                        : "Garantir a consolidação e arquivamento correto do plano de curso, exercícios práticos e materiais pedagógicos ministrados como modelo padrão institucional."}
+                                    </span>
+                                  </li>
+
+                                  {/* Suggestion 3: Student performance self evaluation */}
+                                  <li className="flex gap-2 items-start">
+                                    <CheckCircle className="h-3.5 w-3.5 text-indigo-500 shrink-0 mt-0.5" />
+                                    <span className="leading-normal">
+                                      {studentSelfIndex >= 4.0 
+                                        ? "Homologar e valorizar formalmente o excelente auto-engajamento individual demostrado pelos discentes desta turma em ata pedagógica."
+                                        : "Reforçar as sessões de atividades de mentoria, laboratório supervisionado e plantões extraclasse para encorajar a autonomia e segurança dos alunos discentes."}
+                                    </span>
+                                  </li>
+
+                                  {/* Suggestion 4: Infra suggestion */}
+                                  {infraIndex < 4.2 && (
+                                    <li className="flex gap-2 items-start">
+                                      <CheckCircle className="h-3.5 w-3.5 text-indigo-500 shrink-0 mt-0.5" />
+                                      <span className="leading-normal">
+                                        Acionar o suporte local acadêmico para auditar o espaço das salas, mídias visuais projetivas e conforto térmico de climatização dos ambientes.
+                                      </span>
+                                    </li>
+                                  )}
+                                </ul>
+                              </div>
+                            </div>
+                          </div>
+
                         </div>
                       );
                     })()}
