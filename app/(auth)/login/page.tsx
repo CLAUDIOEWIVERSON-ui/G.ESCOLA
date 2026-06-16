@@ -1,393 +1,628 @@
 'use client';
+/* eslint-disable react-hooks/set-state-in-effect */
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { createClient } from '@supabase/supabase-js';
-import { QrCode, LogIn, User, Lock, AlertCircle, Loader2, BookOpen, Camera } from 'lucide-react';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
+import { useI18n } from '@/lib/i18n/LanguageContext';
+import { useUser } from '@/lib/auth/UserContext';
+import { Logo } from '@/components/Logo';
+import { LogIn, Mail, Lock, AlertCircle, FileText, QrCode, RefreshCw } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { cn } from '@/lib/utils';
 import jsQR from 'jsqr';
 
-// Initialize client-side Supabase client using environment variables
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-
-  // Authentication states
+  const { t, language, setLanguage } = useI18n();
+  const { refreshProfile } = useUser();
+  const [loginType, setLoginType] = useState<'staff' | 'aluno'>('staff');
+  const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [accessCode, setAccessCode] = useState('');
-  const [loginType, setLoginType] = useState<'admin' | 'aluno'>('aluno');
-  
-  // Status states
-  const [error, setError] = useState<string | null>(null);
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [isAutoLogin, setIsAutoLogin] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Camera QR scanner states
-  const [scanning, setScanning] = useState(false);
+  // QR Reader state
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
+  const [scanSuccess, setScanSuccess] = useState<string | null>(null);
+
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const requestRef = useRef<number | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  // Automates student login process when QR parameters are scanned
-  const handleAutoLogin = useCallback(async (code: string) => {
-    setIsAutoLogin(true);
-    setLoading(true);
+  useEffect(() => {
+    if (searchParams) {
+      if (searchParams.get('blocked') === 'true') {
+        setError('Seu acesso foi encerrado porque sua turma foi concluída. Em caso de dúvidas, procure a administração.');
+        setLoginType('aluno');
+      } else {
+        const codeParam = searchParams.get('code') || searchParams.get('accessCode');
+        const passParam = searchParams.get('password') || searchParams.get('pass') || searchParams.get('senha') || '123';
+        if (codeParam) {
+          setLoginType('aluno');
+          setAccessCode(codeParam.trim().toUpperCase());
+          setPassword(passParam.trim());
+          
+          // Self-executing login function to avoid block loading order issues
+          const autoLogin = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+              const response = await fetch('/api/auth/student-login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ accessCode: codeParam.trim().toUpperCase(), password: passParam.trim() })
+              });
+              
+              const data = await response.json();
+              if (!response.ok || data.error) {
+                throw new Error(data.error || 'Erro ao realizar login.');
+              }
+
+              const { error: signInError } = await supabase.auth.signInWithPassword({
+                email: data.email,
+                password: data.password
+              });
+              
+              if (signInError) throw signInError;
+
+              await refreshProfile();
+              router.push('/boletim');
+            } catch (err: any) {
+              setError(err.message || 'Erro ao realizar login automático.');
+            } finally {
+              setLoading(false);
+            }
+          };
+          autoLogin();
+        }
+      }
+    }
+  }, [searchParams, router, refreshProfile]);
+
+  // Clean raw media stream when unmounting
+  useEffect(() => {
+    return () => {
+      if (requestRef.current) {
+        cancelAnimationFrame(requestRef.current);
+      }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, []);
+
+  const startScan = async () => {
+    setIsScanning(true);
+    setScanError(null);
+    setScanSuccess(null);
     setError(null);
 
-    try {
-      // 1. Force state clean up by signing out of any passive/stale sessions
-      await supabase.auth.signOut();
-
-      // 2. Call the backend route to exchange QR code with Supabase session metadata
-      const res = await fetch('/api/auth/student-login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok || !data.session) {
-        throw new Error(data.error || 'Código de acesso QR inválido ou expirado.');
+    // Minor delay to ensure component and dynamic ref mounts in the DOM
+    setTimeout(async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment' }
+        });
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.setAttribute('playsinline', 'true');
+          videoRef.current.play();
+          requestRef.current = requestAnimationFrame(tick);
+        }
+      } catch (err: any) {
+        console.error('[Camera Access Error]:', err);
+        const errMsg = err?.message || '';
+        const errName = err?.name || '';
+        if (errName === 'NotAllowedError' || errMsg.toLowerCase().includes('not allowed') || errMsg.toLowerCase().includes('permission')) {
+          setScanError('Acesso bloqueado pelo navegador. Por favor, clique em "Abrir aplicativo em nova aba" acima para permitir o uso da câmera.');
+        } else {
+          setScanError('Câmera indisponível ou permissão negada.');
+        }
       }
+    }, 150);
+  };
 
-      // 3. Establish the authenticated session on the client Supabase state
-      const { error: sessionErr } = await supabase.auth.setSession({
-        access_token: data.session.access_token,
-        refresh_token: data.session.refresh_token,
-      });
-
-      if (sessionErr) throw sessionErr;
-
-      // 4. Redirect the student directly to the curriculum/report card view
-      router.push('/boletim');
-      router.refresh();
-    } catch (err: any) {
-      console.error('[AutoLoginError]:', err);
-      setError(err.message || 'Erro ao realizar login automático com QR Code.');
-      setIsAutoLogin(false);
-      setLoading(false);
+  const stopScan = () => {
+    setIsScanning(false);
+    setScanError(null);
+    if (requestRef.current) {
+      cancelAnimationFrame(requestRef.current);
+      requestRef.current = null;
     }
-  }, [router]);
-
-  const stopCamera = useCallback(() => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
     }
-    setScanning(false);
-  }, []);
+  };
 
-  // 1. Handle auto login when QR code is scanned / access code is in URL
-  useEffect(() => {
-    if (!searchParams) return;
+  const tick = () => {
+    if (videoRef.current && videoRef.current.readyState === videoRef.current.HAVE_ENOUGH_DATA) {
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          canvas.height = videoRef.current.videoHeight;
+          canvas.width = videoRef.current.videoWidth;
+          ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          
+          // Use internal jsqr library
+          const decoded = jsQR(imageData.data, imageData.width, imageData.height, {
+            inversionAttempts: 'dontInvert',
+          });
 
-    const codeParam = searchParams.get('code') || searchParams.get('accessCode');
-    const blockedParam = searchParams.get('blocked') === 'true';
+          if (decoded) {
+            handleQRCodeDecoded(decoded.data);
+            return; // Exit recursion
+          }
+        }
+      }
+    }
+    requestRef.current = requestAnimationFrame(tick);
+  };
 
-    if (blockedParam) {
-      const timer = setTimeout(() => {
-        setError('Seu acesso foi encerrado porque sua turma foi concluída. Em caso de dúvidas, procure a administração.');
-        setLoginType('aluno');
-      }, 0);
-      return () => clearTimeout(timer);
+  const handleQRCodeDecoded = async (text: string) => {
+    // 1. Immediately kill media tracks and animation loop
+    setIsScanning(false);
+    if (requestRef.current) {
+      cancelAnimationFrame(requestRef.current);
+      requestRef.current = null;
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
     }
 
-    if (codeParam) {
-      const timer = setTimeout(() => {
-        handleAutoLogin(codeParam);
-      }, 0);
-      return () => clearTimeout(timer);
+    // 2. Play beautiful successful scan chime
+    try {
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      osc.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      osc.frequency.setValueAtTime(800, audioCtx.currentTime); // Standard high frequency beep
+      gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.12);
+    } catch (_) {
+      // Ignored if blocked by gesture restriction
     }
-  }, [searchParams, handleAutoLogin]);
 
-  // Clean up camera stream on unmount
-  useEffect(() => {
-    return () => {
-      stopCamera();
-    };
-  }, [stopCamera]);
+    setScanSuccess('QR Code lido com sucesso!');
 
-  // 2. Standard Manual Logins (Admin/Instructor or Student access code typing)
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    // 3. Fallback smart parsing algorithms for barcode scan codes
+    let codeValue = text.trim();
+    let passValue = '123'; // Standard student password default
+
+    try {
+      if (text.startsWith('{') && text.endsWith('}')) {
+        const parsed = JSON.parse(text);
+        if (parsed.accessCode || parsed.codigo || parsed.code) {
+          codeValue = String(parsed.accessCode || parsed.codigo || parsed.code).trim().toUpperCase();
+        }
+        if (parsed.password || parsed.senha || parsed.pass) {
+          passValue = String(parsed.password || parsed.senha || parsed.pass).trim();
+        }
+      } else if (text.includes(':')) {
+        const parts = text.split(':');
+        if (parts.length >= 2) {
+          codeValue = parts[0].trim().toUpperCase();
+          passValue = parts[1].trim();
+        }
+      } else if (text.includes(';')) {
+        const parts = text.split(';');
+        if (parts.length >= 2) {
+          codeValue = parts[0].trim().toUpperCase();
+          passValue = parts[1].trim();
+        }
+      } else if (text.includes('?')) {
+        const urlParams = new URLSearchParams(text.split('?')[1] || text);
+        const codeParam = urlParams.get('accessCode') || urlParams.get('code') || urlParams.get('codigo');
+        const passParam = urlParams.get('password') || urlParams.get('pass') || urlParams.get('senha');
+        if (codeParam) codeValue = codeParam.trim().toUpperCase();
+        if (passParam) passValue = passParam.trim();
+      }
+    } catch (_) {
+      // Fall back to literal trimmed string value
+    }
+
+    setAccessCode(codeValue);
+    setPassword(passValue);
+    setLoginType('aluno');
+
+    // 4. Kick-start auto-login process
     setLoading(true);
     setError(null);
 
     try {
-      if (loginType === 'admin') {
-        // Admin or Instructor password sign-in
-        const { error: signInErr } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (signInErr) throw signInErr;
-        
-        router.push('/dashboard');
-        router.refresh();
-      } else {
-        // Student sign-in by manual code entry
-        if (!accessCode.trim()) {
-          throw new Error('Por favor, informe seu código de acesso.');
-        }
-        await handleAutoLogin(accessCode.trim());
+      const response = await fetch('/api/auth/student-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accessCode: codeValue, password: passValue })
+      });
+      
+      const data = await response.json();
+      if (!response.ok || data.error) {
+        throw new Error(data.error || 'Erro ao realizar login.');
       }
+
+      // Authenticate inside client-side Supabase helper
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: data.password
+      });
+      
+      if (signInError) throw signInError;
+
+      await refreshProfile();
+      router.push('/boletim');
     } catch (err: any) {
-      setError(err.message || 'Credenciais inválidas. Por favor, verifique e tente novamente.');
+      setError(err.message || 'Código lido, mas houve um erro ao realizar o login automático. Tente novamente ou verifique se o QR Code está correto.');
+      setScanSuccess(null);
+    } finally {
       setLoading(false);
     }
   };
 
-  function tick() {
-    if (!videoRef.current || !canvasRef.current || !streamRef.current) return;
+  const handleAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!isSupabaseConfigured()) {
+      setError(t.auth.configRequired);
+      return;
+    }
 
-    if (videoRef.current.readyState === videoRef.current.HAVE_ENOUGH_DATA) {
-      const canvas = canvasRef.current;
-      const context = canvas.getContext('2d');
-      if (context) {
-        canvas.height = videoRef.current.videoHeight;
-        canvas.width = videoRef.current.videoWidth;
-        context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+    setLoading(true);
+    setError(null);
+
+    try {
+      if (loginType === 'aluno') {
+        // Student login via accessCode
+        const response = await fetch('/api/auth/student-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ accessCode, password })
+        });
         
-        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-        const code = jsQR(imageData.data, imageData.width, imageData.height, {
-          inversionAttempts: 'dontInvert',
+        const data = await response.json();
+        if (!response.ok || data.error) {
+          throw new Error(data.error || 'Erro ao realizar login.');
+        }
+
+        // Authenticate client-side to Supabase with shadow account
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: data.email,
+          password: data.password
+        });
+        
+        if (signInError) throw signInError;
+
+        // Force reload context profile information in a blocking await
+        await refreshProfile();
+
+        router.push('/boletim');
+        return;
+      }
+
+      // Staff login (Standard admin / instrutor login)
+      if (isLogin) {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+
+        // Force reload context profile information in a blocking await
+        await refreshProfile();
+      } else {
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ 
+          email, 
+          password,
+          options: {
+            data: { role: 'admin' } // Metadata for initial user
+          }
         });
 
-        if (code && code.data) {
-          stopCamera();
-          
-          // Parse access code if the QR data happens to be an absolute URL
-          let accessCodeValue = code.data;
-          try {
-            if (code.data.startsWith('http')) {
-              const url = new URL(code.data);
-              accessCodeValue = url.searchParams.get('code') || url.searchParams.get('accessCode') || code.data;
-            }
-          } catch (_) {}
-
-          handleAutoLogin(accessCodeValue);
-          return;
+        if (signUpError) throw signUpError;
+        
+        if (signUpData?.user) {
+          // Create profile record
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .upsert({
+              id: signUpData.user.id,
+              role: 'admin',
+              full_name: email.split('@')[0],
+              created_at: new Date().toISOString()
+            });
+            
+          if (profileError) console.error('Profile creation error:', profileError);
         }
-      }
-    }
-    requestAnimationFrame(tick);
-  }
 
-  // 3. Camera QR code reader implementations
-  async function startCamera() {
-    setError(null);
-    setScanning(true);
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' }
-      });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.setAttribute('playsinline', 'true');
-        videoRef.current.play();
-        requestAnimationFrame(tick);
+        setError(t.auth.accountCreated);
+        setIsLogin(true);
+        setLoading(false);
+        return;
       }
-    } catch (err) {
-      console.error('Camera Access Error:', err);
-      setError('Não foi possível obter acesso à câmera para ler o QR Code.');
-      setScanning(false);
+      router.push('/dashboard');
+    } catch (err: any) {
+      setError(err.message || 'Ocorreu um erro ao fazer login.');
+    } finally {
+      setLoading(false);
     }
-  }
-
-  if (isAutoLogin && loading) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-950 p-6 text-zinc-100" id="auto-login-container">
-        <div className="flex flex-col items-center space-y-6 max-w-md text-center bg-zinc-900/50 backdrop-blur-md p-8 rounded-3xl border border-zinc-800 shadow-2xl relative overflow-hidden" id="auto-login-card">
-          <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-3xl blur opacity-20 animate-pulse"></div>
-          <div className="relative flex flex-col items-center space-y-6">
-            <div className="relative">
-              <div className="h-16 w-16 rounded-full border-t-2 border-indigo-500 border-r-2 border-transparent animate-spin"></div>
-              <QrCode className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-6 w-6 text-indigo-400" />
-            </div>
-            <div className="space-y-2">
-              <h1 className="text-2xl font-semibold tracking-tight">Portal do Aluno</h1>
-              <p className="text-sm text-zinc-400 max-w-xs">
-                Processando seu QR Code e carregando sua área de acesso exclusivo...
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-950 p-4 text-zinc-100" id="login-root">
-      <div className="w-full max-w-md" id="login-wrapper">
-        {/* Header Branding */}
-        <div className="flex flex-col items-center mb-8 text-center" id="login-header">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white shadow-lg shadow-indigo-500/20 mb-4">
-            <BookOpen className="h-6 w-6" />
-          </div>
-          <h2 className="text-2xl font-bold tracking-tight">Escola Digital</h2>
-          <p className="text-sm text-zinc-400 mt-1">Conecte-se para acessar suas aulas e avaliações</p>
+    <div className="w-full max-w-sm bg-white rounded-xl shadow-xl shadow-slate-200/50 p-8 border border-slate-200 overflow-hidden min-h-[420px] flex flex-col justify-between">
+      <div>
+        <div className="flex flex-col items-center mb-4">
+          <Logo className="mb-0" dark={true} />
         </div>
 
-        {/* Tab Selection */}
-        <div className="grid grid-cols-2 bg-zinc-900 border border-zinc-800 p-1 rounded-xl mb-6 relative z-10" id="tab-selection">
+        {/* Language selector toggle */}
+        <div className="flex justify-center gap-2 mb-6">
           <button
-            onClick={() => { setLoginType('aluno'); stopCamera(); setError(null); }}
-            className={`flex items-center justify-center gap-2 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
-              loginType === 'aluno'
-                ? 'bg-zinc-850 text-white shadow'
-                : 'text-zinc-400 hover:text-white'
-            }`}
-            id="tab-student"
+            type="button"
+            onClick={() => setLanguage('pt')}
+            className={cn(
+              "px-3 py-1 text-[10px] font-black rounded-lg border transition-all cursor-pointer",
+              language === 'pt' 
+                ? "bg-slate-900 text-white border-slate-900 shadow-sm" 
+                : "bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100"
+            )}
           >
-            <QrCode className="h-4 w-4" />
-            Área do Aluno
+            Português (PT)
           </button>
           <button
-            onClick={() => { setLoginType('admin'); stopCamera(); setError(null); }}
-            className={`flex items-center justify-center gap-2 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
-              loginType === 'admin'
-                ? 'bg-zinc-850 text-white shadow'
-                : 'text-zinc-400 hover:text-white'
-            }`}
-            id="tab-admin"
+            type="button"
+            onClick={() => setLanguage('en')}
+            className={cn(
+              "px-3 py-1 text-[10px] font-black rounded-lg border transition-all cursor-pointer",
+              language === 'en' 
+                ? "bg-slate-900 text-white border-slate-900 shadow-sm" 
+                : "bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100"
+            )}
           >
-            <LogIn className="h-4 w-4" />
-            Equipe Escolar
+            English (EN)
           </button>
         </div>
 
-        {/* Main Box */}
-        <div className="bg-zinc-900/50 backdrop-blur-md rounded-2xl border border-zinc-800 p-6 shadow-2xl relative z-10" id="login-card">
-          {error && (
-            <div className="flex items-start gap-3 bg-red-950/40 border border-red-900/60 text-red-200 p-4 rounded-xl mb-6 text-sm" id="error-alert">
-              <AlertCircle className="h-5 w-5 shrink-0 text-red-400 mt-0.5" />
-              <p>{error}</p>
-            </div>
-          )}
-
-          {scanning ? (
-            <div className="flex flex-col items-center space-y-4" id="camera-container">
-              <h3 className="text-sm font-medium text-zinc-300">Posicione o QR Code em frente à câmera</h3>
-              <div className="relative w-full aspect-video rounded-xl overflow-hidden border border-zinc-800 bg-black">
-                <video ref={videoRef} className="w-full h-full object-cover" />
-                <canvas ref={canvasRef} className="hidden" />
-                {/* QR Laser scanning visual indicator */}
-                <div className="absolute left-0 right-0 top-1/2 h-0.5 bg-indigo-500 animate-bounce shadow-[0_0_8px_rgba(99,102,241,0.8)]"></div>
+        <AnimatePresence mode="wait">
+          {isScanning ? (
+            <motion.div
+              key="scanner"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="flex flex-col items-center"
+            >
+              <div className="text-center mb-4">
+                <span className="text-xs font-bold text-slate-700 block uppercase tracking-wide">Leitor de QR Code</span>
+                <span className="text-[11px] text-slate-400">Aponte a câmera da carteirinha escolar</span>
               </div>
-              <button
-                type="button"
-                onClick={stopCamera}
-                className="w-full py-2.5 bg-zinc-805 hover:bg-zinc-800 text-zinc-300 rounded-xl font-medium text-sm border border-zinc-800 transition"
-              >
-                Cancelar Leitura
-              </button>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-5" id="login-form">
-              {loginType === 'aluno' ? (
-                <>
-                  <div className="space-y-2">
-                    <label htmlFor="accessCode" className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-                      Código de Acesso
-                    </label>
-                    <div className="relative">
-                      <User className="absolute left-3.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-zinc-500" />
-                      <input
-                        id="accessCode"
-                        type="text"
-                        placeholder="Insira o seu código da carteirinha"
-                        value={accessCode}
-                        onChange={(e) => setAccessCode(e.target.value)}
-                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-3 pl-10 pr-4 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-indigo-500 font-mono tracking-wider transition"
-                        disabled={loading}
-                      />
-                    </div>
-                  </div>
 
-                  <div className="flex flex-col gap-3 pt-2">
+              {/* Viewfinder block */}
+              <div className="relative w-full aspect-square max-w-[220px] rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 shadow-xl flex items-center justify-center">
+                <video
+                  ref={videoRef}
+                  className="absolute inset-0 w-full h-full object-cover"
+                  style={{ display: 'block' }}
+                  playsInline
+                  muted
+                />
+                
+                {/* Laser scan lines */}
+                <div className="absolute inset-4 pointer-events-none flex flex-col justify-between">
+                  <div className="flex justify-between">
+                    <div className="w-5 h-5 border-t-4 border-l-4 border-blue-500 rounded-tl-sm"></div>
+                    <div className="w-5 h-5 border-t-4 border-r-4 border-blue-500 rounded-tr-sm"></div>
+                  </div>
+                  
+                  <div className="w-full h-0.5 bg-blue-500 shadow-[0_0_8px_2px_rgba(59,130,246,0.8)] animate-bounce"></div>
+
+                  <div className="flex justify-between">
+                    <div className="w-5 h-5 border-b-4 border-l-4 border-blue-500 rounded-bl-sm"></div>
+                    <div className="w-5 h-5 border-b-4 border-r-4 border-blue-500 rounded-br-sm"></div>
+                  </div>
+                </div>
+
+                <canvas ref={canvasRef} className="hidden" />
+
+                {scanError && (
+                  <div className="absolute inset-0 bg-slate-900/95 flex flex-col items-center justify-center p-4 text-center space-y-1.5 overflow-y-auto">
+                    <AlertCircle size={24} className="text-red-500 shrink-0" />
+                    <span className="text-[11px] text-white font-bold leading-tight">{scanError}</span>
+                    <p className="text-[9px] text-slate-300 leading-normal max-w-[170px]">
+                      Dica: Se estiver usando o preview, clique no botão <span className="font-semibold text-blue-400">&quot;Abrir aplicativo em nova aba&quot;</span> no canto superior direito para dar permissão de câmera com segurança.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Cancel Button */}
+              <div className="flex gap-2 w-full max-w-[220px] mt-4">
+                <button
+                  type="button"
+                  onClick={stopScan}
+                  className="flex-1 py-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 border border-slate-200 hover:bg-slate-50 rounded-lg cursor-pointer transition-all"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    stopScan();
+                    startScan();
+                  }}
+                  className="p-1.5 hover:bg-slate-50 border border-slate-200 text-slate-500 hover:text-slate-700 rounded-lg cursor-pointer transition-all flex items-center justify-center"
+                  title="Recarregar"
+                >
+                  <RefreshCw size={14} />
+                </button>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="form"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              className="space-y-4"
+            >
+              {/* Access Role Tabs */}
+              <div className="flex bg-slate-100 p-1 rounded-xl mb-6">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLoginType('staff');
+                    setError(null);
+                  }}
+                  className={cn(
+                    "flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer",
+                    loginType === 'staff' 
+                      ? "bg-white text-blue-600 shadow-sm" 
+                      : "text-slate-500 hover:text-slate-800"
+                  )}
+                >
+                  {language === 'pt' ? 'Gestão / Instrutor' : 'Staff / Instructor'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLoginType('aluno');
+                    setError(null);
+                  }}
+                  className={cn(
+                    "flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer",
+                    loginType === 'aluno' 
+                      ? "bg-white text-blue-600 shadow-sm" 
+                      : "text-slate-500 hover:text-slate-800"
+                  )}
+                >
+                  {language === 'pt' ? 'Área do Aluno' : 'Student Area'}
+                </button>
+              </div>
+
+              <form id="auth-form" onSubmit={handleAuth} className="space-y-4">
+                <AnimatePresence mode="wait">
+                  {error && (
+                    <motion.div 
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="bg-red-50 border border-red-100 text-red-600 p-3 rounded-lg text-xs flex items-center gap-2"
+                    >
+                      <AlertCircle size={14} className="shrink-0" />
+                      <span className="leading-relaxed">{error}</span>
+                    </motion.div>
+                  )}
+                  {scanSuccess && (
+                    <motion.div 
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="bg-emerald-50 border border-emerald-100 text-emerald-600 p-3 rounded-lg text-xs flex items-center gap-2"
+                    >
+                      <span className="leading-relaxed">{scanSuccess}</span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {loginType === 'staff' ? (
+                  <>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">{t.auth.email}</label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                        <input
+                          id="email"
+                          type="email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          required
+                          className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition-all"
+                          placeholder={t.auth.emailPlaceholder}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">
+                        {t.auth.password}
+                      </label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                        <input
+                          id="password"
+                          type="password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          required
+                          className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition-all"
+                          placeholder="••••••••"
+                        />
+                      </div>
+                    </div>
+
                     <button
+                      id="auth-submit"
                       type="submit"
                       disabled={loading}
-                      className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 px-4 rounded-xl shadow-lg shadow-indigo-500/10 hover:shadow-indigo-500/20 active:scale-[0.98] transition disabled:opacity-50 flex items-center justify-center gap-2"
+                      className="w-full py-2.5 bg-blue-600 text-white rounded-lg font-bold text-sm flex items-center justify-center gap-2 hover:bg-blue-700 transition-all active:scale-[0.98] disabled:opacity-70 shadow-sm shadow-blue-200 cursor-pointer mt-2"
                     >
-                      {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Entrar com Código'}
+                      {loading ? (
+                        <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      ) : (
+                        <>
+                          <LogIn size={16} />
+                          {t.auth.login}
+                        </>
+                      )}
                     </button>
-
-                    <div className="relative flex py-2 items-center">
-                      <div className="flex-grow border-t border-zinc-800"></div>
-                      <span className="flex-shrink mx-4 text-zinc-600 text-xs font-bold uppercase tracking-widest">Ou</span>
-                      <div className="flex-grow border-t border-zinc-800"></div>
-                    </div>
-
+                  </>
+                ) : (
+                  <div className="space-y-4 pt-2">
+                    {/* Quick QR Reader Trigger */}
                     <button
                       type="button"
-                      onClick={startCamera}
-                      className="w-full py-3 px-4 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 text-zinc-200 font-semibold rounded-xl transition flex items-center justify-center gap-2 shadow"
+                      onClick={startScan}
+                      className="w-full py-4 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2.5 transition-all cursor-pointer shadow-lg shadow-blue-500/35 hover:shadow-xl hover:shadow-blue-500/50 ring-2 ring-blue-500/15 hover:ring-blue-500/25 active:scale-[0.98]"
                     >
-                      <Camera className="h-4 w-4" />
-                      Ler QR Code da Carteirinha
+                      <QrCode size={18} />
+                      {language === 'pt' ? 'Acessar via QR Code' : 'Access via QR Code'}
                     </button>
+                    
+                    <p className="text-[11px] leading-relaxed text-slate-500 text-center font-medium mt-3 bg-slate-50 border border-slate-100 rounded-lg p-3">
+                      {language === 'pt' 
+                        ? 'O QR CODE É FORNECIDO PELA ADMINISTRAÇÃO DO CURSO, O ALUNO TERA ACESSO AO DETALHE SEMANAL DE AULAS, RELATORIO DO ALUNO E QUESTIONÁRIO PEDAGÓGICO.' 
+                        : 'THE QR CODE IS PROVIDED BY THE COURSE ADMINISTRATION, THE STUDENT WILL HAVE ACCESS TO THE WEEKLY CLASS DETAILS, STUDENT REPORT, AND PEDAGOGICAL QUESTIONNAIRE.'
+                      }
+                    </p>
                   </div>
-                </>
-              ) : (
-                <>
-                  <div className="space-y-2">
-                    <label htmlFor="email" className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-                      E-mail Institucional
-                    </label>
-                    <div className="relative">
-                      <User className="absolute left-3.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-zinc-500" />
-                      <input
-                        id="email"
-                        type="email"
-                        placeholder="professor@escola.digital"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-3 pl-10 pr-4 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-indigo-500 transition"
-                        disabled={loading}
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label htmlFor="password" className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-                      Senha de Acesso
-                    </label>
-                    <div className="relative">
-                      <Lock className="absolute left-3.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-zinc-500" />
-                      <input
-                        id="password"
-                        type="password"
-                        placeholder="••••••••••••"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-3 pl-10 pr-4 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-indigo-500 transition"
-                        disabled={loading}
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 px-4 rounded-xl shadow-lg shadow-indigo-500/10 hover:shadow-indigo-500/20 active:scale-[0.98] transition disabled:opacity-50 flex items-center justify-center gap-2 pt-2"
-                  >
-                    {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Entrar na Plataforma'}
-                  </button>
-                </>
-              )}
-            </form>
+                )}
+              </form>
+            </motion.div>
           )}
-        </div>
+        </AnimatePresence>
       </div>
+    </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4 font-sans text-slate-900">
+      <Suspense fallback={
+        <div className="w-full max-w-sm bg-white rounded-xl shadow-xl shadow-slate-200/50 p-8 border border-slate-200 flex flex-col items-center justify-center min-h-[400px]">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
+        </div>
+      }>
+        <LoginContent />
+      </Suspense>
     </div>
   );
 }

@@ -2090,14 +2090,7 @@ function RelatorioAvaliacaoAdminContent() {
                                 🖨️ CARTEIRINHA QR
                               </button>
 
-                              <button
-                                type="button"
-                                onClick={() => setIsAdminFilling(true)}
-                                className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs px-3 py-2 rounded-lg font-bold border border-indigo-200 transition flex items-center gap-1 cursor-pointer font-sans"
-                              >
-                                <Edit3 className="h-3.5 w-3.5" />
-                                EDITAR COMO ADMIN
-                              </button>
+                              {/* EDITAR COMO ADMIN removido para retirar o acesso à alteração de questionários preenchidos */}
                             </div>
                           </div>
                           
