@@ -89,16 +89,16 @@ function drawPage1(doc: jsPDF): void {
   doc.text('Não Concordo / Não se Aplica (1 pt)', 151, 57);
 
   let currentY = 70;
-
+  
   // I. AVALIAÇÃO DO CURSO
   currentY = drawSectionHeader(doc, 'I. AVALIAÇÃO DO CURSO', currentY);
   const itemsSection1 = [
-    '1. O conteúdo atendeu aos objetivos propostos.',
-    '2. O conteúdo foi relevante para minha atividade profissional.',
-    '3. A carga horária foi adequada.',
-    '4. O material didático foi satisfatório.',
-    '5. As atividades práticas contribuíram para a aprendizagem.',
-    '6. O curso atendeu às minhas expectativas.'
+    '1. O conteúdo do curso atendeu às expectativas?',
+    '2. O material didático foi adequado?',
+    '3. A carga horária foi suficiente?',
+    '4. Os exercícios práticos contribuíram para o aprendizado?',
+    '5. A organização do curso foi satisfatória?',
+    '6. O curso possui aplicabilidade prática na atividade profissional?'
   ];
   currentY = drawRatingItems(doc, itemsSection1, currentY);
 
@@ -106,13 +106,13 @@ function drawPage1(doc: jsPDF): void {
   currentY += 4;
   currentY = drawSectionHeader(doc, 'II. AVALIAÇÃO DO INSTRUTOR', currentY);
   const itemsSection2 = [
-    '1. Demonstrou domínio do conteúdo.',
-    '2. Apresentou clareza nas explicações.',
-    '3. Demonstrou boa didática.',
-    '4. Manteve pontualidade e assiduidade.',
-    '5. Solucionou dúvidas adequadamente.',
-    '6. Manteve bom relacionamento com a turma.',
-    '7. Conduziu adequadamente as atividades práticas.'
+    '1. Domínio do conteúdo',
+    '2. Clareza na explicação',
+    '3. Pontualidade',
+    '4. Didática',
+    '5. Relacionamento com a turma',
+    '6. Capacidade de solucionar dúvidas',
+    '7. Condução das atividades práticas'
   ];
   currentY = drawRatingItems(doc, itemsSection2, currentY);
 
@@ -120,11 +120,11 @@ function drawPage1(doc: jsPDF): void {
   currentY += 4;
   currentY = drawSectionHeader(doc, 'III. AUTOAVALIAÇÃO DO ALUNO', currentY);
   const itemsSection3 = [
-    '1. Minha participação nas aulas foi satisfatória.',
-    '2. Demonstrei interesse pelo conteúdo ministrado.',
-    '3. Mantive frequência adequada.',
-    '4. Dediquei-me às atividades propostas.',
-    '5. Aproveitei adequadamente os conhecimentos transmitidos.'
+    '1. Participação nas aulas',
+    '2. Interesse demonstrado',
+    '3. Frequência',
+    '4. Aproveitamento do conteúdo',
+    '5. Dedicação aos exercícios e avaliações'
   ];
   drawRatingItems(doc, itemsSection3, currentY);
 }
@@ -149,33 +149,24 @@ function drawPage2(doc: jsPDF): void {
   // IV. INFRAESTRUTURA E APOIO ADMINISTRATIVO
   currentY = drawSectionHeader(doc, 'IV. INFRAESTRUTURA E APOIO ADMINISTRATIVO', currentY);
   const itemsSection4 = [
-    '1. A sala de aula foi adequada para a realização do curso.',
-    '2. Os equipamentos disponíveis atenderam às necessidades do curso.',
-    '3. Os recursos audiovisuais foram satisfatórios.',
-    '4. A organização administrativa do curso foi eficiente.',
-    '5. O ambiente de ensino favoreceu a aprendizagem.'
+    '1. Sala de aula',
+    '2. Equipamentos',
+    '3. Recursos audiovisuais',
+    '4. Organização administrativa',
+    '5. Ambiente de ensino'
   ];
   currentY = drawRatingItems(doc, itemsSection4, currentY);
 
-  // V. IMPACTO DO CURSO
+  // V. COMENTÁRIOS, ELOGIOS E SUGESTÕES
   currentY += 4;
-  currentY = drawSectionHeader(doc, 'V. IMPACTO DO CURSO', currentY);
-  const itemsSection5 = [
-    '1. O curso contribuirá para meu desempenho profissional.',
-    '2. Aplicarei os conhecimentos adquiridos em minhas atividades.',
-    '3. Recomendaria este curso a outros profissionais.'
-  ];
-  currentY = drawRatingItems(doc, itemsSection5, currentY);
-
-  // VI. COMENTÁRIOS, ELOGIOS E SUGESTÕES
-  currentY += 4;
-  currentY = drawSectionHeader(doc, 'VI. COMENTÁRIOS, ELOGIOS E SUGESTÕES', currentY);
+  currentY = drawSectionHeader(doc, 'V. COMENTÁRIOS, ELOGIOS E SUGESTÕES', currentY);
 
   const commentSections = [
-    { title: 'Pontos fortes do curso:', lines: 3 },
     { title: 'Sugestões de melhoria:', lines: 3 },
-    { title: 'Elogios ao instrutor ou à organização do curso:', lines: 3 },
-    { title: 'Outros comentários:', lines: 3 }
+    { title: 'Críticas construtivas:', lines: 3 },
+    { title: 'Elogios:', lines: 3 },
+    { title: 'Necessidade de novos cursos:', lines: 3 },
+    { title: 'Comentários adicionais:', lines: 3 }
   ];
 
   doc.setFont('Helvetica', 'bold');
