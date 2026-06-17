@@ -558,14 +558,6 @@ function AvaliacaoAlunoForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!acceptedTerms) {
-      toast.error('Você precisa aceitar a declaração de veracidade das respostas.');
-      return;
-    }
-    if (!signature.trim()) {
-      toast.error('Por favor, digite seu nome completo no campo de Signature Digital.');
-      return;
-    }
 
     // Double check all steps
     for (let s = 1; s <= 4; s++) {
@@ -578,7 +570,8 @@ function AvaliacaoAlunoForm() {
     setSubmitting(true);
 
     try {
-      const digitalSignatureText = `Assinado Digitalmente por ${signature.trim()} por IP do Aluno em ${new Date().toLocaleString('pt-BR')}`;
+      const studentName = studentDetails?.nome || 'Aluno';
+      const digitalSignatureText = `Preenchido e Confirmado por ${studentName} em ${new Date().toLocaleString('pt-BR')}`;
       
       const payload = {
         aluno_id: studentDetails.id,
@@ -1803,40 +1796,6 @@ function AvaliacaoAlunoForm() {
                 </div>
               </div>
 
-              {/* Signature Field */}
-              <div className="bg-slate-50 border border-slate-200 rounded-lg p-6 mt-8 space-y-4">
-                <div className="flex items-center gap-2 text-slate-800 font-bold mb-2">
-                  <Signature className="h-5 w-5 text-slate-800" />
-                  <span className="font-mono text-sm uppercase font-semibold">Assinatura Eletrônica</span>
-                </div>
-
-                <p className="text-xs text-slate-500 leading-relaxed">
-                  Para assinar digitalmente e confirmar o preenchimento desta avaliação, por favor, insira abaixo seu nome completo exatamente conforme cadastrado. Seu voto é rastreável e auditável pelas instâncias gerenciais.
-                </p>
-
-                <div className="space-y-3">
-                  <input
-                    type="text"
-                    required
-                    value={signature}
-                    onChange={(e) => setSignature(e.target.value)}
-                    placeholder="Digite seu nome completo para assinar..."
-                    className="w-full border border-slate-350 rounded-lg p-3 text-xs bg-white focus:ring-2 focus:ring-slate-900/20 font-bold uppercase"
-                  />
-                  
-                  <label className="flex items-start gap-2 cursor-pointer select-none">
-                    <input 
-                      type="checkbox"
-                      checked={acceptedTerms}
-                      onChange={(e) => setAcceptedTerms(e.target.checked)}
-                      className="mt-0.5 rounded border-slate-350 text-slate-900 focus:ring-slate-900"
-                    />
-                    <span className="text-[11px] text-slate-600 leading-tight">
-                      Declaro sob responsabilidade acadêmica e estatutos regulamentares que respondi honestamente a este questionário pós-conclusão de curso para fins pedagógicos.
-                    </span>
-                  </label>
-                </div>
-              </div>
             </div>
 
             <div className="flex justify-between pt-6 border-t mt-8">
@@ -1850,11 +1809,12 @@ function AvaliacaoAlunoForm() {
               </button>
               
               <button 
+                id="btn-finalizar-avaliacao"
                 type="submit"
                 disabled={submitting}
-                className="flex items-center gap-2 bg-slate-910 hover:bg-slate-950 text-white text-xs font-bold px-6 py-3 rounded-lg shadow-sm transition-all duration-300 transform font-semibold hover:shadow cursor-pointer disabled:opacity-50"
+                className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold uppercase px-8 py-3.5 rounded-lg shadow-[0_0_15px_rgba(16,185,129,0.5)] border border-emerald-400 transition-all duration-250 cursor-pointer disabled:opacity-50 tracking-wider animate-pulse"
               >
-                {submitting ? "Gravando respostas..." : "Assinar e Enviar Questionário"}
+                {submitting ? "Gravando respostas..." : "Finalizar e Enviar Avaliação"}
                 <ArrowRight className="h-4 w-4" />
               </button>
             </div>
