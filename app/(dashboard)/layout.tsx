@@ -198,8 +198,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         ? t.users.aluno 
         : '';
 
-  // Sequência de navegação do botão Próximo: cursos, turmas, detalhe (horário), agenda (calendário), configurações
-  const nextSequence = ['/cursos', '/turmas', '/horario', '/calendario', '/configuracoes'];
+  // Sequência de navegação do botão Próximo: cursos, turmas, detalhe (horário), agenda (calendário), análise de avaliações, configurações
+  const nextSequence = ['/cursos', '/turmas', '/horario', '/calendario', '/relatorio-avaliacao', '/configuracoes'];
 
   // Encontrar o próximo destino com base no pathname atual
   const getNextPagePath = () => {
