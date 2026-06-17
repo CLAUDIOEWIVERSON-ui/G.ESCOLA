@@ -20,7 +20,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
-  Clock
+  Clock,
+  X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
@@ -139,10 +140,19 @@ export default function HorarioPage() {
     }
   }
 
+  const [backupScheduleData, setBackupScheduleData] = useState<Record<string, any>>({});
+
+  const handleCancelEdit = () => {
+    setScheduleData(backupScheduleData);
+    setIsEditMode(false);
+    toast.info(language === 'pt' ? 'Edição cancelada. As alterações foram descartadas.' : 'Editing canceled. Changes discarded.');
+  };
+
   const handleToggleEdit = () => {
     if (isEditMode) {
       handleSave();
     } else {
+      setBackupScheduleData(JSON.parse(JSON.stringify(scheduleData)));
       setIsEditMode(true);
     }
   };
@@ -758,19 +768,32 @@ export default function HorarioPage() {
         {profile?.role !== 'aluno' && (
           <div className="flex items-center gap-3">
             {!isNifStudent && (
-              <button
-                onClick={handleToggleEdit}
-                disabled={isSaving || !selectedTurmaId}
-                className={cn(
-                  "flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-black uppercase tracking-widest transition-all shadow-lg disabled:opacity-50",
-                  isEditMode 
-                    ? "bg-emerald-600 text-white shadow-emerald-200 hover:bg-emerald-700" 
-                    : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 shadow-slate-100"
+              <div className="flex items-center gap-2">
+                {isEditMode && (
+                  <button
+                    onClick={handleCancelEdit}
+                    disabled={isSaving}
+                    type="button"
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-black uppercase tracking-widest transition-all bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 shadow-md cursor-pointer disabled:opacity-50"
+                  >
+                    <X size={18} />
+                    {language === 'pt' ? 'Cancelar' : 'Cancel'}
+                  </button>
                 )}
-              >
-                {isSaving ? <Loader2 size={18} className="animate-spin" /> : (isEditMode ? <Check size={18} /> : <Edit3 size={18} />)}
-                {isEditMode ? (language === 'pt' ? 'Salvar' : 'Save') : (language === 'pt' ? 'Editar' : 'Edit')}
-              </button>
+                <button
+                  onClick={handleToggleEdit}
+                  disabled={isSaving || !selectedTurmaId}
+                  className={cn(
+                    "flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-black uppercase tracking-widest transition-all shadow-lg disabled:opacity-50 cursor-pointer",
+                    isEditMode 
+                      ? "bg-emerald-600 text-white shadow-emerald-200 hover:bg-emerald-700" 
+                      : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 shadow-slate-100"
+                  )}
+                >
+                  {isSaving ? <Loader2 size={18} className="animate-spin" /> : (isEditMode ? <Check size={18} /> : <Edit3 size={18} />)}
+                  {isEditMode ? (language === 'pt' ? 'Salvar' : 'Save') : (language === 'pt' ? 'Editar' : 'Edit')}
+                </button>
+              </div>
             )}
 
             {selectedTurmaId && !isEditMode && (
