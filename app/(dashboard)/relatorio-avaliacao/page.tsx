@@ -213,6 +213,11 @@ function RelatorioAvaliacaoAdminContent() {
   const handleAdminSubmit = async (e: React.FormEvent, studentDetails: any) => {
     e.preventDefault();
 
+    if (profile?.role !== 'admin') {
+      toast.error('Apenas administradores podem preencher ou editar questionários.');
+      return;
+    }
+
     const allQuestions = [
       ...CURSO_QUESTIONS,
       ...INSTRUTOR_QUESTIONS,
@@ -290,6 +295,11 @@ function RelatorioAvaliacaoAdminContent() {
   };
 
   const handleDeleteSubmission = async (submissionId: string) => {
+    if (profile?.role !== 'admin') {
+      toast.error('Apenas administradores podem excluir respostas.');
+      return;
+    }
+
     if (!window.confirm('Tem certeza de que deseja deletar esta resposta? O questionário poderá ser preenchido novamente pelo aluno ou pelo administrador.')) {
       return;
     }
@@ -321,14 +331,32 @@ function RelatorioAvaliacaoAdminContent() {
       setLoading(true);
       
       // Fetch Cursos
-      const { data: cursosData } = await supabase.from('cursos').select('id, nome').is('deleted_at', null);
+      const { data: cursosData } = await supabase.from('cursos').select('id, nome, grupo_responsavel').is('deleted_at', null);
       if (cursosData) setCursos(cursosData);
 
-      // Fetch Turmas with registered instructor field
-      const { data: turmasData } = await supabase.from('turmas').select('id, nome, curso_id, periodo, instrutor, internacional').is('deleted_at', null);
+      // Fetch Turmas with registered instructor and group fields
+      const { data: turmasData } = await supabase.from('turmas').select('id, nome, curso_id, periodo, instrutor, internacional, grupo_responsavel').is('deleted_at', null);
       
       // Filter out international/exterior classes from the evaluation module
-      const nonInternationalTurmas = (turmasData || []).filter((t: any) => !t.internacional);
+      let nonInternationalTurmas = (turmasData || []).filter((t: any) => !t.internacional);
+
+      // Filter classes by instructor's group responsibility if logged in as an instructor
+      if (profile?.role === 'instrutor' && profile?.grupo_responsavel) {
+        const userGroup = profile.grupo_responsavel;
+        nonInternationalTurmas = nonInternationalTurmas.filter((t: any) => {
+          const linkedCurso = (cursosData || []).find((c: any) => c.id === t.curso_id);
+          const turmaGroup = t.grupo_responsavel || linkedCurso?.grupo_responsavel;
+
+          if (userGroup === 'MAN') {
+            return turmaGroup === 'MAN';
+          } else if (userGroup === 'GAT') {
+            return turmaGroup === 'GAT';
+          } else if (userGroup === 'AMBOS') {
+            return turmaGroup === 'MAN' || turmaGroup === 'GAT' || turmaGroup === 'AMBOS' || !turmaGroup;
+          }
+          return true;
+        });
+      }
       setTurmas(nonInternationalTurmas);
 
       // Fetch Alunos
@@ -337,14 +365,14 @@ function RelatorioAvaliacaoAdminContent() {
         .select('id, nome, turma_id, posto_graduacao, om, matricula, email')
         .is('deleted_at', null);
 
-      // Filter out students belonging to international/exterior classes
+      // Filter out students belonging to international/exterior classes or classes outside instructor's group
       const nonInternationalAlunos = (alunosData || []).filter((al: any) => {
-        const matchingTurma = (turmasData || []).find((t: any) => t.id === al.turma_id);
-        return matchingTurma ? !matchingTurma.internacional : true;
+        const matchingTurma = nonInternationalTurmas.find((t: any) => t.id === al.turma_id);
+        return !!matchingTurma;
       });
       setAllStudents(nonInternationalAlunos);
 
-      // Fetch Questionarios joined with relation metrics
+      // Fetch Questionarios joined with relation metrics and group classifications
       const { data: qData, error: qErr } = await supabase
         .from('questionarios_conclusao')
         .select(`
@@ -363,9 +391,11 @@ function RelatorioAvaliacaoAdminContent() {
             instrutor,
             periodo,
             internacional,
+            grupo_responsavel,
             curso:cursos(
               id,
-              nome
+              nome,
+              grupo_responsavel
             )
           )
         `);
@@ -379,11 +409,29 @@ function RelatorioAvaliacaoAdminContent() {
         }
       }
 
-      // Filter out submissions belonging to international/exterior classes
-      const activeSubmissions = (qData || []).filter((sub: any) => !sub.turma?.internacional);
+      // Filter out submissions belonging to international/exterior classes or classes outside instructor's group
+      const activeSubmissions = (qData || []).filter((sub: any) => {
+        if (!sub.turma) return false;
+        if (sub.turma.internacional) return false;
+
+        // Apply instructor group scope if applicable
+        if (profile?.role === 'instrutor' && profile?.grupo_responsavel) {
+          const userGroup = profile.grupo_responsavel;
+          const subGroup = sub.turma.grupo_responsavel || sub.turma.curso?.grupo_responsavel;
+
+          if (userGroup === 'MAN') {
+            return subGroup === 'MAN';
+          } else if (userGroup === 'GAT') {
+            return subGroup === 'GAT';
+          } else if (userGroup === 'AMBOS') {
+            return subGroup === 'MAN' || subGroup === 'GAT' || subGroup === 'AMBOS' || !subGroup;
+          }
+        }
+        return true;
+      });
       setSubmissions(activeSubmissions);
 
-      // Extract unique instructors registered in classes (turmas) and mentioned in submissions
+      // Extract unique instructors registered in classes (turmas) and mentioned in submissions within instructor's responsibility
       const uniqueInstructorsSet = new Set<string>();
       
       // 1. From classes (turmas)
@@ -422,7 +470,8 @@ function RelatorioAvaliacaoAdminContent() {
 
   useEffect(() => {
     if (!userLoading) {
-      if (isAdmin) {
+      const isInstrutor = profile?.role === 'instrutor';
+      if (isAdmin || isInstrutor) {
         setTimeout(() => {
           loadAllData();
         }, 0);
@@ -432,7 +481,7 @@ function RelatorioAvaliacaoAdminContent() {
         }, 0);
       }
     }
-  }, [userLoading, isAdmin]);
+  }, [userLoading, isAdmin, profile]);
 
   // Re-apply filters using a pure memo (no effect side-effects)
   const filteredSubmissions = useMemo(() => {
@@ -821,22 +870,34 @@ function RelatorioAvaliacaoAdminContent() {
 
   if (userLoading || loading) {
     return (
-      <div className="flex h-[75vh] items-center justify-center bg-slate-50">
-        <div className="flex flex-col items-center gap-3">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
-          <span className="text-sm text-slate-500 font-mono">Processando estatísticas gerenciais...</span>
+      <div className="flex h-[75vh] items-center justify-center bg-slate-50 p-4">
+        <div className="flex flex-col items-center gap-4 text-center max-w-md p-6 bg-white border border-slate-200 rounded-xl shadow-sm">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900 mx-auto"></div>
+          <span className="text-sm text-slate-600 font-bold font-mono">Processando estatísticas gerenciais...</span>
+          
+          <div className="mt-4 pt-4 border-t border-slate-100 space-y-3">
+            <p className="text-xs text-slate-500 leading-relaxed">
+              ⚠️ Se a página demorar para responder ou <strong>aparecer em branco</strong>, clique em <strong>F5</strong>, atualize o seu navegador ou use o botão de atualização abaixo para carregar todos os dados.
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-4 py-2.5 rounded-lg cursor-pointer transition uppercase font-mono tracking-wider shadow-sm"
+            >
+              🔄 Atualizar Página (F5)
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
-  if (!profile || profile.role !== 'admin') {
+  if (!profile || (profile.role !== 'admin' && profile.role !== 'instrutor')) {
     return (
       <div className="max-w-xl mx-auto my-12 p-8 bg-white border border-slate-200 rounded-xl shadow-sm text-center">
         <AlertTriangle className="h-12 w-12 text-rose-500 mx-auto mb-4" />
-        <h2 className="text-xl font-bold text-slate-900 mb-2 font-mono">Acesso Restrito ao Administrador</h2>
+        <h2 className="text-xl font-bold text-slate-900 mb-2 font-mono">Acesso Restrito</h2>
         <p className="text-slate-600 text-sm mb-4">
-          Esta tela de análise de indicadores acadêmicos é restrita à equipe de gerência e coordenação de ensino.
+          Esta tela de análise de indicadores acadêmicos é restrita à equipe de gerência, coordenação de ensino e instrutores.
         </p>
       </div>
     );
@@ -913,7 +974,36 @@ function RelatorioAvaliacaoAdminContent() {
             <Printer className="h-3.5 w-3.5" />
             Imprimir Relatório (A4)
           </button>
+
+          <button
+            onClick={() => window.location.reload()}
+            className="flex items-center gap-1.5 bg-slate-900 border border-slate-900 text-white hover:bg-slate-800 text-xs font-bold px-4 py-2.5 rounded-lg transition shadow-sm cursor-pointer"
+          >
+            <span>🔄</span> Atualizar Página (F5)
+          </button>
         </div>
+      </div>
+
+      {/* Alerta de página em branco ou erro de carregamento */}
+      <div className="bg-amber-55 border border-amber-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-sm print:hidden">
+        <div className="flex items-start gap-3">
+          <span className="text-xl shrink-0">⚠️</span>
+          <div>
+            <p className="text-xs font-bold text-amber-850 font-mono uppercase tracking-wider">
+              Dificuldade ao carregar ou página em branco?
+            </p>
+            <p className="text-[11px] text-amber-700 mt-0.5 leading-relaxed">
+              Caso as tabelas ou gráficos não apareçam corretamente, pressione <strong className="font-mono text-amber-900 font-extrabold">F5</strong> ou clique no botão de atualização ao lado.
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          className="flex items-center gap-1.5 bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-bold px-4 py-2 rounded-lg transition-all cursor-pointer shadow-sm hover:shadow uppercase tracking-wider font-mono shrink-0 font-bold"
+        >
+          🔄 Atualizar Página
+        </button>
       </div>
 
       {/* FILTER BOX */}
@@ -1705,21 +1795,23 @@ function RelatorioAvaliacaoAdminContent() {
                             👁️ VER
                           </button>
                           
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const matchingSub = submissions.find(sub => sub.aluno_id === stud.id);
-                              if (matchingSub) {
-                                handleDeleteSubmission(matchingSub.id);
-                              } else {
-                                toast.error('Resposta não localizada.');
-                              }
-                            }}
-                            className="bg-rose-50 hover:bg-rose-100 text-rose-700 font-extrabold text-[10px] px-3 py-2 rounded-lg border border-rose-200 transition flex items-center justify-center gap-1 cursor-pointer font-mono shadow-sm"
-                            title="Excluir Resposta"
-                          >
-                            🗑️ EXCLUIR
-                          </button>
+                          {profile?.role === 'admin' && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const matchingSub = submissions.find(sub => sub.aluno_id === stud.id);
+                                if (matchingSub) {
+                                  handleDeleteSubmission(matchingSub.id);
+                                } else {
+                                  toast.error('Resposta não localizada.');
+                                }
+                              }}
+                              className="bg-rose-50 hover:bg-rose-100 text-rose-700 font-extrabold text-[10px] px-3 py-2 rounded-lg border border-rose-200 transition flex items-center justify-center gap-1 cursor-pointer font-mono shadow-sm"
+                              title="Excluir Resposta"
+                            >
+                              🗑️ EXCLUIR
+                            </button>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -2438,14 +2530,16 @@ function RelatorioAvaliacaoAdminContent() {
                             🖨️ CARTEIRINHA QR
                           </button>
                           
-                          <button
-                            type="button"
-                            onClick={() => setIsAdminFilling(true)}
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-lg shadow-sm transition flex items-center justify-center gap-2 cursor-pointer border border-indigo-500"
-                          >
-                            <Edit3 className="h-4 w-4" />
-                            Preencher Questionário como Admin
-                          </button>
+                          {profile?.role === 'admin' && (
+                            <button
+                              type="button"
+                              onClick={() => setIsAdminFilling(true)}
+                              className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-lg shadow-sm transition flex items-center justify-center gap-2 cursor-pointer border border-indigo-500"
+                            >
+                              <Edit3 className="h-4 w-4" />
+                              Preencher Questionário como Admin
+                            </button>
+                          )}
                         </div>
                       </div>
                     );
@@ -2497,14 +2591,16 @@ function RelatorioAvaliacaoAdminContent() {
                                 🖨️ CARTEIRINHA QR
                               </button>
 
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteSubmission(studentSub.id)}
-                                className="bg-rose-50 hover:bg-rose-150 text-rose-700 hover:text-rose-800 text-xs px-3.5 py-2 rounded-lg font-bold border border-rose-250 transition flex items-center gap-1 cursor-pointer font-sans"
-                                title="Deletar permanentemente esta resposta para que possa ser preenchida novamente"
-                              >
-                                🗑️ EXCLUIR RESPOSTA
-                              </button>
+                              {profile?.role === 'admin' && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteSubmission(studentSub.id)}
+                                  className="bg-rose-50 hover:bg-rose-150 text-rose-700 hover:text-rose-800 text-xs px-3.5 py-2 rounded-lg font-bold border border-rose-250 transition flex items-center gap-1 cursor-pointer font-sans"
+                                  title="Deletar permanentemente esta resposta para que possa ser preenchida novamente"
+                                >
+                                  🗑️ EXCLUIR RESPOSTA
+                                </button>
+                              )}
 
                               {/* EDITAR COMO ADMIN removido para retirar o acesso à alteração de questionários preenchidos */}
                             </div>

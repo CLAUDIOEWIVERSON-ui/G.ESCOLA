@@ -181,7 +181,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: t.nav.attendance, icon: CalendarDays, path: '/frequencia' },
     { name: t.calendar.title, icon: CalendarDays, path: '/calendario' },
     ...(isAdmin ? [{ name: t.users.title, icon: Users, path: '/usuarios' }] : []),
-    ...(isAdmin ? [{ name: "Análise de Avaliações", icon: FileCheck, path: '/relatorio-avaliacao' }] : []),
+    ...((isAdmin || isInstrutor) ? [{ name: "Análise de Avaliações", icon: FileCheck, path: '/relatorio-avaliacao' }] : []),
     { name: t.nav.links, icon: Link2, path: '/links' },
     { name: t.nav.settings, icon: Settings, path: '/configuracoes' },
   ];
