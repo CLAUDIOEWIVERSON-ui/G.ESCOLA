@@ -213,8 +213,8 @@ function RelatorioAvaliacaoAdminContent() {
   const handleAdminSubmit = async (e: React.FormEvent, studentDetails: any) => {
     e.preventDefault();
 
-    if (profile?.role !== 'admin') {
-      toast.error('Apenas administradores podem preencher ou editar questionários.');
+    if (profile?.role !== 'admin' && profile?.role !== 'instrutor') {
+      toast.error('Apenas administradores ou instrutores podem preencher ou editar questionários.');
       return;
     }
 
@@ -295,8 +295,8 @@ function RelatorioAvaliacaoAdminContent() {
   };
 
   const handleDeleteSubmission = async (submissionId: string) => {
-    if (profile?.role !== 'admin') {
-      toast.error('Apenas administradores podem excluir respostas.');
+    if (profile?.role !== 'admin' && profile?.role !== 'instrutor') {
+      toast.error('Apenas administradores ou instrutores podem excluir respostas.');
       return;
     }
 
@@ -1795,7 +1795,7 @@ function RelatorioAvaliacaoAdminContent() {
                             👁️ VER
                           </button>
                           
-                          {profile?.role === 'admin' && (
+                          {(profile?.role === 'admin' || profile?.role === 'instrutor') && (
                             <button
                               type="button"
                               onClick={() => {
@@ -2530,14 +2530,14 @@ function RelatorioAvaliacaoAdminContent() {
                             🖨️ CARTEIRINHA QR
                           </button>
                           
-                          {profile?.role === 'admin' && (
+                          {(profile?.role === 'admin' || profile?.role === 'instrutor') && (
                             <button
                               type="button"
                               onClick={() => setIsAdminFilling(true)}
                               className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-lg shadow-sm transition flex items-center justify-center gap-2 cursor-pointer border border-indigo-500"
                             >
                               <Edit3 className="h-4 w-4" />
-                              Preencher Questionário como Admin
+                              Preencher/Editar Questionário
                             </button>
                           )}
                         </div>
@@ -2591,7 +2591,18 @@ function RelatorioAvaliacaoAdminContent() {
                                 🖨️ CARTEIRINHA QR
                               </button>
 
-                              {profile?.role === 'admin' && (
+                              {(profile?.role === 'admin' || profile?.role === 'instrutor') && (
+                                <button
+                                  type="button"
+                                  onClick={() => setIsAdminFilling(true)}
+                                  className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs px-3.5 py-2 rounded-lg font-bold border border-indigo-200 transition flex items-center gap-1 cursor-pointer font-sans"
+                                  title="Editar as notas ou comentários desta resposta"
+                                >
+                                  <Edit3 className="h-3.5 w-3.5" /> EDITAR RESPOSTA
+                                </button>
+                              )}
+
+                              {(profile?.role === 'admin' || profile?.role === 'instrutor') && (
                                 <button
                                   type="button"
                                   onClick={() => handleDeleteSubmission(studentSub.id)}
@@ -2601,8 +2612,6 @@ function RelatorioAvaliacaoAdminContent() {
                                   🗑️ EXCLUIR RESPOSTA
                                 </button>
                               )}
-
-                              {/* EDITAR COMO ADMIN removido para retirar o acesso à alteração de questionários preenchidos */}
                             </div>
                           </div>
                           
