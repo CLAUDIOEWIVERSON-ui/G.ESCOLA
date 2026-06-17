@@ -2626,6 +2626,186 @@ function RelatorioAvaliacaoAdminContent() {
                         </div>
                       </div>
 
+                      {/* Detailed Questionnaire Responses - Faithful to the actual form */}
+                      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-6">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b pb-4 gap-2">
+                          <div>
+                            <h4 className="text-sm font-extrabold text-slate-900 font-mono uppercase tracking-wide flex items-center gap-1.5">
+                              📝 Respostas Fielmente Registradas no Questionário
+                            </h4>
+                            <p className="text-xs text-slate-500 mt-0.5">Visão fiel do formulário preenchido e das questões marcadas pelo aluno.</p>
+                          </div>
+                          <div className="flex flex-wrap gap-2 text-[10px] font-mono">
+                            <span className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-2 py-0.5 rounded font-bold">CP: Concordo Plenamente (5)</span>
+                            <span className="bg-sky-50 border border-sky-200 text-sky-700 px-2 py-0.5 rounded font-bold">CPa: Concordo Parcialmente (3)</span>
+                            <span className="bg-rose-50 border border-rose-200 text-rose-700 px-2 py-0.5 rounded font-bold">D/NA: Discordo / Não se Aplica (1)</span>
+                          </div>
+                        </div>
+
+                        {/* We organize it by the same 4 blocks */}
+                        <div className="space-y-8">
+                          {/* Part 1: Curso */}
+                          <div className="space-y-4">
+                            <h5 className="text-xs font-black text-indigo-700 uppercase tracking-widest bg-indigo-50 border border-indigo-100 px-3 py-2 rounded-lg flex items-center gap-1.5">
+                              <span>📂</span> I. Avaliação do Curso
+                            </h5>
+                            <div className="grid grid-cols-1 gap-3">
+                              {CURSO_QUESTIONS.map((q, idx) => {
+                                const val = studentSub[q.key];
+                                return (
+                                  <div key={q.key} className="p-3.5 bg-slate-50/50 rounded-lg border border-slate-150 flex flex-col md:flex-row md:items-center md:justify-between gap-4 transition hover:bg-slate-50">
+                                    <p className="text-xs font-bold text-slate-855 leading-relaxed">
+                                      {idx + 1}. {q.label}
+                                    </p>
+                                    <div className="flex max-md:grid max-md:grid-cols-3 gap-2 shrink-0">
+                                      {[
+                                        { value: 5, label: "CONCORDO PLENAMENTE", activeClass: "bg-slate-900 text-white border-slate-900 shadow-sm" },
+                                        { value: 3, label: "CONCORDO PARCIALMENTE", activeClass: "bg-slate-900 text-white border-slate-900 shadow-sm" },
+                                        { value: 1, label: "DISCORDO/ NÃO SE APLICA", activeClass: "bg-slate-900 text-white border-slate-900 shadow-sm" }
+                                      ].map((opt) => {
+                                        const isSelected = val === opt.value;
+                                        return (
+                                          <div
+                                            key={opt.value}
+                                            className={`px-3 py-1.5 rounded-lg text-center text-[10px] font-bold border select-none transition-all duration-150 ${
+                                              isSelected
+                                                ? opt.activeClass + " font-black scale-102"
+                                                : "bg-white text-slate-400 border-slate-200 opacity-60"
+                                            }`}
+                                          >
+                                            {opt.label}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Part 2: Instrutor */}
+                          <div className="space-y-4">
+                            <h5 className="text-xs font-black text-amber-700 uppercase tracking-widest bg-amber-50 border border-amber-100 px-3 py-2 rounded-lg flex items-center gap-1.5">
+                              <span>👨‍🏫</span> II. Avaliação do Instrutor ({studentSub.instrutor_nome || "Não especificado"})
+                            </h5>
+                            <div className="grid grid-cols-1 gap-3">
+                              {INSTRUTOR_QUESTIONS.map((q, idx) => {
+                                const val = studentSub[q.key];
+                                return (
+                                  <div key={q.key} className="p-3.5 bg-slate-50/50 rounded-lg border border-slate-150 flex flex-col md:flex-row md:items-center md:justify-between gap-4 transition hover:bg-slate-50">
+                                    <p className="text-xs font-bold text-slate-855 leading-relaxed">
+                                      {idx + 1}. {q.label}
+                                    </p>
+                                    <div className="flex max-md:grid max-md:grid-cols-3 gap-2 shrink-0">
+                                      {[
+                                        { value: 5, label: "CONCORDO PLENAMENTE", activeClass: "bg-slate-900 text-white border-slate-900 shadow-sm" },
+                                        { value: 3, label: "CONCORDO PARCIALMENTE", activeClass: "bg-slate-900 text-white border-slate-900 shadow-sm" },
+                                        { value: 1, label: "DISCORDO/ NÃO SE APLICA", activeClass: "bg-slate-900 text-white border-slate-900 shadow-sm" }
+                                      ].map((opt) => {
+                                        const isSelected = val === opt.value;
+                                        return (
+                                          <div
+                                            key={opt.value}
+                                            className={`px-3 py-1.5 rounded-lg text-center text-[10px] font-bold border select-none transition-all duration-150 ${
+                                              isSelected
+                                                ? opt.activeClass + " font-black scale-102"
+                                                : "bg-white text-slate-400 border-slate-200 opacity-60"
+                                            }`}
+                                          >
+                                            {opt.label}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Part 3: Autoavaliação */}
+                          <div className="space-y-4">
+                            <h5 className="text-xs font-black text-emerald-700 uppercase tracking-widest bg-emerald-50 border border-emerald-100 px-3 py-2 rounded-lg flex items-center gap-1.5">
+                              <span>👤</span> III. Autoavaliação do Aluno
+                            </h5>
+                            <div className="grid grid-cols-1 gap-3">
+                              {AUTO_QUESTIONS.map((q, idx) => {
+                                const val = studentSub[q.key];
+                                return (
+                                  <div key={q.key} className="p-3.5 bg-slate-50/50 rounded-lg border border-slate-150 flex flex-col md:flex-row md:items-center md:justify-between gap-4 transition hover:bg-slate-50">
+                                    <p className="text-xs font-bold text-slate-855 leading-relaxed">
+                                      {idx + 1}. {q.label}
+                                    </p>
+                                    <div className="flex max-md:grid max-md:grid-cols-3 gap-2 shrink-0">
+                                      {[
+                                        { value: 5, label: "CONCORDO PLENAMENTE", activeClass: "bg-slate-900 text-white border-slate-900 shadow-sm" },
+                                        { value: 3, label: "CONCORDO PARCIALMENTE", activeClass: "bg-slate-900 text-white border-slate-900 shadow-sm" },
+                                        { value: 1, label: "DISCORDO/ NÃO SE APLICA", activeClass: "bg-slate-900 text-white border-slate-900 shadow-sm" }
+                                      ].map((opt) => {
+                                        const isSelected = val === opt.value;
+                                        return (
+                                          <div
+                                            key={opt.value}
+                                            className={`px-3 py-1.5 rounded-lg text-center text-[10px] font-bold border select-none transition-all duration-150 ${
+                                              isSelected
+                                                ? opt.activeClass + " font-black scale-102"
+                                                : "bg-white text-slate-400 border-slate-200 opacity-60"
+                                            }`}
+                                          >
+                                            {opt.label}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Part 4: Infraestrutura */}
+                          <div className="space-y-4">
+                            <h5 className="text-xs font-black text-rose-700 uppercase tracking-widest bg-rose-50 border border-rose-100 px-3 py-2 rounded-lg flex items-center gap-1.5">
+                              <span>🏢</span> IV. Avaliação da Infraestrutura
+                            </h5>
+                            <div className="grid grid-cols-1 gap-3">
+                              {INFRA_QUESTIONS.map((q, idx) => {
+                                const val = studentSub[q.key];
+                                return (
+                                  <div key={q.key} className="p-3.5 bg-slate-50/50 rounded-lg border border-slate-150 flex flex-col md:flex-row md:items-center md:justify-between gap-4 transition hover:bg-slate-50">
+                                    <p className="text-xs font-bold text-slate-855 leading-relaxed">
+                                      {idx + 1}. {q.label}
+                                    </p>
+                                    <div className="flex max-md:grid max-md:grid-cols-3 gap-2 shrink-0">
+                                      {[
+                                        { value: 5, label: "CONCORDO PLENAMENTE", activeClass: "bg-slate-900 text-white border-slate-900 shadow-sm" },
+                                        { value: 3, label: "CONCORDO PARCIALMENTE", activeClass: "bg-slate-900 text-white border-slate-900 shadow-sm" },
+                                        { value: 1, label: "DISCORDO/ NÃO SE APLICA", activeClass: "bg-slate-900 text-white border-slate-900 shadow-sm" }
+                                      ].map((opt) => {
+                                        const isSelected = val === opt.value;
+                                        return (
+                                          <div
+                                            key={opt.value}
+                                            className={`px-3 py-1.5 rounded-lg text-center text-[10px] font-bold border select-none transition-all duration-150 ${
+                                              isSelected
+                                                ? opt.activeClass + " font-black scale-102"
+                                                : "bg-white text-slate-400 border-slate-200 opacity-60"
+                                            }`}
+                                          >
+                                            {opt.label}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
                       {/* Audit verification tag */}
                       <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 text-xs font-mono flex items-center justify-between">
                         <div>
