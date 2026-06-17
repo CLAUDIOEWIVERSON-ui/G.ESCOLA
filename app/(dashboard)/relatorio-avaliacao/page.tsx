@@ -289,6 +289,33 @@ function RelatorioAvaliacaoAdminContent() {
     }
   };
 
+  const handleDeleteSubmission = async (submissionId: string) => {
+    if (!window.confirm('Tem certeza de que deseja deletar esta resposta? O questionário poderá ser preenchido novamente pelo aluno ou pelo administrador.')) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const { error } = await supabase
+        .from('questionarios_conclusao')
+        .delete()
+        .eq('id', submissionId);
+
+      if (error) {
+        throw error;
+      }
+
+      toast.success('Resposta deletada com sucesso! O questionário está liberado para ser preenchido novamente.');
+      setFocusedStudent('');
+      await loadAllData();
+    } catch (err: any) {
+      console.error('Error deleting submission:', err);
+      toast.error('Ocorreu um erro ao deletar a resposta: ' + (err.message || 'Erro desconhecido.'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const loadAllData = async () => {
     try {
       setLoading(true);
@@ -1664,18 +1691,36 @@ function RelatorioAvaliacaoAdminContent() {
                           </p>
                         </div>
 
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedTurma(stud.turma_id);
-                            setFocusedStudent(stud.id);
-                            setIsAdminFilling(false);
-                            setActiveTab('aluno');
-                          }}
-                          className="w-full bg-sky-50 hover:bg-sky-100 text-sky-700 font-extrabold text-[10px] py-2 rounded-lg border border-sky-200 transition flex items-center justify-center gap-1.5 cursor-pointer font-mono tracking-wider shadow-sm"
-                        >
-                          👁️ VISUALIZAR RESPOSTAS
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedTurma(stud.turma_id);
+                              setFocusedStudent(stud.id);
+                              setIsAdminFilling(false);
+                              setActiveTab('aluno');
+                            }}
+                            className="flex-1 bg-sky-50 hover:bg-sky-100 text-sky-700 font-extrabold text-[10px] py-2 rounded-lg border border-sky-200 transition flex items-center justify-center gap-1.5 cursor-pointer font-mono tracking-wider shadow-sm"
+                          >
+                            👁️ VER
+                          </button>
+                          
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const matchingSub = submissions.find(sub => sub.aluno_id === stud.id);
+                              if (matchingSub) {
+                                handleDeleteSubmission(matchingSub.id);
+                              } else {
+                                toast.error('Resposta não localizada.');
+                              }
+                            }}
+                            className="bg-rose-50 hover:bg-rose-100 text-rose-700 font-extrabold text-[10px] px-3 py-2 rounded-lg border border-rose-200 transition flex items-center justify-center gap-1 cursor-pointer font-mono shadow-sm"
+                            title="Excluir Resposta"
+                          >
+                            🗑️ EXCLUIR
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -2429,6 +2474,15 @@ function RelatorioAvaliacaoAdminContent() {
                                 className="bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs px-3 py-2 rounded-lg font-bold border border-blue-200 transition flex items-center gap-1 cursor-pointer font-sans"
                               >
                                 🖨️ CARTEIRINHA QR
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteSubmission(studentSub.id)}
+                                className="bg-rose-50 hover:bg-rose-150 text-rose-700 hover:text-rose-800 text-xs px-3.5 py-2 rounded-lg font-bold border border-rose-250 transition flex items-center gap-1 cursor-pointer font-sans"
+                                title="Deletar permanentemente esta resposta para que possa ser preenchida novamente"
+                              >
+                                🗑️ EXCLUIR RESPOSTA
                               </button>
 
                               {/* EDITAR COMO ADMIN removido para retirar o acesso à alteração de questionários preenchidos */}
