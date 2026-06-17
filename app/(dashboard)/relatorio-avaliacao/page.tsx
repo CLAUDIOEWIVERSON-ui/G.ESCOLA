@@ -212,10 +212,6 @@ function RelatorioAvaliacaoAdminContent() {
 
   const handleAdminSubmit = async (e: React.FormEvent, studentDetails: any) => {
     e.preventDefault();
-    if (!adminSignature.trim()) {
-      toast.error('Por favor, digite seu nome no campo de assinatura digital do administrador.');
-      return;
-    }
 
     const allQuestions = [
       ...CURSO_QUESTIONS,
@@ -234,7 +230,8 @@ function RelatorioAvaliacaoAdminContent() {
 
     try {
       const turma = turmas.find(t => t.id === studentDetails.turma_id);
-      const adminSignatureText = `Preenchido e Assinado pelo Administrador ${adminSignature.trim()} em ${new Date().toLocaleString('pt-BR')}`;
+      const signatureName = profile?.nome || profile?.email || 'Administrador Autenticado';
+      const adminSignatureText = `Preenchido Administrativamente por ${signatureName} em ${new Date().toLocaleString('pt-BR')}`;
       
       const payload = {
         aluno_id: studentDetails.id,
@@ -2303,26 +2300,6 @@ function RelatorioAvaliacaoAdminContent() {
                               </div>
                             </div>
 
-                            {/* Assinatura */}
-                            <div className="bg-slate-50 rounded-xl p-5 border border-slate-200 space-y-3">
-                              <h4 className="text-xs font-bold text-slate-900 uppercase font-mono flex items-center gap-1.5">
-                                <Signature className="h-4 w-4 text-slate-600" />
-                                Assinatura de Validade Administrativa
-                              </h4>
-                              <p className="text-xs text-slate-500 leading-relaxed font-sans">
-                                Este questionário está sendo preenchido administrativamente. Ao prescrever sua assinatura abaixo, você certifica e concede que as informações aqui coletadas correspondem aos fatos observados para fins estatísticos oficiais acadêmicos.
-                              </p>
-                              <div>
-                                <input
-                                  type="text"
-                                  value={adminSignature}
-                                  onChange={(e) => setAdminSignature(e.target.value)}
-                                  className="w-full bg-white border border-slate-200 text-xs rounded-lg px-3 py-2.5 focus:ring-1 focus:ring-slate-800 focus:outline-none font-bold uppercase placeholder-slate-400 text-slate-800"
-                                  placeholder="DIGITE SEU NOME PARA ATUAR COMO ASSINATURA"
-                                />
-                              </div>
-                            </div>
-
                             <div className="flex justify-end gap-3 border-t pt-5">
                               <button
                                 type="button"
@@ -2331,14 +2308,15 @@ function RelatorioAvaliacaoAdminContent() {
                               >
                                 Cancelar
                               </button>
-                            <button
-                              type="submit"
-                              disabled={adminSubmitting}
-                              className="bg-slate-900 text-white text-xs px-6 py-2.5 rounded-lg font-bold hover:bg-slate-800 transition disabled:opacity-50 flex items-center gap-2 cursor-pointer"
-                            >
-                              {adminSubmitting ? "Salvando..." : (studentSub ? "Salvar Alterações" : "Enviar Questionário pelo Admin")}
-                            </button>
-                          </div>
+                              <button
+                                id="btn-finalizar-admin-avaliacao"
+                                type="submit"
+                                disabled={adminSubmitting}
+                                className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-8 py-3 rounded-lg font-extrabold uppercase shadow-[0_0_15px_rgba(16,185,129,0.5)] border border-emerald-400 flex items-center gap-2 cursor-pointer transition duration-250 disabled:opacity-50 tracking-wider animate-pulse"
+                              >
+                                {adminSubmitting ? "Salvando..." : (studentSub ? "Salvar Alterações" : "Enviar Questionário pelo Admin")}
+                              </button>
+                            </div>
                         </form>
                       </div>
                     );
