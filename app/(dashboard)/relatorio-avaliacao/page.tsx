@@ -2085,6 +2085,27 @@ function RelatorioAvaliacaoAdminContent() {
                 </div>
               </div>
 
+              {focusedStudent && (
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-sm print:hidden">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 shrink-0 animate-pulse" />
+                    <span className="text-xs font-bold text-slate-800 font-mono uppercase tracking-wide">
+                      Estudante em Foco: <span className="text-indigo-600 font-sans normal-case">{allStudents.find(s => s.id === focusedStudent)?.nome || "Carregando..."}</span>
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFocusedStudent('');
+                      setActiveTab('geral');
+                    }}
+                    className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-bold px-4 py-2 rounded-lg transition-all cursor-pointer shadow-sm hover:shadow uppercase tracking-wider font-mono shrink-0"
+                  >
+                    📊 Voltar para Estatísticas da Turma
+                  </button>
+                </div>
+              )}
+
               {focusedStudent ? (
                 (() => {
                   const studentSub = submissions.find(sub => sub.aluno_id === focusedStudent);
@@ -2612,6 +2633,20 @@ function RelatorioAvaliacaoAdminContent() {
                           <p className="text-slate-500 mt-1">{studentSub.assinatura_digital}</p>
                         </div>
                         <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider bg-slate-100 border px-2 py-1 rounded">AUDITADO</span>
+                      </div>
+
+                      {/* Bottom Return CTA */}
+                      <div className="flex justify-center pt-2 print:hidden">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFocusedStudent('');
+                            setActiveTab('geral');
+                          }}
+                          className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 text-xs font-bold uppercase tracking-wider font-mono px-6 py-3 rounded-lg transition-all cursor-pointer shadow-sm hover:shadow"
+                        >
+                          📊 Voltar para Estatísticas da Turma
+                        </button>
                       </div>
                     </div>
                   );
