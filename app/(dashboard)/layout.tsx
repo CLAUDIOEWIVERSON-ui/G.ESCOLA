@@ -22,7 +22,10 @@ import {
   X,
   Search,
   Calendar,
-  Link2
+  Link2,
+  ArrowLeft,
+  ArrowRight,
+  Home
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
@@ -108,6 +111,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     if (!authLoading) {
       if (!profile) {
+        if (pathname === '/avaliacao') {
+          return;
+        }
         router.push('/login');
       } else {
         if (profile.role === 'aluno' && profile.turma_id) {
@@ -191,6 +197,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       : profile?.role === 'aluno' 
         ? t.users.aluno 
         : '';
+
+  // Sequência de navegação do botão Próximo: cursos, turmas, detalhe (horário), agenda (calendário), configurações
+  const nextSequence = ['/cursos', '/turmas', '/horario', '/calendario', '/configuracoes'];
+
+  // Encontrar o próximo destino com base no pathname atual
+  const getNextPagePath = () => {
+    const currentPath = pathname || '';
+    const currentIndex = nextSequence.indexOf(currentPath);
+    if (currentIndex === -1) {
+      return '/cursos';
+    }
+    return nextSequence[(currentIndex + 1) % nextSequence.length];
+  };
+
+  const nextPagePath = getNextPagePath();
+
+  if (!profile && pathname === '/avaliacao') {
+    return (
+      <div className="min-h-screen bg-slate-50 relative">
+        <Suspense fallback={null}>
+          {children}
+        </Suspense>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-slate-50 font-sans text-slate-900">
@@ -440,6 +471,35 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             >
               {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
+            
+            {/* Navegger Back/Home Buttons */}
+            <div className="flex items-center gap-2 border-l border-slate-200 pl-4 h-6">
+              <button
+                onClick={() => router.back()}
+                title="Voltar para a página anterior"
+                className="flex items-center justify-center gap-1.5 px-3 py-1 bg-slate-50 border border-slate-200 hover:border-blue-300 hover:bg-blue-50/50 rounded-xl text-slate-600 hover:text-blue-600 transition-all text-xs font-semibold shadow-xs cursor-pointer"
+              >
+                <ArrowLeft size={14} className="stroke-[2.5]" />
+                <span className="hidden sm:inline">Voltar</span>
+              </button>
+              <Link
+                href="/dashboard"
+                title="Ir para o início (Painel)"
+                className="flex items-center justify-center gap-1.5 px-3 py-1 bg-slate-50 border border-slate-200 hover:border-blue-300 hover:bg-blue-50/50 rounded-xl text-slate-600 hover:text-blue-600 transition-all text-xs font-semibold shadow-xs cursor-pointer"
+              >
+                <Home size={14} className="stroke-[2.5]" />
+                <span className="hidden sm:inline">Início</span>
+              </Link>
+              <button
+                onClick={() => router.push(nextPagePath)}
+                title="Avançar para a próxima página"
+                className="flex items-center justify-center gap-1.5 px-3 py-1 bg-slate-50 border border-slate-200 hover:border-blue-300 hover:bg-blue-50/50 rounded-xl text-slate-600 hover:text-blue-600 transition-all text-xs font-semibold shadow-xs cursor-pointer"
+              >
+                <span className="hidden sm:inline">Próximo</span>
+                <ArrowRight size={14} className="stroke-[2.5]" />
+              </button>
+            </div>
+
             <div className="flex flex-col">
               <h1 className="text-lg font-bold text-slate-800 leading-none">
                 {navItems.find(item => item.path === pathname)?.name || t.dashboard.title}
