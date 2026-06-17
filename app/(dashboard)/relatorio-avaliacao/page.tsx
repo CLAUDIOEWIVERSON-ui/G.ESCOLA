@@ -1718,7 +1718,7 @@ function RelatorioAvaliacaoAdminContent() {
                                 }
                               );
                             }}
-                            className="w-1/2 bg-blue-50 hover:bg-blue-100 text-blue-700 font-extrabold text-[9px] py-2 rounded-lg transition flex items-center justify-center gap-1 cursor-pointer font-mono tracking-wider shadow-sm border border-blue-200"
+                            className="w-1/2 bg-cyan-400 hover:bg-cyan-300 text-cyan-950 font-black text-[9.5px] py-2 rounded-lg border-b-[4px] border-r-[2px] border-cyan-600 shadow-[0_0_15px_rgba(34,211,238,0.95)] hover:shadow-[0_0_20px_rgba(34,211,238,1.0)] select-none transition-all duration-150 active:translate-y-[2px] active:border-b-[2px] flex items-center justify-center gap-1 cursor-pointer font-mono tracking-widest uppercase"
                             title="Imprimir Carteirinha com código de acesso QR do Aluno"
                           >
                             🖨️ CARTEIRINHA QR
@@ -2525,7 +2525,7 @@ function RelatorioAvaliacaoAdminContent() {
                                 }
                               );
                             }}
-                            className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 py-2.5 rounded-lg shadow-sm transition flex items-center justify-center gap-2 cursor-pointer border border-blue-500"
+                            className="bg-cyan-400 hover:bg-cyan-300 text-cyan-950 font-black text-xs px-5 py-3 rounded-lg border-b-[4px] border-r-[2px] border-cyan-600 shadow-[0_0_18px_rgba(34,211,238,0.95)] hover:shadow-[0_0_25px_rgba(34,211,238,1.0)] select-none transition-all duration-150 active:translate-y-[2px] active:border-b-[2px] flex items-center justify-center gap-2 cursor-pointer border border-cyan-500 font-sans uppercase tracking-widest"
                           >
                             🖨️ CARTEIRINHA QR
                           </button>
@@ -2586,7 +2586,7 @@ function RelatorioAvaliacaoAdminContent() {
                                     }
                                   );
                                 }}
-                                className="bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs px-3 py-2 rounded-lg font-bold border border-blue-200 transition flex items-center gap-1 cursor-pointer font-sans"
+                                className="bg-cyan-400 hover:bg-cyan-300 text-cyan-950 text-xs px-4 py-2.5 rounded-lg font-black border-b-[4px] border-r-[2px] border-cyan-600 shadow-[0_0_18px_rgba(34,211,238,0.95)] hover:shadow-[0_0_25px_rgba(34,211,238,1.0)] select-none transition-all duration-150 active:translate-y-[2px] active:border-b-[2px] flex items-center gap-1.5 cursor-pointer font-sans uppercase tracking-widest border border-cyan-500"
                               >
                                 🖨️ CARTEIRINHA QR
                               </button>
