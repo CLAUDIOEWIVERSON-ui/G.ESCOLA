@@ -64,6 +64,19 @@ export default function CursosPage() {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [selectedCursoDetails, setSelectedCursoDetails] = useState<Curso | null>(null);
   const [colorSettings, setColorSettings] = useState<CardColorSettings>(() => getCardColorSettings());
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await revalidateCursos();
+      toast.success(language === 'pt' ? 'Dados dos cursos carregados com sucesso!' : 'Course data updated successfully!');
+    } catch (e) {
+      toast.error(language === 'pt' ? 'Erro ao atualizar os cursos.' : 'Error refreshing courses.');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
   
   // Discipline Management State
   const [manageDisciplinasCurso, setManageDisciplinasCurso] = useState<Curso | null>(null);
@@ -542,9 +555,43 @@ export default function CursosPage() {
             <span className="text-sm font-medium">{t.common.loading}...</span>
           </div>
         ) : filteredCursos.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-500 flex flex-col items-center justify-center gap-3 shadow-sm">
-            <GraduationCap className="text-slate-300" size={48} />
-            <span className="text-sm font-medium">{t.common.noneFound}</span>
+          <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-500 flex flex-col items-center justify-center gap-4 shadow-sm max-w-2xl mx-auto my-6">
+            <div className="p-4 bg-slate-50 rounded-full">
+              <GraduationCap className="text-slate-400" size={48} id="empty-state-cap-icon" />
+            </div>
+            <div className="space-y-2">
+              <span className="text-base font-bold text-slate-800 block">{t.common.noneFound}</span>
+              <p className="text-sm text-slate-500 max-w-md mx-auto">
+                {language === 'pt'
+                  ? 'Caso os cartões de cursos não tenham aparecido por erro de conexão ou atraso de carregamento, utilize os botões abaixo para recarregar a página ou atualizar os dados do sistema.'
+                  : 'If course cards have not loaded due to connection errors or delays, please use the buttons below to reload the page or refresh system data.'}
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-4 w-full sm:w-auto">
+              <button
+                id="refresh-courses-data-btn"
+                type="button"
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-50 hover:bg-blue-100 text-blue-700 px-5 py-2.5 rounded-xl text-sm font-bold border border-blue-200 transition cursor-pointer disabled:opacity-50"
+              >
+                {isRefreshing ? (
+                  <Loader2 className="animate-spin" size={16} />
+                ) : (
+                  <span>🔄</span>
+                )}
+                {language === 'pt' ? 'Atualizar Dados' : 'Refresh Data'}
+              </button>
+              <button
+                id="reload-page-courses-btn"
+                type="button"
+                onClick={() => window.location.reload()}
+                className="w-full sm:w-auto flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition shadow-sm cursor-pointer"
+              >
+                <span>⟳</span>
+                {language === 'pt' ? 'Recarregar Página' : 'Reload Page'}
+              </button>
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
