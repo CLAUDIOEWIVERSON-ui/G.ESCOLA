@@ -42,13 +42,8 @@ interface Suggestion {
   created_at: string;
 }
 
-// Helper functions outside the component to prevent linter purity rules
-function generateLocalId(): string {
-  return `local-sug-${Math.random().toString(36).substring(2, 9)}-${Date.now()}`;
-}
-
-function getIsoTimestamp(): string {
-  return new Date().toISOString();
+function generateLocalId() {
+  return `local-sug-${Date.now()}`;
 }
 
 interface SuggestionsModalProps {
@@ -81,6 +76,7 @@ export function SuggestionsModal({ isOpen, onClose }: SuggestionsModalProps) {
 
   // Load suggestions
   const fetchSuggestions = async () => {
+    await Promise.resolve();
     setIsLoading(true);
     try {
       const res = await fetchWithAuth('/api/suggestions');
@@ -114,12 +110,11 @@ export function SuggestionsModal({ isOpen, onClose }: SuggestionsModalProps) {
 
   useEffect(() => {
     if (isOpen) {
-      const timer = setTimeout(() => {
+      setTimeout(() => {
         fetchSuggestions();
         setReplyingToId(null);
         setReplyText('');
       }, 0);
-      return () => clearTimeout(timer);
     }
   }, [isOpen]);
 
@@ -150,7 +145,7 @@ export function SuggestionsModal({ isOpen, onClose }: SuggestionsModalProps) {
           usuario_email: anonima ? null : profile?.email || null,
           status: 'pendente',
           resposta_ti: null,
-          created_at: getIsoTimestamp()
+          created_at: new Date().toISOString()
         } as any;
 
         const updated = [newLocalSug, ...suggestions];
@@ -195,7 +190,7 @@ export function SuggestionsModal({ isOpen, onClose }: SuggestionsModalProps) {
           ...s,
           status: replyStatus,
           resposta_ti: replyText,
-          updated_at: getIsoTimestamp()
+          updated_at: new Date().toISOString()
         } : s);
         setSuggestions(updated);
         localStorage.setItem('school_suggestions_cache', JSON.stringify(updated));

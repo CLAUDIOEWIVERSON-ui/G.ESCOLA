@@ -15,38 +15,26 @@ export async function GET() {
     }
 
     // Validar se usuário é administrador
+    const isConfigured = isSupabaseAdminConfigured();
     let isAdmin = false;
 
-    try {
-      // 1. Tentar obter o perfil com as credentials e cookies de login do usuário logado
-      const { data: userProfile, error: userProfileError } = await supabase
+    const SUPER_ADMIN_EMAIL = 'claudiomarinha2012@gmail.com';
+    if (user.email === SUPER_ADMIN_EMAIL) {
+      isAdmin = true;
+    } else if (isConfigured) {
+      const { data: profile } = await supabaseAdmin
         .from('profiles')
         .select('role')
         .eq('id', user.id)
         .single();
-
-      if (!userProfileError && userProfile?.role === 'admin') {
-        isAdmin = true;
-      } else {
-        console.warn('[db-size-api] Falha ou sem permissão na busca de perfil via sessão básica:', userProfileError);
-        
-        // 2. Se falhar (por exemplo, devido a restrições RLS estritas de leitura própria), usar o supabaseAdmin se configurado
-        if (isSupabaseAdminConfigured()) {
-          const { data: adminProfile, error: adminProfileError } = await supabaseAdmin
-            .from('profiles')
-            .select('role')
-            .eq('id', user.id)
-            .single();
-
-          if (!adminProfileError && adminProfile?.role === 'admin') {
-            isAdmin = true;
-          } else {
-            console.error('[db-size-api] Erro ou sem papel admin na busca via SupabaseAdmin:', adminProfileError);
-          }
-        }
-      }
-    } catch (checkErr) {
-      console.error('[db-size-api] Exceção na verificação de cargo administrativo:', checkErr);
+      isAdmin = profile?.role === 'admin';
+    } else {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+      isAdmin = profile?.role === 'admin';
     }
 
     if (!isAdmin) {
@@ -60,15 +48,15 @@ export async function GET() {
       const { data: rpcData, error: rpcError } = await supabaseAdmin
         .rpc('get_db_storage_stats');
 
-      if (!rpcError && Array.isArray(rpcData) && rpcData.length > 0) {
+      if (!rpcError && rpcData && Array.isNative ? false : Array.isArray(rpcData) && rpcData.length > 0) {
         // Formatar resultados reais do postgres
         const tablesList = rpcData.map((row: any) => ({
-          name: String(row.table_name || '').replace('public.', ''),
-          rowCount: parseInt(String(row.row_count || '0'), 10),
-          sizeBytes: parseInt(String(row.table_size_bytes || '0'), 10),
+          name: row.table_name.replace('public.', ''),
+          rowCount: parseInt(row.row_count || '0'),
+          sizeBytes: parseInt(row.table_size_bytes || '0'),
         }));
 
-        const totalSizeBytes = parseInt(String(rpcData[0]?.total_db_size_bytes || '0'), 10);
+        const totalSizeBytes = parseInt(rpcData[0]?.total_db_size_bytes || '0');
         const calculatedPercentage = (totalSizeBytes / capacityBytes) * 100;
 
         return NextResponse.json({

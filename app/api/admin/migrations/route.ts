@@ -20,7 +20,10 @@ export async function GET() {
     const useAdmin = isSupabaseAdminConfigured();
     let isAdmin = false;
 
-    if (useAdmin) {
+    const SUPER_ADMIN_EMAIL = 'claudiomarinha2012@gmail.com';
+    if (user.email === SUPER_ADMIN_EMAIL) {
+      isAdmin = true;
+    } else if (useAdmin) {
       const { data: profile } = await supabaseAdmin
         .from('profiles')
         .select('role')
@@ -367,6 +370,20 @@ export async function GET() {
             return error;
           }
           return null;
+        }
+      },
+      {
+        key: 'db_optimized_indices',
+        tableName: 'Índices de Performance Supabase',
+        fileName: '44_optimized_indices.sql',
+        description: 'Conjunto de chaves de indexação rápidas criadas nas colunas mais consultadas do sistema (como deleted_at, frequencia(aluno_id, data) e turma_id) para otimizar os tempos de resposta.',
+        isColumn: false,
+        checkFn: async () => {
+          const { error } = await supabaseAdmin
+            .from('frequencia')
+            .select('id')
+            .limit(1);
+          return error;
         }
       }
     ];

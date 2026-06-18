@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase/client';
 import { fetchWithAuth } from '@/lib/api';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
-import { Plus, Search, User, Shield, ShieldAlert, Mail, Trash2, Pencil, Loader2, CheckCircle2 } from 'lucide-react';
+import { Plus, Search, User, Shield, ShieldAlert, Mail, Trash2, Pencil, Loader2, CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import Modal from '@/components/Modal';
@@ -23,6 +23,8 @@ export default function UsuariosPage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -141,6 +143,17 @@ export default function UsuariosPage() {
     }
   };
 
+  const filteredUsers = users.filter(u => 
+    (u.full_name || '').toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const totalItems = filteredUsers.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+  const paginatedUsers = filteredUsers.slice(startIndex, startIndex + itemsPerPage);
+
   if (!isAdmin) {
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] text-center p-8 bg-white rounded-2xl shadow-sm border border-slate-100">
@@ -149,10 +162,6 @@ export default function UsuariosPage() {
       </div>
     );
   }
-
-  const filteredUsers = users.filter(u => 
-    (u.full_name || '').toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   return (
     <div className="space-y-6">
@@ -207,7 +216,10 @@ export default function UsuariosPage() {
               type="text"
               placeholder={t.common.search}
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
               className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition-all"
             />
           </div>
@@ -231,8 +243,8 @@ export default function UsuariosPage() {
                     <Loader2 className="animate-spin text-blue-600 mx-auto" />
                   </td>
                 </tr>
-              ) : filteredUsers.length > 0 ? (
-                filteredUsers.map((user) => (
+              ) : paginatedUsers.length > 0 ? (
+                paginatedUsers.map((user) => (
                   <tr key={user.id} className="hover:bg-slate-50/30 transition-colors group">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
@@ -309,6 +321,73 @@ export default function UsuariosPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Painel de Paginação Otimizada */}
+        {totalItems > 0 && (
+          <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-sans text-slate-500 font-semibold">
+            <div className="flex items-center gap-2">
+              <span>{language === 'pt' ? 'Exibir:' : 'Show:'}</span>
+              <select
+                value={itemsPerPage}
+                onChange={(e) => {
+                  setItemsPerPage(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-700 outline-none focus:ring-1 focus:ring-blue-500 font-bold"
+              >
+                <option value={5}>5</option>
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+              </select>
+              <span>{language === 'pt' ? 'registros por página' : 'records per page'}</span>
+            </div>
+
+            <div className="font-medium text-slate-400 font-mono">
+              {language === 'pt' 
+                ? `Exibindo ${startIndex + 1}-${endIndex} de ${totalItems} usuários`
+                : `Showing ${startIndex + 1}-${endIndex} of ${totalItems} users`}
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                className="p-1 px-2 hover:bg-slate-100 disabled:opacity-45 rounded-lg border border-slate-200 text-slate-500 transition cursor-pointer flex items-center justify-center disabled:cursor-not-allowed"
+                title={language === 'pt' ? 'Anterior' : 'Previous'}
+              >
+                <ChevronLeft size={14} />
+              </button>
+              
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setCurrentPage(p)}
+                  className={cn(
+                    "w-7 h-7 flex items-center justify-center rounded-lg text-xs font-bold transition cursor-pointer",
+                    currentPage === p
+                      ? "bg-blue-600 text-white shadow-md shadow-blue-100"
+                      : "hover:bg-slate-100 text-slate-600 border border-transparent"
+                  )}
+                >
+                  {p}
+                </button>
+              ))}
+
+              <button
+                type="button"
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                className="p-1 px-2 hover:bg-slate-100 disabled:opacity-45 rounded-lg border border-slate-200 text-slate-500 transition cursor-pointer flex items-center justify-center disabled:cursor-not-allowed"
+                title={language === 'pt' ? 'Próximo' : 'Next'}
+              >
+                <ChevronRight size={14} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <Modal
