@@ -4,14 +4,8 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Sparkles, 
-  AlertTriangle, 
   CheckCircle2, 
-  HelpCircle, 
-  ChevronUp, 
-  ChevronDown, 
-  Info,
-  ShieldCheck,
-  AlertCircle
+  ShieldCheck, 
 } from 'lucide-react';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 
@@ -21,16 +15,183 @@ interface EmptyFieldConsequence {
   isCrucial: boolean;
 }
 
+function WizardAvatar({ onClick, isGlow }: { onClick: () => void; isGlow: boolean }) {
+  return (
+    <div 
+      id="wizard-consultant-avatar"
+      onClick={onClick}
+      className="relative cursor-pointer select-none group focus:outline-none transition-transform active:scale-95"
+      role="button"
+      aria-label="Form Consultant Wizard"
+    >
+      {/* Magic float sparks */}
+      <div className="absolute -top-3 left-1/2 -translate-x-1/2 flex gap-1 pointer-events-none z-10">
+        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping opacity-75" style={{ animationDelay: '0s' }} />
+        <span className="w-1 h-1 rounded-full bg-cyan-400 animate-ping opacity-60" style={{ animationDelay: '0.4s' }} />
+        <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-ping opacity-90" style={{ animationDelay: '0.8s' }} />
+      </div>
+
+      {/* Pulsar Ambient Ring */}
+      <div className={`absolute inset-[-4px] rounded-full bg-gradient-to-r from-indigo-500/20 via-cyan-500/10 to-purple-500/20 blur-lg transition-all duration-750 ${isGlow ? 'opacity-100 scale-125' : 'opacity-30'}`} />
+
+      {/* Main Avatar Circle */}
+      <div className="w-20 h-20 md:w-24 md:h-24 rounded-full border border-indigo-505/30 bg-slate-950/80 backdrop-blur-sm shadow-xl flex items-center justify-center overflow-visible group-hover:border-indigo-400 transition-all">
+        <svg 
+          viewBox="0 0 100 100" 
+          className="w-[90%] h-[90%] overflow-visible drop-shadow-[0_4px_8px_rgba(0,0,0,0.6)]"
+          style={{
+            animation: 'wizardFloat 4s ease-in-out infinite'
+          }}
+        >
+          <defs>
+            <radialGradient id="crystalBallGlow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#e0f7fa" />
+              <stop offset="35%" stopColor="#22d3ee" />
+              <stop offset="70%" stopColor="#4f46e5" />
+              <stop offset="100%" stopColor="#090d16" />
+            </radialGradient>
+            <linearGradient id="wizardRobeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#6366f1" />
+              <stop offset="50%" stopColor="#4f46e5" />
+              <stop offset="100%" stopColor="#312e81" />
+            </linearGradient>
+            <linearGradient id="wizardStarGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#fef08a" />
+              <stop offset="100%" stopColor="#eab308" />
+            </linearGradient>
+          </defs>
+
+          {/* Robe body */}
+          <path 
+            d="M 32 80 Q 50 63 68 80 Z" 
+            fill="url(#wizardRobeGrad)" 
+            stroke="#4338ca" 
+            strokeWidth="0.75"
+          />
+
+          {/* Skin Face */}
+          <circle cx="50" cy="56" r="13" fill="#fed7aa" />
+
+          {/* Beard */}
+          <path 
+            d="M 38 59 C 38 78 50 84 50 84 C 50 84 62 78 62 59 Q 50 64 38 59" 
+            fill="#f8fafc" 
+            stroke="#e2e8f0" 
+            strokeWidth="0.5" 
+          />
+
+          {/* Mustache */}
+          <path 
+            d="M 43 59 Q 50 62 57 59 Q 50 64 43 59" 
+            fill="#e2e8f0" 
+          />
+
+          {/* Eyes - Mystical cute closed eyes */}
+          <path d="M 44 53 Q 46 51 48 53" stroke="#1e293b" strokeWidth="1.25" strokeLinecap="round" fill="none" />
+          <path d="M 52 53 Q 54 51 56 53" stroke="#1e293b" strokeWidth="1.25" strokeLinecap="round" fill="none" />
+          
+          {/* Cheeks */}
+          <circle cx="42" cy="56" r="1.5" fill="#f43f5e" opacity="0.5" />
+          <circle cx="58" cy="56" r="1.5" fill="#f43f5e" opacity="0.5" />
+
+          {/* Hat Brim */}
+          <path 
+            d="M 30 47 Q 50 44 70 47 C 65 48.5 35 48.5 30 47 Z" 
+            fill="#312e81" 
+            stroke="#4338ca"
+            strokeWidth="0.5"
+          />
+
+          {/* Wizard Hat Cone */}
+          <path 
+            d="M 33 46 Q 51 17 49 11 Q 52 17 67 46 Z" 
+            fill="url(#wizardRobeGrad)" 
+            stroke="#4338ca"
+            strokeWidth="0.5"
+          />
+
+          {/* Stars on Hat */}
+          <path 
+            d="M 49 11 L 50 13 L 52 13.5 L 50.5 15 L 51 17 L 49 16 L 47 17 L 47.5 15 L 46 13.5 L 48 13 Z" 
+            fill="url(#wizardStarGrad)" 
+          />
+          <path 
+            d="M 37 32 L 38 34 L 40 34 L 38.5 35 L 39 37 L 37 36 L 35 37 L 35.5 35 L 34 34 L 36 34 Z" 
+            fill="url(#wizardStarGrad)" 
+            transform="scale(0.7) translate(13, 10)"
+          />
+
+          {/* Pedestal & Glowing Crystal ball */}
+          <g>
+            <path d="M 43 83 L 57 83 L 55 79 L 45 79 Z" fill="#334155" stroke="#1e293b" strokeWidth="0.5" />
+            <circle 
+              cx="50.1" 
+              cy="75.2" 
+              r="8.5" 
+              fill="url(#crystalBallGlow)" 
+              style={{
+                animation: 'wizardBallGlow 2.5s ease-in-out infinite'
+              }}
+            />
+          </g>
+        </svg>
+
+        {/* Floating and pulse css */}
+        <style dangerouslySetInnerHTML={{__html: `
+          @keyframes wizardFloat {
+            0%, 100% { transform: translateY(0px) scale(1); }
+            50% { transform: translateY(-7px) scale(0.98); }
+          }
+          @keyframes wizardBallGlow {
+            0%, 100% { opacity: 0.8; filter: drop-shadow(0 0 3px rgba(34,211,238,0.5)) drop-shadow(0 0 6px rgba(99,102,241,0.3)); }
+            50% { opacity: 1; filter: drop-shadow(0 0 10px rgba(34,211,238,0.95)) drop-shadow(0 0 12px rgba(99,102,241,0.6)); }
+          }
+        `}} />
+      </div>
+    </div>
+  );
+}
+
 export function FormGuidanceAssistant() {
   const { language } = useI18n();
   const [activeForm, setActiveForm] = useState<HTMLFormElement | null>(null);
   const [activeInput, setActiveInput] = useState<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null>(null);
   const [emptyFields, setEmptyFields] = useState<EmptyFieldConsequence[]>([]);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [bubbleVisible, setBubbleVisible] = useState(false);
+  const [autoTriggerAllowed, setAutoTriggerAllowed] = useState(true);
   const [recentAction, setRecentAction] = useState<string>('');
   const [completionPercent, setCompletionPercent] = useState<number>(0);
+
+  const autoHideTimerRef = useRef<NodeJS.Timeout | null>(null);
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const closedFormRef = useRef<HTMLFormElement | null>(null);
+
+  // Keep state refs to avoid stale closures inside event listeners
+  const autoTriggerAllowedRef = useRef(autoTriggerAllowed);
+  const bubbleVisibleRef = useRef(bubbleVisible);
+
+  useEffect(() => {
+    autoTriggerAllowedRef.current = autoTriggerAllowed;
+  }, [autoTriggerAllowed]);
+
+  useEffect(() => {
+    bubbleVisibleRef.current = bubbleVisible;
+  }, [bubbleVisible]);
+
+  // Clear 5-second auto hide timer
+  const clearAutoHideTimer = useCallback(() => {
+    if (autoHideTimerRef.current) {
+      clearTimeout(autoHideTimerRef.current);
+      autoHideTimerRef.current = null;
+    }
+  }, []);
+
+  // Set 5-second auto hide timer
+  const startAutoHideTimer = useCallback(() => {
+    clearAutoHideTimer();
+    autoHideTimerRef.current = setTimeout(() => {
+      setBubbleVisible(false);
+    }, 5000);
+  }, [clearAutoHideTimer]);
 
   // Define database field mapping, names & exact real-world consequences in PT/EN
   const getFieldGuidanceAndConsequences = useCallback((nameAttr: string, labelText: string): { 
@@ -50,8 +211,8 @@ export function FormGuidanceAssistant() {
           ? 'Insira um endereço de e-mail institucional ou correto.' 
           : 'Enter a valid institutional or personal email address.',
         consequence: language === 'pt'
-          ? 'Impossibilita o acesso à plataforma, recuperação de senhas, autenticação segura e envio de notificações automatizadas de faltas.'
-          : 'Prevents platform access, secure password recovery, and receipt of automated attendance notifications.',
+          ? 'Impossibilita o acesso à plataforma, recuperação de senhas e autenticação segura.'
+          : 'Prevents platform access, secure password recovery, and login.',
         isCrucial: true
       };
     }
@@ -64,8 +225,8 @@ export function FormGuidanceAssistant() {
           ? 'Preencha o nome completo oficial sem abreviações.'
           : 'Enter your official full name without abbreviations.',
         consequence: language === 'pt'
-          ? 'O participante constará de forma oculta ou anônima em diários de classe, pautas de frequência, certificados e atas de avaliação.'
-          : 'The participant will appear anonymously on class journals, attendance sheets, certificates, and grading sheets.',
+          ? 'O participante constará de forma oculta ou anônima em diários e certificados.'
+          : 'The participant will appear anonymously on classes and certificates.',
         isCrucial: true
       };
     }
@@ -78,23 +239,9 @@ export function FormGuidanceAssistant() {
           ? 'Digite uma senha segura com no mínimo 6 caracteres.'
           : 'Choose a secure password of at least 6 characters.',
         consequence: language === 'pt'
-          ? 'Sem uma chave de acesso segura cadastrada, o login inicial será bloqueado por razões de segurança regulamentar.'
-          : 'Without a secure password set, initial login will remain blocked for compliance and security reasons.',
+          ? 'O login será bloqueado por razões de segurança regulamentar.'
+          : 'Account access will remain locked for security protection.',
         isCrucial: true
-      };
-    }
-
-    // Check grupo_responsavel
-    if (name.includes('grupo') || label.includes('grupo') || label.includes('departamento')) {
-      return {
-        friendlyName: language === 'pt' ? 'Grupo Responsável' : 'Responsible Group',
-        guidance: language === 'pt'
-          ? 'Especifique o grupo de acompanhamento (Ex: MAN, GAT, AMBOS ou personalizado).'
-          : 'Specify the coordination group (E.g.: MAN, GAT, BOTH or custom).',
-        consequence: language === 'pt'
-          ? 'O curso ou usuário ficará sem segmentação departamental nas consultas, impedindo filtros em pautas de escalas e notas.'
-          : 'The course or user will lack department assignment, failing to show up on department-filtered schedules and grade rosters.',
-        isCrucial: false
       };
     }
 
@@ -106,8 +253,8 @@ export function FormGuidanceAssistant() {
           ? 'Associe esta turma ou evento a um curso da ementa cadastrada.'
           : 'Associate this group or event with an approved curriculum course.',
         consequence: language === 'pt'
-          ? 'Inviabiliza a vinculação pedagógica, impossibilitando que os alunos herdem as matérias obrigatórias da grade curricular.'
-          : 'Breaks pedagogical associations, preventing students from inheriting required subjects from the main curriculum.',
+          ? 'Alunos não herdarão as matérias e módulos obrigatórios corretamente.'
+          : 'Students will fail to inherit required subject modules correctly.',
         isCrucial: true
       };
     }
@@ -120,23 +267,9 @@ export function FormGuidanceAssistant() {
           ? 'Selecione a turma correta que iniciará o período letivo.'
           : 'Select the class roster initialized for this academic period.',
         consequence: language === 'pt'
-          ? 'Os alunos ficarão sem pauta física, impedindo o controle unificado de aproveitamento e o cálculo correto do boletim.'
-          : 'Students will sit in an unassigned state, failing to sync with report cards and digital grading books.',
+          ? 'Os alunos ficarão sem pauta e sem cálculo automático do boletim.'
+          : 'Students will sit in an unassigned state and fail to sync with report cards.',
         isCrucial: true
-      };
-    }
-
-    // Check instructor
-    if (name.includes('instrutor') || label.includes('instrutor') || name.includes('instructor')) {
-      return {
-        friendlyName: language === 'pt' ? 'Instrutor' : 'Instructor',
-        guidance: language === 'pt'
-          ? 'Atribua um docente certificado a essa disciplina ou horário.'
-          : 'Assign a certified instructor to this subject block or hours.',
-        consequence: language === 'pt'
-          ? 'A turma constará como sem tutor responsável, impossibilitando auditoria de preenchimento de diário de classe por terceiros.'
-          : 'The class will showcase as leaderless, locked from class journal auditing and teacher coordination oversight.',
-        isCrucial: false
       };
     }
 
@@ -148,8 +281,8 @@ export function FormGuidanceAssistant() {
           ? 'Insira a data do primeiro dia de instrução.'
           : 'Enter the calendar date for the first day of class.',
         consequence: language === 'pt'
-          ? 'O cronograma ficará indefinido no calendário e as agendas de horários diários não serão exibidas corretamente.'
-          : 'The educational timeline stays blank, hiding calendars and daily schedule rotations from target groups.',
+          ? 'O cronograma ficará indefinido no calendário e na agenda de horários.'
+          : 'The educational timeline stays blank under schedules.',
         isCrucial: true
       };
     }
@@ -161,8 +294,8 @@ export function FormGuidanceAssistant() {
           ? 'Defina a data final prevista para o encerramento do curso.'
           : 'Define the target final date for course completion.',
         consequence: language === 'pt'
-          ? 'Impossibilita o encerramento de vigência da vaga, mantendo o aluno alocado permanentemente e obstruindo novas turmas.'
-          : 'Prevents seat expiration, locking enrolled students and obstructing the release of next-term semesters.',
+          ? 'Mantém o aluno alocado permanentemente, impedindo novas matrículas.'
+          : 'Prevents seat expiration, locking enrolled students indefinitely.',
         isCrucial: true
       };
     }
@@ -171,25 +304,23 @@ export function FormGuidanceAssistant() {
     return {
       friendlyName: labelText || nameAttr || (language === 'pt' ? 'Este Campo' : 'This Field'),
       guidance: language === 'pt'
-        ? 'Preencha este campo com atenção para manter a integridade dos dados cadastrados.'
+        ? 'Preencha este campo com atenção para manter a integridade dos dados.'
         : 'Please fill out this field with care to preserve system integrity.',
       consequence: language === 'pt'
-        ? 'Dificultará buscas refinadas, relatórios gerenciais analíticos e poderá gerar validações pendentes ao salvar.'
-        : 'Will hinder search queries and dashboard reports, potentially raising validation blockers during saves.',
+        ? 'Dificultará buscas refinadas e relatórios gerenciais analíticos.'
+        : 'Will hinder search queries and analytical dashboard reports.',
       isCrucial: false
     };
   }, [language]);
 
   // Extract a human-readable name or label associated with the field
   const getLabelOrPlaceholder = useCallback((el: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement): string => {
-    // 1. Check if associated label exists
     if (el.id) {
       const labelEl = document.querySelector(`label[for="${el.id}"]`);
       if (labelEl && labelEl.textContent) {
         return labelEl.textContent.trim().replace(/[*:]/g, '');
       }
     }
-    // 2. Sibling label search
     const parentContainer = el.closest('div');
     if (parentContainer) {
       const labelEl = parentContainer.querySelector('label');
@@ -197,11 +328,9 @@ export function FormGuidanceAssistant() {
         return labelEl.textContent.trim().replace(/[*:]/g, '');
       }
     }
-    // 3. Fallback placeholder
     if ('placeholder' in el && (el as any).placeholder) {
       return (el as any).placeholder;
     }
-    // 4. Fallback name
     if (el.name) {
       return el.name;
     }
@@ -210,13 +339,12 @@ export function FormGuidanceAssistant() {
 
   // Perform form structural analysis
   const analyzeFormState = useCallback((form: HTMLFormElement, active: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null) => {
-    // Collect all typical input elements
     const elements = Array.from(form.querySelectorAll('input, select, textarea')) as (HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement)[];
     
-    // Ignore mechanical submit buttons, hidden inputs, search inputs
+    // Ignore mechanical buttons, hidden inputs, search boxes
     const relevantElements = elements.filter(el => {
       const type = (el.getAttribute('type') || '').toLowerCase();
-      const isSearch = el.name === 'q' || el.classList.contains('pl-9');
+      const isSearch = el.name === 'q' || el.classList.contains('pl-9') || el.id?.includes('search');
       return el.tagName !== 'BUTTON' && type !== 'hidden' && type !== 'submit' && !isSearch;
     });
 
@@ -231,18 +359,16 @@ export function FormGuidanceAssistant() {
     const emptyList: EmptyFieldConsequence[] = [];
     relevantElements.forEach(el => {
       const parentIsHidden = el.closest('.hidden') || el.closest('[style*="display: none"]');
-      if (parentIsHidden) return; // skip hidden screens/tabs
+      if (parentIsHidden) return; 
 
-      // If it is currently empty
       if (!el.value || el.value.trim() === '') {
         const isCurrentlyActive = active && active === el;
-        // Don't mark it as skipped or "pulado" if they are currently editing it
+        // Don't mark it as skipped if editing it
         if (!isCurrentlyActive) {
           const lText = getLabelOrPlaceholder(el);
           const nameAttr = el.getAttribute('name') || el.id || '';
-          
-          // Only show as skipped consequence if it has a label or name or it's crucial
           const info = getFieldGuidanceAndConsequences(nameAttr, lText);
+          
           emptyList.push({
             fieldName: info.friendlyName,
             consequence: info.consequence,
@@ -255,7 +381,37 @@ export function FormGuidanceAssistant() {
     setEmptyFields(emptyList);
   }, [getLabelOrPlaceholder, getFieldGuidanceAndConsequences]);
 
-  // Run on layout mounts
+  // Automatic form scan to reveal the Wizard whenever a form is present on the screen
+  useEffect(() => {
+    const scanForActiveForm = () => {
+      const forms = document.querySelectorAll('form');
+      const standardForm = Array.from(forms).find(form => {
+        const isSearch = form.getAttribute('role') === 'search' || form.id?.includes('search');
+        return !isSearch;
+      });
+
+      if (standardForm) {
+        setActiveForm(standardForm as HTMLFormElement);
+        analyzeFormState(standardForm as HTMLFormElement, activeInput);
+      } else {
+        setActiveForm(null);
+        setActiveInput(null);
+      }
+    };
+
+    scanForActiveForm();
+
+    const interval = setInterval(scanForActiveForm, 1000);
+    const observer = new MutationObserver(scanForActiveForm);
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    return () => {
+      clearInterval(interval);
+      observer.disconnect();
+    };
+  }, [activeInput, analyzeFormState]);
+
+  // Handle focus, type, and change event auditing globally
   useEffect(() => {
     const handleFocusIn = (e: FocusEvent) => {
       const target = e.target as HTMLElement;
@@ -276,12 +432,13 @@ export function FormGuidanceAssistant() {
         if (formEl) {
           setActiveForm(formEl);
           analyzeFormState(formEl, inputEl);
-          if (closedFormRef.current !== formEl) {
-            setIsExpanded(true);
-            closedFormRef.current = null;
+          
+          // Fulfill original requirement: Clicking/focusing on form fields automatically displays layout for 5s
+          if (autoTriggerAllowedRef.current) {
+            setBubbleVisible(true);
+            startAutoHideTimer();
+            setAutoTriggerAllowed(false);
           }
-        } else {
-          setIsExpanded(true);
         }
       }
     };
@@ -306,19 +463,23 @@ export function FormGuidanceAssistant() {
 
         if (formEl) {
           analyzeFormState(formEl, inputEl);
+          
+          // Ensure typing also auto-reveals the bubble for 5 seconds if not triggered yet
+          if (autoTriggerAllowedRef.current) {
+            setBubbleVisible(true);
+            startAutoHideTimer();
+            setAutoTriggerAllowed(false);
+          }
         }
       }
     };
 
     const handleFocusOut = () => {
-      // Small timeout to guard against moving to another input in same form
       hideTimeoutRef.current = setTimeout(() => {
-        // Only collapse gently if they took focus away from all inputs
-        // Keep active form for context if they just hovered out
+        // Keep active form for background contexts, soft blur
       }, 300);
     };
 
-    // Attach global window listeners
     window.addEventListener('focusin', handleFocusIn);
     window.addEventListener('input', handleInputOrChange);
     window.addEventListener('change', handleInputOrChange);
@@ -331,7 +492,22 @@ export function FormGuidanceAssistant() {
       window.removeEventListener('focusout', handleFocusOut);
       if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
     };
-  }, [language, getLabelOrPlaceholder, analyzeFormState]);
+  }, [language, getLabelOrPlaceholder, analyzeFormState, startAutoHideTimer]);
+
+  // Toggle bubble manually by clicking directly on the avatar
+  const toggleBubbleManual = useCallback(() => {
+    setBubbleVisible(prev => {
+      const nextValue = !prev;
+      if (nextValue) {
+        // Clear active 5-second auto hide timer so the user can keep it open while reading
+        clearAutoHideTimer();
+      } else {
+        // Re-enable automatic trigger next time they interact with forms if they manually dismissed
+        setAutoTriggerAllowed(true);
+      }
+      return nextValue;
+    });
+  }, [clearAutoHideTimer]);
 
   if (!activeForm) return null;
 
@@ -339,188 +515,148 @@ export function FormGuidanceAssistant() {
   const currentInfo = activeInput ? getFieldGuidanceAndConsequences(activeInput.getAttribute('name') || '', currentLabel) : null;
 
   return (
-    <div className="fixed bottom-20 md:bottom-6 right-6 z-50 font-sans max-w-[340px] md:max-w-md w-full print:hidden">
-      <AnimatePresence>
-        {!isExpanded ? (
-          // Collapsed state - Subtle glowing badge
-          <motion.button
-            id="form-guide-collapsed"
-            initial={{ opacity: 0, scale: 0.9, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 10 }}
-            onClick={() => {
-              setIsExpanded(true);
-              closedFormRef.current = null;
-            }}
-            className="flex items-center gap-2.5 px-4 py-2.5 bg-slate-900 border border-white/10 text-white rounded-full shadow-2xl hover:bg-slate-800 transition-colors float-right cursor-pointer"
-          >
-            <Sparkles size={14} className="text-blue-400 animate-pulse" />
-            <span className="text-[11px] font-bold uppercase tracking-wider">
-              {language === 'pt' ? 'Consulente de Formulário' : 'Form Assistant'}
-            </span>
-            {emptyFields.filter(f => f.isCrucial).length > 0 && (
-              <span className="flex h-2 w-2 rounded-full bg-amber-500" />
-            )}
-            <ChevronUp size={14} className="text-slate-400" />
-          </motion.button>
-        ) : (
-          // Expanded panel
-          <motion.div
-            id="form-guide-expanded"
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            transition={{ type: "spring", stiffness: 300, damping: 25 }}
-            className="bg-slate-900/95 backdrop-blur-md text-white rounded-3xl border border-white/10 shadow-2xl overflow-hidden shadow-black/80"
-          >
-            {/* Header */}
-            <div className="px-5 py-4 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-xl bg-blue-500/10 border border-blue-500/20">
-                  <Sparkles size={14} className="text-blue-400 animate-pulse" />
+    <div className="fixed bottom-24 md:bottom-8 right-8 z-50 font-sans max-w-[320px] md:max-w-[360px] w-full print:hidden">
+      <div className="relative flex flex-col items-end">
+        <AnimatePresence>
+          {bubbleVisible && (
+            <motion.div
+              id="wizard-speech-bubble"
+              initial={{ opacity: 0, y: 15, scale: 0.92 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 15, scale: 0.92 }}
+              transition={{ type: "spring", stiffness: 350, damping: 24 }}
+              className="w-full bg-slate-950/95 text-white rounded-[24px] border border-indigo-500/30 shadow-2xl overflow-hidden p-4 mb-3 relative flex flex-col gap-3.5 backdrop-blur-md shadow-indigo-500/20"
+            >
+              {/* Top Row / Header */}
+              <div className="flex items-center justify-between border-b border-indigo-500/10 pb-2">
+                <div className="flex items-center gap-2">
+                  <Sparkles size={14} className="text-cyan-405 text-cyan-400 animate-pulse" />
+                  <span className="text-[10px] font-black uppercase tracking-[0.15em] text-indigo-300">
+                    {language === 'pt' ? 'Mago Consultor' : 'Wizard Advisor'}
+                  </span>
                 </div>
-                <div>
-                  <h4 className="text-xs font-extrabold uppercase tracking-widest text-slate-100">
-                    {language === 'pt' ? 'Assistente de Validação' : 'Validation Assistant'}
-                  </h4>
-                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">
-                    {language === 'pt' ? 'Apoio em Tempo Real' : 'Real-time Guidance'}
-                  </p>
-                </div>
+                <button
+                  onClick={() => {
+                    setBubbleVisible(false);
+                    setAutoTriggerAllowed(true);
+                  }}
+                  className="p-1 hover:bg-white/10 rounded text-slate-400 hover:text-white transition-colors cursor-pointer"
+                  title={language === 'pt' ? 'Fechar' : 'Close'}
+                  type="button"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
               </div>
-              <button 
-                onClick={() => {
-                  setIsExpanded(false);
-                  if (activeForm) {
-                    closedFormRef.current = activeForm;
-                  }
-                }}
-                className="p-1 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-colors cursor-pointer"
-              >
-                <ChevronDown size={16} />
-              </button>
-            </div>
 
-            {/* Content Area */}
-            <div className="p-5 space-y-4 max-h-[300px] overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-white/10">
-              
               {/* Progress Completion Bar */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                  <span>{language === 'pt' ? 'Progresso do Cadastro' : 'Registration Progress'}</span>
-                  <span>{completionPercent}%</span>
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-[9px] text-slate-400 font-bold uppercase tracking-wider">
+                  <span>{language === 'pt' ? 'Progresso do Cadastro' : 'Form Completion'}</span>
+                  <span className="text-cyan-400 font-extrabold">{completionPercent}%</span>
                 </div>
-                <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden border border-white/5">
                   <motion.div 
                     initial={{ width: 0 }}
                     animate={{ width: `${completionPercent}%` }}
-                    className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full"
+                    className="h-full bg-gradient-to-r from-cyan-400 to-indigo-500 rounded-full"
                   />
                 </div>
               </div>
 
-              {/* Real-time Input Guidance */}
+              {/* Active Input Guidance or General Help */}
               {activeInput ? (
-                <div className="p-3.5 rounded-2xl bg-white/[0.02] border border-white/5 space-y-2">
-                  <div className="flex items-center gap-2 text-slate-300">
-                    <span className="flex h-1.5 w-1.5 rounded-full bg-blue-400" />
-                    <span className="text-xs font-semibold">
-                      {language === 'pt' ? 'Preenchendo agora:' : 'Filling in:'}{' '}
-                      <strong className="text-white font-black">{currentLabel}</strong>
-                    </span>
+                <div className="p-2.5 rounded-xl bg-indigo-500/5 border border-indigo-500/10 text-[11px] leading-relaxed text-slate-200">
+                  <div className="flex items-center gap-1.5 mb-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                    <span className="flex h-1.5 w-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                    <span>{language === 'pt' ? 'Campo Atual:' : 'Active Input:'} <strong className="text-white normal-case">{currentLabel}</strong></span>
                   </div>
                   {currentInfo && (
-                    <p className="text-[11px] text-slate-400 font-medium leading-relaxed">
-                      💡 {currentInfo.guidance}
+                    <p className="font-medium text-slate-300">
+                       💡 {currentInfo.guidance}
                     </p>
                   )}
                   {recentAction && (
                     <motion.div 
                       key={recentAction}
-                      initial={{ opacity: 0, y: 2 }}
+                      initial={{ opacity: 0, y: 1 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="text-[10px] text-emerald-400 font-bold flex items-center gap-1 mt-1"
+                      className="text-[10px] text-emerald-400 font-bold flex items-center gap-1 mt-1.5"
                     >
                       <CheckCircle2 size={10} /> {recentAction}
                     </motion.div>
                   )}
                 </div>
               ) : (
-                <div className="p-3.5 rounded-2xl bg-white/[0.02] border border-white/5 text-center py-5">
-                  <HelpCircle size={18} className="mx-auto text-slate-500 mb-1.5 animate-bounce" />
-                  <p className="text-[11px] text-slate-400 font-medium font-sans">
+                <div className="p-2.5 rounded-xl bg-indigo-950/20 border border-indigo-500/10 text-center py-3.5">
+                  <p className="text-[11px] text-slate-300 font-medium italic">
                     {language === 'pt' 
-                      ? 'Selecione qualquer campo de formulário para iniciar a auditoria em tempo real.' 
-                      : 'Select any form field to initialize real-time validation checks.'}
+                      ? '"Preencha os campos com sabedoria! Revelarei as consequências do preenchimento através da minha bola de cristal..."' 
+                      : '"Fill in the fields with wisdom! I will peek into my crystal ball to reveal compliance rules..."'}
                   </p>
                 </div>
               )}
 
-              {/* Skipped Fields & Real Consequences Warning */}
-              <div className="space-y-2.5">
-                <div className="flex items-center gap-1.5 px-1">
-                  <AlertCircle size={12} className="text-amber-500" />
-                  <h5 className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                    {language === 'pt' ? 'Campos Não Preenchidos & Consequências' : 'Skipped Fields & Consequences'}
-                  </h5>
-                </div>
-
-                {emptyFields.length > 0 ? (
-                  <div className="space-y-2">
-                    {emptyFields.map((field, idx) => (
-                      <motion.div 
+              {/* Empty Fields & Warnings */}
+              {emptyFields.length > 0 ? (
+                <div className="space-y-1.5">
+                  <span className="text-[9px] font-black uppercase tracking-wider text-slate-500 block">
+                    {language === 'pt' ? 'Campos Pendentes Importantes:' : 'Pending Critical Fields:'}
+                  </span>
+                  <div className="max-h-[110px] overflow-y-auto pr-0.5 space-y-1.5 scrollbar-thin scrollbar-thumb-white/10">
+                    {emptyFields.slice(0, 3).map((field, idx) => (
+                      <div 
                         key={`${field.fieldName}-${idx}`}
-                        layout
-                        initial={{ opacity: 0, x: -5 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className={`p-3 rounded-xl border flex flex-col gap-1 transition-all ${
+                        className={`p-2 rounded-lg border text-[10px] ${
                           field.isCrucial 
-                            ? 'bg-red-500/5 border-red-500/20' 
-                            : 'bg-amber-500/5 border-amber-500/15'
+                            ? 'bg-rose-500/5 border-rose-500/20 text-rose-200' 
+                            : 'bg-amber-500/5 border-amber-500/10 text-amber-200'
                         }`}
                       >
-                        <div className="flex items-center justify-between">
-                          <span className="text-[11px] font-bold text-slate-100 flex items-center gap-2">
-                            <span className={`w-1.5 h-1.5 rounded-full ${field.isCrucial ? 'bg-red-500' : 'bg-amber-500'}`} />
-                            {field.fieldName}
-                          </span>
-                          <span className={`text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded ${
-                            field.isCrucial 
-                              ? 'bg-red-500/10 text-red-400' 
-                              : 'bg-amber-500/10 text-amber-500'
-                          }`}>
+                        <div className="flex items-center justify-between font-bold mb-0.5">
+                          <span>{field.fieldName}</span>
+                          <span className="text-[8px] font-black uppercase tracking-widest opacity-80">
                             {field.isCrucial 
-                              ? (language === 'pt' ? 'Obrigatório' : 'Required') 
-                              : (language === 'pt' ? 'Filtro' : 'Optional')}
+                              ? (language === 'pt' ? 'obrigatório' : 'required') 
+                              : (language === 'pt' ? 'filtro' : 'optional')}
                           </span>
                         </div>
-                        <p className={`text-[10px] leading-relaxed font-medium ${field.isCrucial ? 'text-red-300' : 'text-amber-200/80'}`}>
+                        <p className="text-[9px] opacity-90 leading-normal">
                           ⚠️ <span className="font-bold">{language === 'pt' ? 'Se pular:' : 'If skipped:'}</span> {field.consequence}
                         </p>
-                      </motion.div>
+                      </div>
                     ))}
+                    {emptyFields.length > 3 && (
+                      <div className="text-center text-[9px] font-black uppercase tracking-widest text-indigo-400/80 mt-1 animate-pulse">
+                        {language === 'pt' ? `e mais ${emptyFields.length - 3} importantes` : `and ${emptyFields.length - 3} more`}
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <div className="p-3.5 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 flex items-center gap-3">
-                    <ShieldCheck size={16} className="text-emerald-400 shrink-0" />
-                    <p className="text-[11px] text-emerald-300 font-semibold leading-relaxed">
-                      {language === 'pt' 
-                        ? 'Excelente! Todas as informações essenciais deste formulário foram inseridas corretamente.' 
-                        : 'Outstanding! All critical information in this form has been successfully completed.'}
-                    </p>
-                  </div>
-                )}
-              </div>
+                </div>
+              ) : (
+                <div className="p-2 rounded-lg bg-emerald-500/5 border border-emerald-500/20 flex items-center gap-2">
+                  <ShieldCheck size={14} className="text-emerald-400 shrink-0" />
+                  <p className="text-[10px] text-emerald-300 font-bold leading-normal">
+                    {language === 'pt' 
+                      ? 'Incrível! Todas as informações essenciais estão preenchidas!' 
+                      : 'Outstanding! Form fully completed with precision!'}
+                  </p>
+                </div>
+              )}
 
-            </div>
+              {/* Speech bubble tail pointing directly down to the avatar */}
+              <div className="absolute bottom-[-6px] right-8 w-3 h-3 bg-slate-950 border-r border-b border-indigo-500/30 transform rotate-45" />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-            {/* Footer advice */}
-            <div className="px-5 py-3 bg-white/[0.01] border-t border-white/5 text-[9px] text-slate-500 text-center font-bold uppercase tracking-wider">
-              {language === 'pt' ? '🔒 Proteção de Integridade Ativa' : '🔒 Compliance Protection Active'}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+        {/* Wizard Avatar with crystal ball */}
+        <WizardAvatar 
+          onClick={toggleBubbleManual} 
+          isGlow={bubbleVisible || emptyFields.filter(f => f.isCrucial).length > 0} 
+        />
+      </div>
     </div>
   );
 }
