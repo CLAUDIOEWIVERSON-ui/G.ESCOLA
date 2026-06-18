@@ -350,6 +350,24 @@ export async function GET() {
             .limit(1);
           return error;
         }
+      },
+      {
+        key: 'get_db_storage_stats_func',
+        tableName: 'Função: get_db_storage_stats',
+        fileName: '43_create_db_size_function.sql',
+        description: 'Função PostgreSQL RPC utilizada para auditar em tempo real o peso total de cada tabela e o consumo geral do banco de dados.',
+        isColumn: false,
+        checkFn: async () => {
+          // Check if function exists by attempting a dry call or querying pg_proc
+          const { error } = await supabaseAdmin
+            .rpc('get_db_storage_stats')
+            .limit(1);
+          
+          if (error && error.message?.includes('does not exist')) {
+            return error;
+          }
+          return null;
+        }
       }
     ];
 

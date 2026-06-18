@@ -159,6 +159,29 @@ export default function ConfiguracoesPage() {
   const [expandedMig, setExpandedMig] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
+  // Database storage size states
+  const [dbSizeData, setDbSizeData] = useState<any>(null);
+  const [dbSizeLoading, setDbSizeLoading] = useState(false);
+
+  const fetchDbSize = useCallback(async () => {
+    if (!isAdmin) return;
+    setDbSizeLoading(true);
+    try {
+      const res = await fetch('/api/admin/db-size');
+      if (res.ok) {
+        const contentType = res.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          const data = await res.json();
+          setDbSizeData(data);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching DB size stats:', err);
+    } finally {
+      setDbSizeLoading(false);
+    }
+  }, [isAdmin]);
+
   const fetchSmtpStatus = useCallback(async () => {
     if (!isAdmin) return;
     setSmtpLoading(true);
@@ -216,13 +239,14 @@ export default function ConfiguracoesPage() {
       if (isAdmin && active) {
         fetchSmtpStatus();
         fetchDbIntegrity();
+        fetchDbSize();
       }
     }, 50);
     return () => {
       active = false;
       clearTimeout(timer);
     };
-  }, [isAdmin, fetchSmtpStatus, fetchDbIntegrity]);
+  }, [isAdmin, fetchSmtpStatus, fetchDbIntegrity, fetchDbSize]);
 
   const handleSendTestEmail = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -860,6 +884,151 @@ export default function ConfiguracoesPage() {
           ) : (
             <div className="text-center py-4 text-xs italic text-slate-400 font-mono">
               Não foi possível sincronizar informações do servidor SMTP.
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Capacidade e Tamanho do Banco de Dados (Visualizador Energético) */}
+      {isAdmin && (
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-50 pb-4 gap-4">
+            <div className="flex items-center gap-3">
+               <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
+                  <Database size={20} />
+               </div>
+               <div>
+                  <h2 className="font-bold text-slate-800 font-sans">Capacidade de Armazenamento</h2>
+                  <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold font-sans">Sondagem de Peso Sincronizada vs Cota Supabase (500MB)</p>
+               </div>
+            </div>
+            <button
+              onClick={fetchDbSize}
+              disabled={dbSizeLoading}
+              className="p-2 hover:bg-slate-50 rounded-lg border border-slate-200 text-slate-500 hover:text-slate-700 transition cursor-pointer flex items-center gap-1.5 text-xs font-bold font-sans"
+              title="Recarregar peso"
+            >
+              <RefreshCw size={14} className={dbSizeLoading ? "animate-spin" : ""} />
+              {dbSizeLoading ? "Calculando..." : "Sincronizar Uso"}
+            </button>
+          </div>
+
+          {dbSizeLoading && !dbSizeData ? (
+            <div className="py-8 flex flex-col justify-center items-center gap-2 text-slate-500 text-xs font-mono">
+              <Loader2 size={24} className="animate-spin text-blue-600" />
+              Computando peso físico das tabelas e arquivos gerados...
+            </div>
+          ) : dbSizeData ? (
+            <div className="space-y-6">
+              {/* Barra de Energia (Consumo de Cota) */}
+              <div className="bg-slate-900 rounded-2xl p-5 border border-slate-850 text-slate-200 space-y-4 shadow-md shadow-slate-950/20">
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-cyan-400 font-mono">
+                    Nível de Energia / Espaço Ocupado
+                  </span>
+                  <span className="font-mono text-xs font-black text-white bg-slate-800 px-2 py-0.5 rounded-md border border-slate-705">
+                    {dbSizeData.percentage}%
+                  </span>
+                </div>
+
+                {/* Segmented Energy Bar */}
+                <div className="flex items-center gap-1 bg-slate-950 p-2.5 rounded-xl border border-slate-800/80">
+                  {Array.from({ length: 15 }).map((_, idx) => {
+                    const blockThreshold = (idx / 15) * 100;
+                    const isLit = dbSizeData.percentage >= blockThreshold;
+                    
+                    let blockColor = "bg-emerald-500 shadow-xs shadow-emerald-500/50";
+                    if (blockThreshold > 85) {
+                      blockColor = "bg-rose-500 shadow-xs shadow-rose-500/50 animate-pulse";
+                    } else if (blockThreshold > 60) {
+                      blockColor = "bg-amber-500 shadow-xs shadow-amber-500/50";
+                    }
+
+                    return (
+                      <div
+                        key={idx}
+                        className={cn(
+                          "h-5 flex-1 rounded-sm transition-all duration-300 border border-transparent",
+                          isLit 
+                            ? blockColor
+                            : "bg-slate-900 border-slate-800/40"
+                        )}
+                      />
+                    );
+                  })}
+                </div>
+
+                {/* DB size statistics rows */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 font-mono text-center text-xs pt-1.5 border-t border-slate-800/60">
+                  <div className="p-2.5 rounded-xl bg-slate-950/40 border border-slate-800/40">
+                    <span className="block text-[9px] uppercase tracking-wider text-slate-500 font-bold mb-1">
+                      Armazenamento Limite
+                    </span>
+                    <span className="text-white font-black text-sm">
+                      500.00 MB
+                    </span>
+                  </div>
+                  
+                  <div className="p-2.5 rounded-xl bg-slate-950/40 border border-slate-800/40">
+                    <span className="block text-[9px] uppercase tracking-wider text-slate-500 font-bold mb-1">
+                      Consumo Absoluto (Físico + Índices)
+                    </span>
+                    <span className="text-cyan-400 font-black text-sm">
+                      {(dbSizeData.totalSizeBytes / (1024 * 1024)).toFixed(3)} MB
+                    </span>
+                  </div>
+
+                  <div className="p-2.5 rounded-xl bg-slate-950/40 border border-slate-800/40">
+                    <span className="block text-[9px] uppercase tracking-wider text-slate-500 font-bold mb-1">
+                      Espaço Disponível (Seguro)
+                    </span>
+                    <span className="text-emerald-400 font-black text-sm">
+                      {Math.max(0, (dbSizeData.capacityBytes - dbSizeData.totalSizeBytes) / (1024 * 1024)).toFixed(3)} MB
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tabela de peso por módulo de arquivos e tabelas do sistema */}
+              <div className="border border-slate-200 rounded-xl overflow-hidden bg-slate-50">
+                <div className="bg-slate-100 px-4 py-2.5 border-b border-slate-200 text-[10px] font-black uppercase text-slate-500 tracking-wider">
+                  Listagem Detalhada por Volume de Registros e Peso Calculado
+                </div>
+                <div className="divide-y divide-slate-100 font-sans">
+                  {dbSizeData.tables?.map((table: any) => (
+                    <div key={table.name} className="px-4 py-3 flex items-center justify-between text-xs hover:bg-white transition-all">
+                      <div className="space-y-0.5">
+                        <span className="font-bold text-slate-800 font-mono">
+                          {table.label || table.name}
+                        </span>
+                        <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-semibold font-mono">
+                          <span>Esquema: public.{table.name}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-4 text-xs font-mono">
+                        <div className="text-right">
+                          <span className="block font-black text-slate-700">
+                            {table.rowCount} records
+                          </span>
+                          <span className="block text-[10px] text-slate-400">
+                            linhas registradas
+                          </span>
+                        </div>
+                        <div className="shink-0 text-right w-20">
+                          <span className="font-extrabold text-blue-600">
+                            {(table.sizeBytes / 1024).toFixed(2)} KB
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-4 text-xs italic text-slate-400 font-mono">
+              Não foi possível sincronizar peso das partições de dados no momento.
             </div>
           )}
         </div>
