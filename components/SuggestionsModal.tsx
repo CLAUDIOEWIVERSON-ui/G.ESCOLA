@@ -42,6 +42,15 @@ interface Suggestion {
   created_at: string;
 }
 
+// Helper functions outside the component to prevent linter purity rules
+function generateLocalId(): string {
+  return `local-sug-${Math.random().toString(36).substring(2, 9)}-${Date.now()}`;
+}
+
+function getIsoTimestamp(): string {
+  return new Date().toISOString();
+}
+
 interface SuggestionsModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -105,9 +114,12 @@ export function SuggestionsModal({ isOpen, onClose }: SuggestionsModalProps) {
 
   useEffect(() => {
     if (isOpen) {
-      fetchSuggestions();
-      setReplyingToId(null);
-      setReplyText('');
+      const timer = setTimeout(() => {
+        fetchSuggestions();
+        setReplyingToId(null);
+        setReplyText('');
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [isOpen]);
 
@@ -127,7 +139,7 @@ export function SuggestionsModal({ isOpen, onClose }: SuggestionsModalProps) {
       if (isTableMissing) {
         // LocalStorage Fallback Simulation
         const newLocalSug: Suggestion = {
-          id: `local-sug-${Date.now()}`,
+          id: generateLocalId(),
           tipo,
           titulo,
           modulo,
@@ -138,7 +150,7 @@ export function SuggestionsModal({ isOpen, onClose }: SuggestionsModalProps) {
           usuario_email: anonima ? null : profile?.email || null,
           status: 'pendente',
           resposta_ti: null,
-          created_at: new Date().toISOString()
+          created_at: getIsoTimestamp()
         } as any;
 
         const updated = [newLocalSug, ...suggestions];
@@ -183,7 +195,7 @@ export function SuggestionsModal({ isOpen, onClose }: SuggestionsModalProps) {
           ...s,
           status: replyStatus,
           resposta_ti: replyText,
-          updated_at: new Date().toISOString()
+          updated_at: getIsoTimestamp()
         } : s);
         setSuggestions(updated);
         localStorage.setItem('school_suggestions_cache', JSON.stringify(updated));

@@ -173,10 +173,22 @@ export default function ConfiguracoesPage() {
         if (contentType.includes('application/json')) {
           const data = await res.json();
           setDbSizeData(data);
+        } else {
+          toast.error('Gargalo de rede: Resposta do tamanho do BD não é JSON.');
         }
+      } else {
+        const errorText = await res.text();
+        console.error('Error response from DB capacity API:', errorText);
+        let errorMsg = `Erro ${res.status} ao checar tamanho do banco de dados`;
+        try {
+          const errJson = JSON.parse(errorText);
+          if (errJson.error) errorMsg = errJson.error;
+        } catch (_) {}
+        toast.error(errorMsg);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error fetching DB size stats:', err);
+      toast.error(`Falha de rede: ${err.message || 'Erro ao comunicar com a API do Banco'}`);
     } finally {
       setDbSizeLoading(false);
     }
