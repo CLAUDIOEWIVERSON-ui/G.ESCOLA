@@ -336,6 +336,20 @@ export async function GET() {
             .limit(1);
           return error;
         }
+      },
+      {
+        key: 'sugestoes_table',
+        tableName: 'sugestoes',
+        fileName: '42_create_sugestoes_table.sql',
+        description: 'Tabela de armazenamento das sugestões de melhorias enviadas para o TI de forma integrada ao painel.',
+        isColumn: false,
+        checkFn: async () => {
+          const { error } = await supabaseAdmin
+            .from('sugestoes')
+            .select('id')
+            .limit(1);
+          return error;
+        }
       }
     ];
 

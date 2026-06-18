@@ -25,7 +25,8 @@ import {
   Link2,
   ArrowLeft,
   ArrowRight,
-  Home
+  Home,
+  MessageSquare
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
@@ -35,6 +36,7 @@ import { ProximityAlert } from '@/components/ProximityAlert';
 import { EventMarquee } from '@/components/EventMarquee';
 import { HeaderClock } from '@/components/HeaderClock';
 import { FormGuidanceAssistant } from '@/components/FormGuidanceAssistant';
+import { SuggestionsModal } from '@/components/SuggestionsModal';
 
 // Isolated search bar component to avoid CSR bailout in layout.tsx
 function HeaderSearchBar() {
@@ -75,6 +77,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const isReadOnly = !isAdmin;
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
 
   const toggleSubmenu = (path: string, e: React.MouseEvent) => {
     if (!sidebarOpen) {
@@ -498,6 +501,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <span className="hidden sm:inline">Próximo</span>
                 <ArrowRight size={14} className="stroke-[2.5]" />
               </button>
+
+              <button
+                onClick={() => setSuggestionsOpen(true)}
+                title="Deixar sua sugestão de melhoria ou nova função para o TI"
+                className="flex items-center justify-center gap-1.5 px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold shadow-sm cursor-pointer border border-amber-600 tracking-wide transition-all duration-200"
+              >
+                <MessageSquare size={13} className="stroke-[2.5]" />
+                <span className="hidden xs:inline">Caixa de Sugestões</span>
+              </button>
             </div>
 
             <div className="flex flex-col">
@@ -552,6 +564,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </main>
         <ProximityAlert />
         <FormGuidanceAssistant />
+        <SuggestionsModal isOpen={suggestionsOpen} onClose={() => setSuggestionsOpen(false)} />
       </div>
 
       {/* Bottom Nav for Mobile */}
