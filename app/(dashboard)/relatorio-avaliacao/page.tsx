@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { generateQuestionnairePDF } from '@/lib/generateQuestionnairePDF';
+import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
 
 // Scaling text helper matches CP: 5, CPa: 3, D/NA: 1
 const getScaleLabel = (val: number) => {
@@ -1305,36 +1306,37 @@ function RelatorioAvaliacaoAdminContent() {
                             </div>
                           </div>
 
-                          {/* Grid with Grid 1 (Metrics by category) & Grid 2 (Distribution) */}
-                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                           {/* Grid with Grid 1 (Metrics by category), Grid 2 (Distribution) & Grid 3 (Satisfaction Pie Chart) */}
+                          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                             
                             {/* Chart 1: Média Detalhada por Categoria */}
-                            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
-                              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                                <h4 className="text-xs font-black text-slate-755 uppercase tracking-wider font-mono">
-                                  1. Média Detalhada por Categoria
+                            <div className="bg-slate-950 border border-slate-800 rounded-xl p-5 shadow-[0_0_25px_rgba(6,182,212,0.15)] relative overflow-hidden transition-all duration-300 hover:shadow-[0_0_35px_rgba(6,182,212,0.25)] border-b-[4px] border-r-[2px] border-cyan-500/20" id="chart-neon-metrics-card">
+                              <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
+                                <h4 className="text-xs font-black text-cyan-400 uppercase tracking-widest font-mono flex items-center gap-1.5 shadow-sm">
+                                  <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_#22d3ee]"></span>
+                                  1. Média por Categoria
                                 </h4>
-                                <span className="text-[9px] text-slate-400 font-bold uppercase font-mono">Escala de 1.0 a 5.0</span>
+                                <span className="text-[9px] text-cyan-500/80 font-black uppercase font-mono tracking-wider">TECNOLOGIA NEON 3D</span>
                               </div>
                               
-                              <div className="space-y-4">
+                              <div className="space-y-4.5 pt-3">
                                 {/* Category 1: Curso */}
-                                <div className="space-y-1">
+                                <div className="space-y-1.5">
                                   <div className="flex justify-between items-center text-xs">
-                                    <span className="font-semibold text-slate-700 flex items-center gap-1.5">
-                                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                                    <span className="font-extrabold text-slate-300 flex items-center gap-1.5">
+                                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#10b981]"></span>
                                       Expectativas sobre o Curso
                                     </span>
-                                    <span className="font-black text-slate-900 font-mono">{courseSatisfactionIndex.toFixed(2)} / 5.00</span>
+                                    <span className="font-black text-emerald-400 font-mono text-[10.5px]">{courseSatisfactionIndex.toFixed(2)} / 5.00</span>
                                   </div>
-                                  <div className="h-3.5 bg-slate-100 rounded-full relative overflow-hidden">
+                                  <div className="h-4 bg-slate-900 rounded-lg relative overflow-visible shadow-[inset_0_2px_4px_rgba(0,0,0,0.8)] border border-slate-800/40">
                                     <div 
-                                      className="h-full bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-full transition-all duration-500" 
+                                      className="h-full bg-gradient-to-r from-emerald-600 via-emerald-400 to-emerald-300 rounded-l-lg transition-all duration-500 border-t border-white/30 border-b border-b-emerald-800 shadow-[0_0_12px_rgba(16,185,129,0.7)]" 
                                       style={{ width: `${(courseSatisfactionIndex / 5) * 100}%` }}
                                     />
                                     {/* Overall Class Average Reference Line */}
                                     <div 
-                                      className="absolute top-0 bottom-0 w-0.5 bg-slate-950 border-l border-white"
+                                      className="absolute top-0 bottom-0 w-1 bg-amber-400 shadow-[0_0_8px_#f59e0b] border-x border-amber-200 z-10"
                                       style={{ left: `${(overallAverage / 5) * 100}%` }}
                                       title={`Média Geral da Turma: ${overallAverage.toFixed(2)}`}
                                     />
@@ -1342,130 +1344,205 @@ function RelatorioAvaliacaoAdminContent() {
                                 </div>
 
                                 {/* Category 2: Instrutor */}
-                                <div className="space-y-1">
+                                <div className="space-y-1.5">
                                   <div className="flex justify-between items-center text-xs">
-                                    <span className="font-semibold text-slate-700 flex items-center gap-1.5">
-                                      <span className="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
+                                    <span className="font-extrabold text-slate-300 flex items-center gap-1.5">
+                                      <span className="w-2.5 h-2.5 rounded-full bg-violet-400 shadow-[0_0_6px_#8b5cf6]"></span>
                                       Desempenho do Instrutor
                                     </span>
-                                    <span className="font-black text-slate-900 font-mono">{instructorIndex.toFixed(2)} / 5.00</span>
+                                    <span className="font-black text-violet-400 font-mono text-[10.5px]">{instructorIndex.toFixed(2)} / 5.00</span>
                                   </div>
-                                  <div className="h-3.5 bg-slate-100 rounded-full relative overflow-hidden">
+                                  <div className="h-4 bg-slate-900 rounded-lg relative overflow-visible shadow-[inset_0_2px_4px_rgba(0,0,0,0.8)] border border-slate-800/40">
                                     <div 
-                                      className="h-full bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-full transition-all duration-500" 
+                                      className="h-full bg-gradient-to-r from-violet-600 via-fuchsia-400 to-purple-300 rounded-l-lg transition-all duration-500 border-t border-white/30 border-b border-b-violet-850 shadow-[0_0_12px_rgba(168,85,247,0.7)]" 
                                       style={{ width: `${(instructorIndex / 5) * 100}%` }}
                                     />
                                     <div 
-                                      className="absolute top-0 bottom-0 w-0.5 bg-slate-950 border-l border-white"
+                                      className="absolute top-0 bottom-0 w-1 bg-amber-400 shadow-[0_0_8px_#f59e0b] border-x border-amber-200 z-10"
                                       style={{ left: `${(overallAverage / 5) * 100}%` }}
                                     />
                                   </div>
                                 </div>
 
                                 {/* Category 3: Autoavaliação */}
-                                <div className="space-y-1">
+                                <div className="space-y-1.5">
                                   <div className="flex justify-between items-center text-xs">
-                                    <span className="font-semibold text-slate-700 flex items-center gap-1.5">
-                                      <span className="w-2.5 h-2.5 rounded-full bg-sky-500"></span>
+                                    <span className="font-extrabold text-slate-300 flex items-center gap-1.5">
+                                      <span className="w-2.5 h-2.5 rounded-full bg-sky-400 shadow-[0_0_6px_#0ea5e9]"></span>
                                       Autoavaliação dos Alunos
                                     </span>
-                                    <span className="font-black text-slate-900 font-mono">{studentSelfIndex.toFixed(2)} / 5.00</span>
+                                    <span className="font-black text-sky-400 font-mono text-[10.5px]">{studentSelfIndex.toFixed(2)} / 5.00</span>
                                   </div>
-                                  <div className="h-3.5 bg-slate-100 rounded-full relative overflow-hidden">
+                                  <div className="h-4 bg-slate-900 rounded-lg relative overflow-visible shadow-[inset_0_2px_4px_rgba(0,0,0,0.8)] border border-slate-800/40">
                                     <div 
-                                      className="h-full bg-gradient-to-r from-sky-500 to-sky-600 rounded-full transition-all duration-500" 
+                                      className="h-full bg-gradient-to-r from-sky-600 via-cyan-400 to-cyan-300 rounded-l-lg transition-all duration-500 border-t border-white/30 border-b border-b-sky-850 shadow-[0_0_12px_rgba(6,182,212,0.7)]" 
                                       style={{ width: `${(studentSelfIndex / 5) * 100}%` }}
                                     />
                                     <div 
-                                      className="absolute top-0 bottom-0 w-0.5 bg-slate-950 border-l border-white"
+                                      className="absolute top-0 bottom-0 w-1 bg-amber-400 shadow-[0_0_8px_#f59e0b] border-x border-amber-200 z-10"
                                       style={{ left: `${(overallAverage / 5) * 100}%` }}
                                     />
                                   </div>
                                 </div>
 
                                 {/* Category 4: Infraestrutura */}
-                                <div className="space-y-1">
+                                <div className="space-y-1.5">
                                   <div className="flex justify-between items-center text-xs">
-                                    <span className="font-semibold text-slate-700 flex items-center gap-1.5">
-                                      <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                                    <span className="font-extrabold text-slate-300 flex items-center gap-1.5">
+                                      <span className="w-2.5 h-2.5 rounded-full bg-pink-400 shadow-[0_0_6px_#ec4899]"></span>
                                       Infraestrutura e Recursos
                                     </span>
-                                    <span className="font-black text-slate-900 font-mono">{infraIndex.toFixed(2)} / 5.00</span>
+                                    <span className="font-black text-pink-400 font-mono text-[10.5px]">{infraIndex.toFixed(2)} / 5.00</span>
                                   </div>
-                                  <div className="h-3.5 bg-slate-100 rounded-full relative overflow-hidden">
+                                  <div className="h-4 bg-slate-900 rounded-lg relative overflow-visible shadow-[inset_0_2px_4px_rgba(0,0,0,0.8)] border border-slate-800/40">
                                     <div 
-                                      className="h-full bg-gradient-to-r from-rose-500 to-rose-600 rounded-full transition-all duration-500" 
+                                      className="h-full bg-gradient-to-r from-rose-600 via-pink-400 to-rose-300 rounded-l-lg transition-all duration-500 border-t border-white/30 border-b border-b-rose-850 shadow-[0_0_12px_rgba(244,63,94,0.7)]" 
                                       style={{ width: `${(infraIndex / 5) * 100}%` }}
                                     />
                                     <div 
-                                      className="absolute top-0 bottom-0 w-0.5 bg-slate-950 border-l border-white"
+                                      className="absolute top-0 bottom-0 w-1 bg-amber-400 shadow-[0_0_8px_#f59e0b] border-x border-amber-200 z-10"
                                       style={{ left: `${(overallAverage / 5) * 100}%` }}
                                     />
                                   </div>
                                 </div>
                               </div>
 
-                              <div className="flex items-center gap-4 text-[9px] text-slate-500 justify-end pt-2 border-t border-slate-100 font-mono">
-                                <div className="flex items-center gap-1">
-                                  <span className="w-3 h-1 bg-slate-950 inline-block rounded-sm"></span>
-                                  <span>Média Geral da Turma ({overallAverage.toFixed(2)})</span>
+                              <div className="flex items-center gap-4 text-[9px] text-slate-400 justify-end pt-3 border-t border-slate-800/80 font-mono mt-4">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="w-3.5 h-1.5 bg-amber-400 rounded-sm inline-block shadow-[0_0_6px_#f59e0b]"></span>
+                                  <span className="font-black text-amber-400">Média Geral ({overallAverage.toFixed(2)})</span>
                                 </div>
                               </div>
                             </div>
 
                             {/* Chart 2: Perfil de Distribuição de Notas */}
-                            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
-                              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                                <h4 className="text-xs font-black text-slate-755 uppercase tracking-wider font-mono">
-                                  2. Distribuição Geral de Respostas
+                            <div className="bg-slate-950 border border-slate-800 rounded-xl p-5 shadow-[0_0_25px_rgba(168,85,247,0.15)] relative overflow-hidden transition-all duration-300 hover:shadow-[0_0_35px_rgba(168,85,247,0.25)] border-b-[4px] border-r-[2px] border-purple-500/20" id="chart-neon-distribution-card">
+                              <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
+                                <h4 className="text-xs font-black text-purple-400 uppercase tracking-widest font-mono flex items-center gap-1.5">
+                                  <span className="w-2.5 h-2.5 rounded-full bg-purple-400 animate-pulse shadow-[0_0_8px_#a855f7]"></span>
+                                  2. Distribuição Geral
                                 </h4>
-                                <span className="text-[9px] text-slate-400 font-bold uppercase font-mono">{totalResponses} Respotas Registradas</span>
+                                <span className="text-[9px] text-purple-500/80 font-black uppercase font-mono tracking-wider">{totalResponses} respostas</span>
                               </div>
 
                               {/* Vertical bars chart for frequencies */}
-                              <div className="flex items-end justify-between h-40 px-2 pt-4">
+                              <div className="flex items-end justify-between h-40 px-2 pt-5">
                                 {([5, 4, 3, 2, 1] as const).map(score => {
                                   const count = distribution[score];
                                   const pct = totalResponses > 0 ? (count / totalResponses) * 100 : 0;
                                   
-                                  // Determine colors
-                                  const barBg = score === 5 
-                                    ? "bg-emerald-500 hover:bg-emerald-600" 
+                                  // Determine elegant neon gradients and shadows for 3D pillar tubes
+                                  const barStyles = score === 5 
+                                    ? "bg-gradient-to-t from-emerald-600 via-emerald-400 to-emerald-300 border-l border-white/20 border-r border-emerald-850 hover:shadow-[0_0_18px_rgba(16,185,129,0.95)] shadow-[0_0_8px_rgba(16,185,129,0.5)]" 
                                     : score === 4 
-                                      ? "bg-sky-500 hover:bg-sky-600" 
+                                      ? "bg-gradient-to-t from-cyan-600 via-cyan-400 to-cyan-300 border-l border-white/20 border-r border-cyan-850 hover:shadow-[0_0_18px_rgba(6,182,212,0.95)] shadow-[0_0_8px_rgba(6,182,212,0.5)]" 
                                       : score === 3 
-                                        ? "bg-amber-400 hover:bg-amber-500" 
+                                        ? "bg-gradient-to-t from-amber-600 via-amber-400 to-amber-300 border-l border-white/20 border-r border-amber-850 hover:shadow-[0_0_18px_rgba(245,158,11,0.95)] shadow-[0_0_8px_rgba(245,158,11,0.5)]" 
                                         : score === 2 
-                                          ? "bg-orange-400 hover:bg-orange-500" 
-                                          : "bg-rose-500 hover:bg-rose-600";
+                                          ? "bg-gradient-to-t from-orange-600 via-orange-400 to-orange-300 border-l border-white/20 border-r border-orange-850 hover:shadow-[0_0_18px_rgba(249,115,22,0.95)] shadow-[0_0_8px_rgba(249,115,22,0.5)]" 
+                                          : "bg-gradient-to-t from-rose-600 via-rose-400 to-rose-300 border-l border-white/20 border-r border-rose-850 hover:shadow-[0_0_18px_rgba(244,63,94,0.95)] shadow-[0_0_8px_rgba(244,63,94,0.5)]";
 
                                   return (
                                     <div key={score} className="flex flex-col items-center flex-1 group">
-                                      <span className="text-[9px] font-black text-slate-700 opacity-0 group-hover:opacity-100 transition-opacity duration-200 mb-1 font-mono">
+                                      <span className="text-[9.5px] font-black text-slate-100 opacity-0 group-hover:opacity-100 transition-opacity duration-200 mb-1.5 font-mono bg-slate-900 border border-slate-700 px-1.5 py-0.5 rounded shadow-lg">
                                         {count} ({pct.toFixed(0)}%)
                                       </span>
-                                      <div className="w-full max-w-[24px] bg-slate-50 border border-slate-100 rounded-t-md h-24 flex flex-col justify-end overflow-hidden">
+                                      <div className="w-full max-w-[28px] bg-slate-900/90 border border-slate-800/50 rounded-t-lg h-24 flex flex-col justify-end overflow-visible relative shadow-[inset_0_2px_5px_rgba(0,0,0,0.8)]">
                                         <div 
-                                          className={`w-full ${barBg} transition-all duration-500 rounded-t-sm`} 
+                                          className={`w-full ${barStyles} transition-all duration-500 rounded-t-md border-t border-white/30`} 
                                           style={{ height: `${Math.max(4, pct)}%` }}
                                         />
                                       </div>
-                                      <span className="text-[10px] font-black text-slate-800 mt-2 font-mono">
-                                        ★ {score}
+                                      <span className="text-[10px] font-black text-slate-300 mt-2 font-mono flex items-center justify-center gap-0.5 text-center">
+                                        ★{score}
                                       </span>
                                     </div>
                                   );
                                 })}
                               </div>
 
-                              <div className="grid grid-cols-5 text-center text-[9px] text-slate-500 font-bold font-mono pt-2 border-t border-slate-100">
-                                <div>CP (5)</div>
-                                <div>CPa (4)</div>
-                                <div>Neutro (3)</div>
-                                <div>DPa (2)</div>
-                                <div>DP (1)</div>
+                              <div className="grid grid-cols-5 text-center text-[8.5px] text-slate-400 font-extrabold font-mono pt-3 border-t border-slate-800/80 mt-4">
+                                <div className="text-emerald-400">CP (5)</div>
+                                <div className="text-cyan-400">CPa (4)</div>
+                                <div className="text-amber-400">Neutro (3)</div>
+                                <div className="text-orange-400">DPa (2)</div>
+                                <div className="text-rose-400">DP (1)</div>
                               </div>
                             </div>
+
+                            {/* Chart 3: Proporção de Níveis de Satisfação (Pie Chart) */}
+                            {(() => {
+                              const pieData = [
+                                { name: 'Excelente (★5)', value: distribution[5], color: '#10b981' },
+                                { name: 'Bom (★4)', value: distribution[4], color: '#06b6d4' },
+                                { name: 'Regular (★3)', value: distribution[3], color: '#f59e0b' },
+                                { name: 'Insatisfeito (★1-2)', value: (distribution[1] || 0) + (distribution[2] || 0), color: '#ef4444' }
+                              ].filter(item => item.value > 0);
+
+                              return (
+                                <div className="bg-slate-950 border border-slate-800 rounded-xl p-5 shadow-[0_0_25px_rgba(16,185,129,0.15)] relative overflow-hidden transition-all duration-300 hover:shadow-[0_0_35px_rgba(16,185,129,0.25)] border-b-[4px] border-r-[2px] border-emerald-500/20 flex flex-col justify-between" id="chart-pie-satisfaction-card">
+                                  <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
+                                    <h4 className="text-xs font-black text-emerald-400 uppercase tracking-widest font-mono flex items-center gap-1.5">
+                                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#10b981]"></span>
+                                      3. Níveis de Satisfação
+                                    </h4>
+                                    <span className="text-[9px] text-emerald-500/80 font-black uppercase font-mono tracking-wider">PIZZA GLOW</span>
+                                  </div>
+
+                                  <div className="h-40 w-full flex items-center justify-center relative my-1">
+                                    {pieData.length > 0 ? (
+                                      <>
+                                        <ResponsiveContainer width="100%" height="100%">
+                                          <PieChart>
+                                            <Pie
+                                              data={pieData}
+                                              cx="50%"
+                                              cy="50%"
+                                              innerRadius={36}
+                                              outerRadius={56}
+                                              paddingAngle={5}
+                                              dataKey="value"
+                                            >
+                                              {pieData.map((entry, index) => (
+                                                <Cell 
+                                                  key={`cell-${index}`} 
+                                                  fill={entry.color} 
+                                                  style={{ filter: `drop-shadow(0px 0px 6px ${entry.color}ee)` }}
+                                                />
+                                              ))}
+                                            </Pie>
+                                            <Tooltip
+                                              contentStyle={{ backgroundColor: '#090d16', borderRadius: '10px', border: '1px solid #1e293b', fontSize: '10px', fontWeight: 'bold', color: '#f1f5f9' }}
+                                              itemStyle={{ color: '#ffffff' }}
+                                              formatter={(value: any) => [`${value} respostas`, 'Quantidade']}
+                                            />
+                                          </PieChart>
+                                        </ResponsiveContainer>
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                          <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">Total</span>
+                                          <span className="text-sm font-black text-white font-mono">{totalResponses}</span>
+                                        </div>
+                                      </>
+                                    ) : (
+                                      <span className="text-xs text-slate-500 font-mono italic">Sem dados suficientes</span>
+                                    )}
+                                  </div>
+
+                                  <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 text-[9px] font-mono pt-3 border-t border-slate-800/85 mt-2">
+                                    {pieData.map((item) => {
+                                      const pct = totalResponses > 0 ? (item.value / totalResponses) * 100 : 0;
+                                      return (
+                                        <div key={item.name} className="flex items-center gap-1.5">
+                                          <span className="w-2 h-2 rounded-full shrink-0 shadow-[0_0_5px_currentColor]" style={{ backgroundColor: item.color, color: item.color }} />
+                                          <span className="text-slate-300 truncate font-bold">{item.name}:</span>
+                                          <span className="text-white font-black ml-auto">{item.value} ({pct.toFixed(0)}%)</span>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              );
+                            })()}
 
                           </div>
 
