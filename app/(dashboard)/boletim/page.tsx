@@ -388,6 +388,8 @@ export default function BoletimPage() {
     }
   };
 
+  const disciplinasLength = disciplinas?.length || 0;
+
   // Auto-search when turma or year changes
   useEffect(() => {
     if (selectedTurma) {
@@ -396,7 +398,7 @@ export default function BoletimPage() {
       setBoletimData([]);
       setClassStats({ avg: 0, total: 0 });
     }
-  }, [selectedTurma, selectedAno, disciplinas]);
+  }, [selectedTurma, selectedAno, disciplinasLength]);
 
   const getStatus = (final: number | null, freq: number | null) => {
     if (final === null || freq === null) return { 
@@ -614,8 +616,6 @@ export default function BoletimPage() {
                       });
 
                       sortedDisciplines.forEach((disc: any, discIdx: number) => {
-                        const discTopics = (reportData.topics || []).filter((t: any) => t.disciplina_id === disc.id);
-                        
                         // Check if modular unified grades are entered under the first discipline
                         const firstDisc = sortedDisciplines[0];
                         const firstGrade = firstDisc ? reportData.grades.find((g: any) => g.disciplina_id === firstDisc.id) : null;
@@ -664,34 +664,19 @@ export default function BoletimPage() {
                           statusClass = 'text-rose-600 font-extrabold';
                         }
 
-                        if (discTopics.length === 0) {
-                          rows.push({
-                            id: `${disc.id}-empty`,
-                            modulo: `Módulo ${disc.modulo_index || 1}`,
-                            disciplina: disc.nome,
-                            topico: '-',
-                            nota: finalGradeFormatted,
-                            situacao: statusLabel,
-                            statusClass,
-                          });
-                        } else {
-                          discTopics.forEach((topic: any, tIdx: number) => {
-                            rows.push({
-                              id: topic.id,
-                              modulo: `Módulo ${disc.modulo_index || 1}`,
-                              disciplina: disc.nome,
-                              topico: topic.nome,
-                              nota: finalGradeFormatted,
-                              situacao: statusLabel,
-                              statusClass,
-                            });
-                          });
-                        }
+                        rows.push({
+                          id: disc.id,
+                          modulo: `Módulo ${disc.modulo_index || 1}`,
+                          disciplina: disc.nome,
+                          nota: finalGradeFormatted,
+                          situacao: statusLabel,
+                          statusClass,
+                        });
                       });
 
                       const rowsWithSpans: any[] = [];
                       for (let i = 0; i < rows.length; i++) {
-                        const row = { ...rows[i], moduloSpan: 0, disciplinaSpan: 0 };
+                        const row = { ...rows[i], moduloSpan: 0 };
                         
                         if (i === 0 || rows[i].modulo !== rows[i - 1].modulo) {
                           let span = 1;
@@ -699,14 +684,6 @@ export default function BoletimPage() {
                             span++;
                           }
                           row.moduloSpan = span;
-                        }
-                        
-                        if (i === 0 || rows[i].disciplina !== rows[i - 1].disciplina) {
-                          let span = 1;
-                          while (i + span < rows.length && rows[i + span].disciplina === rows[i].disciplina) {
-                            span++;
-                          }
-                          row.disciplinaSpan = span;
                         }
                         
                         rowsWithSpans.push(row);
@@ -720,7 +697,6 @@ export default function BoletimPage() {
                           <tr className="bg-slate-100 print-bg-gray text-[10px] font-extrabold text-slate-600 uppercase tracking-wider border-b border-slate-200">
                             <th className="px-4 py-3 border-r border-slate-200">{language === 'pt' ? 'Módulo' : 'Module'}</th>
                             <th className="px-4 py-3 border-r border-slate-200">{language === 'pt' ? 'Disciplina' : 'Discipline'}</th>
-                            <th className="px-4 py-3 border-r border-slate-200">{language === 'pt' ? 'Tópico' : 'Topic'}</th>
                             <th className="px-3 py-3 text-center border-r border-slate-200 font-mono w-28">{reportT[language as "pt" | "en"].finalGrade}</th>
                             <th className="px-4 py-3 text-right w-36">{reportT[language as "pt" | "en"].situation}</th>
                           </tr>
@@ -728,7 +704,7 @@ export default function BoletimPage() {
                         <tbody className="text-xs text-left">
                           {reportData.disciplines.length === 0 ? (
                             <tr>
-                              <td colSpan={5} className="text-center py-6 text-slate-400 font-bold bg-white">
+                              <td colSpan={4} className="text-center py-6 text-slate-400 font-bold bg-white">
                                 {language === 'pt' ? 'Nenhuma disciplina cadastrada.' : 'No disciplines registered.'}
                               </td>
                             </tr>
@@ -741,24 +717,15 @@ export default function BoletimPage() {
                                       {row.modulo}
                                     </td>
                                   )}
-                                  {row.disciplinaSpan > 0 && (
-                                    <td rowSpan={row.disciplinaSpan} className="px-4 py-2.5 font-extrabold text-slate-800 border-r border-slate-200 text-left bg-white align-middle">
-                                      {row.disciplina}
-                                    </td>
-                                  )}
-                                  <td className="px-4 py-2.5 text-slate-600 border-r border-slate-200 text-left bg-white font-medium">
-                                    {row.topico}
+                                  <td className="px-4 py-2.5 font-extrabold text-slate-800 border-r border-slate-200 text-left bg-white align-middle">
+                                    {row.disciplina}
                                   </td>
-                                  {row.disciplinaSpan > 0 && (
-                                    <td rowSpan={row.disciplinaSpan} className="px-3 py-2.5 text-center font-black font-mono border-r border-slate-200 text-slate-900 bg-white align-middle animate-fade-in">
-                                      {row.nota}
-                                    </td>
-                                  )}
-                                  {row.disciplinaSpan > 0 && (
-                                    <td rowSpan={row.disciplinaSpan} className={cn("px-4 py-2.5 text-right font-black bg-white align-middle", row.statusClass)}>
-                                      {row.situacao}
-                                    </td>
-                                  )}
+                                  <td className="px-3 py-2.5 text-center font-black font-mono border-r border-slate-200 text-slate-900 bg-white align-middle animate-fade-in">
+                                    {row.nota}
+                                  </td>
+                                  <td className={cn("px-4 py-2.5 text-right font-black bg-white align-middle", row.statusClass)}>
+                                    {row.situacao}
+                                  </td>
                                 </tr>
                               );
                             })
@@ -1379,15 +1346,13 @@ export default function BoletimPage() {
                                   {(() => {
                                     const reportRows = (() => {
                                       const rows: any[] = [];
-                                                                         const sortedDisciplines = [...reportData.disciplines].sort((a: any, b: any) => {
+                                      const sortedDisciplines = [...reportData.disciplines].sort((a: any, b: any) => {
                                         const mDiff = (a.modulo_index || 1) - (b.modulo_index || 1);
                                         if (mDiff !== 0) return mDiff;
                                         return a.nome.localeCompare(b.nome);
                                       });
  
                                       sortedDisciplines.forEach((disc: any, discIdx: number) => {
-                                        const discTopics = (reportData.topics || []).filter((t: any) => t.disciplina_id === disc.id);
-                                        
                                         // Check if modular unified grades are entered under the first discipline
                                         const firstDisc = sortedDisciplines[0];
                                         const firstGrade = firstDisc ? reportData.grades.find((g: any) => g.disciplina_id === firstDisc.id) : null;
@@ -1436,34 +1401,19 @@ export default function BoletimPage() {
                                           statusClass = 'text-rose-600 font-extrabold';
                                         }
 
-                                        if (discTopics.length === 0) {
-                                          rows.push({
-                                            id: `${disc.id}-empty`,
-                                            modulo: `Módulo ${disc.modulo_index || 1}`,
-                                            disciplina: disc.nome,
-                                            topico: '-',
-                                            nota: finalGradeFormatted,
-                                            situacao: statusLabel,
-                                            statusClass,
-                                          });
-                                        } else {
-                                          discTopics.forEach((topic: any, tIdx: number) => {
-                                            rows.push({
-                                              id: topic.id,
-                                              modulo: `Módulo ${disc.modulo_index || 1}`,
-                                              disciplina: disc.nome,
-                                              topico: topic.nome,
-                                              nota: finalGradeFormatted,
-                                              situacao: statusLabel,
-                                              statusClass,
-                                            });
-                                          });
-                                        }
+                                        rows.push({
+                                          id: disc.id,
+                                          modulo: `Módulo ${disc.modulo_index || 1}`,
+                                          disciplina: disc.nome,
+                                          nota: finalGradeFormatted,
+                                          situacao: statusLabel,
+                                          statusClass,
+                                        });
                                       });
 
                                       const rowsWithSpans: any[] = [];
                                       for (let i = 0; i < rows.length; i++) {
-                                        const row = { ...rows[i], moduloSpan: 0, disciplinaSpan: 0 };
+                                        const row = { ...rows[i], moduloSpan: 0 };
                                         
                                         if (i === 0 || rows[i].modulo !== rows[i - 1].modulo) {
                                           let span = 1;
@@ -1471,14 +1421,6 @@ export default function BoletimPage() {
                                             span++;
                                           }
                                           row.moduloSpan = span;
-                                        }
-                                        
-                                        if (i === 0 || rows[i].disciplina !== rows[i - 1].disciplina) {
-                                          let span = 1;
-                                          while (i + span < rows.length && rows[i + span].disciplina === rows[i].disciplina) {
-                                            span++;
-                                          }
-                                          row.disciplinaSpan = span;
                                         }
                                         
                                         rowsWithSpans.push(row);
@@ -1492,7 +1434,6 @@ export default function BoletimPage() {
                                           <tr className="bg-slate-100 print-bg-gray text-[10px] font-extrabold text-slate-600 uppercase tracking-wider border-b border-slate-200">
                                             <th className="px-4 py-3 border-r border-slate-200">{language === 'pt' ? 'Módulo' : 'Module'}</th>
                                             <th className="px-4 py-3 border-r border-slate-200">{language === 'pt' ? 'Disciplina' : 'Discipline'}</th>
-                                            <th className="px-4 py-3 border-r border-slate-200">{language === 'pt' ? 'Tópico' : 'Topic'}</th>
                                             <th className="px-3 py-3 text-center border-r border-slate-200 font-mono w-28">{reportT[language as "pt" | "en"].finalGrade}</th>
                                             <th className="px-4 py-3 text-right w-36">{reportT[language as "pt" | "en"].situation}</th>
                                           </tr>
@@ -1500,7 +1441,7 @@ export default function BoletimPage() {
                                         <tbody className="text-xs text-left">
                                           {reportData.disciplines.length === 0 ? (
                                             <tr>
-                                              <td colSpan={5} className="text-center py-6 text-slate-400 font-bold bg-white">
+                                              <td colSpan={4} className="text-center py-6 text-slate-400 font-bold bg-white">
                                                 {language === 'pt' ? 'Nenhuma disciplina cadastrada.' : 'No disciplines registered.'}
                                               </td>
                                             </tr>
@@ -1513,24 +1454,15 @@ export default function BoletimPage() {
                                                       {row.modulo}
                                                     </td>
                                                   )}
-                                                  {row.disciplinaSpan > 0 && (
-                                                    <td rowSpan={row.disciplinaSpan} className="px-4 py-2.5 font-extrabold text-slate-800 border-r border-slate-200 text-left bg-white align-middle">
-                                                      {row.disciplina}
-                                                    </td>
-                                                  )}
-                                                  <td className="px-4 py-2.5 text-slate-600 border-r border-slate-200 text-left bg-white font-medium">
-                                                    {row.topico}
+                                                  <td className="px-4 py-2.5 font-extrabold text-slate-800 border-r border-slate-200 text-left bg-white align-middle">
+                                                    {row.disciplina}
                                                   </td>
-                                                  {row.disciplinaSpan > 0 && (
-                                                    <td rowSpan={row.disciplinaSpan} className="px-3 py-2.5 text-center font-black font-mono border-r border-slate-200 text-slate-900 bg-white align-middle">
-                                                      {row.nota}
-                                                    </td>
-                                                  )}
-                                                  {row.disciplinaSpan > 0 && (
-                                                    <td rowSpan={row.disciplinaSpan} className={cn("px-4 py-2.5 text-right font-black bg-white align-middle", row.statusClass)}>
-                                                      {row.situacao}
-                                                    </td>
-                                                  )}
+                                                  <td className="px-3 py-2.5 text-center font-black font-mono border-r border-slate-200 text-slate-900 bg-white align-middle">
+                                                    {row.nota}
+                                                  </td>
+                                                  <td className={cn("px-4 py-2.5 text-right font-black bg-white align-middle", row.statusClass)}>
+                                                    {row.situacao}
+                                                  </td>
                                                 </tr>
                                               );
                                             })
