@@ -487,6 +487,7 @@ function TurmasContent() {
       status: 'ativa',
       data_inicio: '',
       data_fim: '',
+      data_postergacao: '',
       internacional: activeCategory === 'exterior',
       localizacao: ''
     });
@@ -864,6 +865,7 @@ function TurmasContent() {
         ativa: (currentTurma.status || 'ativa') === 'ativa',
         data_inicio: currentTurma.internacional ? null : (typeof currentTurma.data_inicio === 'string' ? currentTurma.data_inicio.trim() || null : null),
         data_fim: currentTurma.internacional ? null : (typeof currentTurma.data_fim === 'string' ? currentTurma.data_fim.trim() || null : null),
+        data_postergacao: currentTurma.internacional ? null : (typeof currentTurma.data_postergacao === 'string' ? currentTurma.data_postergacao.trim() || null : null),
         internacional: currentTurma.internacional || false,
         localizacao: currentTurma.localizacao || '',
         grupo_responsavel: targetGroup
@@ -1504,6 +1506,23 @@ function TurmasContent() {
                     onChange={(e) => setCurrentTurma({ ...currentTurma, data_fim: e.target.value })}
                     className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-sm font-bold text-slate-800 shadow-sm"
                   />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">
+                    {language === 'pt' ? 'Data de Postergação (Opcional)' : 'Postponement Date (Optional)'}
+                  </label>
+                  <input
+                    type="date"
+                    value={currentTurma?.data_postergacao || ''}
+                    onChange={(e) => setCurrentTurma({ ...currentTurma, data_postergacao: e.target.value || null })}
+                    className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-sm font-bold text-slate-800 shadow-sm"
+                  />
+                  <p className="text-[10px] text-slate-400 mt-1 font-medium leading-normal">
+                    {language === 'pt' 
+                      ? 'Adia o encerramento do curso, o acesso de alunos e o preenchimento do questionário pós-curso.' 
+                      : 'Extends class closure, student access and final survey completion.'}
+                  </p>
                 </div>
               </>
             )}

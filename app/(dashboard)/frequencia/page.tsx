@@ -88,12 +88,13 @@ export default function FrequenciaPage() {
 
   const getFilteredDays = useCallback((days: Date[]) => {
     if (!activeTurma) return days;
+    const effectiveEndDate = activeTurma.data_postergacao || activeTurma.data_fim;
     return days.filter(day => {
       const dayStr = format(day, 'yyyy-MM-dd');
       if (activeTurma.data_inicio && dayStr < activeTurma.data_inicio) {
         return false;
       }
-      if (activeTurma.data_fim && dayStr > activeTurma.data_fim) {
+      if (effectiveEndDate && dayStr > effectiveEndDate) {
         return false;
       }
       return true;
@@ -102,6 +103,7 @@ export default function FrequenciaPage() {
 
   const getFilteredMonths = useCallback((months: Date[]) => {
     if (!activeTurma) return months;
+    const effectiveEndDate = activeTurma.data_postergacao || activeTurma.data_fim;
     return months.filter(month => {
       const monthStartStr = format(startOfMonth(month), 'yyyy-MM-dd');
       const monthEndStr = format(endOfMonth(month), 'yyyy-MM-dd');
@@ -109,7 +111,7 @@ export default function FrequenciaPage() {
       if (activeTurma.data_inicio && monthEndStr < activeTurma.data_inicio) {
         return false;
       }
-      if (activeTurma.data_fim && monthStartStr > activeTurma.data_fim) {
+      if (effectiveEndDate && monthStartStr > effectiveEndDate) {
         return false;
       }
       return true;
@@ -136,7 +138,8 @@ export default function FrequenciaPage() {
 
   const canNavigateRight = useCallback(() => {
     if (!activeTurma) return true;
-    if (!activeTurma.data_fim) return true;
+    const effectiveEndDate = activeTurma.data_postergacao || activeTurma.data_fim;
+    if (!effectiveEndDate) return true;
     
     let targetDate: Date;
     if (mapGranularity === 'week') targetDate = addWeeks(currentMapDate, 1);
@@ -149,7 +152,7 @@ export default function FrequenciaPage() {
     else targetStart = startOfMonth(targetDate);
     
     const targetStartStr = format(targetStart, 'yyyy-MM-dd');
-    return targetStartStr <= activeTurma.data_fim;
+    return targetStartStr <= effectiveEndDate;
   }, [activeTurma, currentMapDate, mapGranularity]);
 
   const fetchAttendance = useCallback(async () => {
@@ -248,13 +251,16 @@ export default function FrequenciaPage() {
 
     const todayStr = format(new Date(), 'yyyy-MM-dd');
     const hasStart = !!activeTurma.data_inicio;
-    const hasEnd = !!activeTurma.data_fim;
+    
+    // Fallback to data_fim if data_postergacao is not set
+    const effectiveEndDate = activeTurma.data_postergacao || activeTurma.data_fim;
+    const hasEnd = !!effectiveEndDate;
 
     let isExpired = false;
     let isBefore = false;
 
     if (hasEnd) {
-      if (todayStr > activeTurma.data_fim || selectedDate > activeTurma.data_fim) {
+      if (todayStr > effectiveEndDate || selectedDate > effectiveEndDate) {
         isExpired = true;
       }
     }
@@ -269,7 +275,7 @@ export default function FrequenciaPage() {
       isExpired,
       isBefore,
       data_inicio: activeTurma.data_inicio,
-      data_fim: activeTurma.data_fim
+      data_fim: effectiveEndDate
     };
   }, [selectedTurma, turmas, selectedDate]);
 
@@ -451,7 +457,7 @@ export default function FrequenciaPage() {
       }
       if (cursosData) setCursos(filteredCuts.filter((c: any) => !c.internacional));
 
-      const { data: turmasData } = await supabase.from('turmas').select('id, nome, curso_id, internacional, data_inicio, data_fim, grupo_responsavel').is('deleted_at', null).order('nome');
+      const { data: turmasData } = await supabase.from('turmas').select('id, nome, curso_id, internacional, data_inicio, data_fim, data_postergacao, grupo_responsavel').is('deleted_at', null).order('nome');
       let filteredCls = turmasData || [];
       if (profile?.role === 'instrutor' && profile?.grupo_responsavel) {
         if (profile.grupo_responsavel === 'MAN') {

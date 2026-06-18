@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
     // Verifica se a turma correspondente realmente existe e se está "ATIVA"
     const { data: turma, error: turmaError } = await supabaseAdmin
       .from('turmas')
-      .select('id, nome, status')
+      .select('id, nome, status, data_fim, data_postergacao')
       .eq('id', student.turma_id)
       .maybeSingle();
 
@@ -85,17 +85,27 @@ export async function POST(req: NextRequest) {
       }, { status: 403 });
     }
 
-    // BLOQUEIO EXCLUSIVO PELO STATUS DA TURMA
-    if (turma.status === 'concluída') {
-      return NextResponse.json({ 
-        error: 'Seu acesso foi encerrado porque sua turma foi concluída. Em caso de dúvidas, procure a administração.' 
-      }, { status: 403 });
-    }
-
     if (turma.status === 'cancelada') {
       return NextResponse.json({ 
         error: 'Seu acesso foi encerrado porque sua turma foi cancelada. Em caso de dúvidas, procure a administração.' 
       }, { status: 403 });
+    }
+
+    // BLOQUEIO EXCLUSIVO PELO STATUS DA TURMA (considerando a data de postergação/fim)
+    if (turma.status === 'concluída') {
+      const effectiveEndDate = turma.data_postergacao || turma.data_fim;
+      if (effectiveEndDate) {
+        const todayStr = new Date().toISOString().split('T')[0];
+        if (todayStr > effectiveEndDate) {
+          return NextResponse.json({ 
+            error: 'Seu acesso foi encerrado porque o período regular e de postergação desta turma já se encerrou.' 
+          }, { status: 403 });
+        }
+      } else {
+        return NextResponse.json({ 
+          error: 'Seu acesso foi encerrado porque sua turma foi concluída. Em caso de dúvidas, procure a administração.' 
+        }, { status: 403 });
+      }
     }
 
     // Generate shadow email and deterministic password

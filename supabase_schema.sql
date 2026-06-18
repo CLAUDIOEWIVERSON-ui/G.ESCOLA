@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS public.turmas (
   ativa BOOLEAN DEFAULT TRUE,
   data_inicio DATE,
   data_fim DATE,
+  data_postergacao DATE,
   internacional BOOLEAN DEFAULT FALSE,
   localizacao TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),

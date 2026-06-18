@@ -124,14 +124,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             try {
               const { data: turma } = await supabase
                 .from('turmas')
-                .select('id, status')
+                .select('id, status, data_fim, data_postergacao')
                 .eq('id', profile.turma_id)
                 .maybeSingle();
 
-              if (turma && (turma.status === 'concluída' || turma.status === 'cancelada')) {
-                // Auto sign-out active session instantly
-                await supabase.auth.signOut();
-                router.push('/login?blocked=true');
+              if (turma) {
+                if (turma.status === 'cancelada') {
+                  // Auto sign-out active session instantly
+                  await supabase.auth.signOut();
+                  router.push('/login?blocked=true');
+                } else if (turma.status === 'concluída') {
+                  const effectiveEndDate = turma.data_postergacao || turma.data_fim;
+                  if (effectiveEndDate) {
+                    const todayStr = new Date().toISOString().split('T')[0];
+                    if (todayStr > effectiveEndDate) {
+                      await supabase.auth.signOut();
+                      router.push('/login?blocked=true');
+                    }
+                  } else {
+                    // Fallback to instant logout if no date limit is found
+                    await supabase.auth.signOut();
+                    router.push('/login?blocked=true');
+                  }
+                }
               }
             } catch (err) {
               console.error('Error dynamic verifying student class status:', err);

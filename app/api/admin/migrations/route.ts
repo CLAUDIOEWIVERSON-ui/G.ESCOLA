@@ -385,6 +385,21 @@ export async function GET() {
             .limit(1);
           return error;
         }
+      },
+      {
+        key: 'turmas_data_postergacao',
+        tableName: 'turmas',
+        columnName: 'data_postergacao',
+        fileName: '45_add_data_postergacao_to_turmas.sql',
+        description: 'Coluna data_postergacao na tabela de turmas para prorrogar/postergar o encerramento da turma, permitindo acesso de alunos e envio de avaliações após o fim regular do curso.',
+        isColumn: true,
+        checkFn: async () => {
+          const { error } = await supabaseAdmin
+            .from('turmas')
+            .select('data_postergacao')
+            .limit(1);
+          return error;
+        }
       }
     ];
 

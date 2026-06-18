@@ -96,6 +96,17 @@ function AvaliacaoAlunoForm() {
   const [reportData, setReportData] = useState<any | null>(null);
   const [loadingReport, setLoadingReport] = useState(false);
 
+  // Check if class period is over (considering postponement date)
+  const isPostponedExpired = useMemo(() => {
+    if (!studentDetails?.turma) return false;
+    const turmaObj = studentDetails.turma;
+    const effectiveEndDate = turmaObj.data_postergacao || turmaObj.data_fim;
+    if (!effectiveEndDate) return false;
+
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    return todayStr > effectiveEndDate;
+  }, [studentDetails]);
+
   const fetchClassMessages = async (tId: string, group: string) => {
     try {
       setLoadingMessages(true);
@@ -308,6 +319,7 @@ function AvaliacaoAlunoForm() {
           nome,
           instrutor,
           data_fim,
+          data_postergacao,
           curso_id,
           grupo_responsavel,
           curso:cursos(
@@ -378,6 +390,7 @@ function AvaliacaoAlunoForm() {
           nome: classObj.nome,
           instrutor: classObj.instrutor || "Não cadastrado",
           data_fim: classObj.data_fim,
+          data_postergacao: classObj.data_postergacao,
           grupo_responsavel: classObj.grupo_responsavel,
           curso: {
             id: classObj.curso?.id || classObj.curso_id,
@@ -413,6 +426,7 @@ function AvaliacaoAlunoForm() {
             nome,
             instrutor,
             data_fim,
+            data_postergacao,
             grupo_responsavel,
             curso:cursos(
               id,
@@ -758,6 +772,22 @@ function AvaliacaoAlunoForm() {
         <h2 className="text-xl font-bold text-slate-900 mb-2 font-mono">Estudante Não Encontrado</h2>
         <p className="text-slate-600 text-sm mb-6">
           Não conseguimos carregar seus dados acadêmicos ou você não está formalmente vinculado a nenhuma turma. Por favor, entre em contato com a administração.
+        </p>
+      </div>
+    );
+  }
+
+  // If the user is NOT an administrator, and the class period is expired, block filling
+  if (isPostponedExpired && profile?.role !== 'admin' && !existingSubmission) {
+    return (
+      <div className="max-w-xl mx-auto my-12 p-8 bg-white border border-slate-200 rounded-xl shadow-sm text-center">
+        <AlertCircle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
+        <h2 className="text-xl font-bold text-slate-900 mb-2 font-mono uppercase tracking-wide">Período de Avaliação Encerrado</h2>
+        <p className="text-slate-600 text-sm mb-4 leading-relaxed">
+          O prazo limite para o preenchimento do questionário pós-curso desta turma já se encerrou.
+        </p>
+        <p className="text-xs text-slate-400 font-mono">
+          Se necessário, solicite um adiamento / postergação com a coordenação de curso.
         </p>
       </div>
     );
