@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase/client';
 import { useTurmas, useCursos } from '@/hooks/useCachedData';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
-import { Plus, Search, Layers as LayersIcon, Library, Calendar, Clock, MapPin, Pencil, Trash2, Loader2, CheckCircle2, RefreshCcw, Users, Mail, Phone, Building, Camera, MessageCircle, XCircle, FileText, X, GraduationCap, School, ChevronRight, Printer, Monitor, Globe } from 'lucide-react';
+import { Plus, Search, Layers as LayersIcon, Library, Calendar, Clock, MapPin, Pencil, Trash2, Loader2, CheckCircle2, RefreshCcw, Users, Mail, Phone, Building, Camera, MessageCircle, XCircle, FileText, X, GraduationCap, School, ChevronRight, Printer, Monitor, Globe, Anchor, Swords } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import Modal from '@/components/Modal';
@@ -1061,6 +1061,7 @@ function TurmasContent() {
           ))
         ) : filteredTurmas.length > 0 ? (
           filteredTurmas.map((turma: any, i: number) => {
+            const finalGroup = turma.grupo_responsavel || turma.curso?.grupo_responsavel;
             const cardStyle = getCardStyleForItem({
               categoria: turma.categoria,
               internacional: turma.internacional,
@@ -1120,18 +1121,36 @@ function TurmasContent() {
                         {t.courses.international}
                       </span>
                     )}
-                    {turma.grupo_responsavel && (
+                    {finalGroup && (
                       <span className={cn(
-                        "flex items-center gap-1.5 text-[8px] font-black px-2.5 py-1 rounded-md uppercase tracking-wider border",
+                        "flex items-center gap-1 text-[8px] font-black px-2.5 py-1 rounded-md uppercase tracking-wider border",
                         cardStyle.badge
                       )}>
-                        Grupo: {turma.grupo_responsavel}
+                        {finalGroup === 'GAT' && <Swords size={9} />}
+                        {finalGroup === 'MAN' && <Anchor size={9} />}
+                        Grupo: {finalGroup}
                       </span>
                     )}
                   </div>
                 </div>
 
               <div className="flex-1 min-w-0 mb-6">
+                {finalGroup === 'GAT' && (
+                  <div className="flex items-center gap-1.5 mb-2.5 bg-rose-500/10 text-rose-700 border border-rose-500/25 px-2.5 py-1 rounded-xl text-[10px] font-black tracking-wider uppercase w-fit shadow-[0_0_12px_rgba(244,63,94,0.15)] select-none" id={`turma-emblem-gat-${turma.id}`}>
+                    <span className="flex items-center justify-center bg-rose-600 text-white rounded-lg p-1">
+                      <Swords size={11} className="text-white" />
+                    </span>
+                    <span className="font-sans">GAT • FUZILEIRO NAVAL 🪖</span>
+                  </div>
+                )}
+                {finalGroup === 'MAN' && (
+                  <div className="flex items-center gap-1.5 mb-2.5 bg-cyan-500/10 text-cyan-800 border border-cyan-500/25 px-2.5 py-1 rounded-xl text-[10px] font-black tracking-wider uppercase w-fit shadow-[0_0_12px_rgba(6,182,212,0.15)] select-none" id={`turma-emblem-man-${turma.id}`}>
+                    <span className="flex items-center justify-center bg-cyan-600 text-white rounded-lg p-1">
+                      <Anchor size={11} className="text-white" />
+                    </span>
+                    <span className="font-sans">MAN ⚓</span>
+                  </div>
+                )}
                 <div className="flex flex-wrap items-center gap-2 mb-1">
                   <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] truncate">{turma.curso?.nome}</p>
                   {turma.curso?.documento_criacao && (

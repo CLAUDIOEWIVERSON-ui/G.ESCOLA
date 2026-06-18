@@ -20,7 +20,10 @@ import {
   GraduationCap,
   Clock,
   BookMarked,
-  BookOpen
+  BookOpen,
+  Anchor,
+  Shield,
+  Swords
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useForm } from 'react-hook-form';
@@ -628,6 +631,23 @@ export default function CursosPage() {
                   )} />
 
                   <div>
+                    {curso.grupo_responsavel === 'GAT' && (
+                      <div className="flex items-center gap-1.5 mb-2.5 bg-rose-500/10 text-rose-700 border border-rose-500/25 px-2.5 py-1 rounded-xl text-[10px] font-black tracking-wider uppercase w-fit shadow-[0_0_12px_rgba(244,63,94,0.15)] select-none" id={`curso-emblem-gat-${curso.id}`}>
+                        <span className="flex items-center justify-center bg-rose-600 text-white rounded-lg p-1">
+                          <Swords size={11} className="text-white" />
+                        </span>
+                        <span className="font-sans">GAT • FUZILEIRO NAVAL 🪖</span>
+                      </div>
+                    )}
+                    {curso.grupo_responsavel === 'MAN' && (
+                      <div className="flex items-center gap-1.5 mb-2.5 bg-cyan-500/10 text-cyan-800 border border-cyan-500/25 px-2.5 py-1 rounded-xl text-[10px] font-black tracking-wider uppercase w-fit shadow-[0_0_12px_rgba(6,182,212,0.15)] select-none" id={`curso-emblem-man-${curso.id}`}>
+                        <span className="flex items-center justify-center bg-cyan-600 text-white rounded-lg p-1">
+                          <Anchor size={11} className="text-white" />
+                        </span>
+                        <span className="font-sans">MAN ⚓</span>
+                      </div>
+                    )}
+
                     <div className="flex items-start justify-between gap-3 mb-3 mt-1">
                       <h3 className="font-bold text-slate-900 text-base sm:text-lg tracking-tight leading-snug line-clamp-2">
                         {curso.nome}
@@ -681,11 +701,13 @@ export default function CursosPage() {
                           {curso.localizacao}
                         </span>
                       )}
-                      {curso.grupo_responsavel && (
+                       {curso.grupo_responsavel && (
                         <span className={cn(
-                          "px-2 py-0.5 text-[9px] font-black uppercase rounded-md border",
+                          "px-2 py-0.5 text-[9px] font-black uppercase rounded-md border flex items-center gap-1",
                           groupStyle ? groupStyle.badge : "bg-indigo-50 text-indigo-700 border-indigo-100"
                         )}>
+                          {curso.grupo_responsavel === 'GAT' && <Swords size={9} />}
+                          {curso.grupo_responsavel === 'MAN' && <Anchor size={9} />}
                           Grupo: {curso.grupo_responsavel}
                         </span>
                       )}
