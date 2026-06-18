@@ -130,7 +130,6 @@ export default function BoletimPage() {
   
   const [selectedCurso, setSelectedCurso] = useState('');
   const [selectedTurma, setSelectedTurma] = useState('');
-  const [selectedDisciplina, setSelectedDisciplina] = useState('');
   const [selectedAno, setSelectedAno] = useState<string>('');
   const [courseModules, setCourseModules] = useState(4);
   
@@ -141,6 +140,7 @@ export default function BoletimPage() {
   const [selectedStudentForReport, setSelectedStudentForReport] = useState<string | null>(null);
   const [loadingReport, setLoadingReport] = useState(false);
   const [reportData, setReportData] = useState<any | null>(null);
+  const [pendingDetailsStudent, setPendingDetailsStudent] = useState<any | null>(null);
 
   useEffect(() => {
     if (isNifStudent && profile?.student_id) {
@@ -266,8 +266,9 @@ export default function BoletimPage() {
     fetchReportData();
   }, [selectedStudentForReport, selectedTurma, language]);
 
-  const handleSearch = async () => {
-    if (!selectedTurma || !selectedDisciplina) {
+  const handleSearch = async (overrideTurmaId?: string) => {
+    const activeTurmaId = overrideTurmaId || selectedTurma;
+    if (!activeTurmaId) {
       toast.warning(t.common.selectRequired);
       return;
     }
@@ -275,7 +276,7 @@ export default function BoletimPage() {
     setLoading(true);
     try {
       // Find course modules count
-      const turma = turmas.find((t: any) => t.id === selectedTurma);
+      const turma = turmas.find((t: any) => t.id === activeTurmaId);
       if (turma?.curso?.qtd_modulos) {
         setCourseModules(Math.min(turma.curso.qtd_modulos, 20));
       } else if (turma?.curso_id) {
@@ -285,11 +286,15 @@ export default function BoletimPage() {
         }
       }
 
+      const courseId = turma?.curso_id;
+      const turmaDisciplines = (disciplinas || []).filter((d: any) => d.curso_id === courseId && !d.deleted_at);
+      const firstDiscId = turmaDisciplines[0]?.id;
+
       // 1. Fetch all students currently enrolled in this class and not deleted
       const { data: students, error: studentsError } = await supabase
         .from('alunos')
         .select('id, nome, matricula, foto_url, turma_id, status, posto_graduacao')
-        .eq('turma_id', selectedTurma)
+        .eq('turma_id', activeTurmaId)
         .is('deleted_at', null)
         .order('nome');
 
@@ -299,8 +304,11 @@ export default function BoletimPage() {
       let gradesQuery = supabase
         .from('notas')
         .select('*')
-        .eq('turma_id', selectedTurma)
-        .eq('disciplina_id', selectedDisciplina);
+        .eq('turma_id', activeTurmaId);
+
+      if (firstDiscId) {
+        gradesQuery = gradesQuery.eq('disciplina_id', firstDiscId);
+      }
 
       if (selectedAno) {
         gradesQuery = gradesQuery.eq('ano_letivo', parseInt(selectedAno));
@@ -322,8 +330,8 @@ export default function BoletimPage() {
           return {
             id: `temp-${student.id}`,
             aluno_id: student.id,
-            turma_id: selectedTurma,
-            disciplina_id: selectedDisciplina,
+            turma_id: activeTurmaId,
+            disciplina_id: firstDiscId || '',
             nota1: null,
             nota2: null,
             nota3: null,
@@ -380,6 +388,16 @@ export default function BoletimPage() {
     }
   };
 
+  // Auto-search when turma or year changes
+  useEffect(() => {
+    if (selectedTurma) {
+      handleSearch(selectedTurma);
+    } else {
+      setBoletimData([]);
+      setClassStats({ avg: 0, total: 0 });
+    }
+  }, [selectedTurma, selectedAno, disciplinas]);
+
   const getStatus = (final: number | null, freq: number | null) => {
     if (final === null || freq === null) return { 
       label: t.grades.pending, 
@@ -406,6 +424,30 @@ export default function BoletimPage() {
       className: 'bg-red-100 text-red-700',
       icon: XCircle 
     };
+  };
+
+  const getPendingItems = (row: any) => {
+    const items: string[] = [];
+    
+    // Check modules
+    for (let i = 0; i < courseModules; i++) {
+      const notaValue = row[`nota${i + 1}`];
+      if (notaValue === null || notaValue === undefined || notaValue === '') {
+        items.push(language === 'pt' ? `Nota do Módulo ${i + 1}` : `Grade for Module ${i + 1}`);
+      }
+    }
+    
+    // Check final grade
+    if (row.nota_final === null || row.nota_final === undefined) {
+      items.push(language === 'pt' ? `Média Final de Disciplina` : `Final Course Average`);
+    }
+    
+    // Check attendance
+    if (row.frequencia === null || row.frequencia === undefined) {
+      items.push(language === 'pt' ? `Aproveitamento de Frequência` : `Attendance Rate`);
+    }
+    
+    return items;
   };
 
   const filteredTurmas = turmas.filter((t: any) => {
@@ -953,7 +995,7 @@ export default function BoletimPage() {
 
       {/* Filters */}
       <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm print:hidden">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
           <div>
             <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">
               {t.nav.courses}
@@ -963,7 +1005,6 @@ export default function BoletimPage() {
               onChange={(e) => {
                 setSelectedCurso(e.target.value);
                 setSelectedTurma('');
-                setSelectedDisciplina('');
               }}
               className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm appearance-none"
             >
@@ -1002,21 +1043,6 @@ export default function BoletimPage() {
               <option value="">{t.grades.selectClass}</option>
               {filteredTurmas.map((turma: any) => (
                 <option key={turma.id} value={turma.id}>{turma.nome}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">
-              {t.nav.subjects}
-            </label>
-            <select
-              value={selectedDisciplina}
-              onChange={(e) => setSelectedDisciplina(e.target.value)}
-              className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none text-sm appearance-none"
-            >
-              <option value="">{t.grades.selectSubject}</option>
-              {filteredDisciplinas.map((disciplina: any) => (
-                <option key={disciplina.id} value={disciplina.id}>{disciplina.nome}</option>
               ))}
             </select>
           </div>
@@ -1105,7 +1131,7 @@ export default function BoletimPage() {
                               </span>
                            </td>
                            <td className="px-6 py-4 text-right">
-                              <div className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ring-1 ring-inset ring-current/20", status.className)}>
+                              <div className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ring-1 ring-inset ring-current/20", status.className, (row.nota_final === null || row.frequencia === null) && "cursor-pointer hover:scale-105 active:scale-95 transition-all duration-200 shadow-xs")} onClick={() => { if (row.nota_final === null || row.frequencia === null) { setPendingDetailsStudent(row); } }} title={(row.nota_final === null || row.frequencia === null) ? (language === 'pt' ? 'Clique para ver o que está pendente' : 'Click to see what is pending') : undefined}>
                                  <StatusIcon size={12} />
                                  {status.label}</div></td><td className="px-6 py-4 text-right print:hidden"><button onClick={() => setSelectedStudentForReport(row.aluno?.id)} className="inline-flex items-center gap-1.5 bg-slate-50 hover:bg-blue-600 hover:text-white text-slate-600 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer border border-slate-200 hover:border-blue-600 shadow-sm"><FileText size={12} /><span>{language === 'pt' ? 'Relatório' : 'Report'}</span></button></td><td className="hidden border-none" style={{ display: 'none' }}><div>
                               </div>
@@ -1118,6 +1144,73 @@ export default function BoletimPage() {
                </table>
 
                 {/* Modal of Individual Student Report */}
+
+                {/* Modal de Detalhes da Situação Pendente */}
+                <AnimatePresence>
+                  {pendingDetailsStudent && (
+                    <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs z-[110] flex items-center justify-center p-4">
+                      <motion.div 
+                        initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
+                        className="bg-white text-slate-800 border border-slate-200 p-6 rounded-2xl shadow-2xl max-w-sm w-full relative"
+                      >
+                        <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
+                          <div className="flex items-center gap-2">
+                            <AlertCircle className="text-amber-500 animate-pulse" size={18} />
+                            <h3 className="text-xs font-black uppercase tracking-widest text-slate-700">
+                              {language === 'pt' ? 'Requisitos Pendentes' : 'Pending Requirements'}
+                            </h3>
+                          </div>
+                          <button
+                            onClick={() => setPendingDetailsStudent(null)}
+                            className="p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition cursor-pointer"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+
+                        <div className="space-y-4">
+                          <div className="bg-slate-50/50 p-3.5 rounded-xl border border-slate-100">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
+                              {language === 'pt' ? 'Aluno / Candidato' : 'Student / Candidate'}
+                            </p>
+                            <p className="text-sm font-extrabold text-slate-800">
+                              {pendingDetailsStudent.aluno?.nome}
+                            </p>
+                            <p className="text-[10px] font-mono font-bold text-slate-500 mt-0.5">
+                              Matrícula: #{pendingDetailsStudent.aluno?.matricula}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">
+                              {language === 'pt' ? 'O que está pendente para aprovação?' : 'What is pending for approval?'}
+                            </p>
+                            <div className="space-y-1.5">
+                              {getPendingItems(pendingDetailsStudent).map((item, index) => (
+                                <div key={index} className="flex items-center gap-2 px-3 py-2 bg-amber-50/40 rounded-lg border border-amber-100 text-amber-900 text-[11px] font-semibold">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0 animate-pulse" />
+                                  <span>{item}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="mt-5 pt-3 border-t border-slate-100 flex justify-end">
+                          <button
+                            onClick={() => setPendingDetailsStudent(null)}
+                            className="w-full px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition cursor-pointer"
+                          >
+                            {language === 'pt' ? 'Fechar' : 'Close'}
+                          </button>
+                        </div>
+                      </motion.div>
+                    </div>
+                  )}
+                </AnimatePresence>
                 {selectedStudentForReport && (
                   <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 overflow-y-auto">
                     <div className="bg-slate-950 text-slate-100 max-w-4xl w-full rounded-2xl shadow-2xl border border-slate-800/80 flex flex-col max-h-[90vh]">
