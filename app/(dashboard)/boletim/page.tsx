@@ -466,7 +466,7 @@ export default function BoletimPage() {
   if (isNifStudent) {
     return (
       <div className="space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 print:hidden">
           <div>
             <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{t.reportCard.title}</h1>
             <p className="text-slate-500 text-sm">
@@ -936,7 +936,7 @@ export default function BoletimPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 print:hidden">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{t.reportCard.title}</h1>
           <p className="text-slate-500 text-sm">
@@ -1024,7 +1024,7 @@ export default function BoletimPage() {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto w-full">
+      <div className="max-w-4xl mx-auto w-full print:hidden">
         {/* Grades Table */}
         <div>
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden min-h-[400px]">
@@ -1179,8 +1179,8 @@ export default function BoletimPage() {
                   )}
                 </AnimatePresence>
                 {selectedStudentForReport && (
-                  <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 overflow-y-auto">
-                    <div className="bg-slate-950 text-slate-100 max-w-4xl w-full rounded-2xl shadow-2xl border border-slate-800/80 flex flex-col max-h-[90vh]">
+                  <div id="student-report-modal-backdrop" className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 overflow-y-auto">
+                    <div id="student-report-modal-content" className="bg-slate-950 text-slate-100 max-w-4xl w-full rounded-2xl shadow-2xl border border-slate-800/80 flex flex-col max-h-[90vh]">
                       {/* Modal Actions Header */}
                       <div className="p-4 border-b border-slate-800/40 flex items-center justify-between no-print bg-slate-900 rounded-t-2xl">
                         <div className="flex items-center gap-2">
@@ -1226,7 +1226,7 @@ export default function BoletimPage() {
                           </div>
                         ) : reportData ? (
                           <div className="flex flex-col gap-6">
-                            <p className="text-xs text-slate-400 text-center mb-2 leading-relaxed">
+                            <p className="text-xs text-slate-400 text-center mb-2 leading-relaxed print:hidden">
                               {language === 'pt' 
                                 ? 'Esta é uma pré-visualização. Clique no botão de impressão para obter o documento formatado em folha A4 com fundo branco.' 
                                 : 'This is a print preview. Click the print button to generate the formatted document on an A4 sheet with clean background.'}
@@ -1244,7 +1244,12 @@ export default function BoletimPage() {
                                   body * {
                                     visibility: hidden !important;
                                   }
-                                  #student-report-print-area, #student-report-print-area * {
+                                  #student-report-print-area, 
+                                  #student-report-print-area *,
+                                  #student-report-modal-backdrop,
+                                  #student-report-modal-content,
+                                  #student-report-modal-backdrop *,
+                                  #student-report-modal-content * {
                                     visibility: visible !important;
                                   }
                                   #student-report-print-area {
