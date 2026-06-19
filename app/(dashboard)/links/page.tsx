@@ -16,7 +16,9 @@ import {
   ExternalLink,
   HelpCircle,
   FolderOpen,
-  Loader2
+  Loader2,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
@@ -117,10 +119,12 @@ const isUUID = (str: string) => {
 };
 
 export default function LinksUteisPage() {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const { isAdmin } = useUser();
   const [links, setLinks] = useState<LinkItem[]>([]);
   const [search, setSearch] = useState('');
+  const [itemsPerPage, setItemsPerPage] = useState<number>(10);
+  const [currentPage, setCurrentPage] = useState<number>(1);
   const [activeTab, setActiveTab] = useState<string>('all');
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedLink, setSelectedLink] = useState<LinkItem | null>(null);
@@ -548,6 +552,12 @@ export default function LinksUteisPage() {
     return nameMatch || descriptionMatch || urlMatch || categoryMatch;
   });
 
+  const totalItems = filteredLinks.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+  const paginatedLinks = filteredLinks.slice(startIndex, endIndex);
+
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       <Toaster position="top-right" richColors />
@@ -638,7 +648,10 @@ CREATE POLICY "Admins have full access" ON public.useful_links FOR ALL USING (
         <input
           type="text"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setCurrentPage(1);
+          }}
           placeholder={`${t.common.search || 'Buscar'}... (Portal, Moodle, G-Suite, PDF...)`}
           className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm transition-all shadow-sm"
         />
@@ -656,12 +669,12 @@ CREATE POLICY "Admins have full access" ON public.useful_links FOR ALL USING (
             <Loader2 size={32} className="text-blue-500 animate-spin" />
             <p className="text-slate-400 text-sm font-medium">{t.common.loading || 'Carregando...'}</p>
           </motion.div>
-        ) : filteredLinks.length > 0 ? (
+        ) : totalItems > 0 ? (
           <motion.div 
             layout 
             className="flex flex-col gap-2.5"
           >
-            {filteredLinks.map((link) => (
+            {paginatedLinks.map((link) => (
               <motion.div
                 layout
                 key={link.id}
@@ -716,6 +729,72 @@ CREATE POLICY "Admins have full access" ON public.useful_links FOR ALL USING (
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Painel de Paginação de Links */}
+      {!isLoading && totalItems > 0 && (
+        <div className="bg-white border border-slate-200 rounded-xl px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-sans text-slate-500 font-semibold shadow-sm">
+          <div className="flex items-center gap-2">
+            <span>{language === 'pt' ? 'Exibir:' : 'Show:'}</span>
+            <select
+              value={itemsPerPage}
+              onChange={(e) => {
+                setItemsPerPage(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-700 outline-none focus:ring-1 focus:ring-indigo-500 font-bold cursor-pointer"
+            >
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={15}>15</option>
+              <option value={20}>20</option>
+            </select>
+            <span>{language === 'pt' ? 'links por página' : 'links per page'}</span>
+          </div>
+
+          <div className="font-medium text-slate-400 font-mono">
+            {language === 'pt' 
+              ? `Exibindo ${totalItems > 0 ? startIndex + 1 : 0}-${endIndex} de ${totalItems} links`
+              : `Showing ${totalItems > 0 ? startIndex + 1 : 0}-${endIndex} of ${totalItems} links`}
+          </div>
+
+          <div className="flex items-center gap-1.5 font-sans">
+            <button
+              type="button"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              className="p-1 px-2 hover:bg-slate-100 disabled:opacity-45 rounded-lg border border-slate-200 text-slate-500 transition cursor-pointer flex items-center justify-center disabled:cursor-not-allowed"
+              title={language === 'pt' ? 'Anterior' : 'Previous'}
+            >
+              <ChevronLeft size={14} />
+            </button>
+            
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setCurrentPage(p)}
+                className={`p-1 px-3 rounded-lg text-xs font-bold transition-colors select-none ${
+                  currentPage === p
+                    ? 'bg-blue-600 border border-blue-600 text-white shadow-sm'
+                    : 'bg-white border border-slate-200 hover:bg-slate-50 text-slate-600'
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+
+            <button
+              type="button"
+              disabled={currentPage === totalPages || totalPages === 0}
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              className="p-1 px-2 hover:bg-slate-100 disabled:opacity-45 rounded-lg border border-slate-200 text-slate-500 transition cursor-pointer flex items-center justify-center disabled:cursor-not-allowed"
+              title={language === 'pt' ? 'Próximo' : 'Next'}
+            >
+              <ChevronRight size={14} />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Create / Edit Modal */}
       <Modal
