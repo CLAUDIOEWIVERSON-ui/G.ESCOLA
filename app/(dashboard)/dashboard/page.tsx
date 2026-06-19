@@ -90,11 +90,12 @@ export default function DashboardPage() {
   };
 
   // States for Thought of the Day
-  const [pensamento, setPensamento] = useState<{ texto: string; autor: string; id?: string; isDemo?: boolean } | null>(null);
+  const [pensamento, setPensamento] = useState<{ texto: string; autor: string; reflexao?: string; id?: string; isDemo?: boolean } | null>(null);
   const [loadingPensamento, setLoadingPensamento] = useState(true);
   const [isEditingPensamento, setIsEditingPensamento] = useState(false);
   const [editTexto, setEditTexto] = useState('');
   const [editAutor, setEditAutor] = useState('');
+  const [editReflexao, setEditReflexao] = useState('');
   const [savingPensamento, setSavingPensamento] = useState(false);
   const [regeneratingPensamento, setRegeneratingPensamento] = useState(false);
   const [categorySelectorOpen, setCategorySelectorOpen] = useState(false);
@@ -114,6 +115,7 @@ export default function DashboardPage() {
           setPensamento(parsed);
           setEditTexto(parsed.texto);
           setEditAutor(parsed.autor);
+          setEditReflexao(parsed.reflexao || '');
           setLoadingPensamento(false);
         }
       } catch (e) {
@@ -139,6 +141,7 @@ export default function DashboardPage() {
           setPensamento(json.data);
           setEditTexto(json.data.texto);
           setEditAutor(json.data.autor);
+          setEditReflexao(json.data.reflexao || '');
           
           if (typeof window !== 'undefined') {
             localStorage.setItem(`pensamento_dia_custom_${todayStr}`, JSON.stringify(json.data));
@@ -172,6 +175,7 @@ export default function DashboardPage() {
       if (json.success && json.data) {
         setEditTexto(json.data.texto);
         setEditAutor(json.data.autor);
+        setEditReflexao(json.data.reflexao || '');
         toast.success('Sugestão gerada com sucesso! Você pode editar ou salvar.');
       } else {
         toast.error('Não foi possível gerar sugestão da IA.');
@@ -199,7 +203,7 @@ export default function DashboardPage() {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ texto: editTexto, autor: editAutor })
+        body: JSON.stringify({ texto: editTexto, autor: editAutor, reflexao: editReflexao })
       });
       const json = await res.json();
       if (json.success) {
@@ -332,6 +336,11 @@ export default function DashboardPage() {
                   &ldquo;{pensamento.texto}&rdquo;
                 </span>
                 <span className="text-[11px] text-slate-500 font-medium ml-1.5 not-italic select-all">— {pensamento.autor}</span>
+                {pensamento.reflexao && (
+                  <span className="block mt-1 pl-3 border-l-2 border-indigo-500/70 text-[11px] text-slate-500 leading-relaxed font-sans font-medium">
+                    {pensamento.reflexao}
+                  </span>
+                )}
                 {pensamento?.isDemo && profile?.role === 'admin' && (
                   <span className="text-[9px] text-amber-600 font-bold ml-2 inline-flex items-center gap-0.5 bg-amber-50 px-1 py-0.2 rounded border border-amber-200/40" title="Tabela pensamento_dia ausente. O pensamento de hoje expirará. Vá em Configurações e execute a migração 31_create_pensamento_dia.sql.">
                     ⚠️ Demo
@@ -524,6 +533,20 @@ export default function DashboardPage() {
                     placeholder="Ex: Confúcio, Santo Agostinho, Provérbios 16:3..."
                     className="w-full text-sm px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-800 transition-colors text-slate-800 font-medium"
                     required
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
+                    Reflexão e Lição Prática
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={editReflexao}
+                    onChange={(e) => setEditReflexao(e.target.value)}
+                    placeholder="Reflexão breve, lição para os alunos ou meditação diária motivacional..."
+                    className="w-full text-sm px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-800 transition-colors placeholder:text-slate-400 text-slate-800 font-sans leading-normal"
+                    maxLength={400}
                   />
                 </div>
 

@@ -216,7 +216,7 @@ export async function GET(req: NextRequest) {
       const isTableMissing = checkTableError && checkTableError.code === '42P01';
 
       // No quote for today, let's generate one dynamically using the Gemini API!
-      let generatedQuote = { texto: '', autor: '' };
+      let generatedQuote = { texto: '', autor: '', reflexao: '' };
 
       const pickRandomFallback = (cat: string) => {
         const filteredFallbacks = cat 
@@ -224,7 +224,12 @@ export async function GET(req: NextRequest) {
           : fallbackQuotes;
         const candidates = filteredFallbacks.length > 0 ? filteredFallbacks : fallbackQuotes;
         const randomIndex = Math.floor(Math.random() * candidates.length);
-        return candidates[randomIndex];
+        const selected = candidates[randomIndex];
+        return {
+          texto: selected.texto,
+          autor: selected.autor,
+          reflexao: 'A sabedoria contida nesta lição nos inspira a refletir de forma profunda sobre a força diária e as virtudes do refinamento pessoal constante.'
+        };
       };
 
       if (!process.env.GEMINI_API_KEY) {
@@ -289,8 +294,8 @@ export async function GET(req: NextRequest) {
           try {
             response = await withTimeout(
               getGeminiAI().models.generateContent({
-                model: 'gemini-3.5-flash',
-                contents: `${themePrompt} Varie os autores e temas. Retorne estritamente em formato JSON estruturado com os campos "texto" (o pensamento) e "autor".`,
+                model: 'gemini-3.1-flash-lite',
+                contents: `${themePrompt} Varie os autores e temas. Retorne estritamente em formato JSON estruturado com os campos "texto" (o pensamento), "autor" e "reflexao" (uma reflexão breve e profunda inspirada no pensamento).`,
                 config: {
                   systemInstruction,
                   responseMimeType: 'application/json',
@@ -304,21 +309,25 @@ export async function GET(req: NextRequest) {
                       autor: {
                         type: 'STRING' as any,
                         description: 'O nome do autor do pensamento.'
+                      },
+                      reflexao: {
+                        type: 'STRING' as any,
+                        description: 'Uma breve, profunda e edificante reflexão em português sobre a lição prática ou aplicação deste pensamento para o dia de hoje.'
                       }
                     },
-                    required: ['texto', 'autor']
+                    required: ['texto', 'autor', 'reflexao']
                   }
                 }
               }),
               12000
             );
           } catch (primaryError: any) {
-            console.warn('[Gemini API Primary Model Error or Timeout] Main model gemini-3.5-flash failed or timed out. Retrying with fallback model gemini-3.1-flash-lite. Reason:', primaryError?.message || primaryError);
-            // Try with the robust lite model with 8000ms timeout
+            console.warn('[Gemini API Primary Model Error or Timeout] Main model gemini-3.1-flash-lite failed or timed out. Retrying with fallback model gemini-3.5-flash. Reason:', primaryError?.message || primaryError);
+            // Try with the other model with 8000ms timeout
             response = await withTimeout(
               getGeminiAI().models.generateContent({
-                model: 'gemini-3.1-flash-lite',
-                contents: `${themePrompt} Varie os autores e temas. Retorne estritamente em formato JSON estruturado com os campos "texto" (o pensamento) e "autor".`,
+                model: 'gemini-3.5-flash',
+                contents: `${themePrompt} Varie os autores e temas. Retorne estritamente em formato JSON estruturado com os campos "texto" (o pensamento), "autor" e "reflexao" (uma reflexão breve e profunda inspirada no pensamento).`,
                 config: {
                   systemInstruction,
                   responseMimeType: 'application/json',
@@ -332,9 +341,13 @@ export async function GET(req: NextRequest) {
                       autor: {
                         type: 'STRING' as any,
                         description: 'O nome do autor do pensamento.'
+                      },
+                      reflexao: {
+                        type: 'STRING' as any,
+                        description: 'Uma breve, profunda e edificante reflexão em português sobre a lição prática ou aplicação deste pensamento para o dia de hoje.'
                       }
                     },
-                    required: ['texto', 'autor']
+                    required: ['texto', 'autor', 'reflexao']
                   }
                 }
               }),
@@ -374,23 +387,48 @@ export async function GET(req: NextRequest) {
       }
 
       if (!generatedQuote.texto || !generatedQuote.autor) {
-        generatedQuote = fallbackQuotes[0];
+        generatedQuote = fallbackQuotes[0] as any;
+      }
+
+      // Ensure reflexao field is present, even if chosen from a legacy fallback quote catalog
+      if (!generatedQuote.reflexao) {
+        generatedQuote.reflexao = `${generatedQuote.texto} — Este ensinamento nos convida a reavaliar as nossas atitudes, cultivando clareza de propósito, ética e resiliência a cada novo amanhecer.`;
       }
 
       // Try to insert the quote into Supabase for today's persistent retrieval
       if (!isTableMissing) {
         try {
-          const { data: insertedData, error: insertError } = await supabase
+          const upsertPayload: any = {
+            texto: generatedQuote.texto,
+            autor: generatedQuote.autor,
+            reflexao: generatedQuote.reflexao,
+            data_exibicao: todayStr
+          };
+
+          let { data: insertedData, error: insertError } = await supabase
             .from('pensamento_dia')
-            .upsert({
-              texto: generatedQuote.texto,
-              autor: generatedQuote.autor,
-              data_exibicao: todayStr
-            }, { onConflict: 'data_exibicao' })
+            .upsert(upsertPayload, { onConflict: 'data_exibicao' })
             .select('*')
             .maybeSingle();
 
+          // Graceful fallback retry if column 'reflexao' doesn't exist in Supabase yet
+          if (insertError && (insertError.code === '42703' || String(insertError.message || '').includes('reflexao'))) {
+            console.warn('[Reflexao column missing in DB - Retrying insertion without it]');
+            delete upsertPayload.reflexao;
+            const retryRes = await supabase
+              .from('pensamento_dia')
+              .upsert(upsertPayload, { onConflict: 'data_exibicao' })
+              .select('*')
+              .maybeSingle();
+            insertedData = retryRes.data;
+            insertError = retryRes.error;
+          }
+
           if (insertedData && !insertError) {
+            // Force assign reflexao if retry was used, so client still gets it
+            if (!insertedData.reflexao && generatedQuote.reflexao) {
+              insertedData.reflexao = generatedQuote.reflexao;
+            }
             // Cache the inserted thought
             thoughtCache = {
               data_exibicao: todayStr,
@@ -410,6 +448,7 @@ export async function GET(req: NextRequest) {
         id: 'temp-id',
         texto: generatedQuote.texto,
         autor: generatedQuote.autor,
+        reflexao: generatedQuote.reflexao,
         data_exibicao: todayStr,
         isDemo: true,
         reason: isTableMissing ? 'table_missing' : 'insert_failed'
@@ -454,33 +493,51 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
 
-    const { texto, autor } = await req.json();
+    const { texto, autor, reflexao } = await req.json();
     if (!texto || !autor) {
       return NextResponse.json({ error: 'Texto e autor são obrigatórios.' }, { status: 400 });
     }
 
     const todayStr = new Date().toISOString().split('T')[0];
-    const fallbackResponse = {
+    const fallbackResponse: any = {
       id: 'temp-id',
       texto,
       autor,
+      reflexao: reflexao || '',
       data_exibicao: todayStr,
       isDemo: true
     };
 
     // Attempt to upsert the thought for today
-    const { data, error } = await supabase
+    const upsertPayload: any = {
+      texto,
+      autor,
+      reflexao: reflexao || '',
+      data_exibicao: todayStr
+    };
+
+    let { data, error } = await supabase
       .from('pensamento_dia')
-      .upsert(
-        {
-          texto,
-          autor,
-          data_exibicao: todayStr
-        },
-        { onConflict: 'data_exibicao' }
-      )
+      .upsert(upsertPayload, { onConflict: 'data_exibicao' })
       .select('*')
       .maybeSingle();
+
+    // Graceful fallback retry if column 'reflexao' doesn't exist yet
+    if (error && (error.code === '42703' || String(error.message || '').includes('reflexao'))) {
+      console.warn('[POST thoughts reflexao column missing - Retrying without reflexao]');
+      delete upsertPayload.reflexao;
+      const retryRes = await supabase
+        .from('pensamento_dia')
+        .upsert(upsertPayload, { onConflict: 'data_exibicao' })
+        .select('*')
+        .maybeSingle();
+      data = retryRes.data;
+      error = retryRes.error;
+    }
+
+    if (data && !error && !data.reflexao && reflexao) {
+      data.reflexao = reflexao;
+    }
 
     if (error) {
       console.warn('[POST thoughts DB error - falling back to cache]', error);

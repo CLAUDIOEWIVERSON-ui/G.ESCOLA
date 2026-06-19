@@ -207,6 +207,21 @@ export async function GET() {
         }
       },
       {
+        key: 'pensamento_dia_reflexao',
+        tableName: 'pensamento_dia',
+        columnName: 'reflexao',
+        fileName: '46_add_reflexao_to_pensamento_dia.sql',
+        description: 'Módulo de aprofundamento espiritual e literário das Sementes Diárias, fornecendo reflexões ricas associadas aos pensamentos.',
+        isColumn: true,
+        checkFn: async () => {
+          const { error } = await supabaseAdmin
+            .from('pensamento_dia')
+            .select('reflexao')
+            .limit(1);
+          return error;
+        }
+      },
+      {
         key: 'certificates_system',
         tableName: 'certificate_templates',
         fileName: '34_create_certificates_system.sql',
