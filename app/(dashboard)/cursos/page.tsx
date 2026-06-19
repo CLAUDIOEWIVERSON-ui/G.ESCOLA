@@ -23,7 +23,9 @@ import {
   BookOpen,
   Anchor,
   Shield,
-  Swords
+  Swords,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useForm } from 'react-hook-form';
@@ -64,6 +66,8 @@ export default function CursosPage() {
   const [saving, setSaving] = useState(false);
   const [editingCurso, setEditingCurso] = useState<Curso | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [itemsPerPage, setItemsPerPage] = useState<number>(10);
+  const [currentPage, setCurrentPage] = useState<number>(1);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [selectedCursoDetails, setSelectedCursoDetails] = useState<Curso | null>(null);
   const [colorSettings, setColorSettings] = useState<CardColorSettings>(() => getCardColorSettings());
@@ -476,6 +480,12 @@ export default function CursosPage() {
     return matchesSearch && matchesCategory;
   });
 
+  const totalCursos = filteredCursos.length;
+  const totalPagesCursos = Math.ceil(totalCursos / itemsPerPage) || 1;
+  const startIndexCursos = (currentPage - 1) * itemsPerPage;
+  const endIndexCursos = Math.min(startIndexCursos + itemsPerPage, totalCursos);
+  const paginatedCursos = filteredCursos.slice(startIndexCursos, endIndexCursos);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
@@ -491,7 +501,7 @@ export default function CursosPage() {
               <button
                 key={cat || 'todos'}
                 type="button"
-                onClick={() => setActiveCategory(cat)}
+                onClick={() => { setActiveCategory(cat); setCurrentPage(1); }}
                 className={cn(
                   "flex-1 sm:flex-none px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap cursor-pointer",
                   activeCategory === cat 
@@ -547,7 +557,7 @@ export default function CursosPage() {
               type="text"
               placeholder={t.common.search}
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
               className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900/5 focus:border-slate-900 focus:bg-white text-sm transition-all"
             />
           </div>
@@ -606,7 +616,7 @@ export default function CursosPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredCursos.map((curso: any) => {
+            {paginatedCursos.map((curso: any) => {
               const cardStyle = getCardStyleForItem({
                 categoria: curso.categoria,
                 internacional: curso.internacional,
@@ -777,6 +787,72 @@ export default function CursosPage() {
                 </motion.div>
               );
             })}
+          </div>
+        )}
+
+        {/* Painel de Paginação de Cursos */}
+        {!loading && totalCursos > 0 && (
+          <div className="bg-white border border-slate-200 rounded-2xl px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-sans text-slate-500 font-semibold shadow-sm">
+            <div className="flex items-center gap-2">
+              <span>{language === 'pt' ? 'Exibir:' : 'Show:'}</span>
+              <select
+                value={itemsPerPage}
+                onChange={(e) => {
+                  setItemsPerPage(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-700 outline-none focus:ring-1 focus:ring-blue-500 font-bold cursor-pointer"
+              >
+                <option value={5}>5</option>
+                <option value={10}>10</option>
+                <option value={15}>15</option>
+                <option value={20}>20</option>
+              </select>
+              <span>{language === 'pt' ? 'cursos por página' : 'courses per page'}</span>
+            </div>
+
+            <div className="font-medium text-slate-400 font-mono">
+              {language === 'pt' 
+                ? `Exibindo ${totalCursos > 0 ? startIndexCursos + 1 : 0}-${endIndexCursos} de ${totalCursos} cursos`
+                : `Showing ${totalCursos > 0 ? startIndexCursos + 1 : 0}-${endIndexCursos} of ${totalCursos} courses`}
+            </div>
+
+            <div className="flex items-center gap-1.5 font-sans">
+              <button
+                type="button"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                className="p-1 px-2 hover:bg-slate-100 disabled:opacity-45 rounded-lg border border-slate-200 text-slate-500 transition cursor-pointer flex items-center justify-center disabled:cursor-not-allowed font-bold"
+                title={language === 'pt' ? 'Anterior' : 'Previous'}
+              >
+                <ChevronLeft size={14} />
+              </button>
+              
+              {Array.from({ length: totalPagesCursos }, (_, i) => i + 1).map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setCurrentPage(p)}
+                  className={`p-1 px-3 rounded-lg text-xs font-bold transition-colors select-none ${
+                    currentPage === p
+                      ? 'bg-blue-600 border border-blue-600 text-white shadow-sm'
+                      : 'bg-white border border-slate-200 hover:bg-slate-50 text-slate-600'
+                  }`}
+                >
+                  {p}
+                </button>
+              ))}
+
+              <button
+                type="button"
+                disabled={currentPage === totalPagesCursos || totalPagesCursos === 0}
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPagesCursos))}
+                className="p-1 px-2 hover:bg-slate-100 disabled:opacity-45 rounded-lg border border-slate-200 text-slate-500 transition cursor-pointer flex items-center justify-center disabled:cursor-not-allowed font-bold"
+                title={language === 'pt' ? 'Próximo' : 'Next'}
+              >
+                <ChevronRight size={14} />
+              </button>
+            </div>
           </div>
         )}
       </div>

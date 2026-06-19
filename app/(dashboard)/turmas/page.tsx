@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase/client';
 import { useTurmas, useCursos } from '@/hooks/useCachedData';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
-import { Plus, Search, Layers as LayersIcon, Library, Calendar, Clock, MapPin, Pencil, Trash2, Loader2, CheckCircle2, RefreshCcw, Users, Mail, Phone, Building, Camera, MessageCircle, XCircle, FileText, X, GraduationCap, School, ChevronRight, Printer, Monitor, Globe, Anchor, Swords } from 'lucide-react';
+import { Plus, Search, Layers as LayersIcon, Library, Calendar, Clock, MapPin, Pencil, Trash2, Loader2, CheckCircle2, RefreshCcw, Users, Mail, Phone, Building, Camera, MessageCircle, XCircle, FileText, X, GraduationCap, School, ChevronLeft, ChevronRight, Printer, Monitor, Globe, Anchor, Swords } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import Modal from '@/components/Modal';
@@ -49,6 +49,8 @@ function TurmasContent() {
 
   const [colorSettings, setColorSettings] = useState<CardColorSettings>(() => getCardColorSettings());
   const [refreshing, setRefreshing] = useState(false);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(10);
+  const [currentPage, setCurrentPage] = useState<number>(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentTurma, setCurrentTurma] = useState<any>(null);
   const [saving, setSaving] = useState(false);
@@ -443,7 +445,15 @@ function TurmasContent() {
     const params = new URLSearchParams(searchParams ? searchParams.toString() : '');
     params.set('cat', cat);
     router.push(`${pathname}?${params.toString()}`);
+    setCurrentPage(1);
   };
+
+  const searchParamsStr = searchParams ? searchParams.toString() : '';
+  const [prevSearchParams, setPrevSearchParams] = useState(searchParamsStr);
+  if (searchParamsStr !== prevSearchParams) {
+    setPrevSearchParams(searchParamsStr);
+    setCurrentPage(1);
+  }
 
   const [confirmConfig, setConfirmConfig] = useState<{
     isOpen: boolean;
@@ -991,6 +1001,12 @@ function TurmasContent() {
     return (t.categoria || 'expedito') === activeCategory;
   });
 
+  const totalTurmas = filteredTurmas.length;
+  const totalPagesTurmas = Math.ceil(totalTurmas / itemsPerPage) || 1;
+  const startIndexTurmas = (currentPage - 1) * itemsPerPage;
+  const endIndexTurmas = Math.min(startIndexTurmas + itemsPerPage, totalTurmas);
+  const paginatedTurmas = filteredTurmas.slice(startIndexTurmas, endIndexTurmas);
+
   return (
     <div className="space-y-8 pb-20">
       {/* Header with Stats Overview potentially here */}
@@ -1061,8 +1077,8 @@ function TurmasContent() {
               <div className="mt-auto h-12 bg-slate-50 rounded-2xl" />
             </div>
           ))
-        ) : filteredTurmas.length > 0 ? (
-          filteredTurmas.map((turma: any, i: number) => {
+        ) : totalTurmas > 0 ? (
+          paginatedTurmas.map((turma: any, i: number) => {
             const finalGroup = turma.grupo_responsavel || turma.curso?.grupo_responsavel;
             const cardStyle = getCardStyleForItem({
               categoria: turma.categoria,
@@ -1303,6 +1319,72 @@ function TurmasContent() {
           </div>
         )}
       </div>
+
+      {/* Painel de Paginação de Turmas */}
+      {!loading && totalTurmas > 0 && (
+        <div className="bg-white border border-slate-200 rounded-2xl px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-sans text-slate-500 font-semibold shadow-sm">
+          <div className="flex items-center gap-2">
+            <span>{language === 'pt' ? 'Exibir:' : 'Show:'}</span>
+            <select
+              value={itemsPerPage}
+              onChange={(e) => {
+                setItemsPerPage(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-700 outline-none focus:ring-1 focus:ring-blue-500 font-bold cursor-pointer"
+            >
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={15}>15</option>
+              <option value={20}>20</option>
+            </select>
+            <span>{language === 'pt' ? 'turmas por página' : 'classes per page'}</span>
+          </div>
+
+          <div className="font-medium text-slate-400 font-mono">
+            {language === 'pt' 
+              ? `Exibindo ${totalTurmas > 0 ? startIndexTurmas + 1 : 0}-${endIndexTurmas} de ${totalTurmas} turmas`
+              : `Showing ${totalTurmas > 0 ? startIndexTurmas + 1 : 0}-${endIndexTurmas} of ${totalTurmas} classes`}
+          </div>
+
+          <div className="flex items-center gap-1.5 font-sans">
+            <button
+              type="button"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              className="p-1 px-2 hover:bg-slate-100 disabled:opacity-45 rounded-lg border border-slate-200 text-slate-500 transition cursor-pointer flex items-center justify-center disabled:cursor-not-allowed font-bold"
+              title={language === 'pt' ? 'Anterior' : 'Previous'}
+            >
+              <ChevronLeft size={14} />
+            </button>
+            
+            {Array.from({ length: totalPagesTurmas }, (_, i) => i + 1).map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setCurrentPage(p)}
+                className={`p-1 px-3 rounded-lg text-xs font-bold transition-colors select-none ${
+                  currentPage === p
+                    ? 'bg-blue-600 border border-blue-600 text-white shadow-sm'
+                    : 'bg-white border border-slate-200 hover:bg-slate-50 text-slate-600'
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+
+            <button
+              type="button"
+              disabled={currentPage === totalPagesTurmas || totalPagesTurmas === 0}
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPagesTurmas))}
+              className="p-1 px-2 hover:bg-slate-100 disabled:opacity-45 rounded-lg border border-slate-200 text-slate-500 transition cursor-pointer flex items-center justify-center disabled:cursor-not-allowed font-bold"
+              title={language === 'pt' ? 'Próximo' : 'Next'}
+            >
+              <ChevronRight size={14} />
+            </button>
+          </div>
+        </div>
+      )}
 
       <Modal
         isOpen={isModalOpen}
