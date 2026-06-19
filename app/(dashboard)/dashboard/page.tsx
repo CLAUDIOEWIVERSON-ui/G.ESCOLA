@@ -561,26 +561,21 @@ export default function DashboardPage() {
                   <div className={`p-2 rounded-lg ${card.color} text-white shadow-sm`}>
                     <card.icon size={20} />
                   </div>
-                  {isSelected ? (
+                  {isSelected && (
                     <span className="text-[9px] font-black text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded uppercase tracking-wider flex items-center gap-1">
-                      <span className="w-1 h-1 rounded-full bg-indigo-600 animate-ping" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-pulse" />
                       {language === 'pt' ? 'Ativo' : 'Active'}
-                    </span>
-                  ) : (
-                    <span className="text-[9px] font-black text-rose-600 bg-rose-50 border border-rose-100 px-2 py-0.5 rounded uppercase tracking-wider flex items-center gap-1 shadow-[0_0_6px_rgba(225,29,72,0.05)] animate-pulse">
-                      <MousePointerClick size={10} className="text-rose-500" />
-                      {language === 'pt' ? 'Clique para Ver' : 'Click to View'}
                     </span>
                   )}
                 </div>
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">{card.name}</p>
                 <div className="flex items-end justify-between">
                   <span className="text-3xl font-black text-slate-800 tracking-tight">{card.value}</span>
-                  <span className={`text-[10px] font-bold flex items-center gap-0.5 group px-2 py-0.5 rounded transition-colors ${
-                    isSelected ? 'text-indigo-700 bg-indigo-50 border border-indigo-100' : 'text-slate-500 hover:text-indigo-600 bg-slate-50'
+                  <span className={`text-[10px] font-bold flex items-center gap-1 group px-2 py-0.5 rounded transition-colors ${
+                    isSelected ? 'text-indigo-700 bg-indigo-50 border border-indigo-100 font-extrabold' : 'text-slate-500 hover:text-indigo-600 bg-slate-50'
                   }`}>
                     {language === 'pt' ? 'Clique para Detalhar' : 'Click to Detail'} 
-                    <ArrowRight size={10} className="text-indigo-500 transition-transform group-hover:translate-x-0.5" />
+                    <ArrowRight size={10} className="text-indigo-550 transition-transform group-hover:translate-x-0.5" />
                   </span>
                 </div>
               </motion.div>
