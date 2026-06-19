@@ -109,6 +109,7 @@ function RelatorioAvaliacaoAdminContent() {
 
   // Interactive View states
   const [activeTab, setActiveTab] = useState<'geral' | 'curso' | 'instrutor' | 'aluno'>('geral');
+  const [chartTheme, setChartTheme] = useState<'azul' | 'branco'>('azul');
   const [focusedInstructor, setFocusedInstructor] = useState<string>('');
   const [focusedStudent, setFocusedStudent] = useState<string>('');
   const [migratingMessage, setMigratingMessage] = useState(false);
@@ -1291,7 +1292,7 @@ function RelatorioAvaliacaoAdminContent() {
                       return (
                         <div className="space-y-6 mt-6 pt-6 border-t border-slate-200/60">
                           {/* Heading */}
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div>
                               <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider font-mono flex items-center gap-2">
                                 <BarChart3 className="h-4 w-4 text-slate-800" />
@@ -1301,248 +1302,350 @@ function RelatorioAvaliacaoAdminContent() {
                                 Métricas de satisfação agregadas em tempo real com base em {filteredSubmissions.length} avaliações preenchidas.
                               </p>
                             </div>
-                            <div className="text-[10px] bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-805 font-bold px-3 py-1.5 rounded-lg font-mono">
-                              Média Geral da Turma: {overallAverage.toFixed(2)} / 5.0
+                            
+                            <div className="flex flex-wrap items-center gap-3">
+                              {/* Option Selector for Chart Background/Theme with 3D Neon look! */}
+                              <div className="flex items-center gap-2 bg-slate-100/80 border border-slate-200 p-1 rounded-xl shadow-inner text-[10px] font-bold font-mono">
+                                <span className="text-[9px] uppercase font-black text-slate-400 font-mono px-2">Fundo:</span>
+                                
+                                <button
+                                  type="button"
+                                  onClick={() => setChartTheme('azul')}
+                                  className={`px-3 py-1.5 rounded-lg transition-all duration-150 flex items-center gap-1.5 font-black uppercase text-[9px] tracking-wider active:translate-y-[2px] active:border-b-[1px] ${
+                                    chartTheme === 'azul'
+                                      ? 'bg-slate-950 text-cyan-400 border border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.45)] border-b-[4px] border-r-[2px] border-cyan-405'
+                                      : 'text-slate-500 border border-transparent border-b-[3px] hover:text-slate-700 hover:bg-slate-200/50'
+                                  }`}
+                                >
+                                  <span className={`w-1.5 h-1.5 rounded-full bg-cyan-400 ${chartTheme === 'azul' ? 'animate-pulse shadow-[0_0_8px_#22d3ee]' : 'opacity-40'}`} />
+                                  Azul
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => setChartTheme('branco')}
+                                  className={`px-3 py-1.5 rounded-lg transition-all duration-150 flex items-center gap-1.5 font-black uppercase text-[9px] tracking-wider active:translate-y-[2px] active:border-b-[1px] ${
+                                    chartTheme === 'branco'
+                                      ? 'bg-white text-slate-900 border border-slate-300 shadow-[0_2px_8px_rgba(0,0,0,0.08)] border-b-[4px] border-r-[2px] border-slate-400'
+                                      : 'text-slate-500 border border-transparent border-b-[3px] hover:text-slate-700 hover:bg-slate-200/50'
+                                  }`}
+                                >
+                                  <span className={`w-1.5 h-1.5 rounded-full bg-slate-400 ${chartTheme === 'branco' ? 'opacity-100' : 'opacity-40'}`} />
+                                  Branco
+                                </button>
+                              </div>
+
+                              <div className="text-[10px] bg-slate-50 border border-slate-200 text-slate-805 font-bold px-3 py-2 rounded-lg font-mono shadow-sm">
+                                Média Geral da Turma: {overallAverage.toFixed(2)} / 5.0
+                              </div>
                             </div>
                           </div>
 
                            {/* Grid with Grid 1 (Metrics by category), Grid 2 (Distribution) & Grid 3 (Satisfaction Pie Chart) */}
-                          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                             
-                            {/* Chart 1: Média Detalhada por Categoria */}
-                            <div className="bg-slate-950 border border-slate-800 rounded-xl p-5 shadow-[0_0_25px_rgba(6,182,212,0.15)] relative overflow-hidden transition-all duration-300 hover:shadow-[0_0_35px_rgba(6,182,212,0.25)] border-b-[4px] border-r-[2px] border-cyan-500/20" id="chart-neon-metrics-card">
-                              <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
-                                <h4 className="text-xs font-black text-cyan-400 uppercase tracking-widest font-mono flex items-center gap-1.5 shadow-sm">
-                                  <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_#22d3ee]"></span>
-                                  1. Média por Categoria
-                                </h4>
-                                <span className="text-[9px] text-cyan-500/80 font-black uppercase font-mono tracking-wider">TECNOLOGIA NEON 3D</span>
-                              </div>
+                             {/* Chart 1: Média Detalhada por Categoria */}
+                             <div className={`border rounded-xl p-5 relative overflow-hidden transition-all duration-300 border-b-[4px] border-r-[2px] ${
+                               chartTheme === 'azul'
+                                 ? 'bg-slate-950 border-slate-800 shadow-[0_0_25px_rgba(6,182,212,0.15)] hover:shadow-[0_0_35px_rgba(6,182,212,0.25)] border-cyan-500/20 text-white'
+                                 : 'bg-white border-slate-250 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border-cyan-500/30 text-slate-800'
+                             }`} id="chart-neon-metrics-card">
+                               <div className={`flex items-center justify-between border-b pb-2.5 ${chartTheme === 'azul' ? 'border-slate-800/80' : 'border-slate-100'}`}>
+                                 <h4 className={`text-xs font-black uppercase tracking-widest font-mono flex items-center gap-1.5 shadow-sm ${chartTheme === 'azul' ? 'text-cyan-400' : 'text-cyan-600'}`}>
+                                   <span className={`w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee] ${chartTheme === 'azul' ? 'animate-pulse' : ''}`}></span>
+                                   1. Média por Categoria
+                                 </h4>
+                                 <span className={`text-[9px] font-black uppercase font-mono tracking-wider ${chartTheme === 'azul' ? 'text-cyan-500/80' : 'text-cyan-600'}`}>
+                                   {chartTheme === 'azul' ? 'TECNOLOGIA NEON 3D' : 'MÉTRICAS CLARAS'}
+                                 </span>
+                               </div>
                               
-                              <div className="space-y-4.5 pt-3">
-                                {/* Category 1: Curso */}
-                                <div className="space-y-1.5">
-                                  <div className="flex justify-between items-center text-xs">
-                                    <span className="font-extrabold text-slate-300 flex items-center gap-1.5">
-                                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#10b981]"></span>
-                                      Expectativas sobre o Curso
-                                    </span>
-                                    <span className="font-black text-emerald-400 font-mono text-[10.5px]">{courseSatisfactionIndex.toFixed(2)} / 5.00</span>
-                                  </div>
-                                  <div className="h-4 bg-slate-900 rounded-lg relative overflow-visible shadow-[inset_0_2px_4px_rgba(0,0,0,0.8)] border border-slate-800/40">
-                                    <div 
-                                      className="h-full bg-gradient-to-r from-emerald-600 via-emerald-400 to-emerald-300 rounded-l-lg transition-all duration-500 border-t border-white/30 border-b border-b-emerald-800 shadow-[0_0_12px_rgba(16,185,129,0.7)]" 
-                                      style={{ width: `${(courseSatisfactionIndex / 5) * 100}%` }}
-                                    />
-                                    {/* Overall Class Average Reference Line */}
-                                    <div 
-                                      className="absolute top-0 bottom-0 w-1 bg-amber-400 shadow-[0_0_8px_#f59e0b] border-x border-amber-200 z-10"
-                                      style={{ left: `${(overallAverage / 5) * 100}%` }}
-                                      title={`Média Geral da Turma: ${overallAverage.toFixed(2)}`}
-                                    />
-                                  </div>
-                                </div>
-
-                                {/* Category 2: Instrutor */}
-                                <div className="space-y-1.5">
-                                  <div className="flex justify-between items-center text-xs">
-                                    <span className="font-extrabold text-slate-300 flex items-center gap-1.5">
-                                      <span className="w-2.5 h-2.5 rounded-full bg-violet-400 shadow-[0_0_6px_#8b5cf6]"></span>
-                                      Desempenho do Instrutor
-                                    </span>
-                                    <span className="font-black text-violet-400 font-mono text-[10.5px]">{instructorIndex.toFixed(2)} / 5.00</span>
-                                  </div>
-                                  <div className="h-4 bg-slate-900 rounded-lg relative overflow-visible shadow-[inset_0_2px_4px_rgba(0,0,0,0.8)] border border-slate-800/40">
-                                    <div 
-                                      className="h-full bg-gradient-to-r from-violet-600 via-fuchsia-400 to-purple-300 rounded-l-lg transition-all duration-500 border-t border-white/30 border-b border-b-violet-850 shadow-[0_0_12px_rgba(168,85,247,0.7)]" 
-                                      style={{ width: `${(instructorIndex / 5) * 100}%` }}
-                                    />
-                                    <div 
-                                      className="absolute top-0 bottom-0 w-1 bg-amber-400 shadow-[0_0_8px_#f59e0b] border-x border-amber-200 z-10"
-                                      style={{ left: `${(overallAverage / 5) * 100}%` }}
-                                    />
-                                  </div>
-                                </div>
-
-                                {/* Category 3: Autoavaliação */}
-                                <div className="space-y-1.5">
-                                  <div className="flex justify-between items-center text-xs">
-                                    <span className="font-extrabold text-slate-300 flex items-center gap-1.5">
-                                      <span className="w-2.5 h-2.5 rounded-full bg-sky-400 shadow-[0_0_6px_#0ea5e9]"></span>
-                                      Autoavaliação dos Alunos
-                                    </span>
-                                    <span className="font-black text-sky-400 font-mono text-[10.5px]">{studentSelfIndex.toFixed(2)} / 5.00</span>
-                                  </div>
-                                  <div className="h-4 bg-slate-900 rounded-lg relative overflow-visible shadow-[inset_0_2px_4px_rgba(0,0,0,0.8)] border border-slate-800/40">
-                                    <div 
-                                      className="h-full bg-gradient-to-r from-sky-600 via-cyan-400 to-cyan-300 rounded-l-lg transition-all duration-500 border-t border-white/30 border-b border-b-sky-850 shadow-[0_0_12px_rgba(6,182,212,0.7)]" 
-                                      style={{ width: `${(studentSelfIndex / 5) * 100}%` }}
-                                    />
-                                    <div 
-                                      className="absolute top-0 bottom-0 w-1 bg-amber-400 shadow-[0_0_8px_#f59e0b] border-x border-amber-200 z-10"
-                                      style={{ left: `${(overallAverage / 5) * 100}%` }}
-                                    />
-                                  </div>
-                                </div>
-
-                                {/* Category 4: Infraestrutura */}
-                                <div className="space-y-1.5">
-                                  <div className="flex justify-between items-center text-xs">
-                                    <span className="font-extrabold text-slate-300 flex items-center gap-1.5">
-                                      <span className="w-2.5 h-2.5 rounded-full bg-pink-400 shadow-[0_0_6px_#ec4899]"></span>
-                                      Infraestrutura e Recursos
-                                    </span>
-                                    <span className="font-black text-pink-400 font-mono text-[10.5px]">{infraIndex.toFixed(2)} / 5.00</span>
-                                  </div>
-                                  <div className="h-4 bg-slate-900 rounded-lg relative overflow-visible shadow-[inset_0_2px_4px_rgba(0,0,0,0.8)] border border-slate-800/40">
-                                    <div 
-                                      className="h-full bg-gradient-to-r from-rose-600 via-pink-400 to-rose-300 rounded-l-lg transition-all duration-500 border-t border-white/30 border-b border-b-rose-850 shadow-[0_0_12px_rgba(244,63,94,0.7)]" 
-                                      style={{ width: `${(infraIndex / 5) * 100}%` }}
-                                    />
-                                    <div 
-                                      className="absolute top-0 bottom-0 w-1 bg-amber-400 shadow-[0_0_8px_#f59e0b] border-x border-amber-200 z-10"
-                                      style={{ left: `${(overallAverage / 5) * 100}%` }}
-                                    />
-                                  </div>
-                                </div>
-                              </div>
-
-                              <div className="flex items-center gap-4 text-[9px] text-slate-400 justify-end pt-3 border-t border-slate-800/80 font-mono mt-4">
-                                <div className="flex items-center gap-1.5">
-                                  <span className="w-3.5 h-1.5 bg-amber-400 rounded-sm inline-block shadow-[0_0_6px_#f59e0b]"></span>
-                                  <span className="font-black text-amber-400">Média Geral ({overallAverage.toFixed(2)})</span>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Chart 2: Perfil de Distribuição de Notas */}
-                            <div className="bg-slate-950 border border-slate-800 rounded-xl p-5 shadow-[0_0_25px_rgba(168,85,247,0.15)] relative overflow-hidden transition-all duration-300 hover:shadow-[0_0_35px_rgba(168,85,247,0.25)] border-b-[4px] border-r-[2px] border-purple-500/20" id="chart-neon-distribution-card">
-                              <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
-                                <h4 className="text-xs font-black text-purple-400 uppercase tracking-widest font-mono flex items-center gap-1.5">
-                                  <span className="w-2.5 h-2.5 rounded-full bg-purple-400 animate-pulse shadow-[0_0_8px_#a855f7]"></span>
-                                  2. Distribuição Geral
-                                </h4>
-                                <span className="text-[9px] text-purple-500/80 font-black uppercase font-mono tracking-wider">{totalResponses} respostas</span>
-                              </div>
-
-                              {/* Vertical bars chart for frequencies */}
-                              <div className="flex items-end justify-between h-40 px-2 pt-5">
-                                {([5, 4, 3, 2, 1] as const).map(score => {
-                                  const count = distribution[score];
-                                  const pct = totalResponses > 0 ? (count / totalResponses) * 100 : 0;
-                                  
-                                  // Determine elegant neon gradients and shadows for 3D pillar tubes
-                                  const barStyles = score === 5 
-                                    ? "bg-gradient-to-t from-emerald-600 via-emerald-400 to-emerald-300 border-l border-white/20 border-r border-emerald-850 hover:shadow-[0_0_18px_rgba(16,185,129,0.95)] shadow-[0_0_8px_rgba(16,185,129,0.5)]" 
-                                    : score === 4 
-                                      ? "bg-gradient-to-t from-cyan-600 via-cyan-400 to-cyan-300 border-l border-white/20 border-r border-cyan-850 hover:shadow-[0_0_18px_rgba(6,182,212,0.95)] shadow-[0_0_8px_rgba(6,182,212,0.5)]" 
-                                      : score === 3 
-                                        ? "bg-gradient-to-t from-amber-600 via-amber-400 to-amber-300 border-l border-white/20 border-r border-amber-850 hover:shadow-[0_0_18px_rgba(245,158,11,0.95)] shadow-[0_0_8px_rgba(245,158,11,0.5)]" 
-                                        : score === 2 
-                                          ? "bg-gradient-to-t from-orange-600 via-orange-400 to-orange-300 border-l border-white/20 border-r border-orange-850 hover:shadow-[0_0_18px_rgba(249,115,22,0.95)] shadow-[0_0_8px_rgba(249,115,22,0.5)]" 
-                                          : "bg-gradient-to-t from-rose-600 via-rose-400 to-rose-300 border-l border-white/20 border-r border-rose-850 hover:shadow-[0_0_18px_rgba(244,63,94,0.95)] shadow-[0_0_8px_rgba(244,63,94,0.5)]";
-
-                                  return (
-                                    <div key={score} className="flex flex-col items-center flex-1 group">
-                                      <span className="text-[9.5px] font-black text-slate-100 opacity-0 group-hover:opacity-100 transition-opacity duration-200 mb-1.5 font-mono bg-slate-900 border border-slate-700 px-1.5 py-0.5 rounded shadow-lg">
-                                        {count} ({pct.toFixed(0)}%)
-                                      </span>
-                                      <div className="w-full max-w-[28px] bg-slate-900/90 border border-slate-800/50 rounded-t-lg h-24 flex flex-col justify-end overflow-visible relative shadow-[inset_0_2px_5px_rgba(0,0,0,0.8)]">
-                                        <div 
-                                          className={`w-full ${barStyles} transition-all duration-500 rounded-t-md border-t border-white/30`} 
-                                          style={{ height: `${Math.max(4, pct)}%` }}
-                                        />
-                                      </div>
-                                      <span className="text-[10px] font-black text-slate-300 mt-2 font-mono flex items-center justify-center gap-0.5 text-center">
-                                        ★{score}
-                                      </span>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-
-                              <div className="grid grid-cols-5 text-center text-[8.5px] text-slate-400 font-extrabold font-mono pt-3 border-t border-slate-800/80 mt-4">
-                                <div className="text-emerald-400">CP (5)</div>
-                                <div className="text-cyan-400">CPa (4)</div>
-                                <div className="text-amber-400">Neutro (3)</div>
-                                <div className="text-orange-400">DPa (2)</div>
-                                <div className="text-rose-400">DP (1)</div>
-                              </div>
-                            </div>
-
-                            {/* Chart 3: Proporção de Níveis de Satisfação (Pie Chart) */}
-                            {(() => {
-                              const pieData = [
-                                { name: 'Excelente (★5)', value: distribution[5], color: '#10b981' },
-                                { name: 'Bom (★4)', value: distribution[4], color: '#06b6d4' },
-                                { name: 'Regular (★3)', value: distribution[3], color: '#f59e0b' },
-                                { name: 'Insatisfeito (★1-2)', value: (distribution[1] || 0) + (distribution[2] || 0), color: '#ef4444' }
-                              ].filter(item => item.value > 0);
-
-                              return (
-                                <div className="bg-slate-950 border border-slate-800 rounded-xl p-5 shadow-[0_0_25px_rgba(16,185,129,0.15)] relative overflow-hidden transition-all duration-300 hover:shadow-[0_0_35px_rgba(16,185,129,0.25)] border-b-[4px] border-r-[2px] border-emerald-500/20 flex flex-col justify-between" id="chart-pie-satisfaction-card">
-                                  <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
-                                    <h4 className="text-xs font-black text-emerald-400 uppercase tracking-widest font-mono flex items-center gap-1.5">
-                                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#10b981]"></span>
-                                      3. Níveis de Satisfação
-                                    </h4>
-                                    <span className="text-[9px] text-emerald-500/80 font-black uppercase font-mono tracking-wider">PIZZA GLOW</span>
-                                  </div>
-
-                                  <div className="h-40 w-full flex items-center justify-center relative my-1">
-                                    {pieData.length > 0 ? (
-                                      <>
-                                        <ResponsiveContainer width="100%" height="100%">
-                                          <PieChart>
-                                            <Pie
-                                              data={pieData}
-                                              cx="50%"
-                                              cy="50%"
-                                              innerRadius={36}
-                                              outerRadius={56}
-                                              paddingAngle={5}
-                                              dataKey="value"
-                                            >
-                                              {pieData.map((entry, index) => (
-                                                <Cell 
-                                                  key={`cell-${index}`} 
-                                                  fill={entry.color} 
-                                                  style={{ filter: `drop-shadow(0px 0px 6px ${entry.color}ee)` }}
-                                                />
-                                              ))}
-                                            </Pie>
-                                            <Tooltip
-                                              contentStyle={{ backgroundColor: '#090d16', borderRadius: '10px', border: '1px solid #1e293b', fontSize: '10px', fontWeight: 'bold', color: '#f1f5f9' }}
-                                              itemStyle={{ color: '#ffffff' }}
-                                              formatter={(value: any) => [`${value} respostas`, 'Quantidade']}
-                                            />
-                                          </PieChart>
-                                        </ResponsiveContainer>
-                                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                          <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">Total</span>
-                                          <span className="text-sm font-black text-white font-mono">{totalResponses}</span>
-                                        </div>
-                                      </>
-                                    ) : (
-                                      <span className="text-xs text-slate-500 font-mono italic">Sem dados suficientes</span>
-                                    )}
-                                  </div>
-
-                                  <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 text-[9px] font-mono pt-3 border-t border-slate-800/85 mt-2">
-                                    {pieData.map((item) => {
-                                      const pct = totalResponses > 0 ? (item.value / totalResponses) * 100 : 0;
-                                      return (
-                                        <div key={item.name} className="flex items-center gap-1.5">
-                                          <span className="w-2 h-2 rounded-full shrink-0 shadow-[0_0_5px_currentColor]" style={{ backgroundColor: item.color, color: item.color }} />
-                                          <span className="text-slate-300 truncate font-bold">{item.name}:</span>
-                                          <span className="text-white font-black ml-auto">{item.value} ({pct.toFixed(0)}%)</span>
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                </div>
-                              );
-                            })()}
+                               <div className="space-y-4.5 pt-3">
+                                 {/* Category 1: Curso */}
+                                 <div className="space-y-1.5">
+                                   <div className="flex justify-between items-center text-xs">
+                                     <span className={`font-extrabold flex items-center gap-1.5 ${chartTheme === 'azul' ? 'text-slate-300' : 'text-slate-600'}`}>
+                                       <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#10b981]"></span>
+                                       Expectativas sobre o Curso
+                                     </span>
+                                     <span className={`font-black font-mono text-[10.5px] ${chartTheme === 'azul' ? 'text-emerald-400' : 'text-emerald-600'}`}>{courseSatisfactionIndex.toFixed(2)} / 5.00</span>
+                                   </div>
+                                   <div className={`h-4 rounded-lg relative overflow-visible border ${
+                                     chartTheme === 'azul' 
+                                       ? 'bg-slate-900 border-slate-800/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.8)]' 
+                                       : 'bg-slate-100 border-slate-200 shadow-[inset_0_1px_3px_rgba(0,0,0,0.1)]'
+                                   }`}>
+                                     <div 
+                                       className="h-full bg-gradient-to-r from-emerald-600 via-emerald-400 to-emerald-300 rounded-l-lg transition-all duration-500 border-t border-white/30 border-b border-b-emerald-800 shadow-[0_0_12px_rgba(16,185,129,0.7)]" 
+                                       style={{ width: `${(courseSatisfactionIndex / 5) * 100}%` }}
+                                     />
+                                     {/* Overall Class Average Reference Line */}
+                                     <div 
+                                       className={`absolute top-0 bottom-0 w-1 border-x z-10 ${
+                                         chartTheme === 'azul'
+                                           ? 'bg-amber-400 shadow-[0_0_8px_#f59e0b] border-amber-200'
+                                           : 'bg-amber-500 border-amber-300 shadow-sm'
+                                       }`}
+                                       style={{ left: `${(overallAverage / 5) * 100}%` }}
+                                       title={`Média Geral da Turma: ${overallAverage.toFixed(2)}`}
+                                     />
+                                   </div>
+                                 </div>
+ 
+                                 {/* Category 2: Instrutor */}
+                                 <div className="space-y-1.5">
+                                   <div className="flex justify-between items-center text-xs">
+                                     <span className={`font-extrabold flex items-center gap-1.5 ${chartTheme === 'azul' ? 'text-slate-300' : 'text-slate-600'}`}>
+                                       <span className="w-2.5 h-2.5 rounded-full bg-violet-400 shadow-[0_0_6px_#8b5cf6]"></span>
+                                       Desempenho do Instrutor
+                                     </span>
+                                     <span className={`font-black font-mono text-[10.5px] ${chartTheme === 'azul' ? 'text-violet-400' : 'text-violet-600'}`}>{instructorIndex.toFixed(2)} / 5.00</span>
+                                   </div>
+                                   <div className={`h-4 rounded-lg relative overflow-visible border ${
+                                     chartTheme === 'azul' 
+                                       ? 'bg-slate-900 border-slate-800/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.8)]' 
+                                       : 'bg-slate-100 border-slate-200 shadow-[inset_0_1px_3px_rgba(0,0,0,0.1)]'
+                                   }`}>
+                                     <div 
+                                       className="h-full bg-gradient-to-r from-violet-600 via-fuchsia-400 to-purple-300 rounded-l-lg transition-all duration-500 border-t border-white/30 border-b border-b-violet-850 shadow-[0_0_12px_rgba(168,85,247,0.7)]" 
+                                       style={{ width: `${(instructorIndex / 5) * 100}%` }}
+                                     />
+                                     <div 
+                                       className={`absolute top-0 bottom-0 w-1 border-x z-10 ${
+                                         chartTheme === 'azul'
+                                           ? 'bg-amber-400 shadow-[0_0_8px_#f59e0b] border-amber-200'
+                                           : 'bg-amber-500 border-amber-300 shadow-sm'
+                                       }`}
+                                       style={{ left: `${(overallAverage / 5) * 100}%` }}
+                                     />
+                                   </div>
+                                 </div>
+ 
+                                 {/* Category 3: Autoavaliação */}
+                                 <div className="space-y-1.5">
+                                   <div className="flex justify-between items-center text-xs">
+                                     <span className={`font-extrabold flex items-center gap-1.5 ${chartTheme === 'azul' ? 'text-slate-300' : 'text-slate-605'}`}>
+                                       <span className="w-2.5 h-2.5 rounded-full bg-sky-400 shadow-[0_0_6px_#0ea5e9]"></span>
+                                       Autoavaliação dos Alunos
+                                     </span>
+                                     <span className={`font-black font-mono text-[10.5px] ${chartTheme === 'azul' ? 'text-sky-400' : 'text-sky-600'}`}>{studentSelfIndex.toFixed(2)} / 5.00</span>
+                                   </div>
+                                   <div className={`h-4 rounded-lg relative overflow-visible border ${
+                                     chartTheme === 'azul' 
+                                       ? 'bg-slate-900 border-slate-800/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.8)]' 
+                                       : 'bg-slate-100 border-slate-200 shadow-[inset_0_1px_3px_rgba(0,0,0,0.1)]'
+                                   }`}>
+                                     <div 
+                                       className="h-full bg-gradient-to-r from-sky-600 via-cyan-400 to-cyan-300 rounded-l-lg transition-all duration-500 border-t border-white/30 border-b border-b-sky-850 shadow-[0_0_12px_rgba(6,182,212,0.7)]" 
+                                       style={{ width: `${(studentSelfIndex / 5) * 100}%` }}
+                                     />
+                                     <div 
+                                       className={`absolute top-0 bottom-0 w-1 border-x z-10 ${
+                                         chartTheme === 'azul'
+                                           ? 'bg-amber-400 shadow-[0_0_8px_#f59e0b] border-amber-200'
+                                           : 'bg-amber-500 border-amber-300 shadow-sm'
+                                       }`}
+                                       style={{ left: `${(overallAverage / 5) * 100}%` }}
+                                     />
+                                   </div>
+                                 </div>
+ 
+                                 {/* Category 4: Infraestrutura */}
+                                 <div className="space-y-1.5">
+                                   <div className="flex justify-between items-center text-xs">
+                                     <span className={`font-extrabold flex items-center gap-1.5 ${chartTheme === 'azul' ? 'text-slate-300' : 'text-slate-600'}`}>
+                                       <span className="w-2.5 h-2.5 rounded-full bg-pink-400 shadow-[0_0_6px_#ec4899]"></span>
+                                       Infraestrutura e Recursos
+                                     </span>
+                                     <span className={`font-black font-mono text-[10.5px] ${chartTheme === 'azul' ? 'text-pink-400' : 'text-pink-600'}`}>{infraIndex.toFixed(2)} / 5.00</span>
+                                   </div>
+                                   <div className={`h-4 rounded-lg relative overflow-visible border ${
+                                     chartTheme === 'azul' 
+                                       ? 'bg-slate-900 border-slate-800/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.8)]' 
+                                       : 'bg-slate-100 border-slate-200 shadow-[inset_0_1px_3px_rgba(0,0,0,0.1)]'
+                                   }`}>
+                                     <div 
+                                       className="h-full bg-gradient-to-r from-rose-600 via-pink-400 to-rose-300 rounded-l-lg transition-all duration-500 border-t border-white/30 border-b border-b-rose-850 shadow-[0_0_12px_rgba(244,63,94,0.7)]" 
+                                       style={{ width: `${(infraIndex / 5) * 100}%` }}
+                                     />
+                                     <div 
+                                       className={`absolute top-0 bottom-0 w-1 border-x z-10 ${
+                                         chartTheme === 'azul'
+                                           ? 'bg-amber-400 shadow-[0_0_8px_#f59e0b] border-amber-200'
+                                           : 'bg-amber-500 border-amber-300 shadow-sm'
+                                       }`}
+                                       style={{ left: `${(overallAverage / 5) * 100}%` }}
+                                     />
+                                   </div>
+                                 </div>
+                               </div>
+ 
+                               <div className={`flex items-center gap-4 text-[9px] justify-end pt-3 border-t font-mono mt-4 ${
+                                 chartTheme === 'azul' ? 'border-slate-800/80 text-slate-400' : 'border-slate-100 text-slate-500'
+                               }`}>
+                                 <div className="flex items-center gap-1.5">
+                                   <span className={`w-3.5 h-1.5 rounded-sm inline-block ${chartTheme === 'azul' ? 'bg-amber-400 shadow-[0_0_6px_#f59e0b]' : 'bg-amber-500'}`}></span>
+                                   <span className={`font-black ${chartTheme === 'azul' ? 'text-amber-400' : 'text-amber-600'}`}>Média Geral ({overallAverage.toFixed(2)})</span>
+                                 </div>
+                               </div>
+                             </div>
+ 
+                             {/* Chart 2: Perfil de Distribuição de Notas */}
+                             <div className={`border rounded-xl p-5 relative overflow-hidden transition-all duration-300 border-b-[4px] border-r-[2px] ${
+                               chartTheme === 'azul'
+                                 ? 'bg-slate-950 border-slate-800 shadow-[0_0_25px_rgba(168,85,247,0.15)] hover:shadow-[0_0_35px_rgba(168,85,247,0.25)] border-purple-500/20 text-white'
+                                 : 'bg-white border-slate-250 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border-purple-500/30 text-slate-800'
+                             }`} id="chart-neon-distribution-card">
+                               <div className={`flex items-center justify-between border-b pb-2.5 ${chartTheme === 'azul' ? 'border-slate-800/80' : 'border-slate-100'}`}>
+                                 <h4 className={`text-xs font-black uppercase tracking-widest font-mono flex items-center gap-1.5 ${chartTheme === 'azul' ? 'text-purple-400' : 'text-purple-600'}`}>
+                                   <span className={`w-2.5 h-2.5 rounded-full bg-purple-400 shadow-[0_0_8px_#a855f7] ${chartTheme === 'azul' ? 'animate-pulse' : ''}`}></span>
+                                   2. Distribuição Geral
+                                 </h4>
+                                 <span className={`text-[9px] font-black uppercase font-mono tracking-wider ${chartTheme === 'azul' ? 'text-purple-500/80' : 'text-purple-605'}`}>
+                                   {totalResponses} respostas
+                                 </span>
+                               </div>
+ 
+                               {/* Vertical bars chart for frequencies */}
+                               <div className="flex items-end justify-between h-40 px-2 pt-5">
+                                 {([5, 4, 3, 2, 1] as const).map(score => {
+                                   const count = distribution[score];
+                                   const pct = totalResponses > 0 ? (count / totalResponses) * 100 : 0;
+                                   
+                                   // Determine elegant neon gradients and shadows for 3D pillar tubes
+                                   const barStyles = score === 5 
+                                     ? "bg-gradient-to-t from-emerald-600 via-emerald-400 to-emerald-300 border-l border-white/20 border-r border-emerald-850 hover:shadow-[0_0_18px_rgba(16,185,129,0.95)] shadow-[0_0_8px_rgba(16,185,129,0.5)]" 
+                                     : score === 4 
+                                       ? "bg-gradient-to-t from-cyan-600 via-cyan-400 to-cyan-300 border-l border-white/20 border-r border-cyan-850 hover:shadow-[0_0_18px_rgba(6,182,212,0.95)] shadow-[0_0_8px_rgba(6,182,212,0.5)]" 
+                                       : score === 3 
+                                         ? "bg-gradient-to-t from-amber-600 via-amber-400 to-amber-300 border-l border-white/20 border-r border-amber-850 hover:shadow-[0_0_18px_rgba(245,158,11,0.95)] shadow-[0_0_8px_rgba(245,158,11,0.5)]" 
+                                         : score === 2 
+                                           ? "bg-gradient-to-t from-orange-600 via-orange-400 to-orange-300 border-l border-white/20 border-r border-orange-850 hover:shadow-[0_0_18px_rgba(249,115,22,0.95)] shadow-[0_0_8px_rgba(249,115,22,0.5)]" 
+                                             : "bg-gradient-to-t from-rose-600 via-rose-400 to-rose-300 border-l border-white/20 border-r border-rose-850 hover:shadow-[0_0_18px_rgba(244,63,94,0.95)] shadow-[0_0_8px_rgba(244,63,94,0.5)]";
+ 
+                                   return (
+                                     <div key={score} className="flex flex-col items-center flex-1 group">
+                                       <span className={`text-[9.5px] font-black opacity-0 group-hover:opacity-100 transition-opacity duration-200 mb-1.5 font-mono border px-1.5 py-0.5 rounded shadow-lg ${
+                                         chartTheme === 'azul' ? 'text-slate-100 bg-slate-900 border-slate-700' : 'text-slate-800 bg-white border-slate-200'
+                                       }`}>
+                                         {count} ({pct.toFixed(0)}%)
+                                       </span>
+                                       <div className={`w-full max-w-[28px] border rounded-t-lg h-24 flex flex-col justify-end overflow-visible relative ${
+                                         chartTheme === 'azul'
+                                           ? 'bg-slate-900/90 border-slate-800/50 shadow-[inset_0_2px_5px_rgba(0,0,0,0.8)]'
+                                           : 'bg-slate-50 border-slate-200 shadow-[inset_0_1px_3px_rgba(0,0,0,0.15)]'
+                                       }`}>
+                                         <div 
+                                           className={`w-full ${barStyles} transition-all duration-500 rounded-t-md border-t border-white/30`} 
+                                           style={{ height: `${Math.max(4, pct)}%` }}
+                                         />
+                                       </div>
+                                       <span className={`text-[10px] font-black mt-2 font-mono flex items-center justify-center gap-0.5 text-center ${
+                                         chartTheme === 'azul' ? 'text-slate-300' : 'text-slate-605'
+                                       }`}>
+                                         ★{score}
+                                       </span>
+                                     </div>
+                                   );
+                                 })}
+                               </div>
+ 
+                               <div className={`grid grid-cols-5 text-center text-[8.5px] font-extrabold font-mono pt-3 border-t mt-4 ${
+                                 chartTheme === 'azul' ? 'text-slate-400 border-slate-800/80' : 'text-slate-500 border-slate-100'
+                               }`}>
+                                 <div className={chartTheme === 'azul' ? 'text-emerald-400' : 'text-emerald-600'}>CP (5)</div>
+                                 <div className={chartTheme === 'azul' ? 'text-cyan-400' : 'text-cyan-600'}>CPa (4)</div>
+                                 <div className={chartTheme === 'azul' ? 'text-amber-400' : 'text-amber-600'}>Neutro (3)</div>
+                                 <div className={chartTheme === 'azul' ? 'text-orange-400' : 'text-orange-600'}>DPa (2)</div>
+                                 <div className={chartTheme === 'azul' ? 'text-rose-400' : 'text-rose-600'}>DP (1)</div>
+                               </div>
+                             </div>
+ 
+                             {/* Chart 3: Proporção de Níveis de Satisfação (Pie Chart) */}
+                             {(() => {
+                               const pieData = [
+                                 { name: 'Excelente (★5)', value: distribution[5], color: '#10b981' },
+                                 { name: 'Bom (★4)', value: distribution[4], color: '#06b6d4' },
+                                 { name: 'Regular (★3)', value: distribution[3], color: '#f59e0b' },
+                                 { name: 'Insatisfeito (★1-2)', value: (distribution[1] || 0) + (distribution[2] || 0), color: '#ef4444' }
+                               ].filter(item => item.value > 0);
+ 
+                               return (
+                                 <div className={`border rounded-xl p-5 relative overflow-hidden transition-all duration-305 border-b-[4px] border-r-[2px] flex flex-col justify-between ${
+                                   chartTheme === 'azul'
+                                     ? 'bg-slate-950 border-slate-800 shadow-[0_0_25px_rgba(16,185,129,0.15)] hover:shadow-[0_0_35px_rgba(16,185,129,0.25)] border-emerald-500/20 text-white'
+                                     : 'bg-white border-slate-205 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border-emerald-500/30 text-slate-800'
+                                 }`} id="chart-pie-satisfaction-card">
+                                   <div className={`flex items-center justify-between border-b pb-2.5 ${chartTheme === 'azul' ? 'border-slate-800/80' : 'border-slate-100'}`}>
+                                     <h4 className={`text-xs font-black uppercase tracking-widest font-mono flex items-center gap-1.5 ${chartTheme === 'azul' ? 'text-emerald-400' : 'text-emerald-600'}`}>
+                                       <span className={`w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#10b981] ${chartTheme === 'azul' ? 'animate-pulse' : ''}`}></span>
+                                       3. Níveis de Satisfação
+                                     </h4>
+                                     <span className={`text-[9px] font-black uppercase font-mono tracking-wider ${chartTheme === 'azul' ? 'text-emerald-500/80' : 'text-emerald-600'}`}>
+                                       PIZZA GLOW
+                                     </span>
+                                   </div>
+ 
+                                   <div className="h-40 w-full flex items-center justify-center relative my-1">
+                                     {pieData.length > 0 ? (
+                                       <>
+                                         <ResponsiveContainer width="100%" height="100%">
+                                           <PieChart>
+                                             <Pie
+                                               data={pieData}
+                                               cx="50%"
+                                               cy="50%"
+                                               innerRadius={36}
+                                               outerRadius={56}
+                                               paddingAngle={5}
+                                               dataKey="value"
+                                             >
+                                               {pieData.map((entry, index) => (
+                                                 <Cell 
+                                                   key={`cell-${index}`} 
+                                                   fill={entry.color} 
+                                                   style={chartTheme === 'azul' ? { filter: `drop-shadow(0px 0px 6px ${entry.color}ee)` } : undefined}
+                                                 />
+                                               ))}
+                                             </Pie>
+                                             <Tooltip
+                                               contentStyle={
+                                                 chartTheme === 'azul'
+                                                   ? { backgroundColor: '#090d16', borderRadius: '10px', border: '1px solid #1e293b', fontSize: '10px', fontWeight: 'bold', color: '#f1f5f9' }
+                                                   : { backgroundColor: '#ffffff', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '10px', fontWeight: 'bold', color: '#0f172a' }
+                                               }
+                                               itemStyle={chartTheme === 'azul' ? { color: '#ffffff' } : { color: '#0f172a' }}
+                                               formatter={(value: any) => [`${value} respostas`, 'Quantidade']}
+                                             />
+                                           </PieChart>
+                                         </ResponsiveContainer>
+                                         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                           <span className={`text-[8px] font-black uppercase tracking-widest ${chartTheme === 'azul' ? 'text-slate-400' : 'text-slate-500'}`}>Total</span>
+                                           <span className={`text-sm font-black font-mono ${chartTheme === 'azul' ? 'text-white' : 'text-slate-900'}`}>{totalResponses}</span>
+                                         </div>
+                                       </>
+                                     ) : (
+                                       <span className="text-xs text-slate-500 font-mono italic">Sem dados suficientes</span>
+                                     )}
+                                   </div>
+ 
+                                   <div className={`grid grid-cols-2 gap-x-2 gap-y-1.5 text-[9px] font-mono pt-3 border-t mt-2 ${
+                                     chartTheme === 'azul' ? 'border-slate-800/85' : 'border-slate-100'
+                                   }`}>
+                                     {pieData.map((item) => {
+                                       const pct = totalResponses > 0 ? (item.value / totalResponses) * 100 : 0;
+                                       return (
+                                         <div key={item.name} className="flex items-center gap-1.5">
+                                           <span className="w-2 h-2 rounded-full shrink-0 shadow-[0_0_5px_currentColor]" style={{ backgroundColor: item.color, color: item.color }} />
+                                           <span className={`truncate font-bold ${chartTheme === 'azul' ? 'text-slate-300' : 'text-slate-650'}`}>{item.name}:</span>
+                                           <span className={`font-black ml-auto ${chartTheme === 'azul' ? 'text-white' : 'text-slate-900'}`}>{item.value} ({pct.toFixed(0)}%)</span>
+                                         </div>
+                                       );
+                                     })}
+                                   </div>
+                                 </div>
+                               );
+                             })()}
 
                           </div>
 
