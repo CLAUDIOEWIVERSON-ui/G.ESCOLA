@@ -22,6 +22,8 @@ import {
   Check,
   Loader2,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   MousePointerClick,
   Trash2
 } from 'lucide-react';
@@ -52,11 +54,21 @@ export default function DashboardPage() {
   } = dashboardData || {};
 
   const [selectedCard, setSelectedCard] = useState<string>('exterior');
+  const [itemsPerPage, setItemsPerPage] = useState<number>(10);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+
+  const totalAlunosExterior = alunosExterior.length;
+  const totalPagesAlunos = Math.ceil(totalAlunosExterior / itemsPerPage);
+  const startIndexAlunos = (currentPage - 1) * itemsPerPage;
+  const endIndexAlunos = Math.min(startIndexAlunos + itemsPerPage, totalAlunosExterior);
+  const paginatedAlunos = alunosExterior.slice(startIndexAlunos, endIndexAlunos);
+
   const [expandedPhoto, setExpandedPhoto] = useState<{url: string, name: string} | null>(null);
   const detailsRef = useRef<HTMLDivElement>(null);
 
   const handleCardClick = (cardId: string) => {
     setSelectedCard(cardId);
+    setCurrentPage(1);
     setTimeout(() => {
       detailsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
@@ -672,7 +684,7 @@ export default function DashboardPage() {
                       </td>
                     </tr>
                   ) : (
-                    alunosExterior.slice(0, 15).map((aluno: any) => {
+                    paginatedAlunos.map((aluno: any) => {
                       const turmaData = Array.isArray((aluno as any).turma) ? (aluno as any).turma[0] : (aluno as any).turma;
                       const curso = Array.isArray(turmaData?.curso) ? turmaData.curso[0] : turmaData?.curso;
                       return (
@@ -750,6 +762,72 @@ export default function DashboardPage() {
                 </tbody>
               </table>
             </div>
+
+            {/* Painel de Paginação de Alunos */}
+            {totalAlunosExterior > 0 && (
+              <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-sans text-slate-500 font-semibold shrink-0">
+                <div className="flex items-center gap-2">
+                  <span>{language === 'pt' ? 'Exibir:' : 'Show:'}</span>
+                  <select
+                    value={itemsPerPage}
+                    onChange={(e) => {
+                      setItemsPerPage(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-700 outline-none focus:ring-1 focus:ring-indigo-500 font-bold cursor-pointer"
+                  >
+                    <option value={5}>5</option>
+                    <option value={10}>10</option>
+                    <option value={15}>15</option>
+                    <option value={20}>20</option>
+                  </select>
+                  <span>{language === 'pt' ? 'alunos por página' : 'students per page'}</span>
+                </div>
+
+                <div className="font-medium text-slate-400 font-mono">
+                  {language === 'pt' 
+                    ? `Exibindo ${totalAlunosExterior > 0 ? startIndexAlunos + 1 : 0}-${endIndexAlunos} de ${totalAlunosExterior} alunos`
+                    : `Showing ${totalAlunosExterior > 0 ? startIndexAlunos + 1 : 0}-${endIndexAlunos} of ${totalAlunosExterior} students`}
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    className="p-1 px-2 hover:bg-slate-100 disabled:opacity-45 rounded-lg border border-slate-200 text-slate-500 transition cursor-pointer flex items-center justify-center disabled:cursor-not-allowed"
+                    title={language === 'pt' ? 'Anterior' : 'Previous'}
+                  >
+                    <ChevronLeft size={14} />
+                  </button>
+                  
+                  {Array.from({ length: totalPagesAlunos }, (_, i) => i + 1).map((p) => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setCurrentPage(p)}
+                      className={`p-1 px-3 rounded-lg text-xs font-bold transition-colors select-none ${
+                        currentPage === p
+                          ? 'bg-indigo-600 border border-indigo-600 text-white shadow-sm'
+                          : 'bg-white border border-slate-200 hover:bg-slate-50 text-slate-600'
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  ))}
+
+                  <button
+                    type="button"
+                    disabled={currentPage === totalPagesAlunos || totalPagesAlunos === 0}
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPagesAlunos))}
+                    className="p-1 px-2 hover:bg-slate-100 disabled:opacity-45 rounded-lg border border-slate-200 text-slate-500 transition cursor-pointer flex items-center justify-center disabled:cursor-not-allowed"
+                    title={language === 'pt' ? 'Próximo' : 'Next'}
+                  >
+                    <ChevronRight size={14} />
+                  </button>
+                </div>
+              </div>
+            )}
           </motion.div>
         )}
 
@@ -854,6 +932,16 @@ function TurmasListTable({ turmas, title, onDelete }: { turmas: any[], title: st
   const { t, language } = useI18n();
   const { isAdmin } = useUser();
   const isPt = language === 'pt';
+
+  const [itemsPerPage, setItemsPerPage] = useState<number>(10);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+
+  const totalItems = turmas.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+  const paginatedTurmas = turmas.slice(startIndex, endIndex);
+
   return (
     <div className="bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col overflow-hidden">
       <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
@@ -885,7 +973,7 @@ function TurmasListTable({ turmas, title, onDelete }: { turmas: any[], title: st
                 </td>
               </tr>
             ) : (
-              turmas.map((turma) => (
+              paginatedTurmas.map((turma) => (
                 <tr key={turma.id} className="hover:bg-slate-50 transition-colors">
                   <td className="px-6 py-4">
                     <div className="font-bold text-slate-800">{turma.nome}</div>
@@ -902,7 +990,7 @@ function TurmasListTable({ turmas, title, onDelete }: { turmas: any[], title: st
                   <td className="px-6 py-4">
                     <div className="text-slate-650 font-medium">{turma.localizacao || '-'}</div>
                     <div className="text-[10px] text-slate-400 uppercase font-bold">
-                      {turma.periodo || '-'}
+                       {turma.periodo || '-'}
                     </div>
                   </td>
                   <td className="px-6 py-4 text-center">
@@ -937,6 +1025,72 @@ function TurmasListTable({ turmas, title, onDelete }: { turmas: any[], title: st
           </tbody>
         </table>
       </div>
+
+      {/* Painel de Paginação de Turmas */}
+      {totalItems > 0 && (
+        <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-sans text-slate-500 font-semibold shrink-0">
+          <div className="flex items-center gap-2">
+            <span>{isPt ? 'Exibir:' : 'Show:'}</span>
+            <select
+              value={itemsPerPage}
+              onChange={(e) => {
+                setItemsPerPage(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-700 outline-none focus:ring-1 focus:ring-indigo-500 font-bold cursor-pointer"
+            >
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={15}>15</option>
+              <option value={20}>20</option>
+            </select>
+            <span>{isPt ? 'registros por página' : 'records per page'}</span>
+          </div>
+
+          <div className="font-medium text-slate-400 font-mono">
+            {isPt 
+              ? `Exibindo ${totalItems > 0 ? startIndex + 1 : 0}-${endIndex} de ${totalItems} registros`
+              : `Showing ${totalItems > 0 ? startIndex + 1 : 0}-${endIndex} of ${totalItems} records`}
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              className="p-1 px-2 hover:bg-slate-100 disabled:opacity-45 rounded-lg border border-slate-200 text-slate-500 transition cursor-pointer flex items-center justify-center disabled:cursor-not-allowed"
+              title={isPt ? 'Anterior' : 'Previous'}
+            >
+              <ChevronLeft size={14} />
+            </button>
+            
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setCurrentPage(p)}
+                className={`p-1 px-3 rounded-lg text-xs font-bold transition-colors select-none ${
+                  currentPage === p
+                    ? 'bg-indigo-600 border border-indigo-600 text-white shadow-sm'
+                    : 'bg-white border border-slate-200 hover:bg-slate-50 text-slate-600'
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+
+            <button
+              type="button"
+              disabled={currentPage === totalPages || totalPages === 0}
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              className="p-1 px-2 hover:bg-slate-100 disabled:opacity-45 rounded-lg border border-slate-200 text-slate-500 transition cursor-pointer flex items-center justify-center disabled:cursor-not-allowed"
+              title={isPt ? 'Próximo' : 'Next'}
+            >
+              <ChevronRight size={14} />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
