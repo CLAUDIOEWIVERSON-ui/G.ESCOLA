@@ -25,6 +25,7 @@ export default function UsuariosPage() {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [roleFilter, setRoleFilter] = useState<string>('all');
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -143,9 +144,12 @@ export default function UsuariosPage() {
     }
   };
 
-  const filteredUsers = users.filter(u => 
-    (u.full_name || '').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredUsers = users.filter(u => {
+    const matchesSearch = (u.full_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          (u.email || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesRole = roleFilter === 'all' || u.role === roleFilter;
+    return matchesSearch && matchesRole;
+  });
 
   const totalItems = filteredUsers.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
@@ -209,8 +213,8 @@ export default function UsuariosPage() {
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="p-4 border-b border-slate-100 bg-slate-50/50">
-          <div className="relative max-w-md">
+        <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="relative w-full lg:max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <input
               type="text"
@@ -222,6 +226,32 @@ export default function UsuariosPage() {
               }}
               className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition-all"
             />
+          </div>
+
+          <div className="flex flex-wrap gap-1 p-1 bg-slate-100 border border-slate-200/60 rounded-xl w-fit">
+            {[
+              { id: 'all', label: language === 'pt' ? 'Todos' : 'All' },
+              { id: 'aluno', label: language === 'pt' ? 'Alunos' : 'Students' },
+              { id: 'instrutor', label: language === 'pt' ? 'Instrutores' : 'Instructors' },
+              { id: 'admin', label: language === 'pt' ? 'Administradores' : 'Administrators' }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => {
+                  setRoleFilter(tab.id);
+                  setCurrentPage(1);
+                }}
+                className={cn(
+                  "px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all select-none cursor-pointer",
+                  roleFilter === tab.id
+                    ? "bg-white text-blue-600 shadow-sm border border-slate-200/40"
+                    : "text-slate-500 hover:bg-white/40 hover:text-slate-800"
+                )}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
         </div>
 
