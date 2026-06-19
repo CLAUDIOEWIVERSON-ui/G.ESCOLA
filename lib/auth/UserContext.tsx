@@ -10,6 +10,8 @@ interface UserProfile {
   id: string;
   role: Role;
   full_name: string | null;
+  nome?: string | null;
+  email?: string | null;
   has_changed_password?: boolean;
   isNifStudent?: boolean;
   student_id?: string;
@@ -98,6 +100,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         finalProfile = data as UserProfile;
       }
 
+      finalProfile.email = session.user.email || null;
+      finalProfile.nome = finalProfile.full_name;
+
       // Hardcode perm admin check
       if (session.user.email === SUPER_ADMIN_EMAIL) {
         finalProfile.role = 'admin';
@@ -125,6 +130,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
             if (stun && !stunErr) {
               finalProfile.full_name = stun.nome;
+              finalProfile.nome = stun.nome;
               finalProfile.turma_id = stun.turma_id;
             } else if (session.user.user_metadata?.turma_id) {
               finalProfile.turma_id = session.user.user_metadata.turma_id;

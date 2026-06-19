@@ -48,7 +48,7 @@ export async function GET() {
       const { data: rpcData, error: rpcError } = await supabaseAdmin
         .rpc('get_db_storage_stats');
 
-      if (!rpcError && rpcData && Array.isNative ? false : Array.isArray(rpcData) && rpcData.length > 0) {
+      if (!rpcError && rpcData && Array.isArray(rpcData) && rpcData.length > 0) {
         // Formatar resultados reais do postgres
         const tablesList = rpcData.map((row: any) => ({
           name: row.table_name.replace('public.', ''),

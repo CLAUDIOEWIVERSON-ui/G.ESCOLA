@@ -473,7 +473,8 @@ export default function CalendarPage() {
                 cor: 'bg-blue-600',
                 exibir_aluno: true,
                 exibir_instrutor: true,
-                uniforme_dia: ''
+                uniforme_dia: '',
+                target_grupo: 'AMBOS'
               });
               setIsModalOpen(true);
             }}

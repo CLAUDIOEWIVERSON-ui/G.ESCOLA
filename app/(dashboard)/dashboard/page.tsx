@@ -31,7 +31,7 @@ import militaryMaleAvatar from '@/src/assets/images/avatar_military_male_1779964
 import militaryFemaleAvatar from '@/src/assets/images/avatar_military_female_1779964903107.png';
 
 export default function DashboardPage() {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const { profile } = useUser();
   const { dashboardData, loading } = useDashboardStats();
   
@@ -552,7 +552,7 @@ export default function DashboardPage() {
                   </div>
                   {isSelected ? (
                     <span className="text-[9px] font-black text-slate-800 bg-slate-100 px-2 py-0.5 rounded uppercase tracking-wider">
-                      {t.t === 'pt' ? 'Visualizando' : 'Viewing'}
+                      {language === 'pt' ? 'Visualizando' : 'Viewing'}
                     </span>
                   ) : (
                     <span className="text-[9px] font-extrabold text-slate-400 bg-slate-55 px-2 py-0.5 rounded uppercase tracking-wider">
@@ -564,7 +564,7 @@ export default function DashboardPage() {
                 <div className="flex items-end justify-between">
                   <span className="text-3xl font-black text-slate-800 tracking-tight">{card.value}</span>
                   <span className="text-[10px] text-indigo-600 font-bold flex items-center gap-0.5 group">
-                    {t.t === 'pt' ? 'Detalhar' : 'Details'} 
+                    {language === 'pt' ? 'Detalhar' : 'Details'} 
                     <ArrowRight size={10} className="text-indigo-500 transition-transform group-hover:translate-x-0.5" />
                   </span>
                 </div>
@@ -592,7 +592,7 @@ export default function DashboardPage() {
                 {t.dashboard.studentsAbroad}
               </h3>
               <span className="text-xs text-slate-550 font-bold bg-slate-100 px-3 py-1 rounded-full border border-slate-200/50">
-                {alunosExterior.length} {t.t === 'pt' ? 'Alunos' : 'Students'}
+                {alunosExterior.length} {language === 'pt' ? 'Alunos' : 'Students'}
               </span>
             </div>
             <div className="overflow-x-auto">
@@ -788,8 +788,8 @@ export default function DashboardPage() {
 }
 
 function TurmasListTable({ turmas, title }: { turmas: any[], title: string }) {
-  const { t } = useI18n();
-  const isPt = t.t === 'pt';
+  const { t, language } = useI18n();
+  const isPt = language === 'pt';
   return (
     <div className="bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col overflow-hidden">
       <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
