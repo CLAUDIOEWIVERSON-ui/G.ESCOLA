@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
 import { useDashboardStats } from '@/hooks/useCachedData';
+import { supabase } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { 
   Users, 
@@ -21,7 +22,8 @@ import {
   Check,
   Loader2,
   ChevronDown,
-  MousePointerClick
+  MousePointerClick,
+  Trash2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import Image from 'next/image';
@@ -33,8 +35,8 @@ import militaryFemaleAvatar from '@/src/assets/images/avatar_military_female_177
 
 export default function DashboardPage() {
   const { t, language } = useI18n();
-  const { profile } = useUser();
-  const { dashboardData, loading } = useDashboardStats();
+  const { profile, isAdmin } = useUser();
+  const { dashboardData, loading, mutate: refreshDashboard } = useDashboardStats();
   
   const { 
     stats = {
@@ -58,6 +60,33 @@ export default function DashboardPage() {
     setTimeout(() => {
       detailsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
+  };
+
+  const handleDeleteTurma = async (id: string) => {
+    if (!isAdmin) {
+      toast.error(language === 'pt' ? 'Você não tem permissão para remover esta turma.' : 'You do not have permission to remove this class.');
+      return;
+    }
+    
+    const confirmDelete = window.confirm(
+      language === 'pt' 
+        ? 'Aviso: Deseja realmente remover esta turma? Isso a ocultará permanentemente do painel.' 
+        : 'Warning: Are you sure you want to remove this class? This will permanently hide it from the dashboard.'
+    );
+    if (!confirmDelete) return;
+
+    try {
+      const { error } = await supabase
+        .from('turmas')
+        .update({ deleted_at: new Date().toISOString() })
+        .eq('id', id);
+        
+      if (error) throw error;
+      toast.success(language === 'pt' ? 'Turma removida!' : 'Class removed!');
+      await refreshDashboard();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
   };
 
   // States for Thought of the Day
@@ -562,20 +591,18 @@ export default function DashboardPage() {
                     <card.icon size={20} />
                   </div>
                   {isSelected && (
-                    <span className="text-[9px] font-black text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded uppercase tracking-wider flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-pulse" />
-                      {language === 'pt' ? 'Ativo' : 'Active'}
-                    </span>
+                    <span className="w-2.5 h-2.5 rounded-full bg-indigo-600 animate-pulse shadow-[0_0_8px_#4f46e5]" title={language === 'pt' ? 'Ativo' : 'Active'} />
                   )}
                 </div>
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">{card.name}</p>
                 <div className="flex items-end justify-between">
                   <span className="text-3xl font-black text-slate-800 tracking-tight">{card.value}</span>
-                  <span className={`text-[10px] font-bold flex items-center gap-1 group px-2 py-0.5 rounded transition-colors ${
+                  <span className={`text-[10px] font-bold flex items-center gap-1.5 group px-2 py-0.5 rounded transition-colors ${
                     isSelected ? 'text-indigo-700 bg-indigo-50 border border-indigo-100 font-extrabold' : 'text-slate-500 hover:text-indigo-600 bg-slate-50'
                   }`}>
+                    <MousePointerClick size={10} className="text-indigo-500" />
                     {language === 'pt' ? 'Clique para Detalhar' : 'Click to Detail'} 
-                    <ArrowRight size={10} className="text-indigo-550 transition-transform group-hover:translate-x-0.5" />
+                    <ArrowRight size={10} className="text-indigo-500 transition-transform group-hover:translate-x-0.5" />
                   </span>
                 </div>
               </motion.div>
@@ -714,6 +741,7 @@ export default function DashboardPage() {
             <TurmasListTable 
               turmas={turmasExpeditoList} 
               title={t.dashboard.turmasExpedito} 
+              onDelete={handleDeleteTurma}
             />
           </motion.div>
         )}
@@ -729,6 +757,7 @@ export default function DashboardPage() {
             <TurmasListTable 
               turmas={turmasCarreiraList} 
               title={t.dashboard.turmasCarreira} 
+              onDelete={handleDeleteTurma}
             />
           </motion.div>
         )}
@@ -744,6 +773,7 @@ export default function DashboardPage() {
             <TurmasListTable 
               turmas={turmasEspeciaisList} 
               title={t.dashboard.turmasEspeciais} 
+              onDelete={handleDeleteTurma}
             />
           </motion.div>
         )}
@@ -797,8 +827,9 @@ export default function DashboardPage() {
   );
 }
 
-function TurmasListTable({ turmas, title }: { turmas: any[], title: string }) {
+function TurmasListTable({ turmas, title, onDelete }: { turmas: any[], title: string, onDelete?: (id: string) => void }) {
   const { t, language } = useI18n();
+  const { isAdmin } = useUser();
   const isPt = language === 'pt';
   return (
     <div className="bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col overflow-hidden">
@@ -820,12 +851,13 @@ function TurmasListTable({ turmas, title }: { turmas: any[], title: string }) {
               <th className="px-6 py-4">{isPt ? 'Localização / Período' : 'Location / Period'}</th>
               <th className="px-6 py-4 text-center">{isPt ? 'Capacidade' : 'Capacity'}</th>
               <th className="px-6 py-4">{isPt ? 'Instrutor Responsável' : 'Responsible Instructor'}</th>
+              {isAdmin && onDelete && <th className="px-6 py-4 text-right">{isPt ? 'Ações' : 'Actions'}</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50 text-sm">
             {turmas.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-6 py-10 text-center text-slate-400 italic font-medium">
+                <td colSpan={isAdmin && onDelete ? 6 : 5} className="px-6 py-10 text-center text-slate-400 italic font-medium">
                   {isPt ? 'Nenhuma turma ativa encontrada para esta categoria.' : 'No active classes found for this category.'}
                 </td>
               </tr>
@@ -845,7 +877,7 @@ function TurmasListTable({ turmas, title }: { turmas: any[], title: string }) {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="text-slate-600 font-medium">{turma.localizacao || '-'}</div>
+                    <div className="text-slate-650 font-medium">{turma.localizacao || '-'}</div>
                     <div className="text-[10px] text-slate-400 uppercase font-bold">
                       {turma.periodo || '-'}
                     </div>
@@ -862,6 +894,20 @@ function TurmasListTable({ turmas, title }: { turmas: any[], title: string }) {
                       Class {turma.status || 'ativa'}
                     </div>
                   </td>
+                  {isAdmin && onDelete && (
+                    <td className="px-6 py-4 text-right">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDelete(turma.id);
+                        }}
+                        className="p-1.5 bg-slate-100 hover:bg-red-600 hover:text-white border border-slate-200/50 rounded-lg transition-colors text-slate-500 cursor-pointer inline-flex items-center justify-center font-bold"
+                        title={isPt ? "Apagar Turma" : "Delete Class"}
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))
             )}

@@ -890,7 +890,7 @@ function TurmasContent() {
     } catch (err: any) {
       console.error('Error saving class (full error):', err);
       // Construct a better error message showing detail, hint or message
-      const errorMsg = err.message || err.details || err.hint || (typeof err === 'object' ? JSON.stringify(err) : String(err));
+      const errorMsg = err.message || err.details || err.hint || String(err);
       toast.error(language === 'pt' ? `Erro ao salvar: ${errorMsg}` : `Error saving: ${errorMsg}`);
     } finally {
       setSaving(false);
@@ -1257,27 +1257,27 @@ function TurmasContent() {
                 </div>
               </div>
 
-              {/* Hover Actions Bar */}
+              {/* Actions Bar (Permanently visible) */}
               {(isAdmin || canEditTurma(turma)) && (
                 <div 
-                  className="absolute bottom-4 right-4 flex items-center gap-1 opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 pointer-events-none group-hover:pointer-events-auto" 
+                  className="absolute bottom-4 right-4 flex items-center gap-1.5 z-10" 
                   onClick={(e) => e.stopPropagation()}
                 >
                   <button 
                     onClick={() => handleOpenModal(turma)}
-                    className="p-2.5 bg-white text-blue-600 rounded-xl shadow-lg border border-blue-50 hover:bg-blue-600 hover:text-white transition-all transform hover:scale-110"
+                    className="p-2 bg-slate-100 hover:bg-blue-600 hover:text-white text-blue-600 rounded-xl border border-slate-200/50 shadow-xs transition-all duration-250 cursor-pointer flex items-center justify-center font-bold"
                     title={t.common.edit}
                   >
-                    <Pencil size={14} strokeWidth={2.5} />
+                    <Pencil size={13} strokeWidth={2.5} />
                   </button>
                   {isAdmin && (
                     <button 
                       disabled={deleting === turma.id}
                       onClick={() => handleDelete(turma.id)}
-                      className="p-2.5 bg-white text-red-600 rounded-xl shadow-lg border border-red-50 hover:bg-red-600 hover:text-white transition-all transform hover:scale-110 disabled:opacity-50"
+                      className="p-2 bg-slate-100 hover:bg-red-600 hover:text-white text-red-600 rounded-xl border border-slate-200/50 shadow-xs transition-all duration-250 cursor-pointer flex items-center justify-center font-bold disabled:opacity-50"
                       title={t.common.delete}
                     >
-                      {deleting === turma.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} strokeWidth={2.5} />}
+                      {deleting === turma.id ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} strokeWidth={2.5} />}
                     </button>
                   )}
                 </div>

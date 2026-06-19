@@ -185,6 +185,14 @@ export default function CursosPage() {
       toast.error(language === 'pt' ? 'Você não tem permissão para remover este curso.' : 'You do not have permission to remove this course.');
       return;
     }
+    
+    const confirmDelete = window.confirm(
+      language === 'pt' 
+        ? `Aviso: Deseja realmente remover o curso "${cursoObj?.nome}"? Isso ocultará o curso permanentemente.` 
+        : `Warning: Are you sure you want to remove the course "${cursoObj?.nome}"? This will permanently hide the course.`
+    );
+    if (!confirmDelete) return;
+
     const { error } = await supabase
       .from('cursos')
       .update({ deleted_at: new Date().toISOString() })
@@ -654,17 +662,17 @@ export default function CursosPage() {
                       </h3>
                       
                       {canEditCurso(curso) && (
-                        <div className="opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity flex items-center gap-1 shrink-0">
+                        <div className="flex items-center gap-1 shrink-0 z-10" onClick={(e) => e.stopPropagation()}>
                           <button 
                             onClick={(e) => { e.stopPropagation(); setEditingCurso(curso); reset(curso); setModalOpen(true); }}
-                            className="p-1.5 bg-slate-50 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors text-slate-400 cursor-pointer"
+                            className="p-1.5 bg-slate-100 hover:bg-blue-600 hover:text-white border border-slate-200/50 rounded-lg transition-colors text-slate-500 cursor-pointer"
                             title={t.common.edit}
                           >
                             <Edit2 size={13} />
                           </button>
                           <button 
                             onClick={(e) => { e.stopPropagation(); deleteCurso(curso.id); }}
-                            className="p-1.5 bg-slate-50 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors text-slate-400 cursor-pointer"
+                            className="p-1.5 bg-slate-100 hover:bg-red-600 hover:text-white border border-slate-200/50 rounded-lg transition-colors text-slate-500 cursor-pointer"
                             title={t.common.delete}
                           >
                             <Trash2 size={13} />

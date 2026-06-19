@@ -213,10 +213,10 @@ export async function PUT(request: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error('Admin API PUT error detailed:', JSON.stringify(error, null, 2));
+    console.error('Admin API PUT error detailed:', error);
     return NextResponse.json({ 
       error: error.message || 'Erro desconhecido na atualização do usuário',
-      details: error
+      details: error.message || String(error)
     }, { status: 500 });
   }
 }
