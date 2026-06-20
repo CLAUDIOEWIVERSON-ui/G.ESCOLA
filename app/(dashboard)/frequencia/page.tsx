@@ -1081,6 +1081,7 @@ export default function FrequenciaPage() {
                 }
 
                 @media print {
+                  /* Reset page context and force standard white/black print output */
                   html, body {
                     margin: 0 !important;
                     padding: 0 !important;
@@ -1091,7 +1092,36 @@ export default function FrequenciaPage() {
                     min-height: auto !important;
                     overflow: visible !important;
                   }
+
+                  /* Hide headers, footers, mobile bottom-navs, back buttons, filters, etc. completely from DOM layout flow */
+                  header, nav, aside, footer, button, .print\:hidden, [role="dialog"], [role="group"] {
+                    display: none !important;
+                    width: 0 !important;
+                    height: 0 !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    overflow: hidden !important;
+                  }
                   
+                  /* Collapse all container heights, min-heights, flex properties, padding, and margins on parent wrappers */
+                  div, main, section, article {
+                    position: static !important;
+                    width: auto !important;
+                    height: auto !important;
+                    min-height: 0 !important;
+                    max-height: none !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    box-shadow: none !important;
+                    border: none !important;
+                    transform: none !important;
+                    overflow: visible !important;
+                    background: transparent !important;
+                    animation: none !important;
+                    transition: none !important;
+                    opacity: 1 !important;
+                  }
+
                   body * {
                     visibility: hidden !important;
                   }
@@ -1100,19 +1130,50 @@ export default function FrequenciaPage() {
                     visibility: visible !important;
                   }
                   
+                  /* Pin print block to top-left of page 1 with absolute assurance */
                   #frequency-print-area {
                     visibility: visible !important;
                     position: absolute !important;
                     left: 0 !important;
                     top: 0 !important;
                     width: 100% !important;
-                    padding: 0mm !important;
+                    min-width: 100% !important;
+                    padding: 0 !important;
                     margin: 0 !important;
                     box-shadow: none !important;
                     border: none !important;
                     background: #ffffff !important;
                     color: #000000 !important;
                     display: block !important;
+                  }
+
+                  /* Overwrite global generic flex flattener for our specialized print contents */
+                  #frequency-print-area .flex {
+                    display: flex !important;
+                  }
+                  #frequency-print-area .flex-row {
+                    flex-direction: row !important;
+                  }
+                  #frequency-print-area .flex-col {
+                    flex-direction: column !important;
+                  }
+                  #frequency-print-area .items-center {
+                    align-items: center !important;
+                  }
+                  #frequency-print-area .justify-between {
+                    justify-content: space-between !important;
+                  }
+                  #frequency-print-area .justify-center {
+                    justify-content: center !important;
+                  }
+                  #frequency-print-area .grid {
+                    display: grid !important;
+                  }
+                  #frequency-print-area .grid-cols-2 {
+                    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+                  }
+                  #frequency-print-area .gap-10 {
+                    gap: 40px !important;
                   }
 
                   #frequency-print-area th, 
