@@ -141,6 +141,22 @@ export default function BoletimPage() {
   const [loadingReport, setLoadingReport] = useState(false);
   const [reportData, setReportData] = useState<any | null>(null);
   const [pendingDetailsStudent, setPendingDetailsStudent] = useState<any | null>(null);
+  const [scale, setScale] = useState(0.55);
+  const [downloadingPDF, setDownloadingPDF] = useState(false);
+
+  // Dynamic auto-fit calculation based on viewport height
+  useEffect(() => {
+    if (!selectedStudentForReport) return;
+    const calculateScale = () => {
+      // Scale A4 (1123px high) to comfortably fit inside around 65% of screen height
+      const targetHeight = window.innerHeight * 0.65;
+      const computedScale = Math.min(Math.max(targetHeight / 1123, 0.4), 0.95);
+      setScale(computedScale);
+    };
+    calculateScale();
+    window.addEventListener('resize', calculateScale);
+    return () => window.removeEventListener('resize', calculateScale);
+  }, [selectedStudentForReport]);
 
   useEffect(() => {
     if (isNifStudent && profile?.student_id) {
@@ -168,6 +184,63 @@ export default function BoletimPage() {
           ? 'Não foi possível imprimir no visualizador integrado. Por favor, abra em uma nova aba.'
           : 'Failed to open print dialog in the integrated preview. Please open in a new tab.'
       );
+    }
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!reportData) return;
+    setDownloadingPDF(true);
+    const toastId = toast.loading(language === 'pt' ? 'Gerando arquivo PDF...' : 'Generating PDF file...');
+    
+    try {
+      const element = document.getElementById('student-report-print-area');
+      if (!element) {
+        throw new Error("Print area element not found");
+      }
+
+      // Temporarily clear the scale transform for high-fidelity canvas snapshot
+      const prevScale = scale;
+      setScale(1.0);
+      
+      // Let the DOM update to full-scale resolution
+      await new Promise((resolve) => setTimeout(resolve, 150));
+
+      const html2canvas = (await import('html2canvas')).default;
+      const { jsPDF } = await import('jspdf');
+
+      const canvas = await html2canvas(element, {
+        scale: 2.2, // Extremely sharp, crystal-clear typography text
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        width: 794,
+        height: 1123,
+        windowWidth: 794,
+        windowHeight: 1123
+      });
+
+      // Restore screen preview scale back to configured level
+      setScale(prevScale);
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      pdf.addImage(imgData, 'PNG', 0, 0, 210, 297);
+      
+      const sanitizedName = reportData.student.nome.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      const fileName = `boletim_individual_${sanitizedName}.pdf`;
+      pdf.save(fileName);
+      
+      toast.success(language === 'pt' ? 'Relatório PDF baixado com sucesso!' : 'PDF Report downloaded successfully!', { id: toastId });
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      toast.error(language === 'pt' ? 'Por favor, tente novamente.' : 'Please try again.', { id: toastId });
+    } finally {
+      setDownloadingPDF(false);
     }
   };
 
@@ -1308,653 +1381,577 @@ export default function BoletimPage() {
                   )}
                 </AnimatePresence>
                 {selectedStudentForReport && (
-                  <div id="student-report-modal-backdrop" className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 overflow-y-auto">
-                    <div id="student-report-modal-content" className="bg-slate-950 text-slate-100 max-w-4xl w-full rounded-2xl shadow-2xl border border-slate-800/80 flex flex-col max-h-[90vh]">
+                  <div id="student-report-modal-backdrop" className="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-[100] flex items-center justify-center p-4 overflow-hidden animate-fade-in">
+                    <div id="student-report-modal-content" className="bg-slate-900 text-slate-100 max-w-4xl w-full rounded-2xl shadow-2xl border border-slate-800 flex flex-col max-h-[95vh]">
                       {/* Modal Actions Header */}
-                      <div className="p-4 border-b border-slate-800/40 flex items-center justify-between no-print bg-slate-900 rounded-t-2xl">
+                      <div className="p-4 border-b border-slate-800 flex items-center justify-between no-print bg-slate-900 rounded-t-2xl">
                         <div className="flex items-center gap-2">
-                          <FileText className="text-blue-500" size={20} />
-                          <h3 className="text-sm font-black uppercase tracking-widest text-slate-200">
-                            {language === 'pt' ? 'Visualização do Relatório' : 'Report Preview'}
+                          <FileText className="text-blue-500" size={18} />
+                          <h3 className="text-xs font-black uppercase tracking-widest text-slate-200">
+                            {language === 'pt' ? 'Visualizador de Relatório Acadêmico' : 'Academic Report Viewer'}
                           </h3>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2.5">
+                          {/* PDF Download Button */}
+                          <button
+                            onClick={handleDownloadPDF}
+                            disabled={loadingReport || !reportData || downloadingPDF}
+                            className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md shadow-emerald-500/10 cursor-pointer"
+                          >
+                            {downloadingPDF ? <Loader2 className="animate-spin" size={13} /> : <Download size={13} />}
+                            <span>{language === 'pt' ? 'Baixar PDF' : 'Download PDF'}</span>
+                          </button>
+
+                          {/* Print Button */}
                           {profile?.role !== 'aluno' && (
                             <button
-                              onClick={() => {
-                                try {
-                                  window.print();
-                                } catch (err) {
-                                  console.error("Window print error", err);
-                                }
-                              }}
+                              onClick={handlePrint}
                               disabled={loadingReport || !reportData}
                               className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md shadow-blue-500/10 cursor-pointer"
                             >
-                              <Printer size={14} />
+                              <Printer size={13} />
                               <span>{language === 'pt' ? 'Imprimir' : 'Print'}</span>
                             </button>
                           )}
+                          
+                          {/* Close Button */}
                           <button
                             onClick={() => setSelectedStudentForReport(null)}
                             className="p-2 hover:bg-slate-800 rounded-xl text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
                           >
-                            <X size={18} />
+                            <X size={16} />
                           </button>
                         </div>
                       </div>
 
-                      {/* Modal Scrollable Body */}
-                      <div className="flex-1 overflow-y-auto p-6 bg-slate-950">
+                      {/* Modal Body Container with screen zoom fit */}
+                      <div className="flex-1 overflow-hidden p-6 bg-slate-950 flex flex-col items-center justify-center relative">
                         {loadingReport ? (
                           <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-3">
-                            <Loader2 className="animate-spin text-blue-500" size={36} />
-                            <span className="text-xs font-bold tracking-widest uppercase">
+                            <Loader2 className="animate-spin text-blue-500" size={32} />
+                            <span className="text-[10px] font-bold tracking-widest uppercase text-slate-400">
                               {language === 'pt' ? 'Carregando dados...' : 'Loading report data...'}
                             </span>
                           </div>
                         ) : reportData ? (
-                          <div className="flex flex-col gap-6">
-                            <p className="text-xs text-slate-400 text-center mb-2 leading-relaxed print:hidden">
-                              {language === 'pt' 
-                                ? 'Esta é uma pré-visualização. Clique no botão de impressão para obter o documento formatado em folha A4 com fundo branco.' 
-                                : 'This is a print preview. Click the print button to generate the formatted document on an A4 sheet with clean background.'}
-                            </p>
-                            
-                            {/* The actual A4 Printable Area */}
+                          <div className="w-full flex-1 flex flex-col items-center justify-center relative overflow-hidden">
+                            {/* Floating zoom controls */}
+                            <div className="absolute top-0 right-0 z-[115] flex items-center gap-1.5 bg-slate-900/95 backdrop-blur-md px-2.5 py-1.5 rounded-xl border border-slate-800/80 text-xs text-slate-300 font-bold shadow-lg no-print">
+                              <button 
+                                onClick={() => setScale(s => Math.max(0.3, s - 0.05))}
+                                className="w-6 h-6 flex items-center justify-center bg-slate-800 hover:bg-slate-700 active:scale-95 rounded-lg transition font-mono text-xs focus:outline-none cursor-pointer"
+                                title="Zoom Out"
+                              >
+                                -
+                              </button>
+                              <span className="w-12 text-center text-[10px] font-mono tracking-wider">{(scale * 100).toFixed(0)}%</span>
+                              <button 
+                                onClick={() => setScale(s => Math.min(1.2, s + 0.05))}
+                                className="w-6 h-6 flex items-center justify-center bg-slate-800 hover:bg-slate-700 active:scale-95 rounded-lg transition font-mono text-xs focus:outline-none cursor-pointer"
+                                title="Zoom In"
+                              >
+                                +
+                              </button>
+                              <button 
+                                onClick={() => {
+                                  const targetHeight = window.innerHeight * 0.65;
+                                  const computedScale = Math.min(Math.max(targetHeight / 1123, 0.4), 0.95);
+                                  setScale(computedScale);
+                                }}
+                                className="px-2 py-0.5 bg-blue-600/30 hover:bg-blue-600/40 border border-blue-500/30 rounded-lg text-[9px] text-blue-400 font-black tracking-wider transition ml-1 uppercase cursor-pointer"
+                                title="Recalcular ajuste automático"
+                              >
+                                {language === 'pt' ? 'Ajustar' : 'Fit'}
+                              </button>
+                            </div>
+
+                            {/* Outer wrapper that limits scaled dimensions to prevent scrolls */}
                             <div 
-                              id="student-report-print-area" 
-                              className="bg-white text-slate-900 border border-slate-200 shadow-xl p-8 rounded-lg max-w-[210mm] mx-auto flex flex-col gap-6 font-sans relative text-left text-xs"
-                              style={{ width: '100%', boxSizing: 'border-box' }}
+                              className="w-full flex items-center justify-center overflow-hidden"
+                              style={{ 
+                                height: `${1123 * scale}px`,
+                              }}
                             >
-                              {/* STYLE TAG FOR DIRECTED CUSTOM CSS FOR PRINT MEDIA */}
-                              <style dangerouslySetInnerHTML={{ __html: `
-                                @media screen {
-                                  #student-report-print-area {
-                                    zoom: 0.52 !important;
-                                    margin: 0 auto !important;
-                                    max-height: 297mm !important;
-                                  }
-                                }
-                                @media screen and (min-height: 800px) {
-                                  #student-report-print-area {
-                                    zoom: 0.60 !important;
-                                  }
-                                }
-                                @media screen and (min-height: 950px) {
-                                  #student-report-print-area {
-                                    zoom: 0.70 !important;
-                                  }
-                                }
-                                @media screen and (min-height: 1100px) {
-                                  #student-report-print-area {
-                                    zoom: 0.8 !important;
-                                  }
-                                }
-
-                                @media print {
-                                  /* Reset page context and force standard white/black print output */
-                                  html, body {
-                                    margin: 0 !important;
-                                    padding: 0 !important;
-                                    background: #ffffff !important;
-                                    color: #000000 !important;
-                                    width: 100% !important;
-                                    height: auto !important;
-                                    min-height: auto !important;
-                                    overflow: visible !important;
-                                  }
-
-                                  /* Hide headers, footers, mobile bottom-navs, back buttons, filters, etc. completely from DOM layout flow */
-                                  header, nav, aside, footer, button, .print\:hidden, [role="dialog"], [role="group"], .no-print {
-                                    display: none !important;
-                                    width: 0 !important;
-                                    height: 0 !important;
-                                    margin: 0 !important;
-                                    padding: 0 !important;
-                                    overflow: hidden !important;
-                                  }
-                                  
-                                  /* Collapse all container heights, min-heights, flex properties, padding, and margins on parent wrappers */
-                                  #student-report-modal-backdrop,
-                                  #student-report-modal-content,
-                                  div, main, section, article {
-                                    position: static !important;
-                                    width: auto !important;
-                                    height: auto !important;
-                                    min-height: 0 !important;
-                                    max-height: none !important;
-                                    margin: 0 !important;
-                                    padding: 0 !important;
-                                    box-shadow: none !important;
-                                    border: none !important;
-                                    transform: none !important;
-                                    overflow: visible !important;
-                                    background: transparent !important;
-                                    animation: none !important;
-                                    transition: none !important;
-                                    opacity: 1 !important;
-                                  }
-
-                                  body * {
-                                    visibility: hidden !important;
-                                  }
-
-                                  #student-report-print-area, 
-                                  #student-report-print-area *,
-                                  #student-report-modal-backdrop,
-                                  #student-report-modal-content,
-                                  #student-report-modal-backdrop *,
-                                  #student-report-modal-content * {
-                                    visibility: visible !important;
-                                  }
-
-                                  #student-report-print-area {
-                                    visibility: visible !important;
-                                    position: absolute !important;
-                                    left: 0 !important;
-                                    top: 0 !important;
-                                    width: 190mm !important; /* Exact A4 content width (210mm - 20mm margins) */
-                                    min-width: 190mm !important;
-                                    height: 297mm !important; /* Garante que a altura total não exceda o tamanho da folha A4 */
-                                    max-height: 297mm !important;
-                                    min-height: 0 !important;
-                                    padding: 0 !important; /* Rely purely on page margin */
-                                    margin: 0 !important;
-                                    border: none !important;
-                                    box-shadow: none !important;
-                                    background: #ffffff !important;
-                                    color: #000000 !important;
-                                    font-family: Arial, sans-serif !important;
-                                    display: flex !important;
-                                    flex-direction: column !important;
-                                    gap: 12px !important; /* Compact design spacing */
-                                  }
-
-                                  /* Overwrite global generic flex/grid flattener for our specialized print contents */
-                                  #student-report-print-area .flex {
-                                    display: flex !important;
-                                  }
-                                  #student-report-print-area .flex-row {
-                                    flex-direction: row !important;
-                                  }
-                                  #student-report-print-area .flex-col {
-                                    flex-direction: column !important;
-                                  }
-                                  #student-report-print-area .items-center {
-                                    align-items: center !important;
-                                  }
-                                  #student-report-print-area .justify-between {
-                                    justify-content: space-between !important;
-                                  }
-                                  #student-report-print-area .justify-center {
-                                    justify-content: center !important;
-                                  }
-                                  #student-report-print-area .grid {
-                                    display: grid !important;
-                                  }
-                                  #student-report-print-area .grid-cols-2 {
-                                    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-                                  }
-                                  #student-report-print-area .grid-cols-3 {
-                                    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-                                  }
-                                  #student-report-print-area .gap-4 {
-                                    gap: 16px !important;
-                                  }
-                                  #student-report-print-area .gap-10 {
-                                    gap: 40px !important;
-                                  }
-
-                                  /* Compact padding and typography for A4 vertical containment */
-                                  #student-report-print-area .p-5 {
-                                    padding: 4mm !important;
-                                  }
-                                  #student-report-print-area .p-4 {
-                                    padding: 4mm !important;
-                                  }
-                                  #student-report-print-area .pb-6 {
-                                    padding-bottom: 4mm !important;
-                                  }
-                                  #student-report-print-area .pt-6 {
-                                    padding-top: 4mm !important;
-                                    margin-top: 2mm !important;
-                                  }
-                                  #student-report-print-area h1 {
-                                    font-size: 18px !important;
-                                    line-height: 1.2 !important;
-                                  }
-                                  #student-report-print-area h3 {
-                                    font-size: 11px !important;
-                                    margin-bottom: 6px !important;
-                                  }
-                                  
-                                  /* Double-column representation for print pages */
-                                  #student-report-print-area .grid-cols-1.md\:grid-cols-2 {
-                                    display: grid !important;
-                                    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-                                    gap: 12px !important;
-                                    width: 100% !important;
-                                  }
-
-                                  table.report-table th {
-                                    padding: 6px 12px !important;
-                                    font-size: 10px !important;
-                                  }
-                                  table.report-table td {
-                                    padding: 5px 12px !important;
-                                    font-size: 11px !important;
-                                  }
-
-                                  .print-only-layout {
-                                    visibility: visible !important;
-                                  }
-                                  
-                                  .print-bg-gray {
-                                    background-color: #f1f5f9 !important;
-                                    -webkit-print-color-adjust: exact !important;
-                                    print-color-adjust: exact !important;
-                                  }
-                                  
-                                  .print-border-black {
-                                    border-color: #000000 !important;
-                                  }
-                                }
-                                
-                                @page {
-                                  size: A4 portrait;
-                                  margin: 10mm 10mm 10mm 10mm;
-                                }
-                              `}} />
-
-                              {/* Clean Header: Student Individual Report and participating class(es) only */}
-                              <div className="flex flex-col items-center justify-center pb-6 border-b-2 border-slate-900 text-center gap-2">
-                                <h1 className="text-2xl font-black text-slate-900 tracking-tight uppercase">
-                                  {language === 'pt' ? 'Relatório Individual do Aluno' : 'Student Individual Report'}
-                                </h1>
-                                <p className="text-xs font-black uppercase tracking-widest text-slate-500">
-                                  {language === 'pt' 
-                                    ? `Turma(s) ao qual participou: ${reportData.classObj?.nome || 'Não informada'}` 
-                                    : `Participated Class(es): ${reportData.classObj?.nome || 'Unassigned'}`}
-                                </p>
-                              </div>
-
-                              {/* Personal Info Grid */}
-                              <div className="border border-slate-200 rounded-lg p-5 bg-slate-50/50 print-bg-gray text-left">
-                                <h3 className="text-[11px] font-black text-slate-600 tracking-[0.15em] uppercase mb-4 pb-1 border-b border-slate-200">
-                                  {reportT[language as "pt" | "en"].studentInfo}
-                                </h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-y-3 gap-x-6 text-sm">
-                                  <div className="flex flex-col gap-0.5 col-span-2 md:col-span-1">
-                                    <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">{reportT[language as "pt" | "en"].fullName}</span>
-                                    <span className="font-extrabold text-slate-900 uppercase text-xs lg:text-sm">{reportData.student.nome}</span>
-                                  </div>
-                                  <div className="flex flex-col gap-0.5">
-                                    <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">{reportT[language as "pt" | "en"].rank}</span>
-                                    <span className="font-bold text-slate-800 uppercase">{reportData.student.posto_graduacao || (language === 'pt' ? 'Não declarado' : 'Not declared')}</span>
-                                  </div>
-                                  <div className="flex flex-col gap-0.5">
-                                    <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Matrícula</span>
-                                    <span className="font-bold font-mono text-slate-800">#{reportData.student.matricula}</span>
-                                  </div>
-                                  <div className="flex flex-col gap-0.5">
-                                    <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">{reportT[language as "pt" | "en"].course}</span>
-                                    <span className="font-bold text-slate-800">{reportData.courseObj?.nome || (language === 'pt' ? 'Não disponível' : 'Not available')}</span>
-                                  </div>
-                                  <div className="flex flex-col gap-0.5">
-                                    <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">{reportT[language as "pt" | "en"].class}</span>
-                                    <span className="font-bold text-slate-800">{reportData.classObj?.nome || (language === 'pt' ? 'Não disponível' : 'Not available')}</span>
-                                  </div>
-                                  <div className="flex flex-col gap-0.5">
-                                    <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">{reportT[language as "pt" | "en"].period}</span>
-                                    <span className="font-bold text-slate-800 capitalize">
-                                      {reportData.classObj?.periodo === 'manhã' ? t.common.morning :
-                                       reportData.classObj?.periodo === 'tarde' ? t.common.afternoon :
-                                       reportData.classObj?.periodo === 'noite' ? t.common.night : reportData.classObj?.periodo}
-                                    </span>
-                                  </div>
-                                  <div className="flex flex-col gap-0.5 col-span-2">
-                                    <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">{reportT[language as "pt" | "en"].status}</span>
-                                    <span className="font-bold flex items-center gap-1.5 text-slate-800">
-                                      <span className={cn("w-2 h-2 rounded-full", reportData.classObj?.status === 'concluida' || reportData.classObj?.status === 'finalizada' ? 'bg-emerald-500' : 'bg-blue-500')} />
-                                      {reportData.classObj?.status === 'concluida' || reportData.classObj?.status === 'finalizada' 
-                                        ? reportT[language as "pt" | "en"].completed 
-                                        : reportT[language as "pt" | "en"].inProgress}
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* Academic Performance Map */}
-                              <div className="space-y-3 font-sans">
-                                <h3 className="text-[11px] font-black text-slate-600 tracking-[0.15em] uppercase pb-1 border-b border-slate-200 text-left">
-                                  {reportT[language as "pt" | "en"].academicMap}
-                                </h3>
-                                 <div className="overflow-x-auto">
-                                  {(() => {
-                                    const reportRows = (() => {
-                                      const rows: any[] = [];
-                                      const sortedDisciplines = [...reportData.disciplines].sort((a: any, b: any) => {
-                                        const mDiff = (a.modulo_index || 1) - (b.modulo_index || 1);
-                                        if (mDiff !== 0) return mDiff;
-                                        return a.nome.localeCompare(b.nome);
-                                      });
- 
-                                      sortedDisciplines.forEach((disc: any, discIdx: number) => {
-                                        // Check if modular unified grades are entered under the first discipline
-                                        const firstDisc = sortedDisciplines[0];
-                                        const firstGrade = firstDisc ? reportData.grades.find((g: any) => g.disciplina_id === firstDisc.id) : null;
-                                        const moduleNum = disc.modulo_index || (discIdx + 1);
-
-                                        let finalGradeValue = null;
-                                        if (firstGrade && moduleNum !== null) {
-                                          const modularGradeValue = firstGrade[`nota${moduleNum}`];
-                                          if (modularGradeValue !== null && modularGradeValue !== undefined && modularGradeValue !== '') {
-                                            finalGradeValue = Number(modularGradeValue);
-                                          }
-                                        }
-
-                                        // Fallback to direct discipline final grade
-                                        if (finalGradeValue === null) {
-                                          const directGrade = reportData.grades.find((g: any) => g.disciplina_id === disc.id);
-                                          finalGradeValue = directGrade ? directGrade.nota_final : null;
-                                        }
-
-                                        // Determine frequency value, falling back to firstGrade if needed
-                                        let freqValue = null;
-                                        if (firstGrade && firstGrade.frequencia !== null && firstGrade.frequencia !== undefined) {
-                                          freqValue = firstGrade.frequencia;
-                                        } else {
-                                          const directGrade = reportData.grades.find((g: any) => g.disciplina_id === disc.id);
-                                          freqValue = directGrade ? directGrade.frequencia : null;
-                                        }
-
-                                        const finalGradeFormatted = finalGradeValue !== null && finalGradeValue !== undefined ? Number(finalGradeValue).toFixed(1) : '-';
-
-                                        let statusLabel = '';
-                                        let statusClass = 'text-slate-400';
-                                        if (finalGradeValue === null || finalGradeValue === undefined) {
-                                          statusLabel = reportT[language as "pt" | "en"].pending;
-                                        } else if (finalGradeValue >= settings.media_aprovacao && (freqValue === null || freqValue >= settings.frequencia_minima)) {
-                                          statusLabel = reportT[language as "pt" | "en"].approved;
-                                          statusClass = 'text-emerald-600 font-extrabold';
-                                        } else if (freqValue !== null && freqValue < settings.frequencia_minima) {
-                                          statusLabel = language === 'pt' ? 'FALTA FREQ.' : 'LOW FREQ.';
-                                          statusClass = 'text-orange-600 font-extrabold';
-                                        } else if (finalGradeValue >= settings.media_recuperacao) {
-                                          statusLabel = reportT[language as "pt" | "en"].retake;
-                                          statusClass = 'text-yellow-600 font-extrabold';
-                                        } else {
-                                          statusLabel = reportT[language as "pt" | "en"].reproved;
-                                          statusClass = 'text-rose-600 font-extrabold';
-                                        }
-
-                                        rows.push({
-                                          id: disc.id,
-                                          modulo: `Módulo ${disc.modulo_index || 1}`,
-                                          disciplina: disc.nome,
-                                          nota: finalGradeFormatted,
-                                          situacao: statusLabel,
-                                          statusClass,
-                                        });
-                                      });
-
-                                      const rowsWithSpans: any[] = [];
-                                      for (let i = 0; i < rows.length; i++) {
-                                        const row = { ...rows[i], moduloSpan: 0 };
-                                        
-                                        if (i === 0 || rows[i].modulo !== rows[i - 1].modulo) {
-                                          let span = 1;
-                                          while (i + span < rows.length && rows[i + span].modulo === rows[i].modulo) {
-                                            span++;
-                                          }
-                                          row.moduloSpan = span;
-                                        }
-                                        
-                                        rowsWithSpans.push(row);
+                              {/* Scaled frame box */}
+                              <div 
+                                style={{ 
+                                  transform: `scale(${scale})`, 
+                                  transformOrigin: 'center center',
+                                  width: '210mm',
+                                  height: '297mm',
+                                  minWidth: '210mm',
+                                  minHeight: '297mm',
+                                }}
+                                className="shadow-2xl flex-shrink-0 transition-transform duration-100 ease-out bg-white rounded-lg overflow-hidden relative"
+                              >
+                                {/* THE INDIVIDUAL REPORT PRINT CONTAINER */}
+                                <div 
+                                  id="student-report-print-area"
+                                  className="w-[210mm] h-[297mm] max-w-[210mm] max-h-[297mm] bg-white text-slate-900 p-8 flex flex-col justify-between font-sans relative text-left text-xs box-border border border-slate-100"
+                                >
+                                  <style dangerouslySetInnerHTML={{ __html: `
+                                    @media print {
+                                      /* Reset page context and force standard white/black print output */
+                                      html, body {
+                                        margin: 0 !important;
+                                        padding: 0 !important;
+                                        background: #ffffff !important;
+                                        color: #000000 !important;
+                                        width: 100% !important;
+                                        height: auto !important;
+                                        min-height: auto !important;
+                                        overflow: visible !important;
                                       }
-                                      return rowsWithSpans;
-                                    })();
 
-                                    return (
-                                      <table className="w-full text-left report-table border border-slate-200 bg-white">
-                                        <thead>
-                                          <tr className="bg-slate-100 print-bg-gray text-[10px] font-extrabold text-slate-600 uppercase tracking-wider border-b border-slate-200">
-                                            <th className="px-4 py-3 border-r border-slate-200">{language === 'pt' ? 'Módulo' : 'Module'}</th>
-                                            <th className="px-4 py-3 border-r border-slate-200">{language === 'pt' ? 'Disciplina' : 'Discipline'}</th>
-                                            <th className="px-3 py-3 text-center border-r border-slate-200 font-mono w-28">{reportT[language as "pt" | "en"].finalGrade}</th>
-                                            <th className="px-4 py-3 text-right w-36">{reportT[language as "pt" | "en"].situation}</th>
-                                          </tr>
-                                        </thead>
-                                        <tbody className="text-xs text-left">
-                                          {reportData.disciplines.length === 0 ? (
-                                            <tr>
-                                              <td colSpan={4} className="text-center py-6 text-slate-400 font-bold bg-white">
-                                                {language === 'pt' ? 'Nenhuma disciplina cadastrada.' : 'No disciplines registered.'}
-                                              </td>
-                                            </tr>
-                                          ) : (
-                                            reportRows.map((row: any) => {
-                                              return (
-                                                <tr key={row.id} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors bg-white">
-                                                  {row.moduloSpan > 0 && (
-                                                    <td rowSpan={row.moduloSpan} className="px-4 py-2.5 font-bold text-slate-900 border-r border-slate-200 text-left bg-white align-middle">
-                                                      {row.modulo}
-                                                    </td>
-                                                  )}
-                                                  <td className="px-4 py-2.5 font-extrabold text-slate-800 border-r border-slate-200 text-left bg-white align-middle">
-                                                    {row.disciplina}
-                                                  </td>
-                                                  <td className="px-3 py-2.5 text-center font-black font-mono border-r border-slate-200 text-slate-900 bg-white align-middle">
-                                                    {row.nota}
-                                                  </td>
-                                                  <td className={cn("px-4 py-2.5 text-right font-black bg-white align-middle", row.statusClass)}>
-                                                    {row.situacao}
+                                      /* Hide headers, footers, mobile bottom-navs, back buttons, filters, etc. completely from DOM layout flow */
+                                      header, nav, aside, footer, button, .print\:hidden, [role="dialog"], [role="group"], .no-print {
+                                        display: none !important;
+                                        width: 0 !important;
+                                        height: 0 !important;
+                                        margin: 0 !important;
+                                        padding: 0 !important;
+                                        overflow: hidden !important;
+                                      }
+                                      
+                                      /* Unset absolute parents and scale transformations so printer renders natively */
+                                      #student-report-modal-backdrop,
+                                      #student-report-modal-content,
+                                      div,
+                                      section {
+                                        transform: none !important;
+                                        filter: none !important;
+                                        position: static !important;
+                                        width: auto !important;
+                                        height: auto !important;
+                                        overflow: visible !important;
+                                        background: transparent !important;
+                                      }
+
+                                      /* Override print margins and canvas constraints for exact 210mm x 297mm bounds */
+                                      #student-report-print-area {
+                                        visibility: visible !important;
+                                        position: absolute !important;
+                                        left: 0 !important;
+                                        top: 0 !important;
+                                        width: 210mm !important;
+                                        height: 297mm !important;
+                                        max-width: 210mm !important;
+                                        max-height: 297mm !important;
+                                        min-width: 210mm !important;
+                                        min-height: 297mm !important;
+                                        margin: 0 !important;
+                                        padding: 12mm 12mm 12mm 12mm !important;
+                                        border: none !important;
+                                        box-shadow: none !important;
+                                        background: #ffffff !important;
+                                        color: #000000 !important;
+                                        box-sizing: border-box !important;
+                                        overflow: hidden !important;
+                                        display: flex !important;
+                                        flex-direction: column !important;
+                                        justify-content: space-between !important;
+                                      }
+                                      #student-report-print-area * {
+                                        visibility: visible !important;
+                                      }
+
+                                      #student-report-print-area .flex {
+                                        display: flex !important;
+                                      }
+                                      #student-report-print-area .flex-row {
+                                        flex-direction: row !important;
+                                      }
+                                      #student-report-print-area .flex-col {
+                                        flex-direction: column !important;
+                                      }
+                                      #student-report-print-area .items-center {
+                                        align-items: center !important;
+                                      }
+                                      #student-report-print-area .justify-between {
+                                        justify-content: space-between !important;
+                                      }
+                                      #student-report-print-area .grid {
+                                        display: grid !important;
+                                      }
+                                      #student-report-print-area .grid-cols-2 {
+                                        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+                                      }
+                                      #student-report-print-area .grid-cols-4 {
+                                        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+                                      }
+                                      #student-report-print-area .gap-3 {
+                                        gap: 12px !important;
+                                      }
+                                      #student-report-print-area .gap-4 {
+                                        gap: 16px !important;
+                                      }
+                                      #student-report-print-area .gap-10 {
+                                        gap: 40px !important;
+                                      }
+                                    }
+                                    @page {
+                                      size: A4 portrait !important;
+                                      margin: 0 !important;
+                                    }
+                                  `}} />
+
+                                  {/* Premium Official Header Layout */}
+                                  <div className="flex items-center justify-between pb-4 border-b border-slate-950">
+                                    <div className="flex items-center gap-3">
+                                      <div className="p-2 bg-slate-900 text-white rounded-lg flex items-center justify-center border border-slate-850">
+                                        <Shield size={22} className="text-blue-400 stroke-[2.2]" />
+                                      </div>
+                                      <div className="text-left flex flex-col justify-center">
+                                        <h1 className="text-sm font-black tracking-widest text-slate-900 uppercase leading-none">
+                                          {reportT[language as "pt" | "en"].headerTitle}
+                                        </h1>
+                                        <p className="text-[9px] font-black tracking-widest text-slate-500 uppercase mt-1 leading-none">
+                                          {reportT[language as "pt" | "en"].headerSubtitle}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <div className="text-right flex flex-col justify-center">
+                                      <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest leading-none">CÓDIGO DE AUTENTICIDADE</span>
+                                      <span className="font-mono text-[9px] font-extrabold text-slate-850 mt-1 leading-none tracking-wider">#{reportData.student.id.slice(0, 8).toUpperCase()}</span>
+                                    </div>
+                                  </div>
+
+                                  {/* Student Information Details Panel */}
+                                  <div className="grid grid-cols-4 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-slate-900 mt-2">
+                                    <div className="col-span-2 flex flex-col gap-0.5">
+                                      <span className="text-[8px] font-black tracking-widest text-slate-400 uppercase leading-none">{reportT[language as "pt" | "en"].fullName}</span>
+                                      <span className="text-xs font-black uppercase text-slate-900 truncate tracking-wide mt-1 leading-tight">{reportData.student.nome}</span>
+                                    </div>
+                                    <div className="flex flex-col gap-0.5">
+                                      <span className="text-[8px] font-black tracking-widest text-slate-400 uppercase leading-none">{reportT[language as "pt" | "en"].rank}</span>
+                                      <span className="text-xs font-black uppercase text-slate-800 tracking-wide mt-1 leading-tight">{reportData.student.posto_graduacao || (language === 'pt' ? 'Membro' : 'Member')}</span>
+                                    </div>
+                                    <div className="flex flex-col gap-0.5">
+                                      <span className="text-[8px] font-black tracking-widest text-slate-400 uppercase leading-none">Matrícula</span>
+                                      <span className="text-xs font-mono font-black text-slate-800 mt-1 leading-tight">#{reportData.student.matricula}</span>
+                                    </div>
+                                    <div className="col-span-2 flex flex-col gap-0.5 mt-2 pt-1.5 border-t border-slate-200/60">
+                                      <span className="text-[8px] font-black tracking-widest text-slate-400 uppercase leading-none">{reportT[language as "pt" | "en"].course}</span>
+                                      <span className="text-[10px] font-extrabold text-slate-850 truncate mt-1 leading-normal">{reportData.courseObj?.nome || (language === 'pt' ? 'Não disponível' : 'Not available')}</span>
+                                    </div>
+                                    <div className="col-span-1 flex flex-col gap-0.5 mt-2 pt-1.5 border-t border-slate-200/60">
+                                      <span className="text-[8px] font-black tracking-widest text-slate-400 uppercase leading-none">{reportT[language as "pt" | "en"].class}</span>
+                                      <span className="text-[10px] font-extrabold text-slate-850 truncate mt-1 leading-normal">{reportData.classObj?.nome || (language === 'pt' ? 'Não disponível' : 'Not available')}</span>
+                                    </div>
+                                    <div className="col-span-1 flex flex-col gap-0.5 mt-2 pt-1.5 border-t border-slate-200/60">
+                                      <span className="text-[8px] font-black tracking-widest text-slate-400 uppercase leading-none">{reportT[language as "pt" | "en"].period}</span>
+                                      <span className="text-[10px] font-extrabold text-slate-850 uppercase tracking-wide mt-1 leading-normal">
+                                        {reportData.classObj?.periodo === 'manhã' ? t.common.morning :
+                                         reportData.classObj?.periodo === 'tarde' ? t.common.afternoon :
+                                         reportData.classObj?.periodo === 'noite' ? t.common.night : reportData.classObj?.periodo}
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  {/* Academic Performance Map Table */}
+                                  <div className="flex flex-col mt-2.5">
+                                    <div className="flex items-center gap-1.5 mb-1.5">
+                                      <BookOpen className="text-slate-900" size={13} />
+                                      <h3 className="text-[9px] font-black text-slate-900 tracking-widest uppercase mb-0">
+                                        {reportT[language as "pt" | "en"].academicMap}
+                                      </h3>
+                                    </div>
+                                    
+                                    <div className="border border-slate-200 rounded-xl overflow-hidden shadow-xs">
+                                      {(() => {
+                                        const sortedDisciplines = [...reportData.disciplines].sort((a: any, b: any) => {
+                                          const mDiff = (a.modulo_index || 1) - (b.modulo_index || 1);
+                                          if (mDiff !== 0) return mDiff;
+                                          return a.nome.localeCompare(b.nome);
+                                        });
+
+                                        const rows = sortedDisciplines.map((disc: any, discIdx: number) => {
+                                          const firstDisc = sortedDisciplines[0];
+                                          const firstGrade = firstDisc ? reportData.grades.find((g: any) => g.disciplina_id === firstDisc.id) : null;
+                                          const moduleNum = disc.modulo_index || (discIdx + 1);
+
+                                          let finalGradeValue = null;
+                                          if (firstGrade && moduleNum !== null) {
+                                            const modularGradeValue = firstGrade[`nota${moduleNum}`];
+                                            if (modularGradeValue !== null && modularGradeValue !== undefined && modularGradeValue !== '') {
+                                              finalGradeValue = Number(modularGradeValue);
+                                            }
+                                          }
+
+                                          if (finalGradeValue === null) {
+                                            const directGrade = reportData.grades.find((g: any) => g.disciplina_id === disc.id);
+                                            finalGradeValue = directGrade ? directGrade.nota_final : null;
+                                          }
+
+                                          let freqValue = null;
+                                          if (firstGrade && firstGrade.frequencia !== null && firstGrade.frequencia !== undefined) {
+                                            freqValue = firstGrade.frequencia;
+                                          } else {
+                                            const directGrade = reportData.grades.find((g: any) => g.disciplina_id === disc.id);
+                                            freqValue = directGrade ? directGrade.frequencia : null;
+                                          }
+
+                                          const finalGradeFormatted = finalGradeValue !== null && finalGradeValue !== undefined ? Number(finalGradeValue).toFixed(1) : '-';
+
+                                          let statusLabel = '';
+                                          let statusClass = '';
+                                          
+                                          if (finalGradeValue === null || finalGradeValue === undefined) {
+                                            statusLabel = reportT[language as "pt" | "en"].pending;
+                                            statusClass = 'text-slate-500 bg-slate-50 border border-slate-100';
+                                          } else if (finalGradeValue >= settings.media_aprovacao && (freqValue === null || freqValue >= settings.frequencia_minima)) {
+                                            statusLabel = reportT[language as "pt" | "en"].approved;
+                                            statusClass = 'text-emerald-700 bg-emerald-50 border border-emerald-100';
+                                          } else if (freqValue !== null && freqValue < settings.frequencia_minima) {
+                                            statusLabel = language === 'pt' ? 'FALTA FREQ.' : 'LOW FREQ.';
+                                            statusClass = 'text-orange-700 bg-orange-50 border border-orange-100';
+                                          } else if (finalGradeValue >= settings.media_recuperacao) {
+                                            statusLabel = reportT[language as "pt" | "en"].retake;
+                                            statusClass = 'text-amber-700 bg-amber-50 border border-amber-100';
+                                          } else {
+                                            statusLabel = reportT[language as "pt" | "en"].reproved;
+                                            statusClass = 'text-rose-700 bg-rose-50 border border-rose-100';
+                                          }
+
+                                          return {
+                                            id: disc.id,
+                                            modulo: `Módulo ${disc.modulo_index || 1}`,
+                                            moduloRaw: disc.modulo_index || 1,
+                                            disciplina: disc.nome,
+                                            nota: finalGradeFormatted,
+                                            situacao: statusLabel,
+                                            statusClass,
+                                          };
+                                        });
+
+                                        const rowsWithSpans: any[] = [];
+                                        for (let i = 0; i < rows.length; i++) {
+                                          const row = { ...rows[i], moduloSpan: 0 };
+                                          if (i === 0 || rows[i].modulo !== rows[i - 1].modulo) {
+                                            let span = 1;
+                                            while (i + span < rows.length && rows[i + span].modulo === rows[i].modulo) {
+                                              span++;
+                                            }
+                                            row.moduloSpan = span;
+                                          }
+                                          rowsWithSpans.push(row);
+                                        }
+
+                                        return (
+                                          <table className="w-full text-left border-collapse bg-white">
+                                            <thead>
+                                              <tr className="bg-slate-900 text-[8px] font-black text-white uppercase tracking-widest border-b border-slate-850">
+                                                <th className="px-3.5 py-2 border-r border-slate-800">{language === 'pt' ? 'Módulo' : 'Module'}</th>
+                                                <th className="px-3.5 py-2 border-r border-slate-800">{language === 'pt' ? 'Disciplina' : 'Discipline'}</th>
+                                                <th className="px-3.5 py-2 text-center border-r border-slate-800 font-mono w-24">{reportT[language as "pt" | "en"].finalGrade}</th>
+                                                <th className="px-3.5 py-2 text-right w-28">{reportT[language as "pt" | "en"].situation}</th>
+                                              </tr>
+                                            </thead>
+                                            <tbody className="text-[10px]">
+                                              {rowsWithSpans.length === 0 ? (
+                                                <tr>
+                                                  <td colSpan={4} className="text-center py-4 text-slate-400 font-bold bg-white">
+                                                    {language === 'pt' ? 'Nenhuma disciplina lançada.' : 'No modules submitted.'}
                                                   </td>
                                                 </tr>
-                                              );
-                                            })
-                                          )}
-                                        </tbody>
-                                      </table>
-                                    );
-                                  })()}
-                                </div>
-                              </div>
+                                              ) : (
+                                                rowsWithSpans.map((row: any) => (
+                                                  <tr key={row.id} className="border-b border-slate-200 bg-white">
+                                                    {row.moduloSpan > 0 && (
+                                                      <td rowSpan={row.moduloSpan} className="px-3.5 py-1.5 font-black text-slate-900 border-r border-slate-250 bg-slate-50/70 align-middle">
+                                                        {row.modulo}
+                                                      </td>
+                                                    )}
+                                                    <td className="px-3.5 py-1.5 font-bold text-slate-800 border-r border-slate-200 bg-white align-middle">
+                                                      {row.disciplina}
+                                                    </td>
+                                                    <td className="px-3.5 py-1.5 text-center font-black font-mono border-r border-slate-200 text-slate-900 bg-white align-middle">
+                                                      {row.nota}
+                                                    </td>
+                                                    <td className="px-3.5 py-1.5 text-right bg-white align-middle">
+                                                      <span className={cn("px-2 py-0.5 rounded text-[8px] font-black uppercase inline-block border", row.statusClass)}>
+                                                        {row.situacao}
+                                                      </span>
+                                                    </td>
+                                                  </tr>
+                                                ))
+                                              )}
+                                            </tbody>
+                                          </table>
+                                        );
+                                      })()}
+                                    </div>
+                                  </div>
 
-                              {/* Attendance and KPI Cards Container */}
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-                                {/* Attendance Summary */}
-                                <div className="border border-slate-200 rounded-lg p-4 flex flex-col gap-3 text-left">
-                                  <h3 className="text-[11px] font-black text-slate-600 tracking-[0.1em] uppercase border-b border-slate-200 pb-1">
-                                    {reportT[language as "pt" | "en"].attendanceReg}
-                                  </h3>
-                                  
-                                  {/* Attendance Stats Calculation */}
-                                  {(() => {
-                                    const totalAulas = reportData.attendance?.length || 0;
-                                    const presencas = reportData.attendance?.filter((a: any) => a.presente).length || 0;
-                                    const faltas = reportData.attendance?.filter((a: any) => !a.presente).length || 0;
-                                    
-                                    let percentualPresenca = 100;
-                                    if (totalAulas > 0) {
-                                      percentualPresenca = (presencas / totalAulas) * 100;
-                                    } else if (reportData.grades && reportData.grades.length > 0) {
-                                      const validFreqs = reportData.grades.filter((g: any) => g.frequencia !== null && g.frequencia !== undefined);
-                                      if (validFreqs.length > 0) {
-                                        percentualPresenca = validFreqs.reduce((sum: number, g: any) => sum + g.frequencia, 0) / validFreqs.length;
-                                      }
-                                    }
+                                  {/* Attendance and Overall KPIs Container */}
+                                  <div className="grid grid-cols-2 gap-4 mt-3">
+                                    {/* Attendance Summary */}
+                                    <div className="border border-slate-200 p-3 rounded-xl bg-slate-50/40 flex flex-col justify-between">
+                                      <div className="flex items-center gap-1.5 border-b border-slate-200/80 pb-1.5 mb-1.5">
+                                        <Award className="text-slate-900" size={13} />
+                                        <h3 className="text-[9px] font-black text-slate-900 tracking-wider uppercase mb-0 leading-none">
+                                          {reportT[language as "pt" | "en"].attendanceReg}
+                                        </h3>
+                                      </div>
 
-                                    return (
-                                      <div className="flex flex-col gap-2.5 text-left">
-                                        <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                                          <div className="p-2 bg-slate-50 print-bg-gray rounded border border-slate-100 flex flex-col gap-0.5">
-                                            <span className="text-[8px] font-bold text-slate-600 uppercase tracking-wider">{reportT[language as "pt" | "en"].totalLectures}</span>
-                                            <span className="text-sm font-black text-slate-800">{totalAulas || '-'}</span>
-                                          </div>
-                                          <div className="p-2 bg-slate-50 print-bg-gray rounded border border-slate-100 flex flex-col gap-0.5">
-                                            <span className="text-[8px] font-bold text-slate-600 uppercase tracking-wider">{reportT[language as "pt" | "en"].attendances}</span>
-                                            <span className="text-sm font-black text-emerald-600">{totalAulas ? presencas : '-'}</span>
-                                          </div>
-                                          <div className="p-2 bg-slate-50 print-bg-gray rounded border border-slate-100 flex flex-col gap-0.5">
-                                            <span className="text-[8px] font-bold text-slate-600 uppercase tracking-wider">{reportT[language as "pt" | "en"].absences}</span>
-                                            <span className="text-sm font-black text-rose-600">{totalAulas ? faltas : '-'}</span>
-                                          </div>
-                                        </div>
+                                      {(() => {
+                                        const totalAulas = reportData.attendance?.length || 0;
+                                        const presencas = reportData.attendance?.filter((a: any) => a.presente).length || 0;
+                                        const faltas = reportData.attendance?.filter((a: any) => !a.presente).length || 0;
+                                        
+                                        let percentualPresenca = 100;
+                                        if (totalAulas > 0) {
+                                          percentualPresenca = (presencas / totalAulas) * 100;
+                                        } else if (reportData.grades && reportData.grades.length > 0) {
+                                          const validFreqs = reportData.grades.filter((g: any) => g.frequencia !== null && g.frequencia !== undefined);
+                                          if (validFreqs.length > 0) {
+                                            percentualPresenca = validFreqs.reduce((sum: number, g: any) => sum + g.frequencia, 0) / validFreqs.length;
+                                          }
+                                        }
 
-                                        {/* Attendance percentage indicator */}
-                                        <div className="flex items-center justify-between text-xs p-1.5 mt-1 border-t border-slate-100">
-                                          <span className="font-extrabold text-slate-500 uppercase text-[9px] tracking-wide">{reportT[language as "pt" | "en"].attendanceRate}:</span>
-                                          <span className={cn(
-                                            "font-black text-sm",
-                                            percentualPresenca >= settings.frequencia_minima ? "text-emerald-600" : "text-rose-600"
-                                          )}>
-                                            {percentualPresenca.toFixed(1)}%
-                                          </span>
-                                        </div>
+                                        return (
+                                          <div className="flex flex-col gap-2">
+                                            <div className="grid grid-cols-3 gap-1.5 text-center">
+                                              <div className="p-1 px-1.5 bg-white rounded border border-slate-200 flex flex-col">
+                                                <span className="text-[7px] font-black text-slate-400 uppercase leading-none tracking-wide">{reportT[language as "pt" | "en"].totalLectures}</span>
+                                                <span className="text-[10px] font-black text-slate-800 mt-1">{totalAulas || '-'}</span>
+                                              </div>
+                                              <div className="p-1 px-1.5 bg-white rounded border border-slate-200 flex flex-col">
+                                                <span className="text-[7px] font-black text-slate-400 uppercase leading-none tracking-wide">{reportT[language as "pt" | "en"].attendances}</span>
+                                                <span className="text-[10px] font-black text-emerald-600 mt-1">{totalAulas ? presencas : '-'}</span>
+                                              </div>
+                                              <div className="p-1 px-1.5 bg-white rounded border border-slate-200 flex flex-col">
+                                                <span className="text-[7px] font-black text-slate-400 uppercase leading-none tracking-wide">{reportT[language as "pt" | "en"].absences}</span>
+                                                <span className="text-[10px] font-black text-rose-600 mt-1">{totalAulas ? faltas : '-'}</span>
+                                              </div>
+                                            </div>
 
-                                        {/* Tiny timeline of latest attendance dates */}
-                                        {reportData.attendance && reportData.attendance.length > 0 && (
-                                          <div className="flex flex-col gap-1.5 mt-1 pt-1.5 border-t border-dashed border-slate-200">
-                                            <span className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">
-                                              {language === 'pt' ? 'Histórico de Presenças (Últimas 10):' : 'Attendance Record (Last 10):'}
-                                            </span>
-                                            <div className="flex flex-wrap gap-1">
-                                              {reportData.attendance.slice(0, 10).map((att: any, ind: number) => (
-                                                <span 
-                                                  key={att.id || ind} 
-                                                  className={cn(
-                                                    "text-[9px] px-1.5 py-0.5 rounded font-bold uppercase",
-                                                    att.presente 
-                                                      ? "bg-emerald-50 text-emerald-700 border border-emerald-100" 
-                                                      : "bg-rose-50 text-rose-700 border border-rose-100"
-                                                  )}
-                                                  title={format(new Date(att.data), 'dd/MM/yyyy')}
-                                                >
-                                                  {format(new Date(att.data), 'dd/MM')} {att.presente ? '✓' : '✗'}
-                                                </span>
-                                              ))}
+                                            <div className="flex items-center justify-between text-xs px-1 border-t border-slate-200 pt-1.5">
+                                              <span className="font-extrabold text-slate-500 uppercase text-[8px] tracking-wide">{reportT[language as "pt" | "en"].attendanceRate}:</span>
+                                              <span className={cn(
+                                                "font-black text-[11px]",
+                                                percentualPresenca >= settings.frequencia_minima ? "text-emerald-600" : "text-rose-600"
+                                              )}>
+                                                {percentualPresenca.toFixed(1)}%
+                                              </span>
                                             </div>
                                           </div>
-                                        )}
+                                        );
+                                      })()}
+                                    </div>
+
+                                    {/* Overall Performance Card */}
+                                    <div className="border border-slate-200 p-3 rounded-xl bg-slate-50/40 flex flex-col justify-between">
+                                      <div className="flex items-center gap-1.5 border-b border-slate-200/80 pb-1.5 mb-1.5">
+                                        <Percent className="text-slate-900" size={13} />
+                                        <h3 className="text-[9px] font-black text-slate-900 tracking-wider uppercase mb-0 leading-none">
+                                          {language === 'pt' ? 'DESEMPENHO GLOBAL' : 'GLOBAL PERFORMANCE'}
+                                        </h3>
                                       </div>
-                                    );
-                                  })()}
-                                </div>
 
-                                {/* Performance & Summary */}
-                                <div className="border border-slate-200 rounded-lg p-4 flex flex-col gap-3 text-left">
-                                  <h3 className="text-[11px] font-black text-slate-600 tracking-[0.1em] uppercase border-b border-slate-200 pb-1">
-                                    {language === 'pt' ? 'DESEMPENHO GLOBAL' : 'GLOBAL PERFORMANCE'}
-                                  </h3>
-                                  
-                                  {(() => {
-                                    const validFinalGrades = reportData.grades
-                                      ? reportData.grades.filter((g: any) => g.nota_final !== null && g.nota_final !== undefined) 
-                                      : [];
-                                    const averageGrade = validFinalGrades.length > 0
-                                      ? validFinalGrades.reduce((sum: number, g: any) => sum + Number(g.nota_final), 0) / validFinalGrades.length
-                                      : null;
+                                      {(() => {
+                                        const validFinalGrades = reportData.grades
+                                          ? reportData.grades.filter((g: any) => g.nota_final !== null && g.nota_final !== undefined) 
+                                          : [];
+                                        const averageGrade = validFinalGrades.length > 0
+                                          ? validFinalGrades.reduce((sum: number, g: any) => sum + Number(g.nota_final), 0) / validFinalGrades.length
+                                          : null;
 
-                                    // Compute overall status
-                                    let overallLabel = language === 'pt' ? 'EM FILTRAGEM / AVALIAÇÃO' : 'UNDER REVIEW';
-                                    let overallClass = 'bg-slate-100 text-slate-700';
+                                        let overallLabel = language === 'pt' ? 'EM DESENVOLVIMENTO' : 'UNDER REVIEW';
+                                        let overallClass = 'bg-slate-100 text-slate-700 border border-slate-200/60';
 
-                                    if (averageGrade !== null) {
-                                      // Let's check for any failure or low attendance
-                                      const hasReprovedDiscipline = reportData.grades.some((g: any) => g.nota_final !== null && g.nota_final < settings.media_aprovacao);
-                                      const totalAulas = reportData.attendance?.length || 0;
-                                      let percentualPresenca = 100;
-                                      if (totalAulas > 0) {
-                                        const presencas = reportData.attendance.filter((a: any) => a.presente).length;
-                                        percentualPresenca = (presencas / totalAulas) * 100;
-                                      } else if (reportData.grades && reportData.grades.length > 0) {
-                                        const validFreqs = reportData.grades.filter((g: any) => g.frequencia !== null && g.frequencia !== undefined);
-                                        if (validFreqs.length > 0) {
-                                          percentualPresenca = validFreqs.reduce((sum: number, g: any) => sum + g.frequencia, 0) / validFreqs.length;
+                                        if (averageGrade !== null) {
+                                          const hasReprovedDiscipline = reportData.grades.some((g: any) => g.nota_final !== null && g.nota_final < settings.media_aprovacao);
+                                          const totalAulas = reportData.attendance?.length || 0;
+                                          let percentualPresenca = 100;
+                                          if (totalAulas > 0) {
+                                            const presencas = reportData.attendance.filter((a: any) => a.presente).length;
+                                            percentualPresenca = (presencas / totalAulas) * 100;
+                                          } else if (reportData.grades && reportData.grades.length > 0) {
+                                            const validFreqs = reportData.grades.filter((g: any) => g.frequencia !== null && g.frequencia !== undefined);
+                                            if (validFreqs.length > 0) {
+                                              percentualPresenca = validFreqs.reduce((sum: number, g: any) => sum + g.frequencia, 0) / validFreqs.length;
+                                            }
+                                          }
+
+                                          if (percentualPresenca < settings.frequencia_minima) {
+                                            overallLabel = language === 'pt' ? 'REP. FREQUÊNCIA' : 'FAILED FREQ.';
+                                            overallClass = 'bg-rose-50 text-rose-700 border border-rose-150';
+                                          } else if (hasReprovedDiscipline) {
+                                            overallLabel = language === 'pt' ? 'REP. NOTA' : 'FAILED ACADEMICS';
+                                            overallClass = 'bg-rose-50 text-rose-700 border border-rose-150';
+                                          } else if (averageGrade >= settings.media_aprovacao) {
+                                            overallLabel = reportT[language as "pt" | "en"].approved;
+                                            overallClass = 'bg-emerald-50 text-emerald-700 border border-emerald-150 font-black';
+                                          } else if (averageGrade >= settings.media_recuperacao) {
+                                            overallLabel = reportT[language as "pt" | "en"].retake;
+                                            overallClass = 'bg-amber-50 text-amber-700 border border-amber-150';
+                                          } else {
+                                            overallLabel = reportT[language as "pt" | "en"].reproved;
+                                            overallClass = 'bg-rose-50 text-rose-700 border border-rose-150';
+                                          }
                                         }
-                                      }
 
-                                      if (percentualPresenca < settings.frequencia_minima) {
-                                        overallLabel = language === 'pt' ? 'REPROVADO POR FREQUÊNCIA' : 'FAILED BY ATTENDANCE';
-                                        overallClass = 'bg-rose-100 text-rose-700';
-                                      } else if (hasReprovedDiscipline) {
-                                        overallLabel = language === 'pt' ? 'REPROVADO POR NOTA' : 'FAILED BY ACADEMICS';
-                                        overallClass = 'bg-red-100 text-red-700';
-                                      } else if (averageGrade >= settings.media_aprovacao) {
-                                        overallLabel = reportT[language as "pt" | "en"].approved;
-                                        overallClass = 'bg-emerald-100 text-emerald-700 font-extrabold';
-                                      } else if (averageGrade >= settings.media_recuperacao) {
-                                        overallLabel = reportT[language as "pt" | "en"].retake;
-                                        overallClass = 'bg-yellow-100 text-yellow-700';
-                                      } else {
-                                        overallLabel = reportT[language as "pt" | "en"].reproved;
-                                        overallClass = 'bg-rose-100 text-rose-700';
-                                      }
-                                    }
+                                        return (
+                                          <div className="flex flex-col gap-2">
+                                            <div className="flex items-center justify-between">
+                                              <span className="text-[8px] font-bold text-slate-500 uppercase tracking-wide leading-none">{reportT[language as "pt" | "en"].overallAverage}:</span>
+                                              <span className="text-[11px] font-black font-mono px-1.5 py-0.5 rounded bg-blue-50 border border-blue-105 text-blue-700">
+                                                {averageGrade !== null ? averageGrade.toFixed(2) : '-'}
+                                              </span>
+                                            </div>
 
-                                    return (
-                                      <div className="flex-1 flex flex-col justify-between gap-3 text-left">
-                                        <div className="flex flex-col gap-2">
-                                          <div className="flex justify-between items-center text-xs p-1">
-                                            <span className="font-extrabold text-slate-500 uppercase text-[9px] tracking-wide">{reportT[language as "pt" | "en"].overallAverage}:</span>
-                                            <span className={cn(
-                                              "font-black font-mono text-base px-2 py-0.5 rounded",
-                                              averageGrade !== null && averageGrade >= settings.media_aprovacao ? "text-blue-600 bg-blue-50" : "text-rose-600 bg-rose-50"
-                                            )}>
-                                              {averageGrade !== null ? averageGrade.toFixed(2) : '-'}
-                                            </span>
+                                            <div className="flex items-center justify-between border-t border-slate-200/60 pt-1.5">
+                                              <span className="text-[8px] font-bold text-slate-500 uppercase tracking-wide leading-none">{reportT[language as "pt" | "en"].overallStatus}:</span>
+                                              <span className={cn("text-[8px] font-black uppercase px-2 py-0.5 rounded", overallClass)}>
+                                                {overallLabel}
+                                              </span>
+                                            </div>
                                           </div>
+                                        );
+                                      })()}
+                                    </div>
+                                  </div>
 
-                                          <div className="flex justify-between items-center text-xs p-1 border-t border-slate-100">
-                                            <span className="font-extrabold text-slate-500 uppercase text-[9px] tracking-wide">{reportT[language as "pt" | "en"].overallStatus}:</span>
-                                            <span className={cn(
-                                              "text-[10px] font-black uppercase px-2.5 py-1 rounded",
-                                              overallClass
-                                            )}>
-                                              {overallLabel}
-                                            </span>
-                                          </div>
-                                        </div>
+                                  {/* Observations Box */}
+                                  <div className="bg-slate-50 rounded-xl p-3 border border-slate-200 mt-2.5">
+                                    <span className="text-[7px] font-black tracking-widest text-slate-400 uppercase block mb-1">
+                                      {reportT[language as "pt" | "en"].observations}
+                                    </span>
+                                    <p className="text-[9px] italic leading-relaxed text-slate-600 text-justify font-serif">
+                                      {`"${reportT[language as "pt" | "en"].defaultObs}"`}
+                                    </p>
+                                  </div>
 
-                                        {/* Visual feedback or badge */}
-                                        <div className="text-[10px] text-slate-400 bg-slate-50 print-bg-gray rounded-lg p-2.5 border border-slate-100 flex items-start gap-2">
-                                          <Award className="text-slate-400 shrink-0 mt-0.5" size={14} />
-                                          <p className="leading-normal">
-                                            {language === 'pt' 
-                                              ? `Média de aprovação configurada em ${settings.media_aprovacao.toFixed(1)} e frequência mínima em ${settings.frequencia_minima}%.`
-                                              : `Program passing grade configured at ${settings.media_aprovacao.toFixed(1)} and minimum attendance at ${settings.frequencia_minima}%.`}
-                                          </p>
-                                        </div>
-                                      </div>
-                                    );
-                                  })()}
+                                  {/* Stamp & Issue Date Footer */}
+                                  <div className="flex items-center justify-between text-[7px] tracking-wider text-slate-400 font-bold uppercase border-t border-slate-250 pt-2.5 mt-1">
+                                    <div className="flex items-center font-mono">
+                                      <span>CERT-{reportData.student.id.slice(0, 12).toUpperCase()}</span>
+                                    </div>
+                                    <span>
+                                      {language === 'pt' ? 'DOCUMENTO EMITIDO EM: ' : 'ISSUED ON: '}
+                                      {new Date().toLocaleDateString(language === 'pt' ? 'pt-BR' : 'en-US', {
+                                        day: '2-digit',
+                                        month: 'short',
+                                        year: 'numeric'
+                                      }).toUpperCase()}
+                                    </span>
+                                  </div>
+
+                                  {/* Double Signature Panel */}
+                                  <div className="grid grid-cols-2 gap-10 pt-3 mt-1.5 border-t border-dashed border-slate-300">
+                                    <div className="flex flex-col items-center text-center">
+                                      <div className="w-44 border-b border-slate-400 h-5"></div>
+                                      <span className="text-[8px] font-black text-slate-700 uppercase mt-1 tracking-wider leading-none">{reportT[language as "pt" | "en"].signatureInstructor}</span>
+                                      <span className="text-[7px] font-bold text-slate-400 uppercase mt-0.5 leading-none">{language === 'pt' ? 'Assinatura Autorizada' : 'Authorized Signature'}</span>
+                                    </div>
+                                    <div className="flex flex-col items-center text-center">
+                                      <div className="w-44 border-b border-slate-400 h-5"></div>
+                                      <span className="text-[8px] font-black text-slate-700 uppercase mt-1 tracking-wider leading-none">{reportT[language as "pt" | "en"].signatureStudent}</span>
+                                      <span className="text-[7px] font-bold text-slate-400 uppercase mt-0.5 leading-none">{language === 'pt' ? 'Assinatura do Aluno' : 'Student Endorsement'}</span>
+                                    </div>
+                                  </div>
                                 </div>
-                              </div>
-
-                              {/* Observations section */}
-                              <div className="border border-slate-200 rounded-lg p-4 flex flex-col gap-2 text-left text-xs text-slate-600 italic">
-                                <h3 className="text-[11px] font-black text-slate-400 tracking-[0.1em] uppercase border-b border-slate-200 pb-1">
-                                  {reportT[language as "pt" | "en"].observations}
-                                </h3>
-                                <p className="leading-relaxed text-justify">
-                                  {reportT[language as "pt" | "en"].defaultObs}
-                                </p>
-                              </div>
-
-
-                              {/* Stamp & Verification Text */}
-                              <div className="pt-6 border-t border-slate-100 flex items-center justify-between text-[9px] text-slate-400 font-medium uppercase tracking-wider bg-white">
-                                <span>{reportT[language as "pt" | "en"].footerText}</span>
-                                <span>
-                                  {language === 'pt' ? 'Data de Emissão: ' : 'Date of Issue: '}
-                                  {new Date().toLocaleDateString(language === 'pt' ? 'pt-BR' : 'en-US', {
-                                    day: '2-digit',
-                                    month: 'long',
-                                    year: 'numeric'
-                                  })}
-                                </span>
                               </div>
                             </div>
                           </div>
