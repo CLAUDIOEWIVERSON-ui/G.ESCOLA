@@ -224,19 +224,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         ? t.users.aluno 
         : '';
 
-  // Sequência de navegação do botão Próximo: cursos, turmas, detalhe (horário), agenda (calendário), análise de avaliações, configurações
-  const nextSequence = ['/cursos', '/turmas', '/horario', '/calendario', '/relatorio-avaliacao', '/configuracoes'];
+  // Definir navegação dinâmica (Voltar/Próximo) baseada na ordem dos módulos em navItems
+  const currentPath = pathname || '';
+  const currentNavIndex = navItems.findIndex(item => item.path === currentPath);
 
-  // Encontrar o próximo destino com base no pathname atual
-  const getNextPagePath = () => {
-    const currentPath = pathname || '';
-    const currentIndex = nextSequence.indexOf(currentPath);
-    if (currentIndex === -1) {
-      return '/cursos';
+  const getPreviousPagePath = () => {
+    if (navItems.length === 0) return '/dashboard';
+    if (currentNavIndex === -1) {
+      return '/dashboard';
     }
-    return nextSequence[(currentIndex + 1) % nextSequence.length];
+    const prevIndex = (currentNavIndex - 1 + navItems.length) % navItems.length;
+    return navItems[prevIndex].path;
   };
 
+  const getNextPagePath = () => {
+    if (navItems.length === 0) return '/dashboard';
+    if (currentNavIndex === -1) {
+      return navItems[0].path;
+    }
+    const nextIndex = (currentNavIndex + 1) % navItems.length;
+    return navItems[nextIndex].path;
+  };
+
+  const prevPagePath = getPreviousPagePath();
   const nextPagePath = getNextPagePath();
 
   if (!profile && pathname === '/avaliacao') {
@@ -608,8 +618,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {/* Navegger Back/Home Buttons */}
             <div className="flex items-center gap-2 border-l border-slate-200 pl-4 h-6">
               <button
-                onClick={() => router.back()}
-                title="Voltar para a página anterior"
+                onClick={() => router.push(prevPagePath)}
+                title="Voltar para o módulo anterior"
                 className="flex items-center justify-center gap-1.5 px-3 py-1 bg-slate-50 border border-slate-200 hover:border-blue-300 hover:bg-blue-50/50 rounded-xl text-slate-600 hover:text-blue-600 transition-all text-xs font-semibold shadow-xs cursor-pointer"
               >
                 <ArrowLeft size={14} className="stroke-[2.5]" />
