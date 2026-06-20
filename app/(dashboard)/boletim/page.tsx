@@ -1369,6 +1369,29 @@ export default function BoletimPage() {
                             >
                               {/* STYLE TAG FOR DIRECTED CUSTOM CSS FOR PRINT MEDIA */}
                               <style dangerouslySetInnerHTML={{ __html: `
+                                @media screen {
+                                  #student-report-print-area {
+                                    zoom: 0.52 !important;
+                                    margin: 0 auto !important;
+                                    max-height: 297mm !important;
+                                  }
+                                }
+                                @media screen and (min-height: 800px) {
+                                  #student-report-print-area {
+                                    zoom: 0.60 !important;
+                                  }
+                                }
+                                @media screen and (min-height: 950px) {
+                                  #student-report-print-area {
+                                    zoom: 0.70 !important;
+                                  }
+                                }
+                                @media screen and (min-height: 1100px) {
+                                  #student-report-print-area {
+                                    zoom: 0.8 !important;
+                                  }
+                                }
+
                                 @media print {
                                   /* Reset page context and force standard white/black print output */
                                   html, body {
