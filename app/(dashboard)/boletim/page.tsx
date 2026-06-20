@@ -558,9 +558,9 @@ export default function BoletimPage() {
                     top: 0 !important;
                     width: 190mm !important; /* Exact A4 content width (210mm - 20mm margins) */
                     min-width: 190mm !important;
-                    height: auto !important;
+                    height: 297mm !important; /* Garante que a altura total não exceda o tamanho da folha A4 */
+                    max-height: 297mm !important;
                     min-height: 0 !important;
-                    max-height: none !important;
                     padding: 0 !important; /* Rely purely on page margin */
                     margin: 0 !important;
                     border: none !important;
@@ -1364,7 +1364,7 @@ export default function BoletimPage() {
                             {/* The actual A4 Printable Area */}
                             <div 
                               id="student-report-print-area" 
-                              className="bg-white text-slate-900 border border-slate-200 shadow-xl p-8 rounded-lg max-w-[210mm] min-h-[297mm] mx-auto flex flex-col gap-6 font-sans relative text-left text-xs"
+                              className="bg-white text-slate-900 border border-slate-200 shadow-xl p-8 rounded-lg max-w-[210mm] mx-auto flex flex-col gap-6 font-sans relative text-left text-xs"
                               style={{ width: '100%', boxSizing: 'border-box' }}
                             >
                               {/* STYLE TAG FOR DIRECTED CUSTOM CSS FOR PRINT MEDIA */}
@@ -1433,9 +1433,9 @@ export default function BoletimPage() {
                                     top: 0 !important;
                                     width: 190mm !important; /* Exact A4 content width (210mm - 20mm margins) */
                                     min-width: 190mm !important;
-                                    height: auto !important;
+                                    height: 297mm !important; /* Garante que a altura total não exceda o tamanho da folha A4 */
+                                    max-height: 297mm !important;
                                     min-height: 0 !important;
-                                    max-height: none !important;
                                     padding: 0 !important; /* Rely purely on page margin */
                                     margin: 0 !important;
                                     border: none !important;
