@@ -78,6 +78,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
+  const [showMoreModules, setShowMoreModules] = useState(false);
 
   const toggleSubmenu = (path: string, e: React.MouseEvent) => {
     if (!sidebarOpen) {
@@ -206,6 +207,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const firstGroup = isNifStudent ? [] : navItems.slice(0, 4);
   const secondGroup = isNifStudent ? navItems : navItems.slice(4);
+
+  // Split secondGroup into visible items and those hidden under "See More" at the height of user management module
+  const hiddenPaths = ['/relatorio-avaliacao', '/links', '/configuracoes'];
+  const visibleSecondItems = secondGroup.filter(item => !hiddenPaths.includes(item.path));
+  const hiddenSecondItems = secondGroup.filter(item => hiddenPaths.includes(item.path));
+  const isAnyHiddenActive = hiddenSecondItems.some(item => pathname === item.path);
+  const isExpanded = showMoreModules || isAnyHiddenActive;
 
   const userInitials = profile?.full_name ? profile.full_name.slice(0, 2).toUpperCase() : 'US';
   const roleName = profile?.role === 'admin' 
@@ -386,7 +394,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   {t.auth.academic}
                 </div>
                 <div className="space-y-1.5">
-                  {secondGroup.map((item) => {
+                  {visibleSecondItems.map((item) => {
                     const isActive = pathname === item.path;
                     const isCalendar = item.path === '/calendario';
                     const isSettings = item.path === '/configuracoes';
@@ -442,6 +450,113 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       </Link>
                     );
                   })}
+
+                  {/* See More ("Veja mais") toggle at the height of user management, covering academic elements below */}
+                  {hiddenSecondItems.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!sidebarOpen) {
+                          setSidebarOpen(true);
+                          setShowMoreModules(true);
+                        } else {
+                          setShowMoreModules(prev => !prev);
+                        }
+                      }}
+                      className={cn(
+                        "w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all group relative overflow-hidden text-slate-400 hover:text-white hover:bg-white/[0.03]",
+                        isExpanded && "bg-slate-900/50"
+                      )}
+                    >
+                      <div className="flex items-center gap-3">
+                        <ChevronRight 
+                          size={18} 
+                          className={cn(
+                            "shrink-0 text-slate-500 group-hover:text-slate-300 transition-transform duration-200", 
+                            isExpanded && "rotate-90 text-blue-400"
+                          )} 
+                        />
+                        <span className={cn(
+                          "text-sm font-medium transition-all whitespace-nowrap text-left",
+                          !sidebarOpen && "opacity-0 invisible w-0"
+                        )}>
+                          {isExpanded 
+                            ? (language === 'pt' ? 'Veja menos' : 'See less') 
+                            : (language === 'pt' ? 'Veja mais' : 'See more')}
+                        </span>
+                      </div>
+                    </button>
+                  )}
+
+                  {/* Collateral academic folders under Veja mais */}
+                  <AnimatePresence initial={false}>
+                    {isExpanded && hiddenSecondItems.length > 0 && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
+                        className="overflow-hidden space-y-1.5 pl-2 border-l border-white/5 ml-3"
+                      >
+                        {hiddenSecondItems.map((item) => {
+                          const isActive = pathname === item.path;
+                          const isCalendar = item.path === '/calendario';
+                          const isSettings = item.path === '/configuracoes';
+                          const needsPasswordChange = isSettings && profile && !profile.has_changed_password;
+                          
+                          return (
+                            <Link 
+                              key={item.path} 
+                              href={item.path}
+                              className={cn(
+                                "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group relative overflow-hidden",
+                                isActive 
+                                  ? "bg-blue-600/10 text-white border border-blue-500/20 shadow-[0_0_15px_rgba(37,99,235,0.1)]" 
+                                  : isCalendar
+                                    ? "bg-amber-500/5 text-amber-500/70 hover:bg-amber-500/10 hover:text-amber-400 border border-transparent hover:border-amber-500/20"
+                                    : "hover:bg-white/[0.03] text-slate-400 hover:text-white"
+                              )}
+                            >
+                              {isActive && (
+                                <motion.div 
+                                  layoutId="active-indicator-academic"
+                                  className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-r-full"
+                                />
+                              )}
+                              <item.icon size={18} className={cn(
+                                "shrink-0 transition-transform group-hover:scale-110", 
+                                isActive 
+                                  ? "text-blue-400" 
+                                  : isCalendar 
+                                    ? "text-amber-500" 
+                                    : needsPasswordChange
+                                      ? "text-amber-500 animate-pulse bg-amber-500/10 p-0.5 rounded-md"
+                                      : "text-slate-500 group-hover:text-slate-300"
+                              )} />
+                              <span className={cn(
+                                "text-sm transition-opacity whitespace-nowrap font-medium",
+                                !sidebarOpen && "opacity-0 invisible w-0",
+                                needsPasswordChange && "text-amber-500 font-bold"
+                              )}>
+                                {item.name}
+                              </span>
+                              {isCalendar && sidebarOpen && (
+                                <span className="ml-auto flex h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                              )}
+                              {needsPasswordChange && sidebarOpen && (
+                                <span className="ml-auto text-[9px] font-black tracking-wider text-amber-500 bg-amber-500/10 border border-amber-500/30 px-1.5 py-0.5 rounded-full uppercase animate-pulse shrink-0 font-sans">
+                                  Atenção
+                                </span>
+                              )}
+                              {needsPasswordChange && !sidebarOpen && (
+                                <span className="absolute right-2 top-2 flex h-2 w-2 rounded-full bg-amber-500 animate-pulse shrink-0" />
+                              )}
+                            </Link>
+                          );
+                        })}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
             </nav>
