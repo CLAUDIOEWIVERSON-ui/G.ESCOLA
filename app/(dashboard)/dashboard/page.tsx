@@ -57,6 +57,17 @@ export default function DashboardPage() {
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState<number>(1);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('items_per_page_dashboard_alunos');
+      if (saved) {
+        setTimeout(() => {
+          setItemsPerPage(Number(saved));
+        }, 0);
+      }
+    }
+  }, []);
+
   const totalAlunosExterior = alunosExterior.length;
   const totalPagesAlunos = Math.ceil(totalAlunosExterior / itemsPerPage);
   const startIndexAlunos = (currentPage - 1) * itemsPerPage;
@@ -771,8 +782,12 @@ export default function DashboardPage() {
                   <select
                     value={itemsPerPage}
                     onChange={(e) => {
-                      setItemsPerPage(Number(e.target.value));
+                      const val = Number(e.target.value);
+                      setItemsPerPage(val);
                       setCurrentPage(1);
+                      if (typeof window !== 'undefined') {
+                        localStorage.setItem('items_per_page_dashboard_alunos', String(val));
+                      }
                     }}
                     className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-700 outline-none focus:ring-1 focus:ring-indigo-500 font-bold cursor-pointer"
                   >
@@ -936,6 +951,17 @@ function TurmasListTable({ turmas, title, onDelete }: { turmas: any[], title: st
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState<number>(1);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('items_per_page_dashboard_turmas');
+      if (saved) {
+        setTimeout(() => {
+          setItemsPerPage(Number(saved));
+        }, 0);
+      }
+    }
+  }, []);
+
   const totalItems = turmas.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -1034,8 +1060,12 @@ function TurmasListTable({ turmas, title, onDelete }: { turmas: any[], title: st
             <select
               value={itemsPerPage}
               onChange={(e) => {
-                setItemsPerPage(Number(e.target.value));
+                const val = Number(e.target.value);
+                setItemsPerPage(val);
                 setCurrentPage(1);
+                if (typeof window !== 'undefined') {
+                  localStorage.setItem('items_per_page_dashboard_turmas', String(val));
+                }
               }}
               className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-700 outline-none focus:ring-1 focus:ring-indigo-500 font-bold cursor-pointer"
             >

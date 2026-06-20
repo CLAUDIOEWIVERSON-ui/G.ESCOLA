@@ -27,6 +27,17 @@ export default function UsuariosPage() {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [roleFilter, setRoleFilter] = useState<string>('all');
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('items_per_page_usuarios');
+      if (saved) {
+        setTimeout(() => {
+          setItemsPerPage(Number(saved));
+        }, 0);
+      }
+    }
+  }, []);
+
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     try {
@@ -360,8 +371,12 @@ export default function UsuariosPage() {
               <select
                 value={itemsPerPage}
                 onChange={(e) => {
-                  setItemsPerPage(Number(e.target.value));
+                  const val = Number(e.target.value);
+                  setItemsPerPage(val);
                   setCurrentPage(1);
+                  if (typeof window !== 'undefined') {
+                    localStorage.setItem('items_per_page_usuarios', String(val));
+                  }
                 }}
                 className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-700 outline-none focus:ring-1 focus:ring-blue-500 font-bold"
               >

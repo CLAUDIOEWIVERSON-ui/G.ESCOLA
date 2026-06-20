@@ -125,6 +125,18 @@ export default function LinksUteisPage() {
   const [search, setSearch] = useState('');
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState<number>(1);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('items_per_page_links');
+      if (saved) {
+        setTimeout(() => {
+          setItemsPerPage(Number(saved));
+        }, 0);
+      }
+    }
+  }, []);
+
   const [activeTab, setActiveTab] = useState<string>('all');
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedLink, setSelectedLink] = useState<LinkItem | null>(null);
@@ -738,8 +750,12 @@ CREATE POLICY "Admins have full access" ON public.useful_links FOR ALL USING (
             <select
               value={itemsPerPage}
               onChange={(e) => {
-                setItemsPerPage(Number(e.target.value));
+                const val = Number(e.target.value);
+                setItemsPerPage(val);
                 setCurrentPage(1);
+                if (typeof window !== 'undefined') {
+                  localStorage.setItem('items_per_page_links', String(val));
+                }
               }}
               className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-700 outline-none focus:ring-1 focus:ring-indigo-500 font-bold cursor-pointer"
             >

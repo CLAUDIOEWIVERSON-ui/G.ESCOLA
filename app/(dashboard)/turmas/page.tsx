@@ -51,6 +51,17 @@ function TurmasContent() {
   const [refreshing, setRefreshing] = useState(false);
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState<number>(1);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('items_per_page_turmas');
+      if (saved) {
+        setTimeout(() => {
+          setItemsPerPage(Number(saved));
+        }, 0);
+      }
+    }
+  }, []);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentTurma, setCurrentTurma] = useState<any>(null);
   const [saving, setSaving] = useState(false);
@@ -1328,8 +1339,12 @@ function TurmasContent() {
             <select
               value={itemsPerPage}
               onChange={(e) => {
-                setItemsPerPage(Number(e.target.value));
+                const val = Number(e.target.value);
+                setItemsPerPage(val);
                 setCurrentPage(1);
+                if (typeof window !== 'undefined') {
+                  localStorage.setItem('items_per_page_turmas', String(val));
+                }
               }}
               className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-700 outline-none focus:ring-1 focus:ring-blue-500 font-bold cursor-pointer"
             >
