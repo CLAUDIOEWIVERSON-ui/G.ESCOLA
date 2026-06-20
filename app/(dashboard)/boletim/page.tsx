@@ -205,6 +205,72 @@ export default function BoletimPage() {
       // Let the DOM update to full-scale resolution
       await new Promise((resolve) => setTimeout(resolve, 150));
 
+      const oklchToRgbVal = (l: number, c: number, h: number): [number, number, number] => {
+        const hRad = (h * Math.PI) / 180;
+        const a = c * Math.cos(hRad);
+        const b = c * Math.sin(hRad);
+
+        const l_ = l + 0.3963377774 * a + 0.2158037573 * b;
+        const m_ = l - 0.1055613458 * a - 0.0638541728 * b;
+        const s_ = l - 0.0894841775 * a - 1.2914855480 * b;
+
+        const l3 = l_ * l_ * l_;
+        const m3 = m_ * m_ * m_;
+        const s3 = s_ * s_ * s_;
+
+        const x = +1.2270138511 * l3 - 0.5577999807 * m3 + 0.2812561490 * s3;
+        const y = -0.0405801784 * l3 + 1.1122568696 * m3 - 0.0716766787 * s3;
+        const z = -0.0763812845 * l3 - 0.4214819784 * m3 + 1.5861632204 * s3;
+
+        let r = +3.2404542 * x - 1.5371385 * y - 0.4985314 * z;
+        let g = -0.9692660 * x + 1.8760108 * y + 0.0415560 * z;
+        let bVal = -0.2264055 * x + 0.0556434 * y + 1.0572252 * z;
+
+        const fn = (cVal: number) => {
+          if (cVal <= 0.0031308) {
+            return 12.92 * cVal;
+          } else {
+            return 1.055 * Math.pow(cVal, 1 / 2.4) - 0.055;
+          }
+        };
+
+        r = fn(r);
+        g = fn(g);
+        bVal = fn(bVal);
+
+        const R = Math.max(0, Math.min(255, Math.round(r * 255)));
+        const G = Math.max(0, Math.min(255, Math.round(g * 255)));
+        const B = Math.max(0, Math.min(255, Math.round(bVal * 255)));
+
+        return [R, G, B];
+      };
+
+      const parseAndConvertOklch = (colorStr: string): string => {
+        if (!colorStr || !colorStr.includes('oklch')) return colorStr;
+
+        return colorStr.replace(/oklch\(([^)]+)\)/g, (match, content) => {
+          try {
+            const normalized = content.replace(/,/g, ' ').replace(/\//g, ' ').trim();
+            const parts = normalized.split(/\s+/).map((p: string) => {
+              if (p.endsWith('%')) {
+                return parseFloat(p) / 100;
+              }
+              return parseFloat(p);
+            });
+
+            if (parts.length >= 3 && !parts.some(isNaN)) {
+              const [l, c, h] = parts;
+              const [r, g, b] = oklchToRgbVal(l, c, h);
+              const alpha = parts[3] !== undefined ? parts[3] : 1;
+              return alpha === 1 ? `rgb(${r}, ${g}, ${b})` : `rgba(${r}, ${g}, ${b}, ${alpha})`;
+            }
+          } catch (e) {
+            console.error("Failed to parse oklch color:", match, e);
+          }
+          return match;
+        });
+      };
+
       const html2canvas = (await import('html2canvas')).default;
       const { jsPDF } = await import('jspdf');
 
@@ -216,7 +282,36 @@ export default function BoletimPage() {
         width: 794,
         height: 1123,
         windowWidth: 794,
-        windowHeight: 1123
+        windowHeight: 1123,
+        onclone: (clonedDoc) => {
+          const elements = clonedDoc.querySelectorAll('*');
+          elements.forEach((el) => {
+            const htmlEl = el as HTMLElement;
+            const styleProps = [
+              'color', 'backgroundColor', 'borderColor', 
+              'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor',
+              'outlineColor', 'fill', 'stroke'
+            ];
+            
+            try {
+              const computed = window.getComputedStyle(htmlEl);
+              styleProps.forEach((prop) => {
+                const val = computed[prop as any];
+                if (val && val.includes('oklch')) {
+                  const converted = parseAndConvertOklch(val);
+                  htmlEl.style[prop as any] = converted;
+                }
+              });
+
+              const inlineStyle = htmlEl.getAttribute('style');
+              if (inlineStyle && inlineStyle.includes('oklch')) {
+                htmlEl.setAttribute('style', parseAndConvertOklch(inlineStyle));
+              }
+            } catch (err) {
+              // Silently ignore style errors on incompatible elements
+            }
+          });
+        }
       });
 
       // Restore screen preview scale back to configured level
