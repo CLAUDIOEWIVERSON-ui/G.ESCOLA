@@ -502,6 +502,7 @@ export default function BoletimPage() {
             >
                <style dangerouslySetInnerHTML={{ __html: `
                 @media print {
+                  /* Reset page context and force standard white/black print output */
                   html, body {
                     margin: 0 !important;
                     padding: 0 !important;
@@ -512,19 +513,34 @@ export default function BoletimPage() {
                     min-height: auto !important;
                     overflow: visible !important;
                   }
-                  
-                  /* Flat layout structure with zero constraints for printing */
-                  div, main, section, article {
-                    transform: none !important;
-                    position: static !important;
-                    overflow: visible !important;
-                    max-height: none !important;
-                    height: auto !important;
-                    border: none !important;
-                    box-shadow: none !important;
-                    background: transparent !important;
-                    padding: 0 !important;
+
+                  /* Hide headers, footers, mobile bottom-navs, back buttons, filters, etc. completely from DOM layout flow */
+                  header, nav, aside, footer, button, .print\:hidden, [role="dialog"], [role="group"], .no-print {
+                    display: none !important;
+                    width: 0 !important;
+                    height: 0 !important;
                     margin: 0 !important;
+                    padding: 0 !important;
+                    overflow: hidden !important;
+                  }
+                  
+                  /* Collapse all container heights, min-heights, flex properties, padding, and margins on parent wrappers */
+                  div, main, section, article {
+                    position: static !important;
+                    width: auto !important;
+                    height: auto !important;
+                    min-height: 0 !important;
+                    max-height: none !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    box-shadow: none !important;
+                    border: none !important;
+                    transform: none !important;
+                    overflow: visible !important;
+                    background: transparent !important;
+                    animation: none !important;
+                    transition: none !important;
+                    opacity: 1 !important;
                   }
 
                   body * {
@@ -541,6 +557,7 @@ export default function BoletimPage() {
                     left: 0 !important;
                     top: 0 !important;
                     width: 190mm !important; /* Exact A4 content width (210mm - 20mm margins) */
+                    min-width: 190mm !important;
                     height: auto !important;
                     min-height: 0 !important;
                     max-height: none !important;
@@ -554,6 +571,41 @@ export default function BoletimPage() {
                     display: flex !important;
                     flex-direction: column !important;
                     gap: 12px !important; /* Elegant compact spacing */
+                  }
+
+                  /* Overwrite global generic flex/grid flattener for our specialized print contents */
+                  #student-report-print-area .flex {
+                    display: flex !important;
+                  }
+                  #student-report-print-area .flex-row {
+                    flex-direction: row !important;
+                  }
+                  #student-report-print-area .flex-col {
+                    flex-direction: column !important;
+                  }
+                  #student-report-print-area .items-center {
+                    align-items: center !important;
+                  }
+                  #student-report-print-area .justify-between {
+                    justify-content: space-between !important;
+                  }
+                  #student-report-print-area .justify-center {
+                    justify-content: center !important;
+                  }
+                  #student-report-print-area .grid {
+                    display: grid !important;
+                  }
+                  #student-report-print-area .grid-cols-2 {
+                    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+                  }
+                  #student-report-print-area .grid-cols-3 {
+                    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+                  }
+                  #student-report-print-area .gap-4 {
+                    gap: 16px !important;
+                  }
+                  #student-report-print-area .gap-10 {
+                    gap: 40px !important;
                   }
 
                   /* Compact formatting for A4 vertical containment */
@@ -1318,6 +1370,7 @@ export default function BoletimPage() {
                               {/* STYLE TAG FOR DIRECTED CUSTOM CSS FOR PRINT MEDIA */}
                               <style dangerouslySetInnerHTML={{ __html: `
                                 @media print {
+                                  /* Reset page context and force standard white/black print output */
                                   html, body {
                                     margin: 0 !important;
                                     padding: 0 !important;
@@ -1328,21 +1381,36 @@ export default function BoletimPage() {
                                     min-height: auto !important;
                                     overflow: visible !important;
                                   }
+
+                                  /* Hide headers, footers, mobile bottom-navs, back buttons, filters, etc. completely from DOM layout flow */
+                                  header, nav, aside, footer, button, .print\:hidden, [role="dialog"], [role="group"], .no-print {
+                                    display: none !important;
+                                    width: 0 !important;
+                                    height: 0 !important;
+                                    margin: 0 !important;
+                                    padding: 0 !important;
+                                    overflow: hidden !important;
+                                  }
                                   
-                                  /* Flatten modal layers and high-level wrappers for fluid print flow */
+                                  /* Collapse all container heights, min-heights, flex properties, padding, and margins on parent wrappers */
                                   #student-report-modal-backdrop,
                                   #student-report-modal-content,
                                   div, main, section, article {
-                                    transform: none !important;
                                     position: static !important;
-                                    overflow: visible !important;
-                                    max-height: none !important;
+                                    width: auto !important;
                                     height: auto !important;
-                                    border: none !important;
-                                    box-shadow: none !important;
-                                    background: transparent !important;
-                                    padding: 0 !important;
+                                    min-height: 0 !important;
+                                    max-height: none !important;
                                     margin: 0 !important;
+                                    padding: 0 !important;
+                                    box-shadow: none !important;
+                                    border: none !important;
+                                    transform: none !important;
+                                    overflow: visible !important;
+                                    background: transparent !important;
+                                    animation: none !important;
+                                    transition: none !important;
+                                    opacity: 1 !important;
                                   }
 
                                   body * {
@@ -1364,6 +1432,7 @@ export default function BoletimPage() {
                                     left: 0 !important;
                                     top: 0 !important;
                                     width: 190mm !important; /* Exact A4 content width (210mm - 20mm margins) */
+                                    min-width: 190mm !important;
                                     height: auto !important;
                                     min-height: 0 !important;
                                     max-height: none !important;
@@ -1377,6 +1446,41 @@ export default function BoletimPage() {
                                     display: flex !important;
                                     flex-direction: column !important;
                                     gap: 12px !important; /* Compact design spacing */
+                                  }
+
+                                  /* Overwrite global generic flex/grid flattener for our specialized print contents */
+                                  #student-report-print-area .flex {
+                                    display: flex !important;
+                                  }
+                                  #student-report-print-area .flex-row {
+                                    flex-direction: row !important;
+                                  }
+                                  #student-report-print-area .flex-col {
+                                    flex-direction: column !important;
+                                  }
+                                  #student-report-print-area .items-center {
+                                    align-items: center !important;
+                                  }
+                                  #student-report-print-area .justify-between {
+                                    justify-content: space-between !important;
+                                  }
+                                  #student-report-print-area .justify-center {
+                                    justify-content: center !important;
+                                  }
+                                  #student-report-print-area .grid {
+                                    display: grid !important;
+                                  }
+                                  #student-report-print-area .grid-cols-2 {
+                                    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+                                  }
+                                  #student-report-print-area .grid-cols-3 {
+                                    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+                                  }
+                                  #student-report-print-area .gap-4 {
+                                    gap: 16px !important;
+                                  }
+                                  #student-report-print-area .gap-10 {
+                                    gap: 40px !important;
                                   }
 
                                   /* Compact padding and typography for A4 vertical containment */
