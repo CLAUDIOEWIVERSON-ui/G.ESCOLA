@@ -500,43 +500,120 @@ export default function BoletimPage() {
               className="bg-white text-slate-900 border border-slate-200 shadow-xl p-8 rounded-lg flex flex-col gap-6 font-sans relative text-left text-xs"
               style={{ width: '100%', boxSizing: 'border-box' }}
             >
-              <style dangerouslySetInnerHTML={{ __html: `
+               <style dangerouslySetInnerHTML={{ __html: `
                 @media print {
+                  html, body {
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    background: #ffffff !important;
+                    color: #000000 !important;
+                    width: 100% !important;
+                    height: auto !important;
+                    min-height: auto !important;
+                    overflow: visible !important;
+                  }
+                  
+                  /* Flat layout structure with zero constraints for printing */
+                  div, main, section, article {
+                    transform: none !important;
+                    position: static !important;
+                    overflow: visible !important;
+                    max-height: none !important;
+                    height: auto !important;
+                    border: none !important;
+                    box-shadow: none !important;
+                    background: transparent !important;
+                    padding: 0 !important;
+                    margin: 0 !important;
+                  }
+
                   body * {
                     visibility: hidden !important;
                   }
+
                   #student-report-print-area, #student-report-print-area * {
                     visibility: visible !important;
                   }
+
                   #student-report-print-area {
+                    visibility: visible !important;
                     position: absolute !important;
                     left: 0 !important;
                     top: 0 !important;
-                    width: 210mm !important;
-                    min-height: 297mm !important;
-                    padding: 15mm !important;
+                    width: 190mm !important; /* Exact A4 content width (210mm - 20mm margins) */
+                    height: auto !important;
+                    min-height: 0 !important;
+                    max-height: none !important;
+                    padding: 0 !important; /* Rely purely on page margin */
                     margin: 0 !important;
                     border: none !important;
                     box-shadow: none !important;
                     background: #ffffff !important;
                     color: #000000 !important;
                     font-family: Arial, sans-serif !important;
+                    display: flex !important;
+                    flex-direction: column !important;
+                    gap: 12px !important; /* Elegant compact spacing */
                   }
+
+                  /* Compact formatting for A4 vertical containment */
+                  #student-report-print-area .p-5 {
+                    padding: 4mm !important;
+                  }
+                  #student-report-print-area .p-4 {
+                    padding: 4mm !important;
+                  }
+                  #student-report-print-area .pb-6 {
+                    padding-bottom: 4mm !important;
+                  }
+                  #student-report-print-area .pt-6 {
+                    padding-top: 4mm !important;
+                    margin-top: 2mm !important;
+                  }
+                  #student-report-print-area h1 {
+                    font-size: 18px !important;
+                    line-height: 1.2 !important;
+                  }
+                  #student-report-print-area h3 {
+                    font-size: 11px !important;
+                    margin-bottom: 6px !important;
+                  }
+                  
+                  /* Preserve side-by-side columns on print pages */
+                  #student-report-print-area .grid-cols-1.md\:grid-cols-2 {
+                    display: grid !important;
+                    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+                    gap: 12px !important;
+                    width: 100% !important;
+                  }
+
+                  table.report-table th {
+                    padding: 6px 12px !important;
+                    font-size: 10px !important;
+                  }
+                  table.report-table td {
+                    padding: 5px 12px !important;
+                    font-size: 11px !important;
+                  }
+
                   .print-only-layout {
                     visibility: visible !important;
                   }
+                  
                   .print-bg-gray {
-                    background-color: #f8fafc !important;
+                    background-color: #f1f5f9 !important;
                     -webkit-print-color-adjust: exact !important;
                     print-color-adjust: exact !important;
                   }
+                  
                   .print-border-black {
                     border-color: #000000 !important;
                   }
                 }
+                
                 @page {
-                  size: A4;
-                  margin: 10mm;
+                  size: A4 portrait;
+                  margin: 10mm 10mm 10mm 10mm;
                 }
               `}} />
 
@@ -1241,9 +1318,37 @@ export default function BoletimPage() {
                               {/* STYLE TAG FOR DIRECTED CUSTOM CSS FOR PRINT MEDIA */}
                               <style dangerouslySetInnerHTML={{ __html: `
                                 @media print {
+                                  html, body {
+                                    margin: 0 !important;
+                                    padding: 0 !important;
+                                    background: #ffffff !important;
+                                    color: #000000 !important;
+                                    width: 100% !important;
+                                    height: auto !important;
+                                    min-height: auto !important;
+                                    overflow: visible !important;
+                                  }
+                                  
+                                  /* Flatten modal layers and high-level wrappers for fluid print flow */
+                                  #student-report-modal-backdrop,
+                                  #student-report-modal-content,
+                                  div, main, section, article {
+                                    transform: none !important;
+                                    position: static !important;
+                                    overflow: visible !important;
+                                    max-height: none !important;
+                                    height: auto !important;
+                                    border: none !important;
+                                    box-shadow: none !important;
+                                    background: transparent !important;
+                                    padding: 0 !important;
+                                    margin: 0 !important;
+                                  }
+
                                   body * {
                                     visibility: hidden !important;
                                   }
+
                                   #student-report-print-area, 
                                   #student-report-print-area *,
                                   #student-report-modal-backdrop,
@@ -1252,35 +1357,86 @@ export default function BoletimPage() {
                                   #student-report-modal-content * {
                                     visibility: visible !important;
                                   }
+
                                   #student-report-print-area {
+                                    visibility: visible !important;
                                     position: absolute !important;
                                     left: 0 !important;
                                     top: 0 !important;
-                                    width: 210mm !important;
-                                    min-height: 297mm !important;
-                                    padding: 15mm !important;
+                                    width: 190mm !important; /* Exact A4 content width (210mm - 20mm margins) */
+                                    height: auto !important;
+                                    min-height: 0 !important;
+                                    max-height: none !important;
+                                    padding: 0 !important; /* Rely purely on page margin */
                                     margin: 0 !important;
                                     border: none !important;
                                     box-shadow: none !important;
                                     background: #ffffff !important;
                                     color: #000000 !important;
                                     font-family: Arial, sans-serif !important;
+                                    display: flex !important;
+                                    flex-direction: column !important;
+                                    gap: 12px !important; /* Compact design spacing */
                                   }
+
+                                  /* Compact padding and typography for A4 vertical containment */
+                                  #student-report-print-area .p-5 {
+                                    padding: 4mm !important;
+                                  }
+                                  #student-report-print-area .p-4 {
+                                    padding: 4mm !important;
+                                  }
+                                  #student-report-print-area .pb-6 {
+                                    padding-bottom: 4mm !important;
+                                  }
+                                  #student-report-print-area .pt-6 {
+                                    padding-top: 4mm !important;
+                                    margin-top: 2mm !important;
+                                  }
+                                  #student-report-print-area h1 {
+                                    font-size: 18px !important;
+                                    line-height: 1.2 !important;
+                                  }
+                                  #student-report-print-area h3 {
+                                    font-size: 11px !important;
+                                    margin-bottom: 6px !important;
+                                  }
+                                  
+                                  /* Double-column representation for print pages */
+                                  #student-report-print-area .grid-cols-1.md\:grid-cols-2 {
+                                    display: grid !important;
+                                    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+                                    gap: 12px !important;
+                                    width: 100% !important;
+                                  }
+
+                                  table.report-table th {
+                                    padding: 6px 12px !important;
+                                    font-size: 10px !important;
+                                  }
+                                  table.report-table td {
+                                    padding: 5px 12px !important;
+                                    font-size: 11px !important;
+                                  }
+
                                   .print-only-layout {
                                     visibility: visible !important;
                                   }
+                                  
                                   .print-bg-gray {
-                                    background-color: #f8fafc !important;
+                                    background-color: #f1f5f9 !important;
                                     -webkit-print-color-adjust: exact !important;
                                     print-color-adjust: exact !important;
                                   }
+                                  
                                   .print-border-black {
                                     border-color: #000000 !important;
                                   }
                                 }
+                                
                                 @page {
-                                  size: A4;
-                                  margin: 10mm;
+                                  size: A4 portrait;
+                                  margin: 10mm 10mm 10mm 10mm;
                                 }
                               `}} />
 
