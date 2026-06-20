@@ -22,7 +22,8 @@ import {
   BarChart3,
   CalendarDays as CalendarIcon,
   Calendar,
-  ShieldAlert
+  ShieldAlert,
+  Printer
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import Image from 'next/image';
@@ -864,9 +865,10 @@ export default function FrequenciaPage() {
             transition={{ duration: 0.2 }}
             className="space-y-6"
           >
-            <div className="flex flex-col xl:flex-row items-center justify-between gap-6 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm transition-all">
+            <div className="flex flex-col xl:flex-row items-center justify-between gap-6 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm transition-all print:hidden">
               <div className="flex items-center gap-4 bg-slate-50 p-2 rounded-2xl border border-slate-100">
                 <button
+                  type="button"
                   onClick={() => {
                     if (!canNavigateLeft()) return;
                     if (mapGranularity === 'week') setCurrentMapDate(subWeeks(currentMapDate, 1));
@@ -895,6 +897,7 @@ export default function FrequenciaPage() {
                   </h2>
                 </div>
                 <button
+                  type="button"
                   onClick={() => {
                     if (!canNavigateRight()) return;
                     if (mapGranularity === 'week') setCurrentMapDate(addWeeks(currentMapDate, 1));
@@ -913,9 +916,19 @@ export default function FrequenciaPage() {
                 </button>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-xs font-black shadow-lg shadow-blue-900/10 transition-all cursor-pointer select-none active:scale-95 shrink-0"
+                >
+                  <Printer size={16} />
+                  {language === 'pt' ? 'IMPRIMIR' : 'PRINT'}
+                </button>
+
                 <div className="flex bg-slate-100 p-1 rounded-2xl border border-slate-200">
                   <button
+                    type="button"
                     onClick={() => setMapGranularity('week')}
                     className={cn(
                       "flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all",
@@ -926,6 +939,7 @@ export default function FrequenciaPage() {
                     SEMANA
                   </button>
                   <button
+                    type="button"
                     onClick={() => setMapGranularity('month')}
                     className={cn(
                       "flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all",
@@ -936,6 +950,7 @@ export default function FrequenciaPage() {
                     MÊS
                   </button>
                   <button
+                    type="button"
                     onClick={() => setMapGranularity('year')}
                     className={cn(
                       "flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all",
@@ -966,12 +981,170 @@ export default function FrequenciaPage() {
               </div>
             </div>
 
-            <div className="bg-white rounded-[2rem] border border-slate-200 shadow-xl shadow-slate-200/50 overflow-hidden">
+            <div 
+              id="frequency-print-area"
+              className="bg-white rounded-[2rem] border border-slate-200 shadow-xl shadow-slate-200/50 p-6 md:p-8 relative overflow-hidden"
+            >
+              {/* Elegant Header Block for Screen Display & Official Print Layouts */}
+              <div className="mb-6 border-b border-slate-200 pb-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center border border-blue-100 shrink-0">
+                    <span className="text-sm font-black text-blue-700">
+                      {activeTurma?.nome ? activeTurma.nome.substring(0, 3).toUpperCase() : 'SG'}
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="text-[10px] font-black text-blue-700 uppercase tracking-widest font-mono">
+                      {language === 'pt' ? 'Sistema de Gestão de Frequência' : 'Attendance Management System'}
+                    </h3>
+                    <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight mt-0.5">
+                      {mapGranularity === 'week' 
+                        ? (language === 'pt' ? 'Folha de Frequência Semanal' : 'Weekly Attendance Sheet')
+                        : mapGranularity === 'year'
+                          ? (language === 'pt' ? 'Mapa de Frequência Anual' : 'Annual Attendance Map')
+                          : (language === 'pt' ? 'Folha de Frequência Mensal' : 'Monthly Attendance Sheet')
+                      }
+                    </h1>
+                    <p className="text-xs font-semibold text-slate-500 mt-0.5">
+                      {mapGranularity === 'week' ? (
+                        `Semana de ${format(startOfWeek(currentMapDate, { weekStartsOn: 1 }), 'dd/MM/yyyy')} a ${format(endOfWeek(currentMapDate, { weekStartsOn: 1 }), 'dd/MM/yyyy')}`
+                      ) : mapGranularity === 'year' ? (
+                        `Ano Letivo ${format(currentMapDate, 'yyyy')}`
+                      ) : (
+                        `Mês de ${format(currentMapDate, 'MMMM yyyy', { locale: dateLocale })}`
+                      )}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl flex flex-wrap items-center gap-4 text-xs">
+                  <div>
+                    <span className="block opacity-65 font-bold uppercase text-[9px] tracking-wider text-slate-400">{language === 'pt' ? 'CURSO' : 'COURSE'}</span>
+                    <span className="font-bold text-slate-700">
+                      {cursos.find(c => c.id === selectedCurso)?.nome || t.common.all || 'Todos'}
+                    </span>
+                  </div>
+                  <div className="border-l border-slate-200 h-6 shrink-0" />
+                  <div>
+                    <span className="block opacity-65 font-bold uppercase text-[9px] tracking-wider text-slate-400">{language === 'pt' ? 'TURMA' : 'CLASS'}</span>
+                    <span className="font-bold text-slate-700 font-mono">
+                      {activeTurma?.nome || t.attendance.allClasses || 'Todas'}
+                    </span>
+                  </div>
+                  <div className="border-l border-slate-200 h-6 shrink-0" />
+                  <div>
+                    <span className="block opacity-65 font-bold uppercase text-[9px] tracking-wider text-slate-400">{language === 'pt' ? 'ALUNOS' : 'STUDENTS'}</span>
+                    <span className="font-bold text-slate-700 font-mono">
+                      {students.length} {language === 'pt' ? 'Ativos' : 'Active'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Dynamic CSS tag to style printing depending on current view constraints */}
+              <style dangerouslySetInnerHTML={{ __html: `
+                /* Presentation styles for screen (before printing) */
+                #frequency-print-area {
+                  background-color: #ffffff !important;
+                  border: 1px solid #cbd5e1 !important;
+                }
+                
+                #frequency-print-area table {
+                  border-collapse: collapse !important;
+                  width: 100% !important;
+                  border: 1px solid #cbd5e1 !important;
+                }
+                
+                #frequency-print-area th {
+                  border: 1px solid #cbd5e1 !important;
+                  background-color: #f8fafc !important;
+                  color: #334155 !important;
+                  font-weight: 850 !important;
+                }
+                
+                #frequency-print-area td {
+                  border: 1px solid #cbd5e1 !important;
+                }
+                
+                /* Ensure sticky column has a highly prominent grey right border on screen */
+                #frequency-print-area th.sticky, 
+                #frequency-print-area td.sticky {
+                  position: sticky !important;
+                  left: 0 !important;
+                  background-color: #ffffff !important;
+                  border-right: 2px solid #94a3b8 !important;
+                  z-index: 10 !important;
+                }
+                #frequency-print-area th.sticky {
+                  background-color: #f8fafc !important;
+                  z-index: 20 !important;
+                }
+
+                @media print {
+                  html, body {
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    background: #ffffff !important;
+                    color: #000000 !important;
+                    width: 100% !important;
+                    height: auto !important;
+                    min-height: auto !important;
+                    overflow: visible !important;
+                  }
+                  
+                  body * {
+                    visibility: hidden !important;
+                  }
+                  
+                  #frequency-print-area, #frequency-print-area * {
+                    visibility: visible !important;
+                  }
+                  
+                  #frequency-print-area {
+                    visibility: visible !important;
+                    position: absolute !important;
+                    left: 0 !important;
+                    top: 0 !important;
+                    width: 100% !important;
+                    padding: 0mm !important;
+                    margin: 0 !important;
+                    box-shadow: none !important;
+                    border: none !important;
+                    background: #ffffff !important;
+                    color: #000000 !important;
+                    display: block !important;
+                  }
+
+                  #frequency-print-area th, 
+                  #frequency-print-area td {
+                    border: 1px solid #1e293b !important;
+                    color: #000000 !important;
+                    padding: 6px 10px !important;
+                    font-size: 11px !important;
+                    background-color: #ffffff !important;
+                    -webkit-print-color-adjust: exact !important;
+                    color-adjust: exact !important;
+                  }
+                  
+                  #frequency-print-area td.sticky, 
+                  #frequency-print-area th.sticky {
+                    position: static !important;
+                    background-color: #ffffff !important;
+                    border-right: 1px solid #1e293b !important;
+                  }
+                }
+                
+                @page {
+                  size: ${mapGranularity === 'week' ? 'A4 portrait' : 'A4 landscape'};
+                  margin: 10mm 10mm 10mm 10mm;
+                }
+              `}} />
+
               <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
+                <table className="w-full border-collapse border border-slate-200">
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-100">
-                      <th className="sticky left-0 z-20 bg-slate-50 p-6 min-w-[240px] text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] text-left">
+                      <th className="sticky left-0 z-20 bg-slate-50 p-4 min-w-[240px] text-[11px] font-black text-slate-500 uppercase tracking-wider text-left border border-slate-200">
                         ALUNO
                       </th>
                       {mapGranularity === 'year' ? (
@@ -981,7 +1154,7 @@ export default function FrequenciaPage() {
                         })).map(month => (
                           <th 
                             key={month.toString()} 
-                            className="p-4 min-w-[80px] text-center text-[10px] font-black text-slate-500 uppercase tracking-widest border-l border-slate-100"
+                            className="p-4 min-w-[80px] text-center text-[10px] font-black text-slate-500 uppercase tracking-widest border border-slate-200 bg-slate-50"
                           >
                             {format(month, 'MMM', { locale: dateLocale })}
                           </th>
@@ -997,9 +1170,9 @@ export default function FrequenciaPage() {
                             <th 
                               key={day.toString()} 
                               className={cn(
-                                "p-3 min-w-[65px] text-center transition-colors border-l border-slate-100",
-                                isStartDay ? "bg-blue-50/70 border-b-2 border-b-blue-500 font-bold" : "",
-                                !isStartDay && [0, 6].includes(day.getDay()) ? "bg-slate-105 opacity-60 text-slate-400" : "text-slate-500"
+                                "p-3 min-w-[65px] text-center transition-colors border border-slate-200",
+                                isStartDay ? "bg-blue-50/70 border-b-2 border-b-blue-500 font-bold" : "bg-slate-50",
+                                !isStartDay && [0, 6].includes(day.getDay()) ? "bg-slate-100 opacity-60 text-slate-400" : "text-slate-500"
                               )}
                             >
                               <div className="text-[9px] font-bold opacity-60 uppercase mb-1">{format(day, 'EEE', { locale: dateLocale })}</div>
@@ -1020,12 +1193,12 @@ export default function FrequenciaPage() {
                   <tbody className="divide-y divide-slate-100">
                     {students.map(student => (
                       <tr key={student.id} className="hover:bg-slate-50/50 transition-colors group">
-                        <td className="sticky left-0 z-10 bg-white p-6 font-black text-slate-700 border-r border-slate-100 group-hover:text-blue-700 transition-colors">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-all">
+                        <td className="sticky left-0 z-10 bg-white p-4 font-bold text-slate-700 border border-slate-200 group-hover:bg-slate-50 transition-colors">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-[9px] font-bold text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-all shrink-0">
                               {student.nome.substring(0, 2).toUpperCase()}
                             </div>
-                            {student.nome}
+                            <span className="truncate max-w-[180px]">{student.nome}</span>
                           </div>
                         </td>
                         {mapGranularity === 'year' ? (
@@ -1045,7 +1218,7 @@ export default function FrequenciaPage() {
                             return (
                               <td 
                                 key={month.toString()} 
-                                className="p-2 border-l border-slate-50 text-center"
+                                className="p-2 border border-slate-200 text-center"
                               >
                                 {rate !== null ? (
                                   <div className={cn(
@@ -1078,9 +1251,9 @@ export default function FrequenciaPage() {
                               <td 
                                 key={day.toString()} 
                                 className={cn(
-                                  "p-0 border-l border-slate-50 cursor-pointer transition-all hover:bg-blue-50/50",
+                                  "p-0 border border-slate-200 cursor-pointer transition-all hover:bg-blue-50/50",
                                   isWeekend && "bg-slate-50/30",
-                                  isStartDay && "bg-blue-50/30 border-x border-blue-100/40",
+                                  isStartDay && "bg-blue-50/30",
                                   isReadOnly && "cursor-not-allowed opacity-80"
                                 )}
                                 title={isReadOnly ? (language === 'pt' ? "Apenas visualização" : "View only") : (language === 'pt' ? "Clique para alternar presença" : "Click to toggle attendance")}
@@ -1120,6 +1293,20 @@ export default function FrequenciaPage() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+
+              {/* Elegant signatures section, perfect for printout and transparent screen display */}
+              <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-10 pt-6 border-t border-dashed border-slate-200 text-center text-xs">
+                <div className="flex flex-col items-center">
+                  <div className="w-56 border-b border-slate-300 h-8 mb-2" />
+                  <span className="font-bold text-slate-700">{language === 'pt' ? 'Assinatura do Instrutor-Chefe / Coordenador' : 'Signature of Chief Instructor / Coordinator'}</span>
+                  <span className="text-slate-400 text-[9px] uppercase font-mono mt-0.5">{language === 'pt' ? 'Responsável Técnico' : 'Technical Director'}</span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <div className="w-56 border-b border-slate-300 h-8 mb-2" />
+                  <span className="font-bold text-slate-700">{language === 'pt' ? 'Assinatura do Aluno / Representante' : 'Signature of Student / Representative'}</span>
+                  <span className="text-slate-400 text-[9px] uppercase font-mono mt-0.5">{language === 'pt' ? 'Confirmação de Frequência' : 'Attendance Confirmation'}</span>
+                </div>
               </div>
             </div>
           </motion.div>
