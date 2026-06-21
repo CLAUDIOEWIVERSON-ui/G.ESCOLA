@@ -145,6 +145,11 @@ export default function BoletimPage() {
   const [scale, setScale] = useState(0.55);
   const [downloadingPDF, setDownloadingPDF] = useState(false);
 
+  // Class Bulletin PDF states
+  const [viewingClassBulletinPDF, setViewingClassBulletinPDF] = useState(false);
+  const [classScale, setClassScale] = useState(0.55);
+  const [downloadingClassPDF, setDownloadingClassPDF] = useState(false);
+
   // Dynamic auto-fit calculation based on viewport height
   useEffect(() => {
     if (!selectedStudentForReport) return;
@@ -158,6 +163,19 @@ export default function BoletimPage() {
     window.addEventListener('resize', calculateScale);
     return () => window.removeEventListener('resize', calculateScale);
   }, [selectedStudentForReport]);
+
+  useEffect(() => {
+    if (!viewingClassBulletinPDF) return;
+    const calculateClassScale = () => {
+      // Scale A4 (1123px high) to comfortably fit inside around 65% of screen height
+      const targetHeight = window.innerHeight * 0.65;
+      const computedScale = Math.min(Math.max(targetHeight / 1123, 0.4), 0.95);
+      setClassScale(computedScale);
+    };
+    calculateClassScale();
+    window.addEventListener('resize', calculateClassScale);
+    return () => window.removeEventListener('resize', calculateClassScale);
+  }, [viewingClassBulletinPDF]);
 
   useEffect(() => {
     if (isNifStudent && profile?.student_id) {
@@ -491,6 +509,117 @@ export default function BoletimPage() {
     } catch (err) {
       console.error("Failed to copy image:", err);
       toast.error(language === 'pt' ? 'Falha ao copiar folha do histórico como imagem.' : 'Failed to copy transcript sheet as image.', { id: toastId });
+    }
+  };
+
+  const handleDownloadClassBulletinPDF = async () => {
+    if (downloadingClassPDF || !selectedTurma || boletimData.length === 0) return;
+
+    setDownloadingClassPDF(true);
+    // Lazy get toast
+    const { toast } = await import('sonner');
+    const toastId = toast.loading(language === 'pt' ? 'Gerando o Boletim de Rendimento de Turma em PDF...' : 'Generating Class Report PDF...');
+
+    try {
+      // Lazy load html2canvas and jspdf
+      const html2canvas = (await import('html2canvas')).default;
+      const { jsPDF } = await import('jspdf');
+
+      const printArea = document.getElementById('class-bulletin-print-area');
+      if (!printArea) {
+        toast.error(language === 'pt' ? 'Área de impressão não localizada.' : 'Print area not found.', { id: toastId });
+        return;
+      }
+
+      // Temporarily set scale to 1.0 for perfect pixel capture
+      const prevScale = classScale;
+      setClassScale(1.0);
+      
+      // Wait for React to render at full resolution scale
+      await new Promise((resolve) => setTimeout(resolve, 350));
+
+      const convertedStyles: { element: HTMLElement; originalStyle: string }[] = [];
+      const oklchElements = printArea.querySelectorAll('*');
+      
+      oklchElements.forEach((el) => {
+        const hEl = el as HTMLElement;
+        const style = hEl.getAttribute('style') || '';
+        const bg = window.getComputedStyle(hEl).backgroundColor;
+        const textCol = window.getComputedStyle(hEl).color;
+        const borderCol = window.getComputedStyle(hEl).borderColor;
+
+        let override = '';
+        if (bg && bg.includes('oklch')) {
+          override += `background-color: ${parseAndConvertOklch(bg)} !important;`;
+        }
+        if (bg && bg.includes('oklab')) {
+          override += `background-color: ${parseAndConvertOklab(bg)} !important;`;
+        }
+        if (textCol && textCol.includes('oklch')) {
+          override += `color: ${parseAndConvertOklch(textCol)} !important;`;
+        }
+        if (textCol && textCol.includes('oklab')) {
+          override += `color: ${parseAndConvertOklab(textCol)} !important;`;
+        }
+        if (borderCol && borderCol.includes('oklch')) {
+          override += `border-color: ${parseAndConvertOklch(borderCol)} !important;`;
+        }
+        if (borderCol && borderCol.includes('oklab')) {
+          override += `border-color: ${parseAndConvertOklab(borderCol)} !important;`;
+        }
+
+        if (override) {
+          convertedStyles.push({ element: hEl, originalStyle: style });
+          hEl.setAttribute('style', style + (style.endsWith(';') || !style ? '' : ';') + override);
+        }
+      });
+
+      const canvas = await html2canvas(printArea, {
+        scale: 2.2, // Retina scale capture for crisp vectors and sharp text lines
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        onclone: (clonedDoc) => {
+          const clonePrintArea = clonedDoc.getElementById('class-bulletin-print-area');
+          if (clonePrintArea) {
+            clonePrintArea.style.transform = 'none';
+            clonePrintArea.style.transformOrigin = 'unset';
+          }
+        }
+      });
+
+      // Restore style overrides
+      convertedStyles.forEach(({ element, originalStyle }) => {
+        if (originalStyle) {
+          element.setAttribute('style', originalStyle);
+        } else {
+          element.removeAttribute('style');
+        }
+      });
+
+      setClassScale(prevScale);
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      pdf.addImage(imgData, 'PNG', 0, 0, 210, 297);
+      
+      const currentTurmaObj = turmas.find((t: any) => t.id === selectedTurma);
+      const sanitizedTurmaName = currentTurmaObj?.nome ? currentTurmaObj.nome.replace(/[^a-z0-9]/gi, '_').toLowerCase() : 'turma';
+      const fileName = `boletim_turma_${sanitizedTurmaName}.pdf`;
+      pdf.save(fileName);
+      
+      toast.success(language === 'pt' ? 'Boletim da Turma extraído com sucesso!' : 'Class Bulletin PDF exported successfully!', { id: toastId });
+    } catch (error) {
+      console.error("Error generating class PDF:", error);
+      toast.error(language === 'pt' ? 'Erro ao processar as folhas de notas da turma.' : 'Failed to compile class grades report pages.', { id: toastId });
+    } finally {
+      setDownloadingClassPDF(false);
     }
   };
 
@@ -1468,11 +1597,18 @@ export default function BoletimPage() {
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden min-h-[400px]">
              <div className="p-4 border-b border-slate-100 bg-slate-50/30 flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-widest px-2">{t.common.finalResult}</span>
-                <div className="flex gap-2 print:hidden">
-                   <button className="p-1.5 hover:bg-slate-100 rounded text-slate-400 transition-colors">
-                      <Download size={16} />
-                   </button>
-                </div>
+                 <div className="flex gap-2 print:hidden items-center">
+                    {boletimData.length > 0 && (
+                      <button
+                        onClick={() => setViewingClassBulletinPDF(true)}
+                        className="flex items-center gap-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 px-3 py-1.5 rounded-lg text-[10.5px] font-black uppercase tracking-wider transition-all border border-blue-200 cursor-pointer"
+                        title={language === 'pt' ? 'Gerar PDF do Boletim da Turma' : 'Generate Class Bulletin PDF'}
+                      >
+                        <FileText size={13} className="text-blue-600" />
+                        <span>{language === 'pt' ? 'Boletim da Turma' : 'Class Report'}</span>
+                      </button>
+                    )}
+                 </div>
              </div>
 
              <div className="overflow-x-auto">
@@ -1485,14 +1621,14 @@ export default function BoletimPage() {
                         <th key={i} className="px-1 lg:px-3 py-4 text-center">MOD {i + 1}</th>
                       ))}
                       <th className="px-2 lg:px-6 py-4 text-center">{t.reportCard.average}</th>
-                      <th className="px-3 lg:px-6 py-4 text-right">{t.reportCard.status}</th>
+
                       <th className="px-3 lg:px-6 py-4 text-right print:hidden">{language === 'pt' ? 'Ações' : 'Actions'}</th>
                    </tr>
                  </thead>
                  <tbody>
                    {boletimData.length === 0 ? (
                      <tr>
-                        <td colSpan={5 + courseModules} className="py-20 text-center">
+                        <td colSpan={4 + courseModules} className="py-20 text-center">
                            <div className="flex flex-col items-center text-slate-300">
                               <FileText size={48} className="mb-4 opacity-20" />
                               <p className="text-sm font-medium">{t.reportCard.noData}</p>
@@ -1535,12 +1671,9 @@ export default function BoletimPage() {
                                 {row.nota_final?.toFixed(1) || '-'}
                               </span>
                            </td>
-                           <td className="px-6 py-4 text-right">
-                              <div className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ring-1 ring-inset ring-current/20", status.className, (row.nota_final === null || row.frequencia === null) && "cursor-pointer hover:scale-105 active:scale-95 transition-all duration-200 shadow-xs")} onClick={() => { if (row.nota_final === null || row.frequencia === null) { setPendingDetailsStudent(row); } }} title={(row.nota_final === null || row.frequencia === null) ? (language === 'pt' ? 'Clique para ver o que está pendente' : 'Click to see what is pending') : undefined}>
-                                 <StatusIcon size={12} />
-                                 {status.label}</div></td><td className="px-6 py-4 text-right print:hidden"><button onClick={() => setSelectedStudentForReport(row.aluno?.id)} className="inline-flex items-center gap-1.5 bg-slate-50 hover:bg-blue-600 hover:text-white text-slate-600 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer border border-slate-200 hover:border-blue-600 shadow-sm"><FileText size={12} /><span>{language === 'pt' ? 'Histórico' : 'Transcript'}</span></button></td><td className="hidden border-none" style={{ display: 'none' }}><div>
-                              </div>
-                           </td>
+                            <td className="px-6 py-4 text-right print:hidden">
+                               <button onClick={() => setSelectedStudentForReport(row.aluno?.id)} className="inline-flex items-center gap-1.5 bg-slate-50 hover:bg-blue-600 hover:text-white text-slate-600 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer border border-slate-200 hover:border-blue-600 shadow-sm"><FileText size={12} /><span>{language === 'pt' ? 'Histórico' : 'Transcript'}</span></button>
+                            </td>
                          </tr>
                        );
                      })
