@@ -795,17 +795,7 @@ export default function BoletimPage() {
               {language === 'pt' ? 'Consulte as suas notas individuais e aproveitamento acadêmico' : 'Check your individual grades and academic performance.'}
             </p>
           </div>
-          {profile?.role !== 'aluno' && (
-            <div className="flex gap-2 print:hidden">
-              <button 
-                onClick={handlePrint}
-                className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-all shadow-sm cursor-pointer"
-              >
-                <Printer size={18} />
-                {t.reportCard.print}
-              </button>
-            </div>
-          )}
+
         </div>
 
         {loadingReport || !reportData ? (
@@ -1404,15 +1394,7 @@ export default function BoletimPage() {
             )}
           </p>
         </div>
-        <div className="flex gap-2 print:hidden">
-          <button 
-            onClick={handlePrint}
-            className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-all shadow-sm cursor-pointer"
-          >
-            <Printer size={18} />
-            {t.reportCard.print}
-          </button>
-        </div>
+
       </div>
 
       {/* Filters */}
@@ -1655,18 +1637,6 @@ export default function BoletimPage() {
                             <span>{language === 'pt' ? 'Baixar PDF' : 'Download PDF'}</span>
                           </button>
 
-                          {/* Print Button */}
-                          {profile?.role !== 'aluno' && (
-                            <button
-                              onClick={handlePrint}
-                              disabled={loadingReport || !reportData}
-                              className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md shadow-blue-500/10 cursor-pointer"
-                            >
-                              <Printer size={13} />
-                              <span>{language === 'pt' ? 'Imprimir' : 'Print'}</span>
-                            </button>
-                          )}
-                          
                           {/* Close Button */}
                           <button
                             onClick={() => setSelectedStudentForReport(null)}
