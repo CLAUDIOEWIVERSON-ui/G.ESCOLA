@@ -205,11 +205,7 @@ export default function BoletimPage() {
       // Let the DOM update to full-scale resolution
       await new Promise((resolve) => setTimeout(resolve, 150));
 
-      const oklchToRgbVal = (l: number, c: number, h: number): [number, number, number] => {
-        const hRad = (h * Math.PI) / 180;
-        const a = c * Math.cos(hRad);
-        const b = c * Math.sin(hRad);
-
+      const oklabToRgbVal = (l: number, a: number, b: number): [number, number, number] => {
         const l_ = l + 0.3963377774 * a + 0.2158037573 * b;
         const m_ = l - 0.1055613458 * a - 0.0638541728 * b;
         const s_ = l - 0.0894841775 * a - 1.2914855480 * b;
@@ -245,6 +241,13 @@ export default function BoletimPage() {
         return [R, G, B];
       };
 
+      const oklchToRgbVal = (l: number, c: number, h: number): [number, number, number] => {
+        const hRad = (h * Math.PI) / 180;
+        const a = c * Math.cos(hRad);
+        const b = c * Math.sin(hRad);
+        return oklabToRgbVal(l, a, b);
+      };
+
       const parseAndConvertOklch = (colorStr: string): string => {
         if (!colorStr || !colorStr.includes('oklch')) return colorStr;
 
@@ -271,6 +274,32 @@ export default function BoletimPage() {
         });
       };
 
+      const parseAndConvertOklab = (colorStr: string): string => {
+        if (!colorStr || !colorStr.includes('oklab')) return colorStr;
+
+        return colorStr.replace(/oklab\(([^)]+)\)/g, (match, content) => {
+          try {
+            const normalized = content.replace(/,/g, ' ').replace(/\//g, ' ').trim();
+            const parts = normalized.split(/\s+/).map((p: string) => {
+              if (p.endsWith('%')) {
+                return parseFloat(p) / 100;
+              }
+              return parseFloat(p);
+            });
+
+            if (parts.length >= 3 && !parts.some(isNaN)) {
+              const [l, a, b] = parts;
+              const [r, g, bVal] = oklabToRgbVal(l, a, b);
+              const alpha = parts[3] !== undefined ? parts[3] : 1;
+              return alpha === 1 ? `rgb(${r}, ${g}, ${bVal})` : `rgba(${r}, ${g}, ${bVal}, ${alpha})`;
+            }
+          } catch (e) {
+            console.error("Failed to parse oklab color:", match, e);
+          }
+          return match;
+        });
+      };
+
       const html2canvas = (await import('html2canvas')).default;
       const { jsPDF } = await import('jspdf');
 
@@ -284,6 +313,20 @@ export default function BoletimPage() {
         windowWidth: 794,
         windowHeight: 1123,
         onclone: (clonedDoc) => {
+          // Process all <style> tags in the cloned document to preemptively transform oklch and oklab stylesheet rules
+          clonedDoc.querySelectorAll('style').forEach((styleEl) => {
+            try {
+              let cssText = styleEl.innerHTML;
+              if (cssText.includes('oklch') || cssText.includes('oklab')) {
+                cssText = parseAndConvertOklch(cssText);
+                cssText = parseAndConvertOklab(cssText);
+                styleEl.innerHTML = cssText;
+              }
+            } catch (e) {
+              console.error("Failed to process style element:", e);
+            }
+          });
+
           const elements = clonedDoc.querySelectorAll('*');
           elements.forEach((el) => {
             const htmlEl = el as HTMLElement;
@@ -297,15 +340,18 @@ export default function BoletimPage() {
               const computed = window.getComputedStyle(htmlEl);
               styleProps.forEach((prop) => {
                 const val = computed[prop as any];
-                if (val && val.includes('oklch')) {
-                  const converted = parseAndConvertOklch(val);
+                if (val && (val.includes('oklch') || val.includes('oklab'))) {
+                  let converted = parseAndConvertOklch(val);
+                  converted = parseAndConvertOklab(converted);
                   htmlEl.style[prop as any] = converted;
                 }
               });
 
               const inlineStyle = htmlEl.getAttribute('style');
-              if (inlineStyle && inlineStyle.includes('oklch')) {
-                htmlEl.setAttribute('style', parseAndConvertOklch(inlineStyle));
+              if (inlineStyle && (inlineStyle.includes('oklch') || inlineStyle.includes('oklab'))) {
+                let converted = parseAndConvertOklch(inlineStyle);
+                converted = parseAndConvertOklab(converted);
+                htmlEl.setAttribute('style', converted);
               }
             } catch (err) {
               // Silently ignore style errors on incompatible elements
