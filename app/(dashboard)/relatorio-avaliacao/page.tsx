@@ -2231,7 +2231,7 @@ function RelatorioAvaliacaoAdminContent() {
             </div>
           )}
 
-          {/* TAB 4: RELATÓRIO INDIVIDUAL DE ALUNO */}
+          {/* TAB 4: HISTÓRICO ESCOLAR DE ALUNO */}
           {activeTab === 'aluno' && (
             <div className="space-y-8">
               {/* Selector students list */}

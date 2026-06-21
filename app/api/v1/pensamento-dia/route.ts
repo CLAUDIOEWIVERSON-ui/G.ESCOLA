@@ -364,7 +364,12 @@ export async function GET(req: NextRequest) {
               : fallbackQuotes;
             const candidates = filteredFallbacks.length > 0 ? filteredFallbacks : fallbackQuotes;
             const randomIndex = Math.floor(Math.random() * candidates.length);
-            generatedQuote = candidates[randomIndex];
+            const selectedQuote = candidates[randomIndex];
+            generatedQuote = {
+              texto: selectedQuote.texto,
+              autor: selectedQuote.autor,
+              reflexao: ''
+            };
           }
         } catch (apiError: any) {
           console.warn('[Gemini API Error or Timeout] Falling back to preloaded thoughts catalog gracefully. Reason:', apiError?.message || apiError);
@@ -382,7 +387,12 @@ export async function GET(req: NextRequest) {
             : fallbackQuotes;
           const candidates = filteredFallbacks.length > 0 ? filteredFallbacks : fallbackQuotes;
           const randomIndex = Math.floor(Math.random() * candidates.length);
-          generatedQuote = candidates[randomIndex];
+          const selectedQuote = candidates[randomIndex];
+          generatedQuote = {
+            texto: selectedQuote.texto,
+            autor: selectedQuote.autor,
+            reflexao: ''
+          };
         }
       }
 

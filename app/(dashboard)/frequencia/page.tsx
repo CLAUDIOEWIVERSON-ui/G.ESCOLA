@@ -1028,7 +1028,7 @@ export default function FrequenciaPage() {
                   <div>
                     <span className="block opacity-65 font-bold uppercase text-[9px] tracking-wider text-slate-400">{language === 'pt' ? 'TURMA' : 'CLASS'}</span>
                     <span className="font-bold text-slate-700 font-mono">
-                      {activeTurma?.nome || t.attendance.allClasses || 'Todas'}
+                      {activeTurma?.nome || (language === 'pt' ? 'Todas' : 'All')}
                     </span>
                   </div>
                   <div className="border-l border-slate-200 h-6 shrink-0" />

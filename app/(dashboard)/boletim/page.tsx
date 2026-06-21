@@ -35,7 +35,7 @@ import { useUser } from '@/lib/auth/UserContext';
 const reportT = {
   pt: {
     headerTitle: "SISTEMA DE ENSINO E INSTRUÇÃO",
-    headerSubtitle: "RELATÓRIO INDIVIDUAL DE DESEMPENHO ACADÊMICO",
+    headerSubtitle: "HISTÓRICO ESCOLAR DE DESEMPENHO ACADÊMICO",
     studentInfo: "IDENTIFICAÇÃO DO ALUNO",
     academicMap: "MAPA DE RENDIMENTO ACADÊMICO",
     attendanceReg: "REGISTRO DE FREQUÊNCIA",
@@ -65,12 +65,12 @@ const reportT = {
     pending: "EM AVALIAÇÃO",
     inProgress: "Em Andamento (Ativo)",
     completed: "Curso Concluído",
-    printReport: "Imprimir Relatório",
+    printReport: "Imprimir Histórico Escolar",
     close: "Fechar",
   },
   en: {
     headerTitle: "EDUCATION AND TRAINING SYSTEM",
-    headerSubtitle: "INDIVIDUAL ACADEMIC PERFORMANCE REPORT",
+    headerSubtitle: "OFFICIAL ACADEMIC TRANSCRIPT",
     studentInfo: "STUDENT / TRAINEE IDENTIFICATION",
     academicMap: "ACADEMIC PERFORMANCE MAP",
     attendanceReg: "ATTENDANCE REGISTER",
@@ -143,8 +143,6 @@ export default function BoletimPage() {
   const [pendingDetailsStudent, setPendingDetailsStudent] = useState<any | null>(null);
   const [scale, setScale] = useState(0.55);
   const [downloadingPDF, setDownloadingPDF] = useState(false);
-  const [canCopyImage, setCanCopyImage] = useState(true);
-  const [copyingImage, setCopyingImage] = useState(false);
 
   // Dynamic auto-fit calculation based on viewport height
   useEffect(() => {
@@ -189,6 +187,101 @@ export default function BoletimPage() {
     }
   };
 
+  const oklabToRgbVal = (l: number, a: number, b: number): [number, number, number] => {
+    const l_ = l + 0.3963377774 * a + 0.2158037573 * b;
+    const m_ = l - 0.1055613458 * a - 0.0638541728 * b;
+    const s_ = l - 0.0894841775 * a - 1.2914855480 * b;
+
+    const l3 = l_ * l_ * l_;
+    const m3 = m_ * m_ * m_;
+    const s3 = s_ * s_ * s_;
+
+    const x = +1.2270138511 * l3 - 0.5577999807 * m3 + 0.2812561490 * s3;
+    const y = -0.0405801784 * l3 + 1.1122568696 * m3 - 0.0716766787 * s3;
+    const z = -0.0763812845 * l3 - 0.4214819784 * m3 + 1.5861632204 * s3;
+
+    let r = +3.2404542 * x - 1.5371385 * y - 0.4985314 * z;
+    let g = -0.9692660 * x + 1.8760108 * y + 0.0415560 * z;
+    let bVal = -0.2264055 * x + 0.0556434 * y + 1.0572252 * z;
+
+    const fn = (cVal: number) => {
+      if (cVal <= 0.0031308) {
+        return 12.92 * cVal;
+      } else {
+        return 1.055 * Math.pow(cVal, 1 / 2.4) - 0.055;
+      }
+    };
+
+    r = fn(r);
+    g = fn(g);
+    bVal = fn(bVal);
+
+    const R = Math.max(0, Math.min(255, Math.round(r * 255)));
+    const G = Math.max(0, Math.min(255, Math.round(g * 255)));
+    const B = Math.max(0, Math.min(255, Math.round(bVal * 255)));
+
+    return [R, G, B];
+  };
+
+  const oklchToRgbVal = (l: number, c: number, h: number): [number, number, number] => {
+    const hRad = (h * Math.PI) / 180;
+    const a = c * Math.cos(hRad);
+    const b = c * Math.sin(hRad);
+    return oklabToRgbVal(l, a, b);
+  };
+
+  const parseAndConvertOklch = (colorStr: string): string => {
+    if (!colorStr || !colorStr.includes('oklch')) return colorStr;
+
+    return colorStr.replace(/oklch\(([^)]+)\)/g, (match, content) => {
+      try {
+        const normalized = content.replace(/,/g, ' ').replace(/\//g, ' ').trim();
+        const parts = normalized.split(/\s+/).map((p: string) => {
+          if (p.endsWith('%')) {
+            return parseFloat(p) / 100;
+          }
+          return parseFloat(p);
+        });
+
+        if (parts.length >= 3 && !parts.some(isNaN)) {
+          const [l, c, h] = parts;
+          const [r, g, b] = oklchToRgbVal(l, c, h);
+          const alpha = parts[3] !== undefined ? parts[3] : 1;
+          return alpha === 1 ? `rgb(${r}, ${g}, ${b})` : `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        }
+      } catch (e) {
+        console.error("Failed to parse oklch color:", match, e);
+      }
+      return match;
+    });
+  };
+
+  const parseAndConvertOklab = (colorStr: string): string => {
+    if (!colorStr || !colorStr.includes('oklab')) return colorStr;
+
+    return colorStr.replace(/oklab\(([^)]+)\)/g, (match, content) => {
+      try {
+        const normalized = content.replace(/,/g, ' ').replace(/\//g, ' ').trim();
+        const parts = normalized.split(/\s+/).map((p: string) => {
+          if (p.endsWith('%')) {
+            return parseFloat(p) / 100;
+          }
+          return parseFloat(p);
+        });
+
+        if (parts.length >= 3 && !parts.some(isNaN)) {
+          const [l, a, b] = parts;
+          const [r, g, bVal] = oklabToRgbVal(l, a, b);
+          const alpha = parts[3] !== undefined ? parts[3] : 1;
+          return alpha === 1 ? `rgb(${r}, ${g}, ${bVal})` : `rgba(${r}, ${g}, ${bVal}, ${alpha})`;
+        }
+      } catch (e) {
+        console.error("Failed to parse oklab color:", match, e);
+      }
+      return match;
+    });
+  };
+
   const handleDownloadPDF = async () => {
     if (!reportData) return;
     setDownloadingPDF(true);
@@ -206,101 +299,6 @@ export default function BoletimPage() {
       
       // Let the DOM update to full-scale resolution
       await new Promise((resolve) => setTimeout(resolve, 150));
-
-      const oklabToRgbVal = (l: number, a: number, b: number): [number, number, number] => {
-        const l_ = l + 0.3963377774 * a + 0.2158037573 * b;
-        const m_ = l - 0.1055613458 * a - 0.0638541728 * b;
-        const s_ = l - 0.0894841775 * a - 1.2914855480 * b;
-
-        const l3 = l_ * l_ * l_;
-        const m3 = m_ * m_ * m_;
-        const s3 = s_ * s_ * s_;
-
-        const x = +1.2270138511 * l3 - 0.5577999807 * m3 + 0.2812561490 * s3;
-        const y = -0.0405801784 * l3 + 1.1122568696 * m3 - 0.0716766787 * s3;
-        const z = -0.0763812845 * l3 - 0.4214819784 * m3 + 1.5861632204 * s3;
-
-        let r = +3.2404542 * x - 1.5371385 * y - 0.4985314 * z;
-        let g = -0.9692660 * x + 1.8760108 * y + 0.0415560 * z;
-        let bVal = -0.2264055 * x + 0.0556434 * y + 1.0572252 * z;
-
-        const fn = (cVal: number) => {
-          if (cVal <= 0.0031308) {
-            return 12.92 * cVal;
-          } else {
-            return 1.055 * Math.pow(cVal, 1 / 2.4) - 0.055;
-          }
-        };
-
-        r = fn(r);
-        g = fn(g);
-        bVal = fn(bVal);
-
-        const R = Math.max(0, Math.min(255, Math.round(r * 255)));
-        const G = Math.max(0, Math.min(255, Math.round(g * 255)));
-        const B = Math.max(0, Math.min(255, Math.round(bVal * 255)));
-
-        return [R, G, B];
-      };
-
-      const oklchToRgbVal = (l: number, c: number, h: number): [number, number, number] => {
-        const hRad = (h * Math.PI) / 180;
-        const a = c * Math.cos(hRad);
-        const b = c * Math.sin(hRad);
-        return oklabToRgbVal(l, a, b);
-      };
-
-      const parseAndConvertOklch = (colorStr: string): string => {
-        if (!colorStr || !colorStr.includes('oklch')) return colorStr;
-
-        return colorStr.replace(/oklch\(([^)]+)\)/g, (match, content) => {
-          try {
-            const normalized = content.replace(/,/g, ' ').replace(/\//g, ' ').trim();
-            const parts = normalized.split(/\s+/).map((p: string) => {
-              if (p.endsWith('%')) {
-                return parseFloat(p) / 100;
-              }
-              return parseFloat(p);
-            });
-
-            if (parts.length >= 3 && !parts.some(isNaN)) {
-              const [l, c, h] = parts;
-              const [r, g, b] = oklchToRgbVal(l, c, h);
-              const alpha = parts[3] !== undefined ? parts[3] : 1;
-              return alpha === 1 ? `rgb(${r}, ${g}, ${b})` : `rgba(${r}, ${g}, ${b}, ${alpha})`;
-            }
-          } catch (e) {
-            console.error("Failed to parse oklch color:", match, e);
-          }
-          return match;
-        });
-      };
-
-      const parseAndConvertOklab = (colorStr: string): string => {
-        if (!colorStr || !colorStr.includes('oklab')) return colorStr;
-
-        return colorStr.replace(/oklab\(([^)]+)\)/g, (match, content) => {
-          try {
-            const normalized = content.replace(/,/g, ' ').replace(/\//g, ' ').trim();
-            const parts = normalized.split(/\s+/).map((p: string) => {
-              if (p.endsWith('%')) {
-                return parseFloat(p) / 100;
-              }
-              return parseFloat(p);
-            });
-
-            if (parts.length >= 3 && !parts.some(isNaN)) {
-              const [l, a, b] = parts;
-              const [r, g, bVal] = oklabToRgbVal(l, a, b);
-              const alpha = parts[3] !== undefined ? parts[3] : 1;
-              return alpha === 1 ? `rgb(${r}, ${g}, ${bVal})` : `rgba(${r}, ${g}, ${bVal}, ${alpha})`;
-            }
-          } catch (e) {
-            console.error("Failed to parse oklab color:", match, e);
-          }
-          return match;
-        });
-      };
 
       const html2canvas = (await import('html2canvas')).default;
       const { jsPDF } = await import('jspdf');
@@ -378,7 +376,7 @@ export default function BoletimPage() {
       const fileName = `boletim_individual_${sanitizedName}.pdf`;
       pdf.save(fileName);
       
-      toast.success(language === 'pt' ? 'Relatório PDF baixado com sucesso!' : 'PDF Report downloaded successfully!', { id: toastId });
+      toast.success(language === 'pt' ? 'Histórico Escolar PDF baixado com sucesso!' : 'Academic Transcript PDF downloaded successfully!', { id: toastId });
     } catch (error) {
       console.error("Error generating PDF:", error);
       toast.error(language === 'pt' ? 'Por favor, tente novamente.' : 'Please try again.', { id: toastId });
@@ -388,141 +386,34 @@ export default function BoletimPage() {
   };
 
   const handleCopyAsImage = async (e: React.MouseEvent) => {
-    // Only proceed if copying is enabled
-    if (!canCopyImage) return;
+    // Only proceed on left mouse button click (button 0)
+    if (e.button !== 0) return;
     
-    // Prevent double triggers or overlaps
-    if (copyingImage) return;
-
-    // Check if the user is selecting text - if so, don't copy
-    const selection = window.getSelection();
-    if (selection && selection.toString().trim().length > 0) {
+    // Prevent copy when clicking buttons, selects, or icons
+    const target = e.target as HTMLElement;
+    if (target.closest('button') || target.closest('input') || target.closest('select') || target.closest('a')) {
       return;
     }
 
-    setCopyingImage(true);
-    const toastId = toast.loading(language === 'pt' ? 'Copiando folha como imagem...' : 'Copying page as image...');
-
+    const toastId = toast.loading(language === 'pt' ? 'Processando imagem para área de transferência...' : 'Processing image for clipboard...');
+    
     try {
-      const element = document.getElementById('student-report-print-area');
-      if (!element) {
-        throw new Error("Print area element not found");
-      }
-
-      // Temporarily clear the scale transform for high-fidelity canvas snapshot
-      const prevScale = scale;
-      setScale(1.0);
-      
-      // Let the DOM update to full-scale resolution
-      await new Promise((resolve) => setTimeout(resolve, 150));
-
-      const oklabToRgbVal = (l: number, a: number, b: number): [number, number, number] => {
-        const l_ = l + 0.3963377774 * a + 0.2158037573 * b;
-        const m_ = l - 0.1055613458 * a - 0.0638541728 * b;
-        const s_ = l - 0.0894841775 * a - 1.2914855480 * b;
-
-        const l3 = l_ * l_ * l_;
-        const m3 = m_ * m_ * m_;
-        const s3 = s_ * s_ * s_;
-
-        const x = +1.2270138511 * l3 - 0.5577999807 * m3 + 0.2812561490 * s3;
-        const y = -0.0405801784 * l3 + 1.1122568696 * m3 - 0.0716766787 * s3;
-        const z = -0.0763812845 * l3 - 0.4214819784 * m3 + 1.5861632204 * s3;
-
-        let r = +3.2404542 * x - 1.5371385 * y - 0.4985314 * z;
-        let g = -0.9692660 * x + 1.8760108 * y + 0.0415560 * z;
-        let bVal = -0.2264055 * x + 0.0556434 * y + 1.0572252 * z;
-
-        const fn = (cVal: number) => {
-          if (cVal <= 0.0031308) {
-            return 12.92 * cVal;
-          } else {
-            return 1.055 * Math.pow(cVal, 1 / 2.4) - 0.055;
-          }
-        };
-
-        r = fn(r);
-        g = fn(g);
-        bVal = fn(bVal);
-
-        const R = Math.max(0, Math.min(255, Math.round(r * 255)));
-        const G = Math.max(0, Math.min(255, Math.round(g * 255)));
-        const B = Math.max(0, Math.min(255, Math.round(bVal * 255)));
-
-        return [R, G, B];
-      };
-
-      const oklchToRgbVal = (l: number, c: number, h: number): [number, number, number] => {
-        const hRad = (h * Math.PI) / 180;
-        const a = c * Math.cos(hRad);
-        const b = c * Math.sin(hRad);
-        return oklabToRgbVal(l, a, b);
-      };
-
-      const parseAndConvertOklch = (colorStr: string): string => {
-        if (!colorStr || !colorStr.includes('oklch')) return colorStr;
-
-        return colorStr.replace(/oklch\(([^)]+)\)/g, (match, content) => {
-          try {
-            const normalized = content.replace(/,/g, ' ').replace(/\//g, ' ').trim();
-            const parts = normalized.split(/\s+/).map((p: string) => {
-              if (p.endsWith('%')) {
-                return parseFloat(p) / 100;
-              }
-              return parseFloat(p);
-            });
-
-            if (parts.length >= 3 && !parts.some(isNaN)) {
-              const [l, c, h] = parts;
-              const [r, g, b] = oklchToRgbVal(l, c, h);
-              const alpha = parts[3] !== undefined ? parts[3] : 1;
-              return alpha === 1 ? `rgb(${r}, ${g}, ${b})` : `rgba(${r}, ${g}, ${b}, ${alpha})`;
-            }
-          } catch (e) {
-            console.error("Failed to parse oklch color:", match, e);
-          }
-          return match;
-        });
-      };
-
-      const parseAndConvertOklab = (colorStr: string): string => {
-        if (!colorStr || !colorStr.includes('oklab')) return colorStr;
-
-        return colorStr.replace(/oklab\(([^)]+)\)/g, (match, content) => {
-          try {
-            const normalized = content.replace(/,/g, ' ').replace(/\//g, ' ').trim();
-            const parts = normalized.split(/\s+/).map((p: string) => {
-              if (p.endsWith('%')) {
-                return parseFloat(p) / 100;
-              }
-              return parseFloat(p);
-            });
-
-            if (parts.length >= 3 && !parts.some(isNaN)) {
-              const [l, a, b] = parts;
-              const [r, g, bVal] = oklabToRgbVal(l, a, b);
-              const alpha = parts[3] !== undefined ? parts[3] : 1;
-              return alpha === 1 ? `rgb(${r}, ${g}, ${bVal})` : `rgba(${r}, ${g}, ${bVal}, ${alpha})`;
-            }
-          } catch (e) {
-            console.error("Failed to parse oklab color:", match, e);
-          }
-          return match;
-        });
-      };
-
       const html2canvas = (await import('html2canvas')).default;
+      const element = document.getElementById('student-report-print-area');
+      if (!element) throw new Error('Report element not found');
+
+      // Set scale temporary to higher resolution for premium quality copy
+      const prevScale = scale;
+      setScale(1.2);
+      await new Promise(resolve => setTimeout(resolve, 80));
 
       const canvas = await html2canvas(element, {
-        scale: 2.2,
+        scale: 2,
         useCORS: true,
+        allowTaint: true,
         backgroundColor: '#ffffff',
-        logging: false,
-        width: 794,
-        height: 1123,
-        windowWidth: 794,
-        windowHeight: 1123,
         onclone: (clonedDoc) => {
+          // Process OKLCH / OKLAB styles to avoid crash (same as pdf generator)
           clonedDoc.querySelectorAll('style').forEach((styleEl) => {
             try {
               let cssText = styleEl.innerHTML;
@@ -532,12 +423,11 @@ export default function BoletimPage() {
                 styleEl.innerHTML = cssText;
               }
             } catch (e) {
-              console.error("Failed to process style element:", e);
+              console.error(e);
             }
           });
 
-          const elements = clonedDoc.querySelectorAll('*');
-          elements.forEach((el) => {
+          clonedDoc.querySelectorAll('*').forEach((el) => {
             const htmlEl = el as HTMLElement;
             const styleProps = [
               'color', 'backgroundColor', 'borderColor', 
@@ -550,9 +440,9 @@ export default function BoletimPage() {
               styleProps.forEach((prop) => {
                 const val = computed[prop as any];
                 if (val && (val.includes('oklch') || val.includes('oklab'))) {
-                   let converted = parseAndConvertOklch(val);
-                   converted = parseAndConvertOklab(converted);
-                   htmlEl.style[prop as any] = converted;
+                  let converted = parseAndConvertOklch(val);
+                  converted = parseAndConvertOklab(converted);
+                  htmlEl.style[prop as any] = converted;
                 }
               });
 
@@ -562,34 +452,44 @@ export default function BoletimPage() {
                 converted = parseAndConvertOklab(converted);
                 htmlEl.setAttribute('style', converted);
               }
-            } catch (err) {
-              // Silently ignore style errors
-            }
+            } catch (err) {}
           });
         }
       });
 
-      // Restore screen preview scale back to configured level
       setScale(prevScale);
 
-      // Convert canvas to blob and copy to clipboard
       canvas.toBlob(async (blob) => {
+        if (!blob) {
+          toast.error(language === 'pt' ? 'Erro ao gerar o arquivo de imagem.' : 'Error generating image file.', { id: toastId });
+          return;
+        }
         try {
-          if (!blob) throw new Error("Blob conversion failed");
-          const item = new ClipboardItem({ 'image/png': blob });
-          await navigator.clipboard.write([item]);
-          toast.success(language === 'pt' ? 'Folha de relatório copiada como imagem com sucesso!' : 'Report page copied to clipboard as an image successfully!', { id: toastId });
-        } catch (clipErr: any) {
-          console.error("Failed to write to clipboard:", clipErr);
-          toast.error(language === 'pt' ? 'Erro ao copiar imagem. Use a exportação de PDF ou tente novamente.' : 'Failed to copy to clipboard.', { id: toastId });
+          // Copy PNG blob directly to clipboard
+          await navigator.clipboard.write([
+            new ClipboardItem({
+              'image/png': blob
+            })
+          ]);
+          toast.success(language === 'pt' ? 'Histórico Escolar copiado como imagem para a área de transferência!' : 'Academic Transcript copied as image to clipboard!', { id: toastId });
+        } catch (clipErr) {
+          console.error("Clipboard API failed, downloading instead:", clipErr);
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          const nameClean = reportData?.student?.nome ? reportData.student.nome.replace(/[^a-z0-9]/gi, '_').toLowerCase() : 'aluno';
+          a.download = `boletim_individual_${nameClean}.png`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          toast.success(language === 'pt' ? 'Imagem gerada e baixada com sucesso!' : 'Image transcript created and downloaded successfully!', { id: toastId });
         }
       }, 'image/png');
 
-    } catch (error) {
-      console.error("Error copying image:", error);
-      toast.error(language === 'pt' ? 'Falha ao processar folha do relatório.' : 'Failed to process report page.', { id: toastId });
-    } finally {
-      setCopyingImage(false);
+    } catch (err) {
+      console.error("Failed to copy image:", err);
+      toast.error(language === 'pt' ? 'Falha ao copiar folha do histórico como imagem.' : 'Failed to copy transcript sheet as image.', { id: toastId });
     }
   };
 
@@ -678,7 +578,7 @@ export default function BoletimPage() {
         });
       } catch (err: any) {
         console.error("Error generating student report:", err);
-        toast.error(language === 'pt' ? 'Erro ao carregar dados do relatório para este aluno.' : 'Error loading report data for this student.');
+        toast.error(language === 'pt' ? 'Erro ao carregar dados do histórico escolar para este aluno.' : 'Error loading transcript data for this student.');
         setSelectedStudentForReport(null);
       } finally {
         setLoadingReport(false);
@@ -895,17 +795,8 @@ export default function BoletimPage() {
               {language === 'pt' ? 'Consulte as suas notas individuais e aproveitamento acadêmico' : 'Check your individual grades and academic performance.'}
             </p>
           </div>
-          <div className="flex items-center gap-3 print:hidden">
-            <label className="flex items-center gap-2 text-xs font-bold text-slate-705 font-mono select-none cursor-pointer border border-slate-250 bg-white hover:bg-slate-50 px-3 py-2 rounded-xl shadow-sm transition duration-150">
-              <input
-                type="checkbox"
-                checked={canCopyImage}
-                onChange={(e) => setCanCopyImage(e.target.checked)}
-                className="accent-emerald-500 w-3.5 h-3.5 rounded cursor-pointer"
-              />
-              <span>{language === 'pt' ? 'Pode Copiar Imagem' : 'Can Copy Image'}</span>
-            </label>
-            {profile?.role !== 'aluno' && (
+          {profile?.role !== 'aluno' && (
+            <div className="flex gap-2 print:hidden">
               <button 
                 onClick={handlePrint}
                 className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-all shadow-sm cursor-pointer"
@@ -913,8 +804,8 @@ export default function BoletimPage() {
                 <Printer size={18} />
                 {t.reportCard.print}
               </button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         {loadingReport || !reportData ? (
@@ -925,15 +816,16 @@ export default function BoletimPage() {
             </span>
           </div>
         ) : (
-          <div className="max-w-4xl mx-auto w-full overflow-x-auto scrollbar-thin">
+          <div className="max-w-4xl mx-auto w-full">
             <div 
               id="student-report-print-area" 
-              onClick={handleCopyAsImage}
-              className={`bg-white text-slate-900 border border-slate-200 shadow-xl p-8 rounded-lg flex flex-col gap-6 font-sans relative text-left text-xs ${canCopyImage ? 'cursor-pointer hover:ring-2 hover:ring-indigo-500 transition-all select-none' : ''}`}
-              style={{ width: '100%', boxSizing: 'border-box' }}
-              title={canCopyImage ? (language === 'pt' ? 'Clique com o botão esquerdo para copiar a folha como imagem' : 'Left-click to copy page as an image') : undefined}
+              className="bg-white text-slate-900 border border-slate-200 shadow-xl p-8 rounded-lg flex flex-col gap-6 font-sans relative text-left text-xs overflow-y-auto scrollbar-thin"
+              style={{ width: '100%', boxSizing: 'border-box', maxHeight: '297mm' }}
             >
                <style dangerouslySetInnerHTML={{ __html: `
+                #student-report-print-area > * {
+                  flex-shrink: 0 !important;
+                }
                 @media print {
                   /* Reset page context and force standard white/black print output */
                   html, body {
@@ -991,9 +883,9 @@ export default function BoletimPage() {
                     top: 0 !important;
                     width: 190mm !important; /* Exact A4 content width (210mm - 20mm margins) */
                     min-width: 190mm !important;
-                    height: 297mm !important; /* Garante que a altura total não exceda o tamanho da folha A4 */
-                    max-height: 297mm !important;
-                    min-height: 0 !important;
+                    min-height: 297mm !important;
+                    height: auto !important;
+                    max-height: none !important;
                     padding: 0 !important; /* Rely purely on page margin */
                     margin: 0 !important;
                     border: none !important;
@@ -1003,6 +895,7 @@ export default function BoletimPage() {
                     font-family: Arial, sans-serif !important;
                     display: flex !important;
                     flex-direction: column !important;
+                    justify-content: flex-start !important;
                     gap: 12px !important; /* Elegant compact spacing */
                   }
 
@@ -1102,10 +995,10 @@ export default function BoletimPage() {
                 }
               `}} />
 
-              {/* Clean Header: Student Individual Report and participating class(es) only */}
+              {/* Clean Header: Histórico Escolar and participating class(es) only */}
               <div className="flex flex-col items-center justify-center pb-6 border-b-2 border-slate-900 text-center gap-2">
                 <h1 className="text-2xl font-black text-slate-900 tracking-tight uppercase">
-                  {language === 'pt' ? 'Relatório Individual do Aluno' : 'Student Individual Report'}
+                  {language === 'pt' ? 'Histórico Escolar' : 'Academic Transcript'}
                 </h1>
                 <p className="text-xs font-black uppercase tracking-widest text-slate-500">
                   {language === 'pt' 
@@ -1254,13 +1147,13 @@ export default function BoletimPage() {
                     })();
 
                     return (
-                      <table className="w-full text-left report-table border border-slate-200 bg-white">
+                      <table className="w-full text-left report-table border border-slate-200 bg-white table-auto">
                         <thead>
                           <tr className="bg-slate-100 print-bg-gray text-[10px] font-extrabold text-slate-600 uppercase tracking-wider border-b border-slate-200">
-                            <th className="px-4 py-3 border-r border-slate-200">{language === 'pt' ? 'Módulo' : 'Module'}</th>
-                            <th className="px-4 py-3 border-r border-slate-200">{language === 'pt' ? 'Disciplina' : 'Discipline'}</th>
-                            <th className="px-3 py-3 text-center border-r border-slate-200 font-mono w-28">{reportT[language as "pt" | "en"].finalGrade}</th>
-                            <th className="px-4 py-3 text-right w-36">{reportT[language as "pt" | "en"].situation}</th>
+                            <th className="px-4 py-3 border-r border-slate-200 w-[20%]">{language === 'pt' ? 'Módulo' : 'Module'}</th>
+                            <th className="px-4 py-3 border-r border-slate-200 w-[50%]">{language === 'pt' ? 'Disciplina' : 'Discipline'}</th>
+                            <th className="px-3 py-3 text-center border-r border-slate-200 font-mono w-[15%]">{reportT[language as "pt" | "en"].finalGrade}</th>
+                            <th className="px-4 py-3 text-right w-[15%]">{reportT[language as "pt" | "en"].situation}</th>
                           </tr>
                         </thead>
                         <tbody className="text-xs text-left">
@@ -1275,17 +1168,17 @@ export default function BoletimPage() {
                               return (
                                 <tr key={row.id} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors bg-white">
                                   {row.moduloSpan > 0 && (
-                                    <td rowSpan={row.moduloSpan} className="px-4 py-2.5 font-bold text-slate-900 border-r border-slate-200 text-left bg-white align-middle">
+                                    <td rowSpan={row.moduloSpan} className="px-4 py-2.5 font-bold text-slate-900 border-r border-slate-200 text-left bg-white align-middle break-words whitespace-normal leading-tight">
                                       {row.modulo}
                                     </td>
                                   )}
-                                  <td className="px-4 py-2.5 font-extrabold text-slate-800 border-r border-slate-200 text-left bg-white align-middle">
+                                  <td className="px-4 py-2.5 font-extrabold text-slate-800 border-r border-slate-200 text-left bg-white align-middle break-words whitespace-normal leading-tight">
                                     {row.disciplina}
                                   </td>
                                   <td className="px-3 py-2.5 text-center font-black font-mono border-r border-slate-200 text-slate-900 bg-white align-middle animate-fade-in">
                                     {row.nota}
                                   </td>
-                                  <td className={cn("px-4 py-2.5 text-right font-black bg-white align-middle", row.statusClass)}>
+                                  <td className={cn("px-4 py-2.5 text-right font-black bg-white align-middle break-words whitespace-normal leading-tight", row.statusClass)}>
                                     {row.situacao}
                                   </td>
                                 </tr>
@@ -1662,7 +1555,7 @@ export default function BoletimPage() {
                            <td className="px-6 py-4 text-right">
                               <div className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ring-1 ring-inset ring-current/20", status.className, (row.nota_final === null || row.frequencia === null) && "cursor-pointer hover:scale-105 active:scale-95 transition-all duration-200 shadow-xs")} onClick={() => { if (row.nota_final === null || row.frequencia === null) { setPendingDetailsStudent(row); } }} title={(row.nota_final === null || row.frequencia === null) ? (language === 'pt' ? 'Clique para ver o que está pendente' : 'Click to see what is pending') : undefined}>
                                  <StatusIcon size={12} />
-                                 {status.label}</div></td><td className="px-6 py-4 text-right print:hidden"><button onClick={() => setSelectedStudentForReport(row.aluno?.id)} className="inline-flex items-center gap-1.5 bg-slate-50 hover:bg-blue-600 hover:text-white text-slate-600 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer border border-slate-200 hover:border-blue-600 shadow-sm"><FileText size={12} /><span>{language === 'pt' ? 'Relatório' : 'Report'}</span></button></td><td className="hidden border-none" style={{ display: 'none' }}><div>
+                                 {status.label}</div></td><td className="px-6 py-4 text-right print:hidden"><button onClick={() => setSelectedStudentForReport(row.aluno?.id)} className="inline-flex items-center gap-1.5 bg-slate-50 hover:bg-blue-600 hover:text-white text-slate-600 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer border border-slate-200 hover:border-blue-600 shadow-sm"><FileText size={12} /><span>{language === 'pt' ? 'Histórico' : 'Transcript'}</span></button></td><td className="hidden border-none" style={{ display: 'none' }}><div>
                               </div>
                            </td>
                          </tr>
@@ -1748,21 +1641,10 @@ export default function BoletimPage() {
                         <div className="flex items-center gap-2">
                           <FileText className="text-blue-500" size={18} />
                           <h3 className="text-xs font-black uppercase tracking-widest text-slate-200">
-                            {language === 'pt' ? 'Visualizador de Relatório Acadêmico' : 'Academic Report Viewer'}
+                            {language === 'pt' ? 'Visualizador de Histórico Escolar' : 'Academic Transcript Viewer'}
                           </h3>
                         </div>
                         <div className="flex items-center gap-2.5">
-                          {/* Copiar como Imagem Property Toggle */}
-                          <label className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-750 border border-slate-700 text-slate-300 px-3.5 py-1.5 rounded-xl text-xs font-bold leading-none select-none cursor-pointer duration-150">
-                            <input
-                              type="checkbox"
-                              checked={canCopyImage}
-                              onChange={(e) => setCanCopyImage(e.target.checked)}
-                              className="accent-emerald-500 w-3.5 h-3.5 rounded cursor-pointer"
-                            />
-                            <span>{language === 'pt' ? 'Pode Copiar Imagem' : 'Can Copy Image'}</span>
-                          </label>
-
                           {/* PDF Download Button */}
                           <button
                             onClick={handleDownloadPDF}
@@ -1796,7 +1678,7 @@ export default function BoletimPage() {
                       </div>
 
                       {/* Modal Body Container with screen zoom fit */}
-                      <div className="flex-1 overflow-auto p-6 bg-slate-950 flex flex-col items-center justify-start relative min-h-0">
+                      <div className="flex-1 overflow-hidden p-6 bg-slate-950 flex flex-col items-center justify-center relative">
                         {loadingReport ? (
                           <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-3">
                             <Loader2 className="animate-spin text-blue-500" size={32} />
@@ -1805,7 +1687,7 @@ export default function BoletimPage() {
                             </span>
                           </div>
                         ) : reportData ? (
-                          <div className="w-full flex-1 flex flex-col items-center justify-start relative overflow-auto py-2">
+                          <div className="w-full flex-1 flex flex-col items-center justify-center relative overflow-hidden">
                             {/* Floating zoom controls */}
                             <div className="absolute top-0 right-0 z-[115] flex items-center gap-1.5 bg-slate-900/95 backdrop-blur-md px-2.5 py-1.5 rounded-xl border border-slate-800/80 text-xs text-slate-300 font-bold shadow-lg no-print">
                               <button 
@@ -1838,7 +1720,7 @@ export default function BoletimPage() {
 
                             {/* Outer wrapper that limits scaled dimensions to prevent scrolls */}
                             <div 
-                              className="w-full flex items-center justify-center overflow-auto py-4"
+                              className="w-full flex items-center justify-center overflow-hidden"
                               style={{ 
                                 height: `${1123 * scale}px`,
                               }}
@@ -1857,12 +1739,16 @@ export default function BoletimPage() {
                               >
                                 {/* THE INDIVIDUAL REPORT PRINT CONTAINER */}
                                 <div 
-                                  id="student-report-print-area"
-                                  onClick={handleCopyAsImage}
-                                  className={`w-[210mm] h-[297mm] max-w-[210mm] max-h-[297mm] bg-white text-slate-900 p-8 flex flex-col justify-between font-sans relative text-left text-xs box-border border border-slate-100 ${canCopyImage ? 'cursor-pointer hover:ring-2 hover:ring-indigo-500 transition-all select-none' : ''}`}
-                                  title={canCopyImage ? (language === 'pt' ? 'Clique com o botão esquerdo para copiar a folha como imagem' : 'Left-click to copy page as an image') : undefined}
-                                >
-                                  <style dangerouslySetInnerHTML={{ __html: `
+                                   id="student-report-print-area"
+                                   className="w-[210mm] bg-white text-slate-900 p-8 flex flex-col justify-between font-sans relative text-left text-xs box-border border border-slate-100 overflow-y-auto scrollbar-thin cursor-pointer select-none transition-all duration-200 group/report hover:border-blue-400/40"
+                                   onClick={handleCopyAsImage}
+                                   title={language === 'pt' ? 'Clique com o botão esquerdo para copiar o Histórico como imagem' : 'Left click to copy Transcript as image'}
+                                   style={{ height: '297mm', maxHeight: '297mm' }}
+                                 >
+                                   <style dangerouslySetInnerHTML={{ __html: `
+                                    #student-report-print-area > * {
+                                      flex-shrink: 0 !important;
+                                    }
                                     @media print {
                                       /* Reset page context and force standard white/black print output */
                                       html, body {
@@ -1907,11 +1793,10 @@ export default function BoletimPage() {
                                         left: 0 !important;
                                         top: 0 !important;
                                         width: 210mm !important;
-                                        height: 297mm !important;
-                                        max-width: 210mm !important;
-                                        max-height: 297mm !important;
                                         min-width: 210mm !important;
                                         min-height: 297mm !important;
+                                        height: auto !important;
+                                        max-height: none !important;
                                         margin: 0 !important;
                                         padding: 12mm 12mm 12mm 12mm !important;
                                         border: none !important;
@@ -1919,10 +1804,11 @@ export default function BoletimPage() {
                                         background: #ffffff !important;
                                         color: #000000 !important;
                                         box-sizing: border-box !important;
-                                        overflow: hidden !important;
+                                        overflow: visible !important;
                                         display: flex !important;
                                         flex-direction: column !important;
-                                        justify-content: space-between !important;
+                                        justify-content: flex-start !important;
+                                        gap: 12px !important;
                                       }
                                       #student-report-print-area * {
                                         visibility: visible !important;
@@ -1968,6 +1854,12 @@ export default function BoletimPage() {
                                     }
                                   `}} />
 
+                                  {/* Copy visual badge overlay (hidden in print) */}
+                                  <div className="no-print absolute top-3 right-3 bg-slate-900/90 text-white text-[9px] font-bold px-2.5 py-1.5 rounded-md opacity-0 group-hover/report:opacity-100 transition-opacity flex items-center gap-1.5 hover:bg-black pointer-events-none z-10 shadow-sm uppercase tracking-wider">
+                                    <Award size={11} className="text-blue-400" />
+                                    {language === 'pt' ? 'Clique para copiar imagem' : 'Click to copy image'}
+                                  </div>
+
                                   {/* Premium Official Header Layout */}
                                   <div className="flex items-center justify-between pb-4 border-b border-slate-950">
                                     <div className="flex items-center gap-3">
@@ -1993,7 +1885,7 @@ export default function BoletimPage() {
                                   <div className="grid grid-cols-4 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-slate-900 mt-2">
                                     <div className="col-span-2 flex flex-col gap-0.5">
                                       <span className="text-[8px] font-black tracking-widest text-slate-400 uppercase leading-none">{reportT[language as "pt" | "en"].fullName}</span>
-                                      <span className="text-xs font-black uppercase text-slate-900 truncate tracking-wide mt-1 leading-tight">{reportData.student.nome}</span>
+                                      <span className="text-xs font-black uppercase text-slate-900 break-words whitespace-normal tracking-wide mt-1 leading-tight">{reportData.student.nome}</span>
                                     </div>
                                     <div className="flex flex-col gap-0.5">
                                       <span className="text-[8px] font-black tracking-widest text-slate-400 uppercase leading-none">{reportT[language as "pt" | "en"].rank}</span>
@@ -2005,11 +1897,11 @@ export default function BoletimPage() {
                                     </div>
                                     <div className="col-span-2 flex flex-col gap-0.5 mt-2 pt-1.5 border-t border-slate-200/60">
                                       <span className="text-[8px] font-black tracking-widest text-slate-400 uppercase leading-none">{reportT[language as "pt" | "en"].course}</span>
-                                      <span className="text-[10px] font-extrabold text-slate-850 truncate mt-1 leading-normal">{reportData.courseObj?.nome || (language === 'pt' ? 'Não disponível' : 'Not available')}</span>
+                                      <span className="text-[10px] font-extrabold text-slate-850 break-words whitespace-normal mt-1 leading-normal">{reportData.courseObj?.nome || (language === 'pt' ? 'Não disponível' : 'Not available')}</span>
                                     </div>
                                     <div className="col-span-1 flex flex-col gap-0.5 mt-2 pt-1.5 border-t border-slate-200/60">
                                       <span className="text-[8px] font-black tracking-widest text-slate-400 uppercase leading-none">{reportT[language as "pt" | "en"].class}</span>
-                                      <span className="text-[10px] font-extrabold text-slate-850 truncate mt-1 leading-normal">{reportData.classObj?.nome || (language === 'pt' ? 'Não disponível' : 'Not available')}</span>
+                                      <span className="text-[10px] font-extrabold text-slate-850 break-words whitespace-normal mt-1 leading-normal">{reportData.classObj?.nome || (language === 'pt' ? 'Não disponível' : 'Not available')}</span>
                                     </div>
                                     <div className="col-span-1 flex flex-col gap-0.5 mt-2 pt-1.5 border-t border-slate-200/60">
                                       <span className="text-[8px] font-black tracking-widest text-slate-400 uppercase leading-none">{reportT[language as "pt" | "en"].period}</span>
@@ -2111,13 +2003,13 @@ export default function BoletimPage() {
                                         }
 
                                         return (
-                                          <table className="w-full text-left border-collapse bg-white">
+                                          <table className="w-full text-left border-collapse bg-white table-auto">
                                             <thead>
                                               <tr className="bg-slate-900 text-[8px] font-black text-white uppercase tracking-widest border-b border-slate-850">
-                                                <th className="px-3.5 py-2 border-r border-slate-800">{language === 'pt' ? 'Módulo' : 'Module'}</th>
-                                                <th className="px-3.5 py-2 border-r border-slate-800">{language === 'pt' ? 'Disciplina' : 'Discipline'}</th>
-                                                <th className="px-3.5 py-2 text-center border-r border-slate-800 font-mono w-24">{reportT[language as "pt" | "en"].finalGrade}</th>
-                                                <th className="px-3.5 py-2 text-right w-28">{reportT[language as "pt" | "en"].situation}</th>
+                                                <th className="px-3.5 py-2 border-r border-slate-800 w-[20%]">{language === 'pt' ? 'Módulo' : 'Module'}</th>
+                                                <th className="px-3.5 py-2 border-r border-slate-800 w-[50%]">{language === 'pt' ? 'Disciplina' : 'Discipline'}</th>
+                                                <th className="px-3.5 py-2 text-center border-r border-slate-800 font-mono w-[15%]">{reportT[language as "pt" | "en"].finalGrade}</th>
+                                                <th className="px-3.5 py-2 text-right w-[15%]">{reportT[language as "pt" | "en"].situation}</th>
                                               </tr>
                                             </thead>
                                             <tbody className="text-[10px]">
@@ -2131,17 +2023,17 @@ export default function BoletimPage() {
                                                 rowsWithSpans.map((row: any) => (
                                                   <tr key={row.id} className="border-b border-slate-200 bg-white">
                                                     {row.moduloSpan > 0 && (
-                                                      <td rowSpan={row.moduloSpan} className="px-3.5 py-1.5 font-black text-slate-900 border-r border-slate-250 bg-slate-50/70 align-middle">
+                                                      <td rowSpan={row.moduloSpan} className="px-3.5 py-1.5 font-black text-slate-900 border-r border-slate-250 bg-slate-50/70 align-middle break-words whitespace-normal leading-tight">
                                                         {row.modulo}
                                                       </td>
                                                     )}
-                                                    <td className="px-3.5 py-1.5 font-bold text-slate-800 border-r border-slate-200 bg-white align-middle">
+                                                    <td className="px-3.5 py-1.5 font-bold text-slate-800 border-r border-slate-200 bg-white align-middle break-words whitespace-normal leading-tight">
                                                       {row.disciplina}
                                                     </td>
-                                                    <td className="px-3.5 py-1.5 text-center font-black font-mono border-r border-slate-200 text-slate-900 bg-white align-middle">
+                                                    <td className="px-3.5 py-1.5 text-center font-black font-mono border-r border-slate-200 text-slate-900 bg-white align-middle break-words whitespace-normal leading-tight">
                                                       {row.nota}
                                                     </td>
-                                                    <td className="px-3.5 py-1.5 text-right bg-white align-middle">
+                                                    <td className="px-3.5 py-1.5 text-right bg-white align-middle break-words whitespace-normal leading-tight">
                                                       <span className={cn("px-2 py-0.5 rounded text-[8px] font-black uppercase inline-block border", row.statusClass)}>
                                                         {row.situacao}
                                                       </span>
