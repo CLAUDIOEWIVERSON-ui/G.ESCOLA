@@ -34,7 +34,7 @@ import { useUser } from '@/lib/auth/UserContext';
 
 const reportT = {
   pt: {
-    headerTitle: "SISTEMA DE ENSINO E INSTRUÇÃO",
+    headerTitle: "MISSÃO DE ASSESSORIA NAVAL DO BRASIL EM SÃO TOMÉ E PRÍNCIPE",
     headerSubtitle: "HISTÓRICO ESCOLAR DE DESEMPENHO ACADÊMICO",
     studentInfo: "IDENTIFICAÇÃO DO ALUNO",
     academicMap: "MAPA DE RENDIMENTO ACADÊMICO",
@@ -69,7 +69,7 @@ const reportT = {
     close: "Fechar",
   },
   en: {
-    headerTitle: "EDUCATION AND TRAINING SYSTEM",
+    headerTitle: "BRAZILIAN NAVAL ADVISORY MISSION IN SÃO TOMÉ AND PRÍNCIPE",
     headerSubtitle: "OFFICIAL ACADEMIC TRANSCRIPT",
     studentInfo: "STUDENT / TRAINEE IDENTIFICATION",
     academicMap: "ACADEMIC PERFORMANCE MAP",
