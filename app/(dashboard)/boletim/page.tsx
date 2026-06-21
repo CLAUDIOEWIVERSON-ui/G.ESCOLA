@@ -143,6 +143,8 @@ export default function BoletimPage() {
   const [pendingDetailsStudent, setPendingDetailsStudent] = useState<any | null>(null);
   const [scale, setScale] = useState(0.55);
   const [downloadingPDF, setDownloadingPDF] = useState(false);
+  const [canCopyImage, setCanCopyImage] = useState(true);
+  const [copyingImage, setCopyingImage] = useState(false);
 
   // Dynamic auto-fit calculation based on viewport height
   useEffect(() => {
@@ -382,6 +384,212 @@ export default function BoletimPage() {
       toast.error(language === 'pt' ? 'Por favor, tente novamente.' : 'Please try again.', { id: toastId });
     } finally {
       setDownloadingPDF(false);
+    }
+  };
+
+  const handleCopyAsImage = async (e: React.MouseEvent) => {
+    // Only proceed if copying is enabled
+    if (!canCopyImage) return;
+    
+    // Prevent double triggers or overlaps
+    if (copyingImage) return;
+
+    // Check if the user is selecting text - if so, don't copy
+    const selection = window.getSelection();
+    if (selection && selection.toString().trim().length > 0) {
+      return;
+    }
+
+    setCopyingImage(true);
+    const toastId = toast.loading(language === 'pt' ? 'Copiando folha como imagem...' : 'Copying page as image...');
+
+    try {
+      const element = document.getElementById('student-report-print-area');
+      if (!element) {
+        throw new Error("Print area element not found");
+      }
+
+      // Temporarily clear the scale transform for high-fidelity canvas snapshot
+      const prevScale = scale;
+      setScale(1.0);
+      
+      // Let the DOM update to full-scale resolution
+      await new Promise((resolve) => setTimeout(resolve, 150));
+
+      const oklabToRgbVal = (l: number, a: number, b: number): [number, number, number] => {
+        const l_ = l + 0.3963377774 * a + 0.2158037573 * b;
+        const m_ = l - 0.1055613458 * a - 0.0638541728 * b;
+        const s_ = l - 0.0894841775 * a - 1.2914855480 * b;
+
+        const l3 = l_ * l_ * l_;
+        const m3 = m_ * m_ * m_;
+        const s3 = s_ * s_ * s_;
+
+        const x = +1.2270138511 * l3 - 0.5577999807 * m3 + 0.2812561490 * s3;
+        const y = -0.0405801784 * l3 + 1.1122568696 * m3 - 0.0716766787 * s3;
+        const z = -0.0763812845 * l3 - 0.4214819784 * m3 + 1.5861632204 * s3;
+
+        let r = +3.2404542 * x - 1.5371385 * y - 0.4985314 * z;
+        let g = -0.9692660 * x + 1.8760108 * y + 0.0415560 * z;
+        let bVal = -0.2264055 * x + 0.0556434 * y + 1.0572252 * z;
+
+        const fn = (cVal: number) => {
+          if (cVal <= 0.0031308) {
+            return 12.92 * cVal;
+          } else {
+            return 1.055 * Math.pow(cVal, 1 / 2.4) - 0.055;
+          }
+        };
+
+        r = fn(r);
+        g = fn(g);
+        bVal = fn(bVal);
+
+        const R = Math.max(0, Math.min(255, Math.round(r * 255)));
+        const G = Math.max(0, Math.min(255, Math.round(g * 255)));
+        const B = Math.max(0, Math.min(255, Math.round(bVal * 255)));
+
+        return [R, G, B];
+      };
+
+      const oklchToRgbVal = (l: number, c: number, h: number): [number, number, number] => {
+        const hRad = (h * Math.PI) / 180;
+        const a = c * Math.cos(hRad);
+        const b = c * Math.sin(hRad);
+        return oklabToRgbVal(l, a, b);
+      };
+
+      const parseAndConvertOklch = (colorStr: string): string => {
+        if (!colorStr || !colorStr.includes('oklch')) return colorStr;
+
+        return colorStr.replace(/oklch\(([^)]+)\)/g, (match, content) => {
+          try {
+            const normalized = content.replace(/,/g, ' ').replace(/\//g, ' ').trim();
+            const parts = normalized.split(/\s+/).map((p: string) => {
+              if (p.endsWith('%')) {
+                return parseFloat(p) / 100;
+              }
+              return parseFloat(p);
+            });
+
+            if (parts.length >= 3 && !parts.some(isNaN)) {
+              const [l, c, h] = parts;
+              const [r, g, b] = oklchToRgbVal(l, c, h);
+              const alpha = parts[3] !== undefined ? parts[3] : 1;
+              return alpha === 1 ? `rgb(${r}, ${g}, ${b})` : `rgba(${r}, ${g}, ${b}, ${alpha})`;
+            }
+          } catch (e) {
+            console.error("Failed to parse oklch color:", match, e);
+          }
+          return match;
+        });
+      };
+
+      const parseAndConvertOklab = (colorStr: string): string => {
+        if (!colorStr || !colorStr.includes('oklab')) return colorStr;
+
+        return colorStr.replace(/oklab\(([^)]+)\)/g, (match, content) => {
+          try {
+            const normalized = content.replace(/,/g, ' ').replace(/\//g, ' ').trim();
+            const parts = normalized.split(/\s+/).map((p: string) => {
+              if (p.endsWith('%')) {
+                return parseFloat(p) / 100;
+              }
+              return parseFloat(p);
+            });
+
+            if (parts.length >= 3 && !parts.some(isNaN)) {
+              const [l, a, b] = parts;
+              const [r, g, bVal] = oklabToRgbVal(l, a, b);
+              const alpha = parts[3] !== undefined ? parts[3] : 1;
+              return alpha === 1 ? `rgb(${r}, ${g}, ${bVal})` : `rgba(${r}, ${g}, ${bVal}, ${alpha})`;
+            }
+          } catch (e) {
+            console.error("Failed to parse oklab color:", match, e);
+          }
+          return match;
+        });
+      };
+
+      const html2canvas = (await import('html2canvas')).default;
+
+      const canvas = await html2canvas(element, {
+        scale: 2.2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        width: 794,
+        height: 1123,
+        windowWidth: 794,
+        windowHeight: 1123,
+        onclone: (clonedDoc) => {
+          clonedDoc.querySelectorAll('style').forEach((styleEl) => {
+            try {
+              let cssText = styleEl.innerHTML;
+              if (cssText.includes('oklch') || cssText.includes('oklab')) {
+                cssText = parseAndConvertOklch(cssText);
+                cssText = parseAndConvertOklab(cssText);
+                styleEl.innerHTML = cssText;
+              }
+            } catch (e) {
+              console.error("Failed to process style element:", e);
+            }
+          });
+
+          const elements = clonedDoc.querySelectorAll('*');
+          elements.forEach((el) => {
+            const htmlEl = el as HTMLElement;
+            const styleProps = [
+              'color', 'backgroundColor', 'borderColor', 
+              'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor',
+              'outlineColor', 'fill', 'stroke'
+            ];
+            
+            try {
+              const computed = window.getComputedStyle(htmlEl);
+              styleProps.forEach((prop) => {
+                const val = computed[prop as any];
+                if (val && (val.includes('oklch') || val.includes('oklab'))) {
+                   let converted = parseAndConvertOklch(val);
+                   converted = parseAndConvertOklab(converted);
+                   htmlEl.style[prop as any] = converted;
+                }
+              });
+
+              const inlineStyle = htmlEl.getAttribute('style');
+              if (inlineStyle && (inlineStyle.includes('oklch') || inlineStyle.includes('oklab'))) {
+                let converted = parseAndConvertOklch(inlineStyle);
+                converted = parseAndConvertOklab(converted);
+                htmlEl.setAttribute('style', converted);
+              }
+            } catch (err) {
+              // Silently ignore style errors
+            }
+          });
+        }
+      });
+
+      // Restore screen preview scale back to configured level
+      setScale(prevScale);
+
+      // Convert canvas to blob and copy to clipboard
+      canvas.toBlob(async (blob) => {
+        try {
+          if (!blob) throw new Error("Blob conversion failed");
+          const item = new ClipboardItem({ 'image/png': blob });
+          await navigator.clipboard.write([item]);
+          toast.success(language === 'pt' ? 'Folha de relatório copiada como imagem com sucesso!' : 'Report page copied to clipboard as an image successfully!', { id: toastId });
+        } catch (clipErr: any) {
+          console.error("Failed to write to clipboard:", clipErr);
+          toast.error(language === 'pt' ? 'Erro ao copiar imagem. Use a exportação de PDF ou tente novamente.' : 'Failed to copy to clipboard.', { id: toastId });
+        }
+      }, 'image/png');
+
+    } catch (error) {
+      console.error("Error copying image:", error);
+      toast.error(language === 'pt' ? 'Falha ao processar folha do relatório.' : 'Failed to process report page.', { id: toastId });
+    } finally {
+      setCopyingImage(false);
     }
   };
 
@@ -687,8 +895,17 @@ export default function BoletimPage() {
               {language === 'pt' ? 'Consulte as suas notas individuais e aproveitamento acadêmico' : 'Check your individual grades and academic performance.'}
             </p>
           </div>
-          {profile?.role !== 'aluno' && (
-            <div className="flex gap-2 print:hidden">
+          <div className="flex items-center gap-3 print:hidden">
+            <label className="flex items-center gap-2 text-xs font-bold text-slate-705 font-mono select-none cursor-pointer border border-slate-250 bg-white hover:bg-slate-50 px-3 py-2 rounded-xl shadow-sm transition duration-150">
+              <input
+                type="checkbox"
+                checked={canCopyImage}
+                onChange={(e) => setCanCopyImage(e.target.checked)}
+                className="accent-emerald-500 w-3.5 h-3.5 rounded cursor-pointer"
+              />
+              <span>{language === 'pt' ? 'Pode Copiar Imagem' : 'Can Copy Image'}</span>
+            </label>
+            {profile?.role !== 'aluno' && (
               <button 
                 onClick={handlePrint}
                 className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-all shadow-sm cursor-pointer"
@@ -696,8 +913,8 @@ export default function BoletimPage() {
                 <Printer size={18} />
                 {t.reportCard.print}
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {loadingReport || !reportData ? (
@@ -708,11 +925,13 @@ export default function BoletimPage() {
             </span>
           </div>
         ) : (
-          <div className="max-w-4xl mx-auto w-full">
+          <div className="max-w-4xl mx-auto w-full overflow-x-auto scrollbar-thin">
             <div 
               id="student-report-print-area" 
-              className="bg-white text-slate-900 border border-slate-200 shadow-xl p-8 rounded-lg flex flex-col gap-6 font-sans relative text-left text-xs"
+              onClick={handleCopyAsImage}
+              className={`bg-white text-slate-900 border border-slate-200 shadow-xl p-8 rounded-lg flex flex-col gap-6 font-sans relative text-left text-xs ${canCopyImage ? 'cursor-pointer hover:ring-2 hover:ring-indigo-500 transition-all select-none' : ''}`}
               style={{ width: '100%', boxSizing: 'border-box' }}
+              title={canCopyImage ? (language === 'pt' ? 'Clique com o botão esquerdo para copiar a folha como imagem' : 'Left-click to copy page as an image') : undefined}
             >
                <style dangerouslySetInnerHTML={{ __html: `
                 @media print {
@@ -1533,6 +1752,17 @@ export default function BoletimPage() {
                           </h3>
                         </div>
                         <div className="flex items-center gap-2.5">
+                          {/* Copiar como Imagem Property Toggle */}
+                          <label className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-750 border border-slate-700 text-slate-300 px-3.5 py-1.5 rounded-xl text-xs font-bold leading-none select-none cursor-pointer duration-150">
+                            <input
+                              type="checkbox"
+                              checked={canCopyImage}
+                              onChange={(e) => setCanCopyImage(e.target.checked)}
+                              className="accent-emerald-500 w-3.5 h-3.5 rounded cursor-pointer"
+                            />
+                            <span>{language === 'pt' ? 'Pode Copiar Imagem' : 'Can Copy Image'}</span>
+                          </label>
+
                           {/* PDF Download Button */}
                           <button
                             onClick={handleDownloadPDF}
@@ -1566,7 +1796,7 @@ export default function BoletimPage() {
                       </div>
 
                       {/* Modal Body Container with screen zoom fit */}
-                      <div className="flex-1 overflow-hidden p-6 bg-slate-950 flex flex-col items-center justify-center relative">
+                      <div className="flex-1 overflow-auto p-6 bg-slate-950 flex flex-col items-center justify-start relative min-h-0">
                         {loadingReport ? (
                           <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-3">
                             <Loader2 className="animate-spin text-blue-500" size={32} />
@@ -1575,7 +1805,7 @@ export default function BoletimPage() {
                             </span>
                           </div>
                         ) : reportData ? (
-                          <div className="w-full flex-1 flex flex-col items-center justify-center relative overflow-hidden">
+                          <div className="w-full flex-1 flex flex-col items-center justify-start relative overflow-auto py-2">
                             {/* Floating zoom controls */}
                             <div className="absolute top-0 right-0 z-[115] flex items-center gap-1.5 bg-slate-900/95 backdrop-blur-md px-2.5 py-1.5 rounded-xl border border-slate-800/80 text-xs text-slate-300 font-bold shadow-lg no-print">
                               <button 
@@ -1608,7 +1838,7 @@ export default function BoletimPage() {
 
                             {/* Outer wrapper that limits scaled dimensions to prevent scrolls */}
                             <div 
-                              className="w-full flex items-center justify-center overflow-hidden"
+                              className="w-full flex items-center justify-center overflow-auto py-4"
                               style={{ 
                                 height: `${1123 * scale}px`,
                               }}
@@ -1628,7 +1858,9 @@ export default function BoletimPage() {
                                 {/* THE INDIVIDUAL REPORT PRINT CONTAINER */}
                                 <div 
                                   id="student-report-print-area"
-                                  className="w-[210mm] h-[297mm] max-w-[210mm] max-h-[297mm] bg-white text-slate-900 p-8 flex flex-col justify-between font-sans relative text-left text-xs box-border border border-slate-100"
+                                  onClick={handleCopyAsImage}
+                                  className={`w-[210mm] h-[297mm] max-w-[210mm] max-h-[297mm] bg-white text-slate-900 p-8 flex flex-col justify-between font-sans relative text-left text-xs box-border border border-slate-100 ${canCopyImage ? 'cursor-pointer hover:ring-2 hover:ring-indigo-500 transition-all select-none' : ''}`}
+                                  title={canCopyImage ? (language === 'pt' ? 'Clique com o botão esquerdo para copiar a folha como imagem' : 'Left-click to copy page as an image') : undefined}
                                 >
                                   <style dangerouslySetInnerHTML={{ __html: `
                                     @media print {
