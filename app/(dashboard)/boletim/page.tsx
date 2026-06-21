@@ -31,6 +31,7 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { useUser } from '@/lib/auth/UserContext';
+import navalMissionLogo from '@/src/assets/images/naval_mission_logo_1782033194993.jpg';
 
 const reportT = {
   pt: {
@@ -1832,9 +1833,17 @@ export default function BoletimPage() {
 
                                   {/* Premium Official Header Layout */}
                                   <div className="flex items-center justify-between pb-4 border-b border-slate-950">
-                                    <div className="flex items-center gap-3">
-                                      <div className="p-2 bg-slate-900 text-white rounded-lg flex items-center justify-center border border-slate-850">
-                                        <Shield size={22} className="text-blue-400 stroke-[2.2]" />
+                                    <div className="flex items-center gap-4">
+                                      <div className="relative w-16 h-16 shrink-0 flex items-center justify-center overflow-hidden bg-white">
+                                        <Image
+                                          src={navalMissionLogo}
+                                          alt="Logo Missão de Assessoria Naval"
+                                          fill
+                                          className="object-contain"
+                                          referrerPolicy="no-referrer"
+                                          sizes="64px"
+                                          priority
+                                        />
                                       </div>
                                       <div className="text-left flex flex-col justify-center">
                                         <h1 className="text-sm font-black tracking-widest text-slate-900 uppercase leading-none">
