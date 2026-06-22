@@ -1182,42 +1182,20 @@ export default function BoletimPage() {
                   {(() => {
                     const reportRows = (() => {
                       const rows: any[] = [];
-                      if (!reportData || !reportData.disciplines) return [];
+                      if (!reportData) return [];
                       
-                      const sortedDisciplines = [...reportData.disciplines].sort((a: any, b: any) => {
-                        const mDiff = (a.modulo_index || 1) - (b.modulo_index || 1);
-                        if (mDiff !== 0) return mDiff;
-                        return a.nome.localeCompare(b.nome);
-                      });
+                      const totalModules = Math.min(reportData.courseObj?.qtd_modulos || 4, 20);
+                      const firstGrade = reportData.grades && reportData.grades.length > 0 ? reportData.grades[0] : null;
 
-                      sortedDisciplines.forEach((disc: any, discIdx: number) => {
-                        // Check if modular unified grades are entered under the first discipline
-                        const firstDisc = sortedDisciplines[0];
-                        const firstGrade = firstDisc ? reportData.grades.find((g: any) => g.disciplina_id === firstDisc.id) : null;
-                        const moduleNum = disc.modulo_index || (discIdx + 1);
+                      for (let m = 1; m <= totalModules; m++) {
+                        const modularGradeValue = firstGrade ? firstGrade[`nota${m}`] : null;
 
                         let finalGradeValue = null;
-                        if (firstGrade && moduleNum !== null) {
-                          const modularGradeValue = firstGrade[`nota${moduleNum}`];
-                          if (modularGradeValue !== null && modularGradeValue !== undefined && modularGradeValue !== '') {
-                            finalGradeValue = Number(modularGradeValue);
-                          }
+                        if (modularGradeValue !== null && modularGradeValue !== undefined && modularGradeValue !== '') {
+                          finalGradeValue = Number(modularGradeValue);
                         }
 
-                        // Fallback to direct discipline final grade
-                        if (finalGradeValue === null) {
-                          const directGrade = reportData.grades.find((g: any) => g.disciplina_id === disc.id);
-                          finalGradeValue = directGrade ? directGrade.nota_final : null;
-                        }
-
-                        // Determine frequency value, falling back to firstGrade if needed
-                        let freqValue = null;
-                        if (firstGrade && firstGrade.frequencia !== null && firstGrade.frequencia !== undefined) {
-                          freqValue = firstGrade.frequencia;
-                        } else {
-                          const directGrade = reportData.grades.find((g: any) => g.disciplina_id === disc.id);
-                          freqValue = directGrade ? directGrade.frequencia : null;
-                        }
+                        let freqValue = firstGrade ? firstGrade.frequencia : null;
 
                         const finalGradeFormatted = finalGradeValue !== null && finalGradeValue !== undefined ? Number(finalGradeValue).toFixed(1) : '-';
 
@@ -1240,14 +1218,14 @@ export default function BoletimPage() {
                         }
 
                         rows.push({
-                          id: disc.id,
-                          modulo: `Módulo ${disc.modulo_index || 1}`,
-                          disciplina: disc.nome,
+                          id: `modulo-${m}`,
+                          modulo: `Módulo ${m}`,
+                          disciplina: language === 'pt' ? `Aproveitamento do Módulo ${m}` : `Module ${m} Assessment`,
                           nota: finalGradeFormatted,
                           situacao: statusLabel,
                           statusClass,
                         });
-                      });
+                      }
 
                       const rowsWithSpans: any[] = [];
                       for (let i = 0; i < rows.length; i++) {
@@ -1277,7 +1255,7 @@ export default function BoletimPage() {
                           </tr>
                         </thead>
                         <tbody className="text-xs text-left">
-                          {reportData.disciplines.length === 0 ? (
+                          {reportRows.length === 0 ? (
                             <tr>
                               <td colSpan={4} className="text-center py-6 text-slate-400 font-bold bg-white">
                                 {language === 'pt' ? 'Nenhuma disciplina cadastrada.' : 'No disciplines registered.'}
