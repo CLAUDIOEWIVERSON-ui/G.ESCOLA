@@ -176,10 +176,9 @@ export async function GET(req: NextRequest) {
     const category = searchParams.get('category') || ''; // Theme categories
     const todayStr = new Date().toISOString().split('T')[0];
 
-    // 1. Check in-memory session cache first to prevent redundant DB reads or API requests under load
-    if (!force && thoughtCache && thoughtCache.data_exibicao === todayStr) {
-      return NextResponse.json({ success: true, data: thoughtCache.data });
-    }
+    // We query the database on every GET request instead of using an in-memory thoughtCache bypass.
+    // This ensures any manual admin thoughts are immediately synchronized for all sessions and devices.
+    // Concurrent first-loads are still coalesced safely via activeRequestPromise.
 
     // Resolve action encapsulating the core logic
     const resolveAction = async () => {
