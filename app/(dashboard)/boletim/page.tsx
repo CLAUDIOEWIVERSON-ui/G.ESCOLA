@@ -1835,7 +1835,7 @@ export default function BoletimPage() {
                                 }}
                                 className={`px-2 py-0.5 border rounded-lg text-[9px] font-black tracking-wider transition ml-1 uppercase cursor-pointer ${
                                   zoomMode === 'height' 
-                                    ? 'bg-blue-600 text-white border-blue-500' 
+                                    ? 'bg-blue-600 hover:bg-blue-600 text-white hover:text-white border-blue-500 hover:border-blue-500' 
                                     : 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-300'
                                 }`}
                                 title="Ajustar à altura da tela"
@@ -1851,7 +1851,7 @@ export default function BoletimPage() {
                                 }}
                                 className={`px-2 py-0.5 border rounded-lg text-[9px] font-black tracking-wider transition ml-1 uppercase cursor-pointer ${
                                   zoomMode === 'width' 
-                                    ? 'bg-blue-600 text-white border-blue-500' 
+                                    ? 'bg-blue-600 hover:bg-blue-600 text-white hover:text-white border-blue-500 hover:border-blue-500' 
                                     : 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-300'
                                 }`}
                                 title="Ajustar à largura da tela (Fullscreen)"
