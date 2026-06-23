@@ -1489,11 +1489,13 @@ export default function BoletimPage() {
 
               {/* Observations section */}
               <div className="border border-slate-200 rounded-lg p-4 flex flex-col gap-2 text-left text-xs text-slate-600 italic">
-                <h3 className="text-[11px] font-black text-slate-400 tracking-[0.1em] uppercase border-b border-slate-200 pb-1">
+                <h3 className="text-[11px] font-black text-slate-400 tracking-[0.1em] uppercase border-b border-slate-200 pb-1 font-sans">
                   {reportT[language as "pt" | "en"].observations}
                 </h3>
-                <p className="leading-relaxed text-justify">
-                  {reportT[language as "pt" | "en"].defaultObs}
+                <p className="leading-relaxed text-justify whitespace-pre-line">
+                  {reportData?.student?.observacoes?.trim() 
+                    ? reportData.student.observacoes 
+                    : reportT[language as "pt" | "en"].defaultObs}
                 </p>
               </div>
 
@@ -2371,8 +2373,10 @@ export default function BoletimPage() {
                                     <span className="text-[7px] font-black tracking-widest text-slate-400 uppercase block mb-1">
                                       {reportT[language as "pt" | "en"].observations}
                                     </span>
-                                    <p className="text-[9px] italic leading-relaxed text-slate-600 text-justify font-serif">
-                                      {`"${reportT[language as "pt" | "en"].defaultObs}"`}
+                                    <p className="text-[9px] italic leading-relaxed text-slate-600 text-justify font-serif whitespace-pre-line">
+                                      {reportData?.student?.observacoes?.trim()
+                                        ? `"${reportData.student.observacoes}"`
+                                        : `"${reportT[language as "pt" | "en"].defaultObs}"`}
                                     </p>
                                   </div>
 

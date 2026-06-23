@@ -415,6 +415,21 @@ export async function GET() {
             .limit(1);
           return error;
         }
+      },
+      {
+        key: 'alunos_observacoes',
+        tableName: 'alunos',
+        columnName: 'observacoes',
+        fileName: '47_add_observacoes_to_alunos.sql',
+        description: 'Coluna observacoes na tabela de alunos para inserir as observações pedagógicas e disciplinares de cada aluno (com reflexo no boletim/histórico escolar).',
+        isColumn: true,
+        checkFn: async () => {
+          const { error } = await supabaseAdmin
+            .from('alunos')
+            .select('observacoes')
+            .limit(1);
+          return error;
+        }
       }
     ];
 

@@ -559,7 +559,8 @@ function TurmasContent() {
       data_inicio_curso: '',
       data_fim_curso: '',
       data_nascimento: '',
-      funcao: ''
+      funcao: '',
+      observacoes: ''
     };
     setCurrentAluno(mockOrRealAluno);
     setIsStudentFormOpen(true);
@@ -650,6 +651,9 @@ function TurmasContent() {
       }
       if (currentAluno.funcao !== undefined) {
         dataToSave.funcao = currentAluno.funcao ? currentAluno.funcao : null;
+      }
+      if (currentAluno.observacoes !== undefined) {
+        dataToSave.observacoes = currentAluno.observacoes ? currentAluno.observacoes : null;
       }
       
       if (isCiabaOrCiaga) {
@@ -2204,6 +2208,18 @@ function TurmasContent() {
                 placeholder={language === 'pt' ? 'Função que exerce' : 'Current function'}
               />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+              {language === 'pt' ? 'Observações Pedagógicas e Disciplinares' : 'Pedagogical & Disciplinary Observations'}
+            </label>
+            <textarea
+              value={currentAluno?.observacoes || ''}
+              onChange={(e) => setCurrentAluno({ ...currentAluno, observacoes: e.target.value })}
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded text-sm outline-none resize-none h-20 shadow-inner"
+              placeholder={language === 'pt' ? 'Insira observações relevantes sobre o rendimento pedagógico, comportamento ou questões disciplinares...' : 'Enter academic performance or behavioral notes...'}
+            />
           </div>
 
           {currentAluno?.id && isAdmin && (
