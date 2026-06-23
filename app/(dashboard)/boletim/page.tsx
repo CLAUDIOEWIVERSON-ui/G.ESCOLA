@@ -154,9 +154,9 @@ export default function BoletimPage() {
   useEffect(() => {
     if (!selectedStudentForReport) return;
     const calculateScale = () => {
-      // Scale A4 (1123px high) to comfortably fit inside around 65% of screen height
-      const targetHeight = window.innerHeight * 0.65;
-      const computedScale = Math.min(Math.max(targetHeight / 1123, 0.4), 0.95);
+      // Scale A4 (1123px high) to comfortably fit inside the full vertical space (subtracting headers/padding)
+      const targetHeight = window.innerHeight - 150;
+      const computedScale = Math.min(Math.max(targetHeight / 1123, 0.3), 1.05);
       setScale(computedScale);
     };
     calculateScale();
@@ -1759,10 +1759,10 @@ export default function BoletimPage() {
                   )}
                 </AnimatePresence>
                 {selectedStudentForReport && (
-                  <div id="student-report-modal-backdrop" className="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-[100] flex items-center justify-center p-4 overflow-hidden animate-fade-in">
-                    <div id="student-report-modal-content" className="bg-slate-900 text-slate-100 max-w-4xl w-full rounded-2xl shadow-2xl border border-slate-800 flex flex-col max-h-[95vh]">
+                  <div id="student-report-modal-backdrop" className="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-[100] flex items-center justify-center p-0 overflow-hidden animate-fade-in">
+                    <div id="student-report-modal-content" className="bg-slate-900 text-slate-100 w-screen h-screen max-w-full max-h-screen rounded-none shadow-2xl border-none flex flex-col">
                       {/* Modal Actions Header */}
-                      <div className="p-4 border-b border-slate-800 flex items-center justify-between no-print bg-slate-900 rounded-t-2xl">
+                      <div className="p-4 border-b border-slate-800 flex items-center justify-between no-print bg-slate-900 rounded-none">
                         <div className="flex items-center gap-2">
                           <FileText className="text-blue-500" size={18} />
                           <h3 className="text-xs font-black uppercase tracking-widest text-slate-200">
@@ -1820,8 +1820,8 @@ export default function BoletimPage() {
                               </button>
                               <button 
                                 onClick={() => {
-                                  const targetHeight = window.innerHeight * 0.65;
-                                  const computedScale = Math.min(Math.max(targetHeight / 1123, 0.4), 0.95);
+                                  const targetHeight = window.innerHeight - 150;
+                                  const computedScale = Math.min(Math.max(targetHeight / 1123, 0.3), 1.05);
                                   setScale(computedScale);
                                 }}
                                 className="px-2 py-0.5 bg-blue-600/30 hover:bg-blue-600/40 border border-blue-500/30 rounded-lg text-[9px] text-blue-400 font-black tracking-wider transition ml-1 uppercase cursor-pointer"
@@ -1833,9 +1833,10 @@ export default function BoletimPage() {
 
                             {/* Outer wrapper with top-aligned start to enable natural scrolling across visual scale */}
                             <div 
-                              className="w-full flex items-start justify-center overflow-visible mt-10"
+                              className="flex items-start justify-center overflow-visible mt-4 mx-auto"
                               style={{ 
                                 height: `${1123 * scale}px`,
+                                width: `${794 * scale}px`,
                               }}
                             >
                               {/* Scaled frame box */}
@@ -2432,7 +2433,7 @@ export default function BoletimPage() {
                       </div>
 
                       {/* Modal Actions Footer */}
-                      <div className="p-4 border-t border-slate-700/50 flex justify-end gap-3 no-print bg-slate-900 rounded-b-2xl">
+                      <div className="p-4 border-t border-slate-700/50 flex justify-end gap-3 no-print bg-slate-900 rounded-none">
                         <button
                           onClick={() => setSelectedStudentForReport(null)}
                           className="bg-slate-800 hover:bg-slate-700 px-5 py-2.5 rounded-xl text-xs font-bold text-slate-300 transition-all cursor-pointer"
