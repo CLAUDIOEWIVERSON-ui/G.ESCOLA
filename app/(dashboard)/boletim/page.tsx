@@ -143,6 +143,7 @@ export default function BoletimPage() {
   const [reportData, setReportData] = useState<any | null>(null);
   const [pendingDetailsStudent, setPendingDetailsStudent] = useState<any | null>(null);
   const [scale, setScale] = useState(0.55);
+  const [zoomMode, setZoomMode] = useState<'height' | 'width'>('height');
   const [downloadingPDF, setDownloadingPDF] = useState(false);
 
   // Class Bulletin PDF states
@@ -150,19 +151,26 @@ export default function BoletimPage() {
   const [classScale, setClassScale] = useState(0.55);
   const [downloadingClassPDF, setDownloadingClassPDF] = useState(false);
 
-  // Dynamic auto-fit calculation based on viewport height
+  // Dynamic auto-fit calculation based on viewport height or width
   useEffect(() => {
     if (!selectedStudentForReport) return;
     const calculateScale = () => {
-      // Scale A4 (1123px high) to comfortably fit inside the full vertical space (subtracting headers/padding)
-      const targetHeight = window.innerHeight - 150;
-      const computedScale = Math.min(Math.max(targetHeight / 1123, 0.3), 1.05);
-      setScale(computedScale);
+      if (zoomMode === 'width') {
+        // Fit Width - Scale A4 (794px wide) to occupy basically the full screen width
+        const targetWidth = window.innerWidth - 64;
+        const computedScale = Math.min(Math.max(targetWidth / 794, 0.3), 1.5);
+        setScale(computedScale);
+      } else {
+        // Fit Height - Scale A4 (1123px high) to comfortably fit inside the full vertical space (subtracting headers/padding)
+        const targetHeight = window.innerHeight - 150;
+        const computedScale = Math.min(Math.max(targetHeight / 1123, 0.3), 1.05);
+        setScale(computedScale);
+      }
     };
     calculateScale();
     window.addEventListener('resize', calculateScale);
     return () => window.removeEventListener('resize', calculateScale);
-  }, [selectedStudentForReport]);
+  }, [selectedStudentForReport, zoomMode]);
 
   useEffect(() => {
     if (!viewingClassBulletinPDF) return;
@@ -1791,7 +1799,7 @@ export default function BoletimPage() {
                       </div>
 
                       {/* Modal Body Container with screen zoom fit and scrollability */}
-                      <div className="flex-1 overflow-y-auto p-6 bg-slate-950 flex flex-col items-center justify-start relative scrollbar-thin">
+                      <div className="flex-1 overflow-auto p-6 bg-slate-950 flex flex-col items-center justify-start relative scrollbar-thin">
                         {loadingReport ? (
                           <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-3">
                             <Loader2 className="animate-spin text-blue-500" size={32} />
@@ -1812,7 +1820,7 @@ export default function BoletimPage() {
                               </button>
                               <span className="w-12 text-center text-[10px] font-mono tracking-wider">{(scale * 100).toFixed(0)}%</span>
                               <button 
-                                onClick={() => setScale(s => Math.min(1.2, s + 0.05))}
+                                onClick={() => setScale(s => Math.min(1.5, s + 0.05))}
                                 className="w-6 h-6 flex items-center justify-center bg-slate-800 hover:bg-slate-700 active:scale-95 rounded-lg transition font-mono text-xs focus:outline-none cursor-pointer"
                                 title="Zoom In"
                               >
@@ -1820,14 +1828,35 @@ export default function BoletimPage() {
                               </button>
                               <button 
                                 onClick={() => {
+                                  setZoomMode('height');
                                   const targetHeight = window.innerHeight - 150;
                                   const computedScale = Math.min(Math.max(targetHeight / 1123, 0.3), 1.05);
                                   setScale(computedScale);
                                 }}
-                                className="px-2 py-0.5 bg-blue-600/30 hover:bg-blue-600/40 border border-blue-500/30 rounded-lg text-[9px] text-blue-400 font-black tracking-wider transition ml-1 uppercase cursor-pointer"
-                                title="Recalcular ajuste automático"
+                                className={`px-2 py-0.5 border rounded-lg text-[9px] font-black tracking-wider transition ml-1 uppercase cursor-pointer ${
+                                  zoomMode === 'height' 
+                                    ? 'bg-blue-600 text-white border-blue-500' 
+                                    : 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-300'
+                                }`}
+                                title="Ajustar à altura da tela"
                               >
-                                {language === 'pt' ? 'Ajustar' : 'Fit'}
+                                {language === 'pt' ? 'Alt. Inteira' : 'Fit Height'}
+                              </button>
+                              <button 
+                                onClick={() => {
+                                  setZoomMode('width');
+                                  const targetWidth = window.innerWidth - 64;
+                                  const computedScale = Math.min(Math.max(targetWidth / 794, 0.3), 1.5);
+                                  setScale(computedScale);
+                                }}
+                                className={`px-2 py-0.5 border rounded-lg text-[9px] font-black tracking-wider transition ml-1 uppercase cursor-pointer ${
+                                  zoomMode === 'width' 
+                                    ? 'bg-blue-600 text-white border-blue-500' 
+                                    : 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-300'
+                                }`}
+                                title="Ajustar à largura da tela (Fullscreen)"
+                              >
+                                {language === 'pt' ? 'Tela Inteira' : 'Fullscreen'}
                               </button>
                             </div>
 
