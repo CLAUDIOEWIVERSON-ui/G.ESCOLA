@@ -1016,7 +1016,7 @@ export default function BoletimPage() {
                     display: flex !important;
                     flex-direction: column !important;
                     justify-content: flex-start !important;
-                    gap: 12px !important; /* Elegant compact spacing */
+                    gap: 6px !important; /* Elegant compact spacing */
                   }
 
                   /* Overwrite global generic flex/grid flattener for our specialized print contents */
@@ -1048,33 +1048,56 @@ export default function BoletimPage() {
                     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
                   }
                   #student-report-print-area .gap-4 {
-                    gap: 16px !important;
+                    gap: 12px !important;
                   }
                   #student-report-print-area .gap-10 {
-                    gap: 40px !important;
+                    gap: 24px !important;
                   }
 
                   /* Compact formatting for A4 vertical containment */
                   #student-report-print-area .p-5 {
-                    padding: 4mm !important;
+                    padding: 3mm !important;
                   }
                   #student-report-print-area .p-4 {
-                    padding: 4mm !important;
+                    padding: 3mm !important;
                   }
-                  #student-report-print-area .pb-6 {
-                    padding-bottom: 4mm !important;
+                  #student-report-print-area .pb-4 {
+                    padding-bottom: 4px !important;
                   }
                   #student-report-print-area .pt-6 {
                     padding-top: 4mm !important;
-                    margin-top: 2mm !important;
+                    margin-top: 1mm !important;
                   }
                   #student-report-print-area h1 {
-                    font-size: 18px !important;
-                    line-height: 1.2 !important;
+                    font-size: 15px !important;
+                    line-height: 1.15 !important;
                   }
                   #student-report-print-area h3 {
-                    font-size: 11px !important;
-                    margin-bottom: 6px !important;
+                    font-size: 10px !important;
+                    margin-bottom: 4px !important;
+                  }
+                  #student-report-print-area .grid-cols-4 {
+                    gap: 6px !important;
+                  }
+                  #student-report-print-area .p-3\.5 {
+                    padding: 6px 10px !important;
+                    border-radius: 6px !important;
+                  }
+                  #student-report-print-area .p-2 {
+                    padding: 4px !important;
+                  }
+                  #student-report-print-area .mt-2 {
+                    margin-top: 4px !important;
+                  }
+                  #student-report-print-area .mt-2\.5 {
+                    margin-top: 4px !important;
+                  }
+                  #student-report-print-area .pt-1\.5 {
+                    padding-top: 4px !important;
+                  }
+                  #student-report-print-area .w-24.h-24 {
+                    width: 60px !important;
+                    height: 60px !important;
                   }
                   
                   /* Preserve side-by-side columns on print pages */
@@ -1085,13 +1108,19 @@ export default function BoletimPage() {
                     width: 100% !important;
                   }
 
-                  table.report-table th {
-                    padding: 6px 12px !important;
-                    font-size: 10px !important;
+                  table.report-table th, 
+                  #student-report-print-area table th, 
+                  #student-report-print-area .report-table th, 
+                  #student-report-print-area th {
+                    padding: 4px 8px !important;
+                    font-size: 8px !important;
                   }
-                  table.report-table td {
-                    padding: 5px 12px !important;
-                    font-size: 11px !important;
+                  table.report-table td, 
+                  #student-report-print-area table td, 
+                  #student-report-print-area .report-table td, 
+                  #student-report-print-area td {
+                    padding: 3px 8px !important;
+                    font-size: 9px !important;
                   }
 
                   .print-only-layout {
@@ -1880,7 +1909,7 @@ export default function BoletimPage() {
                                         height: auto !important;
                                         max-height: none !important;
                                         margin: 0 !important;
-                                        padding: 12mm 12mm 12mm 12mm !important;
+                                        padding: 8mm 12mm 8mm 12mm !important;
                                         border: none !important;
                                         box-shadow: none !important;
                                         background: #ffffff !important;
@@ -1890,7 +1919,76 @@ export default function BoletimPage() {
                                         display: flex !important;
                                         flex-direction: column !important;
                                         justify-content: flex-start !important;
-                                        gap: 12px !important;
+                                        gap: 6px !important;
+                                      }
+                                      #student-report-print-area .p-5 {
+                                        padding: 3mm !important;
+                                      }
+                                      #student-report-print-area .p-4 {
+                                        padding: 3mm !important;
+                                      }
+                                      #student-report-print-area h1 {
+                                        font-size: 15px !important;
+                                        line-height: 1.15 !important;
+                                      }
+                                      #student-report-print-area h3 {
+                                        font-size: 10px !important;
+                                        margin-bottom: 4px !important;
+                                      }
+                                      #student-report-print-area .grid-cols-4 {
+                                        gap: 6px !important;
+                                      }
+                                      #student-report-print-area .p-3\.5 {
+                                        padding: 6px 10px !important;
+                                      }
+                                      #student-report-print-area .p-2 {
+                                        padding: 4px !important;
+                                      }
+                                      #student-report-print-area .mt-2 {
+                                        margin-top: 4px !important;
+                                      }
+                                      #student-report-print-area .mt-2\.5 {
+                                        margin-top: 4px !important;
+                                      }
+                                      #student-report-print-area .pt-1\.5 {
+                                        padding-top: 4px !important;
+                                      }
+                                      #student-report-print-area .pb-4 {
+                                        padding-bottom: 4px !important;
+                                      }
+                                      #student-report-print-area table th, 
+                                      #student-report-print-area .report-table th, 
+                                      #student-report-print-area th {
+                                        padding: 4px 8px !important;
+                                        font-size: 8px !important;
+                                      }
+                                      #student-report-print-area table td, 
+                                      #student-report-print-area .report-table td, 
+                                      #student-report-print-area td {
+                                        padding: 3px 8px !important;
+                                        font-size: 9px !important;
+                                      }
+                                      #student-report-print-area .text-xs {
+                                        font-size: 9px !important;
+                                        line-height: 1.15 !important;
+                                      }
+                                      #student-report-print-area .text-sm {
+                                        font-size: 10px !important;
+                                        line-height: 1.15 !important;
+                                      }
+                                      #student-report-print-area .gap-6 {
+                                        gap: 8px !important;
+                                      }
+                                      #student-report-print-area .grid {
+                                        gap: 8px !important;
+                                      }
+                                      #student-report-print-area .w-24.h-24 {
+                                        width: 60px !important;
+                                        height: 60px !important;
+                                      }
+                                      #student-report-print-area .pt-6 {
+                                        padding-top: 4px !important;
+                                        margin-top: 2px !important;
                                       }
                                       #student-report-print-area * {
                                         visibility: visible !important;
