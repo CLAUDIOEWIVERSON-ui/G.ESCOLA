@@ -1689,7 +1689,7 @@ export default function BoletimPage() {
                               </span>
                            </td>
                             <td className="px-6 py-4 text-right print:hidden">
-                               <button onClick={() => setSelectedStudentForReport(row.aluno?.id)} className="inline-flex items-center gap-1.5 bg-slate-50 hover:bg-blue-600 hover:text-white text-slate-600 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer border border-slate-200 hover:border-blue-600 shadow-sm"><FileText size={12} /><span>{language === 'pt' ? 'Histórico' : 'Transcript'}</span></button>
+                               <button onClick={() => setSelectedStudentForReport(row.aluno?.id)} className="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-600 text-white hover:text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer border border-blue-600 hover:border-blue-600 shadow-sm"><FileText size={12} /><span>{language === 'pt' ? 'Histórico' : 'Transcript'}</span></button>
                             </td>
                          </tr>
                        );

@@ -510,7 +510,8 @@ function TurmasContent() {
       data_fim: '',
       data_postergacao: '',
       internacional: activeCategory === 'exterior',
-      localizacao: ''
+      localizacao: '',
+      liberar_formularios: false
     });
     setIsModalOpen(true);
   };
@@ -893,7 +894,8 @@ function TurmasContent() {
         data_postergacao: currentTurma.internacional ? null : (typeof currentTurma.data_postergacao === 'string' ? currentTurma.data_postergacao.trim() || null : null),
         internacional: currentTurma.internacional || false,
         localizacao: currentTurma.localizacao || '',
-        grupo_responsavel: targetGroup
+        grupo_responsavel: targetGroup,
+        liberar_formularios: !!currentTurma.liberar_formularios
       };
 
       if (currentTurma.id) {
@@ -1162,6 +1164,12 @@ function TurmasContent() {
                         {finalGroup === 'GAT' && <Swords size={9} />}
                         {finalGroup === 'MAN' && <Anchor size={9} />}
                         Grupo: {finalGroup}
+                      </span>
+                    )}
+                    {turma.liberar_formularios && (
+                      <span className="flex items-center gap-1.5 text-[8px] font-black px-2.5 py-1 rounded-md uppercase tracking-wider border bg-emerald-50 text-emerald-600 border-emerald-100 shadow-sm">
+                        <FileText size={9} className="text-emerald-500 animate-pulse" />
+                        Formulário Liberado
                       </span>
                     )}
                   </div>
@@ -1639,6 +1647,25 @@ function TurmasContent() {
                 <div className="flex flex-col">
                   <span className="text-xs font-black text-slate-800 uppercase tracking-widest group-hover:text-blue-600 transition-all">{t.courses.international}</span>
                   <p className="text-[10px] text-slate-400 font-medium">Turma vinculada a localizações externas</p>
+                </div>
+              </label>
+
+               <label className="flex items-center gap-4 cursor-pointer group p-4 border border-slate-100 rounded-2xl hover:bg-slate-50 transition-all">
+                <input
+                  type="checkbox"
+                  checked={currentTurma?.liberar_formularios || false}
+                  onChange={(e) => setCurrentTurma({ ...currentTurma, liberar_formularios: e.target.checked })}
+                  className="w-5 h-5 rounded-lg text-blue-600 focus:ring-blue-500 border-slate-300"
+                />
+                <div className="flex flex-col">
+                  <span className="text-xs font-black text-slate-800 uppercase tracking-widest group-hover:text-blue-600 transition-all">
+                    {language === 'pt' ? 'Liberar Formulário de Avaliação pós-escolar' : 'Release Post-School Evaluation Form'}
+                  </span>
+                  <p className="text-[10px] text-slate-400 font-medium">
+                    {language === 'pt' 
+                      ? 'Habilita o preenchimento do formulário de avaliação pós-escolar pelos alunos desta turma' 
+                      : 'Enables filling out the post-school evaluation form for students of this class'}
+                  </p>
                 </div>
               </label>
 

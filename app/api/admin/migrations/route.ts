@@ -430,6 +430,21 @@ export async function GET() {
             .limit(1);
           return error;
         }
+      },
+      {
+        key: 'turmas_liberar_formularios',
+        tableName: 'turmas',
+        columnName: 'liberar_formularios',
+        fileName: '48_add_liberar_formularios_to_turmas.sql',
+        description: 'Coluna liberar_formularios na tabela de turmas para habilitar ou desabilitar o preenchimento do formulário de avaliação pós-escolar pelos alunos.',
+        isColumn: true,
+        checkFn: async () => {
+          const { error } = await supabaseAdmin
+            .from('turmas')
+            .select('liberar_formularios')
+            .limit(1);
+          return error;
+        }
       }
     ];
 

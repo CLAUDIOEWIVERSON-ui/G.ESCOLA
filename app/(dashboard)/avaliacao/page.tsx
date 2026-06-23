@@ -322,6 +322,8 @@ function AvaliacaoAlunoForm() {
           data_postergacao,
           curso_id,
           grupo_responsavel,
+          liberar_formularios,
+          status,
           curso:cursos(
             id,
             nome,
@@ -392,6 +394,8 @@ function AvaliacaoAlunoForm() {
           data_fim: classObj.data_fim,
           data_postergacao: classObj.data_postergacao,
           grupo_responsavel: classObj.grupo_responsavel,
+          liberar_formularios: classObj.liberar_formularios,
+          status: classObj.status,
           curso: {
             id: classObj.curso?.id || classObj.curso_id,
             nome: classObj.curso?.nome || "Curso Acadêmico",
@@ -428,6 +432,8 @@ function AvaliacaoAlunoForm() {
             data_fim,
             data_postergacao,
             grupo_responsavel,
+            liberar_formularios,
+            status,
             curso:cursos(
               id,
               nome,
@@ -772,6 +778,27 @@ function AvaliacaoAlunoForm() {
         <h2 className="text-xl font-bold text-slate-900 mb-2 font-mono">Estudante Não Encontrado</h2>
         <p className="text-slate-600 text-sm mb-6">
           Não conseguimos carregar seus dados acadêmicos ou você não está formalmente vinculado a nenhuma turma. Por favor, entre em contato com a administração.
+        </p>
+      </div>
+    );
+  }
+
+  // Check if form has been released by administrator/coordinator
+  const isFormReleased = studentDetails?.turma?.liberar_formularios === true;
+  const isTurmaAtiva = studentDetails?.turma?.status === 'ativa';
+
+  if (profile?.role !== 'admin' && !existingSubmission && (!isFormReleased || !isTurmaAtiva)) {
+    return (
+      <div className="max-w-xl mx-auto my-12 p-8 bg-white border border-slate-200 rounded-xl shadow-sm text-center">
+        <AlertCircle className="h-12 w-12 text-rose-500 mx-auto mb-4 animate-bounce" />
+        <h2 className="text-xl font-bold text-slate-900 mb-2 font-mono uppercase tracking-wide">Preenchimento Bloqueado</h2>
+        <p className="text-slate-600 text-sm mb-4 leading-relaxed">
+          {!isTurmaAtiva 
+            ? 'O questionário pós-conclusão está bloqueado porque esta turma não está ativa.'
+            : 'O questionário pós-conclusão ainda não foi liberado para preenchimento pela coordenação de curso para sua turma.'}
+        </p>
+        <p className="text-xs text-slate-400 font-mono">
+          Fale com o coordenador ou instrutor caso precise de liberação.
         </p>
       </div>
     );

@@ -20,6 +20,15 @@ interface Evento {
   is_exclusive?: boolean;
 }
 
+interface EvaluationFormBanner {
+  id: string;
+  nome: string;
+  status?: string;
+  data_fim?: string | null;
+  data_postergacao?: string | null;
+  liberar_formularios?: boolean;
+}
+
 interface EventMarqueeProps {
   thought?: { texto: string; autor: string } | null;
 }
@@ -28,7 +37,48 @@ export function EventMarquee({ thought }: EventMarqueeProps = {}) {
   const { isAluno, profile, isAdmin } = useUser();
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [pensamento, setPensamento] = useState<{ texto: string; autor: string } | null>(null);
+  const [evaluationBanners, setEvaluationBanners] = useState<EvaluationFormBanner[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const formatBannerDate = (dateStr?: string | null) => {
+    if (!dateStr) return null;
+    try {
+      const parts = dateStr.split('-');
+      if (parts.length === 3) {
+        return `${parts[2].slice(0, 2)}/${parts[1]}/${parts[0]}`;
+      }
+      return new Date(dateStr).toLocaleDateString('pt-BR');
+    } catch (e) {
+      return null;
+    }
+  };
+
+  useEffect(() => {
+    const fetchEvaluationBanners = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('turmas')
+          .select('id, nome, status, data_fim, data_postergacao, liberar_formularios')
+          .eq('status', 'ativa')
+          .eq('liberar_formularios', true);
+
+        if (error) {
+          console.warn('Could not load evaluation banners:', error.message);
+          return;
+        }
+
+        if (data) {
+          setEvaluationBanners(data);
+        }
+      } catch (err) {
+        console.error('Catch fetching evaluation banners:', err);
+      }
+    };
+
+    fetchEvaluationBanners();
+    const bannerInterval = setInterval(fetchEvaluationBanners, 3 * 60 * 1000);
+    return () => clearInterval(bannerInterval);
+  }, []);
 
   useEffect(() => {
     if (thought) return;
@@ -180,7 +230,7 @@ export function EventMarquee({ thought }: EventMarqueeProps = {}) {
   });
 
   if (loading) return null;
-  if (filteredEventos.length === 0 && !activeThought) return null;
+  if (filteredEventos.length === 0 && !activeThought && evaluationBanners.length === 0) return null;
 
   return (
     <div className="w-full bg-slate-900 text-white overflow-hidden h-9 flex items-center border-b border-white/10 relative z-50 shrink-0">
@@ -201,6 +251,23 @@ export function EventMarquee({ thought }: EventMarqueeProps = {}) {
         >
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={`set-${i}`} className="inline-flex items-center gap-16">
+              {evaluationBanners.map((banner) => {
+                const dateLimit = banner.data_postergacao || banner.data_fim;
+                const formattedDate = formatBannerDate(dateLimit);
+                return (
+                  <div key={`eval-banner-${banner.id}-${i}`} className="flex items-center gap-2 bg-rose-500/10 py-0.5 px-3 rounded-xl border border-rose-500/30 mr-2 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.2)]">
+                    <span className="text-[9px] font-black uppercase tracking-widest text-rose-400 whitespace-nowrap">
+                      📋 AVALIAÇÃO PÓS-ESCOLAR:
+                    </span>
+                    <span className="text-xs font-bold text-slate-100 whitespace-nowrap">
+                      Turma &ldquo;{banner.nome}&rdquo;
+                    </span>
+                    <span className="text-[10px] font-medium text-slate-300 whitespace-nowrap">
+                      disponível para preenchimento {formattedDate ? `até ${formattedDate}` : 'liberado'}!
+                    </span>
+                  </div>
+                );
+              })}
               {activeThought && (
                 <div key={`pensamento-${i}`} className="flex items-center gap-2 bg-blue-500/10 py-0.5 px-3 rounded-full border border-blue-500/20 mr-2">
                   <span className="text-[9px] font-black uppercase tracking-widest text-blue-400 whitespace-nowrap">

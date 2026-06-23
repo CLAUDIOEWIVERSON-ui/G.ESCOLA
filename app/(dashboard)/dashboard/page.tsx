@@ -360,7 +360,7 @@ export default function DashboardPage() {
                 </span>
                 <span className="text-[11px] text-slate-500 font-medium ml-1.5 not-italic select-all">— {pensamento.autor}</span>
                 {pensamento.reflexao && (
-                  <span className="block mt-1 pl-3 border-l-2 border-indigo-500/70 text-[11px] text-slate-500 leading-relaxed font-sans font-medium">
+                  <span className="block mt-1 pl-3 border-l-2 border-transparent text-[11px] text-slate-500 leading-relaxed font-sans font-medium">
                     {pensamento.reflexao}
                   </span>
                 )}
