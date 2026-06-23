@@ -1759,8 +1759,8 @@ export default function BoletimPage() {
                         </div>
                       </div>
 
-                      {/* Modal Body Container with screen zoom fit */}
-                      <div className="flex-1 overflow-hidden p-6 bg-slate-950 flex flex-col items-center justify-center relative">
+                      {/* Modal Body Container with screen zoom fit and scrollability */}
+                      <div className="flex-1 overflow-y-auto p-6 bg-slate-950 flex flex-col items-center justify-start relative scrollbar-thin">
                         {loadingReport ? (
                           <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-3">
                             <Loader2 className="animate-spin text-blue-500" size={32} />
@@ -1769,7 +1769,7 @@ export default function BoletimPage() {
                             </span>
                           </div>
                         ) : reportData ? (
-                          <div className="w-full flex-1 flex flex-col items-center justify-center relative overflow-hidden">
+                          <div className="w-full flex-1 flex flex-col items-center justify-start relative overflow-visible">
                             {/* Floating zoom controls */}
                             <div className="absolute top-0 right-0 z-[115] flex items-center gap-1.5 bg-slate-900/95 backdrop-blur-md px-2.5 py-1.5 rounded-xl border border-slate-800/80 text-xs text-slate-300 font-bold shadow-lg no-print">
                               <button 
@@ -1800,9 +1800,9 @@ export default function BoletimPage() {
                               </button>
                             </div>
 
-                            {/* Outer wrapper that limits scaled dimensions to prevent scrolls */}
+                            {/* Outer wrapper with top-aligned start to enable natural scrolling across visual scale */}
                             <div 
-                              className="w-full flex items-center justify-center overflow-hidden"
+                              className="w-full flex items-start justify-center overflow-visible mt-10"
                               style={{ 
                                 height: `${1123 * scale}px`,
                               }}
@@ -1811,7 +1811,7 @@ export default function BoletimPage() {
                               <div 
                                 style={{ 
                                   transform: `scale(${scale})`, 
-                                  transformOrigin: 'center center',
+                                  transformOrigin: 'top center',
                                   width: '210mm',
                                   height: '297mm',
                                   minWidth: '210mm',
