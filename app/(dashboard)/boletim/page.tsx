@@ -1419,7 +1419,7 @@ export default function BoletimPage() {
                       let overallClass = 'bg-slate-100 text-slate-700';
 
                       if (averageGrade !== null) {
-                        const hasReprovedDiscipline = reportData.grades.some((g: any) => g.nota_final !== null && g.nota_final < settings.media_aprovacao);
+                        const hasReprovedDiscipline = (reportData?.grades || []).some((g: any) => g.nota_final !== null && g.nota_final < settings.media_aprovacao);
                         const totalAulas = reportData.attendance?.length || 0;
                         let percentualPresenca = 100;
                         if (totalAulas > 0) {
@@ -2114,7 +2114,7 @@ export default function BoletimPage() {
                                     
                                     <div className="border border-slate-200 rounded-xl overflow-hidden shadow-xs">
                                       {(() => {
-                                        const sortedDisciplines = [...reportData.disciplines].sort((a: any, b: any) => {
+                                        const sortedDisciplines = [...(reportData?.disciplines || [])].sort((a: any, b: any) => {
                                           const mDiff = (a.modulo_index || 1) - (b.modulo_index || 1);
                                           if (mDiff !== 0) return mDiff;
                                           return a.nome.localeCompare(b.nome);
@@ -2122,7 +2122,7 @@ export default function BoletimPage() {
 
                                         const rows = sortedDisciplines.map((disc: any, discIdx: number) => {
                                           const firstDisc = sortedDisciplines[0];
-                                          const firstGrade = firstDisc ? reportData.grades.find((g: any) => g.disciplina_id === firstDisc.id) : null;
+                                          const firstGrade = firstDisc ? (reportData?.grades || []).find((g: any) => g.disciplina_id === firstDisc.id) : null;
                                           const moduleNum = disc.modulo_index || (discIdx + 1);
 
                                           let finalGradeValue = null;
@@ -2134,7 +2134,7 @@ export default function BoletimPage() {
                                           }
 
                                           if (finalGradeValue === null) {
-                                            const directGrade = reportData.grades.find((g: any) => g.disciplina_id === disc.id);
+                                            const directGrade = (reportData?.grades || []).find((g: any) => g.disciplina_id === disc.id);
                                             finalGradeValue = directGrade ? directGrade.nota_final : null;
                                           }
 
@@ -2142,7 +2142,7 @@ export default function BoletimPage() {
                                           if (firstGrade && firstGrade.frequencia !== null && firstGrade.frequencia !== undefined) {
                                             freqValue = firstGrade.frequencia;
                                           } else {
-                                            const directGrade = reportData.grades.find((g: any) => g.disciplina_id === disc.id);
+                                            const directGrade = (reportData?.grades || []).find((g: any) => g.disciplina_id === disc.id);
                                             freqValue = directGrade ? directGrade.frequencia : null;
                                           }
 
@@ -2196,8 +2196,9 @@ export default function BoletimPage() {
                                           <table className="w-full text-left border-collapse bg-white table-auto">
                                             <thead>
                                               <tr className="bg-slate-900 text-[8px] font-black text-white uppercase tracking-widest border-b border-slate-850">
-                                                <th className="px-3.5 py-2 border-r border-slate-800 w-[20%]">{language === 'pt' ? 'Módulo' : 'Module'}</th>
+                                                <th className="px-3.5 py-2 border-r border-slate-800 w-[15%]">{language === 'pt' ? 'Módulo' : 'Module'}</th>
                                                 <th className="px-3.5 py-2 border-r border-slate-800 w-[50%]">{language === 'pt' ? 'Disciplina' : 'Discipline'}</th>
+                                                <th className="px-1 py-2 text-center border-r border-slate-800 w-[5%]">{""}</th>
                                                 <th className="px-3.5 py-2 text-center border-r border-slate-800 font-mono w-[15%]">{reportT[language as "pt" | "en"].finalGrade}</th>
                                                 <th className="px-3.5 py-2 text-right w-[15%]">{reportT[language as "pt" | "en"].situation}</th>
                                               </tr>
@@ -2205,7 +2206,7 @@ export default function BoletimPage() {
                                             <tbody className="text-[10px]">
                                               {rowsWithSpans.length === 0 ? (
                                                 <tr>
-                                                  <td colSpan={4} className="text-center py-4 text-slate-400 font-bold bg-white">
+                                                  <td colSpan={5} className="text-center py-4 text-slate-400 font-bold bg-white">
                                                     {language === 'pt' ? 'Nenhuma disciplina lançada.' : 'No modules submitted.'}
                                                   </td>
                                                 </tr>
@@ -2213,21 +2214,32 @@ export default function BoletimPage() {
                                                 rowsWithSpans.map((row: any) => (
                                                   <tr key={row.id} className="border-b border-slate-200 bg-white">
                                                     {row.moduloSpan > 0 && (
-                                                      <td rowSpan={row.moduloSpan} className="px-3.5 py-1.5 font-black text-slate-900 border-r border-slate-250 bg-slate-50/70 align-middle break-words whitespace-normal leading-tight">
+                                                      <td rowSpan={row.moduloSpan} className="px-3.5 py-1.5 font-black text-slate-900 border-r border-slate-250 bg-slate-50/70 align-middle break-words whitespace-normal leading-tight text-center">
                                                         {row.modulo}
                                                       </td>
                                                     )}
                                                     <td className="px-3.5 py-1.5 font-bold text-slate-800 border-r border-slate-200 bg-white align-middle break-words whitespace-normal leading-tight">
                                                       {row.disciplina}
                                                     </td>
-                                                    <td className="px-3.5 py-1.5 text-center font-black font-mono border-r border-slate-200 text-slate-900 bg-white align-middle break-words whitespace-normal leading-tight">
-                                                      {row.nota}
-                                                    </td>
-                                                    <td className="px-3.5 py-1.5 text-right bg-white align-middle break-words whitespace-normal leading-tight">
-                                                      <span className={cn("px-2 py-0.5 rounded text-[8px] font-black uppercase inline-block border", row.statusClass)}>
-                                                        {row.situacao}
-                                                      </span>
-                                                    </td>
+                                                    {row.moduloSpan > 0 && (
+                                                      <>
+                                                        <td rowSpan={row.moduloSpan} className="px-1 py-1 text-center border-r border-slate-200 bg-white align-middle" style={{ verticalAlign: 'middle' }}>
+                                                          <div className="flex items-center justify-center h-full w-full">
+                                                            <svg className="w-3 text-slate-400 stroke-current fill-none" viewBox="0 0 10 100" preserveAspectRatio="none" style={{ height: `${row.moduloSpan * 22}px`, minHeight: '22px' }}>
+                                                              <path d="M1,2 Q6,2 6,15 T6,45 Q6,50 10,50 Q6,50 6,55 T6,85 Q6,98 1,98" strokeWidth="1.5" strokeLinecap="round" />
+                                                            </svg>
+                                                          </div>
+                                                        </td>
+                                                        <td rowSpan={row.moduloSpan} className="px-3.5 py-1.5 text-center font-black font-mono border-r border-slate-200 text-slate-900 bg-white align-middle break-words whitespace-normal leading-tight">
+                                                          {row.nota}
+                                                        </td>
+                                                        <td rowSpan={row.moduloSpan} className="px-3.5 py-1.5 text-right bg-white align-middle break-words whitespace-normal leading-tight">
+                                                          <span className={cn("px-2 py-0.5 rounded text-[8px] font-black uppercase inline-block border", row.statusClass)}>
+                                                            {row.situacao}
+                                                          </span>
+                                                        </td>
+                                                      </>
+                                                    )}
                                                   </tr>
                                                 ))
                                               )}
@@ -2316,7 +2328,7 @@ export default function BoletimPage() {
                                         let overallClass = 'bg-slate-100 text-slate-700 border border-slate-200/60';
 
                                         if (averageGrade !== null) {
-                                          const hasReprovedDiscipline = reportData.grades.some((g: any) => g.nota_final !== null && g.nota_final < settings.media_aprovacao);
+                                          const hasReprovedDiscipline = (reportData?.grades || []).some((g: any) => g.nota_final !== null && g.nota_final < settings.media_aprovacao);
                                           const totalAulas = reportData.attendance?.length || 0;
                                           let percentualPresenca = 100;
                                           if (totalAulas > 0) {
