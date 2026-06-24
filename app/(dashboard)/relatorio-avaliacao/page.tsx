@@ -473,7 +473,8 @@ function RelatorioAvaliacaoAdminContent() {
   useEffect(() => {
     if (!userLoading) {
       const isInstrutor = profile?.role === 'instrutor';
-      if (isAdmin || isInstrutor) {
+      const isConvidado = profile?.role === 'convidado';
+      if (isAdmin || isInstrutor || isConvidado) {
         setTimeout(() => {
           loadAllData();
         }, 0);

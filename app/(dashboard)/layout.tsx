@@ -73,7 +73,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const pathname = usePathname();
   const { t, language, setLanguage } = useI18n();
-  const { profile, isAdmin, isAluno, isInstrutor, loading: authLoading } = useUser();
+  const { profile, isAdmin, isAluno, isInstrutor, isConvidado, loading: authLoading } = useUser();
   const isReadOnly = !isAdmin;
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
@@ -199,8 +199,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: t.schedule.title, icon: Calendar, path: '/horario' },
     { name: t.nav.attendance, icon: CalendarDays, path: '/frequencia' },
     { name: t.calendar.title, icon: CalendarDays, path: '/calendario' },
-    ...(isAdmin ? [{ name: t.users.title, icon: Users, path: '/usuarios' }] : []),
-    ...((isAdmin || isInstrutor) ? [{ name: "Análise de Avaliações", icon: FileCheck, path: '/relatorio-avaliacao' }] : []),
+    ...((isAdmin || isConvidado) ? [{ name: t.users.title, icon: Users, path: '/usuarios' }] : []),
+    ...((isAdmin || isInstrutor || isConvidado) ? [{ name: "Análise de Avaliações", icon: FileCheck, path: '/relatorio-avaliacao' }] : []),
     { name: t.nav.links, icon: Link2, path: '/links' },
     { name: t.nav.settings, icon: Settings, path: '/configuracoes' },
   ];
@@ -222,7 +222,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       ? t.users.instrutor 
       : profile?.role === 'aluno' 
         ? t.users.aluno 
-        : '';
+        : profile?.role === 'convidado'
+          ? (language === 'pt' ? 'Convidado' : 'Guest')
+          : '';
 
   // Definir navegação dinâmica (Voltar/Próximo) baseada na ordem dos módulos em navItems
   const currentPath = pathname || '';

@@ -37,8 +37,8 @@ interface Evento {
 
 export default function CalendarPage() {
   const { t } = useI18n();
-  const { profile, isAdmin, isAluno } = useUser();
-  const isReadOnly = !isAdmin;
+  const { profile, isAdmin, isAluno, isConvidado } = useUser();
+  const isReadOnly = isConvidado || !isAdmin;
   
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [loading, setLoading] = useState(true);

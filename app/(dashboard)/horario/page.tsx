@@ -765,7 +765,7 @@ export default function HorarioPage() {
           <p className="text-slate-500 font-medium ml-11">{t.reportCard.subtitle}</p>
         </div>
         
-        {profile?.role !== 'aluno' && (
+        {profile?.role !== 'aluno' && profile?.role !== 'convidado' && (
           <div className="flex items-center gap-3">
             {!isNifStudent && (
               <div className="flex items-center gap-2">

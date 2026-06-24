@@ -445,6 +445,24 @@ export async function GET() {
             .limit(1);
           return error;
         }
+      },
+      {
+        key: 'profiles_role_convidado',
+        tableName: 'profiles',
+        columnName: 'role',
+        fileName: '49_add_convidado_role_to_profiles.sql',
+        description: 'Adiciona a role "convidado" ao tipo enum user_role_enum no banco de dados para suportar usuários com acesso somente leitura.',
+        isColumn: false,
+        checkFn: async () => {
+          const { error } = await supabaseAdmin
+            .from('profiles')
+            .select('role')
+            .eq('role', 'convidado')
+            .limit(1);
+          // If the enum value does not exist, Postgres will throw an error.
+          // If it exists but there are no matching rows, error is null, which means it is valid.
+          return error;
+        }
       }
     ];
 

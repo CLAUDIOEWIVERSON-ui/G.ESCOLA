@@ -14,7 +14,7 @@ import { toast } from 'sonner';
 
 export default function UsuariosPage() {
   const { t, language } = useI18n();
-  const { isAdmin } = useUser();
+  const { isAdmin, isConvidado } = useUser();
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isConfigured, setIsConfigured] = useState(true);
@@ -169,7 +169,7 @@ export default function UsuariosPage() {
   const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
   const paginatedUsers = filteredUsers.slice(startIndex, startIndex + itemsPerPage);
 
-  if (!isAdmin) {
+  if (!isAdmin && !isConvidado) {
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] text-center p-8 bg-white rounded-2xl shadow-sm border border-slate-100">
         <ShieldAlert size={64} className="text-red-500 mb-4 opacity-20" />
@@ -211,16 +211,25 @@ export default function UsuariosPage() {
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800 tracking-tight">{t.users.title}</h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-2xl font-bold text-slate-800 tracking-tight">{t.users.title}</h2>
+            {isConvidado && (
+              <span className="bg-slate-100 text-slate-600 border border-slate-200 text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">
+                {language === 'pt' ? 'Somente Leitura' : 'Read-Only'}
+              </span>
+            )}
+          </div>
           <p className="text-slate-500 text-sm mt-1">{t.users.subtitle}</p>
         </div>
-        <button
-          onClick={() => handleOpenModal()}
-          className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 active:scale-[0.98]"
-        >
-          <Plus size={18} />
-          {t.users.add}
-        </button>
+        {!isConvidado && (
+          <button
+            onClick={() => handleOpenModal()}
+            className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 active:scale-[0.98]"
+          >
+            <Plus size={18} />
+            {t.users.add}
+          </button>
+        )}
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
@@ -274,13 +283,13 @@ export default function UsuariosPage() {
                 <th className="px-6 py-4">{t.users.email}</th>
                 <th className="px-6 py-4">{t.users.role}</th>
                 <th className="px-6 py-4">Alterou Senha?</th>
-                <th className="px-6 py-4 text-right">{t.common.actions}</th>
+                {!isConvidado && <th className="px-6 py-4 text-right">{t.common.actions}</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center">
+                  <td colSpan={isConvidado ? 4 : 5} className="px-6 py-12 text-center">
                     <Loader2 className="animate-spin text-blue-600 mx-auto" />
                   </td>
                 </tr>
@@ -310,10 +319,11 @@ export default function UsuariosPage() {
                           "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider w-fit",
                           user.role === 'admin' ? "bg-purple-50 text-purple-700 border border-purple-100" : 
                           user.role === 'instrutor' ? "bg-amber-50 text-amber-700 border border-amber-100" :
+                          user.role === 'convidado' ? "bg-slate-50 text-slate-700 border border-slate-100" :
                           "bg-blue-50 text-blue-700 border border-blue-100"
                         )}>
                           {user.role === 'admin' ? <Shield size={12} /> : <User size={12} />}
-                          {user.role === 'admin' ? t.users.admin : user.role === 'instrutor' ? t.users.instrutor : t.users.aluno}
+                          {user.role === 'admin' ? t.users.admin : user.role === 'instrutor' ? t.users.instrutor : user.role === 'convidado' ? (language === 'pt' ? 'Convidado' : 'Guest') : t.users.aluno}
                         </span>
                         {user.grupo_responsavel && (
                           <span className="inline-flex items-center justify-center font-mono text-[9px] font-black text-indigo-600 bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 rounded w-fit uppercase">
@@ -333,28 +343,30 @@ export default function UsuariosPage() {
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex justify-end gap-2 pr-2">
-                        <button 
-                          onClick={() => handleOpenModal(user)}
-                          className="p-2 hover:bg-blue-50 text-slate-400 hover:text-blue-600 rounded-lg transition-all"
-                        >
-                          <Pencil size={16} />
-                        </button>
-                        <button 
-                          disabled={deleting === user.id}
-                          onClick={() => handleDelete(user.id)}
-                          className="p-2 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded-lg transition-all"
-                        >
-                          {deleting === user.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
-                        </button>
-                      </div>
-                    </td>
+                    {!isConvidado && (
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex justify-end gap-2 pr-2">
+                          <button 
+                            onClick={() => handleOpenModal(user)}
+                            className="p-2 hover:bg-blue-50 text-slate-400 hover:text-blue-600 rounded-lg transition-all"
+                          >
+                            <Pencil size={16} />
+                          </button>
+                          <button 
+                            disabled={deleting === user.id}
+                            onClick={() => handleDelete(user.id)}
+                            className="p-2 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded-lg transition-all"
+                          >
+                            {deleting === user.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                          </button>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-slate-400 italic text-sm font-medium">
+                  <td colSpan={isConvidado ? 4 : 5} className="px-6 py-12 text-center text-slate-400 italic text-sm font-medium">
                     {t.users.noUsers}
                   </td>
                 </tr>
@@ -486,6 +498,7 @@ export default function UsuariosPage() {
               <option value="admin">{t.users.admin}</option>
               <option value="instrutor">{t.users.instrutor}</option>
               <option value="aluno">{t.users.aluno}</option>
+              <option value="convidado">{language === 'pt' ? 'Convidado (Somente Leitura)' : 'Guest (Read Only)'}</option>
             </select>
           </div>
 

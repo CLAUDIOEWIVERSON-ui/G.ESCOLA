@@ -41,9 +41,10 @@ type Curso = z.infer<typeof cursoSchema> & { id: string };
 
 export default function CursosPage() {
   const { t, language } = useI18n();
-  const { isAdmin, profile } = useUser();
+  const { isAdmin, isConvidado, profile } = useUser();
   const isInstrutor = profile?.role === 'instrutor';
   const canEditCurso = useCallback((curso: any) => {
+    if (isConvidado) return false;
     if (isAdmin) return true;
     if (isInstrutor && profile?.grupo_responsavel) {
       if (!curso) return true; // allow new course modal open
@@ -55,9 +56,9 @@ export default function CursosPage() {
       return profile.grupo_responsavel === courseGroup;
     }
     return false;
-  }, [isAdmin, isInstrutor, profile]);
+  }, [isAdmin, isInstrutor, profile, isConvidado]);
 
-  const isReadOnly = !isAdmin && !isInstrutor;
+  const isReadOnly = isConvidado || (!isAdmin && !isInstrutor);
   const { cursos, loading, mutate: revalidateCursos } = useCursos();
   const [modalOpen, setModalOpen] = useState(false);
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);

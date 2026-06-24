@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { supabase, clearSupabaseCookiesAndStorage } from '@/lib/supabase/client';
 import { fetchWithAuth } from '@/lib/api';
 
-type Role = 'admin' | 'instrutor' | 'aluno';
+type Role = 'admin' | 'instrutor' | 'aluno' | 'convidado';
 
 interface UserProfile {
   id: string;
@@ -24,6 +24,7 @@ interface UserContextType {
   isAdmin: boolean;
   isInstrutor: boolean;
   isAluno: boolean;
+  isConvidado: boolean;
   loading: boolean;
   refreshProfile: () => Promise<void>;
 }
@@ -191,6 +192,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     isAdmin: profile?.role === 'admin',
     isInstrutor: profile?.role === 'instrutor',
     isAluno: profile?.role === 'aluno',
+    isConvidado: profile?.role === 'convidado',
     loading,
     refreshProfile: fetchProfile
   };

@@ -54,8 +54,8 @@ import { ptBR, enUS } from 'date-fns/locale';
 
 export default function FrequenciaPage() {
   const { t, language } = useI18n();
-  const { profile, isAdmin, isInstrutor } = useUser();
-  const isReadOnly = !isAdmin && !isInstrutor;
+  const { profile, isAdmin, isInstrutor, isConvidado } = useUser();
+  const isReadOnly = isConvidado || (!isAdmin && !isInstrutor);
   const dateLocale = language === 'pt' ? ptBR : enUS;
 
   const [loading, setLoading] = useState(false);

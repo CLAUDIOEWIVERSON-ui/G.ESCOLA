@@ -20,7 +20,8 @@ interface Widget {
 
 export default function WidgetsPage() {
   const { t, language } = useI18n();
-  const { profile } = useUser();
+  const { profile, isAdmin, isConvidado } = useUser();
+  const isReadOnly = isConvidado || !isAdmin;
   const [widgets, setWidgets] = useState<Widget[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -113,13 +114,15 @@ export default function WidgetsPage() {
           <h2 className="text-2xl font-bold text-slate-800 tracking-tight">{t.widgets.title}</h2>
           <p className="text-slate-500 text-sm mt-1">{t.widgets.subtitle}</p>
         </div>
-        <button
-          onClick={() => handleOpenModal()}
-          className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 active:scale-[0.98]"
-        >
-          <Plus size={18} />
-          {t.widgets.add}
-        </button>
+        {!isReadOnly && (
+          <button
+            onClick={() => handleOpenModal()}
+            className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 active:scale-[0.98]"
+          >
+            <Plus size={18} />
+            {t.widgets.add}
+          </button>
+        )}
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
@@ -143,13 +146,13 @@ export default function WidgetsPage() {
                 <th className="px-6 py-4">{t.widgets.name}</th>
                 <th className="px-6 py-4">{t.widgets.type}</th>
                 <th className="px-6 py-4">Status</th>
-                <th className="px-6 py-4 text-right">{t.common.actions}</th>
+                {!isReadOnly && <th className="px-6 py-4 text-right">{t.common.actions}</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
               {loading ? (
                 <tr>
-                  <td colSpan={4} className="px-6 py-12 text-center">
+                  <td colSpan={isReadOnly ? 3 : 4} className="px-6 py-12 text-center">
                     <Loader2 className="animate-spin text-blue-600 mx-auto" />
                   </td>
                 </tr>
@@ -180,28 +183,30 @@ export default function WidgetsPage() {
                         {widget.active ? 'Ativo' : 'Inativo'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex justify-end gap-2 pr-2">
-                        <button 
-                          onClick={() => handleOpenModal(widget)}
-                          className="p-2 hover:bg-blue-50 text-slate-400 hover:text-blue-600 rounded-lg transition-all"
-                        >
-                          <Pencil size={16} />
-                        </button>
-                        <button 
-                          disabled={deleting === widget.id}
-                          onClick={() => handleDelete(widget.id)}
-                          className="p-2 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded-lg transition-all"
-                        >
-                          {deleting === widget.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
-                        </button>
-                      </div>
-                    </td>
+                    {!isReadOnly && (
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex justify-end gap-2 pr-2">
+                          <button 
+                            onClick={() => handleOpenModal(widget)}
+                            className="p-2 hover:bg-blue-50 text-slate-400 hover:text-blue-600 rounded-lg transition-all"
+                          >
+                            <Pencil size={16} />
+                          </button>
+                          <button 
+                            disabled={deleting === widget.id}
+                            onClick={() => handleDelete(widget.id)}
+                            className="p-2 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded-lg transition-all"
+                          >
+                            {deleting === widget.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                          </button>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={4} className="px-6 py-12 text-center text-slate-400 italic text-sm font-medium">
+                  <td colSpan={isReadOnly ? 3 : 4} className="px-6 py-12 text-center text-slate-400 italic text-sm font-medium">
                     {t.widgets.noWidgets}
                   </td>
                 </tr>

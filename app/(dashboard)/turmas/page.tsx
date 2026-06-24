@@ -26,13 +26,14 @@ function TurmasContent() {
   const pathname = usePathname();
   const categoryParam = searchParams ? searchParams.get('cat') : null;
   
-  const { isAdmin, profile } = useUser();
-  const isReadOnly = !isAdmin;
+  const { isAdmin, isConvidado, profile } = useUser();
+  const isReadOnly = isConvidado || !isAdmin;
   const { turmas, loading: loadingTurmas, mutate: revalidateTurmas } = useTurmas();
   const { cursos, loading: loadingCursos } = useCursos();
   const loading = loadingTurmas || loadingCursos;
 
   const canEditTurma = useCallback((turma: any) => {
+    if (isConvidado) return false;
     if (isAdmin) return true;
     if (profile?.role === 'instrutor' && profile?.grupo_responsavel) {
       const selectedCourse = cursos.find((c: any) => c.id === turma.curso_id);
@@ -45,7 +46,7 @@ function TurmasContent() {
       return profile.grupo_responsavel === courseGroup;
     }
     return false;
-  }, [isAdmin, profile, cursos]);
+  }, [isAdmin, isConvidado, profile, cursos]);
 
   const [colorSettings, setColorSettings] = useState<CardColorSettings>(() => getCardColorSettings());
   const [refreshing, setRefreshing] = useState(false);
