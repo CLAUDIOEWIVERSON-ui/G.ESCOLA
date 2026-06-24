@@ -1619,9 +1619,8 @@ export default function BoletimPage() {
                     {selectedTurma && boletimData.length > 0 && (isAdmin || profile?.role === 'instrutor') && (
                       <Link
                         href={`/notas?turmaId=${selectedTurma}${selectedCurso ? `&cursoId=${selectedCurso}` : ''}`}
-                        target="_blank"
                         className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-3 py-1.5 rounded-lg text-[10.5px] font-black uppercase tracking-wider transition-all border border-emerald-200 cursor-pointer"
-                        title={language === 'pt' ? 'Ir para Lançamento de Notas (abre em nova aba)' : 'Go to Grade Entry (opens in a new tab)'}
+                        title={language === 'pt' ? 'Ir para Lançamento de Notas' : 'Go to Grade Entry'}
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-600">
                           <path d="m9 11 3 3L22 4"/>
