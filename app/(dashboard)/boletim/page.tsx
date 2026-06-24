@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -108,7 +109,7 @@ const reportT = {
 
 export default function BoletimPage() {
   const { t, language } = useI18n();
-  const { profile } = useUser();
+  const { profile, isAdmin, isConvidado } = useUser();
   const isNifStudent = profile?.role === 'aluno' && (profile as any).isNifStudent;
 
   const [loading, setLoading] = useState(false);
@@ -1615,6 +1616,20 @@ export default function BoletimPage() {
              <div className="p-4 border-b border-slate-100 bg-slate-50/30 flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-widest px-2">{t.common.finalResult}</span>
                  <div className="flex gap-2 print:hidden items-center">
+                    {selectedTurma && boletimData.length > 0 && (isAdmin || profile?.role === 'instrutor') && (
+                      <Link
+                        href={`/notas?turmaId=${selectedTurma}${selectedCurso ? `&cursoId=${selectedCurso}` : ''}`}
+                        target="_blank"
+                        className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-3 py-1.5 rounded-lg text-[10.5px] font-black uppercase tracking-wider transition-all border border-emerald-200 cursor-pointer"
+                        title={language === 'pt' ? 'Ir para Lançamento de Notas (abre em nova aba)' : 'Go to Grade Entry (opens in a new tab)'}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-600">
+                          <path d="m9 11 3 3L22 4"/>
+                          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                        </svg>
+                        <span>{language === 'pt' ? 'Lançar Notas' : 'Launch Grades'}</span>
+                      </Link>
+                    )}
                     {boletimData.length > 0 && (
                       <button
                         onClick={() => setViewingClassBulletinPDF(true)}

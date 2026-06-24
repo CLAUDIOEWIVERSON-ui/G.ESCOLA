@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
@@ -24,6 +25,7 @@ import { toast } from 'sonner';
 export default function NotasPage() {
   const { t, language } = useI18n();
   const { profile, isAdmin, isConvidado } = useUser();
+  const searchParams = useSearchParams();
   const isReadOnly = isConvidado || !isAdmin;
   const [notas, setNotas] = useState<any[]>([]);
   const [alunos, setAlunos] = useState<any[]>([]);
@@ -34,6 +36,19 @@ export default function NotasPage() {
   const [loading, setLoading] = useState(true);
   const [selectedCurso, setSelectedCurso] = useState('');
   const [selectedTurma, setSelectedTurma] = useState('');
+
+  useEffect(() => {
+    if (searchParams) {
+      const paramTurma = searchParams.get('turmaId');
+      const paramCurso = searchParams.get('cursoId');
+      if (paramTurma) {
+        setSelectedTurma(paramTurma);
+      }
+      if (paramCurso) {
+        setSelectedCurso(paramCurso);
+      }
+    }
+  }, [searchParams]);
   const [turmaAlunos, setTurmaAlunos] = useState<any[]>([]);
   const [bulkNotas, setBulkNotas] = useState<Record<string, Record<string, any>>>({});
   const [saving, setSaving] = useState(false);
