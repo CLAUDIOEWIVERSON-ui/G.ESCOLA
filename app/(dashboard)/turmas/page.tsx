@@ -539,6 +539,70 @@ function TurmasContent() {
     }
   };
 
+  useEffect(() => {
+    if (loading || !turmas || turmas.length === 0) return;
+
+    const action = searchParams ? searchParams.get('action') : null;
+    const turmaId = searchParams ? searchParams.get('turmaId') : null;
+    const studentId = searchParams ? searchParams.get('studentId') : null;
+
+    if (!action) return;
+
+    const clearParams = () => {
+      const newParams = new URLSearchParams(searchParams ? searchParams.toString() : '');
+      newParams.delete('action');
+      newParams.delete('turmaId');
+      newParams.delete('studentId');
+      router.replace(`${pathname}?${newParams.toString()}`);
+    };
+
+    if (action === 'edit-class' && turmaId) {
+      const targetTurma = turmas.find((t: any) => t.id === turmaId);
+      if (targetTurma) {
+        setTimeout(() => {
+          handleOpenModal(targetTurma);
+        }, 0);
+      }
+      clearParams();
+    } else if (action === 'edit-student' && studentId && turmaId) {
+      const targetTurma = turmas.find((t: any) => t.id === turmaId);
+      if (targetTurma) {
+        setTimeout(() => {
+          setViewingTurma(targetTurma);
+          handleViewStudents(targetTurma);
+          
+          supabase
+            .from('alunos')
+            .select('*')
+            .eq('id', studentId)
+            .maybeSingle()
+            .then(({ data, error }) => {
+              if (!error && data) {
+                setStudentAccess(null);
+                setCurrentAluno(data);
+                setIsStudentFormOpen(true);
+                
+                if (isAdmin) {
+                  supabase
+                    .from('student_access_codes')
+                    .select('*')
+                    .eq('student_id', data.id)
+                    .maybeSingle()
+                    .then(({ data: accessData, error: accessError }) => {
+                      if (!accessError && accessData) {
+                        setStudentAccess(accessData);
+                      }
+                    });
+                }
+              }
+            });
+        }, 0);
+      }
+      clearParams();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, turmas, searchParams, pathname, router, isAdmin]);
+
   const handleOpenStudentModal = (aluno: any = null) => {
     if (!canEditViewingTurma) return;
     setStudentAccess(null);

@@ -187,6 +187,34 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Send heartbeat periodically when user profile is loaded
+  useEffect(() => {
+    if (!profile) return;
+
+    const sendHeartbeat = async () => {
+      try {
+        await fetch('/api/auth/heartbeat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: profile.full_name || profile.nome || 'Usuário',
+            role: profile.role
+          })
+        });
+      } catch (err) {
+        console.warn('Failed to send heartbeat presence:', err);
+      }
+    };
+
+    // Send immediately
+    sendHeartbeat();
+
+    // Send every 40 seconds (well within the 60 seconds server expiration threshold)
+    const interval = setInterval(sendHeartbeat, 40000);
+
+    return () => clearInterval(interval);
+  }, [profile]);
+
   const value = {
     profile,
     isAdmin: profile?.role === 'admin',

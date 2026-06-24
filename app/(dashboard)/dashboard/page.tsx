@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
 import { useDashboardStats } from '@/hooks/useCachedData';
@@ -38,6 +39,38 @@ import militaryFemaleAvatar from '@/src/assets/images/avatar_military_female_177
 export default function DashboardPage() {
   const { t, language } = useI18n();
   const { profile, isAdmin } = useUser();
+  const router = useRouter();
+  
+  // Online Users presence tracking
+  const [onlineUsers, setOnlineUsers] = useState<any[]>([]);
+  const [onlineCount, setOnlineCount] = useState<number>(0);
+  const [loadingOnline, setLoadingOnline] = useState<boolean>(false);
+  const [showOnlineListModal, setShowOnlineListModal] = useState<boolean>(false);
+
+  const fetchOnlineUsers = async () => {
+    if (!isAdmin) return;
+    try {
+      setLoadingOnline(true);
+      const res = await fetch('/api/auth/heartbeat');
+      const data = await res.json();
+      if (data.success) {
+        setOnlineUsers(data.users || []);
+        setOnlineCount(data.count || 0);
+      }
+    } catch (err) {
+      console.error('Failed to fetch online users:', err);
+    } finally {
+      setLoadingOnline(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    fetchOnlineUsers();
+    const interval = setInterval(fetchOnlineUsers, 15000); // refresh every 15s for admins
+    return () => clearInterval(interval);
+  }, [isAdmin]);
+
   const { dashboardData, loading, mutate: refreshDashboard } = useDashboardStats();
   
   const { 
@@ -600,6 +633,115 @@ export default function DashboardPage() {
         )}
       </AnimatePresence>
 
+      {isAdmin && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-emerald-50/65 border border-emerald-200/60 p-4 rounded-xl shadow-sm"
+        >
+          <div className="flex items-center gap-3">
+            <span className="relative flex h-3 w-3 shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+            </span>
+            <div className="space-y-0.5">
+              <div className="text-[10px] font-black text-emerald-800 flex items-center gap-1.5 uppercase tracking-wider">
+                {language === 'pt' ? 'Presença em Tempo Real' : 'Real-Time Presence'}
+              </div>
+              <p className="text-xs text-slate-700 font-medium leading-relaxed">
+                {language === 'pt'
+                  ? `Atualmente, há ${onlineCount} ${onlineCount === 1 ? 'usuário ativo' : 'usuários ativos'} no sistema.`
+                  : `Currently, there ${onlineCount === 1 ? 'is' : 'are'} ${onlineCount} active ${onlineCount === 1 ? 'user' : 'users'} in the system.`}
+              </p>
+            </div>
+          </div>
+          {onlineCount > 0 && (
+            <button
+              onClick={() => setShowOnlineListModal(true)}
+              className="flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-lg text-[10px] uppercase tracking-wider transition-all shadow-sm active:scale-95 cursor-pointer border-0"
+            >
+              <Users size={12} />
+              {language === 'pt' ? 'Ver Quem Está Online' : 'See Who is Online'}
+            </button>
+          )}
+        </motion.div>
+      )}
+
+      {/* ONLINE USERS MODAL */}
+      <AnimatePresence>
+        {showOnlineListModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 flex flex-col border border-slate-100 text-slate-800"
+            >
+              <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <span className="relative flex h-2.5 w-2.5 shrink-0">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                  </span>
+                  <h3 className="font-bold text-base text-slate-800 tracking-tight">
+                    {language === 'pt' ? 'Usuários Ativos Agora' : 'Currently Active Users'}
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setShowOnlineListModal(false)}
+                  className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors border-0 cursor-pointer"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="my-4 max-h-64 overflow-y-auto pr-1 space-y-2">
+                {onlineUsers.length === 0 ? (
+                  <p className="text-xs text-slate-400 text-center py-6">
+                    {language === 'pt' ? 'Nenhum usuário ativo listado.' : 'No active users listed.'}
+                  </p>
+                ) : (
+                  onlineUsers.map((u) => (
+                    <div
+                      key={u.id}
+                      className="flex items-center justify-between p-2.5 rounded-xl border border-slate-100 hover:bg-slate-50 transition-all"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold uppercase text-xs shrink-0 border border-indigo-100/60">
+                          {u.name?.charAt(0) || 'U'}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-slate-700 truncate">{u.name}</p>
+                          <p className="text-[10px] text-slate-400 font-medium truncate">{u.email}</p>
+                        </div>
+                      </div>
+                      <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0 ${
+                        u.role === 'admin' 
+                          ? 'bg-rose-50 text-rose-600 border border-rose-100'
+                          : u.role === 'instrutor'
+                            ? 'bg-amber-50 text-amber-600 border border-amber-100'
+                            : 'bg-indigo-50 text-indigo-600 border border-indigo-100'
+                      }`}>
+                        {u.role}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <div className="pt-3 border-t border-slate-100 flex justify-end">
+                <button
+                  onClick={() => setShowOnlineListModal(false)}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-all border-0 cursor-pointer active:scale-95"
+                >
+                  {language === 'pt' ? 'Fechar' : 'Close'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* Clickable indicator banner */}
       <div className="flex items-center gap-2.5 bg-indigo-50/60 border border-indigo-100 p-4 rounded-xl text-xs text-indigo-800 font-bold shadow-sm">
         <Sparkles size={14} className="text-indigo-500 animate-bounce shrink-0" />
@@ -699,13 +841,22 @@ export default function DashboardPage() {
                       const turmaData = Array.isArray((aluno as any).turma) ? (aluno as any).turma[0] : (aluno as any).turma;
                       const curso = Array.isArray(turmaData?.curso) ? turmaData.curso[0] : turmaData?.curso;
                       return (
-                        <tr key={aluno.id} className="hover:bg-slate-50 transition-colors">
+                        <tr 
+                          key={aluno.id} 
+                          className="hover:bg-slate-50 transition-colors cursor-pointer"
+                          onClick={() => {
+                            router.push(`/turmas?action=edit-student&studentId=${aluno.id}&turmaId=${aluno.turma_id || turmaData?.id}`);
+                          }}
+                        >
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
                               {aluno.foto_url ? (
                                 <div 
                                   className="w-12 h-16 rounded-lg overflow-hidden border border-slate-200 shrink-0 shadow-sm hover:scale-105 transition-transform cursor-pointer relative bg-slate-100 group"
-                                  onClick={() => setExpandedPhoto({ url: aluno.foto_url, name: aluno.nome })}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setExpandedPhoto({ url: aluno.foto_url, name: aluno.nome });
+                                  }}
                                 >
                                   <Image 
                                     src={aluno.foto_url} 
@@ -946,6 +1097,7 @@ export default function DashboardPage() {
 function TurmasListTable({ turmas, title, onDelete }: { turmas: any[], title: string, onDelete?: (id: string) => void }) {
   const { t, language } = useI18n();
   const { isAdmin } = useUser();
+  const router = useRouter();
   const isPt = language === 'pt';
 
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
@@ -1000,7 +1152,13 @@ function TurmasListTable({ turmas, title, onDelete }: { turmas: any[], title: st
               </tr>
             ) : (
               paginatedTurmas.map((turma) => (
-                <tr key={turma.id} className="hover:bg-slate-50 transition-colors">
+                <tr 
+                  key={turma.id} 
+                  className="hover:bg-slate-50 transition-colors cursor-pointer"
+                  onClick={() => {
+                    router.push(`/turmas?action=edit-class&turmaId=${turma.id}`);
+                  }}
+                >
                   <td className="px-6 py-4">
                     <div className="font-bold text-slate-800">{turma.nome}</div>
                     <div className="text-[10px] text-slate-400 font-mono uppercase">

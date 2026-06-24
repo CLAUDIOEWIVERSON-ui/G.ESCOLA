@@ -223,6 +223,7 @@ export function useDashboardStats() {
           .select(`
             id,
             nome,
+            turma_id,
             posto_graduacao,
             om,
             foto_url,
@@ -231,6 +232,7 @@ export function useDashboardStats() {
             data_inicio_curso,
             data_fim_curso,
             turma:turmas!inner(
+              id,
               nome,
               ano,
               data_inicio,
