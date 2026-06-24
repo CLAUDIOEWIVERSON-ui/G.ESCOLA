@@ -59,8 +59,8 @@ export function EventMarquee({ thought }: EventMarqueeProps = {}) {
         const { data, error } = await supabase
           .from('turmas')
           .select('id, nome, status, data_fim, data_postergacao, liberar_formularios')
-          .eq('status', 'ativa')
-          .eq('liberar_formularios', true);
+          .eq('liberar_formularios', true)
+          .is('deleted_at', null);
 
         if (error) {
           console.warn('Could not load evaluation banners:', error.message);
@@ -68,7 +68,9 @@ export function EventMarquee({ thought }: EventMarqueeProps = {}) {
         }
 
         if (data) {
-          setEvaluationBanners(data);
+          // Filtrar apenas turmas que não estão canceladas
+          const filtered = data.filter(t => t.status !== 'cancelada');
+          setEvaluationBanners(filtered);
         }
       } catch (err) {
         console.error('Catch fetching evaluation banners:', err);
