@@ -125,7 +125,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             try {
               const { data: turma } = await supabase
                 .from('turmas')
-                .select('id, status, data_fim, data_postergacao')
+                .select('id, status, data_fim, data_postergacao, liberar_formularios')
                 .eq('id', profile.turma_id)
                 .maybeSingle();
 
@@ -135,15 +135,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   await supabase.auth.signOut();
                   router.push('/login?blocked=true');
                 } else if (turma.status === 'concluída') {
+                  const isFormReleased = turma.liberar_formularios === true;
                   const effectiveEndDate = turma.data_postergacao || turma.data_fim;
-                  if (effectiveEndDate) {
-                    const todayStr = new Date().toISOString().split('T')[0];
-                    if (todayStr > effectiveEndDate) {
-                      await supabase.auth.signOut();
-                      router.push('/login?blocked=true');
-                    }
-                  } else {
-                    // Fallback to instant logout if no date limit is found
+                  const todayStr = new Date().toISOString().split('T')[0];
+                  const isPostponedExpired = effectiveEndDate ? todayStr > effectiveEndDate : true;
+
+                  // Se o formulário não estiver liberado OU o prazo de postergação estiver expirado, encerra a sessão
+                  if (!isFormReleased || isPostponedExpired) {
                     await supabase.auth.signOut();
                     router.push('/login?blocked=true');
                   }

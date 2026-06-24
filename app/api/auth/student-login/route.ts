@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
     // Verifica se a turma correspondente realmente existe e se está "ATIVA"
     const { data: turma, error: turmaError } = await supabaseAdmin
       .from('turmas')
-      .select('id, nome, status, data_fim, data_postergacao')
+      .select('id, nome, status, data_fim, data_postergacao, liberar_formularios')
       .eq('id', student.turma_id)
       .maybeSingle();
 
@@ -91,19 +91,23 @@ export async function POST(req: NextRequest) {
       }, { status: 403 });
     }
 
-    // BLOQUEIO EXCLUSIVO PELO STATUS DA TURMA (considerando a data de postergação/fim)
+    // BLOQUEIO EXCLUSIVO PELO STATUS DA TURMA (considerando a data de postergação/fim e liberação de formulário)
     if (turma.status === 'concluída') {
+      const isFormReleased = turma.liberar_formularios === true;
       const effectiveEndDate = turma.data_postergacao || turma.data_fim;
-      if (effectiveEndDate) {
-        const todayStr = new Date().toISOString().split('T')[0];
-        if (todayStr > effectiveEndDate) {
-          return NextResponse.json({ 
-            error: 'Seu acesso foi encerrado porque o período regular e de postergação desta turma já se encerrou.' 
-          }, { status: 403 });
-        }
-      } else {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const isPostponedExpired = effectiveEndDate ? todayStr > effectiveEndDate : true;
+
+      // O aluno só pode fazer login se o formulário estiver liberado e estiver dentro do prazo (não expirado)
+      if (!isFormReleased) {
         return NextResponse.json({ 
-          error: 'Seu acesso foi encerrado porque sua turma foi concluída. Em caso de dúvidas, procure a administração.' 
+          error: 'Seu acesso foi encerrado porque sua turma foi concluída e o formulário de avaliação não foi liberado pela coordenação.' 
+        }, { status: 403 });
+      }
+
+      if (isPostponedExpired) {
+        return NextResponse.json({ 
+          error: 'Seu acesso foi encerrado porque o período regular e de postergação para preencher a avaliação pós-curso desta turma já se encerrou.' 
         }, { status: 403 });
       }
     }
