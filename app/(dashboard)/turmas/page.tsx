@@ -16,6 +16,7 @@ import maleAvatar from '@/src/assets/images/avatar_male_1778977230783.png';
 import femaleAvatar from '@/src/assets/images/avatar_female_1778977246051.png';
 import militaryMaleAvatar from '@/src/assets/images/avatar_military_male_1779964887322.png';
 import militaryFemaleAvatar from '@/src/assets/images/avatar_military_female_1779964903107.png';
+import navalMissionLogo from '@/src/assets/images/brazilian_naval_mission_seal_stp_1782033758419.jpg';
 
 import { toast } from 'sonner';
 
@@ -2732,12 +2733,30 @@ function TurmasContent() {
 
                 {/* Print Header */}
                 <div className="mb-4">
-                  <h1 className="text-xl font-extrabold text-center border-b-2 border-black pb-2 mb-4 uppercase tracking-normal">
-                    {printSheetType === 'semanal' 
-                      ? (language === 'pt' ? 'FOLHA DE FREQUÊNCIA SEMANAL' : 'WEEKLY ATTENDANCE SHEET')
-                      : (language === 'pt' ? 'FOLHA DE FREQUÊNCIA MENSAL' : 'MONTHLY ATTENDANCE SHEET')
-                    }
-                  </h1>
+                  <div className="flex items-center gap-4 border-b-2 border-black pb-2 mb-4">
+                    <div className="relative w-14 h-14 shrink-0 flex items-center justify-center overflow-hidden bg-white">
+                      <Image
+                        src={navalMissionLogo}
+                        alt="Logo Missão de Assessoria Naval"
+                        fill
+                        className="object-contain"
+                        referrerPolicy="no-referrer"
+                        sizes="56px"
+                        priority
+                      />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <h1 className="text-lg font-extrabold uppercase tracking-tight">
+                        {printSheetType === 'semanal' 
+                          ? (language === 'pt' ? 'FOLHA DE FREQUÊNCIA SEMANAL' : 'WEEKLY ATTENDANCE SHEET')
+                          : (language === 'pt' ? 'FOLHA DE FREQUÊNCIA MENSAL' : 'MONTHLY ATTENDANCE SHEET')
+                        }
+                      </h1>
+                      <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-0.5 font-mono">
+                        {language === 'pt' ? 'MISSÃO DE ASSESSORIA NAVAL DO BRASIL EM SÃO TOMÉ E PRÍNCIPE' : 'BRAZILIAN NAVAL ADVISORY MISSION IN SÃO TOMÉ AND PRÍNCIPE'}
+                      </p>
+                    </div>
+                  </div>
                   <div className="grid grid-cols-3 gap-6 font-semibold uppercase text-[10px]">
                     <div className="flex flex-col">
                       <span>{language === 'pt' ? 'Professor(a):' : 'Instructor:'}</span>

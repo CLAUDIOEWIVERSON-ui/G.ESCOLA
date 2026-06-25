@@ -41,15 +41,11 @@ export default function NotasPage() {
     if (searchParams) {
       const paramTurma = searchParams.get('turmaId');
       const paramCurso = searchParams.get('cursoId');
-      if (paramTurma || paramCurso) {
-        setTimeout(() => {
-          if (paramTurma) {
-            setSelectedTurma(paramTurma);
-          }
-          if (paramCurso) {
-            setSelectedCurso(paramCurso);
-          }
-        }, 0);
+      if (paramTurma) {
+        setSelectedTurma(paramTurma);
+      }
+      if (paramCurso) {
+        setSelectedCurso(paramCurso);
       }
     }
   }, [searchParams]);
