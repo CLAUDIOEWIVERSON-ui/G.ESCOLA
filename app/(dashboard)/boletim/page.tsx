@@ -32,7 +32,7 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { useUser } from '@/lib/auth/UserContext';
-import navalMissionLogo from '@/src/assets/images/brazilian_naval_mission_seal_stp_1782033758419.jpg';
+import navalMissionLogo from '@/src/assets/images/regenerated_image_1782409801823.png';
 
 const reportT = {
   pt: {
@@ -1007,9 +1007,7 @@ export default function BoletimPage() {
 
                   #student-report-print-area {
                     visibility: visible !important;
-                    position: absolute !important;
-                    left: 0 !important;
-                    top: 0 !important;
+                    position: static !important;
                     width: 190mm !important; /* Exact A4 content width (210mm - 20mm margins) */
                     min-width: 190mm !important;
                     min-height: 297mm !important;
@@ -1019,6 +1017,7 @@ export default function BoletimPage() {
                     margin: 0 !important;
                     border: none !important;
                     box-shadow: none !important;
+                    page-break-inside: auto !important;
                     background: #ffffff !important;
                     color: #000000 !important;
                     font-family: Arial, sans-serif !important;
@@ -1946,7 +1945,7 @@ export default function BoletimPage() {
                                       /* Override print margins and canvas constraints for exact 210mm x 297mm bounds */
                                       #student-report-print-area {
                                         visibility: visible !important;
-                                        position: absolute !important;
+                                        position: static !important; page-break-inside: auto !important;
                                         left: 0 !important;
                                         top: 0 !important;
                                         width: 210mm !important;

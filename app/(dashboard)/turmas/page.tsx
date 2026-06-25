@@ -16,7 +16,7 @@ import maleAvatar from '@/src/assets/images/avatar_male_1778977230783.png';
 import femaleAvatar from '@/src/assets/images/avatar_female_1778977246051.png';
 import militaryMaleAvatar from '@/src/assets/images/avatar_military_male_1779964887322.png';
 import militaryFemaleAvatar from '@/src/assets/images/avatar_military_female_1779964903107.png';
-import navalMissionLogo from '@/src/assets/images/brazilian_naval_mission_seal_stp_1782033758419.jpg';
+import navalMissionLogo from '@/src/assets/images/regenerated_image_1782409801823.png';
 
 import { toast } from 'sonner';
 
@@ -2692,7 +2692,7 @@ function TurmasContent() {
             <div className="flex-1 flex justify-center items-start p-6 bg-slate-900 overflow-auto custom-scrollbar">
               <div 
                 id="print-attendance-sheet"
-                className="bg-white text-black p-[10mm] shadow-2xl relative rounded border border-slate-700 w-[297mm] h-[210mm] shrink-0 font-sans"
+                className="bg-white text-black p-[10mm] shadow-2xl relative rounded border border-slate-700 w-[297mm] min-h-[210mm] h-auto shrink-0 font-sans"
               >
                 {/* Print Styles */}
                 <style dangerouslySetInnerHTML={{ __html: `
@@ -2712,21 +2712,31 @@ function TurmasContent() {
                       visibility: visible !important;
                     }
                     #print-attendance-sheet {
-                      position: absolute !important;
-                      left: 0 !important;
-                      top: 0 !important;
-                      width: 297mm !important;
-                      height: 210mm !important;
+                      position: static !important;
+                      width: 100% !important;
+                      height: auto !important;
+                      min-height: auto !important;
                       margin: 0 !important;
                       padding: 10mm !important;
                       background: white !important;
                       box-shadow: none !important;
                       border: none !important;
+                      page-break-inside: auto !important;
+                    }
+                    .print-attendance-table {
+                      page-break-inside: auto !important;
+                      width: 100% !important;
+                    }
+                    .print-attendance-table tr {
                       page-break-inside: avoid !important;
+                      page-break-after: auto !important;
+                    }
+                    .print-attendance-table thead {
+                      display: table-header-group !important;
                     }
                     @page {
                       size: A4 landscape !important;
-                      margin: 0 !important;
+                      margin: 10mm 10mm 10mm 10mm !important;
                     }
                   }
                 `}} />

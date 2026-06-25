@@ -31,7 +31,7 @@ import maleAvatar from '@/src/assets/images/avatar_male_1778977230783.png';
 import femaleAvatar from '@/src/assets/images/avatar_female_1778977246051.png';
 import militaryMaleAvatar from '@/src/assets/images/avatar_military_male_1779964887322.png';
 import militaryFemaleAvatar from '@/src/assets/images/avatar_military_female_1779964903107.png';
-import navalMissionLogo from '@/src/assets/images/brazilian_naval_mission_seal_stp_1782033758419.jpg';
+import navalMissionLogo from '@/src/assets/images/regenerated_image_1782409801823.png';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { 
@@ -1148,11 +1148,12 @@ export default function FrequenciaPage() {
                   /* Pin print block to top-left of page 1 with absolute assurance */
                   #frequency-print-area {
                     visibility: visible !important;
-                    position: absolute !important;
-                    left: 0 !important;
-                    top: 0 !important;
+                    position: static !important;
                     width: 100% !important;
                     min-width: 100% !important;
+                    height: auto !important;
+                    min-height: auto !important;
+                    overflow: visible !important;
                     padding: 0 !important;
                     margin: 0 !important;
                     box-shadow: none !important;
@@ -1160,6 +1161,20 @@ export default function FrequenciaPage() {
                     background: #ffffff !important;
                     color: #000000 !important;
                     display: block !important;
+                    page-break-inside: auto !important;
+                  }
+
+                  #frequency-print-area table {
+                    page-break-inside: auto !important;
+                  }
+
+                  #frequency-print-area tr {
+                    page-break-inside: avoid !important;
+                    page-break-after: auto !important;
+                  }
+
+                  #frequency-print-area thead {
+                    display: table-header-group !important;
                   }
 
                   /* Overwrite global generic flex flattener for our specialized print contents */
