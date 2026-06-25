@@ -1118,10 +1118,10 @@ export default function FrequenciaPage() {
                     overflow: hidden !important;
                   }
                   
-                  /* Collapse all container heights, min-heights, flex properties, padding, and margins on parent wrappers */
-                  div, main, section, article {
+                  /* Collapse only major layout wrappers to prevent overflow, preserving nested elements */
+                  html, body, main, .min-h-screen, #__next, .flex-1, [data-framer-portal-container] {
                     position: static !important;
-                    width: auto !important;
+                    width: 100% !important;
                     height: auto !important;
                     min-height: 0 !important;
                     max-height: none !important;
@@ -1145,23 +1145,24 @@ export default function FrequenciaPage() {
                     visibility: visible !important;
                   }
                   
-                  /* Pin print block to top-left of page 1 with absolute assurance */
+                  /* Standard relative flow starting at 0,0 of physical page 1 */
                   #frequency-print-area {
                     visibility: visible !important;
-                    position: static !important;
-                    width: 100% !important;
-                    min-width: 100% !important;
+                    position: relative !important;
+                    width: ${mapGranularity === 'week' ? '190mm' : '277mm'} !important;
+                    max-width: ${mapGranularity === 'week' ? '190mm' : '277mm'} !important;
                     height: auto !important;
                     min-height: auto !important;
                     overflow: visible !important;
                     padding: 0 !important;
-                    margin: 0 !important;
+                    margin: 0 auto !important;
                     box-shadow: none !important;
                     border: none !important;
                     background: #ffffff !important;
                     color: #000000 !important;
                     display: block !important;
                     page-break-inside: auto !important;
+                    box-sizing: border-box !important;
                   }
 
                   #frequency-print-area table {

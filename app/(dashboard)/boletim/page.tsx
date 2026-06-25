@@ -1929,12 +1929,10 @@ export default function BoletimPage() {
                                       }
                                       
                                       /* Unset absolute parents and scale transformations so printer renders natively */
-                                      #student-report-modal-backdrop,
+                                      #student-report-modal-backdrop, html, body, main, .min-h-screen, #__next, .flex-1, [data-framer-portal-container],
                                       #student-report-modal-content,
-                                      div,
-                                      main,
-                                      section,
-                                      article {
+                                      /* Disable wildcard resets to preserve inner component layout */
+                                      .dummy-class-none {
                                         transform: none !important;
                                         filter: none !important;
                                         position: static !important;
@@ -1949,17 +1947,15 @@ export default function BoletimPage() {
                                       /* Override print margins and canvas constraints for exact 210mm x 297mm bounds */
                                       #student-report-print-area {
                                         visibility: visible !important;
-                                        position: static !important;
-                                        page-break-inside: auto !important;
-                                        left: 0 !important;
-                                        top: 0 !important;
-                                        width: 210mm !important;
-                                        min-width: 210mm !important;
-                                        min-height: 297mm !important;
+                                        position: relative !important;
+                                        page-break-inside: avoid !important;
+                                        width: 190mm !important;
+                                        max-width: 190mm !important;
+                                        min-height: 277mm !important;
                                         height: auto !important;
                                         max-height: none !important;
-                                        margin: 0 !important;
-                                        padding: 8mm 12mm 8mm 12mm !important;
+                                        margin: 0 auto !important;
+                                        padding: 0 !important;
                                         border: none !important;
                                         box-shadow: none !important;
                                         background: #ffffff !important;

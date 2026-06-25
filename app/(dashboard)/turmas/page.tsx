@@ -2725,10 +2725,10 @@ function TurmasContent() {
                       overflow: hidden !important;
                     }
                     
-                    /* Collapse all container heights, min-heights, flex properties, padding, and margins on parent wrappers */
-                    div, main, section, article {
+                    /* Collapse only major layout wrappers to prevent overflow, preserving nested elements */
+                    html, body, main, .min-h-screen, #__next, .flex-1, [data-framer-portal-container] {
                       position: static !important;
-                      width: auto !important;
+                      width: 100% !important;
                       height: auto !important;
                       min-height: 0 !important;
                       max-height: none !important;
@@ -2752,16 +2752,19 @@ function TurmasContent() {
                       visibility: visible !important;
                     }
                     #print-attendance-sheet {
-                      position: static !important;
-                      width: 100% !important;
+                      visibility: visible !important;
+                      position: relative !important;
+                      width: ${printSheetType === 'semanal' ? '190mm' : '277mm'} !important;
+                      max-width: ${printSheetType === 'semanal' ? '190mm' : '277mm'} !important;
                       height: auto !important;
                       min-height: auto !important;
-                      margin: 0 !important;
-                      padding: 10mm !important;
+                      margin: 0 auto !important;
+                      padding: 0 !important;
                       background: white !important;
                       box-shadow: none !important;
                       border: none !important;
                       page-break-inside: auto !important;
+                      box-sizing: border-box !important;
                     }
                     .print-attendance-table {
                       page-break-inside: auto !important;
@@ -2775,7 +2778,7 @@ function TurmasContent() {
                       display: table-header-group !important;
                     }
                     @page {
-                      size: A4 landscape !important;
+                      size: ${printSheetType === 'semanal' ? 'A4 portrait' : 'A4 landscape'} !important;
                       margin: 10mm 10mm 10mm 10mm !important;
                     }
                   }
