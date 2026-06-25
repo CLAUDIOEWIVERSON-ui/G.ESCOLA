@@ -990,7 +990,7 @@ export default function FrequenciaPage() {
               <div className="mb-6 border-b border-slate-200 pb-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
                   {(mapGranularity === 'week' || mapGranularity === 'month') ? (
-                    <div className="relative w-16 h-16 shrink-0 flex items-center justify-center overflow-hidden bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
+                    <div className="relative w-16 h-16 shrink-0 flex items-center justify-center overflow-hidden bg-white border border-slate-200 rounded-xl p-1 shadow-sm print:hidden">
                       <Image
                         src={navalMissionLogo}
                         alt="Logo Missão de Assessoria Naval"
@@ -1210,11 +1210,38 @@ export default function FrequenciaPage() {
                   #frequency-print-area td {
                     border: 1px solid #1e293b !important;
                     color: #000000 !important;
-                    padding: 6px 10px !important;
-                    font-size: 11px !important;
+                    padding: 3px 4px !important;
+                    font-size: 9px !important;
                     background-color: #ffffff !important;
                     -webkit-print-color-adjust: exact !important;
                     color-adjust: exact !important;
+                    height: auto !important;
+                  }
+                  
+                  #frequency-print-area td .w-full.h-14 {
+                    height: 20px !important;
+                  }
+
+                  #frequency-print-area th {
+                    padding: 4px 4px !important;
+                    font-size: 8px !important;
+                    background-color: #f1f5f9 !important;
+                  }
+                  
+                  #frequency-print-area .overflow-x-auto {
+                    overflow: visible !important;
+                  }
+
+                  #frequency-print-area .mt-8 {
+                    margin-top: 14px !important;
+                  }
+                  
+                  #frequency-print-area .pt-6 {
+                    padding-top: 10px !important;
+                  }
+
+                  #frequency-print-area .w-56 {
+                    width: 150px !important;
                   }
                   
                   #frequency-print-area td.sticky, 
@@ -1286,10 +1313,10 @@ export default function FrequenciaPage() {
                       <tr key={student.id} className="hover:bg-slate-50/50 transition-colors group">
                         <td className="sticky left-0 z-10 bg-white p-4 font-bold text-slate-700 border border-slate-200 group-hover:bg-slate-50 transition-colors">
                           <div className="flex items-center gap-2.5">
-                            <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-[9px] font-bold text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-all shrink-0">
+                            <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-[9px] font-bold text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-all shrink-0 print:hidden">
                               {student.nome.substring(0, 2).toUpperCase()}
                             </div>
-                            <span className="truncate max-w-[180px]">{student.nome}</span>
+                            <span className="truncate max-w-[180px] print:max-w-none print:whitespace-normal print:text-[10px]">{student.nome}</span>
                           </div>
                         </td>
                         {mapGranularity === 'year' ? (
@@ -1353,27 +1380,42 @@ export default function FrequenciaPage() {
                                   handleToggleMapAttendance(student.id, dayStr, rec);
                                 }}
                               >
-                                <div className="w-full h-14 flex items-center justify-center">
+                                <div className="w-full h-14 flex items-center justify-center print:h-5 print:w-auto">
                                   {rec ? (
                                     rec.presente ? (
-                                      <motion.div 
-                                        initial={{ scale: 0.5, opacity: 0 }}
-                                        animate={{ scale: 1, opacity: 1 }}
-                                        className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-sm"
-                                      >
-                                        <CheckCircle2 size={16} strokeWidth={3} />
-                                      </motion.div>
+                                      <>
+                                        <div className="print:hidden">
+                                          <motion.div 
+                                            initial={{ scale: 0.5, opacity: 0 }}
+                                            animate={{ scale: 1, opacity: 1 }}
+                                            className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-sm"
+                                          >
+                                            <CheckCircle2 size={16} strokeWidth={3} />
+                                          </motion.div>
+                                        </div>
+                                        <span className="hidden print:inline font-black text-emerald-700 text-[10px]">P</span>
+                                      </>
                                     ) : (
-                                      <motion.div 
-                                        initial={{ scale: 0.5, opacity: 0 }}
-                                        animate={{ scale: 1, opacity: 1 }}
-                                        className="w-7 h-7 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center shadow-sm"
-                                      >
-                                        <XCircle size={16} strokeWidth={3} />
-                                      </motion.div>
+                                      <>
+                                        <div className="print:hidden">
+                                          <motion.div 
+                                            initial={{ scale: 0.5, opacity: 0 }}
+                                            animate={{ scale: 1, opacity: 1 }}
+                                            className="w-7 h-7 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center shadow-sm"
+                                          >
+                                            <XCircle size={16} strokeWidth={3} />
+                                          </motion.div>
+                                        </div>
+                                        <span className="hidden print:inline font-black text-rose-700 text-[10px]">F</span>
+                                      </>
                                     )
                                   ) : (
-                                    !isWeekend && <div className="w-1.5 h-1.5 rounded-full bg-slate-200 group-hover:bg-slate-300 transition-colors" />
+                                    !isWeekend && (
+                                      <>
+                                        <div className="w-1.5 h-1.5 rounded-full bg-slate-200 group-hover:bg-slate-300 transition-colors print:hidden" />
+                                        <span className="hidden print:inline text-neutral-300 text-[10px]">—</span>
+                                      </>
+                                    )
                                   )}
                                 </div>
                               </td>

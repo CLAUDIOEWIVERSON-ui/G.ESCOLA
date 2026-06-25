@@ -2784,7 +2784,7 @@ function TurmasContent() {
                 {/* Print Header */}
                 <div className="mb-4">
                   <div className="flex items-center gap-4 border-b-2 border-black pb-2 mb-4">
-                    <div className="relative w-14 h-14 shrink-0 flex items-center justify-center overflow-hidden bg-white">
+                    <div className="relative w-14 h-14 shrink-0 flex items-center justify-center overflow-hidden bg-white print:hidden">
                       <Image
                         src={navalMissionLogo}
                         alt="Logo Missão de Assessoria Naval"
@@ -2948,12 +2948,12 @@ function TurmasContent() {
                 </div>
 
                 {/* Legenda & Signature Section flowing naturally directly below the sheet in the blank space */}
-                <div className="mt-5 grid grid-cols-2 gap-8 items-start">
+                <div className="mt-5 print:mt-1.5 grid grid-cols-2 gap-8 print:gap-4 items-start">
                   <div>
-                    <div className="text-[10px] font-black uppercase tracking-wider mb-1.5">
+                    <div className="text-[10px] font-black uppercase tracking-wider mb-1.5 print:mb-0.5">
                       {language === 'pt' ? 'Legenda:' : 'Legend:'}
                     </div>
-                    <div className="flex select-none flex-wrap gap-x-3 gap-y-1 text-[8px] font-black border-2 border-black p-2 rounded-lg bg-neutral-50 shadow-sm">
+                    <div className="flex select-none flex-wrap gap-x-3 gap-y-1 text-[8px] font-black border border-black p-2 print:p-1 rounded-lg bg-neutral-50 shadow-sm">
                       <span><strong>P</strong> = {language === 'pt' ? 'Presente' : 'Present'}</span>
                       <span><strong>F</strong> = {language === 'pt' ? 'Falta' : 'Absent'}</span>
                       <span><strong>H</strong> = {language === 'pt' ? 'Hospital' : 'Hospitalizado'}</span>
@@ -2964,11 +2964,11 @@ function TurmasContent() {
                     </div>
                   </div>
                   <div>
-                    <div className="text-[10px] font-black uppercase tracking-wider mb-1.5 flex justify-between items-center">
+                    <div className="text-[10px] font-black uppercase tracking-wider mb-1.5 print:mb-0.5 flex justify-between items-center">
                       <span>{language === 'pt' ? 'Feriados Descritos (Motivo):' : 'Holidays Described (Reason):'}</span>
                       <span className="text-[7px] text-neutral-400 font-bold tracking-widest uppercase">São Tomé e Príncipe</span>
                     </div>
-                    <div className="flex flex-col gap-1 text-[7.5px] font-black border-2 border-dashed border-red-500 p-2 rounded-lg bg-red-50/50 min-h-[46px] justify-center">
+                    <div className="flex flex-col gap-1 text-[7.5px] font-black border border-dashed border-red-500 p-2 print:p-1 rounded-lg bg-red-50/50 min-h-[46px] print:min-h-0 justify-center">
                       {(() => {
                         const activeHolidays = getHolidaysForDays(daysToRender);
 
@@ -2996,7 +2996,7 @@ function TurmasContent() {
                 </div>
 
                 {/* Observation Warning Block */}
-                <div className="mt-4 border-2 border-red-500 bg-red-50/50 p-2.5 rounded-lg text-center font-extrabold text-[8.5px] text-red-800 tracking-wide leading-relaxed">
+                <div className="mt-4 print:mt-1 border border-red-500 bg-red-50/50 p-2.5 print:p-1 rounded-lg text-center font-extrabold text-[8.5px] print:text-[7.5px] text-red-800 tracking-wide leading-relaxed">
                   {language === 'pt' 
                     ? 'OBS.: Esta folha de presença deverá ser entregue diariamente ao Coordenador de Cursos para lançamento no controle do aluno.' 
                     : 'OBS.: This attendance sheet must be submitted daily to the Course Coordinator for entry into the student record.'
