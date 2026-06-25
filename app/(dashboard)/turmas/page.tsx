@@ -2704,6 +2704,46 @@ function TurmasContent() {
                     border: 1px solid #111111 !important;
                   }
                   @media print {
+                    html, body {
+                      margin: 0 !important;
+                      padding: 0 !important;
+                      background: #ffffff !important;
+                      color: #000000 !important;
+                      width: 100% !important;
+                      height: auto !important;
+                      min-height: auto !important;
+                      overflow: visible !important;
+                    }
+
+                    /* Hide headers, footers, mobile bottom-navs, back buttons, filters, etc. completely from DOM layout flow */
+                    header, nav, aside, footer, button, .print\:hidden, [role="dialog"], [role="group"], .no-print {
+                      display: none !important;
+                      width: 0 !important;
+                      height: 0 !important;
+                      margin: 0 !important;
+                      padding: 0 !important;
+                      overflow: hidden !important;
+                    }
+                    
+                    /* Collapse all container heights, min-heights, flex properties, padding, and margins on parent wrappers */
+                    div, main, section, article {
+                      position: static !important;
+                      width: auto !important;
+                      height: auto !important;
+                      min-height: 0 !important;
+                      max-height: none !important;
+                      margin: 0 !important;
+                      padding: 0 !important;
+                      box-shadow: none !important;
+                      border: none !important;
+                      transform: none !important;
+                      overflow: visible !important;
+                      background: transparent !important;
+                      animation: none !important;
+                      transition: none !important;
+                      opacity: 1 !important;
+                    }
+
                     /* Only print the sheet */
                     body * {
                       visibility: hidden !important;

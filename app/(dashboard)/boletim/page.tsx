@@ -1932,12 +1932,16 @@ export default function BoletimPage() {
                                       #student-report-modal-backdrop,
                                       #student-report-modal-content,
                                       div,
-                                      section {
+                                      main,
+                                      section,
+                                      article {
                                         transform: none !important;
                                         filter: none !important;
                                         position: static !important;
                                         width: auto !important;
                                         height: auto !important;
+                                        min-height: 0 !important;
+                                        max-height: none !important;
                                         overflow: visible !important;
                                         background: transparent !important;
                                       }
@@ -1945,7 +1949,8 @@ export default function BoletimPage() {
                                       /* Override print margins and canvas constraints for exact 210mm x 297mm bounds */
                                       #student-report-print-area {
                                         visibility: visible !important;
-                                        position: static !important; page-break-inside: auto !important;
+                                        position: static !important;
+                                        page-break-inside: auto !important;
                                         left: 0 !important;
                                         top: 0 !important;
                                         width: 210mm !important;
