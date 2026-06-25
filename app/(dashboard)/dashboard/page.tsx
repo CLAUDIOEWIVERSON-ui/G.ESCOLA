@@ -47,28 +47,32 @@ export default function DashboardPage() {
   const [loadingOnline, setLoadingOnline] = useState<boolean>(false);
   const [showOnlineListModal, setShowOnlineListModal] = useState<boolean>(false);
 
-  const fetchOnlineUsers = async () => {
-    if (!isAdmin) return;
-    try {
-      setLoadingOnline(true);
-      const res = await fetch('/api/auth/heartbeat');
-      const data = await res.json();
-      if (data.success) {
-        setOnlineUsers(data.users || []);
-        setOnlineCount(data.count || 0);
-      }
-    } catch (err) {
-      console.error('Failed to fetch online users:', err);
-    } finally {
-      setLoadingOnline(false);
-    }
-  };
-
   useEffect(() => {
     if (!isAdmin) return;
-    fetchOnlineUsers();
+    const fetchOnlineUsers = async () => {
+      try {
+        setLoadingOnline(true);
+        const res = await fetch('/api/auth/heartbeat');
+        const data = await res.json();
+        if (data.success) {
+          setOnlineUsers(data.users || []);
+          setOnlineCount(data.count || 0);
+        }
+      } catch (err) {
+        console.error('Failed to fetch online users:', err);
+      } finally {
+        setLoadingOnline(false);
+      }
+    };
+
+    const timer = setTimeout(() => {
+      fetchOnlineUsers();
+    }, 0);
     const interval = setInterval(fetchOnlineUsers, 15000); // refresh every 15s for admins
-    return () => clearInterval(interval);
+    return () => {
+      clearTimeout(timer);
+      clearInterval(interval);
+    };
   }, [isAdmin]);
 
   const { dashboardData, loading, mutate: refreshDashboard } = useDashboardStats();

@@ -31,6 +31,7 @@ import maleAvatar from '@/src/assets/images/avatar_male_1778977230783.png';
 import femaleAvatar from '@/src/assets/images/avatar_female_1778977246051.png';
 import militaryMaleAvatar from '@/src/assets/images/avatar_military_male_1779964887322.png';
 import militaryFemaleAvatar from '@/src/assets/images/avatar_military_female_1779964903107.png';
+import navalMissionLogo from '@/src/assets/images/brazilian_naval_mission_seal_stp_1782033758419.jpg';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { 
@@ -988,11 +989,25 @@ export default function FrequenciaPage() {
               {/* Elegant Header Block for Screen Display & Official Print Layouts */}
               <div className="mb-6 border-b border-slate-200 pb-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center border border-blue-100 shrink-0">
-                    <span className="text-sm font-black text-blue-700">
-                      {activeTurma?.nome ? activeTurma.nome.substring(0, 3).toUpperCase() : 'SG'}
-                    </span>
-                  </div>
+                  {(mapGranularity === 'week' || mapGranularity === 'month') ? (
+                    <div className="relative w-16 h-16 shrink-0 flex items-center justify-center overflow-hidden bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
+                      <Image
+                        src={navalMissionLogo}
+                        alt="Logo Missão de Assessoria Naval"
+                        fill
+                        className="object-contain"
+                        referrerPolicy="no-referrer"
+                        sizes="64px"
+                        priority
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center border border-blue-100 shrink-0">
+                      <span className="text-sm font-black text-blue-700">
+                        {activeTurma?.nome ? activeTurma.nome.substring(0, 3).toUpperCase() : 'SG'}
+                      </span>
+                    </div>
+                  )}
                   <div>
                     <h3 className="text-[10px] font-black text-blue-700 uppercase tracking-widest font-mono">
                       {language === 'pt' ? 'Sistema de Gestão de Frequência' : 'Attendance Management System'}
