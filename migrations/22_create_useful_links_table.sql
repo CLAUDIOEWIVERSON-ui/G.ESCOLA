@@ -163,6 +163,14 @@ VALUES
   'https://www.flightaware.com/live/',
   'Rastreamento e monitoramento de voos ao vivo.',
   'external'
+),
+
+(
+  'c3194511-bba0-42f8-9a3c-b171f1110017',
+  'FORMULÁRIOS CONSULARES - HARTFORD',
+  'https://www.gov.br/mre/pt-br/consulado-hartford/servicos-consulares-e-informacoes-uties/formularios',
+  'Formulários consulares e informações úteis do Consulado-Geral do Brasil em Hartford.',
+  'external'
 )
 
 ON CONFLICT (id) DO NOTHING;
