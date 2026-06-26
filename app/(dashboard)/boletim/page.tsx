@@ -824,11 +824,25 @@ export default function BoletimPage() {
 
       // Sort mergedData by grade descending. Students without a grade (null/undefined) go to the end.
       const sortedMergedData = [...mergedData].sort((a, b) => {
-        const gradeA = a.nota_final !== null && a.nota_final !== undefined ? Number(a.nota_final) : -1;
-        const gradeB = b.nota_final !== null && b.nota_final !== undefined ? Number(b.nota_final) : -1;
+        const getAverage = (row: any) => {
+          if (row.nota_final !== null && row.nota_final !== undefined) {
+            return Number(row.nota_final);
+          }
+          const scores: number[] = [];
+          for (let i = 1; i <= courseModules; i++) {
+            const val = row[`nota${i}`];
+            if (val !== null && val !== undefined) {
+              scores.push(Number(val));
+            }
+          }
+          return scores.length > 0 ? scores.reduce((x, y) => x + y, 0) / scores.length : -1;
+        };
+
+        const avgA = getAverage(a);
+        const avgB = getAverage(b);
         
-        if (gradeB !== gradeA) {
-          return gradeB - gradeA;
+        if (avgB !== avgA) {
+          return avgB - avgA;
         }
         
         // If grades are identical, sort alphabetically by student name

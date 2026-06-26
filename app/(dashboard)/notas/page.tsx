@@ -504,7 +504,33 @@ export default function NotasPage() {
                         }).filter((a): a is number => a !== null), -1)
                       : -1;
 
-                    return turmaAlunos.map((aluno: any, index: number) => {
+                    const sortedAlunos = [...turmaAlunos].sort((a, b) => {
+                      const sGradesA = bulkNotas[a.id] || {};
+                      const fdId = disciplinas[0]?.id;
+                      const gDataA = sGradesA[fdId] || {};
+                      const scsA: number[] = [];
+                      for (let i = 1; i <= effectiveModules; i++) {
+                        const v = gDataA[`nota${i}`];
+                        if (v !== null && v !== undefined) scsA.push(v);
+                      }
+                      const avgA = scsA.length > 0 ? scsA.reduce((x, y) => x + y, 0) / scsA.length : -1;
+
+                      const sGradesB = bulkNotas[b.id] || {};
+                      const gDataB = sGradesB[fdId] || {};
+                      const scsB: number[] = [];
+                      for (let i = 1; i <= effectiveModules; i++) {
+                        const v = gDataB[`nota${i}`];
+                        if (v !== null && v !== undefined) scsB.push(v);
+                      }
+                      const avgB = scsB.length > 0 ? scsB.reduce((x, y) => x + y, 0) / scsB.length : -1;
+
+                      if (avgA !== avgB) {
+                        return avgB - avgA;
+                      }
+                      return (a.nome || '').localeCompare(b.nome || '');
+                    });
+
+                    return sortedAlunos.map((aluno: any, index: number) => {
                       const studentGrades = bulkNotas[aluno.id] || {};
                       const isSavingRow = savingRows[aluno.id];
                       const firstDiscId = disciplinas[0].id;
