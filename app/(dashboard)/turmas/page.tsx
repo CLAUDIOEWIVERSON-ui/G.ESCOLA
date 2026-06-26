@@ -2974,7 +2974,7 @@ function TurmasContent() {
                       <span><strong>F</strong> = {language === 'pt' ? 'Falta' : 'Absent'}</span>
                       <span><strong>H</strong> = {language === 'pt' ? 'Hospital' : 'Hospitalizado'}</span>
                       <span><strong>N</strong> = {language === 'pt' ? 'Não houve aula' : 'No Class'}</span>
-                      <span><strong>D</strong> = {language === 'pt' ? 'Desligado' : 'Withdrawn'}</span>
+                      <span><strong>E</strong> = {language === 'pt' ? 'Excluído' : 'Excluded'}</span>
                       <span className="text-red-700 border-l border-black pl-2"><strong>FE</strong> = {language === 'pt' ? 'Feriado' : 'Holiday'}</span>
                       <span className="text-neutral-600 border-l border-black pl-2"><strong>S/D</strong> = Sáb/Dom</span>
                     </div>
