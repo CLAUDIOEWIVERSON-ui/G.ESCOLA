@@ -2751,6 +2751,19 @@ function TurmasContent() {
                     #print-attendance-sheet, #print-attendance-sheet * {
                       visibility: visible !important;
                     }
+                    
+                    /* Collapse all elements except the printable area and its descendants */
+                    *:not(#print-attendance-sheet):not(#print-attendance-sheet *) {
+                      height: 0 !important;
+                      min-height: 0 !important;
+                      max-height: 0 !important;
+                      margin: 0 !important;
+                      padding: 0 !important;
+                      border: none !important;
+                      box-shadow: none !important;
+                      overflow: visible !important;
+                    }
+
                     #print-attendance-sheet {
                       visibility: visible !important;
                       position: relative !important;

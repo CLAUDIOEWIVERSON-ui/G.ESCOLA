@@ -421,15 +421,24 @@ export default function HorarioPage() {
             box-shadow: none !important;
           }
 
-          /* Hide absolutely everything that is not the print container or one of its ancestors */
-          *:not(:has(.print-container)):not(.print-container):not(.print-container *) {
-            display: none !important;
-            width: 0 !important;
+          /* Hide absolutely everything that is not the print container or one of its descendants using fully standard non-has rules */
+          body * {
+            visibility: hidden !important;
+          }
+          .print-container, .print-container * {
+            visibility: visible !important;
+          }
+
+          /* Collapse all elements except the printable area and its descendants */
+          *:not(.print-container):not(.print-container *) {
             height: 0 !important;
+            min-height: 0 !important;
+            max-height: 0 !important;
             margin: 0 !important;
             padding: 0 !important;
-            opacity: 0 !important;
-            visibility: hidden !important;
+            border: none !important;
+            box-shadow: none !important;
+            overflow: visible !important;
           }
 
           /* Reset html, body and ancestors of .print-container to be clean block structures with no padding/margin/flex/box-shadow/transforms */
@@ -445,9 +454,6 @@ export default function HorarioPage() {
             display: block !important;
           }
 
-          div:has(.print-container),
-          main:has(.print-container),
-          section:has(.print-container),
           .col-print-style {
             margin: 0 !important;
             margin-top: 0 !important;

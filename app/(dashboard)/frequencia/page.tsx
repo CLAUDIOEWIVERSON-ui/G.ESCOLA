@@ -1144,6 +1144,18 @@ export default function FrequenciaPage() {
                   #frequency-print-area, #frequency-print-area * {
                     visibility: visible !important;
                   }
+
+                  /* Collapse all elements except the printable area and its descendants */
+                  *:not(#frequency-print-area):not(#frequency-print-area *) {
+                    height: 0 !important;
+                    min-height: 0 !important;
+                    max-height: 0 !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    border: none !important;
+                    box-shadow: none !important;
+                    overflow: visible !important;
+                  }
                   
                   /* Standard relative flow starting at 0,0 of physical page 1 */
                   #frequency-print-area {

@@ -1005,19 +1005,31 @@ export default function BoletimPage() {
                     visibility: visible !important;
                   }
 
+                  /* Collapse all elements except the printable area and its descendants */
+                  *:not(#student-report-print-area):not(#student-report-print-area *) {
+                    height: 0 !important;
+                    min-height: 0 !important;
+                    max-height: 0 !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    border: none !important;
+                    box-shadow: none !important;
+                    overflow: visible !important;
+                  }
+
                   #student-report-print-area {
                     visibility: visible !important;
-                    position: static !important;
+                    position: relative !important;
                     width: 190mm !important; /* Exact A4 content width (210mm - 20mm margins) */
                     min-width: 190mm !important;
-                    min-height: 297mm !important;
+                    min-height: 277mm !important;
                     height: auto !important;
                     max-height: none !important;
                     padding: 0 !important; /* Rely purely on page margin */
-                    margin: 0 !important;
+                    margin: 0 auto !important;
                     border: none !important;
                     box-shadow: none !important;
-                    page-break-inside: auto !important;
+                    page-break-inside: avoid !important;
                     background: #ffffff !important;
                     color: #000000 !important;
                     font-family: Arial, sans-serif !important;
