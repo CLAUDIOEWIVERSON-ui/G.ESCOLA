@@ -247,7 +247,25 @@ export default function CursosPage() {
 
   const handleOpenDisciplinaModal = (disciplina: any = null) => {
     if (isReadOnly) return;
-    setCurrentDisciplina(disciplina || { nome: '', codigo: '', carga_horaria: 60, curso_id: manageDisciplinasCurso?.id, modulo_index: activeDisciplinaModuloIndex });
+    const initialModuloIndex = disciplina?.modulo_index || activeDisciplinaModuloIndex || 1;
+    const prefix = (manageDisciplinasCurso?.codigo || 'DISC').toUpperCase();
+    const autoCode = `${prefix}${String(initialModuloIndex).padStart(4, '0')}`;
+
+    if (disciplina) {
+      setCurrentDisciplina({
+        ...disciplina,
+        modulo_index: initialModuloIndex,
+        codigo: autoCode
+      });
+    } else {
+      setCurrentDisciplina({ 
+        nome: '', 
+        codigo: autoCode, 
+        carga_horaria: 60, 
+        curso_id: manageDisciplinasCurso?.id, 
+        modulo_index: initialModuloIndex 
+      });
+    }
     setIsDisciplinaModalOpen(true);
   };
 
@@ -1233,7 +1251,16 @@ export default function CursosPage() {
             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{language === 'pt' ? 'Módulo' : 'Module'}</label>
             <select
               value={currentDisciplina?.modulo_index || 1}
-              onChange={(e) => setCurrentDisciplina({ ...currentDisciplina, modulo_index: parseInt(e.target.value) })}
+              onChange={(e) => {
+                const newModIndex = parseInt(e.target.value);
+                const prefix = (manageDisciplinasCurso?.codigo || 'DISC').toUpperCase();
+                const autoCode = `${prefix}${String(newModIndex).padStart(4, '0')}`;
+                setCurrentDisciplina({ 
+                  ...currentDisciplina, 
+                  modulo_index: newModIndex,
+                  codigo: autoCode
+                });
+              }}
               className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-905 transition-colors text-sm font-medium"
             >
               {Array.from({ length: manageDisciplinasCurso?.qtd_modulos || 4 }).map((_, i) => (
@@ -1249,11 +1276,11 @@ export default function CursosPage() {
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t.subjects.code}</label>
               <input
                 required
+                disabled
                 type="text"
                 value={currentDisciplina?.codigo || ''}
-                onChange={(e) => setCurrentDisciplina({ ...currentDisciplina, codigo: e.target.value })}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors text-sm font-mono"
-                placeholder="PROG101"
+                className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl focus:outline-none text-sm font-mono text-slate-500 cursor-not-allowed"
+                placeholder="SAR0001"
               />
             </div>
             <div className="space-y-1">
