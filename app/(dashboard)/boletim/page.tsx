@@ -876,6 +876,19 @@ export default function BoletimPage() {
   }, [selectedTurma, selectedAno, disciplinasLength]);
 
   const getStatus = (final: number | null, freq: number | null) => {
+    const currentTurmaObj = turmas.find((t: any) => t.id === selectedTurma);
+    const expirationDate = currentTurmaObj?.data_postergacao || currentTurmaObj?.data_fim;
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    const isExpired = expirationDate ? expirationDate < todayStr : false;
+
+    if (isExpired && (final === null || final === undefined)) {
+      return {
+        label: language === 'pt' ? 'Não Concluiu' : 'Not Completed',
+        className: 'bg-rose-100 text-rose-700 font-bold border border-rose-200',
+        icon: XCircle
+      };
+    }
+
     if (final === null || freq === null) return { 
       label: t.grades.pending, 
       className: 'bg-slate-100 text-slate-600',
@@ -1262,10 +1275,19 @@ export default function BoletimPage() {
 
                         const finalGradeFormatted = finalGradeValue !== null && finalGradeValue !== undefined ? Number(finalGradeValue).toFixed(1) : '-';
 
+                        const expirationDate = reportData.classObj?.data_postergacao || reportData.classObj?.data_fim;
+                        const todayStr = format(new Date(), 'yyyy-MM-dd');
+                        const isClassExpired = expirationDate ? expirationDate < todayStr : false;
+
                         let statusLabel = '';
                         let statusClass = 'text-slate-400';
                         if (finalGradeValue === null || finalGradeValue === undefined) {
-                          statusLabel = reportT[language as "pt" | "en"].pending;
+                          if (isClassExpired) {
+                            statusLabel = language === 'pt' ? 'NÃO CONCLUIU' : 'NOT COMPLETED';
+                            statusClass = 'text-rose-600 font-extrabold';
+                          } else {
+                            statusLabel = reportT[language as "pt" | "en"].pending;
+                          }
                         } else if (finalGradeValue >= settings.media_aprovacao && (freqValue === null || freqValue >= settings.frequencia_minima)) {
                           statusLabel = reportT[language as "pt" | "en"].approved;
                           statusClass = 'text-emerald-600 font-extrabold';
@@ -1448,11 +1470,18 @@ export default function BoletimPage() {
                         ? validFinalGrades.reduce((sum: number, g: any) => sum + Number(g.nota_final), 0) / validFinalGrades.length
                         : null;
 
+                      const expirationDate = reportData.classObj?.data_postergacao || reportData.classObj?.data_fim;
+                      const todayStr = format(new Date(), 'yyyy-MM-dd');
+                      const isClassExpired = expirationDate ? expirationDate < todayStr : false;
+
                       // Compute overall status
                       let overallLabel = language === 'pt' ? 'EM FILTRAGEM / AVALIAÇÃO' : 'UNDER REVIEW';
                       let overallClass = 'bg-slate-100 text-slate-700';
 
-                      if (averageGrade !== null) {
+                      if (averageGrade === null && isClassExpired) {
+                        overallLabel = language === 'pt' ? 'NÃO CONCLUIU O CURSO' : 'COURSE NOT COMPLETED';
+                        overallClass = 'bg-rose-100 text-rose-700 font-extrabold border border-rose-200';
+                      } else if (averageGrade !== null) {
                         const hasReprovedDiscipline = (reportData?.grades || []).some((g: any) => g.nota_final !== null && g.nota_final < settings.media_aprovacao);
                         const totalAulas = reportData.attendance?.length || 0;
                         let percentualPresenca = 100;
@@ -1677,6 +1706,7 @@ export default function BoletimPage() {
                         <th key={i} className="px-1 lg:px-3 py-4 text-center">MOD {i + 1}</th>
                       ))}
                       <th className="px-2 lg:px-6 py-4 text-center">{t.reportCard.average}</th>
+                      <th className="px-2 lg:px-6 py-4 text-center">{language === 'pt' ? 'Situação' : 'Status'}</th>
 
                       <th className="px-3 lg:px-6 py-4 text-right print:hidden">{language === 'pt' ? 'Ações' : 'Actions'}</th>
                    </tr>
@@ -1684,7 +1714,7 @@ export default function BoletimPage() {
                  <tbody>
                    {boletimData.length === 0 ? (
                      <tr>
-                        <td colSpan={4 + courseModules} className="py-20 text-center">
+                        <td colSpan={5 + courseModules} className="py-20 text-center">
                            <div className="flex flex-col items-center text-slate-300">
                               <FileText size={48} className="mb-4 opacity-20" />
                               <p className="text-sm font-medium">{t.reportCard.noData}</p>
@@ -1727,6 +1757,12 @@ export default function BoletimPage() {
                                 {row.nota_final?.toFixed(1) || '-'}
                               </span>
                            </td>
+                            <td className="px-6 py-4 text-center">
+                              <span className={cn("px-2.5 py-1 rounded-lg text-[10px] font-black uppercase inline-flex items-center gap-1 border", status.className)}>
+                                <StatusIcon size={11} className="shrink-0" />
+                                <span>{status.label}</span>
+                              </span>
+                            </td>
                             <td className="px-6 py-4 text-right print:hidden">
                                <button onClick={() => setSelectedStudentForReport(row.aluno?.id)} className="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-600 text-white hover:text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer border border-blue-600 hover:border-blue-600 shadow-sm"><FileText size={12} /><span>{language === 'pt' ? 'Histórico' : 'Transcript'}</span></button>
                             </td>
@@ -2222,8 +2258,17 @@ export default function BoletimPage() {
                                           let statusClass = '';
                                           
                                           if (finalGradeValue === null || finalGradeValue === undefined) {
-                                            statusLabel = reportT[language as "pt" | "en"].pending;
-                                            statusClass = 'text-slate-500 bg-slate-50 border border-slate-100';
+                                            const expirationDate = reportData.classObj?.data_postergacao || reportData.classObj?.data_fim;
+                                             const todayStr = format(new Date(), 'yyyy-MM-dd');
+                                             const isClassExpired = expirationDate ? expirationDate < todayStr : false;
+
+                                             if (isClassExpired) {
+                                               statusLabel = language === 'pt' ? 'NÃO CONCLUIU' : 'NOT COMPLETED';
+                                               statusClass = 'text-rose-700 bg-rose-50 border border-rose-100 font-extrabold';
+                                             } else {
+                                               statusLabel = reportT[language as "pt" | "en"].pending;
+                                               statusClass = 'text-slate-500 bg-slate-50 border border-slate-100';
+                                             }
                                           } else if (finalGradeValue >= settings.media_aprovacao && (freqValue === null || freqValue >= settings.frequencia_minima)) {
                                             statusLabel = reportT[language as "pt" | "en"].approved;
                                             statusClass = 'text-emerald-700 bg-emerald-50 border border-emerald-100';
@@ -2394,10 +2439,17 @@ export default function BoletimPage() {
                                           ? validFinalGrades.reduce((sum: number, g: any) => sum + Number(g.nota_final), 0) / validFinalGrades.length
                                           : null;
 
-                                        let overallLabel = language === 'pt' ? 'EM DESENVOLVIMENTO' : 'UNDER REVIEW';
-                                        let overallClass = 'bg-slate-100 text-slate-700 border border-slate-200/60';
+                                        const expirationDate = reportData.classObj?.data_postergacao || reportData.classObj?.data_fim;
+                                         const todayStr = format(new Date(), 'yyyy-MM-dd');
+                                         const isClassExpired = expirationDate ? expirationDate < todayStr : false;
 
-                                        if (averageGrade !== null) {
+                                         let overallLabel = language === 'pt' ? 'EM DESENVOLVIMENTO' : 'UNDER REVIEW';
+                                         let overallClass = 'bg-slate-100 text-slate-700 border border-slate-200/60';
+
+                                         if (averageGrade === null && isClassExpired) {
+                                           overallLabel = language === 'pt' ? 'NÃO CONCLUIU O CURSO' : 'COURSE NOT COMPLETED';
+                                           overallClass = 'bg-rose-50 text-rose-700 border border-rose-150 font-black';
+                                         } else if (averageGrade !== null) {
                                           const hasReprovedDiscipline = (reportData?.grades || []).some((g: any) => g.nota_final !== null && g.nota_final < settings.media_aprovacao);
                                           const totalAulas = reportData.attendance?.length || 0;
                                           let percentualPresenca = 100;
