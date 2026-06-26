@@ -2772,7 +2772,7 @@ function TurmasContent() {
                       height: auto !important;
                       min-height: auto !important;
                       margin: 0 auto !important;
-                      padding: 0 !important;
+                      padding: 0 0 5mm 0 !important;
                       background: white !important;
                       box-shadow: none !important;
                       border: none !important;
@@ -3019,8 +3019,8 @@ function TurmasContent() {
                   }
                 </div>
 
-                {/* Micro-printed controlled copy warning centered */}
-                <div className="absolute bottom-[10mm] left-0 right-0 text-center text-[7px] font-bold tracking-[0.34em] text-neutral-400 uppercase">
+                {/* Micro-printed controlled copy warning centered (naturally flowing to prevent any overlapping) */}
+                <div className="mt-8 print:mt-4 text-center text-[7px] font-bold tracking-[0.34em] text-neutral-400 uppercase w-full">
                   {language === 'pt' ? 'Documento de uso oficial - Cópia controlada' : 'Official Document - Controlled Copy'}
                 </div>
               </div>
