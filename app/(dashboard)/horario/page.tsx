@@ -1126,105 +1126,150 @@ export default function HorarioPage() {
                                         ? "bg-slate-50 border border-slate-200/80 shadow-sm" 
                                         : "hover:bg-slate-50/40 border border-transparent"
                                   )}>
-                                    {isEditMode ? (
-                                      <div className="space-y-2.5">
-                                        <select 
-                                          value={cell.subjectId || ''}
-                                          onChange={(e) => {
-                                            updateCell(slot.id, day.key, 'subjectId', e.target.value);
-                                            updateCell(slot.id, day.key, 'topicId', '');
-                                            updateCell(slot.id, day.key, 'topic', '');
-                                          }}
-                                          className="w-full text-[10px] font-black text-neutral-950 bg-transparent border-none focus:ring-0 p-0 cursor-pointer block truncate"
-                                        >
-                                          <option value="">{t.schedule.subject}</option>
-                                          {filteredDisciplinas.map(d => (
-                                            <option key={d.id} value={d.id}>{d.nome}</option>
-                                          ))}
-                                        </select>
+                                    {(() => {
+                                      const cellTopicObj = materias.find(m => m.id === cell.topicId);
+                                      const cellDiscObj = disciplinas.find(d => d.id === cell.subjectId);
+                                      const moduloNum = cellTopicObj?.modulo_index || cellDiscObj?.modulo_index || 1;
+                                      const moduloLabel = language === 'pt' ? `Módulo ${moduloNum}` : `Module ${moduloNum}`;
 
-                                        <select 
-                                          value={cell.topicId || ''}
-                                          onChange={(e) => {
-                                            const selectedObj = cellTopics.find(ct => ct.id === e.target.value);
-                                            updateCell(slot.id, day.key, 'topicId', e.target.value);
-                                            if (selectedObj) {
-                                              updateCell(slot.id, day.key, 'topic', selectedObj.nome);
-                                            } else {
-                                              updateCell(slot.id, day.key, 'topic', '');
-                                            }
-                                          }}
-                                          disabled={!cell.subjectId}
-                                          className="w-full text-[10px] font-bold text-blue-600 bg-transparent border-none focus:ring-0 p-0 cursor-pointer block truncate disabled:opacity-40"
-                                        >
-                                          <option value="">{language === 'pt' ? 'Tópico' : 'Topic'}</option>
-                                          {cellTopics.map(m => (
-                                            <option key={m.id} value={m.id}>{m.nome}</option>
-                                          ))}
-                                        </select>
-
-                                        <select 
-                                          value={cell.instructorId || ''}
-                                          onChange={(e) => updateCell(slot.id, day.key, 'instructorId', e.target.value)}
-                                          className="w-full text-[10px] font-bold text-slate-600 bg-transparent border-none focus:ring-0 p-0 cursor-pointer block truncate"
-                                        >
-                                          <option value="">{t.schedule.instructor}</option>
-                                          {displayInstrutores.map(i => (
-                                            <option key={i.id} value={i.id}>{i.full_name}</option>
-                                          ))}
-                                        </select>
-
-                                        <div className="flex items-center gap-1">
-                                          <MapPin size={10} className="text-slate-300" />
-                                          <input 
-                                            value={cell.room || ''}
-                                            onChange={(e) => updateCell(slot.id, day.key, 'room', e.target.value)}
-                                            placeholder="Sala"
-                                            className="w-full text-[9px] font-bold text-slate-400 bg-transparent border-none focus:ring-0 p-0 placeholder:text-slate-200 uppercase"
-                                          />
-                                        </div>
-                                      </div>
-                                    ) : (
-                                      cell.subjectId ? (
-                                        <div className="space-y-2 flex-1 flex flex-col">
-                                          <div className="space-y-1">
-                                            <div className="flex items-center gap-1.5 text-neutral-950">
-                                              <BookOpen size={10} className="shrink-0" />
-                                              <span className="text-[11px] font-black leading-tight uppercase tracking-tight">
-                                                {disciplinas.find(d => d.id === cell.subjectId)?.nome || 'Disciplina'}
+                                      return isEditMode ? (
+                                        <div className="space-y-1.5 flex flex-col h-full justify-between">
+                                          <div className="space-y-1.5">
+                                            {/* 1. MÓDULO INDICATOR */}
+                                            <div className="flex items-center gap-1.5 text-blue-600">
+                                              <Layers size={9} className="shrink-0" />
+                                              <span className="text-[8px] font-black uppercase tracking-wider">
+                                                {moduloLabel}
                                               </span>
                                             </div>
-                                            
-                                            {(cell.topic || cell.topicId) && (
-                                              <div className="flex items-start gap-1.5 text-slate-600 pl-0.5 my-0.5">
-                                                <Book size={10} className="text-slate-400 shrink-0 mt-0.5" />
-                                                <span className="text-[10px] font-bold leading-tight uppercase tracking-tight text-slate-600 line-clamp-2">
-                                                  {cell.topic || materias.find(m => m.id === cell.topicId)?.nome || ''}
-                                                </span>
-                                              </div>
-                                            )}
 
+                                            {/* 2. DISCIPLINA SELECT */}
+                                            <div className="flex items-center gap-1.5 text-neutral-950">
+                                              <BookOpen size={9} className="shrink-0 text-neutral-400" />
+                                              <select 
+                                                value={cell.subjectId || ''}
+                                                onChange={(e) => {
+                                                  updateCell(slot.id, day.key, 'subjectId', e.target.value);
+                                                  updateCell(slot.id, day.key, 'topicId', '');
+                                                  updateCell(slot.id, day.key, 'topic', '');
+                                                }}
+                                                className="w-full text-[9px] font-black text-neutral-950 bg-transparent border-none focus:ring-0 p-0 cursor-pointer block truncate"
+                                              >
+                                                <option value="">{t.schedule.subject}</option>
+                                                {filteredDisciplinas.map(d => (
+                                                  <option key={d.id} value={d.id}>{d.nome}</option>
+                                                ))}
+                                              </select>
+                                            </div>
+
+                                            {/* 3. TÓPICO SELECT */}
+                                            <div className="flex items-center gap-1.5 text-slate-600">
+                                              <Book size={9} className="shrink-0 text-slate-400" />
+                                              <select 
+                                                value={cell.topicId || ''}
+                                                onChange={(e) => {
+                                                  const selectedObj = cellTopics.find(ct => ct.id === e.target.value);
+                                                  updateCell(slot.id, day.key, 'topicId', e.target.value);
+                                                  if (selectedObj) {
+                                                    updateCell(slot.id, day.key, 'topic', selectedObj.nome);
+                                                  } else {
+                                                    updateCell(slot.id, day.key, 'topic', '');
+                                                  }
+                                                }}
+                                                disabled={!cell.subjectId}
+                                                className="w-full text-[9px] font-bold text-blue-600 bg-transparent border-none focus:ring-0 p-0 cursor-pointer block truncate disabled:opacity-40"
+                                              >
+                                                <option value="">{language === 'pt' ? 'Tópico' : 'Topic'}</option>
+                                                {cellTopics.map(m => (
+                                                  <option key={m.id} value={m.id}>{m.nome}</option>
+                                                ))}
+                                              </select>
+                                            </div>
+
+                                            {/* 4. INSTRUTOR SELECT */}
                                             <div className="flex items-center gap-1.5 text-neutral-500">
-                                              <User size={10} className="shrink-0" />
-                                              <span className="text-[10px] font-bold">
-                                                {instrutores.find(i => i.id === cell.instructorId)?.full_name || cell.instructorId || 'Instrutor'}
-                                              </span>
+                                              <User size={9} className="shrink-0 text-slate-400" />
+                                              <select 
+                                                value={cell.instructorId || ''}
+                                                onChange={(e) => updateCell(slot.id, day.key, 'instructorId', e.target.value)}
+                                                className="w-full text-[9px] font-bold text-slate-600 bg-transparent border-none focus:ring-0 p-0 cursor-pointer block truncate"
+                                              >
+                                                <option value="">{t.schedule.instructor}</option>
+                                                {displayInstrutores.map(i => (
+                                                  <option key={i.id} value={i.id}>{i.full_name}</option>
+                                                ))}
+                                              </select>
                                             </div>
                                           </div>
-                                          
-                                          <div className="mt-auto pt-2 flex flex-col gap-1 border-t border-slate-100">
-                                            <div className="flex items-center gap-1.5 text-neutral-400">
-                                              <MapPin size={10} />
-                                              <span className="text-[9px] font-black uppercase tracking-tight">{cell.room || 'N/A'}</span>
-                                            </div>
+
+                                          {/* 5. SALA INPUT */}
+                                          <div className="flex items-center gap-1.5 pt-1.5 border-t border-slate-100 mt-auto">
+                                            <MapPin size={9} className="text-slate-400 shrink-0" />
+                                            <input 
+                                              value={cell.room || ''}
+                                              onChange={(e) => updateCell(slot.id, day.key, 'room', e.target.value)}
+                                              placeholder="Sala"
+                                              className="w-full text-[9px] font-bold text-slate-500 bg-transparent border-none focus:ring-0 p-0 placeholder:text-slate-200 uppercase"
+                                            />
                                           </div>
                                         </div>
                                       ) : (
-                                        <div className="flex-1 flex items-center justify-center opacity-10">
-                                          <Shield size={16} />
-                                        </div>
-                                      )
-                                    )}
+                                        cell.subjectId ? (
+                                          <div className="space-y-1.5 flex-1 flex flex-col justify-between">
+                                            <div className="space-y-1.5">
+                                              {/* 1. MÓDULO */}
+                                              <div className="flex items-center gap-1.5 text-blue-600">
+                                                <Layers size={10} className="shrink-0" />
+                                                <span className="text-[9px] font-black uppercase tracking-wider leading-none">
+                                                  {moduloLabel}
+                                                </span>
+                                              </div>
+
+                                              {/* 2. DISCIPLINA */}
+                                              <div className="flex items-center gap-1.5 text-neutral-950">
+                                                <BookOpen size={10} className="shrink-0" />
+                                                <span className="text-[11px] font-black leading-tight uppercase tracking-tight">
+                                                  {cellDiscObj?.nome || 'Disciplina'}
+                                                </span>
+                                              </div>
+                                              
+                                              {/* 3. TÓPICO */}
+                                              {(cell.topic || cell.topicId) && (
+                                                <div className="flex items-start gap-1.5 text-slate-600 pl-0.5">
+                                                  <Book size={10} className="text-slate-400 shrink-0 mt-0.5" />
+                                                  <span className="text-[10px] font-bold leading-tight uppercase tracking-tight text-slate-600 line-clamp-2">
+                                                    {cell.topic || cellTopicObj?.nome || ''}
+                                                  </span>
+                                                </div>
+                                              )}
+
+                                              {/* 4. INSTRUTOR */}
+                                              <div className="flex items-center gap-1.5 text-neutral-500">
+                                                <User size={10} className="shrink-0" />
+                                                <span className="text-[10px] font-bold leading-none">
+                                                  {instrutores.find(i => i.id === cell.instructorId)?.full_name || cell.instructorId || 'Instrutor'}
+                                                </span>
+                                              </div>
+                                            </div>
+                                            
+                                            {/* 5. SALA */}
+                                            <div className="pt-1.5 flex flex-col gap-1 border-t border-slate-100 mt-auto">
+                                              <div className="flex items-center gap-1.5 text-neutral-400">
+                                                <MapPin size={10} />
+                                                <span className="text-[9px] font-black uppercase tracking-tight leading-none">
+                                                  {language === 'pt' ? 'Sala: ' : 'Room: '}
+                                                  {cell.room || 'N/A'}
+                                                </span>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        ) : (
+                                          <div className="flex-1 flex items-center justify-center opacity-10">
+                                            <Shield size={16} />
+                                          </div>
+                                        )
+                                      );
+                                    })()}
                                   </div>
                                 </td>
                               );
