@@ -275,9 +275,14 @@ export default function CursosPage() {
     setSavingDisciplina(true);
 
     try {
+      // Ensure the code is unique in the database by appending a suffix, while display remains clean
+      const baseCode = (currentDisciplina.codigo || '').split('_')[0];
+      const uniqueSuffix = Math.random().toString(36).substring(2, 10).toUpperCase();
+      const dbCodigo = `${baseCode}_${uniqueSuffix}`;
+
       const dataToSave: any = {
         nome: currentDisciplina.nome,
-        codigo: currentDisciplina.codigo,
+        codigo: dbCodigo,
         carga_horaria: currentDisciplina.carga_horaria,
         curso_id: manageDisciplinasCurso.id,
         modulo_index: currentDisciplina.modulo_index || 1
@@ -1169,7 +1174,7 @@ export default function CursosPage() {
                       <div>
                         <h4 className="font-bold text-slate-800 text-sm">{d.nome}</h4>
                         <div className="flex items-center gap-3 mt-0.5">
-                          <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">{d.codigo}</span>
+                          <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">{d.codigo ? (d.codigo.split('_')[0] || d.codigo) : ''}</span>
                           <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400 uppercase">
                             <Clock size={12} className="opacity-50" />
                             {d.carga_horaria}H
@@ -1278,7 +1283,7 @@ export default function CursosPage() {
                 required
                 disabled
                 type="text"
-                value={currentDisciplina?.codigo || ''}
+                value={(currentDisciplina?.codigo || '').split('_')[0]}
                 className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl focus:outline-none text-sm font-mono text-slate-500 cursor-not-allowed"
                 placeholder="SAR0001"
               />
