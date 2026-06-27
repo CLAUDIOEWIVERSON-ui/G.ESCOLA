@@ -177,6 +177,49 @@ function BoletimContent() {
   const [classScale, setClassScale] = useState(0.55);
   const [downloadingClassPDF, setDownloadingClassPDF] = useState(false);
 
+  // Computed disciplines and grades for the student report card modal, accessible to all child cards
+  const sortedDisciplinesForReport = reportData?.disciplines ? [...(reportData.disciplines || [])].sort((a: any, b: any) => {
+    const mDiff = (a.modulo_index || 1) - (b.modulo_index || 1);
+    if (mDiff !== 0) return mDiff;
+    return a.nome.localeCompare(b.nome);
+  }) : [];
+  const firstDiscForReport = sortedDisciplinesForReport[0];
+  const firstGradeForReport = reportData?.grades ? (reportData.grades || []).find((g: any) => {
+    for (let m = 1; m <= 20; m++) {
+      const val = g[`nota${m}`];
+      if (val !== null && val !== undefined && val !== '') return true;
+    }
+    return false;
+  }) || (firstDiscForReport ? (reportData.grades || []).find((g: any) => g.disciplina_id === firstDiscForReport.id) : null) || (reportData.grades || [])[0] || null : null;
+
+  const reportComputedDisciplines = sortedDisciplinesForReport.map((disc: any, discIdx: number) => {
+    const moduleNum = disc.modulo_index || (discIdx + 1);
+    let finalGradeValue = null;
+    if (firstGradeForReport && moduleNum !== null) {
+      const modularGradeValue = firstGradeForReport[`nota${moduleNum}`];
+      if (modularGradeValue !== null && modularGradeValue !== undefined && modularGradeValue !== '') {
+        finalGradeValue = Number(modularGradeValue);
+      }
+    }
+    if (finalGradeValue === null) {
+      const directGrade = (reportData?.grades || []).find((g: any) => g.disciplina_id === disc.id);
+      finalGradeValue = directGrade ? directGrade.nota_final : null;
+    }
+    let freqValue = null;
+    if (firstGradeForReport && firstGradeForReport.frequencia !== null && firstGradeForReport.frequencia !== undefined) {
+      freqValue = firstGradeForReport.frequencia;
+    } else {
+      const directGrade = (reportData?.grades || []).find((g: any) => g.disciplina_id === disc.id);
+      freqValue = directGrade ? directGrade.frequencia : null;
+    }
+    return {
+      id: disc.id,
+      nome: disc.nome,
+      finalGradeValue,
+      freqValue
+    };
+  });
+
   // Dynamic auto-fit calculation based on viewport height or width
   useEffect(() => {
     if (!selectedStudentForReport) return;
@@ -572,63 +615,56 @@ function BoletimContent() {
       // Wait for React to render at full resolution scale
       await new Promise((resolve) => setTimeout(resolve, 350));
 
-      const convertedStyles: { element: HTMLElement; originalStyle: string }[] = [];
-      const oklchElements = printArea.querySelectorAll('*');
-      
-      oklchElements.forEach((el) => {
-        const hEl = el as HTMLElement;
-        const style = hEl.getAttribute('style') || '';
-        const bg = window.getComputedStyle(hEl).backgroundColor;
-        const textCol = window.getComputedStyle(hEl).color;
-        const borderCol = window.getComputedStyle(hEl).borderColor;
-
-        let override = '';
-        if (bg && bg.includes('oklch')) {
-          override += `background-color: ${parseAndConvertOklch(bg)} !important;`;
-        }
-        if (bg && bg.includes('oklab')) {
-          override += `background-color: ${parseAndConvertOklab(bg)} !important;`;
-        }
-        if (textCol && textCol.includes('oklch')) {
-          override += `color: ${parseAndConvertOklch(textCol)} !important;`;
-        }
-        if (textCol && textCol.includes('oklab')) {
-          override += `color: ${parseAndConvertOklab(textCol)} !important;`;
-        }
-        if (borderCol && borderCol.includes('oklch')) {
-          override += `border-color: ${parseAndConvertOklch(borderCol)} !important;`;
-        }
-        if (borderCol && borderCol.includes('oklab')) {
-          override += `border-color: ${parseAndConvertOklab(borderCol)} !important;`;
-        }
-
-        if (override) {
-          convertedStyles.push({ element: hEl, originalStyle: style });
-          hEl.setAttribute('style', style + (style.endsWith(';') || !style ? '' : ';') + override);
-        }
-      });
-
       const canvas = await html2canvas(printArea, {
         scale: 2.2, // Retina scale capture for crisp vectors and sharp text lines
         useCORS: true,
-        allowTaint: true,
         backgroundColor: '#ffffff',
         logging: false,
+        width: 794,
+        height: 1123,
+        windowWidth: 794,
+        windowHeight: 1123,
         onclone: (clonedDoc) => {
           const clonePrintArea = clonedDoc.getElementById('class-bulletin-print-area');
           if (clonePrintArea) {
             clonePrintArea.style.transform = 'none';
             clonePrintArea.style.transformOrigin = 'unset';
           }
-        }
-      });
 
-      // Restore style overrides
-      convertedStyles.forEach(({ element, originalStyle }) => {
-        if (originalStyle) {
-          element.setAttribute('style', originalStyle);
-        } else {
-          element.removeAttribute('style');
+          clonedDoc.querySelectorAll('style').forEach((styleEl) => {
+            try {
+              let cssText = styleEl.innerHTML;
+              if (cssText.includes('oklch') || cssText.includes('oklab')) {
+                cssText = parseAndConvertOklch(cssText);
+                cssText = parseAndConvertOklab(cssText);
+                styleEl.innerHTML = cssText;
+              }
+            } catch (e) {
+              console.error("Failed to process style element:", e);
+            }
+          });
+
+          const elements = clonedDoc.querySelectorAll('*');
+          elements.forEach((el) => {
+            const htmlEl = el as HTMLElement;
+            const styleProps = [
+              'color', 'backgroundColor', 'borderColor', 
+              'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor',
+              'outlineColor', 'fill', 'stroke'
+            ];
+            
+            try {
+              const computed = window.getComputedStyle(htmlEl);
+              styleProps.forEach((prop) => {
+                const val = computed[prop as any];
+                if (val && (val.includes('oklch') || val.includes('oklab'))) {
+                  let converted = parseAndConvertOklch(val);
+                  converted = parseAndConvertOklab(converted);
+                  htmlEl.style[prop as any] = converted;
+                }
+              });
+            } catch (err) {}
+          });
         }
       });
 
@@ -2532,7 +2568,7 @@ function BoletimContent() {
                                         if (totalAulas > 0) {
                                           percentualPresenca = (presencas / totalAulas) * 100;
                                         } else if (reportData.grades && reportData.grades.length > 0) {
-                                          const validFreqs = computedDisciplines.filter((cd: any) => cd.freqValue !== null && cd.freqValue !== undefined);
+                                          const validFreqs = reportComputedDisciplines.filter((cd: any) => cd.freqValue !== null && cd.freqValue !== undefined);
                                           if (validFreqs.length > 0) {
                                             percentualPresenca = validFreqs.reduce((sum: number, cd: any) => sum + cd.freqValue, 0) / validFreqs.length;
                                           }
@@ -2841,8 +2877,12 @@ function BoletimContent() {
                                       color: #000000 !important;
                                       width: 100% !important;
                                       height: auto !important;
+                                      overflow: visible !important;
                                     }
-                                    header, nav, aside, footer, button, .print\\:hidden, .no-print {
+                                    header, nav, aside, footer, button, .print\\:hidden, .no-print, [role="dialog"] > :not(#class-bulletin-print-area) {
+                                      display: none !important;
+                                    }
+                                    *:not(#class-bulletin-print-area):not(#class-bulletin-print-area *) {
                                       display: none !important;
                                     }
                                     #class-bulletin-print-area {
