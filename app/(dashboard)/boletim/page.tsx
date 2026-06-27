@@ -778,13 +778,31 @@ export default function BoletimPage() {
       const { data: grades, error: gradesError } = await gradesQuery;
       if (gradesError) throw gradesError;
 
+      const localCourseModules = turma?.curso?.qtd_modulos 
+        ? Math.min(turma.curso.qtd_modulos, 20) 
+        : (turma?.curso_id ? Math.min(cursos.find((c: any) => c.id === turma.curso_id)?.qtd_modulos || 4, 20) : 4);
+
       // 3. Merged list: only include students who are actually enrolled in the class!
       // This synchronizes lists and tables, excluding non-enrolled students like "Abdul Lima Quaresma".
       const mergedData = (students || []).map((student: any) => {
         const existingGrade = (grades || []).find((g: any) => g.aluno_id === student.id);
         if (existingGrade) {
+          let computedFinal = existingGrade.nota_final;
+          if (computedFinal === null || computedFinal === undefined || computedFinal === '') {
+            const scores: number[] = [];
+            for (let i = 1; i <= localCourseModules; i++) {
+              const val = existingGrade[`nota${i}`];
+              if (val !== null && val !== undefined && val !== '') {
+                scores.push(Number(val));
+              }
+            }
+            if (scores.length > 0) {
+              computedFinal = scores.reduce((x, y) => x + y, 0) / scores.length;
+            }
+          }
           return {
             ...existingGrade,
+            nota_final: computedFinal !== null ? Number(computedFinal) : null,
             aluno: student
           };
         } else {
@@ -1257,21 +1275,40 @@ export default function BoletimPage() {
                 <div className="overflow-x-auto">
                   {(() => {
                     const reportRows = (() => {
-                      const rows: any[] = [];
                       if (!reportData) return [];
-                      
-                      const totalModules = Math.min(reportData.courseObj?.qtd_modulos || 4, 20);
-                      const firstGrade = reportData.grades && reportData.grades.length > 0 ? reportData.grades[0] : null;
 
-                      for (let m = 1; m <= totalModules; m++) {
-                        const modularGradeValue = firstGrade ? firstGrade[`nota${m}`] : null;
+                      const sortedDisciplines = [...(reportData.disciplines || [])].sort((a: any, b: any) => {
+                        const mDiff = (a.modulo_index || 1) - (b.modulo_index || 1);
+                        if (mDiff !== 0) return mDiff;
+                        return a.nome.localeCompare(b.nome);
+                      });
+
+                      const firstDisc = sortedDisciplines[0];
+                      const firstGrade = firstDisc ? (reportData.grades || []).find((g: any) => g.disciplina_id === firstDisc.id) : null;
+
+                      const computedRows = sortedDisciplines.map((disc: any, discIdx: number) => {
+                        const moduleNum = disc.modulo_index || (discIdx + 1);
 
                         let finalGradeValue = null;
-                        if (modularGradeValue !== null && modularGradeValue !== undefined && modularGradeValue !== '') {
-                          finalGradeValue = Number(modularGradeValue);
+                        if (firstGrade && moduleNum !== null) {
+                          const modularGradeValue = firstGrade[`nota${moduleNum}`];
+                          if (modularGradeValue !== null && modularGradeValue !== undefined && modularGradeValue !== '') {
+                            finalGradeValue = Number(modularGradeValue);
+                          }
                         }
 
-                        let freqValue = firstGrade ? firstGrade.frequencia : null;
+                        if (finalGradeValue === null) {
+                          const directGrade = (reportData.grades || []).find((g: any) => g.disciplina_id === disc.id);
+                          finalGradeValue = directGrade ? directGrade.nota_final : null;
+                        }
+
+                        let freqValue = null;
+                        if (firstGrade && firstGrade.frequencia !== null && firstGrade.frequencia !== undefined) {
+                          freqValue = firstGrade.frequencia;
+                        } else {
+                          const directGrade = (reportData.grades || []).find((g: any) => g.disciplina_id === disc.id);
+                          freqValue = directGrade ? directGrade.frequencia : null;
+                        }
 
                         const finalGradeFormatted = finalGradeValue !== null && finalGradeValue !== undefined ? Number(finalGradeValue).toFixed(1) : '-';
 
@@ -1302,23 +1339,23 @@ export default function BoletimPage() {
                           statusClass = 'text-rose-600 font-extrabold';
                         }
 
-                        rows.push({
-                          id: `modulo-${m}`,
-                          modulo: `Módulo ${m}`,
-                          disciplina: language === 'pt' ? `Aproveitamento do Módulo ${m}` : `Module ${m} Assessment`,
+                        return {
+                          id: disc.id,
+                          modulo: `Módulo ${moduleNum}`,
+                          disciplina: disc.nome,
                           nota: finalGradeFormatted,
                           situacao: statusLabel,
                           statusClass,
-                        });
-                      }
+                        };
+                      });
 
-                      const rowsWithSpans: any[] = [];
-                      for (let i = 0; i < rows.length; i++) {
-                        const row = { ...rows[i], moduloSpan: 0 };
+                      const rowsWithSpans = [];
+                      for (let i = 0; i < computedRows.length; i++) {
+                        const row = { ...computedRows[i], moduloSpan: 0 };
                         
-                        if (i === 0 || rows[i].modulo !== rows[i - 1].modulo) {
+                        if (i === 0 || computedRows[i].modulo !== computedRows[i - 1].modulo) {
                           let span = 1;
-                          while (i + span < rows.length && rows[i + span].modulo === rows[i].modulo) {
+                          while (i + span < computedRows.length && computedRows[i + span].modulo === computedRows[i].modulo) {
                             span++;
                           }
                           row.moduloSpan = span;
@@ -1392,9 +1429,40 @@ export default function BoletimPage() {
                     if (totalAulas > 0) {
                       percentualPresenca = (presencas / totalAulas) * 100;
                     } else if (reportData.grades && reportData.grades.length > 0) {
-                      const validFreqs = reportData.grades.filter((g: any) => g.frequencia !== null && g.frequencia !== undefined);
+                      const sortedDisciplines = [...(reportData.disciplines || [])].sort((a: any, b: any) => {
+                        const mDiff = (a.modulo_index || 1) - (b.modulo_index || 1);
+                        if (mDiff !== 0) return mDiff;
+                        return a.nome.localeCompare(b.nome);
+                      });
+                      const firstDisc = sortedDisciplines[0];
+                      const firstGrade = firstDisc ? (reportData.grades || []).find((g: any) => g.disciplina_id === firstDisc.id) : null;
+
+                      const computedDisciplines = sortedDisciplines.map((disc: any, discIdx: number) => {
+                        const moduleNum = disc.modulo_index || (discIdx + 1);
+                        let finalGradeValue = null;
+                        if (firstGrade && moduleNum !== null) {
+                          const modularGradeValue = firstGrade[`nota${moduleNum}`];
+                          if (modularGradeValue !== null && modularGradeValue !== undefined && modularGradeValue !== '') {
+                            finalGradeValue = Number(modularGradeValue);
+                          }
+                        }
+                        if (finalGradeValue === null) {
+                          const directGrade = (reportData.grades || []).find((g: any) => g.disciplina_id === disc.id);
+                          finalGradeValue = directGrade ? directGrade.nota_final : null;
+                        }
+                        let freqValue = null;
+                        if (firstGrade && firstGrade.frequencia !== null && firstGrade.frequencia !== undefined) {
+                          freqValue = firstGrade.frequencia;
+                        } else {
+                          const directGrade = (reportData.grades || []).find((g: any) => g.disciplina_id === disc.id);
+                          freqValue = directGrade ? directGrade.frequencia : null;
+                        }
+                        return { finalGradeValue, freqValue };
+                      });
+
+                      const validFreqs = computedDisciplines.filter((cd: any) => cd.freqValue !== null && cd.freqValue !== undefined);
                       if (validFreqs.length > 0) {
-                        percentualPresenca = validFreqs.reduce((sum: number, g: any) => sum + g.frequencia, 0) / validFreqs.length;
+                        percentualPresenca = validFreqs.reduce((sum: number, cd: any) => sum + cd.freqValue, 0) / validFreqs.length;
                       }
                     }
 
@@ -1463,11 +1531,41 @@ export default function BoletimPage() {
                     </h3>
                     
                     {(() => {
-                      const validFinalGrades = reportData.grades
-                        ? reportData.grades.filter((g: any) => g.nota_final !== null && g.nota_final !== undefined) 
-                        : [];
+                      // Dynamically compute grades for each discipline using the fallback modular calculation
+                      const sortedDisciplines = [...(reportData.disciplines || [])].sort((a: any, b: any) => {
+                        const mDiff = (a.modulo_index || 1) - (b.modulo_index || 1);
+                        if (mDiff !== 0) return mDiff;
+                        return a.nome.localeCompare(b.nome);
+                      });
+                      const firstDisc = sortedDisciplines[0];
+                      const firstGrade = firstDisc ? (reportData.grades || []).find((g: any) => g.disciplina_id === firstDisc.id) : null;
+
+                      const computedDisciplines = sortedDisciplines.map((disc: any, discIdx: number) => {
+                        const moduleNum = disc.modulo_index || (discIdx + 1);
+                        let finalGradeValue = null;
+                        if (firstGrade && moduleNum !== null) {
+                          const modularGradeValue = firstGrade[`nota${moduleNum}`];
+                          if (modularGradeValue !== null && modularGradeValue !== undefined && modularGradeValue !== '') {
+                            finalGradeValue = Number(modularGradeValue);
+                          }
+                        }
+                        if (finalGradeValue === null) {
+                          const directGrade = (reportData.grades || []).find((g: any) => g.disciplina_id === disc.id);
+                          finalGradeValue = directGrade ? directGrade.nota_final : null;
+                        }
+                        let freqValue = null;
+                        if (firstGrade && firstGrade.frequencia !== null && firstGrade.frequencia !== undefined) {
+                          freqValue = firstGrade.frequencia;
+                        } else {
+                          const directGrade = (reportData.grades || []).find((g: any) => g.disciplina_id === disc.id);
+                          freqValue = directGrade ? directGrade.frequencia : null;
+                        }
+                        return { finalGradeValue, freqValue };
+                      });
+
+                      const validFinalGrades = computedDisciplines.filter((cd: any) => cd.finalGradeValue !== null && cd.finalGradeValue !== undefined);
                       const averageGrade = validFinalGrades.length > 0
-                        ? validFinalGrades.reduce((sum: number, g: any) => sum + Number(g.nota_final), 0) / validFinalGrades.length
+                        ? validFinalGrades.reduce((sum, cd) => sum + cd.finalGradeValue, 0) / validFinalGrades.length
                         : null;
 
                       const expirationDate = reportData.classObj?.data_postergacao || reportData.classObj?.data_fim;
@@ -1482,16 +1580,16 @@ export default function BoletimPage() {
                         overallLabel = language === 'pt' ? 'NÃO CONCLUIU O CURSO' : 'COURSE NOT COMPLETED';
                         overallClass = 'bg-rose-100 text-rose-700 font-extrabold border border-rose-200';
                       } else if (averageGrade !== null) {
-                        const hasReprovedDiscipline = (reportData?.grades || []).some((g: any) => g.nota_final !== null && g.nota_final < settings.media_aprovacao);
+                        const hasReprovedDiscipline = computedDisciplines.some((cd) => cd.finalGradeValue !== null && cd.finalGradeValue < settings.media_aprovacao);
                         const totalAulas = reportData.attendance?.length || 0;
                         let percentualPresenca = 100;
                         if (totalAulas > 0) {
                           const presencas = reportData.attendance.filter((a: any) => a.presente).length;
                           percentualPresenca = (presencas / totalAulas) * 100;
                         } else if (reportData.grades && reportData.grades.length > 0) {
-                          const validFreqs = reportData.grades.filter((g: any) => g.frequencia !== null && g.frequencia !== undefined);
+                          const validFreqs = computedDisciplines.filter((cd: any) => cd.freqValue !== null && cd.freqValue !== undefined);
                           if (validFreqs.length > 0) {
-                            percentualPresenca = validFreqs.reduce((sum: number, g: any) => sum + g.frequencia, 0) / validFreqs.length;
+                            percentualPresenca = validFreqs.reduce((sum: number, cd: any) => sum + cd.freqValue, 0) / validFreqs.length;
                           }
                         }
 
@@ -2385,9 +2483,9 @@ export default function BoletimPage() {
                                         if (totalAulas > 0) {
                                           percentualPresenca = (presencas / totalAulas) * 100;
                                         } else if (reportData.grades && reportData.grades.length > 0) {
-                                          const validFreqs = reportData.grades.filter((g: any) => g.frequencia !== null && g.frequencia !== undefined);
+                                          const validFreqs = computedDisciplines.filter((cd: any) => cd.freqValue !== null && cd.freqValue !== undefined);
                                           if (validFreqs.length > 0) {
-                                            percentualPresenca = validFreqs.reduce((sum: number, g: any) => sum + g.frequencia, 0) / validFreqs.length;
+                                            percentualPresenca = validFreqs.reduce((sum: number, cd: any) => sum + cd.freqValue, 0) / validFreqs.length;
                                           }
                                         }
 
@@ -2432,11 +2530,41 @@ export default function BoletimPage() {
                                       </div>
 
                                       {(() => {
-                                        const validFinalGrades = reportData.grades
-                                          ? reportData.grades.filter((g: any) => g.nota_final !== null && g.nota_final !== undefined) 
-                                          : [];
+                                        // Dynamically compute grades for each discipline using the fallback modular calculation
+                                        const sortedDisciplines = [...(reportData.disciplines || [])].sort((a: any, b: any) => {
+                                          const mDiff = (a.modulo_index || 1) - (b.modulo_index || 1);
+                                          if (mDiff !== 0) return mDiff;
+                                          return a.nome.localeCompare(b.nome);
+                                        });
+                                        const firstDisc = sortedDisciplines[0];
+                                        const firstGrade = firstDisc ? (reportData.grades || []).find((g: any) => g.disciplina_id === firstDisc.id) : null;
+
+                                        const computedDisciplines = sortedDisciplines.map((disc: any, discIdx: number) => {
+                                          const moduleNum = disc.modulo_index || (discIdx + 1);
+                                          let finalGradeValue = null;
+                                          if (firstGrade && moduleNum !== null) {
+                                            const modularGradeValue = firstGrade[`nota${moduleNum}`];
+                                            if (modularGradeValue !== null && modularGradeValue !== undefined && modularGradeValue !== '') {
+                                              finalGradeValue = Number(modularGradeValue);
+                                            }
+                                          }
+                                          if (finalGradeValue === null) {
+                                            const directGrade = (reportData.grades || []).find((g: any) => g.disciplina_id === disc.id);
+                                            finalGradeValue = directGrade ? directGrade.nota_final : null;
+                                          }
+                                          let freqValue = null;
+                                          if (firstGrade && firstGrade.frequencia !== null && firstGrade.frequencia !== undefined) {
+                                            freqValue = firstGrade.frequencia;
+                                          } else {
+                                            const directGrade = (reportData.grades || []).find((g: any) => g.disciplina_id === disc.id);
+                                            freqValue = directGrade ? directGrade.frequencia : null;
+                                          }
+                                          return { finalGradeValue, freqValue };
+                                        });
+
+                                        const validFinalGrades = computedDisciplines.filter((cd: any) => cd.finalGradeValue !== null && cd.finalGradeValue !== undefined);
                                         const averageGrade = validFinalGrades.length > 0
-                                          ? validFinalGrades.reduce((sum: number, g: any) => sum + Number(g.nota_final), 0) / validFinalGrades.length
+                                          ? validFinalGrades.reduce((sum, cd) => sum + cd.finalGradeValue, 0) / validFinalGrades.length
                                           : null;
 
                                         const expirationDate = reportData.classObj?.data_postergacao || reportData.classObj?.data_fim;
@@ -2450,16 +2578,16 @@ export default function BoletimPage() {
                                            overallLabel = language === 'pt' ? 'NÃO CONCLUIU O CURSO' : 'COURSE NOT COMPLETED';
                                            overallClass = 'bg-rose-50 text-rose-700 border border-rose-150 font-black';
                                          } else if (averageGrade !== null) {
-                                          const hasReprovedDiscipline = (reportData?.grades || []).some((g: any) => g.nota_final !== null && g.nota_final < settings.media_aprovacao);
+                                          const hasReprovedDiscipline = computedDisciplines.some((cd) => cd.finalGradeValue !== null && cd.finalGradeValue < settings.media_aprovacao);
                                           const totalAulas = reportData.attendance?.length || 0;
                                           let percentualPresenca = 100;
                                           if (totalAulas > 0) {
                                             const presencas = reportData.attendance.filter((a: any) => a.presente).length;
                                             percentualPresenca = (presencas / totalAulas) * 100;
                                           } else if (reportData.grades && reportData.grades.length > 0) {
-                                            const validFreqs = reportData.grades.filter((g: any) => g.frequencia !== null && g.frequencia !== undefined);
+                                            const validFreqs = computedDisciplines.filter((cd: any) => cd.freqValue !== null && cd.freqValue !== undefined);
                                             if (validFreqs.length > 0) {
-                                              percentualPresenca = validFreqs.reduce((sum: number, g: any) => sum + g.frequencia, 0) / validFreqs.length;
+                                              percentualPresenca = validFreqs.reduce((sum: number, cd: any) => sum + cd.freqValue, 0) / validFreqs.length;
                                             }
                                           }
 
