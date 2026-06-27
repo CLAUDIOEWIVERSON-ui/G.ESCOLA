@@ -1,7 +1,7 @@
 'use client';
 /* eslint-disable react-hooks/set-state-in-effect */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { useCursos, useTurmas, useDisciplinas, useConfiguracoes } from '@/hooks/useCachedData';
@@ -108,7 +108,7 @@ const reportT = {
   }
 };
 
-export default function BoletimPage() {
+function BoletimContent() {
   const { t, language } = useI18n();
   const { profile, isAdmin, isConvidado } = useUser();
   const isNifStudent = profile?.role === 'aluno' && (profile as any).isNifStudent;
@@ -2723,5 +2723,18 @@ export default function BoletimPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function BoletimPage() {
+  return (
+    <Suspense fallback={
+      <div className="py-24 flex flex-col items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-600"></div>
+        <p className="mt-4 text-slate-500 font-bold text-xs uppercase tracking-wider animate-pulse">Carregando...</p>
+      </div>
+    }>
+      <BoletimContent />
+    </Suspense>
   );
 }
