@@ -1309,7 +1309,13 @@ function BoletimContent() {
                       });
 
                       const firstDisc = sortedDisciplines[0];
-                      const firstGrade = firstDisc ? (reportData.grades || []).find((g: any) => g.disciplina_id === firstDisc.id) : null;
+                      const firstGrade = (reportData.grades || []).find((g: any) => {
+                        for (let m = 1; m <= 20; m++) {
+                          const val = g[`nota${m}`];
+                          if (val !== null && val !== undefined && val !== '') return true;
+                        }
+                        return false;
+                      }) || (firstDisc ? (reportData.grades || []).find((g: any) => g.disciplina_id === firstDisc.id) : null) || (reportData.grades || [])[0] || null;
 
                       const computedRows = sortedDisciplines.map((disc: any, discIdx: number) => {
                         const moduleNum = disc.modulo_index || (discIdx + 1);
@@ -1460,7 +1466,13 @@ function BoletimContent() {
                         return a.nome.localeCompare(b.nome);
                       });
                       const firstDisc = sortedDisciplines[0];
-                      const firstGrade = firstDisc ? (reportData.grades || []).find((g: any) => g.disciplina_id === firstDisc.id) : null;
+                      const firstGrade = (reportData.grades || []).find((g: any) => {
+                        for (let m = 1; m <= 20; m++) {
+                          const val = g[`nota${m}`];
+                          if (val !== null && val !== undefined && val !== '') return true;
+                        }
+                        return false;
+                      }) || (firstDisc ? (reportData.grades || []).find((g: any) => g.disciplina_id === firstDisc.id) : null) || (reportData.grades || [])[0] || null;
 
                       const computedDisciplines = sortedDisciplines.map((disc: any, discIdx: number) => {
                         const moduleNum = disc.modulo_index || (discIdx + 1);
@@ -1563,7 +1575,13 @@ function BoletimContent() {
                         return a.nome.localeCompare(b.nome);
                       });
                       const firstDisc = sortedDisciplines[0];
-                      const firstGrade = firstDisc ? (reportData.grades || []).find((g: any) => g.disciplina_id === firstDisc.id) : null;
+                      const firstGrade = (reportData.grades || []).find((g: any) => {
+                        for (let m = 1; m <= 20; m++) {
+                          const val = g[`nota${m}`];
+                          if (val !== null && val !== undefined && val !== '') return true;
+                        }
+                        return false;
+                      }) || (firstDisc ? (reportData.grades || []).find((g: any) => g.disciplina_id === firstDisc.id) : null) || (reportData.grades || [])[0] || null;
 
                       const computedDisciplines = sortedDisciplines.map((disc: any, discIdx: number) => {
                         const moduleNum = disc.modulo_index || (discIdx + 1);
@@ -2351,7 +2369,13 @@ function BoletimContent() {
 
                                         const rows = sortedDisciplines.map((disc: any, discIdx: number) => {
                                           const firstDisc = sortedDisciplines[0];
-                                          const firstGrade = firstDisc ? (reportData?.grades || []).find((g: any) => g.disciplina_id === firstDisc.id) : null;
+                                          const firstGrade = (reportData?.grades || []).find((g: any) => {
+                                            for (let m = 1; m <= 20; m++) {
+                                              const val = g[`nota${m}`];
+                                              if (val !== null && val !== undefined && val !== '') return true;
+                                            }
+                                            return false;
+                                          }) || (firstDisc ? (reportData?.grades || []).find((g: any) => g.disciplina_id === firstDisc.id) : null) || (reportData?.grades || [])[0] || null;
                                           const moduleNum = disc.modulo_index || (discIdx + 1);
 
                                           let finalGradeValue = null;
@@ -2562,7 +2586,13 @@ function BoletimContent() {
                                           return a.nome.localeCompare(b.nome);
                                         });
                                         const firstDisc = sortedDisciplines[0];
-                                        const firstGrade = firstDisc ? (reportData.grades || []).find((g: any) => g.disciplina_id === firstDisc.id) : null;
+                                        const firstGrade = (reportData.grades || []).find((g: any) => {
+                                          for (let m = 1; m <= 20; m++) {
+                                            const val = g[`nota${m}`];
+                                            if (val !== null && val !== undefined && val !== '') return true;
+                                          }
+                                          return false;
+                                        }) || (firstDisc ? (reportData.grades || []).find((g: any) => g.disciplina_id === firstDisc.id) : null) || (reportData.grades || [])[0] || null;
 
                                         const computedDisciplines = sortedDisciplines.map((disc: any, discIdx: number) => {
                                           const moduleNum = disc.modulo_index || (discIdx + 1);
@@ -2713,6 +2743,280 @@ function BoletimContent() {
                           className="bg-slate-800 hover:bg-slate-700 px-5 py-2.5 rounded-xl text-xs font-bold text-slate-300 transition-all cursor-pointer"
                         >
                           {reportT[language as "pt" | "en"].close}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {viewingClassBulletinPDF && (
+                  <div id="class-report-modal-backdrop" className="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-[100] flex items-center justify-center p-0 overflow-hidden animate-fade-in">
+                    <div id="class-report-modal-content" className="bg-slate-900 text-slate-100 w-screen h-screen max-w-full max-h-screen rounded-none shadow-2xl border-none flex flex-col">
+                      {/* Modal Actions Header */}
+                      <div className="p-4 border-b border-slate-800 flex items-center justify-between no-print bg-slate-900 rounded-none">
+                        <div className="flex items-center gap-2">
+                          <FileText className="text-blue-500" size={18} />
+                          <h3 className="text-xs font-black uppercase tracking-widest text-slate-200">
+                            {language === 'pt' ? 'Visualizador de Boletim de Rendimento de Turma' : 'Class Report Card Viewer'}
+                          </h3>
+                        </div>
+                        <div className="flex items-center gap-2.5">
+                          {/* PDF Download Button */}
+                          <button
+                            onClick={handleDownloadClassBulletinPDF}
+                            disabled={downloadingClassPDF || !selectedTurma || boletimData.length === 0}
+                            className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md shadow-emerald-500/10 cursor-pointer"
+                          >
+                            {downloadingClassPDF ? <Loader2 className="animate-spin" size={13} /> : <Download size={13} />}
+                            <span>{language === 'pt' ? 'Baixar PDF' : 'Download PDF'}</span>
+                          </button>
+
+                          {/* Close Button */}
+                          <button
+                            onClick={() => setViewingClassBulletinPDF(false)}
+                            className="p-2 hover:bg-slate-800 rounded-xl text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Modal Body Container with screen zoom fit and scrollability */}
+                      <div className="flex-1 overflow-auto p-6 bg-slate-950 flex flex-col items-center justify-start relative scrollbar-thin">
+                        <div className="w-full flex-1 flex flex-col items-center justify-start relative overflow-visible">
+                          {/* Floating zoom controls */}
+                          <div className="absolute top-0 right-0 z-[115] flex items-center gap-1.5 bg-slate-900/95 backdrop-blur-md px-2.5 py-1.5 rounded-xl border border-slate-800/80 text-xs text-slate-300 font-bold shadow-lg no-print">
+                            <button 
+                              onClick={() => setClassScale(s => Math.max(0.3, s - 0.05))}
+                              className="w-6 h-6 flex items-center justify-center bg-slate-800 hover:bg-slate-700 active:scale-95 rounded-lg transition font-mono text-xs focus:outline-none cursor-pointer"
+                              title="Zoom Out"
+                            >
+                              -
+                            </button>
+                            <span className="w-12 text-center text-[10px] font-mono tracking-wider">{(classScale * 100).toFixed(0)}%</span>
+                            <button 
+                              onClick={() => setClassScale(s => Math.min(1.5, s + 0.05))}
+                              className="w-6 h-6 flex items-center justify-center bg-slate-800 hover:bg-slate-700 active:scale-95 rounded-lg transition font-mono text-xs focus:outline-none cursor-pointer"
+                              title="Zoom In"
+                            >
+                              +
+                            </button>
+                          </div>
+
+                          {/* Outer wrapper with top-aligned start */}
+                          <div 
+                            className="flex items-start justify-center overflow-visible mt-4 mx-auto"
+                            style={{ 
+                              height: `${1123 * classScale}px`,
+                              width: `${794 * classScale}px`,
+                            }}
+                          >
+                            {/* Scaled frame box */}
+                            <div 
+                              style={{ 
+                                transform: `scale(${classScale})`, 
+                                transformOrigin: 'top center',
+                                width: '210mm',
+                                height: '297mm',
+                                minWidth: '210mm',
+                                minHeight: '297mm',
+                              }}
+                              className="shadow-2xl flex-shrink-0 transition-transform duration-100 ease-out bg-white rounded-lg overflow-hidden relative"
+                            >
+                              {/* THE CLASS REPORT PRINT CONTAINER */}
+                              <div 
+                                 id="class-bulletin-print-area"
+                                 className="w-[210mm] bg-white text-slate-900 p-8 flex flex-col justify-between font-sans relative text-left text-xs box-border border border-slate-100 overflow-y-auto scrollbar-thin cursor-pointer select-none transition-all duration-200"
+                                 style={{ height: '297mm', maxHeight: '297mm' }}
+                               >
+                                 <style dangerouslySetInnerHTML={{ __html: `
+                                  #class-bulletin-print-area > * {
+                                    flex-shrink: 0 !important;
+                                  }
+                                  @media print {
+                                    html, body {
+                                      margin: 0 !important;
+                                      padding: 0 !important;
+                                      background: #ffffff !important;
+                                      color: #000000 !important;
+                                      width: 100% !important;
+                                      height: auto !important;
+                                    }
+                                    header, nav, aside, footer, button, .print\\:hidden, .no-print {
+                                      display: none !important;
+                                    }
+                                    #class-bulletin-print-area {
+                                      visibility: visible !important;
+                                      position: relative !important;
+                                      width: 190mm !important;
+                                      margin: 0 auto !important;
+                                      padding: 0 !important;
+                                      border: none !important;
+                                      box-shadow: none !important;
+                                      background: #ffffff !important;
+                                    }
+                                  }
+                                 ` }} />
+
+                                 {/* Header */}
+                                 <div className="flex items-center justify-between pb-4 border-b border-slate-950">
+                                   <div className="flex items-center gap-4">
+                                     <div className="relative w-24 h-24 shrink-0 flex items-center justify-center overflow-hidden bg-white">
+                                       <Image
+                                         src={navalMissionLogo}
+                                         alt="Logo Missão de Assessoria Naval"
+                                         fill
+                                         className="object-contain"
+                                         referrerPolicy="no-referrer"
+                                         sizes="96px"
+                                         priority
+                                       />
+                                     </div>
+                                     <div className="text-left flex flex-col justify-center">
+                                       <h1 className="text-sm font-black tracking-widest text-slate-900 uppercase leading-none">
+                                         {reportT[language as "pt" | "en"].headerTitle}
+                                       </h1>
+                                       <p className="text-[9px] font-black tracking-widest text-slate-500 uppercase mt-1 leading-none">
+                                         {reportT[language as "pt" | "en"].headerSubtitle}
+                                       </p>
+                                     </div>
+                                   </div>
+                                   <div className="text-right flex flex-col justify-center">
+                                     <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest leading-none">BOLETIM COLETIVO</span>
+                                     <span className="font-mono text-[9px] font-extrabold text-slate-850 mt-1 leading-none tracking-wider">
+                                       #{selectedTurma.slice(0, 8).toUpperCase()}
+                                     </span>
+                                   </div>
+                                 </div>
+
+                                 {/* Class Information Details Panel */}
+                                 <div className="grid grid-cols-4 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-slate-900 mt-2">
+                                   <div className="col-span-2 flex flex-col gap-0.5">
+                                     <span className="text-[8px] font-black tracking-widest text-slate-400 uppercase leading-none">{language === 'pt' ? 'CURSO' : 'COURSE'}</span>
+                                     <span className="text-xs font-black uppercase text-slate-900 break-words whitespace-normal tracking-wide mt-1 leading-tight">
+                                       {turmas.find((t: any) => t.id === selectedTurma)?.curso?.nome || 'C-E-BBS'}
+                                     </span>
+                                   </div>
+                                   <div className="flex flex-col gap-0.5">
+                                     <span className="text-[8px] font-black tracking-widest text-slate-400 uppercase leading-none">{language === 'pt' ? 'TURMA' : 'CLASS'}</span>
+                                     <span className="text-xs font-black uppercase text-slate-800 tracking-wide mt-1 leading-tight">
+                                       {turmas.find((t: any) => t.id === selectedTurma)?.nome}
+                                     </span>
+                                   </div>
+                                   <div className="flex flex-col gap-0.5">
+                                     <span className="text-[8px] font-black tracking-widest text-slate-400 uppercase leading-none">{language === 'pt' ? 'ANO' : 'YEAR'}</span>
+                                     <span className="text-xs font-mono font-black text-slate-800 mt-1 leading-tight">
+                                       {selectedAno || turmas.find((t: any) => t.id === selectedTurma)?.ano || new Date().getFullYear()}
+                                     </span>
+                                   </div>
+                                 </div>
+
+                                 {/* Class Table */}
+                                 <div className="flex flex-col mt-3 flex-1 overflow-hidden">
+                                   <div className="flex items-center gap-1.5 mb-1.5">
+                                     <BookOpen className="text-slate-900" size={13} />
+                                     <h3 className="text-[9px] font-black text-slate-900 tracking-widest uppercase mb-0">
+                                       {language === 'pt' ? 'RENDIMENTO DA TURMA' : 'CLASS ACADEMIC PERFORMANCE'}
+                                     </h3>
+                                   </div>
+
+                                   <div className="border border-slate-200 rounded-xl overflow-hidden shadow-xs">
+                                     <table className="w-full text-left border-collapse bg-white table-auto">
+                                       <thead>
+                                         <tr className="bg-slate-900 text-[8px] font-black text-white uppercase tracking-widest border-b border-slate-850">
+                                           <th className="px-3.5 py-2 border-r border-slate-800 w-[5%] text-center">#</th>
+                                           <th className="px-3.5 py-2 border-r border-slate-800 w-[45%]">{language === 'pt' ? 'Aluno' : 'Student'}</th>
+                                           {Array.from({ length: courseModules }).map((_, i) => (
+                                             <th key={i} className="px-1 py-2 text-center border-r border-slate-800 w-[8%]">MOD {i + 1}</th>
+                                           ))}
+                                           <th className="px-3.5 py-2 text-center border-r border-slate-800 w-[12%]">{language === 'pt' ? 'Média' : 'Avg'}</th>
+                                           <th className="px-3.5 py-2 text-right w-[14%]">{language === 'pt' ? 'Situação' : 'Status'}</th>
+                                         </tr>
+                                       </thead>
+                                       <tbody className="text-[9px]">
+                                         {boletimData.length === 0 ? (
+                                           <tr>
+                                             <td colSpan={4 + courseModules} className="text-center py-4 text-slate-400 font-bold bg-white">
+                                               {language === 'pt' ? 'Nenhum aluno lançado.' : 'No students found.'}
+                                             </td>
+                                           </tr>
+                                         ) : (
+                                           boletimData.map((row: any, idx: number) => {
+                                             const status = getStatus(row.nota_final, row.frequencia);
+                                             return (
+                                               <tr key={row.id} className="border-b border-slate-200 bg-white hover:bg-slate-50">
+                                                 <td className="px-3.5 py-1.5 text-center font-bold border-r border-slate-200 text-slate-400 font-mono">
+                                                   {idx + 1}
+                                                 </td>
+                                                 <td className="px-3.5 py-1.5 font-bold text-slate-800 border-r border-slate-200">
+                                                   <div className="font-extrabold">{row.aluno?.nome}</div>
+                                                   <div className="text-[8px] font-mono text-slate-400">#{row.aluno?.matricula}</div>
+                                                 </td>
+                                                 {Array.from({ length: courseModules }).map((_, i) => {
+                                                   const notaValue = (row as any)[`nota${i + 1}`];
+                                                   return (
+                                                     <td key={i} className="px-1 py-1.5 text-center border-r border-slate-200 font-mono">
+                                                       {notaValue !== null && notaValue !== undefined ? Number(notaValue).toFixed(1) : '-'}
+                                                     </td>
+                                                   );
+                                                 })}
+                                                 <td className="px-3.5 py-1.5 text-center border-r border-slate-200 font-black font-mono">
+                                                   {row.nota_final !== null && row.nota_final !== undefined ? Number(row.nota_final).toFixed(1) : '-'}
+                                                 </td>
+                                                 <td className="px-3.5 py-1.5 text-right font-bold">
+                                                   <span className={cn("px-1.5 py-0.5 rounded text-[7px] font-black uppercase inline-block border", status.className)}>
+                                                     {status.label}
+                                                   </span>
+                                                 </td>
+                                               </tr>
+                                             );
+                                           })
+                                         )}
+                                       </tbody>
+                                     </table>
+                                   </div>
+                                 </div>
+
+                                 {/* Summary stats */}
+                                 <div className="grid grid-cols-2 gap-4 mt-3 border-t border-slate-250 pt-3">
+                                   <div className="flex items-center justify-between text-[10px] font-bold text-slate-600">
+                                     <span>{language === 'pt' ? 'MÉDIA GERAL DA TURMA:' : 'CLASS OVERALL AVERAGE:'}</span>
+                                     <span className="font-mono font-black text-blue-700 bg-blue-50 border border-blue-105 px-2 py-0.5 rounded">
+                                       {classStats.avg ? classStats.avg.toFixed(2) : '-'}
+                                     </span>
+                                   </div>
+                                   <div className="flex items-center justify-between text-[10px] font-bold text-slate-600">
+                                     <span>{language === 'pt' ? 'TOTAL DE ALUNOS:' : 'TOTAL STUDENTS:'}</span>
+                                     <span className="font-mono font-black text-slate-800 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded">
+                                       {classStats.total || '-'}
+                                     </span>
+                                   </div>
+                                 </div>
+
+                                 {/* Signatures */}
+                                 <div className="grid grid-cols-2 gap-10 pt-4 mt-2 border-t border-dashed border-slate-300">
+                                   <div className="flex flex-col items-center text-center">
+                                     <div className="w-44 border-b border-slate-400 h-5"></div>
+                                     <span className="text-[8px] font-black text-slate-700 uppercase mt-1 tracking-wider leading-none">Instrutor Responsável</span>
+                                   </div>
+                                   <div className="flex flex-col items-center text-center">
+                                     <div className="w-44 border-b border-slate-400 h-5"></div>
+                                     <span className="text-[8px] font-black text-slate-700 uppercase mt-1 tracking-wider leading-none">Diretor de Ensino</span>
+                                   </div>
+                                 </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Modal Footer */}
+                      <div className="p-4 border-t border-slate-700/50 flex justify-end gap-3 no-print bg-slate-900 rounded-none">
+                        <button
+                          onClick={() => setViewingClassBulletinPDF(false)}
+                          className="bg-slate-800 hover:bg-slate-700 px-5 py-2.5 rounded-xl text-xs font-bold text-slate-300 transition-all cursor-pointer"
+                        >
+                          {language === 'pt' ? 'Fechar' : 'Close'}
                         </button>
                       </div>
                     </div>
