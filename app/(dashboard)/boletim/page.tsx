@@ -2,6 +2,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 
 import { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { useCursos, useTurmas, useDisciplinas, useConfiguracoes } from '@/hooks/useCachedData';
 import { useI18n } from '@/lib/i18n/LanguageContext';
@@ -117,6 +118,7 @@ export default function BoletimPage() {
   const { turmas: rawTurmas } = useTurmas();
   const { disciplinas } = useDisciplinas();
   const { configuracoes } = useConfiguracoes();
+  const searchParams = useSearchParams();
 
   const cursos = useMemo(() => {
     return (rawCursos || []).filter((c: any) => !c.internacional);
@@ -133,6 +135,29 @@ export default function BoletimPage() {
   const [selectedCurso, setSelectedCurso] = useState('');
   const [selectedTurma, setSelectedTurma] = useState('');
   const [selectedAno, setSelectedAno] = useState<string>('');
+
+  useEffect(() => {
+    if (searchParams && turmas.length > 0) {
+      const paramTurma = searchParams.get('turmaId');
+      if (paramTurma) {
+        const foundTurma = turmas.find((t: any) => t.id === paramTurma);
+        if (foundTurma) {
+          if (foundTurma.curso_id) {
+            setSelectedCurso(foundTurma.curso_id);
+          }
+          if (foundTurma.ano) {
+            setSelectedAno(String(foundTurma.ano));
+          }
+          setSelectedTurma(paramTurma);
+        }
+      } else {
+        const paramCurso = searchParams.get('cursoId');
+        if (paramCurso) {
+          setSelectedCurso(paramCurso);
+        }
+      }
+    }
+  }, [searchParams, turmas]);
   const [courseModules, setCourseModules] = useState(4);
   
   const [boletimData, setBoletimData] = useState<any[]>([]);

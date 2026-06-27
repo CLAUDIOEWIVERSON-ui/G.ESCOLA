@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import Image from 'next/image';
+import Link from 'next/link';
 import maleAvatar from '@/src/assets/images/avatar_male_1778977230783.png';
 import femaleAvatar from '@/src/assets/images/avatar_female_1778977246051.png';
 import militaryMaleAvatar from '@/src/assets/images/avatar_military_male_1779964887322.png';
@@ -404,6 +405,15 @@ export default function NotasPage() {
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{t.grades.title}</h1>
           <p className="text-slate-500 text-sm">{t.grades.subtitle}</p>
         </div>
+        {selectedTurma && (
+          <Link
+            href={`/boletim?turmaId=${selectedTurma}&cursoId=${selectedCurso}`}
+            className="self-start md:self-auto inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-sm cursor-pointer"
+          >
+            <FileText size={16} />
+            <span>{language === 'pt' ? 'Ver Boletim da Turma' : 'View Class Bulletin'}</span>
+          </Link>
+        )}
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
