@@ -69,7 +69,7 @@ export function EventMarquee({ thought }: EventMarqueeProps = {}) {
 
         if (data) {
           // Filtrar apenas turmas que não estão canceladas
-          const filtered = data.filter(t => t.status !== 'cancelada');
+          const filtered = data.filter((t: any) => t.status !== 'cancelada');
           setEvaluationBanners(filtered);
         }
       } catch (err) {

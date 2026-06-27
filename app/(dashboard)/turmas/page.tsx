@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
-import { useTurmas, useCursos } from '@/hooks/useCachedData';
+import { useTurmas, useCursos, useDisciplinas } from '@/hooks/useCachedData';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
 import { Plus, Search, Layers as LayersIcon, Library, Calendar, Clock, MapPin, Pencil, Trash2, Loader2, CheckCircle2, RefreshCcw, Users, Mail, Phone, Building, Camera, MessageCircle, XCircle, FileText, X, GraduationCap, School, ChevronLeft, ChevronRight, Printer, Monitor, Globe, Anchor, Swords } from 'lucide-react';
@@ -31,7 +31,8 @@ function TurmasContent() {
   const isReadOnly = isConvidado || !isAdmin;
   const { turmas, loading: loadingTurmas, mutate: revalidateTurmas } = useTurmas();
   const { cursos, loading: loadingCursos } = useCursos();
-  const loading = loadingTurmas || loadingCursos;
+  const { disciplinas, loading: loadingDisciplinas } = useDisciplinas();
+  const loading = loadingTurmas || loadingCursos || loadingDisciplinas;
 
   const canEditTurma = useCallback((turma: any) => {
     if (isConvidado) return false;
@@ -577,7 +578,7 @@ function TurmasContent() {
             .select('*')
             .eq('id', studentId)
             .maybeSingle()
-            .then(({ data, error }) => {
+            .then(({ data, error }: { data: any; error: any }) => {
               if (!error && data) {
                 setStudentAccess(null);
                 setCurrentAluno(data);
@@ -589,7 +590,7 @@ function TurmasContent() {
                     .select('*')
                     .eq('student_id', data.id)
                     .maybeSingle()
-                    .then(({ data: accessData, error: accessError }) => {
+                    .then(({ data: accessData, error: accessError }: { data: any; error: any }) => {
                       if (!accessError && accessData) {
                         setStudentAccess(accessData);
                       }
@@ -1585,6 +1586,57 @@ function TurmasContent() {
                 ))}
               </select>
             </div>
+
+            {currentTurma?.curso_id && (
+              <div className="md:col-span-2 bg-slate-50 border border-slate-100 rounded-2xl p-4 shadow-inner">
+                <h4 className="text-xs font-black text-slate-700 uppercase tracking-wider mb-3 flex items-center gap-2">
+                  <Library size={14} className="text-blue-600" />
+                  {language === 'pt' ? 'Quantidade de Disciplinas por Módulo' : 'Number of Disciplines by Module'}
+                </h4>
+                {(() => {
+                  const courseDisciplines = (disciplinas || []).filter((d: any) => d.curso_id === currentTurma.curso_id && !d.deleted_at);
+                  if (courseDisciplines.length === 0) {
+                    return (
+                      <p className="text-[11px] text-slate-400 italic">
+                        {language === 'pt' ? 'Nenhuma disciplina cadastrada para este curso.' : 'No disciplines registered for this course.'}
+                      </p>
+                    );
+                  }
+                  
+                  // Group by modulo_index
+                  const modulesGroup: { [key: number]: any[] } = {};
+                  courseDisciplines.forEach((d: any) => {
+                    const mod = d.modulo_index || 1;
+                    if (!modulesGroup[mod]) {
+                      modulesGroup[mod] = [];
+                    }
+                    modulesGroup[mod].push(d);
+                  });
+
+                  const sortedModules = Object.keys(modulesGroup).map(Number).sort((a, b) => a - b);
+
+                  return (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {sortedModules.map((mod) => (
+                        <div key={mod} className="bg-white border border-slate-100 rounded-xl p-3 text-center shadow-sm">
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">
+                            {language === 'pt' ? `Módulo ${mod}` : `Module ${mod}`}
+                          </span>
+                          <span className="text-lg font-extrabold text-slate-700 block">
+                            {modulesGroup[mod].length}
+                          </span>
+                          <span className="text-[9px] text-slate-400 block font-medium">
+                            {modulesGroup[mod].length === 1 
+                              ? (language === 'pt' ? 'disciplina' : 'discipline') 
+                              : (language === 'pt' ? 'disciplinas' : 'disciplines')}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
 
             <div>
               <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{t.classes.year}</label>
