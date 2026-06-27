@@ -401,11 +401,17 @@ function BoletimContent() {
         useCORS: true,
         backgroundColor: '#ffffff',
         logging: false,
-        width: 794,
-        height: 1123,
         windowWidth: 794,
-        windowHeight: 1123,
         onclone: (clonedDoc) => {
+          // Process all cloned print area elements to ensure they are fully expanded
+          const clonedPrintAreas = clonedDoc.querySelectorAll('#student-report-print-area');
+          clonedPrintAreas.forEach((cArea) => {
+            const htmlArea = cArea as HTMLElement;
+            htmlArea.style.height = 'auto';
+            htmlArea.style.maxHeight = 'none';
+            htmlArea.style.overflow = 'visible';
+          });
+
           // Process all <style> tags in the cloned document to preemptively transform oklch and oklab stylesheet rules
           clonedDoc.querySelectorAll('style').forEach((styleEl) => {
             try {
@@ -463,7 +469,28 @@ function BoletimContent() {
         format: 'a4'
       });
 
-      pdf.addImage(imgData, 'PNG', 0, 0, 210, 297);
+      const imgWidth = 210;
+      const pageHeight = 297;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      if (imgHeight <= 315) {
+        // Fits perfectly or with very slight downscaling within a single page
+        pdf.addImage(imgData, 'PNG', 0, 0, 210, 297);
+      } else {
+        // Multi-page layout: slice the canvas image across multiple A4 pages
+        let heightLeft = imgHeight;
+        let position = 0;
+
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+
+        while (heightLeft >= 2) {
+          position = heightLeft - imgHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+        }
+      }
       
       const sanitizedName = reportData.student.nome.replace(/[^a-z0-9]/gi, '_').toLowerCase();
       const fileName = `boletim_individual_${sanitizedName}.pdf`;
@@ -506,6 +533,15 @@ function BoletimContent() {
         allowTaint: true,
         backgroundColor: '#ffffff',
         onclone: (clonedDoc) => {
+          // Process all cloned print area elements to ensure they are fully expanded
+          const clonedPrintAreas = clonedDoc.querySelectorAll('#student-report-print-area');
+          clonedPrintAreas.forEach((cArea) => {
+            const htmlArea = cArea as HTMLElement;
+            htmlArea.style.height = 'auto';
+            htmlArea.style.maxHeight = 'none';
+            htmlArea.style.overflow = 'visible';
+          });
+
           // Process OKLCH / OKLAB styles to avoid crash (same as pdf generator)
           clonedDoc.querySelectorAll('style').forEach((styleEl) => {
             try {
