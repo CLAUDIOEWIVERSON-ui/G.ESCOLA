@@ -49,15 +49,38 @@ import {
   startOfYear,
   endOfYear,
   eachMonthOfInterval,
-  isSameMonth
+  isSameMonth,
+  isWeekend
 } from 'date-fns';
 import { ptBR, enUS } from 'date-fns/locale';
+
+// Helper to fetch Brazil holidays (Simplified for this version)
+const BRAZIL_HOLIDAYS = [
+  { date: "2026-01-01", name: "Confraternização Universal" },
+  { date: "2026-02-17", name: "Carnaval" },
+  { date: "2026-04-03", name: "Sexta-feira Santa" },
+  { date: "2026-04-21", name: "Tiradentes" },
+  { date: "2026-05-01", name: "Dia do Trabalho" },
+  { date: "2026-06-04", name: "Corpus Christi" },
+  { date: "2026-09-07", name: "Independência do Brasil" },
+  { date: "2026-10-12", name: "Nossa Senhora Aparecida" },
+  { date: "2026-11-02", name: "Finados" },
+  { date: "2026-11-15", name: "Proclamação da República" },
+  { date: "2026-12-25", name: "Natal" },
+];
+
+const isHoliday = (date: Date) => {
+  const dStr = format(date, "yyyy-MM-dd");
+  return BRAZIL_HOLIDAYS.find((h) => h.date === dStr);
+};
 
 export default function FrequenciaPage() {
   const { t, language } = useI18n();
   const { profile, isAdmin, isInstrutor, isConvidado } = useUser();
   const isReadOnly = isConvidado || (!isAdmin && !isInstrutor);
   const dateLocale = language === 'pt' ? ptBR : enUS;
+  const instructorSignatureLabel = language === 'pt' ? 'Assinatura do Instrutor-Chefe / Coordenador' : 'Signature of Chief Instructor / Coordinator';
+  const studentSignatureLabel = language === 'pt' ? 'Assinatura do Aluno / Representante' : 'Signature of Student / Representative';
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -77,6 +100,7 @@ export default function FrequenciaPage() {
   const [students, setStudents] = useState<any[]>([]);
   const [attendanceRecords, setAttendanceRecords] = useState<Record<string, { presente: boolean, id?: string }>>({});
   const [mapData, setMapData] = useState<any[]>([]);
+  const [activeCell, setActiveCell] = useState<{ studentId: string; dayStr: string } | null>(null);
 
   const activeTurma = turmas.find(t => t.id === selectedTurma);
 
@@ -362,7 +386,7 @@ export default function FrequenciaPage() {
     }
   };
 
-  const handleToggleMapAttendance = async (studentId: string, dayStr: string, currentRecord: any) => {
+  const handleToggleMapAttendance = async (studentId: string, dayStr: string, status: 'P' | 'F' | 'FJ' | 'A' | 'D' | null) => {
     if (isReadOnly) return;
 
     if (!isAdmin) {
@@ -380,10 +404,6 @@ export default function FrequenciaPage() {
         }
       }
     }
-
-    // Toggle logic: defaults to true if no record exists
-    const wasPresent = currentRecord ? currentRecord.presente : true;
-    const newPresence = !wasPresent;
 
     const toastId = toast.loading(language === 'pt' ? 'Atualizando presença...' : 'Updating attendance...');
     try {
@@ -404,21 +424,27 @@ export default function FrequenciaPage() {
       const { error: deleteError } = await deleteQuery;
       if (deleteError) throw deleteError;
 
-      // Insert new record
-      const recordToInsert = {
-        aluno_id: studentId,
-        turma_id: selectedTurma,
-        disciplina_id: selectedDisciplina || null,
-        data: dayStr,
-        presente: newPresence
-      };
+      let insertedData: any[] | null = null;
 
-      const { data: insertedData, error: insertError } = await supabase
-        .from('frequencia')
-        .insert([recordToInsert])
-        .select();
+      if (status !== null) {
+        // Insert new record
+        const recordToInsert = {
+          aluno_id: studentId,
+          turma_id: selectedTurma,
+          disciplina_id: selectedDisciplina || null,
+          data: dayStr,
+          presente: status === 'P' || status === 'A' || status === 'D',
+          observacao: status === 'P' || status === 'F' ? null : status
+        };
 
-      if (insertError) throw insertError;
+        const { data, error: insertError } = await supabase
+          .from('frequencia')
+          .insert([recordToInsert])
+          .select();
+
+        if (insertError) throw insertError;
+        insertedData = data;
+      }
 
       // Snappy local state update
       setMapData(prev => {
@@ -1297,21 +1323,38 @@ export default function FrequenciaPage() {
                         })).map(day => {
                           const dayStr = format(day, 'yyyy-MM-dd');
                           const isStartDay = activeTurma?.data_inicio && dayStr === activeTurma.data_inicio;
+                          const holiday = isHoliday(day);
+                          const isWk = isWeekend(day);
+                          
                           return (
                             <th 
                               key={day.toString()} 
                               className={cn(
-                                "p-3 min-w-[65px] text-center transition-colors border border-slate-200",
-                                isStartDay ? "bg-blue-50/70 border-b-2 border-b-blue-500 font-bold" : "bg-slate-50",
-                                !isStartDay && [0, 6].includes(day.getDay()) ? "bg-slate-100 opacity-60 text-slate-400" : "text-slate-500"
+                                "p-2 min-w-[50px] text-center transition-colors border border-slate-200 relative",
+                                isStartDay ? "bg-blue-50/70 border-b-2 border-b-blue-500 font-bold" : "",
+                                holiday ? "bg-rose-100/80 text-rose-800 border-rose-300 font-black" : 
+                                isWk ? "bg-slate-100/80 text-slate-500 font-semibold" : "bg-slate-50 text-slate-600"
                               )}
+                              title={holiday ? (language === 'pt' ? 'Feriado: ' : 'Holiday: ') + holiday.name : undefined}
                             >
-                              <div className="text-[9px] font-bold opacity-60 uppercase mb-1">{format(day, 'EEE', { locale: dateLocale })}</div>
-                              <div className="text-sm font-black text-slate-700 flex flex-col items-center justify-center">
-                                <span>{format(day, 'dd')}</span>
+                              <div className={cn(
+                                "text-[8px] font-bold opacity-75 uppercase mb-0.5",
+                                holiday ? "text-rose-700 font-extrabold" : ""
+                              )}>
+                                {format(day, 'EEE', { locale: dateLocale })}
+                              </div>
+                              <div className="text-xs font-black flex flex-col items-center justify-center">
+                                <span className={cn(
+                                  holiday ? "text-rose-800 text-[13px]" : ""
+                                )}>{format(day, 'dd')}</span>
                                 {isStartDay && (
-                                  <span className="mt-1 block mx-auto text-[8px] leading-none font-bold bg-blue-100 text-blue-800 px-1 py-0.5 rounded uppercase tracking-wider font-mono scale-90 whitespace-nowrap">
+                                  <span className="mt-0.5 block mx-auto text-[6px] leading-none font-bold bg-blue-100 text-blue-800 px-0.5 py-0.2 rounded uppercase tracking-wider font-mono scale-90 whitespace-nowrap">
                                     Início
+                                  </span>
+                                )}
+                                {holiday && (
+                                  <span className="mt-0.5 block mx-auto text-[6px] leading-none font-extrabold bg-rose-200 text-rose-800 px-0.5 py-0.2 rounded uppercase tracking-wider font-mono scale-90 whitespace-nowrap">
+                                    Feriado
                                   </span>
                                 )}
                               </div>
@@ -1375,60 +1418,132 @@ export default function FrequenciaPage() {
                               const dbDateStr = typeof r.data === 'string' ? r.data.substring(0, 10) : format(new Date(r.data), 'yyyy-MM-dd');
                               return r.aluno_id === student.id && dbDateStr === dayStr;
                             });
-                            const isWeekend = [0, 6].includes(day.getDay());
+                            
+                            const isWk = isWeekend(day);
+                            const holiday = isHoliday(day);
                             const isStartDay = activeTurma?.data_inicio && dayStr === activeTurma.data_inicio;
+                            const status = rec ? (rec.observacao || (rec.presente ? 'P' : 'F')) : null;
                             
                             return (
                               <td 
                                 key={day.toString()} 
                                 className={cn(
-                                  "p-0 border border-slate-200 cursor-pointer transition-all hover:bg-blue-50/50",
-                                  isWeekend && "bg-slate-50/30",
-                                  isStartDay && "bg-blue-50/30",
+                                  "p-1 border border-slate-200 cursor-pointer transition-all hover:bg-blue-50/50 relative text-center min-w-[42px] h-12 print:h-8",
+                                  holiday ? "bg-rose-50/30" : isWk ? "bg-slate-100/30" : "bg-white",
+                                  isStartDay && "bg-blue-50/20",
                                   isReadOnly && "cursor-not-allowed opacity-80"
                                 )}
-                                title={isReadOnly ? (language === 'pt' ? "Apenas visualização" : "View only") : (language === 'pt' ? "Clique para alternar presença" : "Click to toggle attendance")}
+                                title={
+                                  isReadOnly 
+                                    ? (language === 'pt' ? "Apenas visualização" : "View only") 
+                                    : holiday 
+                                      ? (language === 'pt' ? 'Feriado: ' : 'Holiday: ') + holiday.name
+                                      : (language === 'pt' ? "Clique para gerenciar presença" : "Click to manage attendance")
+                                }
                                 onClick={() => {
                                   if (isReadOnly) return;
-                                  handleToggleMapAttendance(student.id, dayStr, rec);
+                                  if (activeCell?.studentId === student.id && activeCell?.dayStr === dayStr) {
+                                    setActiveCell(null);
+                                  } else {
+                                    setActiveCell({ studentId: student.id, dayStr });
+                                  }
                                 }}
                               >
-                                <div className="w-full h-14 flex items-center justify-center print:h-5 print:w-auto">
-                                  {rec ? (
-                                    rec.presente ? (
-                                      <>
-                                        <div className="print:hidden">
-                                          <motion.div 
-                                            initial={{ scale: 0.5, opacity: 0 }}
-                                            animate={{ scale: 1, opacity: 1 }}
-                                            className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-sm"
-                                          >
-                                            <CheckCircle2 size={16} strokeWidth={3} />
-                                          </motion.div>
-                                        </div>
-                                        <span className="hidden print:inline font-black text-emerald-700 text-[10px]">P</span>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <div className="print:hidden">
-                                          <motion.div 
-                                            initial={{ scale: 0.5, opacity: 0 }}
-                                            animate={{ scale: 1, opacity: 1 }}
-                                            className="w-7 h-7 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center shadow-sm"
-                                          >
-                                            <XCircle size={16} strokeWidth={3} />
-                                          </motion.div>
-                                        </div>
-                                        <span className="hidden print:inline font-black text-rose-700 text-[10px]">F</span>
-                                      </>
-                                    )
+                                <div className="w-full h-full flex items-center justify-center relative">
+                                  {status ? (
+                                    <div className={cn(
+                                      "w-7 h-7 rounded-lg flex items-center justify-center font-extrabold text-[11px] shadow-sm transition-transform",
+                                      status === 'P' && "bg-emerald-500 text-white border border-emerald-600 shadow-sm",
+                                      status === 'F' && "bg-rose-500 text-white border border-rose-600 shadow-sm",
+                                      status === 'FJ' && "bg-amber-500 text-white border border-amber-600 shadow-sm",
+                                      status === 'A' && "bg-orange-500 text-white border border-orange-600 shadow-sm",
+                                      status === 'D' && "bg-sky-500 text-white border border-sky-600 shadow-sm"
+                                    )}>
+                                      {status}
+                                    </div>
                                   ) : (
-                                    !isWeekend && (
-                                      <>
-                                        <div className="w-1.5 h-1.5 rounded-full bg-slate-200 group-hover:bg-slate-300 transition-colors print:hidden" />
-                                        <span className="hidden print:inline text-neutral-300 text-[10px]">—</span>
-                                      </>
+                                    holiday ? (
+                                      <span className="text-[10px] font-black text-rose-400 select-none">H</span>
+                                    ) : isWk ? (
+                                      <span className="text-[10px] font-black text-slate-300 select-none">
+                                        {day.getDay() === 0 ? 'D' : 'S'}
+                                      </span>
+                                    ) : (
+                                      <div className="w-1.5 h-1.5 rounded-full bg-slate-200 group-hover:bg-slate-300 transition-colors print:hidden" />
                                     )
+                                  )}
+                                  
+                                  {/* Absolute selection popover */}
+                                  {activeCell?.studentId === student.id && activeCell?.dayStr === dayStr && (
+                                    <div 
+                                      className="absolute z-50 bg-white border border-slate-200 shadow-2xl rounded-2xl p-2 flex flex-col gap-1 min-w-[140px] left-1/2 -translate-x-1/2 top-full mt-2 print:hidden"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-center border-b border-slate-100 pb-1.5 mb-1.5">
+                                        Frequência
+                                      </div>
+                                      <button
+                                        onClick={() => {
+                                          handleToggleMapAttendance(student.id, dayStr, 'P');
+                                          setActiveCell(null);
+                                        }}
+                                        className="flex items-center gap-2 px-2 py-1.5 hover:bg-emerald-50 text-emerald-800 rounded-lg text-xs font-bold w-full text-left"
+                                      >
+                                        <span className="w-5 h-5 flex items-center justify-center bg-emerald-500 text-white rounded text-[10px] font-black">P</span>
+                                        {language === 'pt' ? 'Presente' : 'Present'}
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          handleToggleMapAttendance(student.id, dayStr, 'F');
+                                          setActiveCell(null);
+                                        }}
+                                        className="flex items-center gap-2 px-2 py-1.5 hover:bg-rose-50 text-rose-800 rounded-lg text-xs font-bold w-full text-left"
+                                      >
+                                        <span className="w-5 h-5 flex items-center justify-center bg-rose-500 text-white rounded text-[10px] font-black">F</span>
+                                        {language === 'pt' ? 'Falta' : 'Absent'}
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          handleToggleMapAttendance(student.id, dayStr, 'FJ');
+                                          setActiveCell(null);
+                                        }}
+                                        className="flex items-center gap-2 px-2 py-1.5 hover:bg-amber-50 text-amber-800 rounded-lg text-xs font-bold w-full text-left"
+                                      >
+                                        <span className="w-5 h-5 flex items-center justify-center bg-amber-500 text-white rounded text-[10px] font-black">FJ</span>
+                                        {language === 'pt' ? 'F. Justificada' : 'Excused'}
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          handleToggleMapAttendance(student.id, dayStr, 'A');
+                                          setActiveCell(null);
+                                        }}
+                                        className="flex items-center gap-2 px-2 py-1.5 hover:bg-orange-50 text-orange-800 rounded-lg text-xs font-bold w-full text-left"
+                                      >
+                                        <span className="w-5 h-5 flex items-center justify-center bg-orange-500 text-white rounded text-[10px] font-black">A</span>
+                                        {language === 'pt' ? 'Atraso' : 'Delay'}
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          handleToggleMapAttendance(student.id, dayStr, 'D');
+                                          setActiveCell(null);
+                                        }}
+                                        className="flex items-center gap-2 px-2 py-1.5 hover:bg-sky-50 text-sky-800 rounded-lg text-xs font-bold w-full text-left"
+                                      >
+                                        <span className="w-5 h-5 flex items-center justify-center bg-sky-500 text-white rounded text-[10px] font-black">D</span>
+                                        {language === 'pt' ? 'Dispensado' : 'Excused'}
+                                      </button>
+                                      <div className="border-t border-slate-100 my-1.5" />
+                                      <button
+                                        onClick={() => {
+                                          handleToggleMapAttendance(student.id, dayStr, null);
+                                          setActiveCell(null);
+                                        }}
+                                        className="flex items-center gap-2 px-2 py-1.5 hover:bg-slate-100 text-slate-500 rounded-lg text-xs font-semibold w-full text-left"
+                                      >
+                                        <span className="w-5 h-5 flex items-center justify-center bg-slate-100 rounded text-[10px] font-bold">—</span>
+                                        {language === 'pt' ? 'Limpar' : 'Clear'}
+                                      </button>
+                                    </div>
                                   )}
                                 </div>
                               </td>
@@ -1445,12 +1560,12 @@ export default function FrequenciaPage() {
               <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-10 pt-6 border-t border-dashed border-slate-200 text-center text-xs">
                 <div className="flex flex-col items-center">
                   <div className="w-56 border-b border-slate-300 h-8 mb-2" />
-                  <span className="font-bold text-slate-700">{language === 'pt' ? 'Assinatura do Instrutor-Chefe / Coordenador' : 'Signature of Chief Instructor / Coordinator'}</span>
+                  <span className="font-bold text-slate-700">{instructorSignatureLabel}</span>
                   <span className="text-slate-400 text-[9px] uppercase font-mono mt-0.5">{language === 'pt' ? 'Responsável Técnico' : 'Technical Director'}</span>
                 </div>
                 <div className="flex flex-col items-center">
                   <div className="w-56 border-b border-slate-300 h-8 mb-2" />
-                  <span className="font-bold text-slate-700">{language === 'pt' ? 'Assinatura do Aluno / Representante' : 'Signature of Student / Representative'}</span>
+                  <span className="font-bold text-slate-700">{studentSignatureLabel}</span>
                   <span className="text-slate-400 text-[9px] uppercase font-mono mt-0.5">{language === 'pt' ? 'Confirmação de Frequência' : 'Attendance Confirmation'}</span>
                 </div>
               </div>
