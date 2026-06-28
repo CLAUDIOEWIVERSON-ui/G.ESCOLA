@@ -1130,7 +1130,7 @@ export default function HorarioPage() {
                                     {(() => {
                                       const cellTopicObj = materias.find(m => m.id === cell.topicId);
                                       const cellDiscObj = disciplinas.find(d => d.id === cell.subjectId);
-                                      const moduloNum = cellTopicObj?.modulo_index || cellDiscObj?.modulo_index || 1;
+                                      const moduloNum = cellDiscObj?.modulo_index || cellTopicObj?.modulo_index || 1;
                                       const moduloLabel = language === 'pt' ? `Módulo ${moduloNum}` : `Module ${moduloNum}`;
 
                                       return isEditMode ? (

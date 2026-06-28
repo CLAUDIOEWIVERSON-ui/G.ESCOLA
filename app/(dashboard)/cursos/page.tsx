@@ -380,12 +380,13 @@ export default function CursosPage() {
 
   const handleOpenMateriaModal = (materia: any = null) => {
     if (isReadOnly) return;
+    const defaultModuloIndex = manageMateriasDisciplina?.modulo_index || activeModuloIndex || 1;
     setCurrentMateria(materia || { 
       nome: '', 
       descricao: '', 
-      modulo_index: activeModuloIndex, 
+      modulo_index: defaultModuloIndex, 
       disciplina_id: manageMateriasDisciplina?.id,
-      ordem: materiasModulos.filter(m => m.modulo_index === activeModuloIndex).length + 1
+      ordem: materiasModulos.filter(m => m.modulo_index === defaultModuloIndex).length + 1
     });
     setIsMateriaModalOpen(true);
   };
@@ -399,7 +400,7 @@ export default function CursosPage() {
       const dataToSave = {
         nome: currentMateria.nome,
         descricao: currentMateria.descricao,
-        modulo_index: currentMateria.modulo_index,
+        modulo_index: manageMateriasDisciplina.modulo_index || currentMateria.modulo_index || 1,
         disciplina_id: manageMateriasDisciplina.id,
         ordem: currentMateria.ordem
       };
