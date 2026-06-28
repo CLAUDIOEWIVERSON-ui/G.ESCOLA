@@ -386,12 +386,21 @@ function BoletimContent() {
         throw new Error("Print area element not found");
       }
 
+      // Temporarily expand the container's height and overflow styles to fully display all data
+      const originalHeight = element.style.height;
+      const originalMaxHeight = element.style.maxHeight;
+      const originalOverflow = element.style.overflow;
+
+      element.style.height = 'auto';
+      element.style.maxHeight = 'none';
+      element.style.overflow = 'visible';
+
       // Temporarily clear the scale transform for high-fidelity canvas snapshot
       const prevScale = scale;
       setScale(1.0);
       
-      // Let the DOM update to full-scale resolution
-      await new Promise((resolve) => setTimeout(resolve, 150));
+      // Let the DOM update to full-scale resolution and expanded dimensions
+      await new Promise((resolve) => setTimeout(resolve, 300));
 
       const html2canvas = (await import('html2canvas')).default;
       const { jsPDF } = await import('jspdf');
@@ -459,7 +468,10 @@ function BoletimContent() {
         }
       });
 
-      // Restore screen preview scale back to configured level
+      // Restore original screen styles and preview scale back to configured level
+      element.style.height = originalHeight;
+      element.style.maxHeight = originalMaxHeight;
+      element.style.overflow = originalOverflow;
       setScale(prevScale);
 
       const imgData = canvas.toDataURL('image/png');
@@ -473,11 +485,17 @@ function BoletimContent() {
       const pageHeight = 297;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-      if (imgHeight <= 315) {
-        // Fits perfectly or with very slight downscaling within a single page
-        pdf.addImage(imgData, 'PNG', 0, 0, 210, 297);
+      if (imgHeight <= pageHeight) {
+        // Fits perfectly on a single page without scaling or distortion
+        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      } else if (imgHeight <= 315) {
+        // Very close to pageHeight, scale down proportionally to fit precisely in a single page with zero distortion
+        const scaleFactor = pageHeight / imgHeight;
+        const adjustedWidth = imgWidth * scaleFactor;
+        const xOffset = (imgWidth - adjustedWidth) / 2;
+        pdf.addImage(imgData, 'PNG', xOffset, 0, adjustedWidth, pageHeight);
       } else {
-        // Multi-page layout: slice the canvas image across multiple A4 pages
+        // Multi-page layout: slice the canvas image across multiple A4 pages with exact proportional dimensions
         let heightLeft = imgHeight;
         let position = 0;
 
@@ -522,10 +540,19 @@ function BoletimContent() {
       const element = document.getElementById('student-report-print-area');
       if (!element) throw new Error('Report element not found');
 
+      // Temporarily expand the container's height and overflow styles to fully display all data
+      const originalHeight = element.style.height;
+      const originalMaxHeight = element.style.maxHeight;
+      const originalOverflow = element.style.overflow;
+
+      element.style.height = 'auto';
+      element.style.maxHeight = 'none';
+      element.style.overflow = 'visible';
+
       // Set scale temporary to higher resolution for premium quality copy
       const prevScale = scale;
       setScale(1.2);
-      await new Promise(resolve => setTimeout(resolve, 80));
+      await new Promise(resolve => setTimeout(resolve, 300));
 
       const canvas = await html2canvas(element, {
         scale: 2,
@@ -586,6 +613,10 @@ function BoletimContent() {
         }
       });
 
+      // Restore original screen styles and preview scale back to configured level
+      element.style.height = originalHeight;
+      element.style.maxHeight = originalMaxHeight;
+      element.style.overflow = originalOverflow;
       setScale(prevScale);
 
       canvas.toBlob(async (blob) => {
@@ -641,11 +672,20 @@ function BoletimContent() {
         return;
       }
 
+      // Temporarily expand the container's height and overflow styles to fully display all data
+      const originalHeight = printArea.style.height;
+      const originalMaxHeight = printArea.style.maxHeight;
+      const originalOverflow = printArea.style.overflow;
+
+      printArea.style.height = 'auto';
+      printArea.style.maxHeight = 'none';
+      printArea.style.overflow = 'visible';
+
       // Temporarily set scale to 1.0 for perfect pixel capture
       const prevScale = classScale;
       setClassScale(1.0);
       
-      // Wait for React to render at full resolution scale
+      // Wait for React to render at full resolution scale and expanded dimensions
       await new Promise((resolve) => setTimeout(resolve, 350));
 
       const convertedStyles: { element: HTMLElement; originalStyle: string }[] = [];
@@ -708,6 +748,10 @@ function BoletimContent() {
         }
       });
 
+      // Restore original screen styles and scale
+      printArea.style.height = originalHeight;
+      printArea.style.maxHeight = originalMaxHeight;
+      printArea.style.overflow = originalOverflow;
       setClassScale(prevScale);
 
       const imgData = canvas.toDataURL('image/png');
@@ -717,7 +761,34 @@ function BoletimContent() {
         format: 'a4'
       });
 
-      pdf.addImage(imgData, 'PNG', 0, 0, 210, 297);
+      const imgWidth = 210;
+      const pageHeight = 297;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      if (imgHeight <= pageHeight) {
+        // Fits perfectly on a single page without scaling or distortion
+        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      } else if (imgHeight <= 315) {
+        // Very close to pageHeight, scale down proportionally to fit precisely in a single page with zero distortion
+        const scaleFactor = pageHeight / imgHeight;
+        const adjustedWidth = imgWidth * scaleFactor;
+        const xOffset = (imgWidth - adjustedWidth) / 2;
+        pdf.addImage(imgData, 'PNG', xOffset, 0, adjustedWidth, pageHeight);
+      } else {
+        // Multi-page layout: slice the canvas image across multiple A4 pages with exact proportional dimensions
+        let heightLeft = imgHeight;
+        let position = 0;
+
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+
+        while (heightLeft >= 2) {
+          position = heightLeft - imgHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+        }
+      }
       
       const currentTurmaObj = turmas.find((t: any) => t.id === selectedTurma);
       const sanitizedTurmaName = currentTurmaObj?.nome ? currentTurmaObj.nome.replace(/[^a-z0-9]/gi, '_').toLowerCase() : 'turma';
