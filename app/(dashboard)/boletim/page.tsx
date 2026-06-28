@@ -386,15 +386,6 @@ function BoletimContent() {
         throw new Error("Print area element not found");
       }
 
-      // Temporarily expand the container's height and overflow styles to fully display all data
-      const originalHeight = element.style.height;
-      const originalMaxHeight = element.style.maxHeight;
-      const originalOverflow = element.style.overflow;
-
-      element.style.height = 'auto';
-      element.style.maxHeight = 'none';
-      element.style.overflow = 'visible';
-
       // Temporarily clear the scale transform for high-fidelity canvas snapshot
       const prevScale = scale;
       setScale(1.0);
@@ -420,6 +411,19 @@ function BoletimContent() {
             htmlArea.style.maxHeight = 'none';
             htmlArea.style.overflow = 'visible';
           });
+
+          const clonedFrameBox = clonedDoc.getElementById('student-report-frame-box');
+          if (clonedFrameBox) {
+            clonedFrameBox.style.height = 'auto';
+            clonedFrameBox.style.minHeight = 'none';
+            clonedFrameBox.style.overflow = 'visible';
+          }
+
+          const clonedOuterWrapper = clonedDoc.getElementById('student-report-outer-wrapper');
+          if (clonedOuterWrapper) {
+            clonedOuterWrapper.style.height = 'auto';
+            clonedOuterWrapper.style.overflow = 'visible';
+          }
 
           // Process all <style> tags in the cloned document to preemptively transform oklch and oklab stylesheet rules
           clonedDoc.querySelectorAll('style').forEach((styleEl) => {
@@ -468,10 +472,7 @@ function BoletimContent() {
         }
       });
 
-      // Restore original screen styles and preview scale back to configured level
-      element.style.height = originalHeight;
-      element.style.maxHeight = originalMaxHeight;
-      element.style.overflow = originalOverflow;
+      // Restore preview scale back to configured level
       setScale(prevScale);
 
       const imgData = canvas.toDataURL('image/png');
@@ -672,15 +673,6 @@ function BoletimContent() {
         return;
       }
 
-      // Temporarily expand the container's height and overflow styles to fully display all data
-      const originalHeight = printArea.style.height;
-      const originalMaxHeight = printArea.style.maxHeight;
-      const originalOverflow = printArea.style.overflow;
-
-      printArea.style.height = 'auto';
-      printArea.style.maxHeight = 'none';
-      printArea.style.overflow = 'visible';
-
       // Temporarily set scale to 1.0 for perfect pixel capture
       const prevScale = classScale;
       setClassScale(1.0);
@@ -748,10 +740,7 @@ function BoletimContent() {
         }
       });
 
-      // Restore original screen styles and scale
-      printArea.style.height = originalHeight;
-      printArea.style.maxHeight = originalMaxHeight;
-      printArea.style.overflow = originalOverflow;
+      // Restore preview scale back to configured level
       setClassScale(prevScale);
 
       const imgData = canvas.toDataURL('image/png');
@@ -2207,21 +2196,23 @@ function BoletimContent() {
 
                             {/* Outer wrapper with top-aligned start to enable natural scrolling across visual scale */}
                             <div 
+                              id="student-report-outer-wrapper"
                               className="flex items-start justify-center overflow-visible mt-4 mx-auto"
                               style={{ 
-                                height: `${1123 * scale}px`,
+                                height: downloadingPDF ? 'auto' : `${1123 * scale}px`,
                                 width: `${794 * scale}px`,
                               }}
                             >
                               {/* Scaled frame box */}
                               <div 
+                                id="student-report-frame-box"
                                 style={{ 
                                   transform: `scale(${scale})`, 
                                   transformOrigin: 'top center',
                                   width: '210mm',
-                                  height: '297mm',
+                                  height: downloadingPDF ? 'auto' : '297mm',
                                   minWidth: '210mm',
-                                  minHeight: '297mm',
+                                  minHeight: downloadingPDF ? 'none' : '297mm',
                                 }}
                                 className="shadow-2xl flex-shrink-0 transition-transform duration-100 ease-out bg-white rounded-lg overflow-hidden relative"
                               >
@@ -2231,7 +2222,7 @@ function BoletimContent() {
                                    className="w-[210mm] bg-white text-slate-900 p-8 flex flex-col justify-between font-sans relative text-left text-xs box-border border border-slate-100 overflow-y-auto scrollbar-thin cursor-pointer select-none transition-all duration-200 group/report hover:border-blue-400/40"
                                    onClick={handleCopyAsImage}
                                    title={language === 'pt' ? 'Clique com o botão esquerdo para copiar o Histórico como imagem' : 'Left click to copy Transcript as image'}
-                                   style={{ height: '297mm', maxHeight: '297mm' }}
+                                   style={downloadingPDF ? { height: 'auto', maxHeight: 'none', overflow: 'visible' } : { height: '297mm', maxHeight: '297mm' }}
                                  >
                                    <style dangerouslySetInnerHTML={{ __html: `
                                     #student-report-print-area > * {
@@ -2922,21 +2913,23 @@ function BoletimContent() {
 
                           {/* Outer wrapper with top-aligned start */}
                           <div 
+                            id="class-report-outer-wrapper"
                             className="flex items-start justify-center overflow-visible mt-4 mx-auto"
                             style={{ 
-                              height: `${1123 * classScale}px`,
+                              height: downloadingClassPDF ? 'auto' : `${1123 * classScale}px`,
                               width: `${794 * classScale}px`,
                             }}
                           >
                             {/* Scaled frame box */}
                             <div 
+                              id="class-report-frame-box"
                               style={{ 
                                 transform: `scale(${classScale})`, 
                                 transformOrigin: 'top center',
                                 width: '210mm',
-                                height: '297mm',
+                                height: downloadingClassPDF ? 'auto' : '297mm',
                                 minWidth: '210mm',
-                                minHeight: '297mm',
+                                minHeight: downloadingClassPDF ? 'none' : '297mm',
                               }}
                               className="shadow-2xl flex-shrink-0 transition-transform duration-100 ease-out bg-white rounded-lg overflow-hidden relative"
                             >
@@ -2944,7 +2937,7 @@ function BoletimContent() {
                               <div 
                                  id="class-bulletin-print-area"
                                  className="w-[210mm] bg-white text-slate-900 p-8 flex flex-col justify-between font-sans relative text-left text-xs box-border border border-slate-100 overflow-y-auto scrollbar-thin cursor-pointer select-none transition-all duration-200"
-                                 style={{ height: '297mm', maxHeight: '297mm' }}
+                                 style={downloadingClassPDF ? { height: 'auto', maxHeight: 'none', overflow: 'visible' } : { height: '297mm', maxHeight: '297mm' }}
                                >
                                  <style dangerouslySetInnerHTML={{ __html: `
                                   #class-bulletin-print-area > * {
