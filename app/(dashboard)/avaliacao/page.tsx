@@ -907,7 +907,7 @@ function AvaliacaoAlunoForm() {
                       const filledSlots = slots.map(slot => {
                         const cell = getCellData(slot.id, day.key);
                         return { slot, cell };
-                      }).filter(item => item.cell.subjectId || item.cell.room);
+                      }).filter(item => item.cell.subjectId || item.cell.customSubject || item.cell.room);
 
                       return (
                         <div key={day.key} className="border border-slate-150 rounded-lg p-3 bg-slate-50/50 hover:bg-slate-100/35 transition flex flex-col justify-start">
@@ -919,15 +919,15 @@ function AvaliacaoAlunoForm() {
                           ) : (
                             <div className="space-y-2">
                               {filledSlots.map(({ slot, cell }) => {
-                                const subjectName = disciplinas.find(d => d.id === cell.subjectId)?.nome || cell.subjectId;
-                                const instructorName = instrutores.find(i => i.id === cell.instructorId)?.full_name || cell.instructorId || "Instrutor";
+                                const subjectName = cell.customSubject || disciplinas.find(d => d.id === cell.subjectId)?.nome || cell.subjectId || "Disciplina";
+                                const instructorName = cell.customInstructor || instrutores.find(i => i.id === cell.instructorId)?.full_name || cell.instructorId || "Instrutor";
                                 return (
                                   <div key={slot.id} className="bg-white border border-slate-150 rounded-lg p-2 shadow-xs text-[10px] space-y-1">
                                     <div className="flex justify-between items-center gap-1.5 border-b pb-1 mb-1.5 border-slate-100">
                                       <span className="bg-slate-150 text-slate-700 text-[8.5px] font-bold px-1 py-0.5 rounded font-mono">{slot.time}</span>
                                       {cell.room && <span className="text-[8px] bg-slate-100 text-slate-600 font-mono px-1 rounded truncate max-w-16">Sala: {cell.room}</span>}
                                     </div>
-                                    <p className="font-extrabold text-slate-800 leading-tight block">{subjectName}</p>
+                                    <p className="font-extrabold text-slate-800 leading-tight block uppercase">{subjectName}</p>
                                     <p className="text-[8.5px] text-slate-500 font-mono">Prof.: {instructorName}</p>
                                   </div>
                                 );
@@ -1441,7 +1441,7 @@ function AvaliacaoAlunoForm() {
                                   const filledSlots = slots.map(slot => {
                                     const cell = getCellData(slot.id, day.key);
                                     return { slot, cell };
-                                  }).filter(item => item.cell.subjectId || item.cell.room);
+                                  }).filter(item => item.cell.subjectId || item.cell.customSubject || item.cell.room);
 
                                   return (
                                     <div key={day.key} className="border border-slate-150 rounded-lg p-3 bg-slate-50/50 hover:bg-slate-100/35 transition flex flex-col justify-start">
@@ -1453,8 +1453,8 @@ function AvaliacaoAlunoForm() {
                                       ) : (
                                         <div className="space-y-2">
                                           {filledSlots.map(({ slot, cell }) => {
-                                            const subjectName = disciplinas.find(d => d.id === cell.subjectId)?.nome || cell.subjectId;
-                                            const instructorName = instrutores.find(i => i.id === cell.instructorId)?.full_name || cell.instructorId || "Instrutor";
+                                            const subjectName = cell.customSubject || disciplinas.find(d => d.id === cell.subjectId)?.nome || cell.subjectId || "Disciplina";
+                                            const instructorName = cell.customInstructor || instrutores.find(i => i.id === cell.instructorId)?.full_name || cell.instructorId || "Instrutor";
                                             return (
                                               <div key={slot.id} className="bg-white border border-slate-150 rounded-lg p-2 shadow-xs text-[10px] space-y-1">
                                                 <div className="flex justify-between items-center gap-1.5 border-b pb-1 mb-1.5 border-slate-100">
@@ -1987,7 +1987,7 @@ function AvaliacaoAlunoForm() {
                           };
 
                           return weekDays.map((day) => {
-                            const active = slots.map(slot => ({ slot, cell: getCell(slot.id, day.key) })).filter(x => x.cell.subjectId);
+                            const active = slots.map(slot => ({ slot, cell: getCell(slot.id, day.key) })).filter(x => x.cell.subjectId || x.cell.customSubject);
                             return (
                               <div key={day.key} className="bg-slate-50 border border-slate-250 p-2 rounded-lg">
                                 <span className="text-[10px] font-bold font-mono text-indigo-700 block mb-1.5 pb-0.5 border-b border-indigo-100 uppercase">
@@ -1998,7 +1998,7 @@ function AvaliacaoAlunoForm() {
                                 ) : (
                                   <div className="space-y-1">
                                     {active.map(({ slot, cell }) => {
-                                      const subjectName = disciplinas.find(d => d.id === cell.subjectId)?.nome || cell.subjectId;
+                                      const subjectName = cell.customSubject || disciplinas.find(d => d.id === cell.subjectId)?.nome || cell.subjectId || "Disciplina";
                                       return (
                                         <div key={slot.id} className="bg-white p-1 rounded-sm border border-slate-150 text-[9px] leading-tight">
                                           <span className="font-mono bg-slate-100 text-slate-500 px-0.5 rounded text-[8px] font-bold">{slot.time}</span>

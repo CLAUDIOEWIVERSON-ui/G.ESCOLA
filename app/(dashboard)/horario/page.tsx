@@ -1359,9 +1359,11 @@ export default function HorarioPage() {
                                           ? language === "pt"
                                             ? "PROVAS"
                                             : "EXAMS"
-                                          : language === "pt"
-                                            ? `Módulo ${currentModulo}`
-                                            : `Module ${currentModulo}`;
+                                          : isNaN(Number(currentModulo))
+                                            ? currentModulo
+                                            : language === "pt"
+                                              ? `Módulo ${currentModulo}`
+                                              : `Module ${currentModulo}`;
 
                                       return isEditMode ? (
                                         <div className="space-y-1.5 flex flex-col h-full justify-between">
@@ -1372,43 +1374,85 @@ export default function HorarioPage() {
                                                 size={9}
                                                 className="shrink-0 text-blue-500"
                                               />
-                                              <select
-                                                value={cell.modulo || ""}
-                                                onChange={(e) =>
-                                                  updateCell(
-                                                    slot.id,
-                                                    day.key,
-                                                    "modulo",
-                                                    e.target.value,
-                                                  )
-                                                }
-                                                className="w-full text-[9px] font-black text-blue-600 bg-transparent border-none focus:ring-0 p-0 cursor-pointer block truncate uppercase"
-                                              >
-                                                <option value="">
-                                                  {language === "pt"
-                                                    ? "Módulo Padrão"
-                                                    : "Default Module"}
-                                                </option>
-                                                {Array.from({
-                                                  length:
-                                                    selectedCurso?.qtd_modulos ||
-                                                    4,
-                                                }).map((_, i) => (
-                                                  <option
-                                                    key={i + 1}
-                                                    value={String(i + 1)}
+                                              {cell.moduloIsCustom === "true" || (cell.modulo && isNaN(Number(cell.modulo)) && cell.modulo !== "PROVAS") ? (
+                                                <div className="flex items-center gap-1 w-full">
+                                                  <input
+                                                    type="text"
+                                                    value={cell.modulo || ""}
+                                                    onChange={(e) =>
+                                                      updateCell(
+                                                        slot.id,
+                                                        day.key,
+                                                        "modulo",
+                                                        e.target.value,
+                                                      )
+                                                    }
+                                                    placeholder={language === "pt" ? "Módulo" : "Module"}
+                                                    className="w-full text-[9px] font-black text-blue-600 bg-transparent border-none focus:ring-0 p-0 uppercase"
+                                                    autoFocus
+                                                  />
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                      updateCell(slot.id, day.key, "modulo", "");
+                                                      updateCell(slot.id, day.key, "moduloIsCustom", "");
+                                                    }}
+                                                    className="text-blue-500 hover:text-blue-700 font-bold text-[9px] px-1"
+                                                    title="Select"
                                                   >
+                                                    ✕
+                                                  </button>
+                                                </div>
+                                              ) : (
+                                                <select
+                                                  value={cell.modulo || ""}
+                                                  onChange={(e) => {
+                                                    if (e.target.value === "__custom__") {
+                                                      updateCell(slot.id, day.key, "moduloIsCustom", "true");
+                                                      updateCell(slot.id, day.key, "modulo", "");
+                                                    } else {
+                                                      updateCell(
+                                                        slot.id,
+                                                        day.key,
+                                                        "modulo",
+                                                        e.target.value,
+                                                      );
+                                                      updateCell(slot.id, day.key, "moduloIsCustom", "");
+                                                    }
+                                                  }}
+                                                  className="w-full text-[9px] font-black text-blue-600 bg-transparent border-none focus:ring-0 p-0 cursor-pointer block truncate uppercase"
+                                                >
+                                                  <option value="">
                                                     {language === "pt"
-                                                      ? `Módulo ${i + 1}`
-                                                      : `Module ${i + 1}`}
+                                                      ? "Módulo Padrão"
+                                                      : "Default Module"}
                                                   </option>
-                                                ))}
-                                                <option value="PROVAS">
-                                                  {language === "pt"
-                                                    ? "PROVAS"
-                                                    : "EXAMS"}
-                                                </option>
-                                              </select>
+                                                  {Array.from({
+                                                    length:
+                                                      selectedCurso?.qtd_modulos ||
+                                                      4,
+                                                  }).map((_, i) => (
+                                                    <option
+                                                      key={i + 1}
+                                                      value={String(i + 1)}
+                                                    >
+                                                      {language === "pt"
+                                                        ? `Módulo ${i + 1}`
+                                                        : `Module ${i + 1}`}
+                                                    </option>
+                                                  ))}
+                                                  <option value="PROVAS">
+                                                    {language === "pt"
+                                                      ? "PROVAS"
+                                                      : "EXAMS"}
+                                                  </option>
+                                                  <option value="__custom__">
+                                                    {language === "pt"
+                                                      ? "✍️ Digitar..."
+                                                      : "✍️ Custom..."}
+                                                  </option>
+                                                </select>
+                                              )}
                                             </div>
 
                                             {/* 2. DISCIPLINA SELECT */}
@@ -1417,50 +1461,95 @@ export default function HorarioPage() {
                                                 size={9}
                                                 className="shrink-0 text-neutral-400"
                                               />
-                                              <select
-                                                value={cell.subjectId || ""}
-                                                onChange={(e) => {
-                                                  updateCell(
-                                                    slot.id,
-                                                    day.key,
-                                                    "subjectId",
-                                                    e.target.value,
-                                                  );
-                                                  updateCell(
-                                                    slot.id,
-                                                    day.key,
-                                                    "topicId",
-                                                    "",
-                                                  );
-                                                  updateCell(
-                                                    slot.id,
-                                                    day.key,
-                                                    "topic",
-                                                    "",
-                                                  );
-                                                  updateCell(
-                                                    slot.id,
-                                                    day.key,
-                                                    "modulo",
-                                                    "",
-                                                  );
-                                                }}
-                                                className="w-full text-[9px] font-black text-neutral-950 bg-transparent border-none focus:ring-0 p-0 cursor-pointer block truncate"
-                                              >
-                                                <option value="">
-                                                  {t.schedule.subject}
-                                                </option>
-                                                {filteredDisciplinas.map(
-                                                  (d) => (
-                                                    <option
-                                                      key={d.id}
-                                                      value={d.id}
-                                                    >
-                                                      {d.nome}
-                                                    </option>
-                                                  ),
-                                                )}
-                                              </select>
+                                              {cell.subjectIsCustom === "true" || (cell.customSubject && !cell.subjectId) ? (
+                                                <div className="flex items-center gap-1 w-full">
+                                                  <input
+                                                    type="text"
+                                                    value={cell.customSubject || ""}
+                                                    onChange={(e) =>
+                                                      updateCell(
+                                                        slot.id,
+                                                        day.key,
+                                                        "customSubject",
+                                                        e.target.value,
+                                                      )
+                                                    }
+                                                    placeholder={language === "pt" ? "Disciplina" : "Subject"}
+                                                    className="w-full text-[9px] font-black text-neutral-950 bg-transparent border-none focus:ring-0 p-0 uppercase"
+                                                    autoFocus
+                                                  />
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                      updateCell(slot.id, day.key, "customSubject", "");
+                                                      updateCell(slot.id, day.key, "subjectIsCustom", "");
+                                                      updateCell(slot.id, day.key, "subjectId", "");
+                                                    }}
+                                                    className="text-neutral-500 hover:text-neutral-700 font-bold text-[9px] px-1"
+                                                    title="Select"
+                                                  >
+                                                    ✕
+                                                  </button>
+                                                </div>
+                                              ) : (
+                                                <select
+                                                  value={cell.subjectId || ""}
+                                                  onChange={(e) => {
+                                                    if (e.target.value === "__custom__") {
+                                                      updateCell(slot.id, day.key, "subjectIsCustom", "true");
+                                                      updateCell(slot.id, day.key, "subjectId", "");
+                                                      updateCell(slot.id, day.key, "customSubject", "");
+                                                    } else {
+                                                      updateCell(
+                                                        slot.id,
+                                                        day.key,
+                                                        "subjectId",
+                                                        e.target.value,
+                                                      );
+                                                      updateCell(
+                                                        slot.id,
+                                                        day.key,
+                                                        "topicId",
+                                                        "",
+                                                      );
+                                                      updateCell(
+                                                        slot.id,
+                                                        day.key,
+                                                        "topic",
+                                                        "",
+                                                      );
+                                                      updateCell(
+                                                        slot.id,
+                                                        day.key,
+                                                        "modulo",
+                                                        "",
+                                                      );
+                                                      updateCell(slot.id, day.key, "subjectIsCustom", "");
+                                                      updateCell(slot.id, day.key, "customSubject", "");
+                                                    }
+                                                  }}
+                                                  className="w-full text-[9px] font-black text-neutral-950 bg-transparent border-none focus:ring-0 p-0 cursor-pointer block truncate"
+                                                >
+                                                  <option value="">
+                                                    {t.schedule.subject}
+                                                  </option>
+                                                  {filteredDisciplinas.map(
+                                                    (d) => (
+                                                      <option
+                                                        key={d.id}
+                                                        value={d.id}
+                                                      >
+                                                        {d.nome}
+                                                      </option>
+                                                    ),
+                                                  )}
+                                                  <option value="__custom__">
+                                                    {language === "pt"
+                                                      ? "✍️ Digitar..."
+                                                      : "✍️ Custom..."}
+                                                  </option>
+                                                </select>
+                                              )}
                                             </div>
 
                                             {/* 4. INSTRUTOR SELECT */}
@@ -1469,30 +1558,75 @@ export default function HorarioPage() {
                                                 size={9}
                                                 className="shrink-0 text-slate-400"
                                               />
-                                              <select
-                                                value={cell.instructorId || ""}
-                                                onChange={(e) =>
-                                                  updateCell(
-                                                    slot.id,
-                                                    day.key,
-                                                    "instructorId",
-                                                    e.target.value,
-                                                  )
-                                                }
-                                                className="w-full text-[9px] font-bold text-slate-600 bg-transparent border-none focus:ring-0 p-0 cursor-pointer block truncate"
-                                              >
-                                                <option value="">
-                                                  {t.schedule.instructor}
-                                                </option>
-                                                {displayInstrutores.map((i) => (
-                                                  <option
-                                                    key={i.id}
-                                                    value={i.id}
+                                              {cell.instructorIsCustom === "true" || (cell.customInstructor && !cell.instructorId) ? (
+                                                <div className="flex items-center gap-1 w-full">
+                                                  <input
+                                                    type="text"
+                                                    value={cell.customInstructor || ""}
+                                                    onChange={(e) =>
+                                                      updateCell(
+                                                        slot.id,
+                                                        day.key,
+                                                        "customInstructor",
+                                                        e.target.value,
+                                                      )
+                                                    }
+                                                    placeholder={language === "pt" ? "Instrutor" : "Instructor"}
+                                                    className="w-full text-[9px] font-bold text-slate-600 bg-transparent border-none focus:ring-0 p-0"
+                                                    autoFocus
+                                                  />
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                      updateCell(slot.id, day.key, "customInstructor", "");
+                                                      updateCell(slot.id, day.key, "instructorIsCustom", "");
+                                                      updateCell(slot.id, day.key, "instructorId", "");
+                                                    }}
+                                                    className="text-slate-500 hover:text-slate-700 font-bold text-[9px] px-1"
+                                                    title="Select"
                                                   >
-                                                    {i.full_name}
+                                                    ✕
+                                                  </button>
+                                                </div>
+                                              ) : (
+                                                <select
+                                                  value={cell.instructorId || ""}
+                                                  onChange={(e) => {
+                                                    if (e.target.value === "__custom__") {
+                                                      updateCell(slot.id, day.key, "instructorIsCustom", "true");
+                                                      updateCell(slot.id, day.key, "instructorId", "");
+                                                      updateCell(slot.id, day.key, "customInstructor", "");
+                                                    } else {
+                                                      updateCell(
+                                                        slot.id,
+                                                        day.key,
+                                                        "instructorId",
+                                                        e.target.value,
+                                                      );
+                                                      updateCell(slot.id, day.key, "instructorIsCustom", "");
+                                                      updateCell(slot.id, day.key, "customInstructor", "");
+                                                    }
+                                                  }}
+                                                  className="w-full text-[9px] font-bold text-slate-600 bg-transparent border-none focus:ring-0 p-0 cursor-pointer block truncate"
+                                                >
+                                                  <option value="">
+                                                    {t.schedule.instructor}
                                                   </option>
-                                                ))}
-                                              </select>
+                                                  {displayInstrutores.map((i) => (
+                                                    <option
+                                                      key={i.id}
+                                                      value={i.id}
+                                                    >
+                                                      {i.full_name}
+                                                    </option>
+                                                  ))}
+                                                  <option value="__custom__">
+                                                    {language === "pt"
+                                                      ? "✍️ Digitar..."
+                                                      : "✍️ Custom..."}
+                                                  </option>
+                                                </select>
+                                              )}
                                             </div>
                                           </div>
 
@@ -1517,7 +1651,7 @@ export default function HorarioPage() {
                                             />
                                           </div>
                                         </div>
-                                      ) : cell.subjectId ? (
+                                      ) : (cell.subjectId || cell.customSubject) ? (
                                         <div className="space-y-1.5 flex-1 flex flex-col justify-between">
                                           <div className="space-y-1.5">
                                             {/* 1. MÓDULO */}
@@ -1538,7 +1672,8 @@ export default function HorarioPage() {
                                                 className="shrink-0"
                                               />
                                               <span className="text-[11px] font-black leading-tight uppercase tracking-tight">
-                                                {cellDiscObj?.nome ||
+                                                {cell.customSubject ||
+                                                  cellDiscObj?.nome ||
                                                   "Disciplina"}
                                               </span>
                                             </div>
@@ -1565,10 +1700,11 @@ export default function HorarioPage() {
                                                 className="shrink-0"
                                               />
                                               <span className="text-[10px] font-bold leading-none">
-                                                {instrutores.find(
-                                                  (i) =>
-                                                    i.id === cell.instructorId,
-                                                )?.full_name ||
+                                                {cell.customInstructor ||
+                                                  instrutores.find(
+                                                    (i) =>
+                                                      i.id === cell.instructorId,
+                                                  )?.full_name ||
                                                   cell.instructorId ||
                                                   "Instrutor"}
                                               </span>
