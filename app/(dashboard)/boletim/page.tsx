@@ -2272,13 +2272,13 @@ function BoletimContent() {
                                         visibility: visible !important;
                                         position: relative !important;
                                         page-break-inside: avoid !important;
-                                        width: 190mm !important;
-                                        max-width: 190mm !important;
-                                        min-height: 277mm !important;
+                                        width: 210mm !important;
+                                        max-width: 210mm !important;
+                                        min-height: 297mm !important;
                                         height: auto !important;
                                         max-height: none !important;
-                                        margin: 0 auto !important;
-                                        padding: 0 !important;
+                                        margin: 0 !important;
+                                        padding: 10mm 12mm !important;
                                         border: none !important;
                                         box-shadow: none !important;
                                         background: #ffffff !important;
@@ -2958,12 +2958,15 @@ function BoletimContent() {
                                     #class-bulletin-print-area {
                                       visibility: visible !important;
                                       position: relative !important;
-                                      width: 190mm !important;
-                                      margin: 0 auto !important;
-                                      padding: 0 !important;
+                                      width: 210mm !important;
+                                      max-width: 210mm !important;
+                                      min-height: 297mm !important;
+                                      margin: 0 !important;
+                                      padding: 10mm 12mm !important;
                                       border: none !important;
                                       box-shadow: none !important;
                                       background: #ffffff !important;
+                                      box-sizing: border-box !important;
                                     }
                                   }
                                  ` }} />
