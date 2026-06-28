@@ -1,15 +1,15 @@
-'use client';
+"use client";
 /* eslint-disable react-hooks/set-state-in-effect */
 
-import { useState, useEffect, useRef, useMemo } from 'react';
-import { supabase } from '@/lib/supabase/client';
-import { useI18n } from '@/lib/i18n/LanguageContext';
-import { 
-  Calendar, 
-  Printer, 
-  Loader2, 
-  MapPin, 
-  Shield, 
+import { useState, useEffect, useRef, useMemo } from "react";
+import { supabase } from "@/lib/supabase/client";
+import { useI18n } from "@/lib/i18n/LanguageContext";
+import {
+  Calendar,
+  Printer,
+  Loader2,
+  MapPin,
+  Shield,
   BookOpen,
   Edit3,
   Check,
@@ -22,50 +22,50 @@ import {
   ChevronDown,
   Clock,
   X,
-  Layers
-} from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
-import { cn } from '@/lib/utils';
-import { format, startOfWeek, addDays } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import html2canvas from 'html2canvas';
-import { jsPDF } from 'jspdf';
-import { toast } from 'sonner';
-import { useUser } from '@/lib/auth/UserContext';
+  Layers,
+} from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
+import { cn } from "@/lib/utils";
+import { format, startOfWeek, addDays } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import html2canvas from "html2canvas";
+import { jsPDF } from "jspdf";
+import { toast } from "sonner";
+import { useUser } from "@/lib/auth/UserContext";
 
 // Helper to fetch Brazil holidays (Simplified for this version)
 const BRAZIL_HOLIDAYS = [
-  { date: '2026-01-01', name: 'Confraternização Universal' },
-  { date: '2026-02-17', name: 'Carnaval' },
-  { date: '2026-04-03', name: 'Sexta-feira Santa' },
-  { date: '2026-04-21', name: 'Tiradentes' },
-  { date: '2026-05-01', name: 'Dia do Trabalho' },
-  { date: '2026-06-04', name: 'Corpus Christi' },
-  { date: '2026-09-07', name: 'Independência do Brasil' },
-  { date: '2026-10-12', name: 'Nossa Senhora Aparecida' },
-  { date: '2026-11-02', name: 'Finados' },
-  { date: '2026-11-15', name: 'Proclamação da República' },
-  { date: '2026-12-25', name: 'Natal' },
+  { date: "2026-01-01", name: "Confraternização Universal" },
+  { date: "2026-02-17", name: "Carnaval" },
+  { date: "2026-04-03", name: "Sexta-feira Santa" },
+  { date: "2026-04-21", name: "Tiradentes" },
+  { date: "2026-05-01", name: "Dia do Trabalho" },
+  { date: "2026-06-04", name: "Corpus Christi" },
+  { date: "2026-09-07", name: "Independência do Brasil" },
+  { date: "2026-10-12", name: "Nossa Senhora Aparecida" },
+  { date: "2026-11-02", name: "Finados" },
+  { date: "2026-11-15", name: "Proclamação da República" },
+  { date: "2026-12-25", name: "Natal" },
 ];
 
 export default function HorarioPage() {
   const { t, language } = useI18n();
   const { profile } = useUser();
-  const isNifStudent = profile?.role === 'aluno' && profile?.isNifStudent;
+  const isNifStudent = profile?.role === "aluno" && profile?.isNifStudent;
 
   const [cursos, setCursos] = useState<any[]>([]);
   const [turmas, setTurmas] = useState<any[]>([]);
   const [disciplinas, setDisciplinas] = useState<any[]>([]);
   const [instrutores, setInstrutores] = useState<any[]>([]);
   const [materias, setMaterias] = useState<any[]>([]);
-  const [selectedCursoId, setSelectedCursoId] = useState('');
-  const [selectedTurmaId, setSelectedTurmaId] = useState('');
+  const [selectedCursoId, setSelectedCursoId] = useState("");
+  const [selectedTurmaId, setSelectedTurmaId] = useState("");
 
   useEffect(() => {
     if (isNifStudent && profile?.turma_id) {
       setSelectedTurmaId(profile.turma_id);
       if (turmas.length > 0) {
-        const studentTurma = turmas.find(tu => tu.id === profile.turma_id);
+        const studentTurma = turmas.find((tu) => tu.id === profile.turma_id);
         if (studentTurma?.curso_id) {
           setSelectedCursoId(studentTurma.curso_id);
         }
@@ -73,39 +73,44 @@ export default function HorarioPage() {
     }
   }, [isNifStudent, profile, turmas]);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [printOrientation, setPrintOrientation] = useState<'portrait' | 'landscape'>('landscape');
+  const [printOrientation, setPrintOrientation] = useState<
+    "portrait" | "landscape"
+  >("landscape");
   const printRef = useRef<HTMLDivElement>(null);
 
   // Editable Schedule State
   const [scheduleData, setScheduleData] = useState<Record<string, any>>({});
   const [isSaving, setIsSaving] = useState(false);
-  
-  const selectedTurma = turmas.find(tu => tu.id === selectedTurmaId);
-  const selectedCurso = cursos.find(cu => cu.id === selectedCursoId);
+
+  const selectedTurma = turmas.find((tu) => tu.id === selectedTurmaId);
+  const selectedCurso = cursos.find((cu) => cu.id === selectedCursoId);
 
   // Fetch schedule data when turma changes
-  const fetchSchedule = useMemo(() => async (turmaId: string) => {
-    if (!turmaId) {
-      setScheduleData({});
-      return;
-    }
-    try {
-      const { data } = await supabase
-        .from('horarios')
-        .select('data')
-        .eq('turma_id', turmaId)
-        .single();
-      
-      if (data) {
-        setScheduleData(data.data || {});
-      } else {
+  const fetchSchedule = useMemo(
+    () => async (turmaId: string) => {
+      if (!turmaId) {
+        setScheduleData({});
+        return;
+      }
+      try {
+        const { data } = await supabase
+          .from("horarios")
+          .select("data")
+          .eq("turma_id", turmaId)
+          .single();
+
+        if (data) {
+          setScheduleData(data.data || {});
+        } else {
+          setScheduleData({});
+        }
+      } catch (err) {
+        console.error("Error fetching schedule:", err);
         setScheduleData({});
       }
-    } catch (err) {
-      console.error('Error fetching schedule:', err);
-      setScheduleData({});
-    }
-  }, []);
+    },
+    [],
+  );
 
   useEffect(() => {
     const run = async () => {
@@ -119,34 +124,49 @@ export default function HorarioPage() {
     setIsSaving(true);
     try {
       // Try to upsert to 'horarios' table
-      const { error } = await supabase
-        .from('horarios')
-        .upsert({ 
-          turma_id: selectedTurmaId, 
+      const { error } = await supabase.from("horarios").upsert(
+        {
+          turma_id: selectedTurmaId,
           data: scheduleData,
-          updated_at: new Date().toISOString()
-        }, { onConflict: 'turma_id' });
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "turma_id" },
+      );
 
       if (error) {
-        console.error('Save error:', error);
-        toast.error(language === 'pt' ? 'Erro ao salvar o horário.' : 'Error saving schedule.');
+        console.error("Save error:", error);
+        toast.error(
+          language === "pt"
+            ? "Erro ao salvar o horário."
+            : "Error saving schedule.",
+        );
       } else {
-        toast.success(language === 'pt' ? 'Horário salvo com sucesso!' : 'Schedule saved successfully!');
+        toast.success(
+          language === "pt"
+            ? "Horário salvo com sucesso!"
+            : "Schedule saved successfully!",
+        );
         setIsEditMode(false);
       }
     } catch (err) {
-      console.error('Failed to save schedule:', err);
+      console.error("Failed to save schedule:", err);
     } finally {
       setIsSaving(false);
     }
   }
 
-  const [backupScheduleData, setBackupScheduleData] = useState<Record<string, any>>({});
+  const [backupScheduleData, setBackupScheduleData] = useState<
+    Record<string, any>
+  >({});
 
   const handleCancelEdit = () => {
     setScheduleData(backupScheduleData);
     setIsEditMode(false);
-    toast.info(language === 'pt' ? 'Edição cancelada. As alterações foram descartadas.' : 'Editing canceled. Changes discarded.');
+    toast.info(
+      language === "pt"
+        ? "Edição cancelada. As alterações foram descartadas."
+        : "Editing canceled. Changes discarded.",
+    );
   };
 
   const handleToggleEdit = () => {
@@ -163,12 +183,19 @@ export default function HorarioPage() {
   useEffect(() => {
     if (selectedTurma && selectedTurma.data_inicio) {
       // Use T00:00:00 to parse in local time to avoid timezone offset shifts
-      const startDate = new Date(selectedTurma.data_inicio + 'T00:00:00');
-      const endDate = selectedTurma.data_fim ? new Date(selectedTurma.data_fim + 'T00:00:00') : null;
+      const startDate = new Date(selectedTurma.data_inicio + "T00:00:00");
+      const endDate = selectedTurma.data_fim
+        ? new Date(selectedTurma.data_fim + "T00:00:00")
+        : null;
       const today = new Date();
-      
+
       if (!isNaN(startDate.getTime())) {
-        if (endDate && !isNaN(endDate.getTime()) && today >= startDate && today <= endDate) {
+        if (
+          endDate &&
+          !isNaN(endDate.getTime()) &&
+          today >= startDate &&
+          today <= endDate
+        ) {
           // If today is within course dates, use today as current date
           setCurrentDate(today);
         } else {
@@ -179,15 +206,21 @@ export default function HorarioPage() {
     }
   }, [selectedTurmaId, selectedTurma]);
 
-  const weekStart = useMemo(() => startOfWeek(currentDate, { weekStartsOn: 1 }), [currentDate]);
+  const weekStart = useMemo(
+    () => startOfWeek(currentDate, { weekStartsOn: 1 }),
+    [currentDate],
+  );
   const weekEnd = useMemo(() => addDays(weekStart, 4), [weekStart]);
-  const weekPeriodFormatted = useMemo(() => `${format(weekStart, "dd/MM")} a ${format(weekEnd, "dd/MM/yyyy")}`, [weekStart, weekEnd]);
+  const weekPeriodFormatted = useMemo(
+    () => `${format(weekStart, "dd/MM")} a ${format(weekEnd, "dd/MM/yyyy")}`,
+    [weekStart, weekEnd],
+  );
 
   const handlePrevWeek = () => {
-    setCurrentDate(prev => addDays(prev, -7));
+    setCurrentDate((prev) => addDays(prev, -7));
   };
   const handleNextWeek = () => {
-    setCurrentDate(prev => addDays(prev, 7));
+    setCurrentDate((prev) => addDays(prev, 7));
   };
   const handleCurrentWeek = () => {
     setCurrentDate(new Date());
@@ -195,21 +228,25 @@ export default function HorarioPage() {
 
   const weekOptions = useMemo(() => {
     const options = [];
-    
+
     // Determine base dates based on course period if available
-    let start = selectedTurma?.data_inicio ? new Date(selectedTurma.data_inicio + 'T00:00:00') : new Date();
-    let end = selectedTurma?.data_fim ? new Date(selectedTurma.data_fim + 'T00:00:00') : null;
-    
+    let start = selectedTurma?.data_inicio
+      ? new Date(selectedTurma.data_inicio + "T00:00:00")
+      : new Date();
+    let end = selectedTurma?.data_fim
+      ? new Date(selectedTurma.data_fim + "T00:00:00")
+      : null;
+
     if (isNaN(start.getTime())) start = new Date();
-    
+
     const baseWeekStart = startOfWeek(start, { weekStartsOn: 1 });
-    
+
     if (end && !isNaN(end.getTime())) {
       // Generate options for all weeks from start date to end date
       const endWeekStart = startOfWeek(end, { weekStartsOn: 1 });
       let current = new Date(baseWeekStart);
       let idx = 1;
-      
+
       // Limit to reasonable max weeks to prevent rendering too many options or causing infinite loops
       const maxWeeks = 60;
       while (current <= endWeekStart && idx <= maxWeeks) {
@@ -218,8 +255,9 @@ export default function HorarioPage() {
         const label = `${format(s, "dd/MM")} a ${format(e, "dd/MM/yyyy")}`;
         options.push({
           date: s,
-          label: `${language === 'pt' ? 'Semana' : 'Week'} ${idx} (${label})`,
-          isCurrent: format(currentDate, 'yyyy-MM-dd') === format(s, 'yyyy-MM-dd')
+          label: `${language === "pt" ? "Semana" : "Week"} ${idx} (${label})`,
+          isCurrent:
+            format(currentDate, "yyyy-MM-dd") === format(s, "yyyy-MM-dd"),
         });
         current.setDate(current.getDate() + 7);
         idx++;
@@ -232,12 +270,15 @@ export default function HorarioPage() {
         const label = `${format(s, "dd/MM")} a ${format(e, "dd/MM/yyyy")}`;
         options.push({
           date: s,
-          label: i === 0 ? `${label} (${language === 'pt' ? 'Semana Atual' : 'Current Week'})` : label,
-          isCurrent: i === 0
+          label:
+            i === 0
+              ? `${label} (${language === "pt" ? "Semana Atual" : "Current Week"})`
+              : label,
+          isCurrent: i === 0,
         });
       }
     }
-    
+
     return options;
   }, [selectedTurma, language, currentDate]);
 
@@ -249,20 +290,20 @@ export default function HorarioPage() {
 
     while (currentHour < 16) {
       // Class Slot
-      const start = `${currentHour.toString().padStart(2, '0')}:${currentMin.toString().padStart(2, '0')}`;
-      
+      const start = `${currentHour.toString().padStart(2, "0")}:${currentMin.toString().padStart(2, "0")}`;
+
       // End of 50 min class
       currentMin += 50;
       if (currentMin >= 60) {
         currentHour += Math.floor(currentMin / 60);
         currentMin = currentMin % 60;
       }
-      const end = `${currentHour.toString().padStart(2, '0')}:${currentMin.toString().padStart(2, '0')}`;
-      
-      items.push({ 
+      const end = `${currentHour.toString().padStart(2, "0")}:${currentMin.toString().padStart(2, "0")}`;
+
+      items.push({
         id: `class-${start}`,
-        time: `${start} - ${end}`, 
-        type: 'class' as const
+        time: `${start} - ${end}`,
+        type: "class" as const,
       });
 
       // 10 min Break
@@ -273,12 +314,12 @@ export default function HorarioPage() {
           currentHour += Math.floor(currentMin / 60);
           currentMin = currentMin % 60;
         }
-        const breakEnd = `${currentHour.toString().padStart(2, '0')}:${currentMin.toString().padStart(2, '0')}`;
-        
-        items.push({ 
+        const breakEnd = `${currentHour.toString().padStart(2, "0")}:${currentMin.toString().padStart(2, "0")}`;
+
+        items.push({
           id: `break-${breakStart}`,
-          time: `${breakStart} - ${breakEnd}`, 
-          type: 'interval' as const
+          time: `${breakStart} - ${breakEnd}`,
+          type: "interval" as const,
         });
       }
     }
@@ -286,77 +327,120 @@ export default function HorarioPage() {
   }, []);
 
   const weekDays = [
-    { key: 'monday', label: t.schedule.monday, date: weekStart },
-    { key: 'tuesday', label: t.schedule.tuesday, date: addDays(weekStart, 1) },
-    { key: 'wednesday', label: t.schedule.wednesday, date: addDays(weekStart, 2) },
-    { key: 'thursday', label: t.schedule.thursday, date: addDays(weekStart, 3) },
-    { key: 'friday', label: t.schedule.friday, date: addDays(weekStart, 4) },
+    { key: "monday", label: t.schedule.monday, date: weekStart },
+    { key: "tuesday", label: t.schedule.tuesday, date: addDays(weekStart, 1) },
+    {
+      key: "wednesday",
+      label: t.schedule.wednesday,
+      date: addDays(weekStart, 2),
+    },
+    {
+      key: "thursday",
+      label: t.schedule.thursday,
+      date: addDays(weekStart, 3),
+    },
+    { key: "friday", label: t.schedule.friday, date: addDays(weekStart, 4) },
   ];
 
   useEffect(() => {
     async function fetchData() {
-      const { data: c } = await supabase.from('cursos').select('*').is('deleted_at', null).order('nome');
+      const { data: c } = await supabase
+        .from("cursos")
+        .select("*")
+        .is("deleted_at", null)
+        .order("nome");
       let filteredCuts = (c || []).filter((item: any) => !item.internacional);
-      if (profile?.role === 'instrutor' && profile?.grupo_responsavel) {
-        if (profile.grupo_responsavel === 'MAN') {
-          filteredCuts = filteredCuts.filter((item: any) => item.grupo_responsavel === 'MAN');
-        } else if (profile.grupo_responsavel === 'GAT') {
-          filteredCuts = filteredCuts.filter((item: any) => item.grupo_responsavel === 'GAT');
-        } else if (profile.grupo_responsavel === 'AMBOS') {
-          filteredCuts = filteredCuts.filter((item: any) => item.grupo_responsavel === 'MAN' || item.grupo_responsavel === 'GAT');
+      if (profile?.role === "instrutor" && profile?.grupo_responsavel) {
+        if (profile.grupo_responsavel === "MAN") {
+          filteredCuts = filteredCuts.filter(
+            (item: any) => item.grupo_responsavel === "MAN",
+          );
+        } else if (profile.grupo_responsavel === "GAT") {
+          filteredCuts = filteredCuts.filter(
+            (item: any) => item.grupo_responsavel === "GAT",
+          );
+        } else if (profile.grupo_responsavel === "AMBOS") {
+          filteredCuts = filteredCuts.filter(
+            (item: any) =>
+              item.grupo_responsavel === "MAN" ||
+              item.grupo_responsavel === "GAT",
+          );
         }
       }
       setCursos(filteredCuts);
 
-      const { data: tu } = await supabase.from('turmas').select('*').is('deleted_at', null).order('nome');
+      const { data: tu } = await supabase
+        .from("turmas")
+        .select("*")
+        .is("deleted_at", null)
+        .order("nome");
       let filteredCls = (tu || []).filter((item: any) => !item.internacional);
-      if (profile?.role === 'instrutor' && profile?.grupo_responsavel) {
-        if (profile.grupo_responsavel === 'MAN') {
-          filteredCls = filteredCls.filter((item: any) => item.grupo_responsavel === 'MAN');
-        } else if (profile.grupo_responsavel === 'GAT') {
-          filteredCls = filteredCls.filter((item: any) => item.grupo_responsavel === 'GAT');
-        } else if (profile.grupo_responsavel === 'AMBOS') {
-          filteredCls = filteredCls.filter((item: any) => item.grupo_responsavel === 'MAN' || item.grupo_responsavel === 'GAT');
+      if (profile?.role === "instrutor" && profile?.grupo_responsavel) {
+        if (profile.grupo_responsavel === "MAN") {
+          filteredCls = filteredCls.filter(
+            (item: any) => item.grupo_responsavel === "MAN",
+          );
+        } else if (profile.grupo_responsavel === "GAT") {
+          filteredCls = filteredCls.filter(
+            (item: any) => item.grupo_responsavel === "GAT",
+          );
+        } else if (profile.grupo_responsavel === "AMBOS") {
+          filteredCls = filteredCls.filter(
+            (item: any) =>
+              item.grupo_responsavel === "MAN" ||
+              item.grupo_responsavel === "GAT",
+          );
         }
       }
       setTurmas(filteredCls);
 
-      const { data: d } = await supabase.from('disciplinas').select('*').is('deleted_at', null).order('nome');
+      const { data: d } = await supabase
+        .from("disciplinas")
+        .select("*")
+        .is("deleted_at", null)
+        .order("nome");
       if (d) setDisciplinas(d);
-      const { data: mm } = await supabase.from('materias_modulos').select('*').is('deleted_at', null).order('nome');
+      const { data: mm } = await supabase
+        .from("materias_modulos")
+        .select("*")
+        .is("deleted_at", null)
+        .order("nome");
       if (mm) setMaterias(mm);
-      const { data: i } = await supabase.from('profiles').select('*').eq('role', 'instrutor');
-      
+      const { data: i } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("role", "instrutor");
+
       const combinedInstructors: any[] = [];
       const seenNames = new Set<string>();
-      
+
       if (i) {
         i.forEach((prof: any) => {
-          const name = (prof.full_name || '').trim();
+          const name = (prof.full_name || "").trim();
           if (name) {
             seenNames.add(name.toLowerCase());
             combinedInstructors.push({
               id: prof.id,
               full_name: prof.full_name,
-              grupo_responsavel: prof.grupo_responsavel
+              grupo_responsavel: prof.grupo_responsavel,
             });
           }
         });
       }
-      
+
       if (tu) {
         tu.forEach((t: any) => {
-          const name = (t.instrutor || '').trim();
+          const name = (t.instrutor || "").trim();
           if (name && !seenNames.has(name.toLowerCase())) {
             seenNames.add(name.toLowerCase());
             combinedInstructors.push({
               id: name,
-              full_name: name
+              full_name: name,
             });
           }
         });
       }
-      
+
       setInstrutores(combinedInstructors);
     }
     fetchData();
@@ -367,46 +451,61 @@ export default function HorarioPage() {
     try {
       window.print();
     } catch (err) {
-      console.error('Failed to open native print dialog:', err);
+      console.error("Failed to open native print dialog:", err);
       toast.error(
-        language === 'pt'
-          ? 'Não foi possível abrir a janela de impressão.'
-          : 'Could not open print window.'
+        language === "pt"
+          ? "Não foi possível abrir a janela de impressão."
+          : "Could not open print window.",
       );
     }
   };
 
-  const updateCell = (slotId: string, dayKey: string, field: string, value: string) => {
-    const weekKey = format(weekStart, 'yyyy-MM-dd');
-    setScheduleData(prev => ({
+  const updateCell = (
+    slotId: string,
+    dayKey: string,
+    field: string,
+    value: string,
+  ) => {
+    const weekKey = format(weekStart, "yyyy-MM-dd");
+    setScheduleData((prev) => ({
       ...prev,
       [`${weekKey}_${slotId}-${dayKey}`]: {
-        ...(prev[`${weekKey}_${slotId}-${dayKey}`] || prev[`${slotId}-${dayKey}`] || {}),
-        [field]: value
-      }
+        ...(prev[`${weekKey}_${slotId}-${dayKey}`] ||
+          prev[`${slotId}-${dayKey}`] ||
+          {}),
+        [field]: value,
+      },
     }));
   };
 
   const getCellData = (slotId: string, dayKey: string) => {
-    const weekKey = format(weekStart, 'yyyy-MM-dd');
-    return scheduleData[`${weekKey}_${slotId}-${dayKey}`] || 
-           scheduleData[`${slotId}-${dayKey}`] || 
-           { subjectId: '', instructorId: '', room: '', courseId: '' };
+    const weekKey = format(weekStart, "yyyy-MM-dd");
+    return (
+      scheduleData[`${weekKey}_${slotId}-${dayKey}`] ||
+      scheduleData[`${slotId}-${dayKey}`] || {
+        subjectId: "",
+        instructorId: "",
+        room: "",
+        courseId: "",
+      }
+    );
   };
 
   const filteredDisciplinas = useMemo(() => {
     if (!selectedCursoId) return disciplinas;
-    return disciplinas.filter(d => d.curso_id === selectedCursoId);
+    return disciplinas.filter((d) => d.curso_id === selectedCursoId);
   }, [disciplinas, selectedCursoId]);
 
   const isHoliday = (date: Date) => {
-    const dStr = format(date, 'yyyy-MM-dd');
-    return BRAZIL_HOLIDAYS.find(h => h.date === dStr);
+    const dStr = format(date, "yyyy-MM-dd");
+    return BRAZIL_HOLIDAYS.find((h) => h.date === dStr);
   };
 
   return (
     <div className="space-y-6 col-print-style">
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
         @media print {
           /* Setup page size and margin to 0 for maximum control of margins via container */
           @page { 
@@ -525,7 +624,9 @@ export default function HorarioPage() {
           }
 
           /* Portrait or Landscape specific layout scaling */
-          ${printOrientation === 'landscape' ? `
+          ${
+            printOrientation === "landscape"
+              ? `
             /* LANDSCAPE PRESENTATION */
             .print-container {
               padding: 6mm 8mm !important;
@@ -629,7 +730,8 @@ export default function HorarioPage() {
               font-size: 8px !important;
               letter-spacing: 0.25em !important;
             }
-          ` : `
+          `
+              : `
             /* PORTRAIT PRESENTATION */
             .print-container {
               padding: 8mm 10mm !important;
@@ -733,7 +835,8 @@ export default function HorarioPage() {
               font-size: 8.5px !important;
               letter-spacing: 0.3em !important;
             }
-          `}
+          `
+          }
 
           /* White header/footer block elements */
           .print-header, .print-header * {
@@ -760,7 +863,9 @@ export default function HorarioPage() {
             color: #64748b !important;
           }
         }
-      `}} />
+      `,
+        }}
+      />
 
       {/* Header Panel */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 print:hidden">
@@ -769,10 +874,12 @@ export default function HorarioPage() {
             <Calendar className="text-blue-600" size={32} />
             {t.schedule.weeklySchedule}
           </h1>
-          <p className="text-slate-500 font-medium ml-11">{t.reportCard.subtitle}</p>
+          <p className="text-slate-500 font-medium ml-11">
+            {t.reportCard.subtitle}
+          </p>
         </div>
-        
-        {profile?.role !== 'aluno' && profile?.role !== 'convidado' && (
+
+        {profile?.role !== "aluno" && profile?.role !== "convidado" && (
           <div className="flex items-center gap-3">
             {!isNifStudent && (
               <div className="flex items-center gap-2">
@@ -784,7 +891,7 @@ export default function HorarioPage() {
                     className="flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-black uppercase tracking-widest transition-all bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 shadow-md cursor-pointer disabled:opacity-50"
                   >
                     <X size={18} />
-                    {language === 'pt' ? 'Cancelar' : 'Cancel'}
+                    {language === "pt" ? "Cancelar" : "Cancel"}
                   </button>
                 )}
                 <button
@@ -792,13 +899,25 @@ export default function HorarioPage() {
                   disabled={isSaving || !selectedTurmaId}
                   className={cn(
                     "flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-black uppercase tracking-widest transition-all shadow-lg disabled:opacity-50 cursor-pointer",
-                    isEditMode 
-                      ? "bg-emerald-600 text-white shadow-emerald-200 hover:bg-emerald-700" 
-                      : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 shadow-slate-100"
+                    isEditMode
+                      ? "bg-emerald-600 text-white shadow-emerald-200 hover:bg-emerald-700"
+                      : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 shadow-slate-100",
                   )}
                 >
-                  {isSaving ? <Loader2 size={18} className="animate-spin" /> : (isEditMode ? <Check size={18} /> : <Edit3 size={18} />)}
-                  {isEditMode ? (language === 'pt' ? 'Salvar' : 'Save') : (language === 'pt' ? 'Editar' : 'Edit')}
+                  {isSaving ? (
+                    <Loader2 size={18} className="animate-spin" />
+                  ) : isEditMode ? (
+                    <Check size={18} />
+                  ) : (
+                    <Edit3 size={18} />
+                  )}
+                  {isEditMode
+                    ? language === "pt"
+                      ? "Salvar"
+                      : "Save"
+                    : language === "pt"
+                      ? "Editar"
+                      : "Edit"}
                 </button>
               </div>
             )}
@@ -807,32 +926,32 @@ export default function HorarioPage() {
               <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-2xl border border-slate-200 shadow-inner">
                 <button
                   type="button"
-                  onClick={() => setPrintOrientation('portrait')}
+                  onClick={() => setPrintOrientation("portrait")}
                   className={cn(
                     "px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer select-none",
-                    printOrientation === 'portrait' 
-                      ? "bg-neutral-950 text-white shadow-sm" 
-                      : "text-slate-500 hover:text-slate-800"
+                    printOrientation === "portrait"
+                      ? "bg-neutral-950 text-white shadow-sm"
+                      : "text-slate-500 hover:text-slate-800",
                   )}
                 >
-                  {language === 'pt' ? 'Retrato' : 'Portrait'}
+                  {language === "pt" ? "Retrato" : "Portrait"}
                 </button>
                 <button
                   type="button"
-                  onClick={() => setPrintOrientation('landscape')}
+                  onClick={() => setPrintOrientation("landscape")}
                   className={cn(
                     "px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer select-none",
-                    printOrientation === 'landscape' 
-                      ? "bg-neutral-950 text-white shadow-sm" 
-                      : "text-slate-500 hover:text-slate-800"
+                    printOrientation === "landscape"
+                      ? "bg-neutral-950 text-white shadow-sm"
+                      : "text-slate-500 hover:text-slate-800",
                   )}
                 >
-                  {language === 'pt' ? 'Paisagem' : 'Landscape'}
+                  {language === "pt" ? "Paisagem" : "Landscape"}
                 </button>
               </div>
             )}
-            
-            <button 
+
+            <button
               onClick={handlePrint}
               disabled={isEditMode || !selectedTurmaId}
               className="flex items-center gap-2 bg-[#0f172a] text-white px-5 py-2.5 rounded-2xl text-sm font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 disabled:opacity-50 disabled:grayscale"
@@ -849,22 +968,24 @@ export default function HorarioPage() {
         {isNifStudent ? (
           <div className="space-y-2 col-span-1 md:col-span-2 flex flex-col justify-center">
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">
-              {language === 'pt' ? 'Sua Matrícula e Turma' : 'Your Registration & Class'}
+              {language === "pt"
+                ? "Sua Matrícula e Turma"
+                : "Your Registration & Class"}
             </span>
             <div className="flex flex-wrap gap-3 items-center mt-1">
               <span className="px-4 py-2 bg-blue-50 text-blue-700 font-extrabold text-xs md:text-sm rounded-2xl border border-blue-100 uppercase tracking-wider">
-                {selectedCurso?.nome 
-                  ? (selectedCurso.nome.toLowerCase().startsWith('curso') 
-                      ? selectedCurso.nome 
-                      : `Curso: ${selectedCurso.nome}`) 
-                  : '...'}
+                {selectedCurso?.nome
+                  ? selectedCurso.nome.toLowerCase().startsWith("curso")
+                    ? selectedCurso.nome
+                    : `Curso: ${selectedCurso.nome}`
+                  : "..."}
               </span>
               <span className="px-4 py-2 bg-emerald-50 text-emerald-700 font-extrabold text-xs md:text-sm rounded-2xl border border-emerald-100 uppercase tracking-wider">
-                {selectedTurma?.nome 
-                  ? (selectedTurma.nome.toLowerCase().startsWith('turma') 
-                      ? selectedTurma.nome 
-                      : `Turma: ${selectedTurma.nome}`) 
-                  : '...'}
+                {selectedTurma?.nome
+                  ? selectedTurma.nome.toLowerCase().startsWith("turma")
+                    ? selectedTurma.nome
+                    : `Turma: ${selectedTurma.nome}`
+                  : "..."}
               </span>
             </div>
           </div>
@@ -876,11 +997,18 @@ export default function HorarioPage() {
               </label>
               <select
                 value={selectedCursoId}
-                onChange={(e) => { setSelectedCursoId(e.target.value); setSelectedTurmaId(''); }}
+                onChange={(e) => {
+                  setSelectedCursoId(e.target.value);
+                  setSelectedTurmaId("");
+                }}
                 className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-4 focus:ring-blue-500/10 transition-all outline-none text-sm font-bold text-slate-800 appearance-none cursor-pointer"
               >
                 <option value="">{t.courses.selectCourse}</option>
-                {cursos.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+                {cursos.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.nome}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -895,9 +1023,15 @@ export default function HorarioPage() {
                 className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-4 focus:ring-blue-500/10 transition-all outline-none text-sm font-bold text-slate-800 appearance-none cursor-pointer disabled:opacity-50"
               >
                 <option value="">{t.attendance.selectClass}</option>
-                {turmas.filter(tu => tu.curso_id === selectedCursoId || !selectedCursoId).map(tu => (
-                  <option key={tu.id} value={tu.id}>{tu.nome}</option>
-                ))}
+                {turmas
+                  .filter(
+                    (tu) => tu.curso_id === selectedCursoId || !selectedCursoId,
+                  )
+                  .map((tu) => (
+                    <option key={tu.id} value={tu.id}>
+                      {tu.nome}
+                    </option>
+                  ))}
               </select>
             </div>
           </>
@@ -905,7 +1039,8 @@ export default function HorarioPage() {
 
         <div className="space-y-2">
           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 flex items-center gap-2 flex-wrap">
-            <Clock size={12} className="text-blue-500" /> {language === 'pt' ? 'Semana' : 'Week'}
+            <Clock size={12} className="text-blue-500" />{" "}
+            {language === "pt" ? "Semana" : "Week"}
           </label>
           <div className="flex items-center gap-1 bg-slate-50 border border-slate-100 rounded-2xl p-1 h-[56px]">
             {/* Prev Week */}
@@ -914,7 +1049,7 @@ export default function HorarioPage() {
               onClick={handlePrevWeek}
               disabled={!selectedTurmaId}
               className="text-slate-405 hover:text-slate-800 hover:bg-white rounded-xl transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed shrink-0 flex items-center justify-center h-11 w-11 shadow-sm border border-transparent hover:border-slate-100"
-              title={language === 'pt' ? 'Semana anterior' : 'Previous week'}
+              title={language === "pt" ? "Semana anterior" : "Previous week"}
             >
               <ChevronLeft size={16} />
             </button>
@@ -922,21 +1057,27 @@ export default function HorarioPage() {
             {/* Select Input container */}
             <div className="relative flex-1">
               <select
-                value={format(weekStart, 'yyyy-MM-dd')}
+                value={format(weekStart, "yyyy-MM-dd")}
                 onChange={(e) => {
-                  const selectedD = new Date(e.target.value + 'T00:00:00');
+                  const selectedD = new Date(e.target.value + "T00:00:00");
                   setCurrentDate(selectedD);
                 }}
                 disabled={!selectedTurmaId}
                 className="w-full px-1 py-2.5 bg-transparent outline-none text-xs font-bold text-slate-800 appearance-none cursor-pointer disabled:opacity-30 text-center"
               >
-                {weekOptions.map(opt => (
-                  <option key={format(opt.date, 'yyyy-MM-dd')} value={format(opt.date, 'yyyy-MM-dd')}>
+                {weekOptions.map((opt) => (
+                  <option
+                    key={format(opt.date, "yyyy-MM-dd")}
+                    value={format(opt.date, "yyyy-MM-dd")}
+                  >
                     {opt.label}
                   </option>
                 ))}
               </select>
-              <ChevronDown size={12} className="absolute right-1 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              <ChevronDown
+                size={12}
+                className="absolute right-1 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+              />
             </div>
 
             {/* Next Week */}
@@ -945,7 +1086,7 @@ export default function HorarioPage() {
               onClick={handleNextWeek}
               disabled={!selectedTurmaId}
               className="text-slate-405 hover:text-slate-800 hover:bg-white rounded-xl transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed shrink-0 flex items-center justify-center h-11 w-11 shadow-sm border border-transparent hover:border-slate-100"
-              title={language === 'pt' ? 'Próxima semana' : 'Next week'}
+              title={language === "pt" ? "Próxima semana" : "Next week"}
             >
               <ChevronRight size={16} />
             </button>
@@ -961,7 +1102,7 @@ export default function HorarioPage() {
             className="flex flex-col items-center"
           >
             {/* Elegant Schedule Container */}
-            <div 
+            <div
               ref={printRef}
               className="w-full max-w-[1200px] bg-white rounded-[3rem] shadow-2xl border border-slate-100 overflow-hidden flex flex-col font-sans mb-10 print-container"
             >
@@ -978,15 +1119,19 @@ export default function HorarioPage() {
                       {selectedTurma?.nome}
                     </h2>
                   </div>
-                  
+
                   <div className="flex flex-col md:items-end justify-center">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{t.schedule.period.toUpperCase()}</p>
-                    
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">
+                      {t.schedule.period.toUpperCase()}
+                    </p>
+
                     {/* Beautiful, static/read-only period badge for both Screen and Print */}
                     <div className="bg-slate-50 border border-slate-200 px-6 py-3 rounded-2xl flex flex-col md:items-end shadow-sm print-period-badge">
-                      <span className="text-xl md:text-2xl font-black text-slate-800 tracking-tight leading-none">{weekPeriodFormatted}</span>
+                      <span className="text-xl md:text-2xl font-black text-slate-800 tracking-tight leading-none">
+                        {weekPeriodFormatted}
+                      </span>
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1.5 leading-none">
-                        {format(weekStart, 'MMMM yyyy', { locale: ptBR })}
+                        {format(weekStart, "MMMM yyyy", { locale: ptBR })}
                       </span>
                     </div>
                   </div>
@@ -1000,24 +1145,33 @@ export default function HorarioPage() {
                     <thead>
                       <tr className="bg-slate-50/50 border-b border-slate-200">
                         <th className="w-32 px-4 py-6 border-r border-slate-200">
-                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.schedule.time}</span>
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                            {t.schedule.time}
+                          </span>
                         </th>
-                        {weekDays.map(day => {
+                        {weekDays.map((day) => {
                           const holiday = isHoliday(day.date);
                           return (
-                            <th key={day.key} className={cn(
-                              "px-4 py-6 border-r border-slate-200 last:border-r-0",
-                              holiday ? "bg-neutral-100/50" : ""
-                            )}>
+                            <th
+                              key={day.key}
+                              className={cn(
+                                "px-4 py-6 border-r border-slate-200 last:border-r-0",
+                                holiday ? "bg-neutral-100/50" : "",
+                              )}
+                            >
                               <div className="flex flex-col gap-1">
-                                <span className={cn(
-                                  "text-[10px] font-black uppercase tracking-widest",
-                                  holiday ? "text-neutral-500" : "text-neutral-900"
-                                )}>
+                                <span
+                                  className={cn(
+                                    "text-[10px] font-black uppercase tracking-widest",
+                                    holiday
+                                      ? "text-neutral-500"
+                                      : "text-neutral-900",
+                                  )}
+                                >
                                   {day.label}
                                 </span>
                                 <span className="text-[11px] font-bold text-neutral-400">
-                                  {format(day.date, 'dd/MM')}
+                                  {format(day.date, "dd/MM")}
                                 </span>
                               </div>
                             </th>
@@ -1028,37 +1182,55 @@ export default function HorarioPage() {
                     <tbody>
                       {slots.map((slot, index) => {
                         const isClassFilled = (slotId: string) => {
-                          return weekDays.some(day => {
+                          return weekDays.some((day) => {
                             const cell = getCellData(slotId, day.key);
                             return !!cell.subjectId;
                           });
                         };
 
                         let printClass = "";
-                        if (slot.type === 'class') {
+                        if (slot.type === "class") {
                           const filled = isClassFilled(slot.id);
                           if (!filled) {
                             printClass = "print:hidden no-print";
                           }
-                        } else if (slot.type === 'interval') {
+                        } else if (slot.type === "interval") {
                           const prevSlot = slots[index - 1];
                           const nextSlot = slots[index + 1];
-                          const prevFilled = prevSlot ? isClassFilled(prevSlot.id) : false;
-                          const nextFilled = nextSlot ? isClassFilled(nextSlot.id) : false;
+                          const prevFilled = prevSlot
+                            ? isClassFilled(prevSlot.id)
+                            : false;
+                          const nextFilled = nextSlot
+                            ? isClassFilled(nextSlot.id)
+                            : false;
                           if (!prevFilled && !nextFilled) {
                             printClass = "print:hidden no-print";
                           }
                         }
 
-                        if (slot.type === 'interval') {
+                        if (slot.type === "interval") {
                           return (
-                            <tr key={slot.id} className={cn("bg-slate-50/50 border-b border-slate-100", printClass)}>
+                            <tr
+                              key={slot.id}
+                              className={cn(
+                                "bg-slate-50/50 border-b border-slate-100",
+                                printClass,
+                              )}
+                            >
                               <td className="px-4 py-1.5 text-center border-r border-slate-200">
-                                <span className="text-[9px] font-black text-slate-300 italic">{slot.time}</span>
+                                <span className="text-[9px] font-black text-slate-300 italic">
+                                  {slot.time}
+                                </span>
                               </td>
-                              <td colSpan={5} className="px-4 py-1.5 text-center">
+                              <td
+                                colSpan={5}
+                                className="px-4 py-1.5 text-center"
+                              >
                                 <div className="flex items-center justify-center gap-2 opacity-30">
-                                  <Coffee size={10} className="text-slate-400" />
+                                  <Coffee
+                                    size={10}
+                                    className="text-slate-400"
+                                  />
                                   <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.8em]">
                                     {t.schedule.interval}
                                   </span>
@@ -1069,135 +1241,256 @@ export default function HorarioPage() {
                         }
 
                         return (
-                          <tr key={slot.id} className={cn("border-b border-slate-100 last:border-b-0 print-row", printClass)}>
+                          <tr
+                            key={slot.id}
+                            className={cn(
+                              "border-b border-slate-100 last:border-b-0 print-row",
+                              printClass,
+                            )}
+                          >
                             <td className="px-4 py-8 text-center border-r border-slate-200 bg-slate-50/20">
-                              <div className="text-xs font-black text-slate-800 leading-none">{slot.time}</div>
+                              <div className="text-xs font-black text-slate-800 leading-none">
+                                {slot.time}
+                              </div>
                             </td>
-                            {weekDays.map(day => {
+                            {weekDays.map((day) => {
                               const cell = getCellData(slot.id, day.key);
                               const holiday = isHoliday(day.date);
-                              
-                              const cellTurmaId = cell.turmaId || selectedTurmaId;
-                              const cellTurmaObj = turmas.find(t => t.id === cellTurmaId);
-                              const cellCursoObj = cellTurmaObj ? cursos.find(c => c.id === cellTurmaObj.curso_id) : undefined;
-                              const courseGroup = cellCursoObj?.grupo_responsavel || cellTurmaObj?.grupo_responsavel;
 
-                              const cellFilteredInstrutores = instrutores.filter(i => {
-                                if (cell.instructorId && String(i.id) === String(cell.instructorId)) return true;
-                                if (!courseGroup) return true;
-                                if (courseGroup === 'MAN') {
-                                  return i.grupo_responsavel === 'MAN' || i.grupo_responsavel === 'AMBOS';
-                                }
-                                if (courseGroup === 'GAT') {
-                                  return i.grupo_responsavel === 'GAT' || i.grupo_responsavel === 'AMBOS';
-                                }
-                                return true;
-                              });
+                              const cellTurmaId =
+                                cell.turmaId || selectedTurmaId;
+                              const cellTurmaObj = turmas.find(
+                                (t) => t.id === cellTurmaId,
+                              );
+                              const cellCursoObj = cellTurmaObj
+                                ? cursos.find(
+                                    (c) => c.id === cellTurmaObj.curso_id,
+                                  )
+                                : undefined;
+                              const courseGroup =
+                                cellCursoObj?.grupo_responsavel ||
+                                cellTurmaObj?.grupo_responsavel;
 
-                              const displayInstrutores = cellFilteredInstrutores.length > 0 
-                                ? cellFilteredInstrutores 
-                                : instrutores;
+                              const cellFilteredInstrutores =
+                                instrutores.filter((i) => {
+                                  if (
+                                    cell.instructorId &&
+                                    String(i.id) === String(cell.instructorId)
+                                  )
+                                    return true;
+                                  if (!courseGroup) return true;
+                                  if (courseGroup === "MAN") {
+                                    return (
+                                      i.grupo_responsavel === "MAN" ||
+                                      i.grupo_responsavel === "AMBOS"
+                                    );
+                                  }
+                                  if (courseGroup === "GAT") {
+                                    return (
+                                      i.grupo_responsavel === "GAT" ||
+                                      i.grupo_responsavel === "AMBOS"
+                                    );
+                                  }
+                                  return true;
+                                });
+
+                              const displayInstrutores =
+                                cellFilteredInstrutores.length > 0
+                                  ? cellFilteredInstrutores
+                                  : instrutores;
 
                               const displayTurmas = selectedCursoId
-                                ? turmas.filter(tu => tu.curso_id === selectedCursoId)
+                                ? turmas.filter(
+                                    (tu) => tu.curso_id === selectedCursoId,
+                                  )
                                 : turmas;
-                              
+
                               const cellTopics = cell.subjectId
-                                ? materias.filter(m => m.disciplina_id === cell.subjectId)
+                                ? materias.filter(
+                                    (m) => m.disciplina_id === cell.subjectId,
+                                  )
                                 : [];
-                              
+
                               if (holiday) {
                                 return (
-                                  <td key={day.key} className="px-3 py-3 border-r border-slate-100 last:border-r-0 bg-neutral-50">
+                                  <td
+                                    key={day.key}
+                                    className="px-3 py-3 border-r border-slate-100 last:border-r-0 bg-neutral-50"
+                                  >
                                     <div className="h-full flex flex-col items-center justify-center opacity-40">
-                                      <AlertCircle size={14} className="text-neutral-500 mb-1" />
-                                      <span className="text-[8px] font-black text-neutral-600 uppercase tracking-widest">{holiday.name}</span>
+                                      <AlertCircle
+                                        size={14}
+                                        className="text-neutral-500 mb-1"
+                                      />
+                                      <span className="text-[8px] font-black text-neutral-600 uppercase tracking-widest">
+                                        {holiday.name}
+                                      </span>
                                     </div>
                                   </td>
                                 );
                               }
 
                               return (
-                                <td key={day.key} className="px-3 py-3 border-r border-slate-100 last:border-r-0">
-                                  <div className={cn(
-                                    "rounded-2xl p-4 h-full flex flex-col transition-all min-h-[140px]",
-                                    isEditMode 
-                                      ? "bg-white border-2 border-dashed border-neutral-300" 
-                                      : cell.subjectId 
-                                        ? "bg-slate-50 border border-slate-200/80 shadow-sm" 
-                                        : "hover:bg-slate-50/40 border border-transparent"
-                                  )}>
+                                <td
+                                  key={day.key}
+                                  className="px-3 py-3 border-r border-slate-100 last:border-r-0"
+                                >
+                                  <div
+                                    className={cn(
+                                      "rounded-2xl p-4 h-full flex flex-col transition-all min-h-[140px]",
+                                      isEditMode
+                                        ? "bg-white border-2 border-dashed border-neutral-300"
+                                        : cell.subjectId
+                                          ? "bg-slate-50 border border-slate-200/80 shadow-sm"
+                                          : "hover:bg-slate-50/40 border border-transparent",
+                                    )}
+                                  >
                                     {(() => {
-                                      const cellTopicObj = materias.find(m => m.id === cell.topicId);
-                                      const cellDiscObj = disciplinas.find(d => d.id === cell.subjectId);
-                                      const moduloNum = cellDiscObj?.modulo_index || cellTopicObj?.modulo_index || 1;
-                                      const moduloLabel = language === 'pt' ? `Módulo ${moduloNum}` : `Module ${moduloNum}`;
+                                      const cellDiscObj = disciplinas.find(
+                                        (d) => d.id === cell.subjectId,
+                                      );
+                                      const currentModulo =
+                                        cell.modulo ||
+                                        (cellDiscObj?.modulo_index
+                                          ? String(cellDiscObj.modulo_index)
+                                          : "1");
+                                      const moduloLabel =
+                                        currentModulo === "PROVAS"
+                                          ? language === "pt"
+                                            ? "PROVAS"
+                                            : "EXAMS"
+                                          : language === "pt"
+                                            ? `Módulo ${currentModulo}`
+                                            : `Module ${currentModulo}`;
 
                                       return isEditMode ? (
                                         <div className="space-y-1.5 flex flex-col h-full justify-between">
                                           <div className="space-y-1.5">
-                                            {/* 1. MÓDULO INDICATOR */}
+                                            {/* 1. MÓDULO SELECT */}
                                             <div className="flex items-center gap-1.5 text-blue-600">
-                                              <Layers size={9} className="shrink-0" />
-                                              <span className="text-[8px] font-black uppercase tracking-wider">
-                                                {moduloLabel}
-                                              </span>
+                                              <Layers
+                                                size={9}
+                                                className="shrink-0 text-blue-500"
+                                              />
+                                              <select
+                                                value={cell.modulo || ""}
+                                                onChange={(e) =>
+                                                  updateCell(
+                                                    slot.id,
+                                                    day.key,
+                                                    "modulo",
+                                                    e.target.value,
+                                                  )
+                                                }
+                                                className="w-full text-[9px] font-black text-blue-600 bg-transparent border-none focus:ring-0 p-0 cursor-pointer block truncate uppercase"
+                                              >
+                                                <option value="">
+                                                  {language === "pt"
+                                                    ? "Módulo Padrão"
+                                                    : "Default Module"}
+                                                </option>
+                                                {Array.from({
+                                                  length:
+                                                    selectedCurso?.qtd_modulos ||
+                                                    4,
+                                                }).map((_, i) => (
+                                                  <option
+                                                    key={i + 1}
+                                                    value={String(i + 1)}
+                                                  >
+                                                    {language === "pt"
+                                                      ? `Módulo ${i + 1}`
+                                                      : `Module ${i + 1}`}
+                                                  </option>
+                                                ))}
+                                                <option value="PROVAS">
+                                                  {language === "pt"
+                                                    ? "PROVAS"
+                                                    : "EXAMS"}
+                                                </option>
+                                              </select>
                                             </div>
 
                                             {/* 2. DISCIPLINA SELECT */}
                                             <div className="flex items-center gap-1.5 text-neutral-950">
-                                              <BookOpen size={9} className="shrink-0 text-neutral-400" />
-                                              <select 
-                                                value={cell.subjectId || ''}
+                                              <BookOpen
+                                                size={9}
+                                                className="shrink-0 text-neutral-400"
+                                              />
+                                              <select
+                                                value={cell.subjectId || ""}
                                                 onChange={(e) => {
-                                                  updateCell(slot.id, day.key, 'subjectId', e.target.value);
-                                                  updateCell(slot.id, day.key, 'topicId', '');
-                                                  updateCell(slot.id, day.key, 'topic', '');
+                                                  updateCell(
+                                                    slot.id,
+                                                    day.key,
+                                                    "subjectId",
+                                                    e.target.value,
+                                                  );
+                                                  updateCell(
+                                                    slot.id,
+                                                    day.key,
+                                                    "topicId",
+                                                    "",
+                                                  );
+                                                  updateCell(
+                                                    slot.id,
+                                                    day.key,
+                                                    "topic",
+                                                    "",
+                                                  );
+                                                  updateCell(
+                                                    slot.id,
+                                                    day.key,
+                                                    "modulo",
+                                                    "",
+                                                  );
                                                 }}
                                                 className="w-full text-[9px] font-black text-neutral-950 bg-transparent border-none focus:ring-0 p-0 cursor-pointer block truncate"
                                               >
-                                                <option value="">{t.schedule.subject}</option>
-                                                {filteredDisciplinas.map(d => (
-                                                  <option key={d.id} value={d.id}>{d.nome}</option>
-                                                ))}
-                                              </select>
-                                            </div>
-
-                                            {/* 3. TÓPICO SELECT */}
-                                            <div className="flex items-center gap-1.5 text-slate-600">
-                                              <Book size={9} className="shrink-0 text-slate-400" />
-                                              <select 
-                                                value={cell.topicId || ''}
-                                                onChange={(e) => {
-                                                  const selectedObj = cellTopics.find(ct => ct.id === e.target.value);
-                                                  updateCell(slot.id, day.key, 'topicId', e.target.value);
-                                                  if (selectedObj) {
-                                                    updateCell(slot.id, day.key, 'topic', selectedObj.nome);
-                                                  } else {
-                                                    updateCell(slot.id, day.key, 'topic', '');
-                                                  }
-                                                }}
-                                                disabled={!cell.subjectId}
-                                                className="w-full text-[9px] font-bold text-blue-600 bg-transparent border-none focus:ring-0 p-0 cursor-pointer block truncate disabled:opacity-40"
-                                              >
-                                                <option value="">{language === 'pt' ? 'Tópico' : 'Topic'}</option>
-                                                {cellTopics.map(m => (
-                                                  <option key={m.id} value={m.id}>{m.nome}</option>
-                                                ))}
+                                                <option value="">
+                                                  {t.schedule.subject}
+                                                </option>
+                                                {filteredDisciplinas.map(
+                                                  (d) => (
+                                                    <option
+                                                      key={d.id}
+                                                      value={d.id}
+                                                    >
+                                                      {d.nome}
+                                                    </option>
+                                                  ),
+                                                )}
                                               </select>
                                             </div>
 
                                             {/* 4. INSTRUTOR SELECT */}
                                             <div className="flex items-center gap-1.5 text-neutral-500">
-                                              <User size={9} className="shrink-0 text-slate-400" />
-                                              <select 
-                                                value={cell.instructorId || ''}
-                                                onChange={(e) => updateCell(slot.id, day.key, 'instructorId', e.target.value)}
+                                              <User
+                                                size={9}
+                                                className="shrink-0 text-slate-400"
+                                              />
+                                              <select
+                                                value={cell.instructorId || ""}
+                                                onChange={(e) =>
+                                                  updateCell(
+                                                    slot.id,
+                                                    day.key,
+                                                    "instructorId",
+                                                    e.target.value,
+                                                  )
+                                                }
                                                 className="w-full text-[9px] font-bold text-slate-600 bg-transparent border-none focus:ring-0 p-0 cursor-pointer block truncate"
                                               >
-                                                <option value="">{t.schedule.instructor}</option>
-                                                {displayInstrutores.map(i => (
-                                                  <option key={i.id} value={i.id}>{i.full_name}</option>
+                                                <option value="">
+                                                  {t.schedule.instructor}
+                                                </option>
+                                                {displayInstrutores.map((i) => (
+                                                  <option
+                                                    key={i.id}
+                                                    value={i.id}
+                                                  >
+                                                    {i.full_name}
+                                                  </option>
                                                 ))}
                                               </select>
                                             </div>
@@ -1205,70 +1498,100 @@ export default function HorarioPage() {
 
                                           {/* 5. SALA INPUT */}
                                           <div className="flex items-center gap-1.5 pt-1.5 border-t border-slate-100 mt-auto">
-                                            <MapPin size={9} className="text-slate-400 shrink-0" />
-                                            <input 
-                                              value={cell.room || ''}
-                                              onChange={(e) => updateCell(slot.id, day.key, 'room', e.target.value)}
+                                            <MapPin
+                                              size={9}
+                                              className="text-slate-400 shrink-0"
+                                            />
+                                            <input
+                                              value={cell.room || ""}
+                                              onChange={(e) =>
+                                                updateCell(
+                                                  slot.id,
+                                                  day.key,
+                                                  "room",
+                                                  e.target.value,
+                                                )
+                                              }
                                               placeholder="Sala"
                                               className="w-full text-[9px] font-bold text-slate-500 bg-transparent border-none focus:ring-0 p-0 placeholder:text-slate-200 uppercase"
                                             />
                                           </div>
                                         </div>
+                                      ) : cell.subjectId ? (
+                                        <div className="space-y-1.5 flex-1 flex flex-col justify-between">
+                                          <div className="space-y-1.5">
+                                            {/* 1. MÓDULO */}
+                                            <div className="flex items-center gap-1.5 text-blue-600">
+                                              <Layers
+                                                size={10}
+                                                className="shrink-0"
+                                              />
+                                              <span className="text-[9px] font-black uppercase tracking-wider leading-none">
+                                                {moduloLabel}
+                                              </span>
+                                            </div>
+
+                                            {/* 2. DISCIPLINA */}
+                                            <div className="flex items-center gap-1.5 text-neutral-950">
+                                              <BookOpen
+                                                size={10}
+                                                className="shrink-0"
+                                              />
+                                              <span className="text-[11px] font-black leading-tight uppercase tracking-tight">
+                                                {cellDiscObj?.nome ||
+                                                  "Disciplina"}
+                                              </span>
+                                            </div>
+
+                                            {/* 3. TÓPICO */}
+                                            {(cell.topic || cell.topicId) && (
+                                              <div className="flex items-start gap-1.5 text-slate-600 pl-0.5">
+                                                <Book
+                                                  size={10}
+                                                  className="text-slate-400 shrink-0 mt-0.5"
+                                                />
+                                                <span className="text-[10px] font-bold leading-tight uppercase tracking-tight text-slate-600 line-clamp-2">
+                                                  {cell.topic ||
+                                                    cellTopicObj?.nome ||
+                                                    ""}
+                                                </span>
+                                              </div>
+                                            )}
+
+                                            {/* 4. INSTRUTOR */}
+                                            <div className="flex items-center gap-1.5 text-neutral-500">
+                                              <User
+                                                size={10}
+                                                className="shrink-0"
+                                              />
+                                              <span className="text-[10px] font-bold leading-none">
+                                                {instrutores.find(
+                                                  (i) =>
+                                                    i.id === cell.instructorId,
+                                                )?.full_name ||
+                                                  cell.instructorId ||
+                                                  "Instrutor"}
+                                              </span>
+                                            </div>
+                                          </div>
+
+                                          {/* 5. SALA */}
+                                          <div className="pt-1.5 flex flex-col gap-1 border-t border-slate-100 mt-auto">
+                                            <div className="flex items-center gap-1.5 text-neutral-400">
+                                              <MapPin size={10} />
+                                              <span className="text-[9px] font-black uppercase tracking-tight leading-none">
+                                                {language === "pt"
+                                                  ? "Sala: "
+                                                  : "Room: "}
+                                                {cell.room || "N/A"}
+                                              </span>
+                                            </div>
+                                          </div>
+                                        </div>
                                       ) : (
-                                        cell.subjectId ? (
-                                          <div className="space-y-1.5 flex-1 flex flex-col justify-between">
-                                            <div className="space-y-1.5">
-                                              {/* 1. MÓDULO */}
-                                              <div className="flex items-center gap-1.5 text-blue-600">
-                                                <Layers size={10} className="shrink-0" />
-                                                <span className="text-[9px] font-black uppercase tracking-wider leading-none">
-                                                  {moduloLabel}
-                                                </span>
-                                              </div>
-
-                                              {/* 2. DISCIPLINA */}
-                                              <div className="flex items-center gap-1.5 text-neutral-950">
-                                                <BookOpen size={10} className="shrink-0" />
-                                                <span className="text-[11px] font-black leading-tight uppercase tracking-tight">
-                                                  {cellDiscObj?.nome || 'Disciplina'}
-                                                </span>
-                                              </div>
-                                              
-                                              {/* 3. TÓPICO */}
-                                              {(cell.topic || cell.topicId) && (
-                                                <div className="flex items-start gap-1.5 text-slate-600 pl-0.5">
-                                                  <Book size={10} className="text-slate-400 shrink-0 mt-0.5" />
-                                                  <span className="text-[10px] font-bold leading-tight uppercase tracking-tight text-slate-600 line-clamp-2">
-                                                    {cell.topic || cellTopicObj?.nome || ''}
-                                                  </span>
-                                                </div>
-                                              )}
-
-                                              {/* 4. INSTRUTOR */}
-                                              <div className="flex items-center gap-1.5 text-neutral-500">
-                                                <User size={10} className="shrink-0" />
-                                                <span className="text-[10px] font-bold leading-none">
-                                                  {instrutores.find(i => i.id === cell.instructorId)?.full_name || cell.instructorId || 'Instrutor'}
-                                                </span>
-                                              </div>
-                                            </div>
-                                            
-                                            {/* 5. SALA */}
-                                            <div className="pt-1.5 flex flex-col gap-1 border-t border-slate-100 mt-auto">
-                                              <div className="flex items-center gap-1.5 text-neutral-400">
-                                                <MapPin size={10} />
-                                                <span className="text-[9px] font-black uppercase tracking-tight leading-none">
-                                                  {language === 'pt' ? 'Sala: ' : 'Room: '}
-                                                  {cell.room || 'N/A'}
-                                                </span>
-                                              </div>
-                                            </div>
-                                          </div>
-                                        ) : (
-                                          <div className="flex-1 flex items-center justify-center opacity-10">
-                                            <Shield size={16} />
-                                          </div>
-                                        )
+                                        <div className="flex-1 flex items-center justify-center opacity-10">
+                                          <Shield size={16} />
+                                        </div>
                                       );
                                     })()}
                                   </div>
@@ -1281,30 +1604,41 @@ export default function HorarioPage() {
                     </tbody>
                   </table>
                 </div>
-                         {/* Footer */}
-              <div className="px-12 py-8 bg-white flex items-center justify-between print-header print-header-bottom border-t border-slate-200">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center">
-                    <Shield size={20} className="text-slate-700" />
+                {/* Footer */}
+                <div className="px-12 py-8 bg-white flex items-center justify-between print-header print-header-bottom border-t border-slate-200">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center">
+                      <Shield size={20} className="text-slate-700" />
+                    </div>
+                    <div>
+                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">
+                        {t.schedule.footerVersion}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{t.schedule.footerVersion}</p>
+                  <div className="text-right">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                      {t.schedule.footerDocGenerated}
+                    </p>
+                    <p className="text-xs font-black text-slate-800">
+                      {format(new Date(), "dd/MM/yyyy • HH:mm")}
+                    </p>
                   </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.schedule.footerDocGenerated}</p>
-                  <p className="text-xs font-black text-slate-800">{format(new Date(), "dd/MM/yyyy • HH:mm")}</p>
-                </div>
-              </div>         </div>
+                </div>{" "}
+              </div>
             </div>
           </motion.div>
         ) : (
           <div className="py-32 flex flex-col items-center justify-center bg-white rounded-[4rem] border border-slate-100 shadow-sm">
             <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mb-8 text-slate-200">
-               <Calendar size={48} strokeWidth={1} />
+              <Calendar size={48} strokeWidth={1} />
             </div>
-            <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight mb-2">Selecione uma Turma</h3>
-            <p className="text-slate-400 text-sm font-medium">Use os filtros acima para carregar o quadro de horários.</p>
+            <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight mb-2">
+              Selecione uma Turma
+            </h3>
+            <p className="text-slate-400 text-sm font-medium">
+              Use os filtros acima para carregar o quadro de horários.
+            </p>
           </div>
         )}
       </AnimatePresence>

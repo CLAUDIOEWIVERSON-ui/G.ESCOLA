@@ -1185,13 +1185,6 @@ export default function CursosPage() {
                     </div>
                     {canEditCurso(manageDisciplinasCurso) && (
                       <div className="flex gap-1 items-center">
-                        <button 
-                          onClick={() => setManageMateriasDisciplina(d)}
-                          className="px-2 py-1.5 bg-slate-50 border border-slate-100 hover:bg-emerald-50 hover:text-emerald-600 rounded-lg text-slate-400 transition-all shadow-sm flex items-center gap-1.5 min-w-[80px] justify-center mr-2"
-                        >
-                          <BookOpen size={14} />
-                          <span className="text-[10px] font-bold uppercase">Tópicos</span>
-                        </button>
                         {!confirmDeleteDisciplinaId || confirmDeleteDisciplinaId !== d.id ? (
                           <>
                             <button 
