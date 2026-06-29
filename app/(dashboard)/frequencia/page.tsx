@@ -83,8 +83,6 @@ export default function FrequenciaPage() {
   const studentSignatureLabel = language === 'pt' ? 'Assinatura do Aluno / Representante' : 'Signature of Student / Representative';
 
   const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [view, setView] = useState<'record' | 'map'>('map');
   const [mapGranularity, setMapGranularity] = useState<'week' | 'month' | 'year'>('month');
   
   const [cursos, setCursos] = useState<any[]>([]);
@@ -94,11 +92,9 @@ export default function FrequenciaPage() {
   const [selectedCurso, setSelectedCurso] = useState('');
   const [selectedTurma, setSelectedTurma] = useState('');
   const selectedDisciplina = '';
-  const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [currentMapDate, setCurrentMapDate] = useState(new Date());
 
   const [students, setStudents] = useState<any[]>([]);
-  const [attendanceRecords, setAttendanceRecords] = useState<Record<string, { presente: boolean, id?: string }>>({});
   const [mapData, setMapData] = useState<any[]>([]);
   const [activeCell, setActiveCell] = useState<{ studentId: string; dayStr: string } | null>(null);
 
@@ -184,7 +180,6 @@ export default function FrequenciaPage() {
   const fetchAttendance = useCallback(async () => {
     if (!selectedTurma) {
       setStudents([]);
-      setAttendanceRecords({});
       setMapData([]);
       return;
     }
@@ -207,59 +202,37 @@ export default function FrequenciaPage() {
         .select('*')
         .eq('turma_id', selectedTurma);
 
-      if (view === 'record') {
-        query = query.eq('data', selectedDate);
-        
-        if (selectedDisciplina) {
-          query = query.eq('disciplina_id', selectedDisciplina);
-        } else {
-          query = query.is('disciplina_id', null);
-        }
+      let start: string;
+      let end: string;
 
-        const { data: recData, error: recError } = await query;
-        if (recError) throw recError;
-
-        const records: Record<string, { presente: boolean, id?: string }> = {};
-        alunoData?.forEach((a: any) => {
-          records[a.id] = { presente: true };
-        });
-        recData?.forEach((r: any) => {
-          records[r.aluno_id] = { presente: r.presente, id: r.id };
-        });
-        setAttendanceRecords(records);
+      if (mapGranularity === 'week') {
+        start = format(startOfWeek(currentMapDate, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+        end = format(endOfWeek(currentMapDate, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+      } else if (mapGranularity === 'year') {
+        start = format(startOfYear(currentMapDate), 'yyyy-MM-dd');
+        end = format(endOfYear(currentMapDate), 'yyyy-MM-dd');
       } else {
-        let start: string;
-        let end: string;
-
-        if (mapGranularity === 'week') {
-          start = format(startOfWeek(currentMapDate, { weekStartsOn: 1 }), 'yyyy-MM-dd');
-          end = format(endOfWeek(currentMapDate, { weekStartsOn: 1 }), 'yyyy-MM-dd');
-        } else if (mapGranularity === 'year') {
-          start = format(startOfYear(currentMapDate), 'yyyy-MM-dd');
-          end = format(endOfYear(currentMapDate), 'yyyy-MM-dd');
-        } else {
-          start = format(startOfMonth(currentMapDate), 'yyyy-MM-dd');
-          end = format(endOfMonth(currentMapDate), 'yyyy-MM-dd');
-        }
-        
-        query = query.gte('data', start).lte('data', end);
-        
-        if (selectedDisciplina) {
-          query = query.eq('disciplina_id', selectedDisciplina);
-        } else {
-          query = query.is('disciplina_id', null);
-        }
-
-        const { data: mapRecData, error: mapRecError } = await query;
-        if (mapRecError) throw mapRecError;
-        setMapData(mapRecData || []);
+        start = format(startOfMonth(currentMapDate), 'yyyy-MM-dd');
+        end = format(endOfMonth(currentMapDate), 'yyyy-MM-dd');
       }
+      
+      query = query.gte('data', start).lte('data', end);
+      
+      if (selectedDisciplina) {
+        query = query.eq('disciplina_id', selectedDisciplina);
+      } else {
+        query = query.is('disciplina_id', null);
+      }
+
+      const { data: mapRecData, error: mapRecError } = await query;
+      if (mapRecError) throw mapRecError;
+      setMapData(mapRecData || []);
     } catch (err: any) {
       console.error('Error fetching attendance:', err);
     } finally {
       setLoading(false);
     }
-  }, [selectedTurma, selectedDate, selectedDisciplina, view, currentMapDate, mapGranularity]);
+  }, [selectedTurma, selectedDisciplina, currentMapDate, mapGranularity]);
 
   useEffect(() => {
     let isMounted = true;
@@ -269,122 +242,6 @@ export default function FrequenciaPage() {
     loadData();
     return () => { isMounted = false; };
   }, [fetchAttendance]);
-
-  const getTurmaPeriodStatus = useCallback(() => {
-    if (!selectedTurma) return { isValid: true, isExpired: false, isBefore: false, data_inicio: null, data_fim: null };
-    const activeTurma = turmas.find(t => t.id === selectedTurma);
-    if (!activeTurma) return { isValid: true, isExpired: false, isBefore: false, data_inicio: null, data_fim: null };
-
-    const todayStr = format(new Date(), 'yyyy-MM-dd');
-    const hasStart = !!activeTurma.data_inicio;
-    
-    // Fallback to data_fim if data_postergacao is not set
-    const effectiveEndDate = activeTurma.data_postergacao || activeTurma.data_fim;
-    const hasEnd = !!effectiveEndDate;
-
-    let isExpired = false;
-    let isBefore = false;
-
-    if (hasEnd) {
-      if (todayStr > effectiveEndDate || selectedDate > effectiveEndDate) {
-        isExpired = true;
-      }
-    }
-    if (hasStart) {
-      if (selectedDate < activeTurma.data_inicio) {
-        isBefore = true;
-      }
-    }
-
-    return {
-      isValid: !isExpired && !isBefore,
-      isExpired,
-      isBefore,
-      data_inicio: activeTurma.data_inicio,
-      data_fim: effectiveEndDate
-    };
-  }, [selectedTurma, turmas, selectedDate]);
-
-  const handleToggleAttendance = (alunoId: string) => {
-    if (isReadOnly) return;
-    if (!isAdmin) {
-      const { isValid, isExpired } = getTurmaPeriodStatus();
-      if (isExpired) {
-        toast.error(language === 'pt' ? 'O período desta turma já expirou. Não é permitido marcar frequência.' : 'The period for this class has expired. Attendance marking is not allowed.');
-        return;
-      }
-      if (!isValid) {
-        toast.error(language === 'pt' ? 'A data selecionada está fora do período da turma.' : 'The selected date is outside the class period.');
-        return;
-      }
-    }
-    setAttendanceRecords(prev => ({
-      ...prev,
-      [alunoId]: { ...prev[alunoId], presente: !prev[alunoId].presente }
-    }));
-  };
-
-  const handleSaveAttendance = async () => {
-    if (!selectedTurma || isReadOnly) return;
-    if (!selectedDate) {
-      toast.error(language === 'pt' ? 'Por favor, selecione uma data válida.' : 'Please select a valid date.');
-      return;
-    }
-    if (!isAdmin) {
-      const { isValid, isExpired } = getTurmaPeriodStatus();
-      if (isExpired) {
-        toast.error(language === 'pt' ? 'Impossível salvar. O período da turma já expirou.' : 'Cannot save. The class period has already expired.');
-        return;
-      }
-      if (!isValid) {
-        toast.error(language === 'pt' ? 'Impossível salvar. A data selecionada está fora do período da turma.' : 'Cannot save. Selected date is outside the class period.');
-        return;
-      }
-    }
-    setSaving(true);
-    const loadingToast = toast.loading(t.common.loading || 'Salvando...');
-    try {
-      // First, delete existing entries to prevent duplicates and satisfy the partial index constraints smoothly
-      let deleteQuery = supabase
-        .from('frequencia')
-        .delete()
-        .eq('turma_id', selectedTurma)
-        .eq('data', selectedDate);
-
-      if (selectedDisciplina) {
-        deleteQuery = deleteQuery.eq('disciplina_id', selectedDisciplina);
-      } else {
-        deleteQuery = deleteQuery.is('disciplina_id', null);
-      }
-
-      const { error: deleteError } = await deleteQuery;
-      if (deleteError) throw deleteError;
-
-      // Now, insert the current selected options
-      const recordsToInsert = Object.entries(attendanceRecords).map(([alunoId, data]) => ({
-        aluno_id: alunoId,
-        turma_id: selectedTurma,
-        disciplina_id: selectedDisciplina || null,
-        data: selectedDate,
-        presente: data.presente
-      }));
-
-      if (recordsToInsert.length > 0) {
-        const { error: insertError } = await supabase
-          .from('frequencia')
-          .insert(recordsToInsert);
-
-        if (insertError) throw insertError;
-      }
-
-      toast.success(t.attendance.saveSuccess, { id: loadingToast });
-      fetchAttendance();
-    } catch (err: any) {
-      toast.error(err.message, { id: loadingToast });
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const handleToggleMapAttendance = async (studentId: string, dayStr: string, status: 'P' | 'F' | 'FJ' | 'A' | 'D' | null) => {
     if (isReadOnly) return;
@@ -407,6 +264,16 @@ export default function FrequenciaPage() {
 
     const toastId = toast.loading(language === 'pt' ? 'Atualizando presença...' : 'Updating attendance...');
     try {
+      console.log('handleToggleMapAttendance details:', {
+        studentId,
+        selectedTurma,
+        selectedDisciplina,
+        dayStr,
+        status,
+        isAdmin,
+        isReadOnly
+      });
+
       // First, delete any pre-existing records for this student on this day
       let deleteQuery = supabase
         .from('frequencia')
@@ -422,7 +289,10 @@ export default function FrequenciaPage() {
       }
 
       const { error: deleteError } = await deleteQuery;
-      if (deleteError) throw deleteError;
+      if (deleteError) {
+        console.error('Delete error in handleToggleMapAttendance:', deleteError);
+        throw deleteError;
+      }
 
       let insertedData: any[] | null = null;
 
@@ -437,12 +307,22 @@ export default function FrequenciaPage() {
           observacao: status === 'P' || status === 'F' ? null : status
         };
 
+        console.log('Inserting frequency record:', recordToInsert);
+
         const { data, error: insertError } = await supabase
           .from('frequencia')
           .insert([recordToInsert])
           .select();
 
-        if (insertError) throw insertError;
+        if (insertError) {
+          console.error('Insert error in handleToggleMapAttendance:', {
+            code: insertError.code,
+            message: insertError.message,
+            details: insertError.details,
+            hint: insertError.hint
+          });
+          throw new Error(insertError.message || `${insertError.code}: ${insertError.details}`);
+        }
         insertedData = data;
       }
 
@@ -463,7 +343,8 @@ export default function FrequenciaPage() {
       toast.success(language === 'pt' ? 'Presença atualizada!' : 'Attendance updated!', { id: toastId });
     } catch (err: any) {
       console.error('Error updating map attendance:', err);
-      toast.error(err.message || 'Erro ao salvar alteração.', { id: toastId });
+      const errMsg = err.message || err.details || JSON.stringify(err);
+      toast.error(`${language === 'pt' ? 'Erro ao atualizar presença: ' : 'Error updating attendance: '}${errMsg}`, { id: toastId });
     }
   };
 
@@ -525,7 +406,7 @@ export default function FrequenciaPage() {
 
       {/* Selection Card */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4 print:hidden">
-        <div className="md:col-span-6 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm transition-all hover:shadow-md">
+        <div className="md:col-span-12 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm transition-all hover:shadow-md">
           <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3">
             TURMA
           </label>
@@ -543,24 +424,6 @@ export default function FrequenciaPage() {
             <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
             </div>
-          </div>
-        </div>
-
-        <div className="md:col-span-6 bg-[#1d4ed8] text-white p-6 rounded-3xl shadow-xl flex items-center justify-between relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-[rgba(255,255,255,0.05)] rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-110" />
-          <div className="relative z-10">
-            <label className="block text-[11px] font-bold text-[rgba(219,234,254,0.8)] uppercase tracking-widest mb-1.5 font-mono">
-              {language === 'pt' ? 'MÉDIA DE PRESENÇA NO PERÍODO' : 'AVERAGE ATTENDANCE RATE'}
-            </label>
-            <div className="flex items-baseline gap-3">
-              <span className="text-5xl font-black tracking-tight">{presencePercentage}%</span>
-              <span className="text-blue-100 font-bold text-sm bg-[rgba(37,99,235,0.5)] px-2 py-0.5 rounded-lg whitespace-nowrap font-mono">
-                {students.length} Alunos Ativos
-              </span>
-            </div>
-          </div>
-          <div className="w-14 h-14 rounded-2xl bg-[#2563eb] flex items-center justify-center relative z-10 border border-[rgba(59,130,246,0.5)] shadow-sm">
-            <UserCheck size={28} className="text-white" />
           </div>
         </div>
       </div>
@@ -658,35 +521,16 @@ export default function FrequenciaPage() {
                     <LayoutGrid size={16} />
                     MÊS
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setMapGranularity('year')}
-                    className={cn(
-                      "flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all",
-                      mapGranularity === 'year' ? "bg-white text-blue-600 shadow-md" : "text-slate-500 hover:text-slate-700"
-                    )}
-                  >
-                    <BarChart3 size={16} />
-                    ANO
-                  </button>
                 </div>
 
-                <div className="hidden sm:flex items-center gap-2">
-                  <div className="flex items-center gap-2 px-4 py-2.5 bg-emerald-50 text-emerald-700 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-emerald-100">
-                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm" />
-                    Presente
-                  </div>
-                  <div className="flex items-center gap-2 px-4 py-2.5 bg-rose-50 text-rose-700 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-rose-100">
-                    <div className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-sm" />
-                    Falta
-                  </div>
-                  {activeTurma?.data_inicio && (
+                {activeTurma?.data_inicio && (
+                  <div className="hidden sm:flex items-center gap-2">
                     <div className="flex items-center gap-2 px-4 py-2.5 bg-blue-50 text-blue-700 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-blue-100">
                       <div className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-sm" />
                       Início das Aulas
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1078,183 +922,150 @@ export default function FrequenciaPage() {
                             <span className="truncate max-w-[180px] print:max-w-none print:whitespace-normal print:text-[10px]">{student.nome}</span>
                           </div>
                         </td>
-                        {mapGranularity === 'year' ? (
-                          getFilteredMonths(eachMonthOfInterval({
-                            start: startOfYear(currentMapDate),
-                            end: endOfYear(currentMapDate)
-                          })).map(month => {
-                            const monthRecords = mapData.filter(r => 
-                              r.aluno_id === student.id && 
-                              isSameMonth(new Date(r.data), month)
-                            );
-                            
-                            const presentCount = monthRecords.filter(r => r.presente).length;
-                            const totalDays = monthRecords.length;
-                            const rate = totalDays > 0 ? Math.round((presentCount / totalDays) * 100) : null;
-
-                            return (
-                              <td 
-                                key={month.toString()} 
-                                className="p-2 border border-slate-200 text-center"
-                              >
-                                {rate !== null ? (
+                        {getFilteredDays(eachDayOfInterval({
+                          start: mapGranularity === 'week' ? startOfWeek(currentMapDate, { weekStartsOn: 1 }) : startOfMonth(currentMapDate),
+                          end: mapGranularity === 'week' ? endOfWeek(currentMapDate, { weekStartsOn: 1 }) : endOfMonth(currentMapDate)
+                        })).map(day => {
+                          const dayStr = format(day, 'yyyy-MM-dd');
+                          const rec = mapData.find(r => {
+                            if (!r.data) return false;
+                            const dbDateStr = typeof r.data === 'string' ? r.data.substring(0, 10) : format(new Date(r.data), 'yyyy-MM-dd');
+                            return r.aluno_id === student.id && dbDateStr === dayStr;
+                          });
+                          
+                          const isWk = isWeekend(day);
+                          const holiday = isHoliday(day);
+                          const isStartDay = activeTurma?.data_inicio && dayStr === activeTurma.data_inicio;
+                          const status = rec ? (rec.observacao || (rec.presente ? 'P' : 'F')) : null;
+                          
+                          return (
+                            <td 
+                              key={day.toString()} 
+                              className={cn(
+                                "p-1 border border-slate-200 cursor-pointer transition-all hover:bg-blue-50/50 relative text-center min-w-[42px] h-12 print:h-8",
+                                holiday ? "bg-rose-50/30" : isWk ? "bg-slate-100/30" : "bg-white",
+                                isStartDay && "bg-blue-50/20",
+                                isReadOnly && "cursor-not-allowed opacity-80"
+                              )}
+                              title={
+                                isReadOnly 
+                                  ? (language === 'pt' ? "Apenas visualização" : "View only") 
+                                  : holiday 
+                                    ? (language === 'pt' ? 'Feriado: ' : 'Holiday: ') + holiday.name
+                                    : (language === 'pt' ? "Clique para gerenciar presença" : "Click to manage attendance")
+                              }
+                              onClick={() => {
+                                if (isReadOnly) return;
+                                if (activeCell?.studentId === student.id && activeCell?.dayStr === dayStr) {
+                                  setActiveCell(null);
+                                } else {
+                                  setActiveCell({ studentId: student.id, dayStr });
+                                }
+                              }}
+                            >
+                              <div className="w-full h-full flex items-center justify-center relative">
+                                {status ? (
                                   <div className={cn(
-                                    "px-2 py-1 rounded-lg text-[11px] font-black tracking-tight mx-auto w-fit",
-                                    rate >= 75 ? "bg-emerald-50 text-emerald-700" : rate >= 50 ? "bg-orange-50 text-orange-700" : "bg-rose-50 text-rose-700"
+                                    "w-7 h-7 rounded-lg flex items-center justify-center font-extrabold text-[11px] shadow-sm transition-transform",
+                                    status === 'P' && "bg-emerald-500 text-white border border-emerald-600 shadow-sm",
+                                    status === 'F' && "bg-rose-500 text-white border border-rose-600 shadow-sm",
+                                    status === 'FJ' && "bg-amber-500 text-white border border-amber-600 shadow-sm",
+                                    status === 'A' && "bg-orange-500 text-white border border-orange-600 shadow-sm",
+                                    status === 'D' && "bg-sky-500 text-white border border-sky-600 shadow-sm"
                                   )}>
-                                    {rate}%
+                                    {status}
                                   </div>
                                 ) : (
-                                  <div className="w-1.5 h-1.5 rounded-full bg-slate-200 mx-auto" />
-                                )}
-                              </td>
-                            );
-                          })
-                        ) : (
-                          getFilteredDays(eachDayOfInterval({
-                            start: mapGranularity === 'week' ? startOfWeek(currentMapDate, { weekStartsOn: 1 }) : startOfMonth(currentMapDate),
-                            end: mapGranularity === 'week' ? endOfWeek(currentMapDate, { weekStartsOn: 1 }) : endOfMonth(currentMapDate)
-                          })).map(day => {
-                            const dayStr = format(day, 'yyyy-MM-dd');
-                            const rec = mapData.find(r => {
-                              if (!r.data) return false;
-                              const dbDateStr = typeof r.data === 'string' ? r.data.substring(0, 10) : format(new Date(r.data), 'yyyy-MM-dd');
-                              return r.aluno_id === student.id && dbDateStr === dayStr;
-                            });
-                            
-                            const isWk = isWeekend(day);
-                            const holiday = isHoliday(day);
-                            const isStartDay = activeTurma?.data_inicio && dayStr === activeTurma.data_inicio;
-                            const status = rec ? (rec.observacao || (rec.presente ? 'P' : 'F')) : null;
-                            
-                            return (
-                              <td 
-                                key={day.toString()} 
-                                className={cn(
-                                  "p-1 border border-slate-200 cursor-pointer transition-all hover:bg-blue-50/50 relative text-center min-w-[42px] h-12 print:h-8",
-                                  holiday ? "bg-rose-50/30" : isWk ? "bg-slate-100/30" : "bg-white",
-                                  isStartDay && "bg-blue-50/20",
-                                  isReadOnly && "cursor-not-allowed opacity-80"
-                                )}
-                                title={
-                                  isReadOnly 
-                                    ? (language === 'pt' ? "Apenas visualização" : "View only") 
-                                    : holiday 
-                                      ? (language === 'pt' ? 'Feriado: ' : 'Holiday: ') + holiday.name
-                                      : (language === 'pt' ? "Clique para gerenciar presença" : "Click to manage attendance")
-                                }
-                                onClick={() => {
-                                  if (isReadOnly) return;
-                                  if (activeCell?.studentId === student.id && activeCell?.dayStr === dayStr) {
-                                    setActiveCell(null);
-                                  } else {
-                                    setActiveCell({ studentId: student.id, dayStr });
-                                  }
-                                }}
-                              >
-                                <div className="w-full h-full flex items-center justify-center relative">
-                                  {status ? (
-                                    <div className={cn(
-                                      "w-7 h-7 rounded-lg flex items-center justify-center font-extrabold text-[11px] shadow-sm transition-transform",
-                                      status === 'P' && "bg-emerald-500 text-white border border-emerald-600 shadow-sm",
-                                      status === 'F' && "bg-rose-500 text-white border border-rose-600 shadow-sm",
-                                      status === 'FJ' && "bg-amber-500 text-white border border-amber-600 shadow-sm",
-                                      status === 'A' && "bg-orange-500 text-white border border-orange-600 shadow-sm",
-                                      status === 'D' && "bg-sky-500 text-white border border-sky-600 shadow-sm"
-                                    )}>
-                                      {status}
-                                    </div>
+                                  holiday ? (
+                                    <span className="text-[10px] font-black text-rose-400 select-none">H</span>
+                                  ) : isWk ? (
+                                    <span className="text-[10px] font-black text-slate-300 select-none">
+                                      {day.getDay() === 0 ? 'D' : 'S'}
+                                    </span>
                                   ) : (
-                                    holiday ? (
-                                      <span className="text-[10px] font-black text-rose-400 select-none">H</span>
-                                    ) : isWk ? (
-                                      <span className="text-[10px] font-black text-slate-300 select-none">
-                                        {day.getDay() === 0 ? 'D' : 'S'}
-                                      </span>
-                                    ) : (
-                                      <div className="w-1.5 h-1.5 rounded-full bg-slate-200 group-hover:bg-slate-300 transition-colors print:hidden" />
-                                    )
-                                  )}
+                                    <div className="w-1.5 h-1.5 rounded-full bg-slate-200 group-hover:bg-slate-300 transition-colors print:hidden" />
+                                  )
+                                )}
                                   
-                                  {/* Absolute selection popover */}
-                                  {activeCell?.studentId === student.id && activeCell?.dayStr === dayStr && (
-                                    <div 
-                                      className="absolute z-50 bg-white border border-slate-200 shadow-2xl rounded-2xl p-2 flex flex-col gap-1 min-w-[140px] left-1/2 -translate-x-1/2 top-full mt-2 print:hidden"
-                                      onClick={(e) => e.stopPropagation()}
-                                    >
-                                      <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-center border-b border-slate-100 pb-1.5 mb-1.5">
-                                        Frequência
-                                      </div>
-                                      <button
-                                        onClick={() => {
-                                          handleToggleMapAttendance(student.id, dayStr, 'P');
-                                          setActiveCell(null);
-                                        }}
-                                        className="flex items-center gap-2 px-2 py-1.5 hover:bg-emerald-50 text-emerald-800 rounded-lg text-xs font-bold w-full text-left"
-                                      >
-                                        <span className="w-5 h-5 flex items-center justify-center bg-emerald-500 text-white rounded text-[10px] font-black">P</span>
-                                        {language === 'pt' ? 'Presente' : 'Present'}
-                                      </button>
-                                      <button
-                                        onClick={() => {
-                                          handleToggleMapAttendance(student.id, dayStr, 'F');
-                                          setActiveCell(null);
-                                        }}
-                                        className="flex items-center gap-2 px-2 py-1.5 hover:bg-rose-50 text-rose-800 rounded-lg text-xs font-bold w-full text-left"
-                                      >
-                                        <span className="w-5 h-5 flex items-center justify-center bg-rose-500 text-white rounded text-[10px] font-black">F</span>
-                                        {language === 'pt' ? 'Falta' : 'Absent'}
-                                      </button>
-                                      <button
-                                        onClick={() => {
-                                          handleToggleMapAttendance(student.id, dayStr, 'FJ');
-                                          setActiveCell(null);
-                                        }}
-                                        className="flex items-center gap-2 px-2 py-1.5 hover:bg-amber-50 text-amber-800 rounded-lg text-xs font-bold w-full text-left"
-                                      >
-                                        <span className="w-5 h-5 flex items-center justify-center bg-amber-500 text-white rounded text-[10px] font-black">FJ</span>
-                                        {language === 'pt' ? 'F. Justificada' : 'Excused'}
-                                      </button>
-                                      <button
-                                        onClick={() => {
-                                          handleToggleMapAttendance(student.id, dayStr, 'A');
-                                          setActiveCell(null);
-                                        }}
-                                        className="flex items-center gap-2 px-2 py-1.5 hover:bg-orange-50 text-orange-800 rounded-lg text-xs font-bold w-full text-left"
-                                      >
-                                        <span className="w-5 h-5 flex items-center justify-center bg-orange-500 text-white rounded text-[10px] font-black">A</span>
-                                        {language === 'pt' ? 'Atraso' : 'Delay'}
-                                      </button>
-                                      <button
-                                        onClick={() => {
-                                          handleToggleMapAttendance(student.id, dayStr, 'D');
-                                          setActiveCell(null);
-                                        }}
-                                        className="flex items-center gap-2 px-2 py-1.5 hover:bg-sky-50 text-sky-800 rounded-lg text-xs font-bold w-full text-left"
-                                      >
-                                        <span className="w-5 h-5 flex items-center justify-center bg-sky-500 text-white rounded text-[10px] font-black">D</span>
-                                        {language === 'pt' ? 'Dispensado' : 'Excused'}
-                                      </button>
-                                      <div className="border-t border-slate-100 my-1.5" />
-                                      <button
-                                        onClick={() => {
-                                          handleToggleMapAttendance(student.id, dayStr, null);
-                                          setActiveCell(null);
-                                        }}
-                                        className="flex items-center gap-2 px-2 py-1.5 hover:bg-slate-100 text-slate-500 rounded-lg text-xs font-semibold w-full text-left"
-                                      >
-                                        <span className="w-5 h-5 flex items-center justify-center bg-slate-100 rounded text-[10px] font-bold">—</span>
-                                        {language === 'pt' ? 'Limpar' : 'Clear'}
-                                      </button>
+                                {/* Absolute selection popover */}
+                                {activeCell?.studentId === student.id && activeCell?.dayStr === dayStr && (
+                                  <div 
+                                    className="absolute z-50 bg-white border border-slate-200 shadow-2xl rounded-2xl p-2 flex flex-col gap-1 min-w-[140px] left-1/2 -translate-x-1/2 top-full mt-2 print:hidden"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-center border-b border-slate-100 pb-1.5 mb-1.5">
+                                      Frequência
                                     </div>
-                                  )}
-                                </div>
-                              </td>
-                            );
-                          })
-                        )}
+                                    <button
+                                      onClick={() => {
+                                        handleToggleMapAttendance(student.id, dayStr, 'P');
+                                        setActiveCell(null);
+                                      }}
+                                      className="flex items-center gap-2 px-2 py-1.5 hover:bg-emerald-50 text-emerald-800 rounded-lg text-xs font-bold w-full text-left"
+                                    >
+                                      <span className="w-5 h-5 flex items-center justify-center bg-emerald-500 text-white rounded text-[10px] font-black">P</span>
+                                      {language === 'pt' ? 'Presente' : 'Present'}
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        handleToggleMapAttendance(student.id, dayStr, 'F');
+                                        setActiveCell(null);
+                                      }}
+                                      className="flex items-center gap-2 px-2 py-1.5 hover:bg-rose-50 text-rose-800 rounded-lg text-xs font-bold w-full text-left"
+                                    >
+                                      <span className="w-5 h-5 flex items-center justify-center bg-rose-500 text-white rounded text-[10px] font-black">F</span>
+                                      {language === 'pt' ? 'Falta' : 'Absent'}
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        handleToggleMapAttendance(student.id, dayStr, 'FJ');
+                                        setActiveCell(null);
+                                      }}
+                                      className="flex items-center gap-2 px-2 py-1.5 hover:bg-amber-50 text-amber-800 rounded-lg text-xs font-bold w-full text-left"
+                                    >
+                                      <span className="w-5 h-5 flex items-center justify-center bg-amber-500 text-white rounded text-[10px] font-black">FJ</span>
+                                      {language === 'pt' ? 'F. Justificada' : 'Excused'}
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        handleToggleMapAttendance(student.id, dayStr, 'A');
+                                        setActiveCell(null);
+                                      }}
+                                      className="flex items-center gap-2 px-2 py-1.5 hover:bg-orange-50 text-orange-800 rounded-lg text-xs font-bold w-full text-left"
+                                    >
+                                      <span className="w-5 h-5 flex items-center justify-center bg-orange-500 text-white rounded text-[10px] font-black">A</span>
+                                      {language === 'pt' ? 'Atraso' : 'Delay'}
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        handleToggleMapAttendance(student.id, dayStr, 'D');
+                                        setActiveCell(null);
+                                      }}
+                                      className="flex items-center gap-2 px-2 py-1.5 hover:bg-sky-50 text-sky-800 rounded-lg text-xs font-bold w-full text-left"
+                                    >
+                                      <span className="w-5 h-5 flex items-center justify-center bg-sky-500 text-white rounded text-[10px] font-black">D</span>
+                                      {language === 'pt' ? 'Dispensado' : 'Excused'}
+                                    </button>
+                                    <div className="border-t border-slate-100 my-1.5" />
+                                    <button
+                                      onClick={() => {
+                                        handleToggleMapAttendance(student.id, dayStr, null);
+                                        setActiveCell(null);
+                                      }}
+                                      className="flex items-center gap-2 px-2 py-1.5 hover:bg-slate-100 text-slate-500 rounded-lg text-xs font-semibold w-full text-left"
+                                    >
+                                      <span className="w-5 h-5 flex items-center justify-center bg-slate-100 rounded text-[10px] font-bold">—</span>
+                                      {language === 'pt' ? 'Limpar' : 'Clear'}
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </td>
+                          );
+                        })}
                       </tr>
-                    )))}
+                    ))
+                  )}
                   </tbody>
                 </table>
               </div>
@@ -1274,7 +1085,6 @@ export default function FrequenciaPage() {
               </div>
             </div>
           </motion.div>
-        )}
       </AnimatePresence>
     </div>
   );
