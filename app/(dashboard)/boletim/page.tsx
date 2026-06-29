@@ -171,7 +171,17 @@ function BoletimContent() {
   const getReportFirstGrade = useCallback((rData: any) => {
     if (!rData || !rData.grades || rData.grades.length === 0) return null;
     
-    // Find the alphabetically first discipline of the course
+    // 1. Prioritize finding the grade row that actually contains modular grades (nota1, nota2, etc.)
+    const hasNotesGrade = rData.grades.find((g: any) => {
+      for (let m = 1; m <= 20; m++) {
+        const val = g[`nota${m}`];
+        if (val !== null && val !== undefined && val !== '') return true;
+      }
+      return false;
+    });
+    if (hasNotesGrade) return hasNotesGrade;
+    
+    // 2. Fallback to alphabetically first discipline of the course
     const alphabeticalDisciplines = [...(rData.disciplines || [])].sort((a: any, b: any) => 
       (a.nome || '').localeCompare(b.nome || '', 'pt-BR')
     );
@@ -182,22 +192,12 @@ function BoletimContent() {
       if (matchingGrade) return matchingGrade;
     }
     
-    // Fallback if no direct match for alphabetically first discipline
+    // 3. Fallback to first discipline sorted by module then name
     const firstDisc = [...(rData.disciplines || [])].sort((a: any, b: any) => {
       const mDiff = (a.modulo_index || 1) - (b.modulo_index || 1);
       if (mDiff !== 0) return mDiff;
       return (a.nome || '').localeCompare(b.nome || '', 'pt-BR');
     })[0];
-    
-    const hasNotesGrade = rData.grades.find((g: any) => {
-      for (let m = 1; m <= 20; m++) {
-        const val = g[`nota${m}`];
-        if (val !== null && val !== undefined && val !== '') return true;
-      }
-      return false;
-    });
-    
-    if (hasNotesGrade) return hasNotesGrade;
     
     if (firstDisc) {
       const matchingFirstDiscGrade = rData.grades.find((g: any) => g.disciplina_id === firstDisc.id);
@@ -854,6 +854,24 @@ function BoletimContent() {
           topicsList = tData || [];
         }
 
+        // Map disciplines and resolve modulo_index from topics (materias_modulos) if empty/falsy
+        const resolvedDisciplines = (discList || []).map((disc: any) => {
+          let resolvedModuloIndex = disc.modulo_index;
+          if (resolvedModuloIndex === null || resolvedModuloIndex === undefined || resolvedModuloIndex === 0) {
+            const discTopics = (topicsList || []).filter((t: any) => t.disciplina_id === disc.id);
+            if (discTopics.length > 0) {
+              const minMod = Math.min(...discTopics.map((t: any) => t.modulo_index).filter((m: any) => !isNaN(m)));
+              if (minMod !== Infinity) {
+                resolvedModuloIndex = minMod;
+              }
+            }
+          }
+          return {
+            ...disc,
+            modulo_index: resolvedModuloIndex || 1 // ultimate fallback is module 1
+          };
+        });
+
         const { data: gradesData } = await supabase
           .from('notas')
           .select('*')
@@ -871,7 +889,7 @@ function BoletimContent() {
           student,
           classObj,
           courseObj,
-          disciplines: discList,
+          disciplines: resolvedDisciplines,
           grades: gradesData || [],
           attendance: attendanceData || [],
           topics: topicsList
@@ -2546,8 +2564,8 @@ function BoletimContent() {
 
                                           return {
                                             id: disc.id,
-                                            modulo: `Módulo ${disc.modulo_index || 1}`,
-                                            moduloRaw: disc.modulo_index || 1,
+                                            modulo: disc.modulo_index ? `Módulo ${disc.modulo_index}` : `Módulo ${discIdx + 1}`,
+                                            moduloRaw: disc.modulo_index || (discIdx + 1),
                                             disciplina: disc.nome,
                                             nota: finalGradeFormatted,
                                             situacao: statusLabel,
@@ -2572,9 +2590,8 @@ function BoletimContent() {
                                           <table className="w-full text-left border-collapse bg-white table-auto">
                                             <thead>
                                               <tr className="bg-slate-900 text-[8px] font-black text-white uppercase tracking-widest border-b border-slate-850">
-                                                <th className="px-3.5 py-2 border-r border-slate-800 w-[15%]">{language === 'pt' ? 'Módulo' : 'Module'}</th>
+                                                <th className="px-3.5 py-2 border-r border-slate-800 w-[20%]">{language === 'pt' ? 'Módulo' : 'Module'}</th>
                                                 <th className="px-3.5 py-2 border-r border-slate-800 w-[50%]">{language === 'pt' ? 'Disciplina' : 'Discipline'}</th>
-                                                <th className="px-1 py-2 text-center border-r border-slate-800 w-[5%]">{""}</th>
                                                 <th className="px-3.5 py-2 text-center border-r border-slate-800 font-mono w-[15%]">{reportT[language as "pt" | "en"].finalGrade}</th>
                                                 <th className="px-3.5 py-2 text-right w-[15%]">{reportT[language as "pt" | "en"].situation}</th>
                                               </tr>
@@ -2582,7 +2599,7 @@ function BoletimContent() {
                                             <tbody className="text-[10px]">
                                               {rowsWithSpans.length === 0 ? (
                                                 <tr>
-                                                  <td colSpan={5} className="text-center py-4 text-slate-400 font-bold bg-white">
+                                                  <td colSpan={4} className="text-center py-4 text-slate-400 font-bold bg-white">
                                                     {language === 'pt' ? 'Nenhuma disciplina lançada.' : 'No modules submitted.'}
                                                   </td>
                                                 </tr>
@@ -2597,25 +2614,12 @@ function BoletimContent() {
                                                     <td className="px-3.5 py-1.5 font-bold text-slate-800 border-r border-slate-200 bg-white align-middle break-words whitespace-normal leading-tight">
                                                       {row.disciplina}
                                                     </td>
-                                                    {row.moduloSpan > 0 && (
-                                                      <>
-                                                        <td rowSpan={row.moduloSpan} className="px-1 py-1 text-center border-r border-slate-200 bg-white align-middle" style={{ verticalAlign: 'middle' }}>
-                                                          <div className="flex items-center justify-center h-full w-full">
-                                                            <svg className="w-3 text-slate-400 stroke-current fill-none" viewBox="0 0 10 100" preserveAspectRatio="none" style={{ height: `${row.moduloSpan * 22}px`, minHeight: '22px' }}>
-                                                              <path d="M1,2 Q6,2 6,15 T6,45 Q6,50 10,50 Q6,50 6,55 T6,85 Q6,98 1,98" strokeWidth="1.5" strokeLinecap="round" />
-                                                            </svg>
-                                                          </div>
-                                                        </td>
-                                                        <td rowSpan={row.moduloSpan} className="px-3.5 py-1.5 text-center font-black font-mono border-r border-slate-200 text-slate-900 bg-white align-middle break-words whitespace-normal leading-tight">
-                                                          {row.nota}
-                                                        </td>
-                                                        <td rowSpan={row.moduloSpan} className="px-3.5 py-1.5 text-right bg-white align-middle break-words whitespace-normal leading-tight">
-                                                          <span className={cn("px-2 py-0.5 rounded text-[8px] font-black uppercase inline-block border", row.statusClass)}>
-                                                            {row.situacao}
-                                                          </span>
-                                                        </td>
-                                                      </>
-                                                    )}
+                                                    <td className="px-3.5 py-1.5 text-center font-black font-mono border-r border-slate-200 text-slate-900 bg-white align-middle break-words whitespace-normal leading-tight">
+                                                      {row.nota}
+                                                    </td>
+                                                    <td className={cn("px-3.5 py-1.5 text-right bg-white align-middle break-words whitespace-normal leading-tight font-black", row.statusClass)}>
+                                                      {row.situacao}
+                                                    </td>
                                                   </tr>
                                                 ))
                                               )}
@@ -2646,6 +2650,36 @@ function BoletimContent() {
                                         if (totalAulas > 0) {
                                           percentualPresenca = (presencas / totalAulas) * 100;
                                         } else if (reportData.grades && reportData.grades.length > 0) {
+                                          const sortedDisciplines = [...(reportData.disciplines || [])].sort((a: any, b: any) => {
+                                            const mDiff = (a.modulo_index || 1) - (b.modulo_index || 1);
+                                            if (mDiff !== 0) return mDiff;
+                                            return a.nome.localeCompare(b.nome);
+                                          });
+                                          const firstGrade = getReportFirstGrade(reportData);
+
+                                          const computedDisciplines = sortedDisciplines.map((disc: any, discIdx: number) => {
+                                            const moduleNum = disc.modulo_index || (discIdx + 1);
+                                            let finalGradeValue = null;
+                                            if (firstGrade && moduleNum !== null) {
+                                              const modularGradeValue = firstGrade[`nota${moduleNum}`];
+                                              if (modularGradeValue !== null && modularGradeValue !== undefined && modularGradeValue !== '') {
+                                                finalGradeValue = Number(modularGradeValue);
+                                              }
+                                            }
+                                            if (finalGradeValue === null) {
+                                              const directGrade = (reportData.grades || []).find((g: any) => g.disciplina_id === disc.id);
+                                              finalGradeValue = directGrade ? directGrade.nota_final : null;
+                                            }
+                                            let freqValue = null;
+                                            if (firstGrade && firstGrade.frequencia !== null && firstGrade.frequencia !== undefined) {
+                                              freqValue = firstGrade.frequencia;
+                                            } else {
+                                              const directGrade = (reportData.grades || []).find((g: any) => g.disciplina_id === disc.id);
+                                              freqValue = directGrade ? directGrade.frequencia : null;
+                                            }
+                                            return { finalGradeValue, freqValue };
+                                          });
+
                                           const validFreqs = computedDisciplines.filter((cd: any) => cd.freqValue !== null && cd.freqValue !== undefined);
                                           if (validFreqs.length > 0) {
                                             percentualPresenca = validFreqs.reduce((sum: number, cd: any) => sum + cd.freqValue, 0) / validFreqs.length;
