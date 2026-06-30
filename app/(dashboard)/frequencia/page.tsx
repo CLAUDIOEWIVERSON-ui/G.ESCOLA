@@ -344,7 +344,16 @@ export default function FrequenciaPage() {
     } catch (err: any) {
       console.error('Error updating map attendance:', err);
       const errMsg = err.message || err.details || JSON.stringify(err);
-      toast.error(`${language === 'pt' ? 'Erro ao atualizar presença: ' : 'Error updating attendance: '}${errMsg}`, { id: toastId });
+      if (errMsg.toLowerCase().includes('observacao') || errMsg.toLowerCase().includes('schema cache')) {
+        toast.error(
+          language === 'pt' 
+            ? 'Erro de banco de dados: A coluna "observacao" está ausente na tabela "frequencia". Por favor, execute a migração "50_add_observacao_to_frequencia.sql" na guia de Configurações ou no painel do Supabase para corrigir isso.' 
+            : 'Database error: The "observacao" column is missing from the "frequencia" table. Please execute the migration "50_add_observacao_to_frequencia.sql" in the Settings tab or Supabase panel to resolve this.', 
+          { id: toastId, duration: 8000 }
+        );
+      } else {
+        toast.error(`${language === 'pt' ? 'Erro ao atualizar presença: ' : 'Error updating attendance: '}${errMsg}`, { id: toastId });
+      }
     }
   };
 

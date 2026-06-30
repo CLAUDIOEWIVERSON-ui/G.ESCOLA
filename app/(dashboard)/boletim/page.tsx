@@ -957,6 +957,16 @@ function BoletimContent() {
       const { data: grades, error: gradesError } = await gradesQuery;
       if (gradesError) throw gradesError;
 
+      // Fetch all attendance records for this class to calculate frequency dynamically
+      const { data: attendanceList, error: attendanceError } = await supabase
+        .from('frequencia')
+        .select('aluno_id, presente')
+        .eq('turma_id', activeTurmaId);
+
+      if (attendanceError) {
+        console.error("Error fetching attendance list:", attendanceError);
+      }
+
       const localCourseModules = turma?.curso?.qtd_modulos 
         ? Math.min(turma.curso.qtd_modulos, 20) 
         : (turma?.curso_id ? Math.min(cursos.find((c: any) => c.id === turma.curso_id)?.qtd_modulos || 4, 20) : 4);
@@ -964,6 +974,12 @@ function BoletimContent() {
       // 3. Merged list: only include students who are actually enrolled in the class!
       // This synchronizes lists and tables, excluding non-enrolled students like "Abdul Lima Quaresma".
       const mergedData = (students || []).map((student: any) => {
+        // Calculate dynamic frequency from the frequencia table
+        const studentAtts = (attendanceList || []).filter((a: any) => a.aluno_id === student.id);
+        const totalDays = studentAtts.length;
+        const presentDays = studentAtts.filter((a: any) => a.presente).length;
+        const computedFreq = totalDays > 0 ? (presentDays / totalDays) * 100 : null;
+
         const existingGrade = (grades || []).find((g: any) => g.aluno_id === student.id);
         if (existingGrade) {
           let computedFinal = existingGrade.nota_final;
@@ -982,6 +998,7 @@ function BoletimContent() {
           return {
             ...existingGrade,
             nota_final: computedFinal !== null ? Number(computedFinal) : null,
+            frequencia: existingGrade.frequencia !== null && existingGrade.frequencia !== undefined ? existingGrade.frequencia : computedFreq,
             aluno: student
           };
         } else {
@@ -1011,7 +1028,7 @@ function BoletimContent() {
             nota19: null,
             nota20: null,
             nota_final: null,
-            frequencia: null,
+            frequencia: computedFreq,
             pago: true,
             ano_letivo: parseInt(selectedAno) || new Date().getFullYear(),
             aluno: student

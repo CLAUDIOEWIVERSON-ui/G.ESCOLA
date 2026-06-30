@@ -1,9 +1,7 @@
 {
-  "name": "SISTEMA DE GESTÃO ESCOLAR",
-  "description": "Plataforma completa para gerenciamento de cursos, turmas, instrutores, alunos, notas e emissão de Histórico Escolar nacional, com suporte multi-idioma e autenticação segura.",
-  "requestFramePermissions": [
-    "camera"
-  ],
+  "name": "Presença e Frequência",
+  "description": "Sistema de gestão de presença e frequência escolar",
+  "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
   ]

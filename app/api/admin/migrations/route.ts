@@ -463,6 +463,21 @@ export async function GET() {
           // If it exists but there are no matching rows, error is null, which means it is valid.
           return error;
         }
+      },
+      {
+        key: 'frequencia_observacao',
+        tableName: 'frequencia',
+        columnName: 'observacao',
+        fileName: '50_add_observacao_to_frequencia.sql',
+        description: 'Coluna observacao na tabela de frequencia para registrar observações ou justificativas de faltas/atrasos.',
+        isColumn: true,
+        checkFn: async () => {
+          const { error } = await supabaseAdmin
+            .from('frequencia')
+            .select('observacao')
+            .limit(1);
+          return error;
+        }
       }
     ];
 
