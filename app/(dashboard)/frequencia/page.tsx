@@ -79,8 +79,6 @@ export default function FrequenciaPage() {
   const { profile, isAdmin, isInstrutor, isConvidado } = useUser();
   const isReadOnly = isConvidado || (!isAdmin && !isInstrutor);
   const dateLocale = language === 'pt' ? ptBR : enUS;
-  const instructorSignatureLabel = language === 'pt' ? 'Assinatura do Instrutor-Chefe / Coordenador' : 'Signature of Chief Instructor / Coordinator';
-  const studentSignatureLabel = language === 'pt' ? 'Assinatura do Aluno / Representante' : 'Signature of Student / Representative';
 
   const [loading, setLoading] = useState(false);
   const [mapGranularity, setMapGranularity] = useState<'week' | 'month' | 'year'>('month');
@@ -1079,19 +1077,7 @@ export default function FrequenciaPage() {
                 </table>
               </div>
 
-              {/* Elegant signatures section, perfect for printout and transparent screen display */}
-              <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-10 pt-6 border-t border-dashed border-slate-200 text-center text-xs">
-                <div className="flex flex-col items-center">
-                  <div className="w-56 border-b border-slate-300 h-8 mb-2" />
-                  <span className="font-bold text-slate-700">{instructorSignatureLabel}</span>
-                  <span className="text-slate-400 text-[9px] uppercase font-mono mt-0.5">{language === 'pt' ? 'Responsável Técnico' : 'Technical Director'}</span>
-                </div>
-                <div className="flex flex-col items-center">
-                  <div className="w-56 border-b border-slate-300 h-8 mb-2" />
-                  <span className="font-bold text-slate-700">{studentSignatureLabel}</span>
-                  <span className="text-slate-400 text-[9px] uppercase font-mono mt-0.5">{language === 'pt' ? 'Confirmação de Frequência' : 'Attendance Confirmation'}</span>
-                </div>
-              </div>
+
             </div>
           </motion.div>
       </AnimatePresence>
