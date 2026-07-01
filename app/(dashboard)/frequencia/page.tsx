@@ -338,7 +338,7 @@ export default function FrequenciaPage() {
         return filtered;
       });
 
-      toast.success(language === 'pt' ? 'Presença atualizada!' : 'Attendance updated!', { id: toastId });
+      toast.success(language === 'pt' ? 'Presença updated!' : 'Attendance updated!', { id: toastId });
     } catch (err: any) {
       console.error('Error updating map attendance:', err);
       const errMsg = err.message || err.details || JSON.stringify(err);
@@ -352,6 +352,86 @@ export default function FrequenciaPage() {
       } else {
         toast.error(`${language === 'pt' ? 'Erro ao atualizar presença: ' : 'Error updating attendance: '}${errMsg}`, { id: toastId });
       }
+    }
+  };
+
+  const handleMarkAllPresent = async (dayStr: string) => {
+    if (isReadOnly) return;
+    if (!selectedTurma) return;
+    if (students.length === 0) {
+      toast.error(language === 'pt' ? 'Nenhum aluno nesta turma para marcar presença.' : 'No students in this class to mark attendance.');
+      return;
+    }
+
+    if (!isAdmin) {
+      const activeTurma = turmas.find(t => t.id === selectedTurma);
+      if (activeTurma) {
+        const hasStart = !!activeTurma.data_inicio;
+        const hasEnd = !!activeTurma.data_fim;
+        if (hasEnd && dayStr > activeTurma.data_fim) {
+          toast.error(language === 'pt' ? 'Impossível alterar. O período desta turma já expirou.' : 'Cannot modify. The class period has already expired.');
+          return;
+        }
+        if (hasStart && dayStr < activeTurma.data_inicio) {
+          toast.error(language === 'pt' ? 'Impossível alterar. A data selecionada é anterior ao período letivo.' : 'Cannot modify. The selected date is before the class period.');
+          return;
+        }
+      }
+    }
+
+    const toastId = toast.loading(language === 'pt' ? 'Registrando presença para todos...' : 'Registering attendance for all...');
+    try {
+      // Delete any pre-existing records for this day for this turma
+      let deleteQuery = supabase
+        .from('frequencia')
+        .delete()
+        .eq('turma_id', selectedTurma)
+        .eq('data', dayStr);
+
+      if (selectedDisciplina) {
+        deleteQuery = deleteQuery.eq('disciplina_id', selectedDisciplina);
+      } else {
+        deleteQuery = deleteQuery.is('disciplina_id', null);
+      }
+
+      const { error: deleteError } = await deleteQuery;
+      if (deleteError) throw deleteError;
+
+      // Prepare records for all students
+      const recordsToInsert = students.map(student => ({
+        aluno_id: student.id,
+        turma_id: selectedTurma,
+        disciplina_id: selectedDisciplina || null,
+        data: dayStr,
+        presente: true,
+        observacao: null
+      }));
+
+      const { data: insertedData, error: insertError } = await supabase
+        .from('frequencia')
+        .insert(recordsToInsert)
+        .select();
+
+      if (insertError) throw insertError;
+
+      // Update local state
+      setMapData(prev => {
+        const filtered = prev.filter(r => {
+          const rDate = typeof r.data === 'string' ? r.data.substring(0, 10) : format(new Date(r.data), 'yyyy-MM-dd');
+          const rDis = r.disciplina_id || null;
+          const selDis = selectedDisciplina || null;
+          return !(rDate === dayStr && rDis === selDis);
+        });
+        if (insertedData) {
+          return [...filtered, ...insertedData];
+        }
+        return filtered;
+      });
+
+      toast.success(language === 'pt' ? 'Presença registrada para todos os alunos!' : 'Attendance registered for all students!', { id: toastId });
+    } catch (err: any) {
+      console.error('Error marking all present:', err);
+      toast.error(`${language === 'pt' ? 'Erro ao registrar presença geral: ' : 'Error registering bulk attendance: '}${err.message || JSON.stringify(err)}`, { id: toastId });
     }
   };
 
@@ -899,6 +979,21 @@ export default function FrequenciaPage() {
                                   <span className="mt-0.5 block mx-auto text-[6px] leading-none font-extrabold bg-rose-200 text-rose-800 px-0.5 py-0.2 rounded uppercase tracking-wider font-mono scale-90 whitespace-nowrap">
                                     Feriado
                                   </span>
+                                )}
+                                {!isReadOnly && selectedTurma && students.length > 0 && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (confirm(language === 'pt' ? `Deseja marcar PRESENÇA para TODOS os alunos no dia ${format(day, 'dd/MM/yyyy')}?` : `Mark PRESENCE for ALL students on ${format(day, 'dd/MM/yyyy')}?`)) {
+                                        handleMarkAllPresent(dayStr);
+                                      }
+                                    }}
+                                    className="mt-1.5 p-1 rounded-md bg-emerald-50 hover:bg-emerald-500 hover:text-white text-emerald-600 border border-emerald-100 hover:border-emerald-600 transition-all cursor-pointer shadow-xs print:hidden"
+                                    title={language === 'pt' ? 'Presença Automática (Todos)' : 'Automatic Presence (All)'}
+                                  >
+                                    <ListChecks className="w-3.5 h-3.5" />
+                                  </button>
                                 )}
                               </div>
                             </th>
