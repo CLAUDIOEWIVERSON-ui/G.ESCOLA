@@ -395,6 +395,16 @@ export default function FrequenciaPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState<'all' | 'absent'>('all');
 
+  const activeStudent = activeCell ? students.find(s => s.id === activeCell.studentId) : null;
+  const activeDateFormatted = activeCell ? (() => {
+    try {
+      const [year, month, day] = activeCell.dayStr.split('-');
+      return `${day}/${month}/${year}`;
+    } catch (e) {
+      return activeCell.dayStr;
+    }
+  })() : '';
+
   const presencePercentage = (() => {
     if (!students || students.length === 0 || !mapData || mapData.length === 0) return 0;
     const presentRecords = mapData.filter(r => r.presente).length;
@@ -992,81 +1002,7 @@ export default function FrequenciaPage() {
                                   ) : (
                                     <div className="w-1.5 h-1.5 rounded-full bg-slate-200 group-hover:bg-slate-300 transition-colors print:hidden" />
                                   )
-                                )}
-                                  
-                                {/* Absolute selection popover */}
-                                {activeCell?.studentId === student.id && activeCell?.dayStr === dayStr && (
-                                  <div 
-                                    className="absolute z-50 bg-white border border-slate-200 shadow-2xl rounded-2xl p-2 flex flex-col gap-1 min-w-[140px] left-1/2 -translate-x-1/2 top-full mt-2 print:hidden"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-center border-b border-slate-100 pb-1.5 mb-1.5">
-                                      Frequência
-                                    </div>
-                                    <button
-                                      onClick={() => {
-                                        handleToggleMapAttendance(student.id, dayStr, 'P');
-                                        setActiveCell(null);
-                                      }}
-                                      className="flex items-center gap-2 px-2 py-1.5 hover:bg-emerald-50 text-emerald-800 rounded-lg text-xs font-bold w-full text-left"
-                                    >
-                                      <span className="w-5 h-5 flex items-center justify-center bg-emerald-500 text-white rounded text-[10px] font-black">P</span>
-                                      {language === 'pt' ? 'Presente' : 'Present'}
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        handleToggleMapAttendance(student.id, dayStr, 'F');
-                                        setActiveCell(null);
-                                      }}
-                                      className="flex items-center gap-2 px-2 py-1.5 hover:bg-rose-50 text-rose-800 rounded-lg text-xs font-bold w-full text-left"
-                                    >
-                                      <span className="w-5 h-5 flex items-center justify-center bg-rose-500 text-white rounded text-[10px] font-black">F</span>
-                                      {language === 'pt' ? 'Falta' : 'Absent'}
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        handleToggleMapAttendance(student.id, dayStr, 'FJ');
-                                        setActiveCell(null);
-                                      }}
-                                      className="flex items-center gap-2 px-2 py-1.5 hover:bg-amber-50 text-amber-800 rounded-lg text-xs font-bold w-full text-left"
-                                    >
-                                      <span className="w-5 h-5 flex items-center justify-center bg-amber-500 text-white rounded text-[10px] font-black">FJ</span>
-                                      {language === 'pt' ? 'F. Justificada' : 'Excused'}
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        handleToggleMapAttendance(student.id, dayStr, 'A');
-                                        setActiveCell(null);
-                                      }}
-                                      className="flex items-center gap-2 px-2 py-1.5 hover:bg-orange-50 text-orange-800 rounded-lg text-xs font-bold w-full text-left"
-                                    >
-                                      <span className="w-5 h-5 flex items-center justify-center bg-orange-500 text-white rounded text-[10px] font-black">A</span>
-                                      {language === 'pt' ? 'Atraso' : 'Delay'}
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        handleToggleMapAttendance(student.id, dayStr, 'D');
-                                        setActiveCell(null);
-                                      }}
-                                      className="flex items-center gap-2 px-2 py-1.5 hover:bg-sky-50 text-sky-800 rounded-lg text-xs font-bold w-full text-left"
-                                    >
-                                      <span className="w-5 h-5 flex items-center justify-center bg-sky-500 text-white rounded text-[10px] font-black">D</span>
-                                      {language === 'pt' ? 'Dispensado' : 'Excused'}
-                                    </button>
-                                    <div className="border-t border-slate-100 my-1.5" />
-                                    <button
-                                      onClick={() => {
-                                        handleToggleMapAttendance(student.id, dayStr, null);
-                                        setActiveCell(null);
-                                      }}
-                                      className="flex items-center gap-2 px-2 py-1.5 hover:bg-slate-100 text-slate-500 rounded-lg text-xs font-semibold w-full text-left"
-                                    >
-                                      <span className="w-5 h-5 flex items-center justify-center bg-slate-100 rounded text-[10px] font-bold">—</span>
-                                      {language === 'pt' ? 'Limpar' : 'Clear'}
-                                    </button>
-                                  </div>
-                                )}
-                              </div>
+                                )}                               </div>
                             </td>
                           );
                         })}
@@ -1080,6 +1016,129 @@ export default function FrequenciaPage() {
 
             </div>
           </motion.div>
+
+          {/* Centered screen pop-up window with horizontal options */}
+          <AnimatePresence>
+            {activeCell && activeStudent && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                {/* Backdrop with soft blur */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => setActiveCell(null)}
+                  className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"
+                />
+                
+                {/* Responsive Pop-up Card */}
+                <motion.div
+                  initial={{ scale: 0.95, y: 15, opacity: 0 }}
+                  animate={{ scale: 1, y: 0, opacity: 1 }}
+                  exit={{ scale: 0.95, y: 15, opacity: 0 }}
+                  transition={{ type: "spring", duration: 0.3 }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="relative bg-white rounded-2xl shadow-2xl p-6 w-full max-w-xl border border-slate-200 z-50 overflow-hidden"
+                >
+                  {/* Header */}
+                  <div className="flex items-start justify-between mb-5">
+                    <div>
+                      <span className="text-[10px] font-black tracking-widest text-blue-600 uppercase">
+                        {language === 'pt' ? 'REGISTRAR FREQUÊNCIA' : 'REGISTER ATTENDANCE'}
+                      </span>
+                      <h3 className="text-lg font-extrabold text-slate-800 mt-0.5 leading-snug">
+                        {activeStudent.nome}
+                      </h3>
+                      <p className="text-xs text-slate-500 font-medium flex items-center gap-1 mt-1">
+                        <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                        {language === 'pt' ? `Data: ${activeDateFormatted}` : `Date: ${activeDateFormatted}`}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setActiveCell(null)}
+                      className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                    >
+                      <XCircle className="w-5 h-5 text-slate-400 hover:text-slate-600" />
+                    </button>
+                  </div>
+
+                  {/* Horizontal Options Row */}
+                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2.5 sm:gap-3 py-2">
+                    {/* Option P */}
+                    <button
+                      onClick={() => {
+                        handleToggleMapAttendance(activeStudent.id, activeCell.dayStr, 'P');
+                        setActiveCell(null);
+                      }}
+                      className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-emerald-50 border border-transparent hover:border-emerald-100 transition-all text-emerald-800 text-center cursor-pointer group"
+                    >
+                      <span className="w-10 h-10 flex items-center justify-center bg-emerald-500 text-white rounded-xl text-sm font-black shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform">P</span>
+                      <span className="text-[11px] font-black tracking-tight">{language === 'pt' ? 'Presente' : 'Present'}</span>
+                    </button>
+
+                    {/* Option F */}
+                    <button
+                      onClick={() => {
+                        handleToggleMapAttendance(activeStudent.id, activeCell.dayStr, 'F');
+                        setActiveCell(null);
+                      }}
+                      className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-rose-50 border border-transparent hover:border-rose-100 transition-all text-rose-800 text-center cursor-pointer group"
+                    >
+                      <span className="w-10 h-10 flex items-center justify-center bg-rose-500 text-white rounded-xl text-sm font-black shadow-md shadow-rose-500/20 group-hover:scale-105 transition-transform">F</span>
+                      <span className="text-[11px] font-black tracking-tight">{language === 'pt' ? 'Falta' : 'Absent'}</span>
+                    </button>
+
+                    {/* Option FJ */}
+                    <button
+                      onClick={() => {
+                        handleToggleMapAttendance(activeStudent.id, activeCell.dayStr, 'FJ');
+                        setActiveCell(null);
+                      }}
+                      className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-amber-50 border border-transparent hover:border-amber-100 transition-all text-amber-800 text-center cursor-pointer group"
+                    >
+                      <span className="w-10 h-10 flex items-center justify-center bg-amber-500 text-white rounded-xl text-sm font-black shadow-md shadow-amber-500/20 group-hover:scale-105 transition-transform">FJ</span>
+                      <span className="text-[11px] font-black tracking-tight leading-tight">{language === 'pt' ? 'Justificada' : 'Excused'}</span>
+                    </button>
+
+                    {/* Option A */}
+                    <button
+                      onClick={() => {
+                        handleToggleMapAttendance(activeStudent.id, activeCell.dayStr, 'A');
+                        setActiveCell(null);
+                      }}
+                      className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-orange-50 border border-transparent hover:border-orange-100 transition-all text-orange-800 text-center cursor-pointer group"
+                    >
+                      <span className="w-10 h-10 flex items-center justify-center bg-orange-500 text-white rounded-xl text-sm font-black shadow-md shadow-orange-500/20 group-hover:scale-105 transition-transform">A</span>
+                      <span className="text-[11px] font-black tracking-tight">{language === 'pt' ? 'Atraso' : 'Delay'}</span>
+                    </button>
+
+                    {/* Option D */}
+                    <button
+                      onClick={() => {
+                        handleToggleMapAttendance(activeStudent.id, activeCell.dayStr, 'D');
+                        setActiveCell(null);
+                      }}
+                      className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-sky-50 border border-transparent hover:border-sky-100 transition-all text-sky-800 text-center cursor-pointer group"
+                    >
+                      <span className="w-10 h-10 flex items-center justify-center bg-sky-500 text-white rounded-xl text-sm font-black shadow-md shadow-sky-500/20 group-hover:scale-105 transition-transform">D</span>
+                      <span className="text-[11px] font-black tracking-tight">{language === 'pt' ? 'Dispensado' : 'Exempt'}</span>
+                    </button>
+
+                    {/* Option Limpar */}
+                    <button
+                      onClick={() => {
+                        handleToggleMapAttendance(activeStudent.id, activeCell.dayStr, null);
+                        setActiveCell(null);
+                      }}
+                      className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-slate-100 border border-transparent hover:border-slate-200 transition-all text-slate-500 text-center cursor-pointer group"
+                    >
+                      <span className="w-10 h-10 flex items-center justify-center bg-slate-100 text-slate-600 rounded-xl text-lg font-black shadow-sm group-hover:scale-105 transition-transform">―</span>
+                      <span className="text-[11px] font-black tracking-tight">{language === 'pt' ? 'Limpar' : 'Clear'}</span>
+                    </button>
+                  </div>
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
       </AnimatePresence>
     </div>
   );
