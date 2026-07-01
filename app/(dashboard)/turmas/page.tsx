@@ -113,6 +113,45 @@ function TurmasContent() {
   const [printClassName, setPrintClassName] = useState('');
   const [printSheetType, setPrintSheetType] = useState<'mensal' | 'semanal'>('mensal');
   const [selectedWeekIndex, setSelectedWeekIndex] = useState<number | null>(null);
+  const [printFrequencia, setPrintFrequencia] = useState<any[]>([]);
+  const [loadingFrequencia, setLoadingFrequencia] = useState(false);
+
+  useEffect(() => {
+    if (!isPrintAttendanceOpen || !viewingTurma?.id || !printPeriod) {
+      setPrintFrequencia([]);
+      return;
+    }
+    
+    const fetchFrequenciesForPrint = async () => {
+      setLoadingFrequencia(true);
+      try {
+        const parts = printPeriod.split('/');
+        if (parts.length >= 2) {
+          const month = parseInt(parts[0], 10);
+          const year = parseInt(parts[1], 10);
+          
+          const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+          const endDate = `${year}-${String(month).padStart(2, '0')}-${new Date(year, month, 0).getDate()}`;
+          
+          const { data, error } = await supabase
+            .from('frequencia')
+            .select('*')
+            .eq('turma_id', viewingTurma.id)
+            .gte('data', startDate)
+            .lte('data', endDate);
+            
+          if (error) throw error;
+          setPrintFrequencia(data || []);
+        }
+      } catch (err) {
+        console.error('Error fetching frequencies for print:', err);
+      } finally {
+        setLoadingFrequencia(false);
+      }
+    };
+    
+    fetchFrequenciesForPrint();
+  }, [isPrintAttendanceOpen, viewingTurma?.id, printPeriod]);
 
   const handleOpenPrintAttendance = (turma: any) => {
     setPrintProfessorName(turma.instrutor || '');
@@ -297,7 +336,7 @@ function TurmasContent() {
     return language === 'pt' ? weekdaysPt[dayOfWeek] : weekdaysEn[dayOfWeek];
   };
 
-  const getDayStatus = (dayNum: number, targetMonth?: number, targetYear?: number) => {
+  const getDayStatus = (dayNum: number, targetMonth?: number, targetYear?: number, studentId?: string) => {
     if (!printPeriod) return { label: '', bgClass: '', isValid: true };
     const parts = printPeriod.split('/');
     if (parts.length < 2) return { label: '', bgClass: '', isValid: true };
@@ -333,6 +372,23 @@ function TurmasContent() {
     ];
 
     const isHoliday = holidays.some(h => h.m === month && h.d === dayNum);
+
+    // If studentId is specified, check if there's an attendance record in printFrequencia
+    if (studentId) {
+      const dayStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+      const record = printFrequencia.find(r => r.aluno_id === studentId && r.data === dayStr);
+      if (record) {
+        const statusVal = record.observacao || (record.presente ? 'P' : 'F');
+        let bgClass = '';
+        if (statusVal === 'P') bgClass = 'bg-emerald-50 text-emerald-700 print:text-emerald-800 print:bg-emerald-50/20';
+        else if (statusVal === 'F') bgClass = 'bg-rose-50 text-rose-700 print:text-rose-800 print:bg-rose-50/20';
+        else if (statusVal === 'FJ') bgClass = 'bg-amber-50 text-amber-700 print:text-amber-800 print:bg-amber-50/20';
+        else if (statusVal === 'A') bgClass = 'bg-orange-50 text-orange-700 print:text-orange-800 print:bg-orange-50/20';
+        else if (statusVal === 'D') bgClass = 'bg-sky-50 text-sky-700 print:text-sky-800 print:bg-sky-50/20';
+        
+        return { label: statusVal, bgClass: `${bgClass} font-black`, isValid: true };
+      }
+    }
 
     if (isHoliday) {
       return { label: 'FE', bgClass: 'bg-red-50 text-red-700 font-black', isValid: true };
@@ -2982,7 +3038,7 @@ function TurmasContent() {
                               </div>
                             </td>
                             {daysToRender.map((day) => {
-                              const status = getDayStatus(day.dayNum, day.month, day.year);
+                              const status = getDayStatus(day.dayNum, day.month, day.year, student.id);
                               return (
                                 <td 
                                   key={`${day.year}-${day.month}-${day.dayNum}`} 
@@ -3022,11 +3078,11 @@ function TurmasContent() {
                       {language === 'pt' ? 'Legenda:' : 'Legend:'}
                     </div>
                     <div className="flex select-none flex-wrap gap-x-3 gap-y-1 text-[8px] font-black border border-black p-2 print:p-1 rounded-lg bg-neutral-50 shadow-sm">
-                      <span><strong>P</strong> = {language === 'pt' ? 'Presente' : 'Present'}</span>
-                      <span><strong>F</strong> = {language === 'pt' ? 'Falta' : 'Absent'}</span>
-                      <span><strong>H</strong> = {language === 'pt' ? 'Hospital' : 'Hospitalizado'}</span>
-                      <span><strong>N</strong> = {language === 'pt' ? 'Não houve aula' : 'No Class'}</span>
-                      <span><strong>E</strong> = {language === 'pt' ? 'Excluído' : 'Excluded'}</span>
+                      <span className="text-emerald-700"><strong>P</strong> = {language === 'pt' ? 'Presente' : 'Present'}</span>
+                      <span className="text-rose-700"><strong>F</strong> = {language === 'pt' ? 'Falta' : 'Absent'}</span>
+                      <span className="text-amber-700"><strong>FJ</strong> = {language === 'pt' ? 'Justificada' : 'Excused'}</span>
+                      <span className="text-orange-700"><strong>A</strong> = {language === 'pt' ? 'Atraso' : 'Delay'}</span>
+                      <span className="text-sky-700"><strong>D</strong> = {language === 'pt' ? 'Dispensado' : 'Exempt'}</span>
                       <span className="text-red-700 border-l border-black pl-2"><strong>FE</strong> = {language === 'pt' ? 'Feriado' : 'Holiday'}</span>
                       <span className="text-neutral-600 border-l border-black pl-2"><strong>S/D</strong> = Sáb/Dom</span>
                     </div>
