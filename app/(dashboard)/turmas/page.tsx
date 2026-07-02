@@ -118,6 +118,7 @@ function TurmasContent() {
 
   useEffect(() => {
     if (!isPrintAttendanceOpen || !viewingTurma?.id || !printPeriod) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPrintFrequencia([]);
       return;
     }

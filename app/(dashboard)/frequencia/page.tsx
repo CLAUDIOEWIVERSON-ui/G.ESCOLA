@@ -95,6 +95,7 @@ export default function FrequenciaPage() {
   const [students, setStudents] = useState<any[]>([]);
   const [mapData, setMapData] = useState<any[]>([]);
   const [activeCell, setActiveCell] = useState<{ studentId: string; dayStr: string } | null>(null);
+  const [activeBulkDay, setActiveBulkDay] = useState<{ dayStr: string; day: Date } | null>(null);
 
   const activeTurma = turmas.find(t => t.id === selectedTurma);
 
@@ -355,11 +356,11 @@ export default function FrequenciaPage() {
     }
   };
 
-  const handleMarkAllPresent = async (dayStr: string) => {
+  const handleMarkAllStatus = async (dayStr: string, status: 'P' | 'F' | 'FJ' | 'A' | 'D' | null) => {
     if (isReadOnly) return;
     if (!selectedTurma) return;
     if (students.length === 0) {
-      toast.error(language === 'pt' ? 'Nenhum aluno nesta turma para marcar presença.' : 'No students in this class to mark attendance.');
+      toast.error(language === 'pt' ? 'Nenhum aluno nesta turma.' : 'No students in this class.');
       return;
     }
 
@@ -379,7 +380,11 @@ export default function FrequenciaPage() {
       }
     }
 
-    const toastId = toast.loading(language === 'pt' ? 'Registrando presença para todos...' : 'Registering attendance for all...');
+    const toastId = toast.loading(
+      language === 'pt' 
+        ? 'Atualizando situação para toda a turma...' 
+        : 'Updating status for the entire class...'
+    );
     try {
       // Delete any pre-existing records for this day for this turma
       let deleteQuery = supabase
@@ -397,22 +402,27 @@ export default function FrequenciaPage() {
       const { error: deleteError } = await deleteQuery;
       if (deleteError) throw deleteError;
 
-      // Prepare records for all students
-      const recordsToInsert = students.map(student => ({
-        aluno_id: student.id,
-        turma_id: selectedTurma,
-        disciplina_id: selectedDisciplina || null,
-        data: dayStr,
-        presente: true,
-        observacao: null
-      }));
+      let insertedData: any[] | null = null;
 
-      const { data: insertedData, error: insertError } = await supabase
-        .from('frequencia')
-        .insert(recordsToInsert)
-        .select();
+      if (status !== null) {
+        // Prepare records for all students
+        const recordsToInsert = students.map(student => ({
+          aluno_id: student.id,
+          turma_id: selectedTurma,
+          disciplina_id: selectedDisciplina || null,
+          data: dayStr,
+          presente: status === 'P' || status === 'A' || status === 'D',
+          observacao: status === 'P' || status === 'F' ? null : status
+        }));
 
-      if (insertError) throw insertError;
+        const { data, error: insertError } = await supabase
+          .from('frequencia')
+          .insert(recordsToInsert)
+          .select();
+
+        if (insertError) throw insertError;
+        insertedData = data;
+      }
 
       // Update local state
       setMapData(prev => {
@@ -428,10 +438,15 @@ export default function FrequenciaPage() {
         return filtered;
       });
 
-      toast.success(language === 'pt' ? 'Presença registrada para todos os alunos!' : 'Attendance registered for all students!', { id: toastId });
+      toast.success(
+        language === 'pt' 
+          ? 'Situação registrada para todos os alunos!' 
+          : 'Status registered for all students!', 
+        { id: toastId }
+      );
     } catch (err: any) {
-      console.error('Error marking all present:', err);
-      toast.error(`${language === 'pt' ? 'Erro ao registrar presença geral: ' : 'Error registering bulk attendance: '}${err.message || JSON.stringify(err)}`, { id: toastId });
+      console.error('Error updating bulk status:', err);
+      toast.error(`${language === 'pt' ? 'Erro ao registrar situação geral: ' : 'Error registering bulk attendance: '}${err.message || JSON.stringify(err)}`, { id: toastId });
     }
   };
 
@@ -491,6 +506,25 @@ export default function FrequenciaPage() {
     return Math.round((presentRecords / mapData.length) * 100);
   })();
 
+  const formatIsoToBr = (isoStr?: string) => {
+    if (!isoStr) return '---';
+    try {
+      const [y, m, d] = isoStr.split('-');
+      if (y && m && d) return `${d}/${m}/${y}`;
+      return isoStr;
+    } catch {
+      return isoStr;
+    }
+  };
+
+  const formattedTurmaPeriod = (() => {
+    if (!activeTurma) return null;
+    if (!activeTurma.data_inicio && !activeTurma.data_fim && !activeTurma.data_postergacao) return null;
+    const startStr = formatIsoToBr(activeTurma.data_inicio);
+    const endStr = formatIsoToBr(activeTurma.data_postergacao || activeTurma.data_fim);
+    return `${startStr} a ${endStr}`;
+  })();
+
   return (
     <div className="space-y-6 pb-20 max-w-[1400px] mx-auto">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -499,14 +533,34 @@ export default function FrequenciaPage() {
           <span className="text-slate-300">›</span>
           <span className="font-medium text-slate-900">{t.attendance.title}</span>
         </div>
+        {formattedTurmaPeriod && (
+          <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-2xl text-xs font-black border border-blue-100 shadow-xs">
+            <Calendar className="w-4 h-4 text-blue-600 shrink-0" />
+            <span>
+              {language === 'pt' ? 'Período letivo: ' : 'Academic period: '}
+              <strong className="font-mono text-blue-900">{formattedTurmaPeriod}</strong>
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Selection Card */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4 print:hidden">
         <div className="md:col-span-12 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm transition-all hover:shadow-md">
-          <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3">
-            TURMA
-          </label>
+          <div className="flex items-center justify-between mb-3">
+            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+              TURMA
+            </label>
+            {formattedTurmaPeriod && (
+              <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-700 rounded-xl text-xs font-bold border border-emerald-100">
+                <Calendar className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span>
+                  {language === 'pt' ? 'Período: ' : 'Period: '}
+                  <strong className="font-mono text-emerald-900">{formattedTurmaPeriod}</strong>
+                </span>
+              </div>
+            )}
+          </div>
           <div className="relative group">
             <select
               value={selectedTurma}
@@ -514,8 +568,8 @@ export default function FrequenciaPage() {
               className="w-full px-5 py-3.5 bg-slate-50/50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 outline-none text-base font-semibold appearance-none transition-all cursor-pointer group-hover:bg-slate-50 text-slate-700"
             >
               <option value="">{t.attendance.selectClass}</option>
-              {turmas.map(turma => (
-                <option key={turma.id} value={turma.id}>{turma.nome}</option>
+              {turmas.map((turma, idx) => (
+                <option key={`turma-opt-${turma.id || idx}`} value={turma.id}>{turma.nome}</option>
               ))}
             </select>
             <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
@@ -657,6 +711,17 @@ export default function FrequenciaPage() {
                       </span>
                     </div>
                   )}
+                  {formattedTurmaPeriod && (
+                    <div className="hidden sm:flex items-center gap-2">
+                      <div className="flex items-center gap-2 px-4 py-2.5 bg-blue-50 text-blue-700 rounded-2xl text-xs font-black border border-blue-100 shadow-xs">
+                        <Calendar className="w-4 h-4 text-blue-600 shrink-0" />
+                        <span>
+                          {language === 'pt' ? 'Período: ' : 'Period: '}
+                          <strong className="font-mono text-blue-900">{formattedTurmaPeriod}</strong>
+                        </span>
+                      </div>
+                    </div>
+                  )}
                   <div>
                     <h3 className="text-[10px] font-black text-blue-700 uppercase tracking-widest font-mono">
                       {language === 'pt' ? 'Sistema de Gestão de Frequência' : 'Attendance Management System'}
@@ -702,6 +767,17 @@ export default function FrequenciaPage() {
                       {students.length} {language === 'pt' ? 'Ativos' : 'Active'}
                     </span>
                   </div>
+                  {formattedTurmaPeriod && (
+                    <>
+                      <div className="border-l border-slate-200 h-6 shrink-0" />
+                      <div>
+                        <span className="block opacity-65 font-bold uppercase text-[9px] tracking-wider text-slate-400">{language === 'pt' ? 'PERÍODO LETIVO' : 'PERIOD'}</span>
+                        <span className="font-bold text-blue-700 font-mono">
+                          {formattedTurmaPeriod}
+                        </span>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -933,7 +1009,7 @@ export default function FrequenciaPage() {
                           end: endOfYear(currentMapDate)
                         })).map(month => (
                           <th 
-                            key={month.toString()} 
+                            key={`th-m-${format(month, 'yyyy-MM')}`} 
                             className="p-4 min-w-[80px] text-center text-[10px] font-black text-slate-500 uppercase tracking-widest border border-slate-200 bg-slate-50"
                           >
                             {format(month, 'MMM', { locale: dateLocale })}
@@ -951,7 +1027,7 @@ export default function FrequenciaPage() {
                           
                           return (
                             <th 
-                              key={day.toString()} 
+                              key={`th-d-${dayStr}`} 
                               className={cn(
                                 "p-2 min-w-[50px] text-center transition-colors border border-slate-200 relative",
                                 isStartDay ? "bg-blue-50/70 border-b-2 border-b-blue-500 font-bold" : "",
@@ -985,12 +1061,10 @@ export default function FrequenciaPage() {
                                     type="button"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      if (confirm(language === 'pt' ? `Deseja marcar PRESENÇA para TODOS os alunos no dia ${format(day, 'dd/MM/yyyy')}?` : `Mark PRESENCE for ALL students on ${format(day, 'dd/MM/yyyy')}?`)) {
-                                        handleMarkAllPresent(dayStr);
-                                      }
+                                      setActiveBulkDay({ dayStr, day });
                                     }}
                                     className="mt-1.5 p-1 rounded-md bg-emerald-50 hover:bg-emerald-500 hover:text-white text-emerald-600 border border-emerald-100 hover:border-emerald-600 transition-all cursor-pointer shadow-xs print:hidden"
-                                    title={language === 'pt' ? 'Presença Automática (Todos)' : 'Automatic Presence (All)'}
+                                    title={language === 'pt' ? 'Presença/Situação Geral (Turma Toda)' : 'Mass Attendance/Status (Whole Class)'}
                                   >
                                     <ListChecks className="w-3.5 h-3.5" />
                                   </button>
@@ -1024,8 +1098,8 @@ export default function FrequenciaPage() {
                         </td>
                       </tr>
                     ) : (
-                      students.map(student => (
-                      <tr key={student.id} className="hover:bg-slate-50/50 transition-colors group">
+                      students.map((student, idx) => (
+                      <tr key={`student-${student.id || idx}`} className="hover:bg-slate-50/50 transition-colors group">
                         <td className="sticky left-0 z-10 bg-white p-4 font-bold text-slate-700 border border-slate-200 group-hover:bg-slate-50 transition-colors">
                           <div className="flex items-center gap-2.5">
                             <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-[9px] font-bold text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-all shrink-0 print:hidden">
@@ -1052,7 +1126,7 @@ export default function FrequenciaPage() {
                           
                           return (
                             <td 
-                              key={day.toString()} 
+                              key={`td-${student.id || idx}-${dayStr}`} 
                               className={cn(
                                 "p-1 border border-slate-200 cursor-pointer transition-all hover:bg-blue-50/50 relative text-center min-w-[42px] h-12 print:h-8",
                                 holiday ? "bg-rose-50/30" : isWk ? "bg-slate-100/30" : "bg-white",
@@ -1234,7 +1308,130 @@ export default function FrequenciaPage() {
               </div>
             )}
           </AnimatePresence>
-      </AnimatePresence>
-    </div>
+
+          {/* Centered screen pop-up window for BULK frequency options */}
+          <AnimatePresence>
+            {activeBulkDay && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                {/* Backdrop with soft blur */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => setActiveBulkDay(null)}
+                  className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"
+                />
+                
+                {/* Responsive Pop-up Card */}
+                <motion.div
+                  initial={{ scale: 0.95, y: 15, opacity: 0 }}
+                  animate={{ scale: 1, y: 0, opacity: 1 }}
+                  exit={{ scale: 0.95, y: 15, opacity: 0 }}
+                  transition={{ type: "spring", duration: 0.3 }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="relative bg-white rounded-2xl shadow-2xl p-6 w-full max-w-xl border border-slate-200 z-50 overflow-hidden"
+                >
+                  {/* Header */}
+                  <div className="flex items-start justify-between mb-5">
+                    <div>
+                      <span className="text-[10px] font-black tracking-widest text-emerald-600 uppercase">
+                        {language === 'pt' ? 'REGISTRAR FREQUÊNCIA GERAL' : 'REGISTER MASS ATTENDANCE'}
+                      </span>
+                      <h3 className="text-lg font-extrabold text-slate-800 mt-0.5 leading-snug">
+                        {language === 'pt' ? 'Toda a Turma' : 'Entire Class'}
+                      </h3>
+                      <p className="text-xs text-slate-500 font-medium flex items-center gap-1 mt-1">
+                        <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                        {language === 'pt' ? `Data: ${format(activeBulkDay.day, 'dd/MM/yyyy')}` : `Date: ${format(activeBulkDay.day, 'MM/dd/yyyy')}`}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setActiveBulkDay(null)}
+                      className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                    >
+                      <XCircle className="w-5 h-5 text-slate-400 hover:text-slate-600" />
+                    </button>
+                  </div>
+
+                  {/* Horizontal Options Row */}
+                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2.5 sm:gap-3 py-2">
+                    {/* Option P */}
+                    <button
+                      onClick={() => {
+                        handleMarkAllStatus(activeBulkDay.dayStr, 'P');
+                        setActiveBulkDay(null);
+                      }}
+                      className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-emerald-50 border border-transparent hover:border-emerald-100 transition-all text-emerald-800 text-center cursor-pointer group"
+                    >
+                      <span className="w-10 h-10 flex items-center justify-center bg-emerald-500 text-white rounded-xl text-sm font-black shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform">P</span>
+                      <span className="text-[11px] font-black tracking-tight">{language === 'pt' ? 'Presentes' : 'Present'}</span>
+                    </button>
+
+                    {/* Option F */}
+                    <button
+                      onClick={() => {
+                        handleMarkAllStatus(activeBulkDay.dayStr, 'F');
+                        setActiveBulkDay(null);
+                      }}
+                      className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-rose-50 border border-transparent hover:border-rose-100 transition-all text-rose-800 text-center cursor-pointer group"
+                    >
+                      <span className="w-10 h-10 flex items-center justify-center bg-rose-500 text-white rounded-xl text-sm font-black shadow-md shadow-rose-500/20 group-hover:scale-105 transition-transform">F</span>
+                      <span className="text-[11px] font-black tracking-tight">{language === 'pt' ? 'Faltas' : 'Absent'}</span>
+                    </button>
+
+                    {/* Option FJ */}
+                    <button
+                      onClick={() => {
+                        handleMarkAllStatus(activeBulkDay.dayStr, 'FJ');
+                        setActiveBulkDay(null);
+                      }}
+                      className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-amber-50 border border-transparent hover:border-amber-100 transition-all text-amber-800 text-center cursor-pointer group"
+                    >
+                      <span className="w-10 h-10 flex items-center justify-center bg-amber-500 text-white rounded-xl text-sm font-black shadow-md shadow-amber-500/20 group-hover:scale-105 transition-transform">FJ</span>
+                      <span className="text-[11px] font-black tracking-tight leading-tight">{language === 'pt' ? 'Justificadas' : 'Excused'}</span>
+                    </button>
+
+                    {/* Option A */}
+                    <button
+                      onClick={() => {
+                        handleMarkAllStatus(activeBulkDay.dayStr, 'A');
+                        setActiveBulkDay(null);
+                      }}
+                      className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-orange-50 border border-transparent hover:border-orange-100 transition-all text-orange-800 text-center cursor-pointer group"
+                    >
+                      <span className="w-10 h-10 flex items-center justify-center bg-orange-500 text-white rounded-xl text-sm font-black shadow-md shadow-orange-500/20 group-hover:scale-105 transition-transform">A</span>
+                      <span className="text-[11px] font-black tracking-tight">{language === 'pt' ? 'Atrasos' : 'Delay'}</span>
+                    </button>
+
+                    {/* Option D */}
+                    <button
+                      onClick={() => {
+                        handleMarkAllStatus(activeBulkDay.dayStr, 'D');
+                        setActiveBulkDay(null);
+                      }}
+                      className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-sky-50 border border-transparent hover:border-sky-100 transition-all text-sky-800 text-center cursor-pointer group"
+                    >
+                      <span className="w-10 h-10 flex items-center justify-center bg-sky-500 text-white rounded-xl text-sm font-black shadow-md shadow-sky-500/20 group-hover:scale-105 transition-transform">D</span>
+                      <span className="text-[11px] font-black tracking-tight">{language === 'pt' ? 'Dispensas' : 'Exempt'}</span>
+                    </button>
+
+                    {/* Option Limpar */}
+                    <button
+                      onClick={() => {
+                        handleMarkAllStatus(activeBulkDay.dayStr, null);
+                        setActiveBulkDay(null);
+                      }}
+                      className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-slate-100 border border-transparent hover:border-slate-200 transition-all text-slate-500 text-center cursor-pointer group"
+                    >
+                      <span className="w-10 h-10 flex items-center justify-center bg-slate-100 text-slate-600 rounded-xl text-lg font-black shadow-sm group-hover:scale-105 transition-transform">―</span>
+                      <span className="text-[11px] font-black tracking-tight">{language === 'pt' ? 'Limpar' : 'Clear'}</span>
+                    </button>
+                  </div>
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
+        </AnimatePresence>
+      </div>
   );
 }

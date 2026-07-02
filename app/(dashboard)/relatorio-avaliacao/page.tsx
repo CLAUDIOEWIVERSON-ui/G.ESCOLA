@@ -1856,8 +1856,8 @@ function RelatorioAvaliacaoAdminContent() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {filteredPendingStudents.map((stud) => (
-                      <div key={stud.id} className="border border-slate-150 rounded-xl p-4 bg-slate-50/50 hover:bg-slate-100/40 transition flex flex-col justify-between space-y-3">
+                    {filteredPendingStudents.map((stud, index) => (
+                      <div key={`pending-${stud.id || index}`} className="border border-slate-150 rounded-xl p-4 bg-slate-50/50 hover:bg-slate-100/40 transition flex flex-col justify-between space-y-3">
                         <div className="space-y-1">
                           <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5 font-mono">
                             {stud.posto_graduacao ? (
@@ -1943,8 +1943,8 @@ function RelatorioAvaliacaoAdminContent() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {filteredRespondedStudents.map((stud) => (
-                      <div key={stud.id} className="border border-slate-150 rounded-xl p-4 bg-slate-50/50 hover:bg-slate-100/40 transition flex flex-col justify-between space-y-3">
+                    {filteredRespondedStudents.map((stud, index) => (
+                      <div key={`responded-${stud.id || index}`} className="border border-slate-150 rounded-xl p-4 bg-slate-50/50 hover:bg-slate-100/40 transition flex flex-col justify-between space-y-3">
                         <div className="space-y-1">
                           <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5 font-mono">
                             {stud.posto_graduacao ? (
@@ -2052,8 +2052,8 @@ function RelatorioAvaliacaoAdminContent() {
                     ) : (
                       filteredSubmissions
                         .filter(sub => sub.elogios && sub.elogios.trim())
-                        .map(sub => (
-                          <div key={sub.id} className="bg-emerald-50/40 p-3 rounded-lg border border-emerald-100/50 text-xs">
+                        .map((sub, idx) => (
+                          <div key={`elogio-${sub.id || idx}`} className="bg-emerald-50/40 p-3 rounded-lg border border-emerald-100/50 text-xs">
                             <p className="text-slate-800">{sub.elogios}</p>
                             <span className="text-[10px] text-emerald-700 block mt-1.5 font-bold font-mono">
                               — {sub.aluno?.nome || "Aluno"} ({sub.aluno?.posto_graduacao || "Graduação"})
@@ -2075,8 +2075,8 @@ function RelatorioAvaliacaoAdminContent() {
                     ) : (
                       filteredSubmissions
                         .filter(sub => sub.criticas_construtivas && sub.criticas_construtivas.trim())
-                        .map(sub => (
-                          <div key={sub.id} className="bg-rose-50/40 p-3 rounded-lg border border-rose-100/55 text-xs">
+                        .map((sub, idx) => (
+                          <div key={`critica-${sub.id || idx}`} className="bg-rose-50/40 p-3 rounded-lg border border-rose-100/55 text-xs">
                             <p className="text-slate-800">{sub.criticas_construtivas}</p>
                             <span className="text-[10px] text-rose-700 block mt-1.5 font-bold font-mono">
                               — {sub.aluno?.nome || "Aluno"} ({sub.aluno?.posto_graduacao || "Graduação"})

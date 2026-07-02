@@ -1580,9 +1580,9 @@ function BoletimContent() {
                               </td>
                             </tr>
                           ) : (
-                            reportRows.map((row: any) => {
+                            reportRows.map((row: any, rIdx: number) => {
                               return (
-                                <tr key={row.id} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors bg-white">
+                                <tr key={`row-${row.id || ''}-${rIdx}`} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors bg-white">
                                   {row.moduloSpan > 0 && (
                                     <td rowSpan={row.moduloSpan} className="px-4 py-2.5 font-bold text-slate-900 border-r border-slate-200 text-left bg-white align-middle break-words whitespace-normal leading-tight">
                                       {row.modulo}
@@ -1699,7 +1699,7 @@ function BoletimContent() {
                             <div className="flex flex-wrap gap-1">
                               {reportData.attendance.slice(0, 10).map((att: any, ind: number) => (
                                 <span 
-                                  key={att.id || ind} 
+                                  key={`att-${att.id || ''}-${ind}`} 
                                   className={cn(
                                     "text-[9px] px-1.5 py-0.5 rounded font-bold uppercase",
                                     att.presente 
@@ -2020,7 +2020,7 @@ function BoletimContent() {
                        const status = getStatus(row.nota_final, row.frequencia);
                        const StatusIcon = status.icon;
                        return (
-                         <tr key={row.id} className={cn("border-b border-slate-50 hover:bg-slate-50/40 transition-colors group", row.nota_final !== null && row.nota_final !== undefined && Number(row.nota_final) === maxAvgInBoletim && maxAvgInBoletim > 0 && "bg-blue-50/50")}>
+                         <tr key={`boletim-row-${row.id || ''}-${idx}`} className={cn("border-b border-slate-50 hover:bg-slate-50/40 transition-colors group", row.nota_final !== null && row.nota_final !== undefined && Number(row.nota_final) === maxAvgInBoletim && maxAvgInBoletim > 0 && "bg-blue-50/50")}>
                             <td className="px-4 lg:px-6 py-4 font-mono text-xs font-bold text-slate-400 text-left">
                               {idx + 1}
                             </td>
@@ -2621,8 +2621,8 @@ function BoletimContent() {
                                                   </td>
                                                 </tr>
                                               ) : (
-                                                rowsWithSpans.map((row: any) => (
-                                                  <tr key={row.id} className="border-b border-slate-200 bg-white">
+                                                rowsWithSpans.map((row: any, rIdx: number) => (
+                                                  <tr key={`print-row-${row.id || ''}-${rIdx}`} className="border-b border-slate-200 bg-white">
                                                     {row.moduloSpan > 0 && (
                                                       <td rowSpan={row.moduloSpan} className="px-3.5 py-1.5 font-black text-slate-900 border-r border-slate-250 bg-slate-50/70 align-middle break-words whitespace-normal leading-tight text-center">
                                                         {row.modulo}
@@ -3108,7 +3108,7 @@ function BoletimContent() {
                                            boletimData.map((row: any, idx: number) => {
                                              const status = getStatus(row.nota_final, row.frequencia);
                                              return (
-                                               <tr key={row.id} className="border-b border-slate-200 bg-white hover:bg-slate-50">
+                                               <tr key={`summary-row-${row.id || ''}-${idx}`} className="border-b border-slate-200 bg-white hover:bg-slate-50">
                                                  <td className="px-3.5 py-1.5 text-center font-bold border-r border-slate-200 text-slate-400 font-mono">
                                                    {idx + 1}
                                                  </td>
