@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
@@ -97,22 +97,24 @@ export default function FrequenciaPage() {
   const [activeCell, setActiveCell] = useState<{ studentId: string; dayStr: string } | null>(null);
   const [activeBulkDay, setActiveBulkDay] = useState<{ dayStr: string; day: Date } | null>(null);
 
-  const activeTurma = turmas.find(t => t.id === selectedTurma);
+  const activeTurma = useMemo(() => turmas.find(t => t.id === selectedTurma), [turmas, selectedTurma]);
+  const activeCurso = useMemo(() => cursos.find(c => c.id === (selectedCurso || activeTurma?.curso_id)), [cursos, selectedCurso, activeTurma]);
+  const effectiveStartDate = useMemo(() => activeTurma?.data_inicio || activeCurso?.data_inicio || null, [activeTurma, activeCurso]);
+  const effectiveEndDate = useMemo(() => activeTurma?.data_postergacao || activeTurma?.data_fim || activeCurso?.data_fim || null, [activeTurma, activeCurso]);
 
   useEffect(() => {
-    if (activeTurma?.data_inicio) {
-      const [year, month, day] = activeTurma.data_inicio.split('-').map(Number);
+    if (effectiveStartDate) {
+      const [year, month, day] = effectiveStartDate.split('-').map(Number);
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setCurrentMapDate(new Date(year, month - 1, day));
     }
-  }, [selectedTurma, activeTurma?.data_inicio]);
+  }, [selectedTurma, selectedCurso, effectiveStartDate]);
 
   const getFilteredDays = useCallback((days: Date[]) => {
-    if (!activeTurma) return days;
-    const effectiveEndDate = activeTurma.data_postergacao || activeTurma.data_fim;
+    if (!effectiveStartDate && !effectiveEndDate) return days;
     return days.filter(day => {
       const dayStr = format(day, 'yyyy-MM-dd');
-      if (activeTurma.data_inicio && dayStr < activeTurma.data_inicio) {
+      if (effectiveStartDate && dayStr < effectiveStartDate) {
         return false;
       }
       if (effectiveEndDate && dayStr > effectiveEndDate) {
@@ -120,16 +122,15 @@ export default function FrequenciaPage() {
       }
       return true;
     });
-  }, [activeTurma]);
+  }, [effectiveStartDate, effectiveEndDate]);
 
   const getFilteredMonths = useCallback((months: Date[]) => {
-    if (!activeTurma) return months;
-    const effectiveEndDate = activeTurma.data_postergacao || activeTurma.data_fim;
+    if (!effectiveStartDate && !effectiveEndDate) return months;
     return months.filter(month => {
       const monthStartStr = format(startOfMonth(month), 'yyyy-MM-dd');
       const monthEndStr = format(endOfMonth(month), 'yyyy-MM-dd');
       
-      if (activeTurma.data_inicio && monthEndStr < activeTurma.data_inicio) {
+      if (effectiveStartDate && monthEndStr < effectiveStartDate) {
         return false;
       }
       if (effectiveEndDate && monthStartStr > effectiveEndDate) {
@@ -137,11 +138,10 @@ export default function FrequenciaPage() {
       }
       return true;
     });
-  }, [activeTurma]);
+  }, [effectiveStartDate, effectiveEndDate]);
 
   const canNavigateLeft = useCallback(() => {
-    if (!activeTurma) return true;
-    if (!activeTurma.data_inicio) return true;
+    if (!effectiveStartDate) return true;
     
     let targetDate: Date;
     if (mapGranularity === 'week') targetDate = subWeeks(currentMapDate, 1);
@@ -154,12 +154,10 @@ export default function FrequenciaPage() {
     else targetEnd = endOfMonth(targetDate);
     
     const targetEndStr = format(targetEnd, 'yyyy-MM-dd');
-    return targetEndStr >= activeTurma.data_inicio;
-  }, [activeTurma, currentMapDate, mapGranularity]);
+    return targetEndStr >= effectiveStartDate;
+  }, [effectiveStartDate, currentMapDate, mapGranularity]);
 
   const canNavigateRight = useCallback(() => {
-    if (!activeTurma) return true;
-    const effectiveEndDate = activeTurma.data_postergacao || activeTurma.data_fim;
     if (!effectiveEndDate) return true;
     
     let targetDate: Date;
@@ -174,7 +172,7 @@ export default function FrequenciaPage() {
     
     const targetStartStr = format(targetStart, 'yyyy-MM-dd');
     return targetStartStr <= effectiveEndDate;
-  }, [activeTurma, currentMapDate, mapGranularity]);
+  }, [effectiveEndDate, currentMapDate, mapGranularity]);
 
   const fetchAttendance = useCallback(async () => {
     if (!selectedTurma) {
@@ -245,20 +243,13 @@ export default function FrequenciaPage() {
   const handleToggleMapAttendance = async (studentId: string, dayStr: string, status: 'P' | 'F' | 'FJ' | 'A' | 'D' | null) => {
     if (isReadOnly) return;
 
-    if (!isAdmin) {
-      const activeTurma = turmas.find(t => t.id === selectedTurma);
-      if (activeTurma) {
-        const hasStart = !!activeTurma.data_inicio;
-        const hasEnd = !!activeTurma.data_fim;
-        if (hasEnd && dayStr > activeTurma.data_fim) {
-          toast.error(language === 'pt' ? 'Impossível alterar. O período desta turma já expirou.' : 'Cannot modify. The class period has already expired.');
-          return;
-        }
-        if (hasStart && dayStr < activeTurma.data_inicio) {
-          toast.error(language === 'pt' ? 'Impossível alterar. A data selecionada é anterior ao período letivo.' : 'Cannot modify. The selected date is before the class period.');
-          return;
-        }
-      }
+    if (effectiveEndDate && dayStr > effectiveEndDate) {
+      toast.error(language === 'pt' ? 'Impossível alterar. O período deste curso/turma já expirou.' : 'Cannot modify. The course/class period has already expired.');
+      return;
+    }
+    if (effectiveStartDate && dayStr < effectiveStartDate) {
+      toast.error(language === 'pt' ? 'Impossível alterar. A data selecionada é anterior ao período letivo do curso/turma.' : 'Cannot modify. The selected date is before the course/class period.');
+      return;
     }
 
     const toastId = toast.loading(language === 'pt' ? 'Atualizando presença...' : 'Updating attendance...');
@@ -364,20 +355,13 @@ export default function FrequenciaPage() {
       return;
     }
 
-    if (!isAdmin) {
-      const activeTurma = turmas.find(t => t.id === selectedTurma);
-      if (activeTurma) {
-        const hasStart = !!activeTurma.data_inicio;
-        const hasEnd = !!activeTurma.data_fim;
-        if (hasEnd && dayStr > activeTurma.data_fim) {
-          toast.error(language === 'pt' ? 'Impossível alterar. O período desta turma já expirou.' : 'Cannot modify. The class period has already expired.');
-          return;
-        }
-        if (hasStart && dayStr < activeTurma.data_inicio) {
-          toast.error(language === 'pt' ? 'Impossível alterar. A data selecionada é anterior ao período letivo.' : 'Cannot modify. The selected date is before the class period.');
-          return;
-        }
-      }
+    if (effectiveEndDate && dayStr > effectiveEndDate) {
+      toast.error(language === 'pt' ? 'Impossível alterar. O período deste curso/turma já expirou.' : 'Cannot modify. The course/class period has already expired.');
+      return;
+    }
+    if (effectiveStartDate && dayStr < effectiveStartDate) {
+      toast.error(language === 'pt' ? 'Impossível alterar. A data selecionada é anterior ao período letivo do curso/turma.' : 'Cannot modify. The selected date is before the course/class period.');
+      return;
     }
 
     const toastId = toast.loading(
@@ -455,7 +439,7 @@ export default function FrequenciaPage() {
 
   useEffect(() => {
     const fetchFilters = async () => {
-      const { data: cursosData } = await supabase.from('cursos').select('id, nome, internacional, grupo_responsavel').is('deleted_at', null).order('nome');
+      const { data: cursosData } = await supabase.from('cursos').select('id, nome, internacional, grupo_responsavel, data_inicio, data_fim').is('deleted_at', null).order('nome');
       let filteredCuts = cursosData || [];
       if (profile?.role === 'instrutor' && profile?.grupo_responsavel) {
         if (profile.grupo_responsavel === 'MAN') {
@@ -518,10 +502,9 @@ export default function FrequenciaPage() {
   };
 
   const formattedTurmaPeriod = (() => {
-    if (!activeTurma) return null;
-    if (!activeTurma.data_inicio && !activeTurma.data_fim && !activeTurma.data_postergacao) return null;
-    const startStr = formatIsoToBr(activeTurma.data_inicio);
-    const endStr = formatIsoToBr(activeTurma.data_postergacao || activeTurma.data_fim);
+    if (!effectiveStartDate && !effectiveEndDate) return null;
+    const startStr = formatIsoToBr(effectiveStartDate || undefined);
+    const endStr = formatIsoToBr(effectiveEndDate || undefined);
     return `${startStr} a ${endStr}`;
   })();
 
@@ -674,7 +657,7 @@ export default function FrequenciaPage() {
                   </button>
                 </div>
 
-                {activeTurma?.data_inicio && (
+                {effectiveStartDate && (
                   <div className="hidden sm:flex items-center gap-2">
                     <div className="flex items-center gap-2 px-4 py-2.5 bg-blue-50 text-blue-700 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-blue-100">
                       <div className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-sm" />
@@ -1021,7 +1004,7 @@ export default function FrequenciaPage() {
                           end: mapGranularity === 'week' ? endOfWeek(currentMapDate, { weekStartsOn: 1 }) : endOfMonth(currentMapDate)
                         })).map(day => {
                           const dayStr = format(day, 'yyyy-MM-dd');
-                          const isStartDay = activeTurma?.data_inicio && dayStr === activeTurma.data_inicio;
+                          const isStartDay = effectiveStartDate && dayStr === effectiveStartDate;
                           const holiday = isHoliday(day);
                           const isWk = isWeekend(day);
                           
@@ -1061,6 +1044,10 @@ export default function FrequenciaPage() {
                                     type="button"
                                     onClick={(e) => {
                                       e.stopPropagation();
+                                      if ((effectiveStartDate && dayStr < effectiveStartDate) || (effectiveEndDate && dayStr > effectiveEndDate)) {
+                                        toast.error(language === 'pt' ? 'Data fora do período letivo do curso/turma.' : 'Date outside the course/class period.');
+                                        return;
+                                      }
                                       setActiveBulkDay({ dayStr, day });
                                     }}
                                     className="mt-1.5 p-1 rounded-md bg-emerald-50 hover:bg-emerald-500 hover:text-white text-emerald-600 border border-emerald-100 hover:border-emerald-600 transition-all cursor-pointer shadow-xs print:hidden"
@@ -1121,7 +1108,7 @@ export default function FrequenciaPage() {
                           
                           const isWk = isWeekend(day);
                           const holiday = isHoliday(day);
-                          const isStartDay = activeTurma?.data_inicio && dayStr === activeTurma.data_inicio;
+                          const isStartDay = effectiveStartDate && dayStr === effectiveStartDate;
                           const status = rec ? (rec.observacao || (rec.presente ? 'P' : 'F')) : null;
                           
                           return (
@@ -1142,6 +1129,10 @@ export default function FrequenciaPage() {
                               }
                               onClick={() => {
                                 if (isReadOnly) return;
+                                if ((effectiveStartDate && dayStr < effectiveStartDate) || (effectiveEndDate && dayStr > effectiveEndDate)) {
+                                  toast.error(language === 'pt' ? 'Data fora do período letivo do curso/turma.' : 'Date outside the course/class period.');
+                                  return;
+                                }
                                 if (activeCell?.studentId === student.id && activeCell?.dayStr === dayStr) {
                                   setActiveCell(null);
                                 } else {

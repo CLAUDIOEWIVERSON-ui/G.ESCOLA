@@ -1349,6 +1349,9 @@ export default function HorarioPage() {
                                       const cellDiscObj = disciplinas.find(
                                         (d) => d.id === cell.subjectId,
                                       );
+                                      const cellTopicObj = materias.find(
+                                        (m) => m.id === cell.topicId,
+                                      );
                                       const currentModulo =
                                         cell.modulo ||
                                         (cellDiscObj?.modulo_index
