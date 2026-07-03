@@ -105,7 +105,6 @@ export default function FrequenciaPage() {
   useEffect(() => {
     if (effectiveStartDate) {
       const [year, month, day] = effectiveStartDate.split('-').map(Number);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCurrentMapDate(new Date(year, month - 1, day));
     }
   }, [selectedTurma, selectedCurso, effectiveStartDate]);

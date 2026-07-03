@@ -238,7 +238,6 @@ export default function CursosPage() {
 
   useEffect(() => {
     if (manageDisciplinasCurso) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchDisciplinas(manageDisciplinasCurso.id);
     } else {
       setDisciplinas([]);
@@ -371,7 +370,6 @@ export default function CursosPage() {
 
   useEffect(() => {
     if (manageMateriasDisciplina) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchMaterias(manageMateriasDisciplina.id);
     } else {
       setMateriasModulos([]);
