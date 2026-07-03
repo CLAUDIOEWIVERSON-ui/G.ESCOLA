@@ -1,0 +1,3158 @@
+'use client';
+
+import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+import { supabase } from '@/lib/supabase/client';
+import { useTurmas, useCursos, useDisciplinas } from '@/hooks/useCachedData';
+import { useI18n } from '@/lib/i18n/LanguageContext';
+import { useUser } from '@/lib/auth/UserContext';
+import { Plus, Search, Layers as LayersIcon, Library, Calendar, Clock, MapPin, Pencil, Trash2, Loader2, CheckCircle2, RefreshCcw, Users, Mail, Phone, Building, Camera, MessageCircle, XCircle, FileText, X, GraduationCap, School, ChevronLeft, ChevronRight, Printer, Monitor, Globe, Anchor, Swords } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { cn } from '@/lib/utils';
+import Modal from '@/components/Modal';
+import { getCardStyleForItem, getCardColorSettings, CardColorSettings } from '@/lib/cardColors';
+import Image from 'next/image';
+import maleAvatar from '@/src/assets/images/avatar_male_1778977230783.png';
+import femaleAvatar from '@/src/assets/images/avatar_female_1778977246051.png';
+import militaryMaleAvatar from '@/src/assets/images/avatar_military_male_1779964887322.png';
+import militaryFemaleAvatar from '@/src/assets/images/avatar_military_female_1779964903107.png';
+import navalMissionLogo from '@/src/assets/images/regenerated_image_1782409801823.png';
+
+import { toast } from 'sonner';
+
+function TurmasContent() {
+  const { t, language } = useI18n();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const categoryParam = searchParams ? searchParams.get('cat') : null;
+  
+  const { isAdmin, isConvidado, profile } = useUser();
+  const isReadOnly = isConvidado || !isAdmin;
+  const { turmas, loading: loadingTurmas, mutate: revalidateTurmas } = useTurmas();
+  const { cursos, loading: loadingCursos } = useCursos();
+  const { disciplinas, loading: loadingDisciplinas } = useDisciplinas();
+  const loading = loadingTurmas || loadingCursos || loadingDisciplinas;
+
+  const canEditTurma = useCallback((turma: any) => {
+    if (isConvidado) return false;
+    if (isAdmin) return true;
+    if (profile?.role === 'instrutor' && profile?.grupo_responsavel) {
+      const selectedCourse = cursos.find((c: any) => c.id === turma.curso_id);
+      const courseGroup = selectedCourse?.grupo_responsavel || turma.grupo_responsavel;
+
+      if (!courseGroup) return false;
+      if (profile.grupo_responsavel === 'AMBOS') {
+        return courseGroup === 'MAN' || courseGroup === 'GAT';
+      }
+      return profile.grupo_responsavel === courseGroup;
+    }
+    return false;
+  }, [isAdmin, isConvidado, profile, cursos]);
+
+  const [colorSettings, setColorSettings] = useState<CardColorSettings>(() => getCardColorSettings());
+  const [refreshing, setRefreshing] = useState(false);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(10);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('items_per_page_turmas');
+      if (saved) {
+        setTimeout(() => {
+          setItemsPerPage(Number(saved));
+        }, 0);
+      }
+    }
+  }, []);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentTurma, setCurrentTurma] = useState<any>(null);
+  const [saving, setSaving] = useState(false);
+  const [savingStudent, setSavingStudent] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const [deletingStudent, setDeletingStudent] = useState<string | null>(null);
+  const [deletingAll, setDeletingAll] = useState(false);
+  const [isStudentsModalOpen, setIsStudentsModalOpen] = useState(false);
+  const [isStudentFormOpen, setIsStudentFormOpen] = useState(false);
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
+  const [bulkData, setBulkData] = useState('');
+  const [skipHeader, setSkipHeader] = useState(false);
+  const [viewingTurma, setViewingTurma] = useState<any>(null);
+  const [alunosInTurma, setAlunosInTurma] = useState<any[]>([]);
+  const [currentAluno, setCurrentAluno] = useState<any>(null);
+  const [loadingAlunos, setLoadingAlunos] = useState(false);
+  const [expandedPhoto, setExpandedPhoto] = useState<{url: string, name: string} | null>(null);
+  const [studentAccess, setStudentAccess] = useState<any>(null);
+  const [allInstructors, setAllInstructors] = useState<any[]>([]);
+
+  const canEditViewingTurma = viewingTurma ? (isAdmin || canEditTurma(viewingTurma)) : false;
+
+  useEffect(() => {
+    async function loadInstructors() {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, full_name, grupo_responsavel, role')
+          .eq('role', 'instrutor');
+        if (!error && data) {
+          setAllInstructors(data);
+        }
+      } catch (err) {
+        console.error('Error loading instructors:', err);
+      }
+    }
+    loadInstructors();
+  }, []);
+  
+  const isCiabaOrCiaga = viewingTurma?.nome ? (viewingTurma.nome.toUpperCase().includes('CIABA') || viewingTurma.nome.toUpperCase().includes('CIAGA') || viewingTurma.internacional) : false;
+  
+  // States for Folha de Frequência (Mensal & Semanal)
+  const [isPrintAttendanceOpen, setIsPrintAttendanceOpen] = useState(false);
+  const [printProfessorName, setPrintProfessorName] = useState('');
+  const [printPeriod, setPrintPeriod] = useState('');
+  const [printClassName, setPrintClassName] = useState('');
+  const [printSheetType, setPrintSheetType] = useState<'mensal' | 'semanal'>('mensal');
+  const [selectedWeekIndex, setSelectedWeekIndex] = useState<number | null>(null);
+  const [printFrequencia, setPrintFrequencia] = useState<any[]>([]);
+  const [loadingFrequencia, setLoadingFrequencia] = useState(false);
+
+  useEffect(() => {
+    if (!isPrintAttendanceOpen || !viewingTurma?.id || !printPeriod) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setPrintFrequencia([]);
+      return;
+    }
+    
+    const fetchFrequenciesForPrint = async () => {
+      setLoadingFrequencia(true);
+      try {
+        const parts = printPeriod.split('/');
+        if (parts.length >= 2) {
+          const month = parseInt(parts[0], 10);
+          const year = parseInt(parts[1], 10);
+          
+          const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+          const endDate = `${year}-${String(month).padStart(2, '0')}-${new Date(year, month, 0).getDate()}`;
+          
+          const { data, error } = await supabase
+            .from('frequencia')
+            .select('*')
+            .eq('turma_id', viewingTurma.id)
+            .gte('data', startDate)
+            .lte('data', endDate);
+            
+          if (error) throw error;
+          setPrintFrequencia(data || []);
+        }
+      } catch (err) {
+        console.error('Error fetching frequencies for print:', err);
+      } finally {
+        setLoadingFrequencia(false);
+      }
+    };
+    
+    fetchFrequenciesForPrint();
+  }, [isPrintAttendanceOpen, viewingTurma?.id, printPeriod]);
+
+  const handleOpenPrintAttendance = (turma: any) => {
+    setPrintProfessorName(turma.instrutor || '');
+    setPrintClassName(turma.nome || '');
+    
+    let defaultMonthYear = '';
+    if (turma.data_inicio) {
+      const parts = turma.data_inicio.split('-');
+      if (parts.length >= 2) {
+        defaultMonthYear = `${parts[1]}/${parts[0]}`;
+      }
+    }
+    if (!defaultMonthYear) {
+      defaultMonthYear = `${String(new Date().getMonth() + 1).padStart(2, '0')}/${new Date().getFullYear()}`;
+    }
+    
+    setPrintPeriod(defaultMonthYear);
+    setSelectedWeekIndex(null);
+    setIsPrintAttendanceOpen(true);
+  };
+
+  const handleDirectPrintAttendance = async (turma: any, type: 'mensal' | 'semanal' = 'mensal') => {
+    setViewingTurma(turma);
+    setPrintSheetType(type);
+    setSelectedWeekIndex(null);
+    setLoadingAlunos(true);
+    try {
+      const { data, error } = await supabase
+        .from('alunos')
+        .select('*')
+        .eq('turma_id', { targetId: turma.id }.targetId)
+        .is('deleted_at', null)
+        .order('nome');
+        
+      if (error) throw error;
+      setAlunosInTurma(data || []);
+      
+      // Auto open print modal
+      setPrintProfessorName(turma.instrutor || '');
+      setPrintClassName(turma.nome || '');
+      
+      let defaultMonthYear = '';
+      if (turma.data_inicio) {
+        const parts = turma.data_inicio.split('-');
+        if (parts.length >= 2) {
+          defaultMonthYear = `${parts[1]}/${parts[0]}`;
+        }
+      }
+      if (!defaultMonthYear) {
+        defaultMonthYear = `${String(new Date().getMonth() + 1).padStart(2, '0')}/${new Date().getFullYear()}`;
+      }
+      
+      setPrintPeriod(defaultMonthYear);
+      setIsPrintAttendanceOpen(true);
+    } catch (err: any) {
+      console.error('Error fetching students for print:', err.message);
+    } finally {
+      setLoadingAlunos(false);
+    }
+  };
+
+  const handlePrintQRCode = (studentName: string, accessCode: string, turmaNome: string) => {
+    const w = window.open('', '_blank');
+    if (w) {
+      const hStart = '<' + 'html' + '>';
+      const hEnd = '</' + 'html' + '>';
+      const hdStart = '<' + 'head' + '>';
+      const hdEnd = '</' + 'head' + '>';
+      const bdStart = '<' + 'body onload="window.print()"' + '>';
+      const bdEnd = '</' + 'body' + '>';
+
+      w.document.write(`
+        ${hStart}
+          ${hdStart}
+            <title>QR Code de Acesso - ${studentName}</title>
+            <style>
+              body { font-family: sans-serif; padding: 40px; color: #334155; text-align: center; background: #f8fafc; }
+              .card { border: 2.5px dashed #1e3a8a; padding: 30px; border-radius: 16px; max-width: 380px; margin: 40px auto; text-align: center; background: white; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+              h2 { margin: 0 0 5px 0; color: #1e3a8a; font-size: 22px; }
+              p { line-height: 1.5; margin: 6px 0; font-size: 14px; color: #475569; }
+              .qr-container { margin: 20px 0; }
+              .code { font-family: monospace; font-size: 20px; font-weight: bold; background: #f1f5f9; padding: 8px 16px; display: inline-block; border-radius: 6px; border: 1px solid #cbd5e1; color: #1d4ed8; letter-spacing: 1px; }
+              .footer { font-size: 11px; color: #64748b; margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 15px; }
+              @media print {
+                body { background: white; padding: 0; }
+                .card { margin: 0 auto; box-shadow: none; border-color: #334155; }
+              }
+            </style>
+          ${hdEnd}
+          ${bdStart}
+            <div class="card">
+              <h2>CARTEIRINHA ESCOLAR</h2>
+              <p style="text-transform: uppercase; font-size: 10px; font-weight: bold; letter-spacing: 1px; color: #475569; margin-bottom: 20px;">Área do Aluno • Login por QR Code</p>
+              <p><strong>Aluno:</strong> ${studentName}</p>
+              <p><strong>Turma:</strong> ${turmaNome}</p>
+              <div class="qr-container">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`${window.location.origin}/login?code=${accessCode}`)}" alt="QR Code" style="width: 140px; height: 140px; border: 1px solid #e2e8f0; padding: 6px; border-radius: 8px; background: white;" />
+              </div>
+              <div class="code">${accessCode}</div>
+              <p style="font-size: 11px; color: #64748b; margin-top: 15px;">Aponte o leitor de QR Code para esta imagem para entrar.</p>
+              <div class="footer">Escola Digital © ${new Date().getFullYear()}</div>
+            </div>
+          ${bdEnd}
+        ${hEnd}
+      `);
+      w.document.close();
+    }
+  };
+
+  interface PrintDay {
+    dayNum: number;
+    month: number;
+    year: number;
+    isCurrentMonth: boolean;
+  }
+
+  const getDaysInMonth = () => {
+    if (!printPeriod) return 31;
+    const parts = printPeriod.split('/');
+    if (parts.length < 2) return 31;
+    const month = parseInt(parts[0], 10) - 1; // 0-based month
+    const year = parseInt(parts[1], 10);
+    if (isNaN(month) || isNaN(year)) return 31;
+    return new Date(year, month + 1, 0).getDate();
+  };
+
+  const getWeeksOfMonth = (month: number, year: number): { days: PrintDay[] }[] => {
+    const firstDayOfMonth = new Date(year, month, 1);
+    const dayOfWeek = firstDayOfMonth.getDay(); // 0 = Sunday, 1 = Monday, ...
+    const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    const firstMonday = new Date(year, month, 1 + diff);
+
+    const lastDayOfMonth = new Date(year, month + 1, 0);
+
+    const weeks: { days: PrintDay[] }[] = [];
+    const currentMonday = new Date(firstMonday);
+
+    while (currentMonday <= lastDayOfMonth) {
+      const weekDays: PrintDay[] = [];
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(currentMonday);
+        d.setDate(currentMonday.getDate() + i);
+        weekDays.push({
+          dayNum: d.getDate(),
+          month: d.getMonth(),
+          year: d.getFullYear(),
+          isCurrentMonth: d.getMonth() === month,
+        });
+      }
+      weeks.push({ days: weekDays });
+      currentMonday.setDate(currentMonday.getDate() + 7);
+    }
+    return weeks;
+  };
+
+  const getWeeksList = () => {
+    if (!printPeriod) return [];
+    const parts = printPeriod.split('/');
+    if (parts.length < 2) return [];
+    const month = parseInt(parts[0], 10) - 1; // 0-based month
+    const year = parseInt(parts[1], 10);
+    if (isNaN(month) || isNaN(year)) return [];
+
+    const weeks = getWeeksOfMonth(month, year);
+    return weeks.map((w, idx) => {
+      const firstDay = w.days[0];
+      const lastDay = w.days[w.days.length - 1];
+      const formatDay = (d: number) => String(d).padStart(2, '0');
+      const formatMonth = (m: number) => String(m + 1).padStart(2, '0');
+      return {
+        label: `${language === 'pt' ? 'Semana' : 'Week'} ${idx + 1} (${formatDay(firstDay.dayNum)}/${formatMonth(firstDay.month)} a ${formatDay(lastDay.dayNum)}/${formatMonth(lastDay.month)})`,
+        days: w.days,
+        index: idx
+      };
+    });
+  };
+
+  const getWeekdayName = (dayOfWeek: number) => {
+    const weekdaysPt = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+    const weekdaysEn = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    return language === 'pt' ? weekdaysPt[dayOfWeek] : weekdaysEn[dayOfWeek];
+  };
+
+  const getDayStatus = (dayNum: number, targetMonth?: number, targetYear?: number, studentId?: string) => {
+    if (!printPeriod) return { label: '', bgClass: '', isValid: true };
+    const parts = printPeriod.split('/');
+    if (parts.length < 2) return { label: '', bgClass: '', isValid: true };
+    const defaultMonth = parseInt(parts[0], 10) - 1; // 0-based month
+    const defaultYear = parseInt(parts[1], 10);
+    
+    const month = targetMonth !== undefined ? targetMonth : defaultMonth;
+    const year = targetYear !== undefined ? targetYear : defaultYear;
+    
+    if (isNaN(month) || isNaN(year)) return { label: '', bgClass: '', isValid: true };
+
+    const maxDays = new Date(year, month + 1, 0).getDate();
+    if (dayNum > maxDays || dayNum < 1) {
+      return { label: '-', bgClass: 'bg-neutral-100 text-neutral-400 font-bold', isValid: false };
+    }
+
+    const date = new Date(year, month, dayNum);
+    const dayOfWeek = date.getDay(); // 0 = Sunday, 6 = Saturday
+    const isSunday = dayOfWeek === 0;
+    const isSaturday = dayOfWeek === 6;
+
+    // São Tomé and Príncipe national holidays
+    const holidays = [
+      { m: 0, d: 1, name: 'Ano Novo' },
+      { m: 1, d: 3, name: 'Dia dos Mártires' },
+      { m: 4, d: 1, name: 'Dia do Trabalhador' },
+      { m: 5, d: 1, name: 'Dia da Criança' },
+      { m: 6, d: 12, name: 'Dia da Independência' },
+      { m: 8, d: 6, name: 'Dia das Forças Armadas' },
+      { m: 8, d: 30, name: 'Reforma Agrária / Nacionalizações' },
+      { m: 11, d: 21, name: 'Dia de São Tomé' },
+      { m: 11, d: 25, name: 'Natal' }
+    ];
+
+    const isHoliday = holidays.some(h => h.m === month && h.d === dayNum);
+
+    // If studentId is specified, check if there's an attendance record in printFrequencia
+    if (studentId) {
+      const dayStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+      const record = printFrequencia.find(r => r.aluno_id === studentId && r.data === dayStr);
+      if (record) {
+        const statusVal = record.observacao || (record.presente ? 'P' : 'F');
+        let bgClass = '';
+        if (statusVal === 'P') bgClass = 'bg-emerald-50 text-emerald-700 print:text-emerald-800 print:bg-emerald-50/20';
+        else if (statusVal === 'F') bgClass = 'bg-rose-50 text-rose-700 print:text-rose-800 print:bg-rose-50/20';
+        else if (statusVal === 'FJ') bgClass = 'bg-amber-50 text-amber-700 print:text-amber-800 print:bg-amber-50/20';
+        else if (statusVal === 'A') bgClass = 'bg-orange-50 text-orange-700 print:text-orange-800 print:bg-orange-50/20';
+        else if (statusVal === 'D') bgClass = 'bg-sky-50 text-sky-700 print:text-sky-800 print:bg-sky-50/20';
+        
+        return { label: statusVal, bgClass: `${bgClass} font-black`, isValid: true };
+      }
+    }
+
+    if (isHoliday) {
+      return { label: 'FE', bgClass: 'bg-red-50 text-red-700 font-black', isValid: true };
+    }
+    if (isSaturday) {
+      return { label: 'S', bgClass: 'bg-neutral-100 text-neutral-500 font-bold', isValid: true };
+    }
+    if (isSunday) {
+      return { label: 'D', bgClass: 'bg-neutral-100 text-neutral-500 font-bold', isValid: true };
+    }
+
+    return { label: '', bgClass: '', isValid: true };
+  };
+
+  const getMonthHolidays = () => {
+    if (!printPeriod) return [];
+    const parts = printPeriod.split('/');
+    if (parts.length < 2) return [];
+    const month = parseInt(parts[0], 10) - 1; // 0-based month
+    const year = parseInt(parts[1], 10);
+    if (isNaN(month) || isNaN(year)) return [];
+
+    const holidays = [
+      { 
+        m: 0, 
+        d: 1, 
+        name: 'Ano Novo', 
+        meaning: 'Celebração universal do início do ano novo civil.' 
+      },
+      { 
+        m: 1, 
+        d: 3, 
+        name: 'Dia dos Mártires', 
+        meaning: 'Homenagem aos mártires do Massacre de Batepá (1953), símbolo histórico de resistência nacional contra a opressão colonial.' 
+      },
+      { 
+        m: 4, 
+        d: 1, 
+        name: 'Dia do Trabalhador', 
+        meaning: 'Celebração internacional da classe trabalhadora, seus direitos e conquistas sociais laborais.' 
+      },
+      { 
+        m: 5, 
+        d: 1, 
+        name: 'Dia da Criança', 
+        meaning: 'Data comemorativa visando à sensibilização pública para a proteção contínua dos direitos básicos das crianças santomenses.' 
+      },
+      { 
+        m: 6, 
+        d: 12, 
+        name: 'Dia da Independência', 
+        meaning: 'Aniversário da Proclamação da Independência Nacional de São Tomé e Príncipe em 12 de julho de 1975.' 
+      },
+      { 
+        m: 8, 
+        d: 6, 
+        name: 'Dia das Forças Armadas', 
+        meaning: 'Reconhecimento oficial e de agradecimento às Forças Armadas de São Tomé e Príncipe (FASTP).' 
+      },
+      { 
+        m: 8, 
+        d: 30, 
+        name: 'Reforma Agrária / Nacionalizações', 
+        meaning: 'Celebração da nacionalização histórica das grandes plantações agrícolas (roças) pós-independência em 1975.' 
+      },
+      { 
+        m: 11, 
+        d: 21, 
+        name: 'Dia de São Tomé', 
+        meaning: 'Dia em honra do padroeiro nacional do país e do descobrimento histórico da ilha de São Tomé no ano de 1470.' 
+      },
+      { 
+        m: 11, 
+        d: 25, 
+        name: 'Natal', 
+        meaning: 'Celebração cristã solene do nascimento de Jesus Cristo, também festejada como o Dia da Família.' 
+      }
+    ];
+
+    return holidays
+      .filter(h => h.m === month)
+      .map(h => ({
+        day: h.d,
+        name: h.name,
+        meaning: h.meaning
+      }));
+  };
+
+  const getHolidaysForDays = (days: { dayNum: number; month: number; year: number }[]) => {
+    const holidaysMeaning = [
+      { m: 0, d: 1, name: 'Ano Novo', meaning: 'Celebração universal do início do ano novo civil.' },
+      { m: 1, d: 3, name: 'Dia dos Mártires', meaning: 'Homenagem aos mártires do Massacre de Batepá (1953), símbolo histórico de resistência nacional contra a opressão colonial.' },
+      { m: 4, d: 1, name: 'Dia do Trabalhador', meaning: 'Celebração internacional da classe trabalhadora, seus direitos e conquistas sociais laborais.' },
+      { m: 5, d: 1, name: 'Dia da Criança', meaning: 'Data comemorativa visando à sensibilização pública para a proteção contínua dos direitos básicos das crianças santomenses.' },
+      { m: 6, d: 12, name: 'Dia da Independência', meaning: 'Aniversário da Proclamação da Independência Nacional de São Tomé e Príncipe em 12 de julho de 1975.' },
+      { m: 8, d: 6, name: 'Dia das Forças Armadas', meaning: 'Reconhecimento oficial e de agradecimento às Forças Armadas de São Tomé e Príncipe (FASTP).' },
+      { m: 8, d: 30, name: 'Reforma Agrária / Nacionalizações', meaning: 'Celebração da nacionalização histórica das grandes plantações agrícolas (roças) pós-independência em 1975.' },
+      { m: 11, d: 21, name: 'Dia de São Tomé', meaning: 'Dia em honra do padroeiro nacional do país e do descobrimento histórico da ilha de São Tomé no ano de 1470.' },
+      { m: 11, d: 25, name: 'Natal', meaning: 'Celebração cristã solene do nascimento de Jesus Cristo, também festejada como o Dia da Família.' }
+    ];
+
+    const result: { day: number; name: string; meaning: string; month: number }[] = [];
+    days.forEach((day) => {
+      const h = holidaysMeaning.find((hm) => hm.m === day.month && hm.d === day.dayNum);
+      if (h) {
+        if (!result.some(r => r.day === day.dayNum && r.month === day.month)) {
+          result.push({
+            day: day.dayNum,
+            name: h.name,
+            meaning: h.meaning,
+            month: day.month
+          });
+        }
+      }
+    });
+    return result;
+  };
+  
+  const activeCategory = (categoryParam && ['all', 'expedito', 'especial', 'carreira', 'ead', 'exterior'].includes(categoryParam)) 
+    ? (categoryParam as 'all' | 'expedito' | 'especial' | 'carreira' | 'ead' | 'exterior') 
+    : 'all';
+
+  const setActiveCategory = (cat: string) => {
+    const params = new URLSearchParams(searchParams ? searchParams.toString() : '');
+    params.set('cat', cat);
+    router.push(`${pathname}?${params.toString()}`);
+    setCurrentPage(1);
+  };
+
+  const searchParamsStr = searchParams ? searchParams.toString() : '';
+  const [prevSearchParams, setPrevSearchParams] = useState(searchParamsStr);
+  if (searchParamsStr !== prevSearchParams) {
+    setPrevSearchParams(searchParamsStr);
+    setCurrentPage(1);
+  }
+
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
+
+  const refreshData = () => {
+    setRefreshing(true);
+    revalidateTurmas().finally(() => {
+      setRefreshing(false);
+    });
+  };
+
+  const handleOpenModal = (turma: any = null) => {
+    if (turma) {
+      if (!isAdmin && !canEditTurma(turma)) {
+        toast.error(language === 'pt' ? 'Você não tem permissão para editar esta turma.' : 'You do not have permission to edit this class.');
+        return;
+      }
+    } else {
+      if (!isAdmin) {
+        toast.error(language === 'pt' ? 'Apenas administradores podem criar turmas.' : 'Only administrators can create classes.');
+        return;
+      }
+    }
+    setCurrentTurma(turma || { 
+      nome: '', 
+      curso_id: '', 
+      categoria: activeCategory === 'all' ? 'expedito' : (activeCategory === 'exterior' ? 'expedito' : activeCategory),
+      ano: new Date().getFullYear(), 
+      periodo: 'manhã', 
+      capacidade_max: 40, 
+      instrutor: '', 
+      status: 'ativa',
+      data_inicio: '',
+      data_fim: '',
+      data_postergacao: '',
+      internacional: activeCategory === 'exterior',
+      localizacao: '',
+      liberar_formularios: false
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleViewStudents = async (turma: any) => {
+    setViewingTurma(turma);
+    setIsStudentsModalOpen(true);
+    setLoadingAlunos(true);
+    
+    try {
+      const { data, error } = await supabase
+        .from('alunos')
+        .select('*')
+        .eq('turma_id', turma.id)
+        .is('deleted_at', null)
+        .order('nome');
+        
+      if (error) throw error;
+      setAlunosInTurma(data || []);
+    } catch (err: any) {
+      console.error('Error fetching students:', err.message);
+    } finally {
+      setLoadingAlunos(false);
+    }
+  };
+
+  useEffect(() => {
+    if (loading || !turmas || turmas.length === 0) return;
+
+    const action = searchParams ? searchParams.get('action') : null;
+    const turmaId = searchParams ? searchParams.get('turmaId') : null;
+    const studentId = searchParams ? searchParams.get('studentId') : null;
+
+    if (!action) return;
+
+    const clearParams = () => {
+      const newParams = new URLSearchParams(searchParams ? searchParams.toString() : '');
+      newParams.delete('action');
+      newParams.delete('turmaId');
+      newParams.delete('studentId');
+      router.replace(`${pathname}?${newParams.toString()}`);
+    };
+
+    if (action === 'edit-class' && turmaId) {
+      const targetTurma = turmas.find((t: any) => t.id === turmaId);
+      if (targetTurma) {
+        setTimeout(() => {
+          handleOpenModal(targetTurma);
+        }, 0);
+      }
+      clearParams();
+    } else if (action === 'edit-student' && studentId && turmaId) {
+      const targetTurma = turmas.find((t: any) => t.id === turmaId);
+      if (targetTurma) {
+        setTimeout(() => {
+          setViewingTurma(targetTurma);
+          handleViewStudents(targetTurma);
+          
+          supabase
+            .from('alunos')
+            .select('*')
+            .eq('id', studentId)
+            .maybeSingle()
+            .then(({ data, error }: { data: any; error: any }) => {
+              if (!error && data) {
+                setStudentAccess(null);
+                setCurrentAluno(data);
+                setIsStudentFormOpen(true);
+                
+                if (isAdmin) {
+                  supabase
+                    .from('student_access_codes')
+                    .select('*')
+                    .eq('student_id', data.id)
+                    .maybeSingle()
+                    .then(({ data: accessData, error: accessError }: { data: any; error: any }) => {
+                      if (!accessError && accessData) {
+                        setStudentAccess(accessData);
+                      }
+                    });
+                }
+              }
+            });
+        }, 0);
+      }
+      clearParams();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, turmas, searchParams, pathname, router, isAdmin]);
+
+  const handleOpenStudentModal = (aluno: any = null) => {
+    if (!canEditViewingTurma) return;
+    setStudentAccess(null);
+    const mockOrRealAluno = aluno || { 
+      nome: '', 
+      email: '', 
+      matricula: '', 
+      turma_id: viewingTurma?.id || '', 
+      status: 'ativo',
+      genero: 'masculino',
+      tipo_aluno: 'militar',
+      nif: '',
+      rg: '',
+      om: '',
+      posto_graduacao: '',
+      ano_admissao: new Date().getFullYear(),
+      telefone: '',
+      whatsapp: '',
+      foto_url: '',
+      data_inicio_curso: '',
+      data_fim_curso: '',
+      data_nascimento: '',
+      funcao: '',
+      observacoes: ''
+    };
+    setCurrentAluno(mockOrRealAluno);
+    setIsStudentFormOpen(true);
+
+    if (aluno && aluno.id && isAdmin) {
+      supabase
+        .from('student_access_codes')
+        .select('*')
+        .eq('student_id', aluno.id)
+        .maybeSingle()
+        .then(({ data, error }: { data: any, error: any }) => {
+          if (!error && data) {
+            setStudentAccess(data);
+          }
+        });
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setSavingStudent(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 11)}.${fileExt}`;
+      const filePath = `alunos/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('escola')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('escola')
+        .getPublicUrl(filePath);
+
+      setCurrentAluno({ ...currentAluno, foto_url: publicUrl });
+      toast.success(language === 'pt' ? 'Foto carregada!' : 'Photo uploaded!');
+    } catch (err: any) {
+      toast.error(t.common.uploadError + ': ' + (err.message || ''));
+    } finally {
+      setSavingStudent(false);
+    }
+  };
+
+  const handleSaveStudent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!canEditViewingTurma) return;
+    setSavingStudent(true);
+
+    try {
+      if (!currentAluno.nome || currentAluno.nome.trim().length < 2) {
+        throw new Error(language === 'pt' ? 'Nome é obrigatório (mínimo 3 caracteres)' : 'Name is required (min 3 characters)');
+      }
+
+      let matricula = currentAluno.matricula;
+      if (!matricula || matricula.length < 2) {
+        matricula = `MAT${new Date().getFullYear()}${Math.floor(100000 + Math.random() * 899999)}`;
+      }
+
+      const dataToSave: any = {
+        nome: currentAluno.nome,
+        matricula: matricula,
+        turma_id: viewingTurma?.id,
+      };
+
+      dataToSave.email = (currentAluno.email && currentAluno.email.includes('@')) ? currentAluno.email : null;
+      if (currentAluno.tipo_aluno) {
+        dataToSave.tipo_aluno = currentAluno.tipo_aluno;
+      } else {
+        dataToSave.tipo_aluno = 'militar';
+      }
+      if (currentAluno.posto_graduacao) dataToSave.posto_graduacao = currentAluno.posto_graduacao;
+      if (currentAluno.rg) dataToSave.rg = currentAluno.rg;
+      if (currentAluno.titulo_eleitor) dataToSave.titulo_eleitor = currentAluno.titulo_eleitor;
+      if (currentAluno.nome_pai) dataToSave.nome_pai = currentAluno.nome_pai;
+      if (currentAluno.nome_mae) dataToSave.nome_mae = currentAluno.nome_mae;
+      if (currentAluno.om) dataToSave.om = currentAluno.om;
+      if (currentAluno.genero) dataToSave.genero = currentAluno.genero;
+      if (currentAluno.telefone) dataToSave.telefone = currentAluno.telefone;
+      if (currentAluno.whatsapp) dataToSave.whatsapp = currentAluno.whatsapp;
+      if (currentAluno.foto_url) dataToSave.foto_url = currentAluno.foto_url;
+      
+      if (currentAluno.data_nascimento !== undefined) {
+        dataToSave.data_nascimento = currentAluno.data_nascimento ? currentAluno.data_nascimento : null;
+      }
+      if (currentAluno.funcao !== undefined) {
+        dataToSave.funcao = currentAluno.funcao ? currentAluno.funcao : null;
+      }
+      if (currentAluno.observacoes !== undefined) {
+        dataToSave.observacoes = currentAluno.observacoes ? currentAluno.observacoes : null;
+      }
+      
+      if (isCiabaOrCiaga) {
+        if (currentAluno.data_inicio_curso !== undefined) {
+          dataToSave.data_inicio_curso = currentAluno.data_inicio_curso ? currentAluno.data_inicio_curso : null;
+        }
+        if (currentAluno.data_fim_curso !== undefined) {
+          dataToSave.data_fim_curso = currentAluno.data_fim_curso ? currentAluno.data_fim_curso : null;
+        }
+      } else {
+        dataToSave.data_inicio_curso = null;
+        dataToSave.data_fim_curso = null;
+      }
+      
+      const parsedAno = currentAluno.ano_admissao ? parseInt(currentAluno.ano_admissao.toString()) : NaN;
+      if (!isNaN(parsedAno)) dataToSave.ano_admissao = parsedAno;
+
+      let saveError;
+      if (currentAluno.id) {
+        const { error } = await supabase
+          .from('alunos')
+          .update(dataToSave)
+          .eq('id', currentAluno.id);
+        saveError = error;
+      } else {
+        const { error } = await supabase
+          .from('alunos')
+          .insert([dataToSave]);
+        saveError = error;
+      }
+
+      if (saveError) throw saveError;
+
+      // Refresh list
+      const { data } = await supabase
+        .from('alunos')
+        .select('*')
+        .eq('turma_id', viewingTurma?.id)
+        .is('deleted_at', null)
+        .order('nome');
+      
+      if (data) setAlunosInTurma(data);
+      setIsStudentFormOpen(false);
+      refreshData(); // Refresh class count
+      toast.success(language === 'pt' ? 'Aluno salvo com sucesso!' : 'Student saved successfully!');
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setSavingStudent(false);
+    }
+  };
+
+  const handleDeleteStudent = async (id: string) => {
+    if (!canEditViewingTurma) return;
+    setConfirmConfig({
+      isOpen: true,
+      title: t.common.delete,
+      message: t.common.delete + '?',
+      onConfirm: async () => {
+        setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+        setDeletingStudent(id);
+        
+        try {
+          const { error } = await supabase
+            .from('alunos')
+            .delete()
+            .eq('id', id);
+            
+          if (error) throw error;
+          
+          setAlunosInTurma(alunosInTurma.filter(a => a.id !== id));
+          refreshData(); // Refresh class count
+          toast.success(language === 'pt' ? 'Aluno removido!' : 'Student removed!');
+        } catch (err: any) {
+          toast.error(err.message);
+        } finally {
+          setDeletingStudent(null);
+        }
+      }
+    });
+  };
+
+  const handleDeleteAllStudents = async () => {
+    if (!viewingTurma || alunosInTurma.length === 0 || !canEditViewingTurma) return;
+    
+    setConfirmConfig({
+      isOpen: true,
+      title: t.common.deleteAll,
+      message: t.common.deleteAllConfirm,
+      onConfirm: async () => {
+        setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+        setDeletingAll(true);
+        try {
+          const { error } = await supabase
+            .from('alunos')
+            .delete()
+            .eq('turma_id', viewingTurma.id);
+            
+          if (error) throw error;
+          
+          setAlunosInTurma([]);
+          refreshData();
+          toast.success(language === 'pt' ? 'Todos os alunos foram removidos!' : 'All students were removed!');
+        } catch (err: any) {
+          toast.error(err.message);
+        } finally {
+          setDeletingAll(false);
+        }
+      }
+    });
+  };
+
+  const handleBulkSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!bulkData.trim() || !viewingTurma || !canEditViewingTurma) return;
+    setSavingStudent(true);
+
+    try {
+      const rawLines = bulkData.split(/\r?\n/).filter(line => line.trim());
+      if (rawLines.length === 0) throw new Error(t.common.parseError);
+
+      const firstLine = rawLines[0];
+      let separator = ',';
+      if (firstLine.includes('\t')) separator = '\t';
+      else if (firstLine.includes(';')) separator = ';';
+
+      const dataLines = skipHeader ? rawLines.slice(1) : rawLines;
+      
+      const studentsToInsert = dataLines.map((line, index) => {
+        const lineTrimmed = line.trim();
+        if (!lineTrimmed) return null;
+
+        let nome, email, matricula, nif, rg, om, posto_graduacao, ano_admissao, telefone, whatsapp, data_nascimento;
+        
+        if (!line.includes(separator)) {
+          nome = lineTrimmed;
+        } else {
+          const parts = line.split(separator).map(s => s.trim());
+          [nome, email, matricula, nif, rg, om, posto_graduacao, ano_admissao, telefone, whatsapp, data_nascimento] = parts;
+        }
+        
+        const cleanNome = (nome || '').trim().replace(/['"]/g, '');
+        if (!cleanNome) return null;
+
+        const fallbackMatricula = `MAT${new Date().getFullYear()}${Math.floor(100000 + Math.random() * 899999)}`;
+
+        const studentData: any = {
+          nome: cleanNome,
+          matricula: (matricula && matricula.length > 2) ? matricula.replace(/['"]/g, '') : fallbackMatricula,
+          turma_id: viewingTurma.id,
+          status: 'ativo'
+        };
+
+        if (email && email.includes('@')) studentData.email = email.replace(/['"]/g, '');
+        if (rg) studentData.rg = rg;
+        if (om) studentData.om = om;
+        if (posto_graduacao) studentData.posto_graduacao = posto_graduacao;
+        if (telefone) studentData.telefone = telefone;
+        if (whatsapp) studentData.whatsapp = whatsapp;
+        if (data_nascimento && data_nascimento.length >= 8) studentData.data_nascimento = data_nascimento;
+
+        const parsedAno = parseInt(ano_admissao || '');
+        if (!isNaN(parsedAno)) studentData.ano_admissao = parsedAno;
+
+        return studentData;
+      }).filter(Boolean) as any[];
+
+      if (studentsToInsert.length === 0) throw new Error(t.common.parseError);
+
+      const { data, error } = await supabase
+        .from('alunos')
+        .insert(studentsToInsert)
+        .select();
+      
+      if (error) throw error;
+
+      // Refresh list
+      const { data: newData } = await supabase
+        .from('alunos')
+        .select('*')
+        .eq('turma_id', viewingTurma.id)
+        .is('deleted_at', null)
+        .order('nome');
+      
+      if (newData) setAlunosInTurma(newData);
+      setIsBulkModalOpen(false);
+      setBulkData('');
+      refreshData();
+      
+      const successCount = data?.length || 0;
+      toast.success(t.common.processedSuccess.replace('{count}', successCount.toString()));
+    } catch (err: any) {
+      toast.error(t.common.importErrorMsg + ': ' + (err.message || ''));
+    } finally {
+      setSavingStudent(false);
+    }
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const canSave = currentTurma?.id 
+      ? (isAdmin || canEditTurma(currentTurma)) 
+      : (isAdmin || (profile?.role === 'instrutor' && profile?.grupo_responsavel));
+    if (!canSave) {
+      toast.error(language === 'pt' ? 'Você não tem permissão para salvar esta turma.' : 'You do not have permission to save this class.');
+      return;
+    }
+    setSaving(true);
+
+    try {
+      if (!currentTurma.curso_id) {
+        throw new Error(language === 'pt' ? 'Por favor, selecione um curso.' : 'Please select a course.');
+      }
+
+      const selectedCourse = cursos.find((c: any) => c.id === currentTurma.curso_id);
+      let targetGroup = currentTurma.grupo_responsavel || (selectedCourse ? selectedCourse.grupo_responsavel : null);
+      if (profile?.role === 'instrutor' && profile?.grupo_responsavel) {
+        if (profile.grupo_responsavel !== 'AMBOS') {
+          targetGroup = profile.grupo_responsavel;
+        } else if (!targetGroup || (targetGroup !== 'MAN' && targetGroup !== 'GAT' && targetGroup !== 'AMBOS')) {
+          targetGroup = 'AMBOS';
+        }
+      }
+
+      const payload = {
+        nome: currentTurma.nome || '',
+        curso_id: currentTurma.curso_id,
+        categoria: currentTurma.categoria || 'expedito',
+        ano: currentTurma.ano || new Date().getFullYear(),
+        periodo: currentTurma.periodo || 'manhã',
+        capacidade_max: currentTurma.capacidade_max || 40,
+        instrutor: currentTurma.instrutor || '',
+        status: currentTurma.status || 'ativa',
+        ativa: (currentTurma.status || 'ativa') === 'ativa',
+        data_inicio: currentTurma.internacional ? null : (typeof currentTurma.data_inicio === 'string' ? currentTurma.data_inicio.trim() || null : null),
+        data_fim: currentTurma.internacional ? null : (typeof currentTurma.data_fim === 'string' ? currentTurma.data_fim.trim() || null : null),
+        data_postergacao: currentTurma.internacional ? null : (typeof currentTurma.data_postergacao === 'string' ? currentTurma.data_postergacao.trim() || null : null),
+        internacional: currentTurma.internacional || false,
+        localizacao: currentTurma.localizacao || '',
+        grupo_responsavel: targetGroup,
+        liberar_formularios: !!currentTurma.liberar_formularios
+      };
+
+      if (currentTurma.id) {
+        const { error } = await supabase
+          .from('turmas')
+          .update(payload)
+          .eq('id', currentTurma.id);
+        if (error) throw new Error(error.message + (error.details ? ` (${error.details})` : ''));
+      } else {
+        const { error } = await supabase
+          .from('turmas')
+          .insert([payload]);
+        if (error) throw new Error(error.message + (error.details ? ` (${error.details})` : ''));
+      }
+
+      await refreshData();
+      setIsModalOpen(false);
+      toast.success(language === 'pt' ? 'Turma salva com sucesso!' : 'Class saved successfully!');
+    } catch (err: any) {
+      console.error('Error saving class (full error):', err);
+      // Construct a better error message showing detail, hint or message
+      const errorMsg = err.message || err.details || err.hint || String(err);
+      toast.error(language === 'pt' ? `Erro ao salvar: ${errorMsg}` : `Error saving: ${errorMsg}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    const turmaObj = turmas.find((t: any) => t.id === id);
+    if (!isAdmin && !canEditTurma(turmaObj)) {
+      toast.error(language === 'pt' ? 'Você não tem permissão para remover esta turma.' : 'You do not have permission to remove this class.');
+      return;
+    }
+    setConfirmConfig({
+      isOpen: true,
+      title: t.common.delete,
+      message: t.common.delete + '?',
+      onConfirm: async () => {
+        setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+        setDeleting(id);
+        
+        try {
+          const { error } = await supabase
+            .from('turmas')
+            .update({ deleted_at: new Date().toISOString() })
+            .eq('id', id);
+            
+          if (error) throw error;
+          await refreshData();
+          toast.success(language === 'pt' ? 'Turma removida!' : 'Class removed!');
+        } catch (err: any) {
+          toast.error(err.message);
+        } finally {
+          setDeleting(null);
+        }
+      }
+    });
+  };
+
+  const activeWeeksList = getWeeksList();
+  
+  // Find which week contains today's date
+  const getTodayWeekIndex = (): number => {
+    const today = new Date();
+    const todayDay = today.getDate();
+    const todayMonth = today.getMonth();
+    const todayYear = today.getFullYear();
+
+    const idx = activeWeeksList.findIndex(w => 
+      w.days.some(d => d.dayNum === todayDay && d.month === todayMonth && d.year === todayYear)
+    );
+    return idx !== -1 ? idx : 0;
+  };
+
+  const activeWeekIndex = selectedWeekIndex !== null 
+    ? (selectedWeekIndex >= activeWeeksList.length ? 0 : selectedWeekIndex)
+    : getTodayWeekIndex();
+
+  const activeWeekObj = activeWeeksList[activeWeekIndex];
+  
+  const getDaysOfCurrentMonth = (): PrintDay[] => {
+    if (!printPeriod) return [];
+    const parts = printPeriod.split('/');
+    if (parts.length < 2) return [];
+    const month = parseInt(parts[0], 10) - 1;
+    const year = parseInt(parts[1], 10);
+    if (isNaN(month) || isNaN(year)) return [];
+
+    const daysCount = new Date(year, month + 1, 0).getDate();
+    return Array.from({ length: daysCount }).map((_, i) => ({
+      dayNum: i + 1,
+      month: month,
+      year: year,
+      isCurrentMonth: true
+    }));
+  };
+
+  const daysToRender = printSheetType === 'semanal' 
+    ? (activeWeekObj?.days || []) 
+    : getDaysOfCurrentMonth();
+
+  const q = searchParams ? (searchParams.get('q')?.toLowerCase() || '') : '';
+
+  const filteredTurmas = turmas.filter((t: any) => {
+    if (q) {
+      const nomeMatch = t.nome?.toLowerCase().includes(q);
+      const cursoMatch = t.curso?.nome?.toLowerCase().includes(q);
+      const instrutorMatch = t.instrutor?.toLowerCase().includes(q);
+      if (!nomeMatch && !cursoMatch && !instrutorMatch) {
+        return false;
+      }
+    }
+    if (activeCategory === 'all') {
+      return true;
+    }
+    if (activeCategory === 'exterior') {
+      return t.internacional === true;
+    }
+    return (t.categoria || 'expedito') === activeCategory;
+  });
+
+  const totalTurmas = filteredTurmas.length;
+  const totalPagesTurmas = Math.ceil(totalTurmas / itemsPerPage) || 1;
+  const startIndexTurmas = (currentPage - 1) * itemsPerPage;
+  const endIndexTurmas = Math.min(startIndexTurmas + itemsPerPage, totalTurmas);
+  const paginatedTurmas = filteredTurmas.slice(startIndexTurmas, endIndexTurmas);
+
+  return (
+    <div className="space-y-8 pb-20">
+      {/* Header with Stats Overview potentially here */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <School className="text-blue-600" size={24} />
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">{t.classes.title}</h1>
+          </div>
+          <p className="text-slate-500 text-sm italic font-medium">{t.classes.subtitle}</p>
+        </div>
+        
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+          <div className="grid grid-cols-6 gap-1 bg-white p-1 rounded-xl shadow-sm border border-slate-200 w-full sm:w-[620px]">
+            {(['all', 'expedito', 'especial', 'carreira', 'ead', 'exterior'] as const).map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                className={cn(
+                  "px-1 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer text-center flex items-center justify-center",
+                  activeCategory === cat 
+                    ? "bg-blue-600 text-white shadow-lg shadow-blue-200" 
+                    : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
+                )}
+              >
+                {t.classes[`category${cat.charAt(0).toUpperCase() + cat.slice(1)}` as keyof typeof t.classes]}
+              </button>
+            ))}
+          </div>
+
+          <div className="h-10 w-[1px] bg-slate-200 mx-1 hidden md:block" />
+
+          <button 
+            onClick={refreshData}
+            className="p-3 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+            title={t.common.refresh}
+          >
+            <RefreshCcw size={20} className={refreshing ? "animate-spin" : ""} />
+          </button>
+
+          {!isReadOnly && (
+            <button 
+              onClick={() => handleOpenModal()}
+              className="flex items-center gap-2 bg-slate-900 text-white px-5 py-3 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-200"
+            >
+              <Plus size={18} />
+              {t.classes.add}
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className={cn(
+        "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6",
+        loading && "opacity-50 pointer-events-none"
+      )}>
+        {loading ? (
+          Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="bg-white h-64 rounded-3xl border border-slate-100 animate-pulse flex flex-col p-6 space-y-4">
+              <div className="flex justify-between">
+                <div className="w-12 h-12 bg-slate-100 rounded-2xl" />
+                <div className="w-20 h-6 bg-slate-100 rounded-full" />
+              </div>
+              <div className="space-y-2">
+                <div className="w-3/4 h-6 bg-slate-100 rounded" />
+                <div className="w-1/2 h-4 bg-slate-100 rounded" />
+              </div>
+              <div className="mt-auto h-12 bg-slate-50 rounded-2xl" />
+            </div>
+          ))
+        ) : totalTurmas > 0 ? (
+          paginatedTurmas.map((turma: any, i: number) => {
+            const finalGroup = turma.grupo_responsavel || turma.curso?.grupo_responsavel;
+            const cardStyle = getCardStyleForItem({
+              categoria: turma.categoria,
+              internacional: turma.internacional,
+              grupo_responsavel: turma.grupo_responsavel
+            }, colorSettings);
+
+            return (
+              <motion.div 
+                key={turma.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05, ease: [0.23, 1, 0.32, 1] }}
+                onClick={() => handleViewStudents(turma)}
+                className={cn(
+                  "rounded-3xl border shadow-sm relative overflow-hidden group hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer flex flex-col p-6",
+                  cardStyle.bg,
+                  cardStyle.hoverBg,
+                  cardStyle.border,
+                  cardStyle.hoverBorder,
+                  "shadow-slate-500/5 hover:shadow-slate-500/10"
+                )}
+              >
+                {/* Category Indicator Line */}
+                <div className={cn(
+                  "absolute top-0 left-0 w-full h-1.5",
+                  cardStyle.line
+                )} />
+
+                <div className="flex justify-between items-start mb-6">
+                  <div className={cn(
+                    "w-14 h-14 rounded-2xl flex items-center justify-center transition-colors shadow-inner",
+                    cardStyle.avatarBg
+                  )}>
+                    {turma.internacional ? <Globe size={28} /> :
+                     turma.categoria === 'expedito' ? <LayersIcon size={28} /> :
+                     turma.categoria === 'especial' ? <GraduationCap size={28} /> :
+                     turma.categoria === 'carreira' ? <Library size={28} /> :
+                     turma.categoria === 'ead' ? <Monitor size={28} /> : <Library size={28} />}
+                  </div>
+                  
+                  <div className="flex flex-col items-end gap-2">
+                    <span className={cn(
+                      "text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border",
+                      turma.status === 'concluída' ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
+                      turma.status === 'cancelada' ? "bg-red-50 text-red-600 border-red-100" :
+                      "bg-blue-50 text-blue-600 border-blue-100"
+                    )}>
+                      {turma.status === 'concluída' ? t.classes.completed : 
+                       turma.status === 'cancelada' ? t.classes.cancelled : t.classes.active}
+                    </span>
+                    {turma.internacional && (
+                      <span className={cn(
+                        "flex items-center gap-1.5 text-[8px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider border",
+                        getCardStyleForItem({ internacional: true }, colorSettings).badge
+                      )}>
+                        <MapPin size={10} />
+                        {t.courses.international}
+                      </span>
+                    )}
+                    {finalGroup && (
+                      <span className={cn(
+                        "flex items-center gap-1 text-[8px] font-black px-2.5 py-1 rounded-md uppercase tracking-wider border",
+                        cardStyle.badge
+                      )}>
+                        {finalGroup === 'GAT' && <Swords size={9} />}
+                        {finalGroup === 'MAN' && <Anchor size={9} />}
+                        Grupo: {finalGroup}
+                      </span>
+                    )}
+                    {turma.liberar_formularios && (
+                      <span className="flex items-center gap-1.5 text-[8px] font-black px-2.5 py-1 rounded-md uppercase tracking-wider border bg-emerald-50 text-emerald-600 border-emerald-100 shadow-sm">
+                        <FileText size={9} className="text-emerald-500 animate-pulse" />
+                        Formulário Liberado
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+              <div className="flex-1 min-w-0 mb-6">
+                {finalGroup === 'GAT' && (
+                  <div className="flex items-center gap-1.5 mb-2.5 bg-rose-500/10 text-rose-700 border border-rose-500/25 px-2.5 py-1 rounded-xl text-[10px] font-black tracking-wider uppercase w-fit shadow-[0_0_12px_rgba(244,63,94,0.15)] select-none" id={`turma-emblem-gat-${turma.id}`}>
+                    <span className="flex items-center justify-center bg-rose-600 text-white rounded-lg p-1">
+                      <Swords size={11} className="text-white" />
+                    </span>
+                    <span className="font-sans">GAT • FUZILEIRO NAVAL 🪖</span>
+                  </div>
+                )}
+                {finalGroup === 'MAN' && (
+                  <div className="flex items-center gap-1.5 mb-2.5 bg-cyan-500/10 text-cyan-800 border border-cyan-500/25 px-2.5 py-1 rounded-xl text-[10px] font-black tracking-wider uppercase w-fit shadow-[0_0_12px_rgba(6,182,212,0.15)] select-none" id={`turma-emblem-man-${turma.id}`}>
+                    <span className="flex items-center justify-center bg-cyan-600 text-white rounded-lg p-1">
+                      <Anchor size={11} className="text-white" />
+                    </span>
+                    <span className="font-sans">MAN ⚓</span>
+                  </div>
+                )}
+                <div className="flex flex-wrap items-center gap-2 mb-1">
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] truncate">{turma.curso?.nome}</p>
+                  {turma.curso?.documento_criacao && (
+                    <span className="px-1.5 py-0.5 bg-blue-50 text-blue-700 text-[8px] font-bold uppercase rounded border border-blue-100 flex-shrink-0">
+                      Doc: {turma.curso.documento_criacao}
+                    </span>
+                  )}
+                </div>
+                <h3 className="text-xl font-black text-slate-800 tracking-tight leading-tight group-hover:text-blue-600 transition-colors">{turma.nome}</h3>
+                
+                <div className="mt-4 grid grid-cols-2 gap-y-3 gap-x-2">
+                  <div className="flex items-center gap-2 text-slate-500">
+                    <Calendar size={14} className="text-slate-300" />
+                    <span className="text-[10px] font-bold uppercase tracking-wider">{turma.ano}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-slate-500">
+                    <Clock size={14} className="text-slate-300" />
+                    <span className="text-[10px] font-bold uppercase tracking-wider capitalize">
+                      {turma.periodo === 'manhã' ? t.common.morning : 
+                       turma.periodo === 'tarde' ? t.common.afternoon : 
+                       turma.periodo === 'noite' ? t.common.night : turma.periodo}
+                    </span>
+                  </div>
+                  {(turma.data_inicio || turma.data_fim) && (
+                    <div className="flex items-center gap-2 text-slate-500 col-span-2">
+                      <Calendar size={14} className="text-blue-500" />
+                      <span className="text-[10px] font-black text-slate-700 uppercase tracking-wider">
+                        {turma.data_inicio ? turma.data_inicio.split('-').reverse().join('/') : '—'} - {turma.data_fim ? turma.data_fim.split('-').reverse().join('/') : '—'}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 text-slate-500 col-span-2">
+                    <Users size={14} className="text-slate-300" />
+                    <span className="text-[10px] font-bold uppercase tracking-wider">{turma.instrutor || "S/ Instrutor"}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2 pt-5 border-t border-slate-50 mt-auto">
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleViewStudents(turma);
+                  }}
+                  className="w-full flex items-center justify-between p-2.5 rounded-xl bg-slate-50 group/btn hover:bg-blue-600 transition-all cursor-pointer"
+                >
+                  <div className="flex items-center gap-2 text-slate-600 group-hover/btn:text-white transition-colors">
+                    <Users size={15} />
+                    <span className="text-[9px] font-black uppercase tracking-widest">{t.classes.manageStudents}</span>
+                  </div>
+                  <ChevronRight size={13} className="text-slate-300 group-hover/btn:text-white transition-colors" />
+                </button>
+
+                {!turma.internacional && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDirectPrintAttendance(turma, 'mensal');
+                      }}
+                      className="flex items-center justify-between p-2.5 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white group/print transition-all cursor-pointer"
+                    >
+                      <div className="flex items-center gap-1.5 text-emerald-700 group-hover/print:text-white transition-colors">
+                        <Printer size={13} />
+                        <span className="text-[8.5px] font-black uppercase tracking-wider">
+                          {language === 'pt' ? 'Folha Mensal' : 'Monthly Sheet'}
+                        </span>
+                      </div>
+                    </button>
+
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDirectPrintAttendance(turma, 'semanal');
+                      }}
+                      className="flex items-center justify-between p-2.5 rounded-xl bg-teal-50 text-teal-700 hover:bg-teal-600 hover:text-white group/print-week transition-all cursor-pointer"
+                    >
+                      <div className="flex items-center gap-1.5 text-teal-700 group-hover/print-week:text-white transition-colors">
+                        <Calendar size={13} />
+                        <span className="text-[8.5px] font-black uppercase tracking-wider">
+                          {language === 'pt' ? 'Folha Semanal' : 'Weekly Sheet'}
+                        </span>
+                      </div>
+                    </button>
+                  </div>
+                )}
+
+                <div className="space-y-1.5 px-1 pt-1">
+                  <div className="flex justify-between items-center text-[8px] font-black uppercase tracking-widest text-slate-400">
+                    <span>{t.classes.capacity}</span>
+                    <span className="text-slate-900">{turma.alunos_matriculados} / {turma.capacidade_max}</span>
+                  </div>
+                  <div className="h-1 bg-slate-50 rounded-full overflow-hidden p-0.5 border border-slate-100 shadow-inner">
+                    <div 
+                      className={cn(
+                        "h-full rounded-full transition-all duration-1000 ease-out",
+                        (turma.alunos_matriculados / (turma.capacidade_max || 1)) > 0.9 ? "bg-red-500" : "bg-blue-500"
+                      )}
+                      style={{ width: `${Math.min(100, (turma.alunos_matriculados / (turma.capacidade_max || 1)) * 100)}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions Bar (Permanently visible) */}
+              {(isAdmin || canEditTurma(turma)) && (
+                <div 
+                  className="absolute bottom-4 right-4 flex items-center gap-1.5 z-10" 
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <button 
+                    onClick={() => handleOpenModal(turma)}
+                    className="p-2 bg-slate-100 hover:bg-blue-600 hover:text-white text-blue-600 rounded-xl border border-slate-200/50 shadow-xs transition-all duration-250 cursor-pointer flex items-center justify-center font-bold"
+                    title={t.common.edit}
+                  >
+                    <Pencil size={13} strokeWidth={2.5} />
+                  </button>
+                  {isAdmin && (
+                    <button 
+                      disabled={deleting === turma.id}
+                      onClick={() => handleDelete(turma.id)}
+                      className="p-2 bg-slate-100 hover:bg-red-600 hover:text-white text-red-600 rounded-xl border border-slate-200/50 shadow-xs transition-all duration-250 cursor-pointer flex items-center justify-center font-bold disabled:opacity-50"
+                      title={t.common.delete}
+                    >
+                      {deleting === turma.id ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} strokeWidth={2.5} />}
+                    </button>
+                  )}
+                </div>
+              )}
+            </motion.div>
+          )})
+        ) : (
+          <div className="col-span-full py-32 flex flex-col items-center justify-center text-center bg-white rounded-[40px] border border-dashed border-slate-200">
+            <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mb-6 text-slate-200">
+              <LayersIcon size={48} strokeWidth={1} />
+            </div>
+            <h3 className="text-2xl font-black text-slate-800 tracking-tight">{t.common.noneFound}</h3>
+            <p className="text-slate-400 text-sm max-w-xs mt-2 font-medium italic">{t.classes.noClassesInCategory}</p>
+            {!isReadOnly && (
+              <button 
+                onClick={() => handleOpenModal()}
+                className="mt-8 flex items-center gap-2 text-blue-600 bg-blue-50 px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-blue-100 transition-all"
+              >
+                <Plus size={18} />
+                {t.classes.add}
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Painel de Paginação de Turmas */}
+      {!loading && totalTurmas > 0 && (
+        <div className="bg-white border border-slate-200 rounded-2xl px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-sans text-slate-500 font-semibold shadow-sm">
+          <div className="flex items-center gap-2">
+            <span>{language === 'pt' ? 'Exibir:' : 'Show:'}</span>
+            <select
+              value={itemsPerPage}
+              onChange={(e) => {
+                const val = Number(e.target.value);
+                setItemsPerPage(val);
+                setCurrentPage(1);
+                if (typeof window !== 'undefined') {
+                  localStorage.setItem('items_per_page_turmas', String(val));
+                }
+              }}
+              className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-700 outline-none focus:ring-1 focus:ring-blue-500 font-bold cursor-pointer"
+            >
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={15}>15</option>
+              <option value={20}>20</option>
+            </select>
+            <span>{language === 'pt' ? 'turmas por página' : 'classes per page'}</span>
+          </div>
+
+          <div className="font-medium text-slate-400 font-mono">
+            {language === 'pt' 
+              ? `Exibindo ${totalTurmas > 0 ? startIndexTurmas + 1 : 0}-${endIndexTurmas} de ${totalTurmas} turmas`
+              : `Showing ${totalTurmas > 0 ? startIndexTurmas + 1 : 0}-${endIndexTurmas} of ${totalTurmas} classes`}
+          </div>
+
+          <div className="flex items-center gap-1.5 font-sans">
+            <button
+              type="button"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              className="p-1 px-2 hover:bg-slate-100 disabled:opacity-45 rounded-lg border border-slate-200 text-slate-500 transition cursor-pointer flex items-center justify-center disabled:cursor-not-allowed font-bold"
+              title={language === 'pt' ? 'Anterior' : 'Previous'}
+            >
+              <ChevronLeft size={14} />
+            </button>
+            
+            {Array.from({ length: totalPagesTurmas }, (_, i) => i + 1).map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setCurrentPage(p)}
+                className={`p-1 px-3 rounded-lg text-xs font-bold transition-colors select-none ${
+                  currentPage === p
+                    ? 'bg-blue-600 border border-blue-600 text-white shadow-sm'
+                    : 'bg-white border border-slate-200 hover:bg-slate-50 text-slate-600'
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+
+            <button
+              type="button"
+              disabled={currentPage === totalPagesTurmas || totalPagesTurmas === 0}
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPagesTurmas))}
+              className="p-1 px-2 hover:bg-slate-100 disabled:opacity-45 rounded-lg border border-slate-200 text-slate-500 transition cursor-pointer flex items-center justify-center disabled:cursor-not-allowed font-bold"
+              title={language === 'pt' ? 'Próximo' : 'Next'}
+            >
+              <ChevronRight size={14} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={currentTurma?.id ? t.common.edit : t.classes.add}
+        className="max-w-2xl"
+      >
+        <form onSubmit={handleSave} className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="md:col-span-2">
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{t.classes.name}</label>
+              <input
+                required
+                type="text"
+                value={currentTurma?.nome || ''}
+                onChange={(e) => setCurrentTurma({ ...currentTurma, nome: e.target.value })}
+                className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-sm font-bold text-slate-800 placeholder:text-slate-300 shadow-sm"
+                placeholder="Ex: Turma Alfa 2024"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{t.classes.category}</label>
+              <select
+                required
+                value={currentTurma?.categoria || 'expedito'}
+                onChange={(e) => setCurrentTurma({ ...currentTurma, categoria: e.target.value })}
+                className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-sm font-bold text-slate-800 appearance-none cursor-pointer shadow-sm"
+              >
+                <option value="expedito">{t.classes.categoryExpedito}</option>
+                <option value="especial">{t.classes.categoryEspecial}</option>
+                <option value="carreira">{t.classes.categoryCarreira}</option>
+                <option value="ead">{t.classes.categoryEad}</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{t.classes.instructor}</label>
+              {(() => {
+                const selectedCourse = cursos.find((c: any) => c.id === currentTurma?.curso_id);
+                const courseGroup = selectedCourse?.grupo_responsavel || currentTurma?.grupo_responsavel;
+
+                const filteredInstructors = allInstructors.filter((inst: any) => {
+                  if (!courseGroup) return true;
+                  if (courseGroup === 'MAN') {
+                    return inst.grupo_responsavel === 'MAN' || inst.grupo_responsavel === 'AMBOS';
+                  }
+                  if (courseGroup === 'GAT') {
+                    return inst.grupo_responsavel === 'GAT' || inst.grupo_responsavel === 'AMBOS';
+                  }
+                  return true;
+                });
+
+                const isCustomInstructor = currentTurma?.instrutor && currentTurma.instrutor !== '' && currentTurma.instrutor !== 'Novo' && !filteredInstructors.some(inst => inst.full_name === currentTurma.instrutor);
+
+                return (
+                  <div className="space-y-2">
+                    <select
+                      value={isCustomInstructor ? 'custom_input' : (currentTurma?.instrutor || '')}
+                      onChange={(e) => {
+                        if (e.target.value === 'custom_input') {
+                          setCurrentTurma({ ...currentTurma, instrutor: 'Novo' });
+                        } else {
+                          setCurrentTurma({ ...currentTurma, instrutor: e.target.value });
+                        }
+                      }}
+                      className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-sm font-bold text-slate-800 appearance-none cursor-pointer shadow-sm"
+                    >
+                      <option value="">{language === 'pt' ? 'Selecione um Instrutor' : 'Select an Instructor'}</option>
+                      {filteredInstructors.map(inst => (
+                        <option key={inst.id} value={inst.full_name}>
+                          {inst.full_name} ({inst.grupo_responsavel || 'Sem Grupo'})
+                        </option>
+                      ))}
+                      <option value="custom_input">{language === 'pt' ? 'Outro (Digitar Nome)' : 'Other (Type Name)'}</option>
+                    </select>
+
+                    {(isCustomInstructor || currentTurma?.instrutor === 'Novo') && (
+                      <input
+                        type="text"
+                        value={currentTurma?.instrutor === 'Novo' ? '' : (currentTurma?.instrutor || '')}
+                        onChange={(e) => setCurrentTurma({ ...currentTurma, instrutor: e.target.value })}
+                        placeholder={language === 'pt' ? 'Ex: Cel Sobrenome' : 'Ex: Col Surname'}
+                        className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-sm font-bold text-slate-800 placeholder:text-slate-300 shadow-sm animate-fadeIn"
+                      />
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{t.nav.courses}</label>
+              <select
+                required
+                value={currentTurma?.curso_id || ''}
+                onChange={(e) => setCurrentTurma({ ...currentTurma, curso_id: e.target.value })}
+                className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-sm font-bold text-slate-800 appearance-none cursor-pointer shadow-sm"
+              >
+                <option value="">{t.courses.selectCourse}</option>
+                {cursos.map((curso: any) => (
+                  <option key={curso.id} value={curso.id}>
+                    {curso.nome} {curso.codigo ? `(${curso.codigo})` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {currentTurma?.curso_id && (
+              <div className="md:col-span-2 bg-slate-50 border border-slate-100 rounded-2xl p-4 shadow-inner">
+                <h4 className="text-xs font-black text-slate-700 uppercase tracking-wider mb-3 flex items-center gap-2">
+                  <Library size={14} className="text-blue-600" />
+                  {language === 'pt' ? 'Quantidade de Disciplinas por Módulo' : 'Number of Disciplines by Module'}
+                </h4>
+                {(() => {
+                  const courseDisciplines = (disciplinas || []).filter((d: any) => d.curso_id === currentTurma.curso_id && !d.deleted_at);
+                  if (courseDisciplines.length === 0) {
+                    return (
+                      <p className="text-[11px] text-slate-400 italic">
+                        {language === 'pt' ? 'Nenhuma disciplina cadastrada para este curso.' : 'No disciplines registered for this course.'}
+                      </p>
+                    );
+                  }
+                  
+                  // Group by modulo_index
+                  const modulesGroup: { [key: number]: any[] } = {};
+                  courseDisciplines.forEach((d: any) => {
+                    const mod = d.modulo_index || 1;
+                    if (!modulesGroup[mod]) {
+                      modulesGroup[mod] = [];
+                    }
+                    modulesGroup[mod].push(d);
+                  });
+
+                  const sortedModules = Object.keys(modulesGroup).map(Number).sort((a, b) => a - b);
+
+                  return (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {sortedModules.map((mod) => (
+                        <div key={mod} className="bg-white border border-slate-100 rounded-xl p-3 text-center shadow-sm">
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">
+                            {language === 'pt' ? `Módulo ${mod}` : `Module ${mod}`}
+                          </span>
+                          <span className="text-lg font-extrabold text-slate-700 block">
+                            {modulesGroup[mod].length}
+                          </span>
+                          <span className="text-[9px] text-slate-400 block font-medium">
+                            {modulesGroup[mod].length === 1 
+                              ? (language === 'pt' ? 'disciplina' : 'discipline') 
+                              : (language === 'pt' ? 'disciplinas' : 'disciplines')}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+
+            <div>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{t.classes.year}</label>
+              <input
+                required
+                type="number"
+                value={currentTurma?.ano || ''}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value);
+                  setCurrentTurma({ ...currentTurma, ano: isNaN(val) ? new Date().getFullYear() : val });
+                }}
+                className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-sm font-bold text-slate-800 shadow-sm"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{t.classes.period}</label>
+              <select
+                required
+                value={currentTurma?.periodo || 'manhã'}
+                onChange={(e) => setCurrentTurma({ ...currentTurma, periodo: e.target.value })}
+                className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-sm font-bold text-slate-800 appearance-none cursor-pointer shadow-sm"
+              >
+                <option value="manhã">{t.common.morning}</option>
+                <option value="tarde">{t.common.afternoon}</option>
+                <option value="noite">{t.common.night}</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{t.classes.capacity}</label>
+              <input
+                required
+                type="number"
+                value={currentTurma?.capacidade_max || ''}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value);
+                  setCurrentTurma({ ...currentTurma, capacidade_max: isNaN(val) ? 40 : val });
+                }}
+                className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-sm font-bold text-slate-800 shadow-sm"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{t.classes.status}</label>
+              <select
+                required
+                value={currentTurma?.status || 'ativa'}
+                onChange={(e) => setCurrentTurma({ ...currentTurma, status: e.target.value })}
+                className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-sm font-bold text-slate-800 appearance-none cursor-pointer shadow-sm"
+              >
+                <option value="ativa">{t.classes.active}</option>
+                <option value="concluída">{t.classes.completed}</option>
+                <option value="cancelada">{t.classes.cancelled}</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">
+                {language === 'pt' ? 'Grupo Responsável' : 'Responsible Group'}
+              </label>
+              <input
+                type="text"
+                list="grupos-responsavel-turmas"
+                placeholder={language === 'pt' ? 'Digite ou selecione o grupo (Ex: MAN, GAT, AMBOS)' : 'Type or select group (E.g.: MAN, GAT, AMBOS)'}
+                value={currentTurma?.grupo_responsavel || ''}
+                onChange={(e) => setCurrentTurma({ ...currentTurma, grupo_responsavel: e.target.value || null })}
+                className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-sm font-bold text-slate-800 shadow-sm"
+              />
+              <datalist id="grupos-responsavel-turmas">
+                <option value="MAN" />
+                <option value="GAT" />
+                <option value="AMBOS" />
+              </datalist>
+            </div>
+
+            {!currentTurma?.internacional && (
+              <>
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{t.classes.startDate}</label>
+                  <input
+                    type="date"
+                    value={currentTurma?.data_inicio || ''}
+                    onChange={(e) => setCurrentTurma({ ...currentTurma, data_inicio: e.target.value })}
+                    className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-sm font-bold text-slate-800 shadow-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{t.classes.endDate}</label>
+                  <input
+                    type="date"
+                    value={currentTurma?.data_fim || ''}
+                    onChange={(e) => setCurrentTurma({ ...currentTurma, data_fim: e.target.value })}
+                    className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-sm font-bold text-slate-800 shadow-sm"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">
+                    {language === 'pt' ? 'Data de Postergação (Opcional)' : 'Postponement Date (Optional)'}
+                  </label>
+                  <input
+                    type="date"
+                    value={currentTurma?.data_postergacao || ''}
+                    onChange={(e) => setCurrentTurma({ ...currentTurma, data_postergacao: e.target.value || null })}
+                    className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-sm font-bold text-slate-800 shadow-sm"
+                  />
+                  <p className="text-[10px] text-slate-400 mt-1 font-medium leading-normal">
+                    {language === 'pt' 
+                      ? 'Adia o encerramento do curso, o acesso de alunos e o preenchimento do questionário pós-curso.' 
+                      : 'Extends class closure, student access and final survey completion.'}
+                  </p>
+                </div>
+              </>
+            )}
+
+            <div className="md:col-span-2 space-y-4 pt-4 border-t border-slate-100">
+               <label className="flex items-center gap-4 cursor-pointer group p-4 border border-slate-100 rounded-2xl hover:bg-slate-50 transition-all">
+                <input
+                  type="checkbox"
+                  checked={currentTurma?.internacional || false}
+                  onChange={(e) => setCurrentTurma({ ...currentTurma, internacional: e.target.checked })}
+                  className="w-5 h-5 rounded-lg text-blue-600 focus:ring-blue-500 border-slate-300"
+                />
+                <div className="flex flex-col">
+                  <span className="text-xs font-black text-slate-800 uppercase tracking-widest group-hover:text-blue-600 transition-all">{t.courses.international}</span>
+                  <p className="text-[10px] text-slate-400 font-medium">Turma vinculada a localizações externas</p>
+                </div>
+              </label>
+
+               <label className="flex items-center gap-4 cursor-pointer group p-4 border border-slate-100 rounded-2xl hover:bg-slate-50 transition-all">
+                <input
+                  type="checkbox"
+                  checked={currentTurma?.liberar_formularios || false}
+                  onChange={(e) => setCurrentTurma({ ...currentTurma, liberar_formularios: e.target.checked })}
+                  className="w-5 h-5 rounded-lg text-blue-600 focus:ring-blue-500 border-slate-300"
+                />
+                <div className="flex flex-col">
+                  <span className="text-xs font-black text-slate-800 uppercase tracking-widest group-hover:text-blue-600 transition-all">
+                    {language === 'pt' ? 'Liberar Formulário de Avaliação pós-escolar' : 'Release Post-School Evaluation Form'}
+                  </span>
+                  <p className="text-[10px] text-slate-400 font-medium">
+                    {language === 'pt' 
+                      ? 'Habilita o preenchimento do formulário de avaliação pós-escolar pelos alunos desta turma' 
+                      : 'Enables filling out the post-school evaluation form for students of this class'}
+                  </p>
+                </div>
+              </label>
+
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{t.courses.location}</label>
+                <input
+                  type="text"
+                  value={currentTurma?.localizacao || ''}
+                  onChange={(e) => setCurrentTurma({ ...currentTurma, localizacao: e.target.value })}
+                  className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-sm font-bold text-slate-800 placeholder:text-slate-300 shadow-sm"
+                  placeholder="Ex: Luanda, Angola"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-4 pt-8">
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(false)}
+              className="flex-1 px-5 py-4 border border-slate-200 text-slate-500 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-50 transition-all"
+            >
+              {t.common.cancel}
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex-3 px-5 py-4 bg-blue-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl shadow-blue-100 flex items-center justify-center gap-2 disabled:opacity-70"
+            >
+              {saving ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle2 size={18} />}
+              {t.common.save}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal
+        isOpen={isStudentsModalOpen}
+        onClose={() => setIsStudentsModalOpen(false)}
+        title={`${t.nav.students} - ${viewingTurma?.nome}`}
+      >
+        <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-100">
+          <div>
+            <p className="text-xs text-slate-500 font-medium italic">
+              {alunosInTurma.length} {language === 'pt' ? 'alunos matriculados' : 'students enrolled'}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {!viewingTurma?.internacional && (
+              <button
+                onClick={() => handleOpenPrintAttendance(viewingTurma)}
+                className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-100 px-3 py-1.5 rounded-lg hover:bg-emerald-100 hover:text-emerald-800 transition-all cursor-pointer shadow-sm shadow-emerald-100"
+              >
+                <Printer size={13} strokeWidth={2.5} />
+                {language === 'pt' ? 'Folha de Frequência' : 'Attendance Sheet'}
+              </button>
+            )}
+            {canEditViewingTurma && (
+              <>
+                <button
+                  onClick={async () => {
+                    if (!viewingTurma?.id) return;
+                    
+                    toast.promise(
+                      (async () => {
+                        const turmaNome = viewingTurma.nome || 'Turma';
+
+                        const { data, error } = await supabase
+                          .from('student_access_codes')
+                          .select('access_code, student_id')
+                          .in('student_id', alunosInTurma.map(s => s.id));
+                          
+                        if (error) throw error;
+                        if (!data || data.length === 0) {
+                          throw new Error('Nenhum código de acesso gerado para esta turma.');
+                        }
+
+                        const printWindow = window.open('', '_blank');
+                        if (printWindow) {
+                          const cardsHtml = data.map((codeObj: any) => {
+                            const student = alunosInTurma.find((a: any) => a.id === codeObj.student_id);
+                            const studentName = student ? student.nome : 'Estudante';
+                            return `
+                              <div class="card">
+                                <h3>CARTEIRINHA DE ACESSO</h3>
+                                <p class="label">Aluno</p>
+                                <p class="value">${studentName}</p>
+                                <p class="label">Turma</p>
+                                <p class="value">${turmaNome}</p>
+                                <div style="margin: 12px 0;">
+                                  <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(`${window.location.origin}/login?code=${codeObj.access_code}`)}" alt="QR Code" style="width: 110px; height: 110px; border: 1px solid #cbd5e1; padding: 4px; border-radius: 6px; background: white;" />
+                                </div>
+                                <code class="code">${codeObj.access_code}</code>
+                              </div>
+                            `;
+                          }).join('');
+
+                          const hStart = '<' + 'html' + '>';
+                          const hEnd = '</' + 'html' + '>';
+                          const hdStart = '<' + 'head' + '>';
+                          const hdEnd = '</' + 'head' + '>';
+                          const bdStart = '<' + 'body onload="window.print()"' + '>';
+                          const bdEnd = '</' + 'body' + '>';
+
+                          printWindow.document.write(`
+                            ${hStart}
+                              ${hdStart}
+                                <title>Carteirinhas de Acesso QR - ${turmaNome}</title>
+                                <style>
+                                  body { font-family: sans-serif; padding: 20px; background: #f8fafc; color: #1e293b; }
+                                  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
+                                  .card { border: 1px solid #e2e8f0; padding: 20px; border-radius: 12px; background: white; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); page-break-inside: avoid; }
+                                  h3 { margin: 0 0 8px 0; color: #1e3a8a; font-size: 13px; letter-spacing: 0.5px; border-bottom: 2px solid #ef4444; padding-bottom: 6px; text-transform: uppercase; }
+                                  .label { font-size: 9px; text-transform: uppercase; color: #64748b; margin: 6px 0 2px 0; font-weight: bold; }
+                                  .value { font-size: 12px; font-weight: bold; margin: 0; color: #334155; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+                                  .code { font-family: monospace; font-size: 13px; font-weight: bold; background: #f1f5f9; padding: 3px 8px; display: inline-block; border-radius: 4px; border: 1px solid #cbd5e1; margin-top: 5px; color: #1d4ed8; }
+                                  @media print {
+                                    body { background: white; padding: 0; }
+                                    .grid { gap: 15px; }
+                                    .card { border: 1.5px dashed #475569; box-shadow: none; }
+                                  }
+                                </style>
+                              ${hdEnd}
+                              ${bdStart}
+                                <div style="margin-bottom: 20px; border-bottom: 1px solid #cbd5e1; padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+                                  <div>
+                                    <h2 style="margin: 0; font-size: 18px; color: #1e3a8a;">Impressão de Carteirinhas QR da Turma</h2>
+                                    <p style="margin: 4px 0 0 0; font-size: 11px; color: #64748b;">Turma: ${turmaNome} (${data.length} carteirinhas)</p>
+                                  </div>
+                                </div>
+                                <div class="grid">${cardsHtml}</div>
+                              ${bdEnd}
+                            ${hEnd}
+                          `);
+                          printWindow.document.close();
+                        }
+                        return true;
+                      })(),
+                      {
+                        loading: 'Gerando carteirinhas QR para impressão...',
+                        success: 'Carteirinhas geradas!',
+                        error: (err: any) => `${err.message || 'Erro ao gerar carteirinhas.'}`
+                      }
+                    );
+                  }}
+                  className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-all cursor-pointer shadow-sm shadow-blue-50"
+                  title="Imprimir carteirinhas com código QR para todos os alunos desta turma"
+                >
+                  🖨️ Carteirinhas QR (Lote)
+                </button>
+                <button
+                  onClick={() => setIsBulkModalOpen(true)}
+                  className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg hover:bg-slate-200 transition-all"
+                >
+                  <FileText size={14} />
+                  {t.common.bulkAdd}
+                </button>
+                <button
+                  onClick={() => handleOpenStudentModal()}
+                  className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-all"
+                >
+                  <Plus size={14} />
+                  {t.students.add}
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+
+        <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar border-y border-slate-100 py-4">
+          {loadingAlunos ? (
+            <div className="py-12 flex justify-center">
+              <Loader2 className="animate-spin text-blue-600" />
+            </div>
+          ) : alunosInTurma.length > 0 ? (
+            <div className="space-y-2">
+              {alunosInTurma.map((aluno, index) => (
+                <div key={aluno.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100 group">
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono text-xs font-bold text-slate-400 min-w-[1.5rem] text-right shrink-0">
+                      {index + 1}
+                    </span>
+                    <div 
+                      className={cn(
+                        "w-12 h-16 bg-slate-200 rounded-lg overflow-hidden relative border border-slate-200 shrink-0 shadow-sm transition-transform group",
+                        aluno.foto_url ? "hover:scale-110 cursor-pointer" : ""
+                      )}
+                      onClick={() => aluno.foto_url && setExpandedPhoto({ url: aluno.foto_url, name: aluno.nome })}
+                    >
+                      {aluno.foto_url ? (
+                        <>
+                          <Image src={aluno.foto_url} alt={aluno.nome} fill className="object-cover" sizes="48px" referrerPolicy="no-referrer" />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                            <LayersIcon size={14} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
+                        </>
+                      ) : (
+                        <Image 
+                          src={
+                            aluno.tipo_aluno === 'civil'
+                              ? (aluno.genero === 'feminino' ? femaleAvatar : maleAvatar)
+                              : (aluno.genero === 'feminino' ? militaryFemaleAvatar : militaryMaleAvatar)
+                          } 
+                          alt={aluno.nome} 
+                          fill 
+                          className="object-cover opacity-50" 
+                          sizes="48px" 
+                        />
+                      )}
+                    </div>
+                    <div>
+                      <div className="font-bold text-slate-800 text-sm">{aluno.nome}</div>
+                      <div className="text-[10px] text-slate-500 font-medium">{aluno.posto_graduacao || ''} • {aluno.matricula}</div>
+                      
+                      {(aluno.data_nascimento || aluno.funcao) && (
+                        <div className="flex flex-wrap gap-1.5 mt-1">
+                          {aluno.data_nascimento && (
+                            <span className="text-[9px] text-slate-600 bg-slate-100 border border-slate-200 rounded px-1.5 py-0.5 whitespace-nowrap">
+                              🎂 {aluno.data_nascimento.split('-').reverse().join('/')}
+                            </span>
+                          )}
+                          {aluno.funcao && (
+                            <span className="text-[9px] text-slate-600 bg-slate-100 border border-slate-200 rounded px-1.5 py-0.5 whitespace-nowrap italic">
+                              💼 {aluno.funcao}
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {isCiabaOrCiaga && (aluno.data_inicio_curso || aluno.data_fim_curso) && (
+                        <div className="text-[9px] font-black text-blue-700 bg-blue-50 border border-blue-100 rounded px-1.5 py-0.5 mt-1 inline-block">
+                          {language === 'pt' ? 'Curso: ' : 'Course: '}
+                          <span className="font-mono text-blue-900">
+                            {aluno.data_inicio_curso ? aluno.data_inicio_curso.split('-').reverse().join('/') : '—'}
+                          </span>
+                          {' a '}
+                          <span className="font-mono text-blue-900">
+                            {aluno.data_fim_curso ? aluno.data_fim_curso.split('-').reverse().join('/') : '—'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                    <div className="flex items-center gap-2">
+                      {canEditViewingTurma && (
+                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button 
+                            onClick={() => handleOpenStudentModal(aluno)}
+                            className="p-1.5 hover:bg-blue-100 text-blue-600 rounded"
+                          >
+                            <Pencil size={12} />
+                          </button>
+                          <button 
+                            disabled={deletingStudent === aluno.id}
+                            onClick={() => handleDeleteStudent(aluno.id)}
+                            className="p-1.5 hover:bg-red-100 text-red-600 rounded disabled:opacity-50"
+                          >
+                            {deletingStudent === aluno.id ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="py-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
+              <p className="text-sm text-slate-500">{t.classes.noStudents}</p>
+            </div>
+          )}
+        </div>
+        <div className="mt-6 flex gap-3">
+          <button
+            onClick={() => setIsStudentsModalOpen(false)}
+            className="flex-1 px-4 py-2.5 bg-slate-100 text-slate-600 rounded-lg font-bold text-sm hover:bg-slate-200 transition-all flex items-center justify-center gap-2"
+          >
+            {t.common.close}
+          </button>
+          {canEditViewingTurma && alunosInTurma.length > 0 && (
+            <button
+              disabled={deletingAll}
+              onClick={handleDeleteAllStudents}
+              className="flex-1 px-4 py-2.5 bg-red-50 text-red-600 rounded-lg font-bold text-sm hover:bg-red-100 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {deletingAll ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+              {t.common.deleteAll}
+            </button>
+          )}
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={isBulkModalOpen}
+        onClose={() => setIsBulkModalOpen(false)}
+        title={`${t.common.bulkAdd} - ${viewingTurma?.nome}`}
+      >
+        <form onSubmit={handleBulkSave} className="space-y-4">
+          <p className="text-xs text-slate-500 bg-slate-50 p-3 rounded-lg border border-slate-100 italic">
+            {language === 'pt' 
+              ? 'Cole a lista de alunos (um por linha). Se usar colunas, use vírgula, ponto e vírgula ou tab. Ordem: Nome, Email, Matrícula, [Pular NIF], RG, OM, Posto, Ano, Tel, WA, Nasc. O Código de Acesso do Aluno é gerado automaticamente pelo sistema.' 
+              : 'Paste student list (one per line). If using columns, use comma, semicolon or tab. Order: Name, Email, Reg, [Skip NIF], RG, Unit, Rank, Year, Tel, WA, Birth. Student Access Code is automatically generated by the system.'}
+          </p>
+          
+          <textarea
+            value={bulkData}
+            onChange={(e) => setBulkData(e.target.value)}
+            className="w-full h-48 px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 outline-none text-sm font-mono"
+            placeholder="Nome Completo&#10;Nome Completo, email@test.com, MAT001"
+          />
+
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="skipHeader"
+              checked={skipHeader}
+              onChange={(e) => setSkipHeader(e.target.checked)}
+              className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+            />
+            <label htmlFor="skipHeader" className="text-xs font-medium text-slate-600">
+              {t.common.csvPlaceholder.includes('CSV') ? 'Pular primeira linha (cabeçalho)' : 'Skip first line (header)'}
+            </label>
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => setIsBulkModalOpen(false)}
+              className="flex-1 px-4 py-2 border border-slate-200 text-slate-600 rounded font-bold text-sm hover:bg-slate-50"
+            >
+              {t.common.cancel}
+            </button>
+            <button
+              type="submit"
+              disabled={savingStudent}
+              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded font-bold text-sm hover:bg-blue-700 disabled:opacity-70 flex items-center justify-center gap-2"
+            >
+              {savingStudent ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
+              {t.common.import}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal
+        isOpen={isStudentFormOpen}
+        onClose={() => setIsStudentFormOpen(false)}
+        title={currentAluno?.id ? t.common.edit : t.students.add}
+      >
+        <form onSubmit={handleSaveStudent} className="space-y-4 max-h-[75vh] overflow-y-auto px-1">
+          <div className="flex flex-col sm:flex-row gap-4 mb-4 pb-4 border-b border-slate-100">
+            <div className="flex-shrink-0 flex flex-col items-center gap-2">
+              <div className="relative group cursor-pointer w-36 h-48 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 hover:border-blue-400 hover:text-blue-500 transition-all overflow-hidden text-center p-2 shadow-inner">
+                {currentAluno?.foto_url ? (
+                  <Image src={currentAluno.foto_url} alt="3x4" fill className="object-cover" sizes="144px" referrerPolicy="no-referrer" />
+                ) : (
+                  <>
+                    <Image 
+                      src={
+                        currentAluno?.tipo_aluno === 'civil'
+                          ? (currentAluno?.genero === 'feminino' ? femaleAvatar : maleAvatar)
+                          : (currentAluno?.genero === 'feminino' ? militaryFemaleAvatar : militaryMaleAvatar)
+                      } 
+                      alt="Avatar" 
+                      fill 
+                      className="object-cover opacity-20 group-hover:opacity-30 transition-opacity" 
+                      sizes="144px" 
+                      referrerPolicy="no-referrer" 
+                    />
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 group-hover:text-blue-500 transition-colors pointer-events-none">
+                      <Camera size={24} strokeWidth={1.5} />
+                      <span className="text-[8px] font-bold uppercase mt-1">{t.students.photo}</span>
+                    </div>
+                  </>
+                )}
+                <input type="file" accept="image/*" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
+              </div>
+            </div>
+
+            <div className="flex-1 space-y-3">
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                  {t.students.name} <span className="text-red-500">*</span>
+                </label>
+                <input
+                  required
+                  type="text"
+                  value={currentAluno?.nome || ''}
+                  onChange={(e) => setCurrentAluno({ ...currentAluno, nome: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded focus:ring-2 focus:ring-blue-500/20 outline-none text-sm"
+                />
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    {language === 'pt' ? 'Militar / Civil' : 'Military / Civil'}
+                  </label>
+                  <select
+                    value={currentAluno?.tipo_aluno || 'militar'}
+                    onChange={(e) => setCurrentAluno({ ...currentAluno, tipo_aluno: e.target.value })}
+                    className="w-full px-2 py-2 bg-slate-50 border border-slate-200 rounded text-sm outline-none"
+                  >
+                    <option value="militar">{language === 'pt' ? 'Militar' : 'Military'}</option>
+                    <option value="civil">{language === 'pt' ? 'Civil' : 'Civil'}</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    {t.students.registration}
+                  </label>
+                  <input
+                    type="text"
+                    value={currentAluno?.matricula || ''}
+                    onChange={(e) => setCurrentAluno({ ...currentAluno, matricula: e.target.value })}
+                    className="w-full px-2 py-2 bg-slate-50 border border-slate-200 rounded text-sm"
+                    placeholder="Auto"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    {t.students.gender}
+                  </label>
+                  <select
+                    value={currentAluno?.genero || 'masculino'}
+                    onChange={(e) => setCurrentAluno({ ...currentAluno, genero: e.target.value })}
+                    className="w-full px-2 py-2 bg-slate-50 border border-slate-200 rounded text-sm outline-none"
+                  >
+                    <option value="masculino">{t.students.male}</option>
+                    <option value="feminino">{t.students.female}</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                {t.students.nome_pai}
+              </label>
+              <input
+                type="text"
+                value={currentAluno?.nome_pai || ''}
+                onChange={(e) => setCurrentAluno({ ...currentAluno, nome_pai: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                {t.students.nome_mae}
+              </label>
+              <input
+                type="text"
+                value={currentAluno?.nome_mae || ''}
+                onChange={(e) => setCurrentAluno({ ...currentAluno, nome_mae: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded text-sm"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">{t.students.rg}</label>
+              <input
+                type="text"
+                value={currentAluno?.rg || ''}
+                onChange={(e) => setCurrentAluno({ ...currentAluno, rg: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                {t.students.titulo_eleitor}
+              </label>
+              <input
+                type="text"
+                value={currentAluno?.titulo_eleitor || ''}
+                onChange={(e) => setCurrentAluno({ ...currentAluno, titulo_eleitor: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded text-sm"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">{t.students.rank}</label>
+              <input
+                type="text"
+                value={currentAluno?.posto_graduacao || ''}
+                onChange={(e) => setCurrentAluno({ ...currentAluno, posto_graduacao: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">{t.students.om}</label>
+              <input
+                type="text"
+                value={currentAluno?.om || ''}
+                onChange={(e) => setCurrentAluno({ ...currentAluno, om: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded text-sm"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">{t.students.email}</label>
+              <input
+                type="email"
+                value={currentAluno?.email || ''}
+                onChange={(e) => setCurrentAluno({ ...currentAluno, email: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">{t.students.forceEntryYear}</label>
+              <input
+                type="number"
+                value={currentAluno?.ano_admissao || ''}
+                onChange={(e) => setCurrentAluno({ ...currentAluno, ano_admissao: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded text-sm"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">{t.students.phone}</label>
+              <input
+                type="text"
+                value={currentAluno?.telefone || ''}
+                onChange={(e) => setCurrentAluno({ ...currentAluno, telefone: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">{t.students.whatsapp}</label>
+              <input
+                type="text"
+                value={currentAluno?.whatsapp || ''}
+                onChange={(e) => setCurrentAluno({ ...currentAluno, whatsapp: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded text-sm"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                {t.students.data_nascimento}
+              </label>
+              <input
+                type="date"
+                value={currentAluno?.data_nascimento || ''}
+                onChange={(e) => setCurrentAluno({ ...currentAluno, data_nascimento: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded text-sm outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                {t.students.funcao}
+              </label>
+              <input
+                type="text"
+                value={currentAluno?.funcao || ''}
+                onChange={(e) => setCurrentAluno({ ...currentAluno, funcao: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded text-sm outline-none"
+                placeholder={language === 'pt' ? 'Função que exerce' : 'Current function'}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+              {language === 'pt' ? 'Observações Pedagógicas e Disciplinares' : 'Pedagogical & Disciplinary Observations'}
+            </label>
+            <textarea
+              value={currentAluno?.observacoes || ''}
+              onChange={(e) => setCurrentAluno({ ...currentAluno, observacoes: e.target.value })}
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded text-sm outline-none resize-none h-20 shadow-inner"
+              placeholder={language === 'pt' ? 'Insira observações relevantes sobre o rendimento pedagógico, comportamento ou questões disciplinares...' : 'Enter academic performance or behavioral notes...'}
+            />
+          </div>
+
+          {currentAluno?.id && isAdmin && (
+            <div className="p-4 bg-slate-100 rounded-xl border border-slate-200 space-y-3 mt-4">
+              <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-200 pb-2">
+                🔒 Acesso ao Sistema (Área do Aluno)
+              </h4>
+              
+              <div className="grid grid-cols-2 gap-4 text-xs">
+                <div>
+                  <span className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">
+                    Código de Acesso
+                  </span>
+                  {studentAccess?.access_code ? (
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <code className="px-2.5 py-1 bg-blue-50 border border-blue-200 text-blue-700 font-mono font-bold rounded text-sm">
+                        {studentAccess.access_code}
+                      </code>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(studentAccess.access_code);
+                          toast.success('Código copiado!');
+                        }}
+                        className="p-1 px-1.5 hover:bg-slate-200 text-slate-600 hover:text-slate-900 rounded transition-colors text-xs border border-slate-300 bg-white"
+                        title="Copiar"
+                      >
+                        Copiar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const w = window.open('', '_blank');
+                          if (w) {
+                            const hStart = '<' + 'html' + '>';
+                            const hEnd = '</' + 'html' + '>';
+                            const hdStart = '<' + 'head' + '>';
+                            const hdEnd = '</' + 'head' + '>';
+                            const bdStart = '<' + 'body onload="window.print()"' + '>';
+                            const bdEnd = '</' + 'body' + '>';
+
+                            w.document.write(`
+                              ${hStart}
+                                ${hdStart}
+                                  <title>Código de Acesso - ${currentAluno.nome}</title>
+                                  <style>
+                                    body { font-family: sans-serif; padding: 40px; color: #334155; }
+                                    .card { border: 2px dashed #1e3a8a; padding: 30px; border-radius: 12px; max-width: 450px; margin: 0 auto; text-align: center; }
+                                    h2 { margin: 0 0 10px 0; color: #1e3a8a; font-size: 20px; }
+                                    .code { font-family: monospace; font-size: 26px; font-weight: bold; background: #f1f5f9; padding: 12px 24px; display: inline-block; border-radius: 8px; border: 1px solid #e2e8f0; margin: 20px 0; letter-spacing: 1px; color: #1d4ed8; }
+                                    .footer { font-size: 11px; color: #64748b; margin-top: 30px; border-top: 1px solid #f1f5f9; pt-10; }
+                                    p { line-height: 1.5; margin: 8px 0; }
+                                  </style>
+                                ${hdEnd}
+                                ${bdStart}
+                                  <div class="card">
+                                    <h2>CÓDIGO DE ACESSO EXCLUSIVO</h2>
+                                    <p><strong>Nome do Aluno:</strong> ${currentAluno.nome}</p>
+                                    <p><strong>Turma Vinculada:</strong> ${viewingTurma?.nome || 'Não especificada'}</p>
+                                    <div class="code">${studentAccess.access_code}</div>
+                                    <p style="font-size: 13px;">Use este Código de Acesso e a sua senha padrão (<strong>123</strong>) para realizar login na Área do Aluno.</p>
+                                    <div class="footer">Escola Digital © ${new Date().getFullYear()}</div>
+                                  </div>
+                                ${bdEnd}
+                              ${hEnd}
+                            `);
+                            w.document.close();
+                          }
+                        }}
+                        className="p-1 px-1.5 hover:bg-slate-200 text-slate-600 hover:text-slate-900 rounded transition-colors text-xs border border-slate-300 bg-white"
+                        title="Imprimir"
+                      >
+                        Imprimir
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="text-slate-400 italic">Será gerado na matrícula</span>
+                  )}
+                </div>
+                <div>
+                  <span className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">
+                    Status da Turma
+                  </span>
+                  <span className={cn(
+                    "inline-flex items-center px-2 py-0.5 mt-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
+                    viewingTurma?.status === 'ativa'
+                      ? "bg-green-50 text-green-700 border border-green-200"
+                      : "bg-red-50 text-red-700 border border-red-200"
+                  )}>
+                    ● {viewingTurma?.status === 'ativa' ? 'ATIVA (Acesso Normal)' : 'CONCLUÍDA (Acesso Bloqueado)'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 text-xs pt-2 border-t border-slate-200">
+                <div>
+                  <span className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">
+                    Último Login
+                  </span>
+                  <span className="font-semibold text-slate-600 font-sans">
+                    {studentAccess?.last_login
+                      ? new Date(studentAccess.last_login).toLocaleString('pt-BR')
+                      : 'Nunca logado'}
+                  </span>
+                </div>
+                <div>
+                  <span className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">
+                    Quantidade de acessos
+                  </span>
+                  <span className="px-2 py-0.5 bg-white border border-slate-200 rounded font-bold font-mono text-slate-700">
+                    {studentAccess?.login_count || 0}
+                  </span>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-slate-200 flex gap-2">
+                <button
+                  id="resend-student-code-btn"
+                  type="button"
+                  onClick={() => {
+                    if (!currentAluno?.id || !studentAccess?.access_code) {
+                      toast.error('Código de acesso indisponível.');
+                      return;
+                    }
+                    handlePrintQRCode(currentAluno.nome, studentAccess.access_code, viewingTurma?.nome || 'Turma');
+                  }}
+                  className="px-2.5 py-1 bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-700 font-bold rounded text-[11px] transition-colors shadow-sm outline-none cursor-pointer flex items-center gap-1.5"
+                >
+                  🖨️ CARTEIRINHA QR
+                </button>
+              </div>
+            </div>
+          )}
+
+          {isCiabaOrCiaga && (
+            <div className="grid grid-cols-2 gap-3 p-3 bg-blue-50/40 rounded-xl border border-blue-100">
+              <div>
+                <label className="block text-[10px] font-extrabold text-blue-700 uppercase tracking-wider mb-1">
+                  {language === 'pt' ? 'Início do Curso' : 'Course Start Date'}
+                </label>
+                <input
+                  type="date"
+                  value={currentAluno?.data_inicio_curso || ''}
+                  onChange={(e) => setCurrentAluno({ ...currentAluno, data_inicio_curso: e.target.value })}
+                  className="w-full px-3 py-2 bg-white border border-blue-200 text-blue-900 rounded text-sm focus:ring-2 focus:ring-blue-500/20 outline-none font-bold"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-extrabold text-blue-700 uppercase tracking-wider mb-1">
+                  {language === 'pt' ? 'Término do Curso' : 'Course End Date'}
+                </label>
+                <input
+                  type="date"
+                  value={currentAluno?.data_fim_curso || ''}
+                  onChange={(e) => setCurrentAluno({ ...currentAluno, data_fim_curso: e.target.value })}
+                  className="w-full px-3 py-2 bg-white border border-blue-200 text-blue-900 rounded text-sm focus:ring-2 focus:ring-blue-500/20 outline-none font-bold"
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="flex gap-3 pt-4">
+            <button
+              type="button"
+              onClick={() => setIsStudentFormOpen(false)}
+              className="flex-1 px-4 py-2 border border-slate-200 text-slate-600 rounded font-bold text-sm hover:bg-slate-50"
+            >
+              {t.common.cancel}
+            </button>
+            <button
+              type="submit"
+              disabled={savingStudent}
+              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded font-bold text-sm hover:bg-blue-700 disabled:opacity-70 flex items-center justify-center gap-2"
+            >
+              {savingStudent ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
+              {t.common.save}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal
+        isOpen={confirmConfig.isOpen}
+        onClose={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
+        title={confirmConfig.title}
+      >
+        <div className="space-y-6">
+          <p className="text-slate-600 text-sm">{confirmConfig.message}</p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
+              className="flex-1 px-4 py-2.5 border border-slate-200 text-slate-600 rounded-lg font-bold text-sm hover:bg-slate-50 transition-all"
+            >
+              {t.common.cancel}
+            </button>
+            <button
+              onClick={confirmConfig.onConfirm}
+              className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg font-bold text-sm hover:bg-red-700 transition-all shadow-md shadow-red-100"
+            >
+              {t.common.delete}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <AnimatePresence>
+        {expandedPhoto && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[rgba(15,23,42,0.9)]"
+            onClick={() => setExpandedPhoto(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative max-w-full max-h-full flex flex-col items-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                className="absolute -top-12 right-0 p-2 text-white bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+                onClick={() => setExpandedPhoto(null)}
+              >
+                <X size={24} />
+              </button>
+              
+              <div className="bg-white p-2 rounded-2xl shadow-2xl relative">
+                <div className="relative w-[90vw] h-[80vh] sm:w-[500px] sm:h-[667px] rounded-xl overflow-hidden shadow-inner bg-slate-50">
+                  {expandedPhoto.url ? (
+                    <Image
+                      src={expandedPhoto.url}
+                      alt={expandedPhoto.name}
+                      fill
+                      className="object-contain"
+                      referrerPolicy="no-referrer"
+                      sizes="(max-width: 640px) 90vw, 500px"
+                      priority
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-slate-300">
+                      <LayersIcon size={64} strokeWidth={1} />
+                    </div>
+                  )}
+                </div>
+                <div className="mt-4 text-center pb-2">
+                  <h4 className="text-xl font-bold text-slate-800">{expandedPhoto.name}</h4>
+                  <p className="text-slate-500 font-mono text-xs uppercase mt-1 tracking-widest border-t border-slate-100 pt-2 mx-4">Foto Identificação 3x4</p>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Folha de Frequência Mensal Print Preview & Controls */}
+      <AnimatePresence>
+        {isPrintAttendanceOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[80] bg-slate-900/90 overflow-y-auto custom-scrollbar flex flex-col"
+          >
+            {/* Top Workspace Bar */}
+            <div className="flex flex-col lg:flex-row items-center justify-between gap-4 p-4 border-b border-white/10 bg-slate-950 sticky top-0 z-50 text-white shadow-xl no-print">
+              <div className="flex items-center gap-3 w-full lg:w-auto">
+                <button
+                  onClick={() => setIsPrintAttendanceOpen(false)}
+                  className="p-2 hover:bg-white/10 text-slate-400 hover:text-white rounded-xl transition-all"
+                  title="Fechar"
+                >
+                  <X size={20} />
+                </button>
+                <div>
+                  <h2 className="text-base font-black uppercase tracking-wider text-white">
+                    {printSheetType === 'semanal' 
+                      ? (language === 'pt' ? 'Folha de Frequência Semanal' : 'Weekly Attendance Sheet')
+                      : (language === 'pt' ? 'Folha de Frequência Mensal' : 'Monthly Attendance Sheet')
+                    }
+                  </h2>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
+                    {alunosInTurma.length} {language === 'pt' ? 'alunos listados' : 'students listed'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Editable Fields in Controls Bar */}
+              <div className="flex flex-wrap items-center gap-3 bg-white/[0.03] p-2 rounded-2xl border border-white/5 w-full lg:w-auto">
+                <div className="flex flex-col">
+                  <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest pl-1 mb-1">Tipo</span>
+                  <select
+                    value={printSheetType}
+                    onChange={(e) => {
+                      setPrintSheetType(e.target.value as 'mensal' | 'semanal');
+                      setSelectedWeekIndex(null);
+                    }}
+                    className="px-2.5 py-1.5 bg-slate-900 border border-white/10 rounded-lg text-xs font-bold text-white focus:outline-none focus:border-blue-500 cursor-pointer h-[34px]"
+                  >
+                    <option value="mensal">{language === 'pt' ? 'Mensal' : 'Monthly'}</option>
+                    <option value="semanal">{language === 'pt' ? 'Semanal' : 'Weekly'}</option>
+                  </select>
+                </div>
+
+                {printSheetType === 'semanal' && (
+                  <div className="flex flex-col">
+                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest pl-1 mb-1">Semana Selecionada</span>
+                    <select
+                      value={activeWeekIndex}
+                      onChange={(e) => setSelectedWeekIndex(parseInt(e.target.value, 10))}
+                      className="px-2.5 py-1.5 bg-slate-900 border border-white/10 rounded-lg text-xs font-bold text-white focus:outline-none focus:border-blue-500 min-w-[200px] cursor-pointer h-[34px]"
+                    >
+                      {activeWeeksList.map((w) => (
+                        <option key={w.index} value={w.index}>
+                          {w.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <div className="flex flex-col flex-1 sm:flex-initial">
+                  <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest pl-1 mb-1">Professor(a)</span>
+                  <input
+                    type="text"
+                    value={printProfessorName}
+                    onChange={(e) => setPrintProfessorName(e.target.value)}
+                    className="px-3 py-1.5 bg-slate-900 border border-white/10 rounded-lg text-xs font-bold font-sans text-white focus:outline-none focus:border-blue-500 w-full sm:w-44 h-[34px]"
+                    placeholder="Nome do Professor"
+                  />
+                </div>
+                <div className="flex flex-col flex-1 sm:flex-initial">
+                  <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest pl-1 mb-1">Turma</span>
+                  <input
+                    type="text"
+                    value={printClassName}
+                    onChange={(e) => setPrintClassName(e.target.value)}
+                    className="px-3 py-1.5 bg-slate-900 border border-white/10 rounded-lg text-xs font-bold font-sans text-white focus:outline-none focus:border-blue-500 w-full sm:w-44 h-[34px]"
+                    placeholder="Nome da Turma"
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest pl-1 mb-1">Mês/Ano</span>
+                  <input
+                    type="text"
+                    value={printPeriod}
+                    onChange={(e) => {
+                      setPrintPeriod(e.target.value);
+                      setSelectedWeekIndex(null);
+                    }}
+                    className="px-3 py-1.5 bg-slate-900 border border-white/10 rounded-lg text-xs font-bold font-mono text-white focus:outline-none focus:border-blue-500 w-24 text-center h-[34px]"
+                    placeholder="MM/AAAA"
+                  />
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2 w-full md:w-auto justify-end">
+                <button
+                  onClick={() => setIsPrintAttendanceOpen(false)}
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold text-xs uppercase tracking-widest transition"
+                >
+                  {t.common.cancel}
+                </button>
+                <button
+                  onClick={() => window.print()}
+                  className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-emerald-950 transition-all active:translate-y-px"
+                >
+                  <Printer size={16} />
+                  {language === 'pt' ? 'Imprimir Frequência' : 'Print Sheet'}
+                </button>
+              </div>
+            </div>
+
+            {/* Printable canvas container centerer with Zoom styling */}
+            <div className="flex-1 flex justify-center items-start p-6 bg-slate-900 overflow-auto custom-scrollbar">
+              <div 
+                id="print-attendance-sheet"
+                className="bg-white text-black p-[10mm] shadow-2xl relative rounded border border-slate-700 w-[297mm] min-h-[210mm] h-auto shrink-0 font-sans"
+              >
+                {/* Print Styles */}
+                <style dangerouslySetInnerHTML={{ __html: `
+                  #print-attendance-sheet {
+                    color-adjust: exact;
+                    -webkit-print-color-adjust: exact;
+                  }
+                  .print-attendance-table td, .print-attendance-table th {
+                    border: 1px solid #111111 !important;
+                  }
+                  @media print {
+                    html, body {
+                      margin: 0 !important;
+                      padding: 0 !important;
+                      background: #ffffff !important;
+                      color: #000000 !important;
+                      width: 100% !important;
+                      height: auto !important;
+                      min-height: auto !important;
+                      overflow: visible !important;
+                    }
+
+                    /* Hide headers, footers, mobile bottom-navs, back buttons, filters, etc. completely from DOM layout flow */
+                    header, nav, aside, footer, button, .print\:hidden, [role="dialog"], [role="group"], .no-print {
+                      display: none !important;
+                      width: 0 !important;
+                      height: 0 !important;
+                      margin: 0 !important;
+                      padding: 0 !important;
+                      overflow: hidden !important;
+                    }
+                    
+                    /* Collapse only major layout wrappers to prevent overflow, preserving nested elements */
+                    html, body, main, .min-h-screen, #__next, .flex-1, [data-framer-portal-container] {
+                      position: static !important;
+                      width: 100% !important;
+                      height: auto !important;
+                      min-height: 0 !important;
+                      max-height: none !important;
+                      margin: 0 !important;
+                      padding: 0 !important;
+                      box-shadow: none !important;
+                      border: none !important;
+                      transform: none !important;
+                      overflow: visible !important;
+                      background: transparent !important;
+                      animation: none !important;
+                      transition: none !important;
+                      opacity: 1 !important;
+                    }
+
+                    /* Only print the sheet */
+                    body * {
+                      visibility: hidden !important;
+                    }
+                    #print-attendance-sheet, #print-attendance-sheet * {
+                      visibility: visible !important;
+                    }
+                    
+                    /* Collapse all elements except the printable area and its descendants */
+                    *:not(#print-attendance-sheet):not(#print-attendance-sheet *) {
+                      height: 0 !important;
+                      min-height: 0 !important;
+                      max-height: 0 !important;
+                      margin: 0 !important;
+                      padding: 0 !important;
+                      border: none !important;
+                      box-shadow: none !important;
+                      overflow: visible !important;
+                    }
+
+                    #print-attendance-sheet {
+                      visibility: visible !important;
+                      position: relative !important;
+                      width: ${printSheetType === 'semanal' ? '190mm' : '277mm'} !important;
+                      max-width: ${printSheetType === 'semanal' ? '190mm' : '277mm'} !important;
+                      height: auto !important;
+                      min-height: auto !important;
+                      margin: 0 auto !important;
+                      padding: 0 0 5mm 0 !important;
+                      background: white !important;
+                      box-shadow: none !important;
+                      border: none !important;
+                      page-break-inside: auto !important;
+                      box-sizing: border-box !important;
+                    }
+                    .print-attendance-table {
+                      page-break-inside: auto !important;
+                      width: 100% !important;
+                    }
+                    .print-attendance-table tr {
+                      page-break-inside: avoid !important;
+                      page-break-after: auto !important;
+                    }
+                    .print-attendance-table thead {
+                      display: table-header-group !important;
+                    }
+                    @page {
+                      size: ${printSheetType === 'semanal' ? 'A4 portrait' : 'A4 landscape'} !important;
+                      margin: 10mm 10mm 10mm 10mm !important;
+                    }
+                  }
+                `}} />
+
+                {/* Print Header */}
+                <div className="mb-4">
+                  <div className="flex items-center gap-4 border-b-2 border-black pb-2 mb-4">
+                    <div className="relative w-14 h-14 shrink-0 flex items-center justify-center overflow-hidden bg-white print:hidden">
+                      <Image
+                        src={navalMissionLogo}
+                        alt="Logo Missão de Assessoria Naval"
+                        fill
+                        className="object-contain"
+                        referrerPolicy="no-referrer"
+                        sizes="56px"
+                        priority
+                      />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <h1 className="text-lg font-extrabold uppercase tracking-tight">
+                        {printSheetType === 'semanal' 
+                          ? (language === 'pt' ? 'FOLHA DE FREQUÊNCIA SEMANAL' : 'WEEKLY ATTENDANCE SHEET')
+                          : (language === 'pt' ? 'FOLHA DE FREQUÊNCIA MENSAL' : 'MONTHLY ATTENDANCE SHEET')
+                        }
+                      </h1>
+                      <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-0.5 font-mono">
+                        {language === 'pt' ? 'MISSÃO DE ASSESSORIA NAVAL DO BRASIL EM SÃO TOMÉ E PRÍNCIPE' : 'BRAZILIAN NAVAL ADVISORY MISSION IN SÃO TOMÉ AND PRÍNCIPE'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-6 font-semibold uppercase text-[10px]">
+                    <div className="flex flex-col">
+                      <span>{language === 'pt' ? 'Professor(a):' : 'Instructor:'}</span>
+                      <div className="border-b border-black h-8 flex items-end pb-1 text-xs font-bold px-1 whitespace-nowrap overflow-hidden">
+                        {printProfessorName}
+                      </div>
+                    </div>
+                    <div className="flex flex-col">
+                      <span>{language === 'pt' ? 'Turma:' : 'Class/Group:'}</span>
+                      <div className="border-b border-black h-8 flex items-end pb-1 text-xs font-bold px-1 whitespace-nowrap overflow-hidden">
+                        {printClassName}
+                      </div>
+                    </div>
+                    <div className="flex flex-col">
+                      <span>
+                        {printSheetType === 'semanal' 
+                          ? (language === 'pt' ? 'Semana / Período:' : 'Week / Period:') 
+                          : (language === 'pt' ? 'Mês/Ano:' : 'Month/Year:')
+                        }
+                      </span>
+                      <div className="border-b border-black h-8 flex items-end pb-1 text-xs font-mono font-bold px-1 text-center justify-center font-bold">
+                        {printSheetType === 'semanal'
+                          ? (activeWeeksList[activeWeekIndex]?.label || printPeriod) 
+                          : printPeriod
+                        }
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Table container wrapping the exact styled attendance grid */}
+                <div className="overflow-hidden mt-3">
+                  <table className="print-attendance-table w-full border-collapse border border-black table-fixed">
+                    <thead>
+                      <tr className="bg-neutral-100 text-[8px] font-bold uppercase text-center h-5">
+                        <th className="w-[32px] border border-black p-0.5 text-center">#</th>
+                        <th 
+                          className={cn(
+                            "border border-black p-0.5 text-left pl-2 text-[9px] overflow-hidden truncate whitespace-nowrap",
+                            printSheetType === 'semanal' ? "w-[350px]" : "w-[210px]"
+                          )}
+                        >
+                          {language === 'pt' ? 'Nome do Aluno' : 'Student Name'}
+                        </th>
+                        {daysToRender.map((day) => {
+                          const status = getDayStatus(day.dayNum, day.month, day.year);
+                          const dateObj = new Date(day.year, day.month, day.dayNum);
+                          const dayOfWeek = dateObj.getDay();
+                          return (
+                            <th 
+                              key={`${day.year}-${day.month}-${day.dayNum}`} 
+                              className={cn(
+                                "border border-black p-0 text-center font-mono font-bold text-[8px]",
+                                printSheetType === 'semanal' ? "w-[40px]" : "w-[18px]",
+                                !status.isValid ? "bg-neutral-200 text-neutral-400" :
+                                status.label === 'FE' ? "bg-red-100 text-red-800" :
+                                (status.label === 'S' || status.label === 'D') ? "bg-neutral-200 text-neutral-700" : ""
+                              )}
+                            >
+                              <div className="flex flex-col items-center justify-center leading-tight">
+                                <span className={cn(printSheetType === 'semanal' ? "text-[9px]" : "text-[8px]")}>{day.dayNum}</span>
+                                {printSheetType === 'semanal' ? (
+                                  <span className="text-[6.5px] uppercase text-neutral-500 font-extrabold">{getWeekdayName(dayOfWeek)}</span>
+                                ) : (
+                                  status.isValid && (status.label === 'FE' || status.label === 'S' || status.label === 'D') && (
+                                    <span className="text-[5.5px] opacity-75 font-black text-red-600">{status.label}</span>
+                                  )
+                                )}
+                              </div>
+                            </th>
+                          );
+                        })}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {alunosInTurma.length > 0 ? (
+                        alunosInTurma.map((student, index) => (
+                          <tr key={student.id || index} className={cn("text-[8px] font-bold uppercase", printSheetType === 'semanal' ? "h-[5.5mm]" : "h-[3.9mm]")}>
+                            <td className="border border-black text-center font-mono font-semibold text-[8px]">
+                              {index + 1}
+                            </td>
+                            <td 
+                              className={cn(
+                                "border border-black px-2 text-[9px] font-sans",
+                                isCiabaOrCiaga ? "" : "truncate whitespace-nowrap",
+                                printSheetType === 'semanal' ? "max-w-[350px]" : "max-w-[210px]"
+                              )}
+                            >
+                              <div className="flex flex-col justify-center py-0.5 leading-tight">
+                                <span className={cn(isCiabaOrCiaga ? "text-[8px] truncate block" : "")}>
+                                  {student.posto_graduacao ? `${student.posto_graduacao} ${student.nome}` : student.nome}
+                                </span>
+                                {isCiabaOrCiaga && (student.data_inicio_curso || student.data_fim_curso) && (
+                                  <span className="text-[6px] text-neutral-500 font-extrabold normal-case mt-0.5 whitespace-nowrap overflow-hidden block">
+                                    {language === 'pt' ? 'período: ' : 'period: '}
+                                    <span className="font-mono text-black">
+                                      {student.data_inicio_curso ? student.data_inicio_curso.split('-').reverse().join('/') : '—'}
+                                    </span>
+                                    {' a '}
+                                    <span className="font-mono text-black">
+                                      {student.data_fim_curso ? student.data_fim_curso.split('-').reverse().join('/') : '—'}
+                                    </span>
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            {daysToRender.map((day) => {
+                              const status = getDayStatus(day.dayNum, day.month, day.year, student.id);
+                              return (
+                                <td 
+                                  key={`${day.year}-${day.month}-${day.dayNum}`} 
+                                  className={cn(
+                                    "border border-black p-0 text-center font-bold font-mono select-none",
+                                    printSheetType === 'semanal' ? "text-[9px]" : "text-[7px]",
+                                    status.bgClass
+                                  )}
+                                >
+                                  {status.label}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        ))
+                      ) : (
+                        <tr className="h-[3.9mm] text-[8px] font-bold uppercase">
+                          <td className="border border-black text-center font-mono font-semibold text-[8px]">
+                            1
+                          </td>
+                          <td className="border border-black px-2 text-[9px] italic text-neutral-400">
+                            {language === 'pt' ? 'Nenhum aluno inscrito nesta turma' : 'No students registered in this class'}
+                          </td>
+                          {daysToRender.map((day) => (
+                            <td key={`${day.year}-${day.month}-${day.dayNum}`} className="border border-black p-0 bg-neutral-100"></td>
+                          ))}
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Legenda & Signature Section flowing naturally directly below the sheet in the blank space */}
+                <div className="mt-5 print:mt-1.5 grid grid-cols-2 gap-8 print:gap-4 items-start">
+                  <div>
+                    <div className="text-[10px] font-black uppercase tracking-wider mb-1.5 print:mb-0.5">
+                      {language === 'pt' ? 'Legenda:' : 'Legend:'}
+                    </div>
+                    <div className="flex select-none flex-wrap gap-x-3 gap-y-1 text-[8px] font-black border border-black p-2 print:p-1 rounded-lg bg-neutral-50 shadow-sm">
+                      <span className="text-emerald-700"><strong>P</strong> = {language === 'pt' ? 'Presente' : 'Present'}</span>
+                      <span className="text-rose-700"><strong>F</strong> = {language === 'pt' ? 'Falta' : 'Absent'}</span>
+                      <span className="text-amber-700"><strong>FJ</strong> = {language === 'pt' ? 'Justificada' : 'Excused'}</span>
+                      <span className="text-orange-700"><strong>A</strong> = {language === 'pt' ? 'Atraso' : 'Delay'}</span>
+                      <span className="text-sky-700"><strong>D</strong> = {language === 'pt' ? 'Dispensado' : 'Exempt'}</span>
+                      <span className="text-red-700 border-l border-black pl-2"><strong>FE</strong> = {language === 'pt' ? 'Feriado' : 'Holiday'}</span>
+                      <span className="text-neutral-600 border-l border-black pl-2"><strong>S/D</strong> = Sáb/Dom</span>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-black uppercase tracking-wider mb-1.5 print:mb-0.5 flex justify-between items-center">
+                      <span>{language === 'pt' ? 'Feriados Descritos (Motivo):' : 'Holidays Described (Reason):'}</span>
+                      <span className="text-[7px] text-neutral-400 font-bold tracking-widest uppercase">São Tomé e Príncipe</span>
+                    </div>
+                    <div className="flex flex-col gap-1 text-[7.5px] font-black border border-dashed border-red-500 p-2 print:p-1 rounded-lg bg-red-50/50 min-h-[46px] print:min-h-0 justify-center">
+                      {(() => {
+                        const activeHolidays = getHolidaysForDays(daysToRender);
+
+                        return activeHolidays.length > 0 ? (
+                          activeHolidays.map((holiday, hIdx) => (
+                            <div key={hIdx} className="text-red-700 flex items-start gap-1 justify-start leading-tight">
+                              <span className="bg-red-600 text-white font-mono text-[6.5px] px-1 rounded shrink-0 font-extrabold">
+                                FE {holiday.day}/{String(holiday.month + 1).padStart(2, '0')}
+                              </span>
+                              <span className="font-bold shrink-0">{holiday.name}:</span>
+                              <span className="font-medium text-neutral-700 normal-case italic line-clamp-2">{holiday.meaning}</span>
+                            </div>
+                          ))
+                        ) : (
+                          <span className="text-neutral-500 italic font-mono uppercase tracking-widest text-[7px] text-center block w-full">
+                            {printSheetType === 'semanal'
+                              ? (language === 'pt' ? 'Nenhum feriado nacional nesta semana.' : 'No national holidays this week.')
+                              : (language === 'pt' ? 'Nenhum feriado nacional neste mês.' : 'No national holidays this month.')
+                            }
+                          </span>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Observation Warning Block */}
+                <div className="mt-4 print:mt-1 border border-red-500 bg-red-50/50 p-2.5 print:p-1 rounded-lg text-center font-extrabold text-[8.5px] print:text-[7.5px] text-red-800 tracking-wide leading-relaxed">
+                  {language === 'pt' 
+                    ? 'OBS.: Esta folha de presença deverá ser entregue diariamente ao Coordenador de Cursos para lançamento no controle do aluno.' 
+                    : 'OBS.: This attendance sheet must be submitted daily to the Course Coordinator for entry into the student record.'
+                  }
+                </div>
+
+                {/* Micro-printed controlled copy warning centered (naturally flowing to prevent any overlapping) */}
+                <div className="mt-8 print:mt-4 text-center text-[7px] font-bold tracking-[0.34em] text-neutral-400 uppercase w-full">
+                  {language === 'pt' ? 'Documento de uso oficial - Cópia controlada' : 'Official Document - Controlled Copy'}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+export default function TurmasPage() {
+  return (
+    <Suspense fallback={
+      <div className="py-24 flex flex-col items-center justify-center">
+        <div className="relative">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-600"></div>
+          <School className="absolute inset-0 m-auto text-blue-600" size={24} />
+        </div>
+        <p className="mt-4 text-slate-500 font-black text-[10px] uppercase tracking-[0.2em] animate-pulse">Carregando Turmas...</p>
+      </div>
+    }>
+      <TurmasContent />
+    </Suspense>
+  );
+}

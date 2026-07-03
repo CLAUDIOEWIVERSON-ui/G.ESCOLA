@@ -1,0 +1,88 @@
+import { z } from 'zod';
+
+export const cursoSchema = z.object({
+  nome: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
+  codigo: z.string().max(15, "Sigla deve ter no máximo 15 caracteres").optional().nullable(),
+  descricao: z.string().optional().nullable(),
+  duracao: z.number().int().min(1).max(500),
+  duracao_unidade: z.enum(['dia', 'semana', 'mes', 'ano']),
+  ativo: z.boolean(),
+  qtd_modulos: z.number().int().min(1).max(20),
+  categoria: z.string().optional().nullable(),
+  internacional: z.boolean().optional(),
+  localizacao: z.string().optional().nullable(),
+  grupo_responsavel: z.string().optional().nullable(),
+  documento_criacao: z.string().optional().nullable(),
+});
+
+export const turmaSchema = z.object({
+  curso_id: z.string().uuid(),
+  nome: z.string().min(1, "Nome é obrigatório"),
+  ano: z.number().int().min(2020),
+  periodo: z.enum(['manhã', 'tarde', 'noite']),
+  capacidade_max: z.number().int().min(1).max(100),
+  status: z.enum(['ativa', 'concluída', 'cancelada']),
+  instrutor: z.string().optional().nullable(),
+  data_inicio: z.string().optional().nullable(),
+  data_fim: z.string().optional().nullable(),
+  internacional: z.boolean().optional(),
+  localizacao: z.string().optional().nullable(),
+  grupo_responsavel: z.string().optional().nullable(),
+});
+
+export const alunoSchema = z.object({
+  nome: z.string().min(3, "Nome completo é obrigatório"),
+  email: z.string().email("E-mail inválido").optional().nullable(),
+  data_nascimento: z.string().optional().nullable(),
+  turma_id: z.string().uuid().optional().nullable(),
+  matricula: z.string().optional().nullable(),
+  status: z.string().optional().nullable(),
+  nome_pai: z.string().optional().nullable(),
+  nome_mae: z.string().optional().nullable(),
+  titulo_eleitor: z.string().optional().nullable(),
+  nif: z.string().optional().nullable(),
+  rg: z.string().optional().nullable(),
+  om: z.string().optional().nullable(),
+  posto_graduacao: z.string().optional().nullable(),
+  ano_admissao: z.number().int().optional().nullable(),
+  telefone: z.string().optional().nullable(),
+  whatsapp: z.string().optional().nullable(),
+  foto_url: z.string().url().optional().nullable(),
+  funcao: z.string().optional().nullable(),
+});
+
+export const disciplinaSchema = z.object({
+  nome: z.string().min(2),
+  codigo: z.string().min(2),
+  carga_horaria: z.number().int().min(10),
+  curso_id: z.string().uuid(),
+});
+
+export const notaSchema = z.object({
+  aluno_id: z.string().uuid(),
+  disciplina_id: z.string().uuid(),
+  turma_id: z.string().uuid(),
+  nota1: z.number().min(0).max(10).optional().nullable(),
+  nota2: z.number().min(0).max(10).optional().nullable(),
+  nota3: z.number().min(0).max(10).optional().nullable(),
+  nota4: z.number().min(0).max(10).optional().nullable(),
+  nota5: z.number().min(0).max(10).optional().nullable(),
+  nota6: z.number().min(0).max(10).optional().nullable(),
+  nota7: z.number().min(0).max(10).optional().nullable(),
+  nota8: z.number().min(0).max(10).optional().nullable(),
+  nota9: z.number().min(0).max(10).optional().nullable(),
+  nota10: z.number().min(0).max(10).optional().nullable(),
+  nota11: z.number().min(0).max(10).optional().nullable(),
+  nota12: z.number().min(0).max(10).optional().nullable(),
+  nota13: z.number().min(0).max(10).optional().nullable(),
+  nota14: z.number().min(0).max(10).optional().nullable(),
+  nota15: z.number().min(0).max(10).optional().nullable(),
+  nota16: z.number().min(0).max(10).optional().nullable(),
+  nota17: z.number().min(0).max(10).optional().nullable(),
+  nota18: z.number().min(0).max(10).optional().nullable(),
+  nota19: z.number().min(0).max(10).optional().nullable(),
+  nota20: z.number().min(0).max(10).optional().nullable(),
+  frequencia: z.number().min(0).max(100),
+  ano_letivo: z.number().int(),
+  pago: z.boolean().optional().nullable(),
+});
