@@ -1533,20 +1533,40 @@ function BoletimContent() {
                         return a.nome.localeCompare(b.nome);
                       });
 
-                      const firstDisc = sortedDisciplines[0];
                       const firstGrade = getReportFirstGrade(reportData);
 
-                      const reportRows = sortedDisciplines.map((disc: any, discIdx: number) => {
-                        const { finalGradeValue, freqValue, moduleNum } = getDisciplineGradeAndFreq(disc, discIdx, reportData, firstGrade);
-                        const finalGradeFormatted = finalGradeValue !== null && finalGradeValue !== undefined ? Number(finalGradeValue).toFixed(1) : '-';
+                      const moduleGroupsMap = new Map<number, any[]>();
+                      sortedDisciplines.forEach((disc: any, discIdx: number) => {
+                        const moduleNum = disc.modulo_index || (discIdx + 1);
+                        if (!moduleGroupsMap.has(moduleNum)) {
+                          moduleGroupsMap.set(moduleNum, []);
+                        }
+                        moduleGroupsMap.get(moduleNum)!.push({ disc, discIdx });
+                      });
 
-                        const expirationDate = reportData.classObj?.data_postergacao || reportData.classObj?.data_fim;
-                        const todayStr = format(new Date(), 'yyyy-MM-dd');
-                        const isClassExpired = expirationDate ? expirationDate < todayStr : false;
+                      const expirationDate = reportData.classObj?.data_postergacao || reportData.classObj?.data_fim;
+                      const todayStr = format(new Date(), 'yyyy-MM-dd');
+                      const isClassExpired = expirationDate ? expirationDate < todayStr : false;
+
+                      const reportRows = Array.from(moduleGroupsMap.entries()).map(([moduleNum, groupItems]) => {
+                        const evaluated = groupItems.map(({ disc, discIdx }) => {
+                          return getDisciplineGradeAndFreq(disc, discIdx, reportData, firstGrade);
+                        });
+
+                        const validGrades = evaluated
+                          .map(e => e.finalGradeValue)
+                          .filter((g): g is number => g !== null && g !== undefined && !isNaN(g));
+                        const finalGradeValue = validGrades.length > 0 ? Math.max(...validGrades) : null;
+                        const finalGradeFormatted = finalGradeValue !== null ? finalGradeValue.toFixed(1) : '-';
+
+                        const validFreqs = evaluated
+                          .map(e => e.freqValue)
+                          .filter((f): f is number => f !== null && f !== undefined && !isNaN(f));
+                        const freqValue = validFreqs.length > 0 ? Math.min(...validFreqs) : null;
 
                         let statusLabel = '';
                         let statusClass = 'text-slate-400';
-                        if (finalGradeValue === null || finalGradeValue === undefined) {
+                        if (finalGradeValue === null) {
                           if (isClassExpired) {
                             statusLabel = language === 'pt' ? 'NÃO CONCLUIU' : 'NOT COMPLETED';
                             statusClass = 'text-rose-600 font-extrabold';
@@ -1568,9 +1588,9 @@ function BoletimContent() {
                         }
 
                         return {
-                          id: disc.id,
+                          moduleNum,
                           modulo: `Módulo ${moduleNum}`,
-                          disciplina: disc.nome,
+                          disciplines: groupItems.map(item => item.disc),
                           nota: finalGradeFormatted,
                           situacao: statusLabel,
                           statusClass,
@@ -1597,17 +1617,36 @@ function BoletimContent() {
                             ) : (
                               reportRows.map((row: any, rIdx: number) => {
                                 return (
-                                  <tr key={`row-${row.id || ''}-${rIdx}`} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors bg-white">
-                                    <td className="px-4 py-2.5 font-bold text-slate-900 border-r border-slate-200 text-left bg-white align-middle break-words whitespace-normal leading-tight">
+                                  <tr key={`row-mod-${row.moduleNum}-${rIdx}`} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors bg-white">
+                                    <td className="px-4 py-3 font-extrabold text-slate-900 border-r border-slate-200 text-left bg-white align-middle whitespace-nowrap">
                                       {row.modulo}
                                     </td>
-                                    <td className="px-4 py-2.5 font-extrabold text-slate-800 border-r border-slate-200 text-left bg-white align-middle break-words whitespace-normal leading-tight">
-                                      {row.disciplina}
+                                    <td className="px-4 py-3 font-extrabold text-slate-800 border-r border-slate-200 text-left bg-white align-middle">
+                                      <div className="flex items-stretch justify-between gap-3">
+                                        <div className="flex flex-col justify-center gap-2.5 py-0.5 w-full">
+                                          {row.disciplines.map((disc: any, dIdx: number) => (
+                                            <div key={`disc-${disc.id || dIdx}`} className={cn(
+                                              "flex items-center gap-2 text-slate-800 font-extrabold text-xs leading-tight break-words",
+                                              dIdx > 0 && "pt-2 border-t border-slate-100/80"
+                                            )}>
+                                              <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
+                                              <span>{disc.nome}</span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                        {row.disciplines.length > 1 && (
+                                          <div className="flex items-center shrink-0 px-1 text-slate-300 select-none">
+                                            <svg className="w-4 h-full min-h-[36px] py-0.5 text-slate-400 overflow-visible" viewBox="0 0 14 100" preserveAspectRatio="none" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                              <path d="M0 2 C8 2 10 15 10 35 L10 42 C10 48 13 50 14 50 C13 50 10 52 10 58 L10 65 C10 85 8 98 0 98" vectorEffect="non-scaling-stroke" />
+                                            </svg>
+                                          </div>
+                                        )}
+                                      </div>
                                     </td>
-                                    <td className="px-3 py-2.5 text-center font-black font-mono border-r border-slate-200 text-slate-900 bg-white align-middle animate-fade-in">
+                                    <td className="px-3 py-3 text-center font-black font-mono text-sm border-r border-slate-200 text-slate-900 bg-white align-middle animate-fade-in">
                                       {row.nota}
                                     </td>
-                                    <td className={cn("px-4 py-2.5 text-right font-black bg-white align-middle break-words whitespace-normal leading-tight", row.statusClass)}>
+                                    <td className={cn("px-4 py-3 text-right font-black bg-white align-middle break-words whitespace-normal leading-tight", row.statusClass)}>
                                       {row.situacao}
                                     </td>
                                   </tr>
@@ -2499,25 +2538,45 @@ function BoletimContent() {
 
                                         const firstGrade = getReportFirstGrade(reportData);
 
-                                        const rows = sortedDisciplines.map((disc: any, discIdx: number) => {
-                                          const { finalGradeValue, freqValue, moduleNum } = getDisciplineGradeAndFreq(disc, discIdx, reportData, firstGrade);
-                                          const finalGradeFormatted = finalGradeValue !== null && finalGradeValue !== undefined ? Number(finalGradeValue).toFixed(1) : '-';
+                                        const moduleGroupsMap = new Map<number, any[]>();
+                                        sortedDisciplines.forEach((disc: any, discIdx: number) => {
+                                          const moduleNum = disc.modulo_index || (discIdx + 1);
+                                          if (!moduleGroupsMap.has(moduleNum)) {
+                                            moduleGroupsMap.set(moduleNum, []);
+                                          }
+                                          moduleGroupsMap.get(moduleNum)!.push({ disc, discIdx });
+                                        });
+
+                                        const expirationDate = reportData.classObj?.data_postergacao || reportData.classObj?.data_fim;
+                                        const todayStr = format(new Date(), 'yyyy-MM-dd');
+                                        const isClassExpired = expirationDate ? expirationDate < todayStr : false;
+
+                                        const rows = Array.from(moduleGroupsMap.entries()).map(([moduleNum, groupItems]) => {
+                                          const evaluated = groupItems.map(({ disc, discIdx }) => {
+                                            return getDisciplineGradeAndFreq(disc, discIdx, reportData, firstGrade);
+                                          });
+
+                                          const validGrades = evaluated
+                                            .map(e => e.finalGradeValue)
+                                            .filter((g): g is number => g !== null && g !== undefined && !isNaN(g));
+                                          const finalGradeValue = validGrades.length > 0 ? Math.max(...validGrades) : null;
+                                          const finalGradeFormatted = finalGradeValue !== null ? finalGradeValue.toFixed(1) : '-';
+
+                                          const validFreqs = evaluated
+                                            .map(e => e.freqValue)
+                                            .filter((f): f is number => f !== null && f !== undefined && !isNaN(f));
+                                          const freqValue = validFreqs.length > 0 ? Math.min(...validFreqs) : null;
 
                                           let statusLabel = '';
                                           let statusClass = '';
-                                          
-                                          if (finalGradeValue === null || finalGradeValue === undefined) {
-                                            const expirationDate = reportData.classObj?.data_postergacao || reportData.classObj?.data_fim;
-                                             const todayStr = format(new Date(), 'yyyy-MM-dd');
-                                             const isClassExpired = expirationDate ? expirationDate < todayStr : false;
-
-                                             if (isClassExpired) {
-                                               statusLabel = language === 'pt' ? 'NÃO CONCLUIU' : 'NOT COMPLETED';
-                                               statusClass = 'text-rose-700 bg-rose-50 border border-rose-100 font-extrabold';
-                                             } else {
-                                               statusLabel = reportT[language as "pt" | "en"].pending;
-                                               statusClass = 'text-slate-500 bg-slate-50 border border-slate-100';
-                                             }
+                                          if (finalGradeValue === null) {
+                                            if (isClassExpired) {
+                                              statusLabel = language === 'pt' ? 'NÃO CONCLUIU' : 'NOT COMPLETED';
+                                              statusClass = 'text-rose-700 bg-rose-50 border border-rose-100 font-extrabold';
+                                            } else {
+                                              statusLabel = reportT[language as "pt" | "en"].pending;
+                                              statusClass = 'text-slate-500 bg-slate-50 border border-slate-100';
+                                            }
                                           } else if (finalGradeValue >= settings.media_aprovacao && (freqValue === null || freqValue >= settings.frequencia_minima)) {
                                             statusLabel = reportT[language as "pt" | "en"].approved;
                                             statusClass = 'text-emerald-700 bg-emerald-50 border border-emerald-100';
@@ -2533,10 +2592,9 @@ function BoletimContent() {
                                           }
 
                                           return {
-                                            id: disc.id,
-                                            modulo: disc.modulo_index ? `Módulo ${disc.modulo_index}` : `Módulo ${discIdx + 1}`,
-                                            moduloRaw: disc.modulo_index || (discIdx + 1),
-                                            disciplina: disc.nome,
+                                            moduleNum,
+                                            modulo: `Módulo ${moduleNum}`,
+                                            disciplines: groupItems.map(item => item.disc),
                                             nota: finalGradeFormatted,
                                             situacao: statusLabel,
                                             statusClass,
@@ -2562,17 +2620,36 @@ function BoletimContent() {
                                                 </tr>
                                               ) : (
                                                 rows.map((row: any, rIdx: number) => (
-                                                  <tr key={`print-row-${row.id || ''}-${rIdx}`} className="border-b border-slate-200 bg-white">
-                                                    <td className="px-3.5 py-1.5 font-black text-slate-900 border-r border-slate-250 bg-slate-50/70 align-middle break-words whitespace-normal leading-tight text-center">
+                                                  <tr key={`print-row-mod-${row.moduleNum}-${rIdx}`} className="border-b border-slate-200 bg-white">
+                                                    <td className="px-3.5 py-2 font-black text-slate-900 border-r border-slate-250 bg-slate-50/70 align-middle whitespace-nowrap text-center">
                                                       {row.modulo}
                                                     </td>
-                                                    <td className="px-3.5 py-1.5 font-bold text-slate-800 border-r border-slate-200 bg-white align-middle break-words whitespace-normal leading-tight">
-                                                      {row.disciplina}
+                                                    <td className="px-3.5 py-2 font-bold text-slate-800 border-r border-slate-200 bg-white align-middle">
+                                                      <div className="flex items-stretch justify-between gap-2">
+                                                        <div className="flex flex-col justify-center gap-2 py-0.5 w-full">
+                                                          {row.disciplines.map((disc: any, dIdx: number) => (
+                                                            <div key={`print-disc-${disc.id || dIdx}`} className={cn(
+                                                              "flex items-center gap-1.5 text-slate-800 font-extrabold text-[10px] leading-tight break-words",
+                                                              dIdx > 0 && "pt-1.5 border-t border-slate-100/80"
+                                                            )}>
+                                                              <span className="w-1 h-1 rounded-full bg-slate-400 shrink-0" />
+                                                              <span>{disc.nome}</span>
+                                                            </div>
+                                                          ))}
+                                                        </div>
+                                                        {row.disciplines.length > 1 && (
+                                                          <div className="flex items-center shrink-0 px-0.5 text-slate-300 select-none">
+                                                            <svg className="w-3.5 h-full min-h-[32px] py-0.5 text-slate-400 overflow-visible" viewBox="0 0 14 100" preserveAspectRatio="none" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                                              <path d="M0 2 C8 2 10 15 10 35 L10 42 C10 48 13 50 14 50 C13 50 10 52 10 58 L10 65 C10 85 8 98 0 98" vectorEffect="non-scaling-stroke" />
+                                                            </svg>
+                                                          </div>
+                                                        )}
+                                                      </div>
                                                     </td>
-                                                    <td className="px-3.5 py-1.5 text-center font-black font-mono border-r border-slate-200 text-slate-900 bg-white align-middle break-words whitespace-normal leading-tight">
+                                                    <td className="px-3.5 py-2 text-center font-black font-mono text-xs border-r border-slate-200 text-slate-900 bg-white align-middle">
                                                       {row.nota}
                                                     </td>
-                                                    <td className={cn("px-3.5 py-1.5 text-right bg-white align-middle break-words whitespace-normal leading-tight font-black", row.statusClass)}>
+                                                    <td className={cn("px-3.5 py-2 text-right bg-white align-middle break-words whitespace-normal leading-tight font-black", row.statusClass)}>
                                                       {row.situacao}
                                                     </td>
                                                   </tr>
