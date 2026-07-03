@@ -47,6 +47,7 @@ const reportT = {
     defaultObs: "Atleta/Aluno demonstra comprometimento acadêmico regular, preenchendo os requisitos regulamentares de frequência e aproveitamento didático estabelecidos pelas normas vigentes.",
     signatureInstructor: "Assinatura do Instrutor-Chefe / Coordenador",
     signatureStudent: "Assinatura do Aluno / Treinando",
+    signatureCommander: "Comandante da Missão de Assessoria Naval do Brasil em São Tomé e Príncipe",
     fullName: "Nome Completo",
     rank: "Posto / Graduação",
     course: "Curso de Formação",
@@ -82,6 +83,7 @@ const reportT = {
     defaultObs: "The student demonstrates regular academic commitment, complying with the regulatory requirements of attendance and training achievements established by current regulations.",
     signatureInstructor: "Signature of Chief Instructor / Coordinator",
     signatureStudent: "Signature of Student / Trainee",
+    signatureCommander: "Commander of the Brazilian Naval Advisory Mission in São Tomé and Príncipe",
     fullName: "Full Name",
     rank: "Rank / Post",
     course: "Course of Instruction",
@@ -2856,17 +2858,16 @@ function BoletimContent() {
                                     </span>
                                   </div>
 
-                                  {/* Double Signature Panel */}
-                                  <div className="grid grid-cols-2 gap-10 pt-3 mt-1.5 border-t border-dashed border-slate-300">
-                                    <div className="flex flex-col items-center text-center">
-                                      <div className="w-44 border-b border-slate-400 h-5"></div>
-                                      <span className="text-[8px] font-black text-slate-700 uppercase mt-1 tracking-wider leading-none">{reportT[language as "pt" | "en"].signatureInstructor}</span>
-                                      <span className="text-[7px] font-bold text-slate-400 uppercase mt-0.5 leading-none">{language === 'pt' ? 'Assinatura Autorizada' : 'Authorized Signature'}</span>
-                                    </div>
-                                    <div className="flex flex-col items-center text-center">
-                                      <div className="w-44 border-b border-slate-400 h-5"></div>
-                                      <span className="text-[8px] font-black text-slate-700 uppercase mt-1 tracking-wider leading-none">{reportT[language as "pt" | "en"].signatureStudent}</span>
-                                      <span className="text-[7px] font-bold text-slate-400 uppercase mt-0.5 leading-none">{language === 'pt' ? 'Assinatura do Aluno' : 'Student Endorsement'}</span>
+                                  {/* Single Signature Panel */}
+                                  <div className="flex flex-col items-center justify-center pt-4 mt-2 border-t border-dashed border-slate-300">
+                                    <div className="flex flex-col items-center text-center max-w-lg w-full">
+                                      <div className="w-80 border-b border-slate-400 h-6"></div>
+                                      <span className="text-[8px] font-black text-slate-700 uppercase mt-1.5 tracking-wider leading-none text-center">
+                                        {reportT[language as "pt" | "en"].signatureCommander}
+                                      </span>
+                                      <span className="text-[7px] font-bold text-slate-400 uppercase mt-0.5 leading-none">
+                                        {language === 'pt' ? 'Assinatura Autorizada' : 'Authorized Signature'}
+                                      </span>
                                     </div>
                                   </div>
                                 </div>
