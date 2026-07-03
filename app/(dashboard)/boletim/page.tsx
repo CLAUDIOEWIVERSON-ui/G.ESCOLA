@@ -207,6 +207,43 @@ function BoletimContent() {
     return rData.grades[0] || null;
   }, []);
 
+  const getDisciplineGradeAndFreq = useCallback((disc: any, discIdx: number, rData: any, firstGrade: any) => {
+    const moduleNum = disc.modulo_index || (discIdx + 1);
+    const directGrade = (rData?.grades || []).find((g: any) => g.disciplina_id === disc.id);
+
+    let finalGradeValue: number | null = null;
+    if (directGrade && directGrade.nota_final !== null && directGrade.nota_final !== undefined && directGrade.nota_final !== '') {
+      finalGradeValue = Number(directGrade.nota_final);
+    } else if (directGrade && directGrade[`nota${moduleNum}`] !== null && directGrade[`nota${moduleNum}`] !== undefined && directGrade[`nota${moduleNum}`] !== '') {
+      finalGradeValue = Number(directGrade[`nota${moduleNum}`]);
+    } else {
+      const anyModularRow = (rData?.grades || []).find((g: any) => {
+        const val = g[`nota${moduleNum}`];
+        return val !== null && val !== undefined && val !== '';
+      });
+      if (anyModularRow) {
+        const val = anyModularRow[`nota${moduleNum}`];
+        if (val !== null && val !== undefined && val !== '') {
+          finalGradeValue = Number(val);
+        }
+      } else if (directGrade && directGrade.nota1 !== null && directGrade.nota1 !== undefined && directGrade.nota1 !== '') {
+        finalGradeValue = Number(directGrade.nota1);
+      }
+    }
+
+    let freqValue: number | null = null;
+    if (directGrade && directGrade.frequencia !== null && directGrade.frequencia !== undefined && directGrade.frequencia !== '') {
+      freqValue = Number(directGrade.frequencia);
+    } else {
+      const anyFreqRow = (rData?.grades || []).find((g: any) => g.frequencia !== null && g.frequencia !== undefined && g.frequencia !== '');
+      if (anyFreqRow) {
+        freqValue = Number(anyFreqRow.frequencia);
+      }
+    }
+
+    return { finalGradeValue, freqValue, moduleNum };
+  }, []);
+
   const [pendingDetailsStudent, setPendingDetailsStudent] = useState<any | null>(null);
   const [scale, setScale] = useState(0.55);
   const [zoomMode, setZoomMode] = useState<'height' | 'width'>('height');
@@ -980,10 +1017,18 @@ function BoletimContent() {
         const presentDays = studentAtts.filter((a: any) => a.presente).length;
         const computedFreq = totalDays > 0 ? (presentDays / totalDays) * 100 : null;
 
-        const existingGrade = (grades || []).find((g: any) => g.aluno_id === student.id);
+        const studentGrades = (grades || []).filter((g: any) => g.aluno_id === student.id);
+        const existingGrade = studentGrades[0];
         if (existingGrade) {
-          let computedFinal = existingGrade.nota_final;
-          if (computedFinal === null || computedFinal === undefined || computedFinal === '') {
+          let computedFinal = null;
+          const validFinals = studentGrades
+            .map((g: any) => g.nota_final)
+            .filter((val: any) => val !== null && val !== undefined && val !== '')
+            .map((val: any) => Number(val));
+            
+          if (validFinals.length > 0) {
+            computedFinal = validFinals.reduce((a: number, b: number) => a + b, 0) / validFinals.length;
+          } else {
             const scores: number[] = [];
             for (let i = 1; i <= localCourseModules; i++) {
               const val = existingGrade[`nota${i}`];
@@ -995,10 +1040,20 @@ function BoletimContent() {
               computedFinal = scores.reduce((x, y) => x + y, 0) / scores.length;
             }
           }
+
+          let bestFreq = existingGrade.frequencia;
+          const validFreqs = studentGrades
+            .map((g: any) => g.frequencia)
+            .filter((val: any) => val !== null && val !== undefined && val !== '')
+            .map((val: any) => Number(val));
+          if (validFreqs.length > 0) {
+            bestFreq = validFreqs.reduce((a: number, b: number) => a + b, 0) / validFreqs.length;
+          }
+
           return {
             ...existingGrade,
             nota_final: computedFinal !== null ? Number(computedFinal) : null,
-            frequencia: existingGrade.frequencia !== null && existingGrade.frequencia !== undefined ? existingGrade.frequencia : computedFreq,
+            frequencia: bestFreq !== null && bestFreq !== undefined ? bestFreq : computedFreq,
             aluno: student
           };
         } else {
@@ -1470,10 +1525,9 @@ function BoletimContent() {
                 </h3>
                 <div className="overflow-x-auto">
                   {(() => {
-                    const reportRows = (() => {
-                      if (!reportData) return [];
+                    if (!reportData) return null;
 
-                      const sortedDisciplines = [...(reportData.disciplines || [])].sort((a: any, b: any) => {
+                    const sortedDisciplines = [...(reportData.disciplines || [])].sort((a: any, b: any) => {
                         const mDiff = (a.modulo_index || 1) - (b.modulo_index || 1);
                         if (mDiff !== 0) return mDiff;
                         return a.nome.localeCompare(b.nome);
@@ -1482,30 +1536,8 @@ function BoletimContent() {
                       const firstDisc = sortedDisciplines[0];
                       const firstGrade = getReportFirstGrade(reportData);
 
-                      const computedRows = sortedDisciplines.map((disc: any, discIdx: number) => {
-                        const moduleNum = disc.modulo_index || (discIdx + 1);
-
-                        let finalGradeValue = null;
-                        if (firstGrade && moduleNum !== null) {
-                          const modularGradeValue = firstGrade[`nota${moduleNum}`];
-                          if (modularGradeValue !== null && modularGradeValue !== undefined && modularGradeValue !== '') {
-                            finalGradeValue = Number(modularGradeValue);
-                          }
-                        }
-
-                        if (finalGradeValue === null) {
-                          const directGrade = (reportData.grades || []).find((g: any) => g.disciplina_id === disc.id);
-                          finalGradeValue = directGrade ? directGrade.nota_final : null;
-                        }
-
-                        let freqValue = null;
-                        if (firstGrade && firstGrade.frequencia !== null && firstGrade.frequencia !== undefined) {
-                          freqValue = firstGrade.frequencia;
-                        } else {
-                          const directGrade = (reportData.grades || []).find((g: any) => g.disciplina_id === disc.id);
-                          freqValue = directGrade ? directGrade.frequencia : null;
-                        }
-
+                      const reportRows = sortedDisciplines.map((disc: any, discIdx: number) => {
+                        const { finalGradeValue, freqValue, moduleNum } = getDisciplineGradeAndFreq(disc, discIdx, reportData, firstGrade);
                         const finalGradeFormatted = finalGradeValue !== null && finalGradeValue !== undefined ? Number(finalGradeValue).toFixed(1) : '-';
 
                         const expirationDate = reportData.classObj?.data_postergacao || reportData.classObj?.data_fim;
@@ -1545,64 +1577,45 @@ function BoletimContent() {
                         };
                       });
 
-                      const rowsWithSpans = [];
-                      for (let i = 0; i < computedRows.length; i++) {
-                        const row = { ...computedRows[i], moduloSpan: 0 };
-                        
-                        if (i === 0 || computedRows[i].modulo !== computedRows[i - 1].modulo) {
-                          let span = 1;
-                          while (i + span < computedRows.length && computedRows[i + span].modulo === computedRows[i].modulo) {
-                            span++;
-                          }
-                          row.moduloSpan = span;
-                        }
-                        
-                        rowsWithSpans.push(row);
-                      }
-                      return rowsWithSpans;
-                    })();
-
-                    return (
-                      <table className="w-full text-left report-table border border-slate-200 bg-white table-auto">
-                        <thead>
-                          <tr className="bg-slate-100 print-bg-gray text-[10px] font-extrabold text-slate-600 uppercase tracking-wider border-b border-slate-200">
-                            <th className="px-4 py-3 border-r border-slate-200 w-[20%]">{language === 'pt' ? 'Módulo' : 'Module'}</th>
-                            <th className="px-4 py-3 border-r border-slate-200 w-[50%]">{language === 'pt' ? 'Disciplina' : 'Discipline'}</th>
-                            <th className="px-3 py-3 text-center border-r border-slate-200 font-mono w-[15%]">{reportT[language as "pt" | "en"].finalGrade}</th>
-                            <th className="px-4 py-3 text-right w-[15%]">{reportT[language as "pt" | "en"].situation}</th>
-                          </tr>
-                        </thead>
-                        <tbody className="text-xs text-left">
-                          {reportRows.length === 0 ? (
-                            <tr>
-                              <td colSpan={4} className="text-center py-6 text-slate-400 font-bold bg-white">
-                                {language === 'pt' ? 'Nenhuma disciplina cadastrada.' : 'No disciplines registered.'}
-                              </td>
+                      return (
+                        <table className="w-full text-left report-table border border-slate-200 bg-white table-auto">
+                          <thead>
+                            <tr className="bg-slate-100 print-bg-gray text-[10px] font-extrabold text-slate-600 uppercase tracking-wider border-b border-slate-200">
+                              <th className="px-4 py-3 border-r border-slate-200 w-[20%]">{language === 'pt' ? 'Módulo' : 'Module'}</th>
+                              <th className="px-4 py-3 border-r border-slate-200 w-[50%]">{language === 'pt' ? 'Disciplina' : 'Discipline'}</th>
+                              <th className="px-3 py-3 text-center border-r border-slate-200 font-mono w-[15%]">{reportT[language as "pt" | "en"].finalGrade}</th>
+                              <th className="px-4 py-3 text-right w-[15%]">{reportT[language as "pt" | "en"].situation}</th>
                             </tr>
-                          ) : (
-                            reportRows.map((row: any, rIdx: number) => {
-                              return (
-                                <tr key={`row-${row.id || ''}-${rIdx}`} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors bg-white">
-                                  {row.moduloSpan > 0 && (
-                                    <td rowSpan={row.moduloSpan} className="px-4 py-2.5 font-bold text-slate-900 border-r border-slate-200 text-left bg-white align-middle break-words whitespace-normal leading-tight">
+                          </thead>
+                          <tbody className="text-xs text-left">
+                            {reportRows.length === 0 ? (
+                              <tr>
+                                <td colSpan={4} className="text-center py-6 text-slate-400 font-bold bg-white">
+                                  {language === 'pt' ? 'Nenhuma disciplina cadastrada.' : 'No disciplines registered.'}
+                                </td>
+                              </tr>
+                            ) : (
+                              reportRows.map((row: any, rIdx: number) => {
+                                return (
+                                  <tr key={`row-${row.id || ''}-${rIdx}`} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors bg-white">
+                                    <td className="px-4 py-2.5 font-bold text-slate-900 border-r border-slate-200 text-left bg-white align-middle break-words whitespace-normal leading-tight">
                                       {row.modulo}
                                     </td>
-                                  )}
-                                  <td className="px-4 py-2.5 font-extrabold text-slate-800 border-r border-slate-200 text-left bg-white align-middle break-words whitespace-normal leading-tight">
-                                    {row.disciplina}
-                                  </td>
-                                  <td className="px-3 py-2.5 text-center font-black font-mono border-r border-slate-200 text-slate-900 bg-white align-middle animate-fade-in">
-                                    {row.nota}
-                                  </td>
-                                  <td className={cn("px-4 py-2.5 text-right font-black bg-white align-middle break-words whitespace-normal leading-tight", row.statusClass)}>
-                                    {row.situacao}
-                                  </td>
-                                </tr>
-                              );
-                            })
-                          )}
-                        </tbody>
-                      </table>
+                                    <td className="px-4 py-2.5 font-extrabold text-slate-800 border-r border-slate-200 text-left bg-white align-middle break-words whitespace-normal leading-tight">
+                                      {row.disciplina}
+                                    </td>
+                                    <td className="px-3 py-2.5 text-center font-black font-mono border-r border-slate-200 text-slate-900 bg-white align-middle animate-fade-in">
+                                      {row.nota}
+                                    </td>
+                                    <td className={cn("px-4 py-2.5 text-right font-black bg-white align-middle break-words whitespace-normal leading-tight", row.statusClass)}>
+                                      {row.situacao}
+                                    </td>
+                                  </tr>
+                                );
+                              })
+                            )}
+                          </tbody>
+                        </table>
                     );
                   })()}
                 </div>
@@ -1630,29 +1643,10 @@ function BoletimContent() {
                         if (mDiff !== 0) return mDiff;
                         return a.nome.localeCompare(b.nome);
                       });
-                      const firstDisc = sortedDisciplines[0];
                       const firstGrade = getReportFirstGrade(reportData);
 
                       const computedDisciplines = sortedDisciplines.map((disc: any, discIdx: number) => {
-                        const moduleNum = disc.modulo_index || (discIdx + 1);
-                        let finalGradeValue = null;
-                        if (firstGrade && moduleNum !== null) {
-                          const modularGradeValue = firstGrade[`nota${moduleNum}`];
-                          if (modularGradeValue !== null && modularGradeValue !== undefined && modularGradeValue !== '') {
-                            finalGradeValue = Number(modularGradeValue);
-                          }
-                        }
-                        if (finalGradeValue === null) {
-                          const directGrade = (reportData.grades || []).find((g: any) => g.disciplina_id === disc.id);
-                          finalGradeValue = directGrade ? directGrade.nota_final : null;
-                        }
-                        let freqValue = null;
-                        if (firstGrade && firstGrade.frequencia !== null && firstGrade.frequencia !== undefined) {
-                          freqValue = firstGrade.frequencia;
-                        } else {
-                          const directGrade = (reportData.grades || []).find((g: any) => g.disciplina_id === disc.id);
-                          freqValue = directGrade ? directGrade.frequencia : null;
-                        }
+                        const { finalGradeValue, freqValue } = getDisciplineGradeAndFreq(disc, discIdx, reportData, firstGrade);
                         return { finalGradeValue, freqValue };
                       });
 
@@ -1733,29 +1727,10 @@ function BoletimContent() {
                         if (mDiff !== 0) return mDiff;
                         return a.nome.localeCompare(b.nome);
                       });
-                      const firstDisc = sortedDisciplines[0];
                       const firstGrade = getReportFirstGrade(reportData);
 
                       const computedDisciplines = sortedDisciplines.map((disc: any, discIdx: number) => {
-                        const moduleNum = disc.modulo_index || (discIdx + 1);
-                        let finalGradeValue = null;
-                        if (firstGrade && moduleNum !== null) {
-                          const modularGradeValue = firstGrade[`nota${moduleNum}`];
-                          if (modularGradeValue !== null && modularGradeValue !== undefined && modularGradeValue !== '') {
-                            finalGradeValue = Number(modularGradeValue);
-                          }
-                        }
-                        if (finalGradeValue === null) {
-                          const directGrade = (reportData.grades || []).find((g: any) => g.disciplina_id === disc.id);
-                          finalGradeValue = directGrade ? directGrade.nota_final : null;
-                        }
-                        let freqValue = null;
-                        if (firstGrade && firstGrade.frequencia !== null && firstGrade.frequencia !== undefined) {
-                          freqValue = firstGrade.frequencia;
-                        } else {
-                          const directGrade = (reportData.grades || []).find((g: any) => g.disciplina_id === disc.id);
-                          freqValue = directGrade ? directGrade.frequencia : null;
-                        }
+                        const { finalGradeValue, freqValue } = getDisciplineGradeAndFreq(disc, discIdx, reportData, firstGrade);
                         return { finalGradeValue, freqValue };
                       });
 
@@ -2525,29 +2500,7 @@ function BoletimContent() {
                                         const firstGrade = getReportFirstGrade(reportData);
 
                                         const rows = sortedDisciplines.map((disc: any, discIdx: number) => {
-                                          const moduleNum = disc.modulo_index || (discIdx + 1);
-
-                                          let finalGradeValue = null;
-                                          if (firstGrade && moduleNum !== null) {
-                                            const modularGradeValue = firstGrade[`nota${moduleNum}`];
-                                            if (modularGradeValue !== null && modularGradeValue !== undefined && modularGradeValue !== '') {
-                                              finalGradeValue = Number(modularGradeValue);
-                                            }
-                                          }
-
-                                          if (finalGradeValue === null) {
-                                            const directGrade = (reportData?.grades || []).find((g: any) => g.disciplina_id === disc.id);
-                                            finalGradeValue = directGrade ? directGrade.nota_final : null;
-                                          }
-
-                                          let freqValue = null;
-                                          if (firstGrade && firstGrade.frequencia !== null && firstGrade.frequencia !== undefined) {
-                                            freqValue = firstGrade.frequencia;
-                                          } else {
-                                            const directGrade = (reportData?.grades || []).find((g: any) => g.disciplina_id === disc.id);
-                                            freqValue = directGrade ? directGrade.frequencia : null;
-                                          }
-
+                                          const { finalGradeValue, freqValue, moduleNum } = getDisciplineGradeAndFreq(disc, discIdx, reportData, firstGrade);
                                           const finalGradeFormatted = finalGradeValue !== null && finalGradeValue !== undefined ? Number(finalGradeValue).toFixed(1) : '-';
 
                                           let statusLabel = '';
@@ -2590,19 +2543,6 @@ function BoletimContent() {
                                           };
                                         });
 
-                                        const rowsWithSpans: any[] = [];
-                                        for (let i = 0; i < rows.length; i++) {
-                                          const row = { ...rows[i], moduloSpan: 0 };
-                                          if (i === 0 || rows[i].modulo !== rows[i - 1].modulo) {
-                                            let span = 1;
-                                            while (i + span < rows.length && rows[i + span].modulo === rows[i].modulo) {
-                                              span++;
-                                            }
-                                            row.moduloSpan = span;
-                                          }
-                                          rowsWithSpans.push(row);
-                                        }
-
                                         return (
                                           <table className="w-full text-left border-collapse bg-white table-auto">
                                             <thead>
@@ -2614,20 +2554,18 @@ function BoletimContent() {
                                               </tr>
                                             </thead>
                                             <tbody className="text-[10px]">
-                                              {rowsWithSpans.length === 0 ? (
+                                              {rows.length === 0 ? (
                                                 <tr>
                                                   <td colSpan={4} className="text-center py-4 text-slate-400 font-bold bg-white">
                                                     {language === 'pt' ? 'Nenhuma disciplina lançada.' : 'No modules submitted.'}
                                                   </td>
                                                 </tr>
                                               ) : (
-                                                rowsWithSpans.map((row: any, rIdx: number) => (
+                                                rows.map((row: any, rIdx: number) => (
                                                   <tr key={`print-row-${row.id || ''}-${rIdx}`} className="border-b border-slate-200 bg-white">
-                                                    {row.moduloSpan > 0 && (
-                                                      <td rowSpan={row.moduloSpan} className="px-3.5 py-1.5 font-black text-slate-900 border-r border-slate-250 bg-slate-50/70 align-middle break-words whitespace-normal leading-tight text-center">
-                                                        {row.modulo}
-                                                      </td>
-                                                    )}
+                                                    <td className="px-3.5 py-1.5 font-black text-slate-900 border-r border-slate-250 bg-slate-50/70 align-middle break-words whitespace-normal leading-tight text-center">
+                                                      {row.modulo}
+                                                    </td>
                                                     <td className="px-3.5 py-1.5 font-bold text-slate-800 border-r border-slate-200 bg-white align-middle break-words whitespace-normal leading-tight">
                                                       {row.disciplina}
                                                     </td>
@@ -2675,25 +2613,7 @@ function BoletimContent() {
                                           const firstGrade = getReportFirstGrade(reportData);
 
                                           const computedDisciplines = sortedDisciplines.map((disc: any, discIdx: number) => {
-                                            const moduleNum = disc.modulo_index || (discIdx + 1);
-                                            let finalGradeValue = null;
-                                            if (firstGrade && moduleNum !== null) {
-                                              const modularGradeValue = firstGrade[`nota${moduleNum}`];
-                                              if (modularGradeValue !== null && modularGradeValue !== undefined && modularGradeValue !== '') {
-                                                finalGradeValue = Number(modularGradeValue);
-                                              }
-                                            }
-                                            if (finalGradeValue === null) {
-                                              const directGrade = (reportData.grades || []).find((g: any) => g.disciplina_id === disc.id);
-                                              finalGradeValue = directGrade ? directGrade.nota_final : null;
-                                            }
-                                            let freqValue = null;
-                                            if (firstGrade && firstGrade.frequencia !== null && firstGrade.frequencia !== undefined) {
-                                              freqValue = firstGrade.frequencia;
-                                            } else {
-                                              const directGrade = (reportData.grades || []).find((g: any) => g.disciplina_id === disc.id);
-                                              freqValue = directGrade ? directGrade.frequencia : null;
-                                            }
+                                            const { finalGradeValue, freqValue } = getDisciplineGradeAndFreq(disc, discIdx, reportData, firstGrade);
                                             return { finalGradeValue, freqValue };
                                           });
 
@@ -2754,25 +2674,7 @@ function BoletimContent() {
                                         const firstGrade = getReportFirstGrade(reportData);
 
                                         const computedDisciplines = sortedDisciplines.map((disc: any, discIdx: number) => {
-                                          const moduleNum = disc.modulo_index || (discIdx + 1);
-                                          let finalGradeValue = null;
-                                          if (firstGrade && moduleNum !== null) {
-                                            const modularGradeValue = firstGrade[`nota${moduleNum}`];
-                                            if (modularGradeValue !== null && modularGradeValue !== undefined && modularGradeValue !== '') {
-                                              finalGradeValue = Number(modularGradeValue);
-                                            }
-                                          }
-                                          if (finalGradeValue === null) {
-                                            const directGrade = (reportData.grades || []).find((g: any) => g.disciplina_id === disc.id);
-                                            finalGradeValue = directGrade ? directGrade.nota_final : null;
-                                          }
-                                          let freqValue = null;
-                                          if (firstGrade && firstGrade.frequencia !== null && firstGrade.frequencia !== undefined) {
-                                            freqValue = firstGrade.frequencia;
-                                          } else {
-                                            const directGrade = (reportData.grades || []).find((g: any) => g.disciplina_id === disc.id);
-                                            freqValue = directGrade ? directGrade.frequencia : null;
-                                          }
+                                          const { finalGradeValue, freqValue } = getDisciplineGradeAndFreq(disc, discIdx, reportData, firstGrade);
                                           return { finalGradeValue, freqValue };
                                         });
 
