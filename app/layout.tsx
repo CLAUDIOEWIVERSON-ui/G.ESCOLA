@@ -3,12 +3,10 @@ import './globals.css';
 import { LanguageProvider } from '@/lib/i18n/LanguageContext';
 import { UserProvider } from '@/lib/auth/UserContext';
 import { Toaster } from 'sonner';
-
 export const metadata: Metadata = {
   title: 'SISTEMA DE GESTÃO ESCOLAR',
   description: 'Sistema completo de gerenciamento escolar',
 };
-
 export default function RootLayout({children}: {children: React.ReactNode}) {
   return (
     <html lang="pt">
