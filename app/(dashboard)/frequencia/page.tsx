@@ -7,7 +7,6 @@ import { useUser } from '@/lib/auth/UserContext';
 import { 
   CalendarDays, 
   Search, 
-  BookOpen,
   UserCheck, 
   Save, 
   Loader2, 
@@ -82,7 +81,7 @@ export default function FrequenciaPage() {
   const dateLocale = language === 'pt' ? ptBR : enUS;
 
   const [loading, setLoading] = useState(false);
-  const [mapGranularity, setMapGranularity] = useState<'week' | 'month' | 'year' | 'course'>('course');
+  const [mapGranularity, setMapGranularity] = useState<'week' | 'month' | 'year'>('month');
   
   const [cursos, setCursos] = useState<any[]>([]);
   const [turmas, setTurmas] = useState<any[]>([]);
@@ -141,7 +140,6 @@ export default function FrequenciaPage() {
   }, [effectiveStartDate, effectiveEndDate]);
 
   const canNavigateLeft = useCallback(() => {
-    if (mapGranularity === 'course') return false;
     if (!effectiveStartDate) return true;
     
     let targetDate: Date;
@@ -159,7 +157,6 @@ export default function FrequenciaPage() {
   }, [effectiveStartDate, currentMapDate, mapGranularity]);
 
   const canNavigateRight = useCallback(() => {
-    if (mapGranularity === 'course') return false;
     if (!effectiveEndDate) return true;
     
     let targetDate: Date;
@@ -204,10 +201,7 @@ export default function FrequenciaPage() {
       let start: string;
       let end: string;
 
-      if (mapGranularity === 'course') {
-        start = effectiveStartDate || format(startOfMonth(currentMapDate), 'yyyy-MM-dd');
-        end = effectiveEndDate || format(endOfMonth(currentMapDate), 'yyyy-MM-dd');
-      } else if (mapGranularity === 'week') {
+      if (mapGranularity === 'week') {
         start = format(startOfWeek(currentMapDate, { weekStartsOn: 1 }), 'yyyy-MM-dd');
         end = format(endOfWeek(currentMapDate, { weekStartsOn: 1 }), 'yyyy-MM-dd');
       } else if (mapGranularity === 'year') {
@@ -598,9 +592,7 @@ export default function FrequenciaPage() {
                 </button>
                 <div className="text-center min-w-[220px]">
                   <h2 className="text-xl font-black text-slate-900 capitalize tracking-tight">
-                    {mapGranularity === 'course' ? (
-                      language === 'pt' ? 'Período Completo' : 'Full Course'
-                    ) : mapGranularity === 'week' ? (
+                    {mapGranularity === 'week' ? (
                       `Semana de ${format(startOfWeek(currentMapDate, { weekStartsOn: 1 }), 'dd/MM')}`
                     ) : mapGranularity === 'year' ? (
                       format(currentMapDate, 'yyyy')
@@ -662,17 +654,6 @@ export default function FrequenciaPage() {
                     <LayoutGrid size={16} />
                     MÊS
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setMapGranularity('course')}
-                    className={cn(
-                      "flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all",
-                      mapGranularity === 'course' ? "bg-white text-blue-600 shadow-md" : "text-slate-500 hover:text-slate-700"
-                    )}
-                  >
-                    <BookOpen size={16} />
-                    COMPLETO
-                  </button>
                 </div>
 
                 {effectiveStartDate && (
@@ -728,9 +709,7 @@ export default function FrequenciaPage() {
                       {language === 'pt' ? 'Sistema de Gestão de Frequência' : 'Attendance Management System'}
                     </h3>
                     <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight mt-0.5">
-                      {mapGranularity === 'course'
-                        ? (language === 'pt' ? 'Mapa de Frequência Completo' : 'Full Attendance Map')
-                        : mapGranularity === 'week' 
+                      {mapGranularity === 'week' 
                         ? (language === 'pt' ? 'Folha de Frequência Semanal' : 'Weekly Attendance Sheet')
                         : mapGranularity === 'year'
                           ? (language === 'pt' ? 'Mapa de Frequência Anual' : 'Annual Attendance Map')
@@ -738,11 +717,7 @@ export default function FrequenciaPage() {
                       }
                     </h1>
                     <p className="text-xs font-semibold text-slate-500 mt-0.5">
-                      {mapGranularity === 'course' ? (
-                        effectiveStartDate && effectiveEndDate 
-                          ? `${format(new Date(effectiveStartDate + 'T00:00:00'), 'dd/MM/yyyy')} a ${format(new Date(effectiveEndDate + 'T00:00:00'), 'dd/MM/yyyy')}`
-                          : (language === 'pt' ? 'Período Indeterminado' : 'Indeterminate Period')
-                      ) : mapGranularity === 'week' ? (
+                      {mapGranularity === 'week' ? (
                         `Semana de ${format(startOfWeek(currentMapDate, { weekStartsOn: 1 }), 'dd/MM/yyyy')} a ${format(endOfWeek(currentMapDate, { weekStartsOn: 1 }), 'dd/MM/yyyy')}`
                       ) : mapGranularity === 'year' ? (
                         `Ano Letivo ${format(currentMapDate, 'yyyy')}`
@@ -1024,8 +999,8 @@ export default function FrequenciaPage() {
                         ))
                       ) : (
                         getFilteredDays(eachDayOfInterval({
-                          start: mapGranularity === 'course' ? (effectiveStartDate ? new Date(effectiveStartDate + 'T00:00:00') : startOfMonth(currentMapDate)) : (mapGranularity === 'week' ? startOfWeek(currentMapDate, { weekStartsOn: 1 }) : startOfMonth(currentMapDate)),
-                          end: mapGranularity === 'course' ? (effectiveEndDate ? new Date(effectiveEndDate + 'T00:00:00') : endOfMonth(currentMapDate)) : (mapGranularity === 'week' ? endOfWeek(currentMapDate, { weekStartsOn: 1 }) : endOfMonth(currentMapDate))
+                          start: mapGranularity === 'week' ? startOfWeek(currentMapDate, { weekStartsOn: 1 }) : startOfMonth(currentMapDate),
+                          end: mapGranularity === 'week' ? endOfWeek(currentMapDate, { weekStartsOn: 1 }) : endOfMonth(currentMapDate)
                         })).map(day => {
                           const dayStr = format(day, 'yyyy-MM-dd');
                           const isStartDay = effectiveStartDate && dayStr === effectiveStartDate;
@@ -1095,8 +1070,8 @@ export default function FrequenciaPage() {
                             1 + (mapGranularity === 'year' 
                               ? getFilteredMonths(eachMonthOfInterval({ start: startOfYear(currentMapDate), end: endOfYear(currentMapDate) })).length
                               : getFilteredDays(eachDayOfInterval({
-                                  start: mapGranularity === 'course' ? (effectiveStartDate ? new Date(effectiveStartDate + 'T00:00:00') : startOfMonth(currentMapDate)) : (mapGranularity === 'week' ? startOfWeek(currentMapDate, { weekStartsOn: 1 }) : startOfMonth(currentMapDate)),
-                                  end: mapGranularity === 'course' ? (effectiveEndDate ? new Date(effectiveEndDate + 'T00:00:00') : endOfMonth(currentMapDate)) : (mapGranularity === 'week' ? endOfWeek(currentMapDate, { weekStartsOn: 1 }) : endOfMonth(currentMapDate))
+                                  start: mapGranularity === 'week' ? startOfWeek(currentMapDate, { weekStartsOn: 1 }) : startOfMonth(currentMapDate),
+                                  end: mapGranularity === 'week' ? endOfWeek(currentMapDate, { weekStartsOn: 1 }) : endOfMonth(currentMapDate)
                                 })).length
                             )
                           } 
@@ -1120,8 +1095,8 @@ export default function FrequenciaPage() {
                           </div>
                         </td>
                         {getFilteredDays(eachDayOfInterval({
-                          start: mapGranularity === 'course' ? (effectiveStartDate ? new Date(effectiveStartDate + 'T00:00:00') : startOfMonth(currentMapDate)) : (mapGranularity === 'week' ? startOfWeek(currentMapDate, { weekStartsOn: 1 }) : startOfMonth(currentMapDate)),
-                          end: mapGranularity === 'course' ? (effectiveEndDate ? new Date(effectiveEndDate + 'T00:00:00') : endOfMonth(currentMapDate)) : (mapGranularity === 'week' ? endOfWeek(currentMapDate, { weekStartsOn: 1 }) : endOfMonth(currentMapDate))
+                          start: mapGranularity === 'week' ? startOfWeek(currentMapDate, { weekStartsOn: 1 }) : startOfMonth(currentMapDate),
+                          end: mapGranularity === 'week' ? endOfWeek(currentMapDate, { weekStartsOn: 1 }) : endOfMonth(currentMapDate)
                         })).map(day => {
                           const dayStr = format(day, 'yyyy-MM-dd');
                           const rec = mapData.find(r => {

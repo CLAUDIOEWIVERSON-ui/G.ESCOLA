@@ -37,6 +37,7 @@ export default function NotasPage() {
   const [loading, setLoading] = useState(true);
   const [selectedCurso, setSelectedCurso] = useState('');
   const [selectedTurma, setSelectedTurma] = useState('');
+  const [selectedDisciplina, setSelectedDisciplina] = useState('');
 
   useEffect(() => {
     if (searchParams) {
@@ -187,6 +188,9 @@ export default function NotasPage() {
         .order('nome');
       if (discData) {
         setDisciplinas(discData);
+        if (discData.length > 0 && !discData.find((d: any) => d.id === selectedDisciplina)) {
+          setSelectedDisciplina(discData[0].id);
+        }
       }
     };
 
@@ -205,7 +209,7 @@ export default function NotasPage() {
       }
     }
     const field = `nota${modulo}`;
-    const targetDisciplinaId = disciplinas[0].id; // Use first discipline as main container
+    const targetDisciplinaId = selectedDisciplina || disciplinas[0]?.id; // Use selected discipline
     
     const aluno = turmaAlunos.find(a => a.id === alunoId);
     if (!aluno) return;
@@ -234,7 +238,7 @@ export default function NotasPage() {
 
   const togglePago = (alunoId: string) => {
     if (disciplinas.length === 0 || isReadOnly) return;
-    const targetDisciplinaId = disciplinas[0].id;
+    const targetDisciplinaId = selectedDisciplina || disciplinas[0]?.id;
     const aluno = turmaAlunos.find(a => a.id === alunoId);
     if (!aluno) return;
 
@@ -416,7 +420,7 @@ export default function NotasPage() {
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="space-y-2">
             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t.attendance.course}</label>
             <select
@@ -450,6 +454,20 @@ export default function NotasPage() {
               {turmas
                 .filter((t: any) => !selectedCurso || t.curso_id === selectedCurso)
                 .map((t: any) => <option key={t.id} value={t.id}>{t.nome}</option>)}
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{language === 'pt' ? 'Disciplina' : 'Discipline'}</label>
+            <select
+              value={selectedDisciplina}
+              onChange={(e) => setSelectedDisciplina(e.target.value)}
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-sm font-medium"
+              disabled={disciplinas.length === 0}
+            >
+              {disciplinas.map((d: any) => (
+                <option key={d.id} value={d.id}>{d.nome}</option>
+              ))}
             </select>
           </div>
         </div>
@@ -502,7 +520,7 @@ export default function NotasPage() {
                     const maxAvgValue = turmaAlunos.length > 0 
                       ? Math.max(...turmaAlunos.map((a: any) => {
                           const sGrades = bulkNotas[a.id] || {};
-                          const fdId = disciplinas[0]?.id;
+                          const fdId = selectedDisciplina || disciplinas[0]?.id;
                           const gData = sGrades[fdId] || {};
                           const scs: number[] = [];
                           for (let i = 1; i <= effectiveModules; i++) {
@@ -515,7 +533,7 @@ export default function NotasPage() {
 
                     const sortedAlunos = [...turmaAlunos].sort((a, b) => {
                       const sGradesA = bulkNotas[a.id] || {};
-                      const fdId = disciplinas[0]?.id;
+                      const fdId = selectedDisciplina || disciplinas[0]?.id;
                       const gDataA = sGradesA[fdId] || {};
                       const scsA: number[] = [];
                       for (let i = 1; i <= effectiveModules; i++) {
@@ -542,7 +560,7 @@ export default function NotasPage() {
                     return sortedAlunos.map((aluno: any, index: number) => {
                       const studentGrades = bulkNotas[aluno.id] || {};
                       const isSavingRow = savingRows[aluno.id];
-                      const firstDiscId = disciplinas[0].id;
+                      const firstDiscId = selectedDisciplina || disciplinas[0]?.id;
                       const gradeData = studentGrades[firstDiscId] || {};
                       
                       // Calculation based on modules
