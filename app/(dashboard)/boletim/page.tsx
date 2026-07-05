@@ -1025,23 +1025,19 @@ function BoletimContent() {
         const computedFreq = totalDays > 0 ? (presentDays / totalDays) * 100 : null;
 
         const studentGrades = (grades || []).filter((g: any) => g.aluno_id === student.id);
-        
-        // Find the first discipline alphabetically to match notas/page.tsx default behavior
+        let existingGrade = studentGrades[0];
         const alphabeticalDisciplines = [...(turmaDisciplines || [])].sort((a: any, b: any) => 
-          (a.nome || '').localeCompare(b.nome || '', 'pt-BR')
+          (a.nome || "").localeCompare(b.nome || "", "pt-BR")
         );
         const mainDiscId = alphabeticalDisciplines[0]?.id;
-        
-        // Prefer the grade row of the main discipline
-        let existingGrade = studentGrades.find((g: any) => g.disciplina_id === mainDiscId) || studentGrades[0];
-
+        existingGrade = studentGrades.find((g: any) => g.disciplina_id === mainDiscId) || studentGrades[0];
         if (existingGrade) {
           let computedFinal = existingGrade.nota_final;
           if (computedFinal === null || computedFinal === undefined) {
             const scores: number[] = [];
             for (let i = 1; i <= localCourseModules; i++) {
               const val = existingGrade[`nota${i}`];
-              if (val !== null && val !== undefined && val !== "") {
+              if (val !== null && val !== undefined && val !== '') {
                 scores.push(Number(val));
               }
             }

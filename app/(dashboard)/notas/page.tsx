@@ -195,7 +195,7 @@ export default function NotasPage() {
     };
 
     fetchDisciplinasForTurma();
-  }, [currentCursoId]);
+  }, [currentCursoId, selectedDisciplina]);
 
   const handleBulkChange = (alunoId: string, modulo: number, value: string) => {
     if (disciplinas.length === 0) return;
