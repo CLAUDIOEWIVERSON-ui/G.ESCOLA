@@ -44,9 +44,7 @@ const reportT = {
     footerText: "Emitido eletronicamente via Sistema de Gestão Escolar",
     observations: "OBSERVAÇÕES PEDAGÓGICAS E DISCIPLINARES",
     defaultObs: "Atleta/Aluno demonstra comprometimento acadêmico regular, preenchendo os requisitos regulamentares de frequência e aproveitamento didático estabelecidos pelas normas vigentes.",
-    signatureInstructor: "Assinatura do Instrutor-Chefe / Coordenador",
-    signatureStudent: "Assinatura do Aluno / Treinando",
-    signatureCommander: "Comandante da Missão de Assessoria Naval do Brasil em São Tomé e Príncipe",
+    signatureCommander: "Chefe da Missão de Assessoria Naval do Brasil em São Tomé e Príncipe",
     fullName: "Nome Completo",
     rank: "Posto / Graduação",
     course: "Curso de Formação",
@@ -80,9 +78,7 @@ const reportT = {
     footerText: "Electronically issued via School Management System",
     observations: "PEDAGOGICAL & DISCIPLINARY OBSERVATIONS",
     defaultObs: "The student demonstrates regular academic commitment, complying with the regulatory requirements of attendance and training achievements established by current regulations.",
-    signatureInstructor: "Signature of Chief Instructor / Coordinator",
-    signatureStudent: "Signature of Student / Trainee",
-    signatureCommander: "Commander of the Brazilian Naval Advisory Mission in São Tomé and Príncipe",
+    signatureCommander: "Head of the Brazilian Naval Advisory Mission in São Tomé and Príncipe",
     fullName: "Full Name",
     rank: "Rank / Post",
     course: "Course of Instruction",
@@ -1831,8 +1827,8 @@ function BoletimContent() {
                           <div className="flex justify-between items-center text-xs p-1">
                             <span className="font-extrabold text-slate-500 uppercase text-[9px] tracking-wide">{reportT[language as "pt" | "en"].overallAverage}:</span>
                             <span className={cn(
-                              "font-black font-mono text-base px-2 py-0.5 rounded",
-                              averageGrade !== null && averageGrade >= settings.media_aprovacao ? "text-blue-600 bg-blue-50" : "text-rose-600 bg-rose-50"
+                              "inline-flex items-center justify-center text-center min-w-[64px] font-black font-mono text-base px-2 py-0.5 rounded border",
+                              averageGrade !== null && averageGrade >= settings.media_aprovacao ? "text-blue-700 bg-blue-50 border-blue-600" : "text-rose-700 bg-rose-50 border-rose-600"
                             )}>
                               {averageGrade !== null ? averageGrade.toFixed(2) : '-'}
                             </span>
@@ -2811,7 +2807,7 @@ function BoletimContent() {
                                           <div className="flex flex-col gap-2">
                                             <div className="flex items-center justify-between">
                                               <span className="text-[8px] font-bold text-slate-500 uppercase tracking-wide leading-none">{reportT[language as "pt" | "en"].overallAverage}:</span>
-                                              <span className="text-[11px] font-black font-mono px-1.5 py-0.5 rounded bg-blue-50 border border-blue-105 text-blue-700">
+                                              <span className="inline-flex items-center justify-center text-center min-w-[50px] text-[11px] font-black font-mono px-2 py-0.5 rounded bg-blue-50 border border-blue-600 text-blue-700">
                                                 {averageGrade !== null ? averageGrade.toFixed(2) : '-'}
                                               </span>
                                             </div>
@@ -2855,15 +2851,17 @@ function BoletimContent() {
                                     </span>
                                   </div>
 
-                                  {/* Single Signature Panel */}
-                                  <div className="flex flex-col items-center justify-center pt-4 mt-2 border-t border-dashed border-slate-300">
+                                  {/* Single Signature & Stamp (Carimbo) Panel */}
+                                  <div className="flex flex-col items-center justify-center pt-5 mt-3 border-t border-dashed border-slate-300">
                                     <div className="flex flex-col items-center text-center max-w-lg w-full">
-                                      <div className="w-80 border-b border-slate-400 h-6"></div>
-                                      <span className="text-[8px] font-black text-slate-700 uppercase mt-1.5 tracking-wider leading-none text-center">
-                                        {reportT[language as "pt" | "en"].signatureCommander}
-                                      </span>
-                                      <span className="text-[7px] font-bold text-slate-400 uppercase mt-0.5 leading-none">
-                                        {language === 'pt' ? 'Assinatura Autorizada' : 'Authorized Signature'}
+                                      <div className="w-72 border-b-2 border-slate-700 h-8 mb-2"></div>
+                                      <div className="flex flex-col items-center px-4 py-1.5 border-2 border-slate-700 rounded bg-slate-50 min-w-[260px] shadow-2xs">
+                                        <span className="text-[9px] font-black text-slate-900 uppercase tracking-wider leading-tight text-center font-mono">
+                                          {reportT[language as "pt" | "en"].signatureCommander}
+                                        </span>
+                                      </div>
+                                      <span className="text-[7px] font-bold text-slate-400 uppercase mt-1.5 leading-none tracking-widest">
+                                        {language === 'pt' ? 'Assinatura e Carimbo Oficial' : 'Official Signature and Stamp'}
                                       </span>
                                     </div>
                                   </div>
@@ -3128,27 +3126,30 @@ function BoletimContent() {
                                  <div className="grid grid-cols-2 gap-4 mt-3 border-t border-slate-250 pt-3">
                                    <div className="flex items-center justify-between text-[10px] font-bold text-slate-600">
                                      <span>{language === 'pt' ? 'MÉDIA GERAL DA TURMA:' : 'CLASS OVERALL AVERAGE:'}</span>
-                                     <span className="font-mono font-black text-blue-700 bg-blue-50 border border-blue-105 px-2 py-0.5 rounded">
+                                     <span className="inline-flex items-center justify-center text-center min-w-[50px] font-mono font-black text-blue-700 bg-blue-50 border border-blue-600 px-2 py-0.5 rounded">
                                        {classStats.avg ? classStats.avg.toFixed(2) : '-'}
                                      </span>
                                    </div>
                                    <div className="flex items-center justify-between text-[10px] font-bold text-slate-600">
                                      <span>{language === 'pt' ? 'TOTAL DE ALUNOS:' : 'TOTAL STUDENTS:'}</span>
-                                     <span className="font-mono font-black text-slate-800 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded">
+                                     <span className="inline-flex items-center justify-center text-center min-w-[50px] font-mono font-black text-slate-800 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded">
                                        {classStats.total || '-'}
                                      </span>
                                    </div>
                                  </div>
 
-                                 {/* Signatures */}
-                                 <div className="grid grid-cols-2 gap-10 pt-4 mt-2 border-t border-dashed border-slate-300">
-                                   <div className="flex flex-col items-center text-center">
-                                     <div className="w-44 border-b border-slate-400 h-5"></div>
-                                     <span className="text-[8px] font-black text-slate-700 uppercase mt-1 tracking-wider leading-none">Instrutor Responsável</span>
-                                   </div>
-                                   <div className="flex flex-col items-center text-center">
-                                     <div className="w-44 border-b border-slate-400 h-5"></div>
-                                     <span className="text-[8px] font-black text-slate-700 uppercase mt-1 tracking-wider leading-none">Diretor de Ensino</span>
+                                 {/* Single Signature & Stamp (Carimbo) Panel */}
+                                 <div className="flex flex-col items-center justify-center pt-5 mt-3 border-t border-dashed border-slate-300">
+                                   <div className="flex flex-col items-center text-center max-w-lg w-full">
+                                     <div className="w-72 border-b-2 border-slate-700 h-8 mb-2"></div>
+                                     <div className="flex flex-col items-center px-4 py-1.5 border-2 border-slate-700 rounded bg-slate-50 min-w-[260px] shadow-2xs">
+                                       <span className="text-[9px] font-black text-slate-900 uppercase tracking-wider leading-tight text-center font-mono">
+                                         {reportT[language as "pt" | "en"].signatureCommander}
+                                       </span>
+                                     </div>
+                                     <span className="text-[7px] font-bold text-slate-400 uppercase mt-1.5 leading-none tracking-widest">
+                                       {language === 'pt' ? 'Assinatura e Carimbo Oficial' : 'Official Signature and Stamp'}
+                                     </span>
                                    </div>
                                  </div>
                               </div>
