@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { supabaseAdmin, isSupabaseAdminConfigured } from '@/lib/supabase/admin';
 
+export const dynamic = 'force-dynamic';
+
 // Declare a type-safe global object for TypeScript
 interface OnlineUser {
   id: string;
