@@ -1776,7 +1776,7 @@ function BoletimContent() {
 
                       const validFinalGrades = computedDisciplines.filter((cd: any) => cd.finalGradeValue !== null && cd.finalGradeValue !== undefined);
                       const averageGrade = validFinalGrades.length > 0
-                        ? validFinalGrades.reduce((sum, cd) => sum + cd.finalGradeValue, 0) / validFinalGrades.length
+                        ? validFinalGrades.reduce((sum, cd) => sum + (cd.finalGradeValue || 0), 0) / validFinalGrades.length
                         : null;
 
                       const expirationDate = reportData.classObj?.data_postergacao || reportData.classObj?.data_fim;
@@ -2758,7 +2758,7 @@ function BoletimContent() {
 
                                         const validFinalGrades = computedDisciplines.filter((cd: any) => cd.finalGradeValue !== null && cd.finalGradeValue !== undefined);
                                         const averageGrade = validFinalGrades.length > 0
-                                          ? validFinalGrades.reduce((sum, cd) => sum + cd.finalGradeValue, 0) / validFinalGrades.length
+                                          ? validFinalGrades.reduce((sum, cd) => sum + (cd.finalGradeValue || 0), 0) / validFinalGrades.length
                                           : null;
 
                                         const expirationDate = reportData.classObj?.data_postergacao || reportData.classObj?.data_fim;

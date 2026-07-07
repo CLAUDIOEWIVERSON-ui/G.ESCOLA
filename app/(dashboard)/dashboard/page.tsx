@@ -58,7 +58,7 @@ export default function DashboardPage() {
         setOnlineCount(data.count || 0);
       }
     } catch (err) {
-      console.error('Failed to fetch online users:', err);
+      // Silently fail network errors for polling
     } finally {
       setLoadingOnline(false);
     }
