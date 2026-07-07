@@ -912,8 +912,7 @@ function BoletimContent() {
           .eq('aluno_id', selectedStudentForReport)
           .eq('turma_id', classId);
 
-        const activeDiscIds = new Set((resolvedDisciplines || []).map((d: any) => d.id));
-        const gradesData = (gradesDataRaw || []).filter((g: any) => activeDiscIds.has(g.disciplina_id));
+        const gradesData = gradesDataRaw || [];
 
         const { data: attendanceData } = await supabase
           .from('frequencia')
@@ -977,15 +976,11 @@ function BoletimContent() {
 
       if (studentsError) throw studentsError;
 
-      // 2. Fetch all grades registered for this class and discipline
+      // 2. Fetch all grades registered for this class across all disciplines
       let gradesQuery = supabase
         .from('notas')
         .select('*')
         .eq('turma_id', activeTurmaId);
-
-      if (firstDiscId) {
-        gradesQuery = gradesQuery.eq('disciplina_id', firstDiscId);
-      }
 
       if (selectedAno) {
         gradesQuery = gradesQuery.eq('ano_letivo', parseInt(selectedAno));
@@ -994,8 +989,7 @@ function BoletimContent() {
       const { data: gradesRaw, error: gradesError } = await gradesQuery;
       if (gradesError) throw gradesError;
 
-      const activeDiscIds = new Set((turmaDisciplines || []).map((d: any) => d.id));
-      const grades = (gradesRaw || []).filter((g: any) => activeDiscIds.has(g.disciplina_id));
+      const grades = gradesRaw || [];
 
       // Fetch all attendance records for this class to calculate frequency dynamically
       const { data: attendanceList, error: attendanceError } = await supabase
@@ -1006,6 +1000,38 @@ function BoletimContent() {
       if (attendanceError) {
         console.error("Error fetching attendance list:", attendanceError);
       }
+
+      // Fetch materials_modulos to resolve modulo_index
+      let topicsList: any[] = [];
+      if (turmaDisciplines.length > 0) {
+        const discIds = turmaDisciplines.map((d: any) => d.id);
+        const { data: tData } = await supabase
+          .from('materias_modulos')
+          .select('*')
+          .in('disciplina_id', discIds)
+          .is('deleted_at', null)
+          .order('modulo_index', { ascending: true })
+          .order('ordem', { ascending: true });
+        topicsList = tData || [];
+      }
+
+      // Pre-calculate resolved disciplines with correct modulo_index
+      const resolvedDisciplines = (turmaDisciplines || []).map((disc: any) => {
+        let resolvedModuloIndex = disc.modulo_index;
+        if (resolvedModuloIndex === null || resolvedModuloIndex === undefined || resolvedModuloIndex === 0) {
+          const discTopics = (topicsList || []).filter((t: any) => t.disciplina_id === disc.id);
+          if (discTopics.length > 0) {
+            const minMod = Math.min(...discTopics.map((t: any) => t.modulo_index).filter((m: any) => !isNaN(m)));
+            if (minMod !== Infinity) {
+              resolvedModuloIndex = minMod;
+            }
+          }
+        }
+        return {
+          ...disc,
+          modulo_index: resolvedModuloIndex || 1 // ultimate fallback is module 1
+        };
+      });
 
       const localCourseModules = turma?.curso?.qtd_modulos 
         ? Math.min(turma.curso.qtd_modulos, 20) 
@@ -1021,75 +1047,112 @@ function BoletimContent() {
         const computedFreq = totalDays > 0 ? (presentDays / totalDays) * 100 : null;
 
         const studentGrades = (grades || []).filter((g: any) => g.aluno_id === student.id);
-        let existingGrade = studentGrades[0];
-        const alphabeticalDisciplines = [...(turmaDisciplines || [])].sort((a: any, b: any) => 
-          (a.nome || "").localeCompare(b.nome || "", "pt-BR")
-        );
-        const mainDiscId = alphabeticalDisciplines[0]?.id;
-        existingGrade = studentGrades.find((g: any) => g.disciplina_id === mainDiscId) || studentGrades[0];
-        if (existingGrade) {
-          let computedFinal = existingGrade.nota_final;
-          if (computedFinal === null || computedFinal === undefined) {
-            const scores: number[] = [];
-            for (let i = 1; i <= localCourseModules; i++) {
-              const val = existingGrade[`nota${i}`];
+
+        const localGetDisciplineGradeAndFreq = (disc: any, discIdx: number, studentGradesList: any[]) => {
+          const moduleNum = disc.modulo_index || (discIdx + 1);
+          const directGrade = studentGradesList.find((g: any) => g.disciplina_id === disc.id);
+
+          let finalGradeValue: number | null = null;
+          if (directGrade && directGrade.nota_final !== null && directGrade.nota_final !== undefined && directGrade.nota_final !== '') {
+            finalGradeValue = Number(directGrade.nota_final);
+          } else if (directGrade && directGrade[`nota${moduleNum}`] !== null && directGrade[`nota${moduleNum}`] !== undefined && directGrade[`nota${moduleNum}`] !== '') {
+            finalGradeValue = Number(directGrade[`nota${moduleNum}`]);
+          } else {
+            const anyModularRow = studentGradesList.find((g: any) => {
+              const val = g[`nota${moduleNum}`];
+              return val !== null && val !== undefined && val !== '';
+            });
+            if (anyModularRow) {
+              const val = anyModularRow[`nota${moduleNum}`];
               if (val !== null && val !== undefined && val !== '') {
-                scores.push(Number(val));
+                finalGradeValue = Number(val);
               }
-            }
-            if (scores.length > 0) {
-              computedFinal = scores.reduce((x, y) => x + y, 0) / scores.length;
+            } else if (directGrade && directGrade.nota1 !== null && directGrade.nota1 !== undefined && directGrade.nota1 !== '') {
+              finalGradeValue = Number(directGrade.nota1);
             }
           }
 
-          let bestFreq = existingGrade.frequencia;
-          const validFreqs = studentGrades
-            .map((g: any) => g.frequencia)
-            .filter((val: any) => val !== null && val !== undefined && val !== '')
-            .map((val: any) => Number(val));
-          if (validFreqs.length > 0) {
-            bestFreq = validFreqs.reduce((a: number, b: number) => a + b, 0) / validFreqs.length;
+          let freqValue: number | null = null;
+          if (directGrade && directGrade.frequencia !== null && directGrade.frequencia !== undefined && directGrade.frequencia !== '') {
+            freqValue = Number(directGrade.frequencia);
+          } else {
+            const anyFreqRow = studentGradesList.find((g: any) => g.frequencia !== null && g.frequencia !== undefined && g.frequencia !== '');
+            if (anyFreqRow) {
+              freqValue = Number(anyFreqRow.frequencia);
+            }
           }
 
-          return {
-            ...existingGrade,
-            nota_final: computedFinal !== null ? Number(computedFinal) : null,
-            frequencia: bestFreq !== null && bestFreq !== undefined ? bestFreq : computedFreq,
-            aluno: student
-          };
-        } else {
-          return {
-            id: `temp-${student.id}`,
-            aluno_id: student.id,
-            turma_id: activeTurmaId,
-            disciplina_id: firstDiscId || '',
-            nota1: null,
-            nota2: null,
-            nota3: null,
-            nota4: null,
-            nota5: null,
-            nota6: null,
-            nota7: null,
-            nota8: null,
-            nota9: null,
-            nota10: null,
-            nota11: null,
-            nota12: null,
-            nota13: null,
-            nota14: null,
-            nota15: null,
-            nota16: null,
-            nota17: null,
-            nota18: null,
-            nota19: null,
-            nota20: null,
-            nota_final: null,
-            frequencia: computedFreq,
-            pago: true,
-            ano_letivo: parseInt(selectedAno) || new Date().getFullYear(),
-            aluno: student
-          };
+          return { finalGradeValue, freqValue, moduleNum };
+        };
+
+        // Group resolved disciplines by module_index
+        const moduleGroupsMap = new Map<number, any[]>();
+        
+        resolvedDisciplines.forEach((disc: any, discIdx: number) => {
+          const moduleNum = disc.modulo_index || (discIdx + 1);
+          if (!moduleGroupsMap.has(moduleNum)) {
+            moduleGroupsMap.set(moduleNum, []);
+          }
+          moduleGroupsMap.get(moduleNum)!.push({ disc, discIdx });
+        });
+
+        const computedModuleGrades: { [key: string]: number | null } = {};
+        const computedModuleFreqs: number[] = [];
+
+        for (let i = 1; i <= localCourseModules; i++) {
+          const groupItems = moduleGroupsMap.get(i) || [];
+          if (groupItems.length > 0) {
+            const evaluated = groupItems.map(({ disc, discIdx }) => {
+              return localGetDisciplineGradeAndFreq(disc, discIdx, studentGrades);
+            });
+
+            const validGrades = evaluated
+              .map(e => e.finalGradeValue)
+              .filter((g): g is number => g !== null && g !== undefined && !isNaN(g));
+            computedModuleGrades[`nota${i}`] = validGrades.length > 0 ? Math.max(...validGrades) : null;
+
+            const validFreqs = evaluated
+              .map(e => e.freqValue)
+              .filter((f): f is number => f !== null && f !== undefined && !isNaN(f));
+            if (validFreqs.length > 0) {
+              computedModuleFreqs.push(Math.min(...validFreqs));
+            }
+          } else {
+            // Fallback: search in studentGrades for any modular column matching nota{i}
+            const anyModularRow = studentGrades.find((g: any) => {
+              const val = g[`nota${i}`];
+              return val !== null && val !== undefined && val !== '';
+            });
+            computedModuleGrades[`nota${i}`] = anyModularRow ? Number(anyModularRow[`nota${i}`]) : null;
+          }
         }
+
+        const validFinalGrades = Object.values(computedModuleGrades).filter((g): g is number => g !== null && g !== undefined && !isNaN(g));
+        const computedFinal = validFinalGrades.length > 0
+          ? validFinalGrades.reduce((sum, val) => sum + val, 0) / validFinalGrades.length
+          : null;
+
+        let bestFreq = computedModuleFreqs.length > 0
+          ? computedModuleFreqs.reduce((sum, val) => sum + val, 0) / computedModuleFreqs.length
+          : null;
+        if (bestFreq === null || isNaN(bestFreq)) {
+          bestFreq = computedFreq;
+        }
+
+        const baseGradeObj = studentGrades[0] || {};
+
+        return {
+          id: baseGradeObj.id || `temp-${student.id}`,
+          aluno_id: student.id,
+          turma_id: activeTurmaId,
+          disciplina_id: baseGradeObj.disciplina_id || firstDiscId || '',
+          ...computedModuleGrades,
+          nota_final: computedFinal,
+          frequencia: bestFreq,
+          pago: baseGradeObj.pago !== undefined ? baseGradeObj.pago : true,
+          ano_letivo: baseGradeObj.ano_letivo || parseInt(selectedAno) || new Date().getFullYear(),
+          aluno: student
+        };
       });
 
       // Sort mergedData by grade descending. Students without a grade (null/undefined) go to the end.
