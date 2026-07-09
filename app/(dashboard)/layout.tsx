@@ -192,7 +192,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: t.nav.dashboard, icon: LayoutDashboard, path: '/dashboard' },
     { name: t.nav.courses, icon: BookOpen, path: '/cursos' },
     { name: t.nav.classes, icon: Library, path: '/turmas' },
-    { name: t.nav.grades, icon: FileCheck, path: '/notas' },
     { name: t.nav.reportCard, icon: FileText, path: '/boletim' },
     { name: t.schedule.title, icon: Calendar, path: '/horario' },
     { name: t.nav.attendance, icon: CalendarDays, path: '/frequencia' },
@@ -203,8 +202,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: t.nav.settings, icon: Settings, path: '/configuracoes' },
   ];
 
-  const firstGroup = isNifStudent ? [] : navItems.slice(0, 4);
-  const secondGroup = isNifStudent ? navItems : navItems.slice(4);
+  const firstGroup = isNifStudent ? [] : navItems.slice(0, 3);
+  const secondGroup = isNifStudent ? navItems : navItems.slice(3);
 
   // Split secondGroup into visible items and those hidden under "See More" at the height of user management module
   const hiddenPaths = ['/relatorio-avaliacao', '/links', '/configuracoes'];
