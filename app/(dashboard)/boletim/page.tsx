@@ -1196,6 +1196,55 @@ function BoletimContent() {
     }
   };
 
+  const handleQuickGradeUpdate = async (row: any, moduleIndex: number | 'final', value: string) => {
+    try {
+      const numValue = value === '' ? null : Number(value);
+      const fieldName = moduleIndex === 'final' ? 'nota_final' : `nota${moduleIndex}`;
+      
+      // Optimistic update
+      setBoletimData(prev => prev.map(r => {
+        if (r.aluno_id === row.aluno_id) {
+          const updated = { ...r, [fieldName]: numValue };
+          // For a simple UX, we won't automatically re-average nota_final here,
+          // because it would require complex recalculation. A refresh does it anyway.
+          return updated;
+        }
+        return r;
+      }));
+
+      // Find the base record to update or insert
+      // In boletim, row.disciplina_id is the primary discipline for this student's module/class
+      if (!row.disciplina_id) {
+         toast.error(language === 'pt' ? 'Nenhuma disciplina vinculada para atualizar a nota.' : 'No linked discipline to update grade.');
+         return;
+      }
+
+      const dataToUpsert = {
+        aluno_id: row.aluno_id,
+        turma_id: row.turma_id,
+        disciplina_id: row.disciplina_id,
+        [fieldName]: numValue,
+        ano_letivo: row.ano_letivo,
+      };
+
+      const { error } = await supabase
+        .from('notas')
+        .upsert(dataToUpsert, { onConflict: 'aluno_id,disciplina_id,turma_id' });
+        
+      if (error) throw error;
+      
+      toast.success(language === 'pt' ? 'Nota atualizada com sucesso!' : 'Grade updated successfully!');
+      
+      // We could optionally call handleSearch(selectedTurma) to refresh and compute averages,
+      // but it might cause the input to lose focus. Optimistic update is enough for quick edits.
+    } catch (err: any) {
+      console.error('Error quick updating grade:', err);
+      toast.error(language === 'pt' ? 'Erro ao salvar a nota.' : 'Error saving grade.');
+      // Optionally trigger handleSearch to revert
+      if (selectedTurma) handleSearch(selectedTurma);
+    }
+  };
+
   const disciplinasLength = disciplinas?.length || 0;
 
   // Auto-search when turma or year changes
@@ -2119,15 +2168,47 @@ function BoletimContent() {
                            {Array.from({ length: courseModules }).map((_, i) => {
                              const notaValue = (row as any)[`nota${i + 1}`];
                              return (
-                               <td key={i} className="px-3 py-4 text-center font-mono text-sm text-slate-500">
-                                 {notaValue !== null && notaValue !== undefined ? Number(notaValue).toFixed(1) : '-'}
+                               <td key={i} className="px-1 py-2 text-center font-mono text-sm text-slate-500">
+                                 <input
+                                   type="number"
+                                   min="0"
+                                   max="10"
+                                   step="0.1"
+                                   value={notaValue !== null && notaValue !== undefined ? Number(notaValue) : ''}
+                                   onChange={(e) => {
+                                     // Just optimistic local state update for typing
+                                     const val = e.target.value;
+                                     setBoletimData(prev => prev.map(r => 
+                                       r.id === row.id ? { ...r, [`nota${i + 1}`]: val === '' ? null : Number(val) } : r
+                                     ));
+                                   }}
+                                   onBlur={(e) => handleQuickGradeUpdate(row, i + 1, e.target.value)}
+                                   className="w-14 px-1 py-1 text-center border border-transparent hover:border-slate-200 focus:border-blue-500 rounded bg-transparent focus:bg-white focus:outline-none transition-all print:border-none print:bg-transparent print:p-0"
+                                   placeholder="-"
+                                 />
                                </td>
                              );
                            })}
-                           <td className="px-6 py-4 text-center">
-                              <span className={cn("font-bold font-mono text-sm", (row.nota_final || 0) >= settings.media_aprovacao ? "text-blue-600" : (row.nota_final || 0) >= settings.media_recuperacao ? "text-yellow-600" : "text-red-500")}>
-                                {row.nota_final?.toFixed(1) || '-'}
-                              </span>
+                           <td className="px-3 py-2 text-center">
+                             <input
+                               type="number"
+                               min="0"
+                               max="10"
+                               step="0.1"
+                               value={row.nota_final !== null && row.nota_final !== undefined ? Number(row.nota_final) : ''}
+                               onChange={(e) => {
+                                 const val = e.target.value;
+                                 setBoletimData(prev => prev.map(r => 
+                                   r.id === row.id ? { ...r, nota_final: val === '' ? null : Number(val) } : r
+                                 ));
+                               }}
+                               onBlur={(e) => handleQuickGradeUpdate(row, 'final', e.target.value)}
+                               className={cn(
+                                 "w-16 px-1 py-1 text-center border border-transparent hover:border-slate-200 focus:border-blue-500 rounded bg-transparent focus:bg-white focus:outline-none transition-all font-bold font-mono text-sm print:border-none print:bg-transparent print:p-0",
+                                 (row.nota_final || 0) >= settings.media_aprovacao ? "text-blue-600" : (row.nota_final || 0) >= settings.media_recuperacao ? "text-yellow-600" : "text-red-500"
+                               )}
+                               placeholder="-"
+                             />
                            </td>
                             <td className="px-6 py-4 text-center">
                               <span className={cn("px-2.5 py-1 rounded-lg text-[10px] font-black uppercase inline-flex items-center gap-1 border", status.className)}>
