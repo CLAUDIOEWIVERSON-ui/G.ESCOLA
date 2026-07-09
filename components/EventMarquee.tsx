@@ -73,7 +73,7 @@ export function EventMarquee({ thought }: EventMarqueeProps = {}) {
           setEvaluationBanners(filtered);
         }
       } catch (err) {
-        console.error('Catch fetching evaluation banners:', err);
+        console.warn('Catch fetching evaluation banners:', err);
       }
     };
 
@@ -142,7 +142,9 @@ export function EventMarquee({ thought }: EventMarqueeProps = {}) {
                 setEventos([]);
                 return;
               }
-              throw minError;
+              console.warn('Marquee fetch failed:', minError.message || minError);
+              setEventos([]);
+              return;
             }
             data = minData;
           } else {
@@ -152,7 +154,7 @@ export function EventMarquee({ thought }: EventMarqueeProps = {}) {
 
         if (data) setEventos(data);
       } catch (error) {
-        console.error('Error fetching marquee events:', error);
+        console.warn('Error fetching marquee events:', error);
       } finally {
         setLoading(false);
       }

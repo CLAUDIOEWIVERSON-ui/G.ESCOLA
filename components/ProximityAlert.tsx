@@ -193,7 +193,7 @@ export function ProximityAlert() {
           }
         }
       } catch (error) {
-        console.error('Error checking proximity events:', error);
+        console.warn('Error checking proximity events:', error);
       }
     };
 
