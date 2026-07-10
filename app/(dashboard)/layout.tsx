@@ -614,43 +614,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
             
-            {/* Navegger Back/Home Buttons */}
-            <div className="flex items-center gap-2 border-l border-slate-200 pl-4 h-6">
-              <button
-                onClick={() => router.push(prevPagePath)}
-                title="Voltar para o módulo anterior"
-                className="flex items-center justify-center gap-1.5 px-3 py-1 bg-slate-50 border border-slate-200 hover:border-blue-300 hover:bg-blue-50/50 rounded-xl text-slate-600 hover:text-blue-600 transition-all text-xs font-semibold shadow-xs cursor-pointer"
-              >
-                <ArrowLeft size={14} className="stroke-[2.5]" />
-                <span className="hidden sm:inline">Voltar</span>
-              </button>
-              <Link
-                href="/dashboard"
-                title="Ir para o início (Painel)"
-                className="flex items-center justify-center gap-1.5 px-3 py-1 bg-slate-50 border border-slate-200 hover:border-blue-300 hover:bg-blue-50/50 rounded-xl text-slate-600 hover:text-blue-600 transition-all text-xs font-semibold shadow-xs cursor-pointer"
-              >
-                <Home size={14} className="stroke-[2.5]" />
-                <span className="hidden sm:inline">Início</span>
-              </Link>
-              <button
-                onClick={() => router.push(nextPagePath)}
-                title="Avançar para a próxima página"
-                className="flex items-center justify-center gap-1.5 px-3 py-1 bg-slate-50 border border-slate-200 hover:border-blue-300 hover:bg-blue-50/50 rounded-xl text-slate-600 hover:text-blue-600 transition-all text-xs font-semibold shadow-xs cursor-pointer"
-              >
-                <span className="hidden sm:inline">Próximo</span>
-                <ArrowRight size={14} className="stroke-[2.5]" />
-              </button>
-
-              <button
-                onClick={() => setSuggestionsOpen(true)}
-                title="Deixar sua sugestão de melhoria ou nova função para o TI"
-                className="flex items-center justify-center gap-1.5 px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold shadow-sm cursor-pointer border border-amber-600 tracking-wide transition-all duration-200"
-              >
-                <MessageSquare size={13} className="stroke-[2.5]" />
-                <span className="hidden xs:inline">Caixa de Sugestões</span>
-              </button>
-            </div>
-
             <div className="flex flex-col">
               <h1 className="text-lg font-bold text-slate-800 leading-none">
                 {navItems.find(item => item.path === pathname)?.name || t.dashboard.title}
