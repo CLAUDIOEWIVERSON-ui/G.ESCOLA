@@ -939,23 +939,7 @@ function RelatorioAvaliacaoAdminContent() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 space-y-8 print:max-w-none print:w-full print:px-0 print:py-0 print:space-y-6 print:bg-white">
-      {/* Print-only Header */}
-      <div className="hidden print:block border-b-2 border-slate-900 pb-4">
-        <div className="flex items-end justify-between">
-          <div>
-            <h1 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Relatório de Avaliação Acadêmica</h1>
-            <p className="text-sm font-medium text-slate-600 mt-1">
-              {filteredTurma ? `Turma: ${filteredTurma.nome}` : 'Todas as Turmas'} • {filteredYear || 'Todos os Anos'}
-            </p>
-          </div>
-          <div className="text-right">
-            <p className="text-xs font-mono text-slate-500 uppercase">Gerado em: {new Date().toLocaleDateString('pt-BR')}</p>
-            <p className="text-xs font-mono text-slate-500 uppercase mt-0.5">Gestão Acadêmica</p>
-          </div>
-        </div>
-      </div>
-
+    <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
       {/* Page Title & Utility buttons */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b pb-4 mt-2 print:hidden">
         <div>
@@ -985,7 +969,7 @@ function RelatorioAvaliacaoAdminContent() {
           <h2 className="text-xs font-black uppercase tracking-wider font-mono">Filtros de Pesquisa e Segmentação</h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 print:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Turma Selection */}
           <div>
             <label className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1.5 font-mono">Turma</label>
@@ -1176,9 +1160,9 @@ function RelatorioAvaliacaoAdminContent() {
 
                 return (
                   <div className="space-y-6 animate-fade-in">
-                    <div className="grid grid-cols-1 md:grid-cols-3 print:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       {/* Metric 1: Enrolled */}
-                      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm print:shadow-none print:border-slate-300 print:break-inside-avoid print:p-4 flex items-center justify-between">
+                      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center justify-between">
                         <div className="space-y-1">
                           <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider font-mono">Inscritos na Turma</span>
                           <p className="text-3xl font-black text-slate-900 tracking-tight">{numInscritos}</p>
@@ -1190,7 +1174,7 @@ function RelatorioAvaliacaoAdminContent() {
                       </div>
 
                       {/* Metric 2: Filled */}
-                      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm print:shadow-none print:border-slate-300 print:break-inside-avoid print:p-4 flex items-center justify-between">
+                      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center justify-between">
                         <div className="space-y-1">
                           <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider font-mono text-emerald-800">Questionários Preenchidos</span>
                           <p className="text-3xl font-black text-emerald-700 tracking-tight">{numPreenchidos}</p>
@@ -1202,7 +1186,7 @@ function RelatorioAvaliacaoAdminContent() {
                       </div>
 
                       {/* Metric 3: Lack of filling */}
-                      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm print:shadow-none print:border-slate-300 print:break-inside-avoid print:p-4 flex items-center justify-between">
+                      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center justify-between">
                         <div className="space-y-1">
                           <span className="text-[10px] text-slate-450 font-bold uppercase tracking-wider font-mono text-rose-800">Falta Preencher</span>
                           <p className="text-3xl font-black text-rose-700 tracking-tight">{numFalta}</p>
@@ -1215,7 +1199,7 @@ function RelatorioAvaliacaoAdminContent() {
                     </div>
 
                     {/* Simple completion bar indicator */}
-                    <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm print:shadow-none print:border-slate-300 print:break-inside-avoid print:p-4">
+                    <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
                       <div className="flex justify-between items-center text-xs mb-2 font-mono">
                         <span className="font-bold text-slate-700">Progresso de Preenchimento da Turma</span>
                         <span className="font-black text-slate-900">{numPreenchidos} / {numInscritos} ({fillingPercent.toFixed(1)}%)</span>
@@ -1275,7 +1259,7 @@ function RelatorioAvaliacaoAdminContent() {
                             
                             <div className="flex flex-wrap items-center gap-3">
                               {/* Option Selector for Chart Background/Theme with 3D Neon look! */}
-                              <div className="flex items-center gap-2 bg-slate-100/80 border border-slate-200 p-1 rounded-xl shadow-inner text-[10px] font-bold font-mono print:hidden">
+                              <div className="flex items-center gap-2 bg-slate-100/80 border border-slate-200 p-1 rounded-xl shadow-inner text-[10px] font-bold font-mono">
                                 <span className="text-[9px] uppercase font-black text-slate-400 font-mono px-2">Fundo:</span>
                                 
                                 <button
@@ -1312,12 +1296,12 @@ function RelatorioAvaliacaoAdminContent() {
                           </div>
 
                            {/* Grid with Grid 1 (Metrics by category), Grid 2 (Distribution) & Grid 3 (Satisfaction Pie Chart) */}
-                           <div className="grid grid-cols-1 lg:grid-cols-3 print:grid-cols-3 gap-6">
+                           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                             
                              {/* Chart 1: Média Detalhada por Categoria */}
                              <div className={`border rounded-xl p-5 relative overflow-hidden transition-all duration-300 border-b-[4px] border-r-[2px] ${
                                chartTheme === 'azul'
-                                 ? 'bg-slate-950 border-slate-800 shadow-[0_0_25px_rgba(6,182,212,0.15)] hover:shadow-[0_0_35px_rgba(6,182,212,0.25)] border-cyan-500/20 text-white print:bg-white print:border-slate-300 print:text-slate-800 print:shadow-none'
+                                 ? 'bg-slate-950 border-slate-800 shadow-[0_0_25px_rgba(6,182,212,0.15)] hover:shadow-[0_0_35px_rgba(6,182,212,0.25)] border-cyan-500/20 text-white'
                                  : 'bg-white border-slate-250 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border-cyan-500/30 text-slate-800'
                              }`} id="chart-neon-metrics-card">
                                <div className={`flex items-center justify-between border-b pb-2.5 ${chartTheme === 'azul' ? 'border-slate-800/80' : 'border-slate-100'}`}>
@@ -1620,7 +1604,7 @@ function RelatorioAvaliacaoAdminContent() {
                           </div>
 
                           {/* Highlights cards */}
-                          <div className="grid grid-cols-1 md:grid-cols-2 print:grid-cols-2 gap-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {/* Pontos Fortes */}
                             <div className="bg-emerald-50/40 border border-emerald-100/70 rounded-xl p-4 space-y-3">
                               <h5 className="text-[10px] font-black text-emerald-800 uppercase tracking-wider font-mono flex items-center gap-1.5">
@@ -1677,7 +1661,7 @@ function RelatorioAvaliacaoAdminContent() {
                           {/* PARECER DE APOIO AO COORDENADOR & SUGESTÕES DO SISTEMA */}
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                             {/* Card 1: Parecer Técnico de Apoio ao Coordenador */}
-                            <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 shadow-sm space-y-3 print:bg-white print:shadow-none print:break-inside-avoid print:p-4">
+                            <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 shadow-sm space-y-3">
                               <h5 className="text-[10px] font-black text-slate-800 uppercase tracking-wider font-mono flex items-center gap-1.5">
                                 <Signature className="h-4 w-4 text-slate-600" />
                                 Parecer de Apoio ao Coordenador
@@ -1773,7 +1757,7 @@ function RelatorioAvaliacaoAdminContent() {
               })()}
 
               {/* Card List of Pending Questionnaires on the General Tab */}
-              <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm print:shadow-none print:border-slate-300 print:break-inside-avoid print:p-4 space-y-4">
+              <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-4">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-3 gap-2">
                   <div>
                     <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider font-mono flex items-center gap-2">
@@ -1794,7 +1778,7 @@ function RelatorioAvaliacaoAdminContent() {
                     🎉 Excelente! Todos os alunos deste escopo responderam à avaliação pedagógica.
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 print:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {filteredPendingStudents.map((stud, index) => (
                       <div key={`pending-${stud.id || index}`} className="border border-slate-150 rounded-xl p-4 bg-slate-50/50 hover:bg-slate-100/40 transition flex flex-col justify-between space-y-3">
                         <div className="space-y-1">
@@ -1860,7 +1844,7 @@ function RelatorioAvaliacaoAdminContent() {
               </div>
 
               {/* Card List of Responded/Submitted Questionnaires on the General Tab */}
-              <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm print:shadow-none print:border-slate-300 print:break-inside-avoid print:p-4 space-y-4">
+              <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-4">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-3 gap-2">
                   <div>
                     <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider font-mono flex items-center gap-2">
@@ -1881,7 +1865,7 @@ function RelatorioAvaliacaoAdminContent() {
                     📭 Nenhuma avaliação enviada para o escopo selecionado ainda.
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 print:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {filteredRespondedStudents.map((stud, index) => (
                       <div key={`responded-${stud.id || index}`} className="border border-slate-150 rounded-xl p-4 bg-slate-50/50 hover:bg-slate-100/40 transition flex flex-col justify-between space-y-3">
                         <div className="space-y-1">
@@ -1944,14 +1928,14 @@ function RelatorioAvaliacaoAdminContent() {
           {/* TAB 2: RELATÓRIO DO CURSO */}
           {activeTab === 'curso' && (
             <div className="space-y-8">
-              <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm print:shadow-none print:border-slate-300 print:break-inside-avoid print:p-4 space-y-6">
+              <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-6">
                 <div>
                   <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider border-b pb-2 mb-4 font-mono">
                     Estatísticas Detalhadas do Conteúdo e Organização do Curso
                   </h3>
                   
                   {/* Courses Detailed Question Map */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 print:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {CURSO_QUESTIONS.map((q, idx) => {
                       const avg = calculateQuestionAverage(filteredSubmissions, q.key);
                       return (
@@ -1979,13 +1963,13 @@ function RelatorioAvaliacaoAdminContent() {
               </div>
 
               {/* Suggestions and Comments sections consolidated */}
-              <div className="grid grid-cols-1 md:grid-cols-2 print:grid-cols-2 gap-6">
-                <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm print:shadow-none print:border-slate-300 print:break-inside-avoid print:p-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
                   <h3 className="text-sm font-bold text-emerald-800 uppercase tracking-wider border-b pb-2 mb-4 font-mono flex items-center gap-1.5">
                     <CheckCircle className="h-4 w-4 text-emerald-600" />
                     Resumo de Elogios e Pontos Fortes
                   </h3>
-                  <div className="space-y-3.5 max-h-[300px] overflow-y-auto print:max-h-none print:overflow-visible pr-2 custom-scrollbar">
+                  <div className="space-y-3.5 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
                     {filteredSubmissions.filter(sub => sub.elogios && sub.elogios.trim()).length === 0 ? (
                       <p className="text-xs text-slate-400 italic">Nenhum elogio em destaque no filtro de busca selecionado.</p>
                     ) : (
@@ -2003,12 +1987,12 @@ function RelatorioAvaliacaoAdminContent() {
                   </div>
                 </div>
 
-                <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm print:shadow-none print:border-slate-300 print:break-inside-avoid print:p-4">
+                <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
                   <h3 className="text-sm font-bold text-rose-800 uppercase tracking-wider border-b pb-2 mb-4 font-mono flex items-center gap-1.5">
                     <AlertTriangle className="h-4 w-4 text-rose-600" />
                     Críticas e Pontos Críticos do Curso
                   </h3>
-                  <div className="space-y-3.5 max-h-[300px] overflow-y-auto print:max-h-none print:overflow-visible pr-2 custom-scrollbar">
+                  <div className="space-y-3.5 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
                     {filteredSubmissions.filter(sub => sub.criticas_construtivas && sub.criticas_construtivas.trim()).length === 0 ? (
                       <p className="text-xs text-slate-400 italic">Nenhuma crítica registrada no filtro de busca selecionado.</p>
                     ) : (
@@ -2033,7 +2017,7 @@ function RelatorioAvaliacaoAdminContent() {
           {activeTab === 'instrutor' && (
             <div className="space-y-8">
               {/* Selector instructor focused */}
-              <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm print:shadow-none print:border-slate-300 print:break-inside-avoid print:p-4 print:hidden">
+              <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm print:hidden">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                   <div>
                     <h3 className="text-sm font-bold text-slate-800 font-mono uppercase">Selecionar Foco de Instrutor</h3>
@@ -2073,7 +2057,7 @@ function RelatorioAvaliacaoAdminContent() {
                   return (
                     <div className="space-y-8">
                       {/* Performance Header summary */}
-                      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm print:shadow-none print:border-slate-300 print:break-inside-avoid print:p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                         <div className="flex items-center gap-4">
                           <div className="w-16 h-16 bg-slate-900 text-white rounded-full flex items-center justify-center font-bold text-xl font-mono">
                             {focusedInstructor.slice(0, 2).toUpperCase()}
@@ -2094,8 +2078,8 @@ function RelatorioAvaliacaoAdminContent() {
                       </div>
 
                       {/* Detailed list of instructor questions */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 print:grid-cols-2 gap-6">
-                        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm print:shadow-none print:border-slate-300 print:break-inside-avoid print:p-4 space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-4">
                           <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider border-b pb-2 font-mono">
                             Médias Claras por Questionário Objetivos
                           </h3>
@@ -2120,7 +2104,7 @@ function RelatorioAvaliacaoAdminContent() {
                         {/* Analysis of docent strengths and weaknesses */}
                         <div className="space-y-6">
                           {/* Strengths card */}
-                          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm print:shadow-none print:border-slate-300 print:break-inside-avoid print:p-4">
+                          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
                             <h3 className="text-xs font-bold text-emerald-800 uppercase tracking-wider border-b pb-2 mb-3.5 font-mono flex items-center gap-1.5">
                               <CheckCircle className="h-4 w-4 text-emerald-600" />
                               Pontos Fortes (Média ≥ 4.0)
@@ -2140,7 +2124,7 @@ function RelatorioAvaliacaoAdminContent() {
                           </div>
 
                           {/* Points to improve */}
-                          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm print:shadow-none print:border-slate-300 print:break-inside-avoid print:p-4">
+                          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
                             <h3 className="text-xs font-bold text-amber-800 uppercase tracking-wider border-b pb-2 mb-3.5 font-mono flex items-center gap-1.5">
                               <AlertTriangle className="h-4 w-4 text-amber-500" />
                               Pontos a Melhorar (Média &lt; 3.5)
@@ -2175,7 +2159,7 @@ function RelatorioAvaliacaoAdminContent() {
           {activeTab === 'aluno' && (
             <div className="space-y-8">
               {/* Selector students list */}
-              <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm print:shadow-none print:border-slate-300 print:break-inside-avoid print:p-4 print:hidden">
+              <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm print:hidden">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                   <div>
                     <h3 className="text-sm font-bold text-slate-800 font-mono uppercase">Selecionar Estudante para Avaliar</h3>
@@ -2617,7 +2601,7 @@ function RelatorioAvaliacaoAdminContent() {
                           <p><strong>OM:</strong> {studentDetails?.om || "Não disponível"}</p>
                           <p><strong>Frequência:</strong> Dependente de envio</p>
                         </div>
-                        <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row justify-center gap-3 print:hidden">
+                        <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row justify-center gap-3">
                           <button
                             type="button"
                             onClick={async () => {
@@ -2671,7 +2655,7 @@ function RelatorioAvaliacaoAdminContent() {
                   return (
                     <div className="space-y-8">
                       {/* Identity profile card */}
-                      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm print:shadow-none print:border-slate-300 print:break-inside-avoid print:p-4 grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="md:col-span-2 space-y-4">
                           <div className="flex items-center justify-between gap-4">
                             <div className="flex items-center gap-3">
@@ -2765,9 +2749,9 @@ function RelatorioAvaliacaoAdminContent() {
                       </div>
 
                       {/* Display breakdown of elements */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 print:grid-cols-2 gap-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Course evaluation details */}
-                        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm print:shadow-none print:border-slate-300 print:break-inside-avoid print:p-4 space-y-4">
+                        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-4">
                           <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider font-mono border-b pb-2">
                             Média por Categoria (Comparado com Média da Turma)
                           </h4>
@@ -2820,12 +2804,12 @@ function RelatorioAvaliacaoAdminContent() {
                         </div>
 
                         {/* Qualitative observations card */}
-                        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm print:shadow-none print:border-slate-300 print:break-inside-avoid print:p-4 space-y-4">
+                        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-4">
                           <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider font-mono border-b pb-2">
                             Comentários Escritos pelo Aluno
                           </h4>
                           
-                          <div className="space-y-3 max-h-[220px] overflow-y-auto print:max-h-none print:overflow-visible pr-2 custom-scrollbar text-xs">
+                          <div className="space-y-3 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar text-xs">
                             {studentSub.sugestoes_melhoria && (
                               <div>
                                 <span className="font-bold text-slate-650 block">Sugestões de Melhorias:</span>
@@ -2852,7 +2836,7 @@ function RelatorioAvaliacaoAdminContent() {
                       </div>
 
                       {/* Detailed Questionnaire Responses - Faithful to the actual form */}
-                      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm print:shadow-none print:border-slate-300 print:break-inside-avoid print:p-4 space-y-6">
+                      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-6">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b pb-4 gap-2">
                           <div>
                             <h4 className="text-sm font-extrabold text-slate-900 font-mono uppercase tracking-wide flex items-center gap-1.5">
@@ -2884,9 +2868,9 @@ function RelatorioAvaliacaoAdminContent() {
                                     </p>
                                     <div className="flex max-md:grid max-md:grid-cols-3 gap-2 shrink-0">
                                       {[
-                                        { value: 5, label: "CONCORDO PLENAMENTE", activeClass: "bg-slate-900 text-white border-slate-900 shadow-sm print:bg-white print:text-black print:border-black print:border-2" },
-                                        { value: 3, label: "CONCORDO PARCIALMENTE", activeClass: "bg-slate-900 text-white border-slate-900 shadow-sm print:bg-white print:text-black print:border-black print:border-2" },
-                                        { value: 1, label: "DISCORDO/ NÃO SE APLICA", activeClass: "bg-slate-900 text-white border-slate-900 shadow-sm print:bg-white print:text-black print:border-black print:border-2" }
+                                        { value: 5, label: "CONCORDO PLENAMENTE", activeClass: "bg-slate-900 text-white border-slate-900 shadow-sm" },
+                                        { value: 3, label: "CONCORDO PARCIALMENTE", activeClass: "bg-slate-900 text-white border-slate-900 shadow-sm" },
+                                        { value: 1, label: "DISCORDO/ NÃO SE APLICA", activeClass: "bg-slate-900 text-white border-slate-900 shadow-sm" }
                                       ].map((opt) => {
                                         const isSelected = val === opt.value;
                                         return (
@@ -2924,9 +2908,9 @@ function RelatorioAvaliacaoAdminContent() {
                                     </p>
                                     <div className="flex max-md:grid max-md:grid-cols-3 gap-2 shrink-0">
                                       {[
-                                        { value: 5, label: "CONCORDO PLENAMENTE", activeClass: "bg-slate-900 text-white border-slate-900 shadow-sm print:bg-white print:text-black print:border-black print:border-2" },
-                                        { value: 3, label: "CONCORDO PARCIALMENTE", activeClass: "bg-slate-900 text-white border-slate-900 shadow-sm print:bg-white print:text-black print:border-black print:border-2" },
-                                        { value: 1, label: "DISCORDO/ NÃO SE APLICA", activeClass: "bg-slate-900 text-white border-slate-900 shadow-sm print:bg-white print:text-black print:border-black print:border-2" }
+                                        { value: 5, label: "CONCORDO PLENAMENTE", activeClass: "bg-slate-900 text-white border-slate-900 shadow-sm" },
+                                        { value: 3, label: "CONCORDO PARCIALMENTE", activeClass: "bg-slate-900 text-white border-slate-900 shadow-sm" },
+                                        { value: 1, label: "DISCORDO/ NÃO SE APLICA", activeClass: "bg-slate-900 text-white border-slate-900 shadow-sm" }
                                       ].map((opt) => {
                                         const isSelected = val === opt.value;
                                         return (
@@ -2964,9 +2948,9 @@ function RelatorioAvaliacaoAdminContent() {
                                     </p>
                                     <div className="flex max-md:grid max-md:grid-cols-3 gap-2 shrink-0">
                                       {[
-                                        { value: 5, label: "CONCORDO PLENAMENTE", activeClass: "bg-slate-900 text-white border-slate-900 shadow-sm print:bg-white print:text-black print:border-black print:border-2" },
-                                        { value: 3, label: "CONCORDO PARCIALMENTE", activeClass: "bg-slate-900 text-white border-slate-900 shadow-sm print:bg-white print:text-black print:border-black print:border-2" },
-                                        { value: 1, label: "DISCORDO/ NÃO SE APLICA", activeClass: "bg-slate-900 text-white border-slate-900 shadow-sm print:bg-white print:text-black print:border-black print:border-2" }
+                                        { value: 5, label: "CONCORDO PLENAMENTE", activeClass: "bg-slate-900 text-white border-slate-900 shadow-sm" },
+                                        { value: 3, label: "CONCORDO PARCIALMENTE", activeClass: "bg-slate-900 text-white border-slate-900 shadow-sm" },
+                                        { value: 1, label: "DISCORDO/ NÃO SE APLICA", activeClass: "bg-slate-900 text-white border-slate-900 shadow-sm" }
                                       ].map((opt) => {
                                         const isSelected = val === opt.value;
                                         return (
@@ -3004,9 +2988,9 @@ function RelatorioAvaliacaoAdminContent() {
                                     </p>
                                     <div className="flex max-md:grid max-md:grid-cols-3 gap-2 shrink-0">
                                       {[
-                                        { value: 5, label: "CONCORDO PLENAMENTE", activeClass: "bg-slate-900 text-white border-slate-900 shadow-sm print:bg-white print:text-black print:border-black print:border-2" },
-                                        { value: 3, label: "CONCORDO PARCIALMENTE", activeClass: "bg-slate-900 text-white border-slate-900 shadow-sm print:bg-white print:text-black print:border-black print:border-2" },
-                                        { value: 1, label: "DISCORDO/ NÃO SE APLICA", activeClass: "bg-slate-900 text-white border-slate-900 shadow-sm print:bg-white print:text-black print:border-black print:border-2" }
+                                        { value: 5, label: "CONCORDO PLENAMENTE", activeClass: "bg-slate-900 text-white border-slate-900 shadow-sm" },
+                                        { value: 3, label: "CONCORDO PARCIALMENTE", activeClass: "bg-slate-900 text-white border-slate-900 shadow-sm" },
+                                        { value: 1, label: "DISCORDO/ NÃO SE APLICA", activeClass: "bg-slate-900 text-white border-slate-900 shadow-sm" }
                                       ].map((opt) => {
                                         const isSelected = val === opt.value;
                                         return (
