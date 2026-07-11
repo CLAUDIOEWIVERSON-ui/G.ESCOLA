@@ -30,7 +30,6 @@ import {
   Signature
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { generateQuestionnairePDF } from '@/lib/generateQuestionnairePDF';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
 
 // Scaling text helper matches CP: 5, CPa: 3, D/NA: 1
@@ -954,59 +953,13 @@ function RelatorioAvaliacaoAdminContent() {
 
         <div className="flex flex-wrap gap-2 print:hidden">
           <button
-            onClick={() => {
-              try {
-                generateQuestionnairePDF();
-                toast.success("Modelo em branco do Questionário de Avaliação Pós-Curso baixado com sucesso!");
-              } catch (error) {
-                console.error("Erro ao gerar PDF:", error);
-                toast.error("Ocorreu um erro ao gerar o PDF do questionário.");
-              }
-            }}
-            className="flex items-center gap-1.5 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition shadow-sm cursor-pointer border border-sky-500"
-            title="Download do modelo PDF oficial do Questionário de Avaliação Pós-Curso"
-          >
-            <Download className="h-3.5 w-3.5" />
-            Baixar Modelo PDF (A4)
-          </button>
-
-          <button
             onClick={handlePrint}
             className="flex items-center gap-1.5 bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 text-xs font-bold px-4 py-2.5 rounded-lg transition shadow-sm cursor-pointer"
           >
             <Printer className="h-3.5 w-3.5" />
             Imprimir Relatório (A4)
           </button>
-
-          <button
-            onClick={() => window.location.reload()}
-            className="flex items-center gap-1.5 bg-slate-900 border border-slate-900 text-white hover:bg-slate-800 text-xs font-bold px-4 py-2.5 rounded-lg transition shadow-sm cursor-pointer"
-          >
-            <span>🔄</span> Atualizar Página (F5)
-          </button>
         </div>
-      </div>
-
-      {/* Alerta de página em branco ou erro de carregamento */}
-      <div className="bg-amber-55 border border-amber-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-sm print:hidden">
-        <div className="flex items-start gap-3">
-          <span className="text-xl shrink-0">⚠️</span>
-          <div>
-            <p className="text-xs font-bold text-amber-850 font-mono uppercase tracking-wider">
-              Dificuldade ao carregar ou página em branco?
-            </p>
-            <p className="text-[11px] text-amber-700 mt-0.5 leading-relaxed">
-              Caso as tabelas ou gráficos não apareçam corretamente, pressione <strong className="font-mono text-amber-900 font-extrabold">F5</strong> ou clique no botão de atualização ao lado.
-            </p>
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={() => window.location.reload()}
-          className="flex items-center gap-1.5 bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-bold px-4 py-2 rounded-lg transition-all cursor-pointer shadow-sm hover:shadow uppercase tracking-wider font-mono shrink-0 font-bold"
-        >
-          🔄 Atualizar Página
-        </button>
       </div>
 
       {/* FILTER BOX */}
@@ -1802,36 +1755,6 @@ function RelatorioAvaliacaoAdminContent() {
                   </div>
                 );
               })()}
-
-              {/* Card download of physical blank forms */}
-              <div className="bg-sky-50 border border-sky-100 rounded-xl p-5 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4 print:hidden">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-1.5 text-[10px] text-sky-850 font-bold uppercase tracking-wider font-mono">
-                    <FileText className="h-4 w-4 text-sky-600" />
-                    Modelo Físico de Avaliação (Papel / Off-line)
-                  </div>
-                  <h4 className="text-sm font-bold text-slate-800 uppercase tracking-wide font-sans">Questionário de Avaliação Pós-Curso Oficial (A4)</h4>
-                  <p className="text-xs text-slate-605 max-w-3xl">
-                    Precisa aplicar o questionário acadêmico de forma física por escrito? Baixe o modelo oficial em formato PDF de duas páginas, com a escala de pontuação (CP, CPa, NC/NA) e campos para comentários, conforme o padrão oficial da Missão de Assessoria Naval do Brasil.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    try {
-                      generateQuestionnairePDF();
-                      toast.success("Modelo em branco do Questionário de Avaliação Pós-Curso baixado com sucesso!");
-                    } catch (error) {
-                      console.error("Erro ao gerar PDF:", error);
-                      toast.error("Ocorreu um erro ao gerar o PDF do questionário.");
-                    }
-                  }}
-                  className="w-full md:w-auto bg-sky-650 hover:bg-sky-700 text-white font-extrabold text-[11px] px-5 py-3 rounded-lg transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer shrink-0 border border-sky-600 font-mono tracking-wider"
-                >
-                  <Download className="h-4 w-4" />
-                  BAIXAR FORMULÁRIO (PDF)
-                </button>
-              </div>
 
               {/* Card List of Pending Questionnaires on the General Tab */}
               <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-4">
