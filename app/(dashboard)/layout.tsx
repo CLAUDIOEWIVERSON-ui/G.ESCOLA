@@ -26,7 +26,8 @@ import {
   ArrowLeft,
   ArrowRight,
   Home,
-  MessageSquare
+  MessageSquare,
+  MousePointer2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
@@ -79,6 +80,27 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const [showMoreModules, setShowMoreModules] = useState(false);
+  const [onlineCount, setOnlineCount] = useState<number>(0);
+
+  const fetchOnlineUsers = async () => {
+    if (!isAdmin) return;
+    try {
+      const res = await fetch('/api/auth/heartbeat');
+      const data = await res.json();
+      if (data.success) {
+        setOnlineCount(data.count || 0);
+      }
+    } catch (err) {
+      // Silently fail network errors for polling
+    }
+  };
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    fetchOnlineUsers();
+    const interval = setInterval(fetchOnlineUsers, 15000); // refresh every 15s for admins
+    return () => clearInterval(interval);
+  }, [isAdmin]);
 
   const toggleSubmenu = (path: string, e: React.MouseEvent) => {
     if (!sidebarOpen) {
@@ -621,6 +643,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </div>
           <div className="flex items-center gap-4 md:gap-6">
+            {isAdmin && (
+              <div 
+                className="hidden sm:flex items-center gap-1.5 px-2 py-1 bg-emerald-50 text-emerald-600 rounded-lg border border-emerald-100 shadow-sm"
+                title={language === 'pt' ? 'Usuários online' : 'Online users'}
+              >
+                <MousePointer2 size={14} className="animate-pulse" />
+                <span className="text-xs font-bold">{onlineCount}</span>
+              </div>
+            )}
             <div className="hidden md:flex items-center gap-2">
                <Suspense fallback={<div className="w-48 h-8 bg-slate-50 border border-slate-200 rounded-lg animate-pulse" />}>
                  <HeaderSearchBar />
