@@ -679,11 +679,11 @@ export default function CalendarPage() {
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden"
+              className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
             >
-              <div className={cn("h-3 w-full", viewingEvent.cor)} />
+              <div className={cn("h-3 w-full shrink-0", viewingEvent.cor)} />
               
-              <div className="p-8">
+              <div className="p-8 overflow-y-auto custom-scrollbar">
                 <div className="flex items-center gap-4 mb-6">
                   <div className={cn("p-4 rounded-2xl text-white shadow-lg", viewingEvent.cor)}>
                     <CalendarIcon size={24} />
@@ -838,14 +838,14 @@ export default function CalendarPage() {
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
               className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden"
             >
-              <form onSubmit={handleSubmit}>
-                <div className="p-6 border-b border-slate-100">
+              <form onSubmit={handleSubmit} className="flex flex-col max-h-[90vh]">
+                <div className="p-6 border-b border-slate-100 shrink-0">
                   <h3 className="text-lg font-bold text-slate-800">
                     {editingEvent ? t.calendar.editEvent : t.calendar.newEvent}
                   </h3>
                 </div>
                 
-                <div className="p-6 space-y-4">
+                <div className="p-6 space-y-4 overflow-y-auto custom-scrollbar">
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t.calendar.eventName}</label>
                     <input 
@@ -982,7 +982,7 @@ export default function CalendarPage() {
                   )}
                 </div>
 
-                <div className="p-6 bg-slate-50 flex items-center justify-end gap-3 border-t border-slate-100">
+                <div className="p-6 bg-slate-50 flex items-center justify-end gap-3 border-t border-slate-100 shrink-0">
                   <button 
                     type="button"
                     onClick={() => setIsModalOpen(false)}

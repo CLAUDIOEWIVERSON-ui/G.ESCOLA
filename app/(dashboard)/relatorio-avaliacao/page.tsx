@@ -108,7 +108,7 @@ function RelatorioAvaliacaoAdminContent() {
 
   // Interactive View states
   const [activeTab, setActiveTab] = useState<'geral' | 'curso' | 'instrutor' | 'aluno'>('geral');
-  const [chartTheme, setChartTheme] = useState<'azul' | 'branco'>('azul');
+  const [chartTheme, setChartTheme] = useState<'azul' | 'branco'>('branco');
   const [focusedInstructor, setFocusedInstructor] = useState<string>('');
   const [focusedStudent, setFocusedStudent] = useState<string>('');
   const [migratingMessage, setMigratingMessage] = useState(false);
@@ -939,7 +939,7 @@ function RelatorioAvaliacaoAdminContent() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+    <div className="max-w-7xl mx-auto px-4 py-8 space-y-8 print:space-y-4 print:py-4 print:px-0 print:max-w-none print:grayscale">
       {/* Page Title & Utility buttons */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b pb-4 mt-2 print:hidden">
         <div>
@@ -1296,7 +1296,7 @@ function RelatorioAvaliacaoAdminContent() {
                           </div>
 
                            {/* Grid with Grid 1 (Metrics by category), Grid 2 (Distribution) & Grid 3 (Satisfaction Pie Chart) */}
-                           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 print:grid-cols-3 print:gap-4">
                             
                              {/* Chart 1: Média Detalhada por Categoria */}
                              <div className={`border rounded-xl p-5 relative overflow-hidden transition-all duration-300 border-b-[4px] border-r-[2px] ${
@@ -1757,7 +1757,7 @@ function RelatorioAvaliacaoAdminContent() {
               })()}
 
               {/* Card List of Pending Questionnaires on the General Tab */}
-              <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-4">
+              <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-4 print:hidden">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-3 gap-2">
                   <div>
                     <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider font-mono flex items-center gap-2">
@@ -1844,7 +1844,7 @@ function RelatorioAvaliacaoAdminContent() {
               </div>
 
               {/* Card List of Responded/Submitted Questionnaires on the General Tab */}
-              <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-4">
+              <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-4 print:hidden">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-3 gap-2">
                   <div>
                     <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider font-mono flex items-center gap-2">
