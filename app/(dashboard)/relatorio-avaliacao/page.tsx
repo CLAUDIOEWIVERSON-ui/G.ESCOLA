@@ -3066,7 +3066,7 @@ function RelatorioAvaliacaoAdminContent() {
 export default function RelatorioAvaliacaoAdminPage() {
   return (
     <Suspense fallback={
-      <div className="py-24 flex flex-col items-center justify-center bg-slate-50 min-h-[75vh]">
+      <div className="py-24 flex flex-col items-center justify-center bg-slate-50 min-h-[75vh] print:min-h-0 print:py-8">
         <div className="relative">
           <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-slate-900"></div>
           <BarChart3 className="absolute inset-0 m-auto text-slate-900" size={24} />

@@ -259,7 +259,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="flex min-h-screen bg-slate-50 font-sans text-slate-900">
+    <div className="flex min-h-screen bg-slate-50 font-sans text-slate-900 print:block print:bg-white print:min-h-0">
       {/* Sidebar Overlay (Mobile only) */}
       <AnimatePresence>
         {sidebarOpen && (
@@ -601,7 +601,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 print:block print:w-full print:min-h-0">
         <div className="print:hidden">
           <EventMarquee />
         </div>
@@ -651,7 +651,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        <main className="flex-1 p-4 lg:p-8 overflow-y-auto overflow-x-hidden pb-24 lg:pb-8">
+        <main className="flex-1 p-4 lg:p-8 overflow-y-auto overflow-x-hidden pb-24 lg:pb-8 print:p-0 print:m-0 print:overflow-visible print:block print:h-auto print:min-h-0">
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={pathname}
