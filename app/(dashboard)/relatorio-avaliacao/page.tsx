@@ -940,6 +940,26 @@ function RelatorioAvaliacaoAdminContent() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 space-y-8 print:space-y-4 print:py-4 print:px-0 print:max-w-none print:grayscale">
+      {/* PRINT HEADER */}
+      <div className="hidden print:block border-b-2 border-slate-900 pb-4 mb-4">
+        <h1 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Relatório de Avaliações</h1>
+        {selectedTurma !== 'ALL' ? (
+          (() => {
+            const t = turmas.find(t => t.id === selectedTurma);
+            return t ? (
+              <div className="mt-3 text-sm text-slate-700 grid grid-cols-2 gap-2">
+                <p><strong>Turma:</strong> {t.nome}</p>
+                {t.curso?.nome && <p><strong>Curso:</strong> {t.curso.nome}</p>}
+                {t.instrutor && <p><strong>Instrutor:</strong> {t.instrutor}</p>}
+                {t.periodo && <p><strong>Período:</strong> {t.periodo}</p>}
+              </div>
+            ) : null;
+          })()
+        ) : (
+          <p className="text-sm text-slate-600 mt-2">Relatório Geral (Todas as Turmas)</p>
+        )}
+      </div>
+
       {/* Page Title & Utility buttons */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b pb-4 mt-2 print:hidden">
         <div>
@@ -1296,14 +1316,14 @@ function RelatorioAvaliacaoAdminContent() {
                           </div>
 
                            {/* Grid with Grid 1 (Metrics by category), Grid 2 (Distribution) & Grid 3 (Satisfaction Pie Chart) */}
-                           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 print:grid-cols-3 print:gap-4">
+                           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 print:grid-cols-1 print:gap-6">
                             
                              {/* Chart 1: Média Detalhada por Categoria */}
                              <div className={`border rounded-xl p-5 relative overflow-hidden transition-all duration-300 border-b-[4px] border-r-[2px] ${
                                chartTheme === 'azul'
                                  ? 'bg-slate-950 border-slate-800 shadow-[0_0_25px_rgba(6,182,212,0.15)] hover:shadow-[0_0_35px_rgba(6,182,212,0.25)] border-cyan-500/20 text-white'
                                  : 'bg-white border-slate-250 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border-cyan-500/30 text-slate-800'
-                             }`} id="chart-neon-metrics-card">
+                             }`} id="chart-neon-metrics-card" style={{ pageBreakInside: 'avoid' }}>
                                <div className={`flex items-center justify-between border-b pb-2.5 ${chartTheme === 'azul' ? 'border-slate-800/80' : 'border-slate-100'}`}>
                                  <h4 className={`text-xs font-black uppercase tracking-widest font-mono flex items-center gap-1.5 shadow-sm ${chartTheme === 'azul' ? 'text-cyan-400' : 'text-cyan-600'}`}>
                                    <span className={`w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee] ${chartTheme === 'azul' ? 'animate-pulse' : ''}`}></span>
@@ -1449,7 +1469,7 @@ function RelatorioAvaliacaoAdminContent() {
                                chartTheme === 'azul'
                                  ? 'bg-slate-950 border-slate-800 shadow-[0_0_25px_rgba(168,85,247,0.15)] hover:shadow-[0_0_35px_rgba(168,85,247,0.25)] border-purple-500/20 text-white'
                                  : 'bg-white border-slate-250 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border-purple-500/30 text-slate-800'
-                             }`} id="chart-neon-distribution-card">
+                             }`} id="chart-neon-distribution-card" style={{ pageBreakInside: 'avoid' }}>
                                <div className={`flex items-center justify-between border-b pb-2.5 ${chartTheme === 'azul' ? 'border-slate-800/80' : 'border-slate-100'}`}>
                                  <h4 className={`text-xs font-black uppercase tracking-widest font-mono flex items-center gap-1.5 ${chartTheme === 'azul' ? 'text-purple-400' : 'text-purple-600'}`}>
                                    <span className={`w-2.5 h-2.5 rounded-full bg-purple-400 shadow-[0_0_8px_#a855f7] ${chartTheme === 'azul' ? 'animate-pulse' : ''}`}></span>
@@ -1529,7 +1549,7 @@ function RelatorioAvaliacaoAdminContent() {
                                    chartTheme === 'azul'
                                      ? 'bg-slate-950 border-slate-800 shadow-[0_0_25px_rgba(16,185,129,0.15)] hover:shadow-[0_0_35px_rgba(16,185,129,0.25)] border-emerald-500/20 text-white'
                                      : 'bg-white border-slate-205 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border-emerald-500/30 text-slate-800'
-                                 }`} id="chart-pie-satisfaction-card">
+                                 }`} id="chart-pie-satisfaction-card" style={{ pageBreakInside: 'avoid' }}>
                                    <div className={`flex items-center justify-between border-b pb-2.5 ${chartTheme === 'azul' ? 'border-slate-800/80' : 'border-slate-100'}`}>
                                      <h4 className={`text-xs font-black uppercase tracking-widest font-mono flex items-center gap-1.5 ${chartTheme === 'azul' ? 'text-emerald-400' : 'text-emerald-600'}`}>
                                        <span className={`w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#10b981] ${chartTheme === 'azul' ? 'animate-pulse' : ''}`}></span>
@@ -1606,7 +1626,7 @@ function RelatorioAvaliacaoAdminContent() {
                           {/* Highlights cards */}
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {/* Pontos Fortes */}
-                            <div className="bg-emerald-50/40 border border-emerald-100/70 rounded-xl p-4 space-y-3">
+                            <div className="bg-emerald-50/40 border border-emerald-100/70 rounded-xl p-4 space-y-3 print:break-inside-avoid">
                               <h5 className="text-[10px] font-black text-emerald-800 uppercase tracking-wider font-mono flex items-center gap-1.5">
                                 <TrendingUp className="h-4 w-4 text-emerald-600" />
                                 Principais Pontos Fortes da Turma
@@ -1629,7 +1649,7 @@ function RelatorioAvaliacaoAdminContent() {
                             </div>
 
                             {/* Pontos a Melhorar */}
-                            <div className="bg-amber-50/40 border border-amber-100/70 rounded-xl p-4 space-y-3">
+                            <div className="bg-amber-50/40 border border-amber-100/70 rounded-xl p-4 space-y-3 print:break-inside-avoid">
                               <h5 className="text-[10px] font-black text-amber-800 uppercase tracking-wider font-mono flex items-center gap-1.5">
                                 <AlertTriangle className="h-4 w-4 text-amber-605" />
                                 Oportunidades de Melhoria Acadêmica
@@ -1969,7 +1989,7 @@ function RelatorioAvaliacaoAdminContent() {
                     <CheckCircle className="h-4 w-4 text-emerald-600" />
                     Resumo de Elogios e Pontos Fortes
                   </h3>
-                  <div className="space-y-3.5 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                  <div className="space-y-3.5 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar print:max-h-none print:overflow-visible print:break-inside-avoid">
                     {filteredSubmissions.filter(sub => sub.elogios && sub.elogios.trim()).length === 0 ? (
                       <p className="text-xs text-slate-400 italic">Nenhum elogio em destaque no filtro de busca selecionado.</p>
                     ) : (
@@ -1992,7 +2012,7 @@ function RelatorioAvaliacaoAdminContent() {
                     <AlertTriangle className="h-4 w-4 text-rose-600" />
                     Críticas e Pontos Críticos do Curso
                   </h3>
-                  <div className="space-y-3.5 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                  <div className="space-y-3.5 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar print:max-h-none print:overflow-visible print:break-inside-avoid">
                     {filteredSubmissions.filter(sub => sub.criticas_construtivas && sub.criticas_construtivas.trim()).length === 0 ? (
                       <p className="text-xs text-slate-400 italic">Nenhuma crítica registrada no filtro de busca selecionado.</p>
                     ) : (
@@ -2809,7 +2829,7 @@ function RelatorioAvaliacaoAdminContent() {
                             Comentários Escritos pelo Aluno
                           </h4>
                           
-                          <div className="space-y-3 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar text-xs">
+                          <div className="space-y-3 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar text-xs print:max-h-none print:overflow-visible">
                             {studentSub.sugestoes_melhoria && (
                               <div>
                                 <span className="font-bold text-slate-650 block">Sugestões de Melhorias:</span>
