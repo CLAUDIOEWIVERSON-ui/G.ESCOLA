@@ -293,7 +293,7 @@ export async function GET(req: NextRequest) {
           try {
             response = await withTimeout(
               getGeminiAI().models.generateContent({
-                model: 'gemini-3.5-flash',
+                model: 'gemini-1.5-flash',
                 contents: `${themePrompt} Varie os autores e temas. Retorne estritamente em formato JSON estruturado com os campos "texto" (o pensamento), "autor" e "reflexao" (uma reflexão breve e profunda inspirada no pensamento).`,
                 config: {
                   systemInstruction,
@@ -321,11 +321,11 @@ export async function GET(req: NextRequest) {
               12000
             );
           } catch (primaryError: any) {
-            console.warn('[Gemini API Primary Model Error or Timeout] Main model gemini-3.5-flash failed or timed out. Retrying with fallback model gemini-3.1-flash-lite. Reason:', primaryError?.message || primaryError);
+            console.warn('[Gemini API Primary Model Error or Timeout] Main model gemini-1.5-flash failed or timed out. Retrying with fallback model gemini-1.5-flash-8b. Reason:', primaryError?.message || primaryError);
             // Try with the other model with 8000ms timeout
             response = await withTimeout(
               getGeminiAI().models.generateContent({
-                model: 'gemini-3.1-flash-lite',
+                model: 'gemini-1.5-flash-8b',
                 contents: `${themePrompt} Varie os autores e temas. Retorne estritamente em formato JSON estruturado com os campos "texto" (o pensamento), "autor" e "reflexao" (uma reflexão breve e profunda inspirada no pensamento).`,
                 config: {
                   systemInstruction,
