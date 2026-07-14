@@ -1626,7 +1626,7 @@ function RelatorioAvaliacaoAdminContent() {
                           {/* Highlights cards */}
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {/* Pontos Fortes */}
-                            <div className="bg-emerald-50/40 border border-emerald-100/70 rounded-xl p-4 space-y-3 print:break-inside-avoid">
+                            <div className="bg-emerald-50/40 border border-emerald-100/70 rounded-xl p-4 space-y-3 ">
                               <h5 className="text-[10px] font-black text-emerald-800 uppercase tracking-wider font-mono flex items-center gap-1.5">
                                 <TrendingUp className="h-4 w-4 text-emerald-600" />
                                 Principais Pontos Fortes da Turma
@@ -1649,7 +1649,7 @@ function RelatorioAvaliacaoAdminContent() {
                             </div>
 
                             {/* Pontos a Melhorar */}
-                            <div className="bg-amber-50/40 border border-amber-100/70 rounded-xl p-4 space-y-3 print:break-inside-avoid">
+                            <div className="bg-amber-50/40 border border-amber-100/70 rounded-xl p-4 space-y-3 ">
                               <h5 className="text-[10px] font-black text-amber-800 uppercase tracking-wider font-mono flex items-center gap-1.5">
                                 <AlertTriangle className="h-4 w-4 text-amber-605" />
                                 Oportunidades de Melhoria Acadêmica
@@ -1989,7 +1989,7 @@ function RelatorioAvaliacaoAdminContent() {
                     <CheckCircle className="h-4 w-4 text-emerald-600" />
                     Resumo de Elogios e Pontos Fortes
                   </h3>
-                  <div className="space-y-3.5 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar print:max-h-none print:overflow-visible print:break-inside-avoid">
+                  <div className="space-y-3.5 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar print:max-h-none print:overflow-visible ">
                     {filteredSubmissions.filter(sub => sub.elogios && sub.elogios.trim()).length === 0 ? (
                       <p className="text-xs text-slate-400 italic">Nenhum elogio em destaque no filtro de busca selecionado.</p>
                     ) : (
@@ -2012,7 +2012,7 @@ function RelatorioAvaliacaoAdminContent() {
                     <AlertTriangle className="h-4 w-4 text-rose-600" />
                     Críticas e Pontos Críticos do Curso
                   </h3>
-                  <div className="space-y-3.5 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar print:max-h-none print:overflow-visible print:break-inside-avoid">
+                  <div className="space-y-3.5 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar print:max-h-none print:overflow-visible ">
                     {filteredSubmissions.filter(sub => sub.criticas_construtivas && sub.criticas_construtivas.trim()).length === 0 ? (
                       <p className="text-xs text-slate-400 italic">Nenhuma crítica registrada no filtro de busca selecionado.</p>
                     ) : (
