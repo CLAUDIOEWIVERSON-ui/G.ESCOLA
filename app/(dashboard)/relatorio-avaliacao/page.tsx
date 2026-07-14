@@ -939,15 +939,15 @@ function RelatorioAvaliacaoAdminContent() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 space-y-8 print:space-y-4 print:py-4 print:px-0 print:max-w-none print:grayscale">
+    <div className="max-w-7xl mx-auto px-4 py-8 space-y-8 print:space-y-2 print:py-0 print:px-0 print:max-w-none print:grayscale">
       {/* PRINT HEADER */}
-      <div className="hidden print:block border-b-2 border-slate-900 pb-4 mb-4">
-        <h1 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Relatório de Avaliações</h1>
+      <div className="hidden print:block border-b-2 border-slate-900 pb-2 mb-2">
+        <h1 className="text-xl font-black text-slate-900 uppercase tracking-tight">Relatório de Avaliações</h1>
         {selectedTurma !== 'ALL' ? (
           (() => {
             const t = turmas.find(t => t.id === selectedTurma);
             return t ? (
-              <div className="mt-3 text-sm text-slate-700 grid grid-cols-2 gap-2">
+              <div className="mt-1 text-xs text-slate-800 flex flex-wrap gap-x-6 gap-y-1">
                 <p><strong>Turma:</strong> {t.nome}</p>
                 {t.curso?.nome && <p><strong>Curso:</strong> {t.curso.nome}</p>}
                 {t.instrutor && <p><strong>Instrutor:</strong> {t.instrutor}</p>}
@@ -956,7 +956,7 @@ function RelatorioAvaliacaoAdminContent() {
             ) : null;
           })()
         ) : (
-          <p className="text-sm text-slate-600 mt-2">Relatório Geral (Todas as Turmas)</p>
+          <p className="text-xs text-slate-800 mt-1">Relatório Geral (Todas as Turmas)</p>
         )}
       </div>
 
