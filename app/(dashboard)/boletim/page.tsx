@@ -1714,8 +1714,9 @@ function BoletimContent() {
                         <table className="w-full text-left report-table border border-slate-200 bg-white table-auto">
                           <thead>
                             <tr className="bg-slate-100 print-bg-gray text-[10px] font-extrabold text-slate-600 uppercase tracking-wider border-b border-slate-200">
-                              <th className="px-4 py-3 border-r border-slate-200 w-[20%]">{language === 'pt' ? 'Módulo' : 'Module'}</th>
-                              <th className="px-4 py-3 border-r border-slate-200 w-[50%]">{language === 'pt' ? 'Disciplina' : 'Discipline'}</th>
+                              <th className="px-4 py-3 border-r border-slate-200 w-[15%]">{language === 'pt' ? 'Módulo' : 'Module'}</th>
+                              <th className="px-4 py-3 border-r border-slate-200 w-[45%]">{language === 'pt' ? 'Disciplina' : 'Discipline'}</th>
+                              <th className="px-3 py-3 text-center border-r border-slate-200 w-[10%]">{language === 'pt' ? 'C.H.' : 'Hours'}</th>
                               <th className="px-3 py-3 text-center border-r border-slate-200 font-mono w-[15%]">{reportT[language as "pt" | "en"].finalGrade}</th>
                               <th className="px-4 py-3 text-right w-[15%]">{reportT[language as "pt" | "en"].situation}</th>
                             </tr>
@@ -1723,46 +1724,46 @@ function BoletimContent() {
                           <tbody className="text-xs text-left">
                             {reportRows.length === 0 ? (
                               <tr>
-                                <td colSpan={4} className="text-center py-6 text-slate-400 font-bold bg-white">
+                                <td colSpan={5} className="text-center py-6 text-slate-400 font-bold bg-white">
                                   {language === 'pt' ? 'Nenhuma disciplina cadastrada.' : 'No disciplines registered.'}
                                 </td>
                               </tr>
                             ) : (
                               reportRows.map((row: any, rIdx: number) => {
                                 return (
-                                  <tr key={`row-mod-${row.moduleNum}-${rIdx}`} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors bg-white">
-                                    <td className="px-4 py-3 font-extrabold text-slate-900 border-r border-slate-200 text-left bg-white align-middle whitespace-nowrap">
-                                      {row.modulo}
-                                    </td>
-                                    <td className="px-4 py-3 font-extrabold text-slate-800 border-r border-slate-200 text-left bg-white align-middle">
-                                      <div className="flex items-stretch justify-between gap-3">
-                                        <div className="flex flex-col justify-center gap-2.5 py-0.5 w-full">
-                                          {row.disciplines.map((disc: any, dIdx: number) => (
-                                            <div key={`disc-${disc.id || dIdx}`} className={cn(
-                                              "flex items-center gap-2 text-slate-800 font-extrabold text-xs leading-tight break-words",
-                                              dIdx > 0 && "pt-2 border-t border-slate-100/80"
-                                            )}>
+                                  <React.Fragment key={`row-mod-${row.moduleNum}-${rIdx}`}>
+                                    {row.disciplines.map((disc: any, dIdx: number) => {
+                                      const isLastDisc = dIdx === row.disciplines.length - 1;
+                                      return (
+                                        <tr key={`disc-${disc.id || dIdx}`} className={cn("bg-white hover:bg-slate-50/50 transition-colors", isLastDisc ? "border-b border-slate-200" : "border-b border-slate-100")}>
+                                          {dIdx === 0 && (
+                                            <td rowSpan={row.disciplines.length} className="px-4 py-3 font-extrabold text-slate-900 border-r border-slate-200 text-left bg-white align-middle whitespace-nowrap">
+                                              {row.modulo}
+                                            </td>
+                                          )}
+                                          <td className="px-4 py-3 font-extrabold text-slate-800 border-r border-slate-200 text-left bg-white align-middle">
+                                            <div className="flex items-center gap-2 text-xs leading-tight break-words">
                                               <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
                                               <span>{disc.nome}</span>
                                             </div>
-                                          ))}
-                                        </div>
-                                        {row.disciplines.length > 1 && (
-                                          <div className="flex items-center shrink-0 px-1 text-slate-300 select-none">
-                                            <svg className="w-4 h-full min-h-[36px] py-0.5 text-slate-400 overflow-visible" viewBox="0 0 14 100" preserveAspectRatio="none" fill="none" stroke="currentColor" strokeWidth="1.5">
-                                              <path d="M0 2 C8 2 10 15 10 35 L10 42 C10 48 13 50 14 50 C13 50 10 52 10 58 L10 65 C10 85 8 98 0 98" vectorEffect="non-scaling-stroke" />
-                                            </svg>
-                                          </div>
-                                        )}
-                                      </div>
-                                    </td>
-                                    <td className="px-3 py-3 text-center font-black font-mono text-sm border-r border-slate-200 text-slate-900 bg-white align-middle animate-fade-in">
-                                      {row.nota}
-                                    </td>
-                                    <td className={cn("px-4 py-3 text-right font-black bg-white align-middle break-words whitespace-normal leading-tight", row.statusClass)}>
-                                      {row.situacao}
-                                    </td>
-                                  </tr>
+                                          </td>
+                                          <td className="px-3 py-3 text-center font-mono text-xs text-slate-500 border-r border-slate-200 bg-white align-middle">
+                                            {disc.carga_horaria ? `${disc.carga_horaria}h` : '-'}
+                                          </td>
+                                          {dIdx === 0 && (
+                                            <td rowSpan={row.disciplines.length} className="px-3 py-3 text-center font-black font-mono text-sm border-r border-slate-200 text-slate-900 bg-white align-middle animate-fade-in">
+                                              {row.nota}
+                                            </td>
+                                          )}
+                                          {dIdx === 0 && (
+                                            <td rowSpan={row.disciplines.length} className={cn("px-4 py-3 text-right font-black bg-white align-middle break-words whitespace-normal leading-tight", row.statusClass)}>
+                                              {row.situacao}
+                                            </td>
+                                          )}
+                                        </tr>
+                                      );
+                                    })}
+                                  </React.Fragment>
                                 );
                               })
                             )}
@@ -2737,8 +2738,9 @@ function BoletimContent() {
                                           <table className="w-full text-left border-collapse bg-white table-auto">
                                             <thead>
                                               <tr className="bg-slate-900 text-[8px] font-black text-white uppercase tracking-widest border-b border-slate-850">
-                                                <th className="px-3.5 py-2 border-r border-slate-800 w-[20%]">{language === 'pt' ? 'Módulo' : 'Module'}</th>
-                                                <th className="px-3.5 py-2 border-r border-slate-800 w-[50%]">{language === 'pt' ? 'Disciplina' : 'Discipline'}</th>
+                                                <th className="px-3.5 py-2 border-r border-slate-800 w-[15%]">{language === 'pt' ? 'Módulo' : 'Module'}</th>
+                                                <th className="px-3.5 py-2 border-r border-slate-800 w-[45%]">{language === 'pt' ? 'Disciplina' : 'Discipline'}</th>
+                                                <th className="px-3.5 py-2 border-r border-slate-800 w-[10%] text-center">{language === 'pt' ? 'C.H.' : 'Hours'}</th>
                                                 <th className="px-3.5 py-2 text-center border-r border-slate-800 font-mono w-[15%]">{reportT[language as "pt" | "en"].finalGrade}</th>
                                                 <th className="px-3.5 py-2 text-right w-[15%]">{reportT[language as "pt" | "en"].situation}</th>
                                               </tr>
@@ -2746,46 +2748,48 @@ function BoletimContent() {
                                             <tbody className="text-[10px]">
                                               {rows.length === 0 ? (
                                                 <tr>
-                                                  <td colSpan={4} className="text-center py-4 text-slate-400 font-bold bg-white">
+                                                  <td colSpan={5} className="text-center py-4 text-slate-400 font-bold bg-white">
                                                     {language === 'pt' ? 'Nenhuma disciplina lançada.' : 'No modules submitted.'}
                                                   </td>
                                                 </tr>
                                               ) : (
-                                                rows.map((row: any, rIdx: number) => (
-                                                  <tr key={`print-row-mod-${row.moduleNum}-${rIdx}`} className="border-b border-slate-200 bg-white">
-                                                    <td className="px-3.5 py-2 font-black text-slate-900 border-r border-slate-250 bg-slate-50/70 align-middle whitespace-nowrap text-center">
-                                                      {row.modulo}
-                                                    </td>
-                                                    <td className="px-3.5 py-2 font-bold text-slate-800 border-r border-slate-200 bg-white align-middle">
-                                                      <div className="flex items-stretch justify-between gap-2">
-                                                        <div className="flex flex-col justify-center gap-2 py-0.5 w-full">
-                                                          {row.disciplines.map((disc: any, dIdx: number) => (
-                                                            <div key={`print-disc-${disc.id || dIdx}`} className={cn(
-                                                              "flex items-center gap-1.5 text-slate-800 font-extrabold text-[10px] leading-tight break-words",
-                                                              dIdx > 0 && "pt-1.5 border-t border-slate-100/80"
-                                                            )}>
-                                                              <span className="w-1 h-1 rounded-full bg-slate-400 shrink-0" />
-                                                              <span>{disc.nome}</span>
-                                                            </div>
-                                                          ))}
-                                                        </div>
-                                                        {row.disciplines.length > 1 && (
-                                                          <div className="flex items-center shrink-0 px-0.5 text-slate-300 select-none">
-                                                            <svg className="w-3.5 h-full min-h-[32px] py-0.5 text-slate-400 overflow-visible" viewBox="0 0 14 100" preserveAspectRatio="none" fill="none" stroke="currentColor" strokeWidth="1.5">
-                                                              <path d="M0 2 C8 2 10 15 10 35 L10 42 C10 48 13 50 14 50 C13 50 10 52 10 58 L10 65 C10 85 8 98 0 98" vectorEffect="non-scaling-stroke" />
-                                                            </svg>
-                                                          </div>
-                                                        )}
-                                                      </div>
-                                                    </td>
-                                                    <td className="px-3.5 py-2 text-center font-black font-mono text-xs border-r border-slate-200 text-slate-900 bg-white align-middle">
-                                                      {row.nota}
-                                                    </td>
-                                                    <td className={cn("px-3.5 py-2 text-right bg-white align-middle break-words whitespace-normal leading-tight font-black", row.statusClass)}>
-                                                      {row.situacao}
-                                                    </td>
-                                                  </tr>
-                                                ))
+                                                rows.map((row: any, rIdx: number) => {
+                                                  return (
+                                                    <React.Fragment key={`print-row-mod-${row.moduleNum}-${rIdx}`}>
+                                                      {row.disciplines.map((disc: any, dIdx: number) => {
+                                                        const isLastDisc = dIdx === row.disciplines.length - 1;
+                                                        return (
+                                                          <tr key={`print-disc-${disc.id || dIdx}`} className={cn("bg-white", isLastDisc ? "border-b border-slate-200" : "border-b border-slate-100/80")}>
+                                                            {dIdx === 0 && (
+                                                              <td rowSpan={row.disciplines.length} className="px-3.5 py-2 font-black text-slate-900 border-r border-slate-250 bg-slate-50/70 align-middle whitespace-nowrap text-center">
+                                                                {row.modulo}
+                                                              </td>
+                                                            )}
+                                                            <td className="px-3.5 py-2 font-bold text-slate-800 border-r border-slate-200 bg-white align-middle">
+                                                              <div className="flex items-center gap-1.5 text-[10px] leading-tight break-words">
+                                                                <span className="w-1 h-1 rounded-full bg-slate-400 shrink-0" />
+                                                                <span>{disc.nome}</span>
+                                                              </div>
+                                                            </td>
+                                                            <td className="px-3.5 py-2 text-center font-mono text-[9px] text-slate-500 border-r border-slate-200 bg-white align-middle">
+                                                              {disc.carga_horaria ? `${disc.carga_horaria}h` : '-'}
+                                                            </td>
+                                                            {dIdx === 0 && (
+                                                              <td rowSpan={row.disciplines.length} className="px-3.5 py-2 text-center font-black font-mono text-xs border-r border-slate-200 text-slate-900 bg-white align-middle">
+                                                                {row.nota}
+                                                              </td>
+                                                            )}
+                                                            {dIdx === 0 && (
+                                                              <td rowSpan={row.disciplines.length} className={cn("px-3.5 py-2 text-right bg-white align-middle break-words whitespace-normal leading-tight font-black", row.statusClass)}>
+                                                                {row.situacao}
+                                                              </td>
+                                                            )}
+                                                          </tr>
+                                                        );
+                                                      })}
+                                                    </React.Fragment>
+                                                  );
+                                                })
                                               )}
                                             </tbody>
                                           </table>

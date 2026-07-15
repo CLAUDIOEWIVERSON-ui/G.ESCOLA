@@ -328,20 +328,28 @@ export function useDashboardStats() {
       const expeditoTurmasList: any[] = [];
       const carreiraTurmasList: any[] = [];
       const especialTurmasList: any[] = [];
+      const preInscritasTurmasList: any[] = [];
 
       filteredTurmas.forEach((t: any) => {
         const isAtiva = t.status === 'ativa' || !t.status;
-        if (isAtiva && t.curso_id) {
+        const isPreInscrito = t.status === 'pré-inscrito(a)(s)';
+        
+        if (t.curso_id) {
           const course = courseMap.get(t.curso_id);
           if (course) {
             const cat = course.categoria?.toLowerCase();
             const tWithCourse = { ...t, curso: course };
-            if (cat === 'expedito') {
-              expeditoTurmasList.push(tWithCourse);
-            } else if (cat === 'carreira') {
-              carreiraTurmasList.push(tWithCourse);
-            } else if (cat === 'especial') {
-              especialTurmasList.push(tWithCourse);
+            
+            if (isAtiva) {
+              if (cat === 'expedito') {
+                expeditoTurmasList.push(tWithCourse);
+              } else if (cat === 'carreira') {
+                carreiraTurmasList.push(tWithCourse);
+              } else if (cat === 'especial') {
+                especialTurmasList.push(tWithCourse);
+              }
+            } else if (isPreInscrito) {
+              preInscritasTurmasList.push(tWithCourse);
             }
           }
         }
@@ -351,24 +359,26 @@ export function useDashboardStats() {
       let expeditoAlunosCount = 0;
       let carreiraAlunosCount = 0;
       let especialAlunosCount = 0;
+      let preInscritosAlunosCount = 0;
 
       activeAlunos.forEach((al: any) => {
         if (al.turma_id) {
           const course = turmaCoursesMap.get(al.turma_id);
           if (course) {
             const isAtiva = course.status === 'ativa' || !course.status;
+            const isPreInscrito = course.status === 'pré-inscrito(a)(s)';
+            
             if (isAtiva) {
               const cat = course.categoria?.toLowerCase();
               if (cat === 'expedito') {
                 expeditoAlunosCount++;
               } else if (cat === 'carreira') {
                 carreiraAlunosCount++;
-              } {
-                const cat2 = course.categoria?.toLowerCase();
-                if (cat2 === 'especial') {
-                  especialAlunosCount++;
-                }
+              } else if (cat === 'especial') {
+                especialAlunosCount++;
               }
+            } else if (isPreInscrito) {
+              preInscritosAlunosCount++;
             }
           }
         }
@@ -380,14 +390,17 @@ export function useDashboardStats() {
           turmasExpedito: expeditoTurmasList.length,
           turmasCarreira: carreiraTurmasList.length,
           turmasEspeciais: especialTurmasList.length,
+          turmasPreInscritas: preInscritasTurmasList.length,
           studentsExpedito: expeditoAlunosCount,
           studentsCarreira: carreiraAlunosCount,
           studentsEspeciais: especialAlunosCount,
+          studentsPreInscritos: preInscritosAlunosCount,
         },
         alunosExterior: filteredAlunosExterior,
         turmasExpeditoList: expeditoTurmasList,
         turmasCarreiraList: carreiraTurmasList,
         turmasEspeciaisList: especialTurmasList,
+        turmasPreInscritasList: preInscritasTurmasList,
       };
     },
     {
@@ -398,14 +411,17 @@ export function useDashboardStats() {
           turmasExpedito: 0,
           turmasCarreira: 0,
           turmasEspeciais: 0,
+          turmasPreInscritas: 0,
           studentsExpedito: 0,
           studentsCarreira: 0,
           studentsEspeciais: 0,
+          studentsPreInscritos: 0,
         },
         alunosExterior: [],
         turmasExpeditoList: [],
         turmasCarreiraList: [],
-        turmasEspeciaisList: []
+        turmasEspeciaisList: [],
+        turmasPreInscritasList: [],
       }
     }
   );

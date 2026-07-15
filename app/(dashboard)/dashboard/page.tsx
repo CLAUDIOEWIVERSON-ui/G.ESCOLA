@@ -49,11 +49,13 @@ export default function DashboardPage() {
       turmasExpedito: 0,
       turmasCarreira: 0,
       turmasEspeciais: 0,
+      turmasPreInscritas: 0,
     }, 
     alunosExterior = [],
     turmasExpeditoList = [],
     turmasCarreiraList = [],
-    turmasEspeciaisList = []
+    turmasEspeciaisList = [],
+    turmasPreInscritasList = [],
   } = dashboardData || {};
 
   const [selectedCard, setSelectedCard] = useState<string>('exterior');
@@ -292,6 +294,14 @@ export default function DashboardPage() {
       value: stats.turmasEspeciais, 
       icon: Award, 
       color: 'bg-blue-600',
+      shouldShow: true
+    },
+    { 
+      id: 'pre_inscritos',
+      name: language === 'pt' ? 'Turmas Pré-Inscritas' : 'Pre-registered Classes', 
+      value: stats.turmasPreInscritas, 
+      icon: Users, 
+      color: 'bg-cyan-600',
       shouldShow: true
     },
   ];
@@ -900,6 +910,22 @@ export default function DashboardPage() {
             <TurmasListTable 
               turmas={turmasEspeciaisList} 
               title={t.dashboard.turmasEspeciais} 
+              onDelete={handleDeleteTurma}
+            />
+          </motion.div>
+        )}
+
+        {selectedCard === 'pre_inscritos' && (
+          <motion.div
+            key="pre_inscritos"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            transition={{ duration: 0.2 }}
+          >
+            <TurmasListTable 
+              turmas={turmasPreInscritasList} 
+              title={language === 'pt' ? 'Turmas Pré-Inscritas' : 'Pre-registered Classes'} 
               onDelete={handleDeleteTurma}
             />
           </motion.div>
