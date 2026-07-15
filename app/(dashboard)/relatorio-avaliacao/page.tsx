@@ -940,7 +940,7 @@ function RelatorioAvaliacaoAdminContent() {
   }
 
   return (
-    <div className={`max-w-7xl mx-auto px-4 py-8 space-y-8 print:space-y-2 print:py-0 print:px-0 print:max-w-none ${printMode === "bw" ? "print:grayscale" : ""}`}>
+    <div className={`max-w-7xl mx-auto px-4 py-8 space-y-8 print:space-y-2 print:py-0 print:px-0 print:max-w-none print:bg-white print:text-black ${printMode === "bw" ? "print:grayscale" : ""}`}>
       {/* PRINT HEADER */}
       <div className="hidden print:block border-b-2 border-slate-900 pb-2 mb-2">
         <h1 className="text-xl font-black text-slate-900 uppercase tracking-tight">Relatório de Avaliações</h1>

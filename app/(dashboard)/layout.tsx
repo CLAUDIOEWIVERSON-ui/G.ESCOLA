@@ -281,7 +281,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="flex min-h-screen bg-slate-50 font-sans text-slate-900 print:block print:bg-white print:min-h-0">
+    <div className="flex min-h-screen bg-slate-50 font-sans text-slate-900 print:block print:bg-white print:text-black print:min-h-0">
       {/* Sidebar Overlay (Mobile only) */}
       <AnimatePresence>
         {sidebarOpen && (
