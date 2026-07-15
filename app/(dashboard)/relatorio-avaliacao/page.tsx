@@ -992,7 +992,7 @@ function RelatorioAvaliacaoAdminContent() {
       </div>
 
       {/* FILTER BOX */}
-      <div className="bg-slate-900 text-white border border-slate-850 rounded-xl shadow-sm p-6 print:hidden">
+      <div className="bg-slate-900 print:bg-transparent text-white print:text-slate-900 border border-slate-850 rounded-xl shadow-sm p-6 print:hidden">
         <div className="flex items-center gap-2 mb-4 border-b border-slate-800 pb-2.5">
           <SlidersHorizontal className="h-4 w-4 text-slate-400" />
           <h2 className="text-xs font-black uppercase tracking-wider font-mono">Filtros de Pesquisa e Segmentação</h2>
@@ -1021,7 +1021,7 @@ function RelatorioAvaliacaoAdminContent() {
                 // Reset student filter on class change
                 setSelectedStudent('ALL');
               }}
-              className="w-full bg-slate-950 border border-slate-800 text-xs rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-sky-500 text-slate-300"
+              className="w-full bg-slate-950 print:bg-transparent border border-slate-800 text-xs rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-sky-500 text-slate-300"
             >
               <option value="ALL">Todas as Turmas</option>
               {turmas.map(t => (
@@ -1036,7 +1036,7 @@ function RelatorioAvaliacaoAdminContent() {
             <select
               value={selectedInstructor}
               onChange={(e) => setSelectedInstructor(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 text-xs rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-sky-500 text-slate-300"
+              className="w-full bg-slate-950 print:bg-transparent border border-slate-800 text-xs rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-sky-500 text-slate-300"
             >
               <option value="ALL">Todos os Instrutores</option>
               {instructorsList.map(inst => (
@@ -1091,7 +1091,7 @@ function RelatorioAvaliacaoAdminContent() {
 
               <div className="flex-1 space-y-4 text-center md:text-left w-full">
                 <div>
-                  <span className="text-[10px] bg-slate-900 text-white font-mono font-bold px-2 py-0.5 rounded uppercase tracking-wider">Acesso Livre - Sem Login</span>
+                  <span className="text-[10px] bg-slate-900 print:bg-transparent text-white print:text-slate-900 font-mono font-bold px-2 py-0.5 rounded uppercase tracking-wider">Acesso Livre - Sem Login</span>
                   <h3 className="text-base font-bold text-slate-900 mt-2 font-mono">
                     Avaliação da Turma: {selectedTurmaObj.nome}
                   </h3>
@@ -1296,7 +1296,7 @@ function RelatorioAvaliacaoAdminContent() {
                                   onClick={() => setChartTheme('azul')}
                                   className={`px-3 py-1.5 rounded-lg transition-all duration-150 flex items-center gap-1.5 font-black uppercase text-[9px] tracking-wider active:translate-y-[2px] active:border-b-[1px] ${
                                     chartTheme === 'azul'
-                                      ? 'bg-slate-950 text-cyan-400 border border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.45)] border-b-[4px] border-r-[2px] border-cyan-405'
+                                      ? 'bg-slate-950 print:bg-transparent text-cyan-400 border border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.45)] border-b-[4px] border-r-[2px] border-cyan-405'
                                       : 'text-slate-500 border border-transparent border-b-[3px] hover:text-slate-700 hover:bg-slate-200/50'
                                   }`}
                                 >
@@ -1330,7 +1330,7 @@ function RelatorioAvaliacaoAdminContent() {
                              {/* Chart 1: Média Detalhada por Categoria */}
                              <div className={`border rounded-xl p-5 relative overflow-hidden transition-all duration-300 border-b-[4px] border-r-[2px] ${
                                chartTheme === 'azul'
-                                 ? 'bg-slate-950 border-slate-800 shadow-[0_0_25px_rgba(6,182,212,0.15)] hover:shadow-[0_0_35px_rgba(6,182,212,0.25)] border-cyan-500/20 text-white'
+                                 ? 'bg-slate-950 print:bg-transparent border-slate-800 shadow-[0_0_25px_rgba(6,182,212,0.15)] hover:shadow-[0_0_35px_rgba(6,182,212,0.25)] border-cyan-500/20 text-white'
                                  : 'bg-white border-slate-250 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border-cyan-500/30 text-slate-800'
                              }`} id="chart-neon-metrics-card" style={{ pageBreakInside: 'avoid' }}>
                                <div className={`flex items-center justify-between border-b pb-2.5 ${chartTheme === 'azul' ? 'border-slate-800/80' : 'border-slate-100'}`}>
@@ -1476,7 +1476,7 @@ function RelatorioAvaliacaoAdminContent() {
                              {/* Chart 2: Perfil de Distribuição de Notas */}
                              <div className={`border rounded-xl p-5 relative overflow-hidden transition-all duration-300 border-b-[4px] border-r-[2px] ${
                                chartTheme === 'azul'
-                                 ? 'bg-slate-950 border-slate-800 shadow-[0_0_25px_rgba(168,85,247,0.15)] hover:shadow-[0_0_35px_rgba(168,85,247,0.25)] border-purple-500/20 text-white'
+                                 ? 'bg-slate-950 print:bg-transparent border-slate-800 shadow-[0_0_25px_rgba(168,85,247,0.15)] hover:shadow-[0_0_35px_rgba(168,85,247,0.25)] border-purple-500/20 text-white'
                                  : 'bg-white border-slate-250 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border-purple-500/30 text-slate-800'
                              }`} id="chart-neon-distribution-card" style={{ pageBreakInside: 'avoid' }}>
                                <div className={`flex items-center justify-between border-b pb-2.5 ${chartTheme === 'azul' ? 'border-slate-800/80' : 'border-slate-100'}`}>
@@ -1556,7 +1556,7 @@ function RelatorioAvaliacaoAdminContent() {
                                return (
                                  <div className={`border rounded-xl p-5 relative overflow-hidden transition-all duration-305 border-b-[4px] border-r-[2px] flex flex-col justify-between ${
                                    chartTheme === 'azul'
-                                     ? 'bg-slate-950 border-slate-800 shadow-[0_0_25px_rgba(16,185,129,0.15)] hover:shadow-[0_0_35px_rgba(16,185,129,0.25)] border-emerald-500/20 text-white'
+                                     ? 'bg-slate-950 print:bg-transparent border-slate-800 shadow-[0_0_25px_rgba(16,185,129,0.15)] hover:shadow-[0_0_35px_rgba(16,185,129,0.25)] border-emerald-500/20 text-white'
                                      : 'bg-white border-slate-205 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border-emerald-500/30 text-slate-800'
                                  }`} id="chart-pie-satisfaction-card" style={{ pageBreakInside: 'avoid' }}>
                                    <div className={`flex items-center justify-between border-b pb-2.5 ${chartTheme === 'azul' ? 'border-slate-800/80' : 'border-slate-100'}`}>
@@ -2088,7 +2088,7 @@ function RelatorioAvaliacaoAdminContent() {
                       {/* Performance Header summary */}
                       <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                         <div className="flex items-center gap-4">
-                          <div className="w-16 h-16 bg-slate-900 text-white rounded-full flex items-center justify-center font-bold text-xl font-mono">
+                          <div className="w-16 h-16 bg-slate-900 print:bg-transparent text-white print:text-slate-900 rounded-full flex items-center justify-center font-bold text-xl font-mono">
                             {focusedInstructor.slice(0, 2).toUpperCase()}
                           </div>
                           <div>
@@ -2897,9 +2897,9 @@ function RelatorioAvaliacaoAdminContent() {
                                     </p>
                                     <div className="flex max-md:grid max-md:grid-cols-3 gap-2 shrink-0">
                                       {[
-                                        { value: 5, label: "CONCORDO PLENAMENTE", activeClass: "bg-slate-900 text-white border-slate-900 shadow-sm" },
-                                        { value: 3, label: "CONCORDO PARCIALMENTE", activeClass: "bg-slate-900 text-white border-slate-900 shadow-sm" },
-                                        { value: 1, label: "DISCORDO/ NÃO SE APLICA", activeClass: "bg-slate-900 text-white border-slate-900 shadow-sm" }
+                                        { value: 5, label: "CONCORDO PLENAMENTE", activeClass: "bg-slate-900 print:bg-transparent text-white print:text-slate-900 border-slate-900 shadow-sm" },
+                                        { value: 3, label: "CONCORDO PARCIALMENTE", activeClass: "bg-slate-900 print:bg-transparent text-white print:text-slate-900 border-slate-900 shadow-sm" },
+                                        { value: 1, label: "DISCORDO/ NÃO SE APLICA", activeClass: "bg-slate-900 print:bg-transparent text-white print:text-slate-900 border-slate-900 shadow-sm" }
                                       ].map((opt) => {
                                         const isSelected = val === opt.value;
                                         return (
@@ -2937,9 +2937,9 @@ function RelatorioAvaliacaoAdminContent() {
                                     </p>
                                     <div className="flex max-md:grid max-md:grid-cols-3 gap-2 shrink-0">
                                       {[
-                                        { value: 5, label: "CONCORDO PLENAMENTE", activeClass: "bg-slate-900 text-white border-slate-900 shadow-sm" },
-                                        { value: 3, label: "CONCORDO PARCIALMENTE", activeClass: "bg-slate-900 text-white border-slate-900 shadow-sm" },
-                                        { value: 1, label: "DISCORDO/ NÃO SE APLICA", activeClass: "bg-slate-900 text-white border-slate-900 shadow-sm" }
+                                        { value: 5, label: "CONCORDO PLENAMENTE", activeClass: "bg-slate-900 print:bg-transparent text-white print:text-slate-900 border-slate-900 shadow-sm" },
+                                        { value: 3, label: "CONCORDO PARCIALMENTE", activeClass: "bg-slate-900 print:bg-transparent text-white print:text-slate-900 border-slate-900 shadow-sm" },
+                                        { value: 1, label: "DISCORDO/ NÃO SE APLICA", activeClass: "bg-slate-900 print:bg-transparent text-white print:text-slate-900 border-slate-900 shadow-sm" }
                                       ].map((opt) => {
                                         const isSelected = val === opt.value;
                                         return (
@@ -2977,9 +2977,9 @@ function RelatorioAvaliacaoAdminContent() {
                                     </p>
                                     <div className="flex max-md:grid max-md:grid-cols-3 gap-2 shrink-0">
                                       {[
-                                        { value: 5, label: "CONCORDO PLENAMENTE", activeClass: "bg-slate-900 text-white border-slate-900 shadow-sm" },
-                                        { value: 3, label: "CONCORDO PARCIALMENTE", activeClass: "bg-slate-900 text-white border-slate-900 shadow-sm" },
-                                        { value: 1, label: "DISCORDO/ NÃO SE APLICA", activeClass: "bg-slate-900 text-white border-slate-900 shadow-sm" }
+                                        { value: 5, label: "CONCORDO PLENAMENTE", activeClass: "bg-slate-900 print:bg-transparent text-white print:text-slate-900 border-slate-900 shadow-sm" },
+                                        { value: 3, label: "CONCORDO PARCIALMENTE", activeClass: "bg-slate-900 print:bg-transparent text-white print:text-slate-900 border-slate-900 shadow-sm" },
+                                        { value: 1, label: "DISCORDO/ NÃO SE APLICA", activeClass: "bg-slate-900 print:bg-transparent text-white print:text-slate-900 border-slate-900 shadow-sm" }
                                       ].map((opt) => {
                                         const isSelected = val === opt.value;
                                         return (
@@ -3017,9 +3017,9 @@ function RelatorioAvaliacaoAdminContent() {
                                     </p>
                                     <div className="flex max-md:grid max-md:grid-cols-3 gap-2 shrink-0">
                                       {[
-                                        { value: 5, label: "CONCORDO PLENAMENTE", activeClass: "bg-slate-900 text-white border-slate-900 shadow-sm" },
-                                        { value: 3, label: "CONCORDO PARCIALMENTE", activeClass: "bg-slate-900 text-white border-slate-900 shadow-sm" },
-                                        { value: 1, label: "DISCORDO/ NÃO SE APLICA", activeClass: "bg-slate-900 text-white border-slate-900 shadow-sm" }
+                                        { value: 5, label: "CONCORDO PLENAMENTE", activeClass: "bg-slate-900 print:bg-transparent text-white print:text-slate-900 border-slate-900 shadow-sm" },
+                                        { value: 3, label: "CONCORDO PARCIALMENTE", activeClass: "bg-slate-900 print:bg-transparent text-white print:text-slate-900 border-slate-900 shadow-sm" },
+                                        { value: 1, label: "DISCORDO/ NÃO SE APLICA", activeClass: "bg-slate-900 print:bg-transparent text-white print:text-slate-900 border-slate-900 shadow-sm" }
                                       ].map((opt) => {
                                         const isSelected = val === opt.value;
                                         return (

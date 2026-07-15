@@ -478,6 +478,22 @@ export async function GET() {
             .limit(1);
           return error;
         }
+      },
+      {
+        key: 'turma_status_pre_inscrito',
+        tableName: 'turmas',
+        columnName: 'status',
+        fileName: '51_add_pre_inscrito_status.sql',
+        description: 'Adiciona "pré-inscrito(a)(s)" ao enum turma_status_enum para uso nas turmas.',
+        isColumn: false,
+        checkFn: async () => {
+          const { error } = await supabaseAdmin
+            .from('turmas')
+            .select('status')
+            .eq('status', 'pré-inscrito(a)(s)' as any)
+            .limit(1);
+          return error;
+        }
       }
     ];
 
