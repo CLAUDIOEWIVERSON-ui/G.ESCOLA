@@ -1682,19 +1682,19 @@ function BoletimContent() {
                         if (finalGradeValue === null) {
                           if (isClassExpired) {
                             statusLabel = language === 'pt' ? 'NÃO CONCLUIU' : 'NOT COMPLETED';
-                            statusClass = 'text-rose-600 font-extrabold';
+                            statusClass = 'text-rose-700 bg-rose-50/50 font-extrabold';
                           } else {
                             statusLabel = reportT[language as "pt" | "en"].pending;
                           }
                         } else if (finalGradeValue >= settings.media_aprovacao && (freqValue === null || freqValue >= settings.frequencia_minima)) {
                           statusLabel = reportT[language as "pt" | "en"].approved;
-                          statusClass = 'text-emerald-600 font-extrabold';
+                          statusClass = 'text-emerald-700 bg-emerald-50/50 font-extrabold';
                         } else if (freqValue !== null && freqValue < settings.frequencia_minima) {
                           statusLabel = language === 'pt' ? 'FALTA FREQ.' : 'LOW FREQ.';
-                          statusClass = 'text-orange-600 font-extrabold';
+                          statusClass = 'text-orange-700 bg-orange-50/50 font-extrabold';
                         } else if (finalGradeValue >= settings.media_recuperacao) {
                           statusLabel = reportT[language as "pt" | "en"].retake;
-                          statusClass = 'text-yellow-600 font-extrabold';
+                          statusClass = 'text-amber-700 bg-amber-50/50 font-extrabold';
                         } else {
                           statusLabel = reportT[language as "pt" | "en"].reproved;
                           statusClass = 'text-rose-600 font-extrabold';
@@ -1734,12 +1734,13 @@ function BoletimContent() {
                                   <Fragment key={`row-mod-${row.moduleNum}-${rIdx}`}>
                                     {row.disciplines.map((disc: any, dIdx: number) => {
                                       const isLastDisc = dIdx === row.disciplines.length - 1;
-                                      const midIdx = Math.floor((row.disciplines.length - 1) / 2);
                                       return (
                                         <tr key={`disc-${disc.id || dIdx}`} className="bg-white hover:bg-slate-50/50 transition-colors">
-                                          <td className={cn("px-4 py-3 font-extrabold text-slate-900 border-r border-slate-200 text-left bg-white align-middle whitespace-nowrap", isLastDisc ? "border-b border-slate-200" : "")}>
-                                            {dIdx === midIdx ? row.modulo : null}
-                                          </td>
+                                          {dIdx === 0 && (
+                                            <td rowSpan={row.disciplines.length} className="px-4 py-3 font-extrabold text-slate-900 border-r border-slate-200 text-left bg-white align-middle whitespace-nowrap border-b border-slate-200">
+                                              {row.modulo}
+                                            </td>
+                                          )}
                                           <td className={cn("px-4 py-3 font-extrabold text-slate-800 border-r border-slate-200 text-left bg-transparent align-middle", isLastDisc ? "border-b border-slate-200" : "border-b border-slate-100")}>
                                             <div className="flex items-center gap-2 text-xs leading-tight break-words">
                                               <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
@@ -1749,12 +1750,16 @@ function BoletimContent() {
                                           <td className={cn("px-3 py-3 text-center font-mono text-xs text-slate-500 border-r border-slate-200 bg-transparent align-middle", isLastDisc ? "border-b border-slate-200" : "border-b border-slate-100")}>
                                             {disc.carga_horaria ? `${disc.carga_horaria}h` : '-'}
                                           </td>
-                                          <td className={cn("px-3 py-3 text-center font-black font-mono text-sm border-r border-slate-200 text-slate-900 bg-white align-middle", isLastDisc ? "border-b border-slate-200" : "")}>
-                                            {dIdx === midIdx ? row.nota : null}
-                                          </td>
-                                          <td className={cn("px-4 py-3 text-right font-black bg-white align-middle break-words whitespace-normal leading-tight", row.statusClass, isLastDisc ? "border-b border-slate-200" : "")}>
-                                            {dIdx === midIdx ? row.situacao : null}
-                                          </td>
+                                          {dIdx === 0 && (
+                                            <td rowSpan={row.disciplines.length} className="px-3 py-3 text-center font-black font-mono text-sm border-r border-slate-200 text-slate-900 bg-white align-middle animate-fade-in border-b border-slate-200">
+                                              {row.nota}
+                                            </td>
+                                          )}
+                                          {dIdx === 0 && (
+                                            <td rowSpan={row.disciplines.length} className={cn("px-4 py-3 text-right font-black align-middle break-words whitespace-normal leading-tight border-b border-slate-200", row.statusClass)}>
+                                              {row.situacao}
+                                            </td>
+                                          )}
                                         </tr>
                                       );
                                     })}
@@ -2753,12 +2758,13 @@ function BoletimContent() {
                                                     <Fragment key={`print-row-mod-${row.moduleNum}-${rIdx}`}>
                                                       {row.disciplines.map((disc: any, dIdx: number) => {
                                                         const isLastDisc = dIdx === row.disciplines.length - 1;
-                                                        const midIdx = Math.floor((row.disciplines.length - 1) / 2);
                                                         return (
                                                           <tr key={`print-disc-${disc.id || dIdx}`} className="bg-white">
-                                                            <td className={cn("px-3.5 py-2 font-black text-slate-900 border-r border-slate-250 bg-slate-50/70 align-middle whitespace-nowrap text-center", isLastDisc ? "border-b border-slate-200" : "")}>
-                                                              {dIdx === midIdx ? row.modulo : null}
-                                                            </td>
+                                                            {dIdx === 0 && (
+                                                              <td rowSpan={row.disciplines.length} className="px-3.5 py-2 font-black text-slate-900 border-r border-slate-250 bg-slate-50/70 align-middle whitespace-nowrap text-center border-b border-slate-200">
+                                                                {row.modulo}
+                                                              </td>
+                                                            )}
                                                             <td className={cn("px-3.5 py-2 font-bold text-slate-800 border-r border-slate-200 bg-transparent align-middle", isLastDisc ? "border-b border-slate-200" : "border-b border-slate-100/80")}>
                                                               <div className="flex items-center gap-1.5 text-[10px] leading-tight break-words">
                                                                 <span className="w-1 h-1 rounded-full bg-slate-400 shrink-0" />
@@ -2768,12 +2774,16 @@ function BoletimContent() {
                                                             <td className={cn("px-3.5 py-2 text-center font-mono text-[9px] text-slate-500 border-r border-slate-200 bg-transparent align-middle", isLastDisc ? "border-b border-slate-200" : "border-b border-slate-100/80")}>
                                                               {disc.carga_horaria ? `${disc.carga_horaria}h` : '-'}
                                                             </td>
-                                                            <td className={cn("px-3.5 py-2 text-center font-black font-mono text-xs border-r border-slate-200 text-slate-900 bg-white align-middle", isLastDisc ? "border-b border-slate-200" : "")}>
-                                                              {dIdx === midIdx ? row.nota : null}
-                                                            </td>
-                                                            <td className={cn("px-3.5 py-2 text-right bg-white align-middle break-words whitespace-normal leading-tight font-black", row.statusClass, isLastDisc ? "border-b border-slate-200" : "")}>
-                                                              {dIdx === midIdx ? row.situacao : null}
-                                                            </td>
+                                                            {dIdx === 0 && (
+                                                              <td rowSpan={row.disciplines.length} className="px-3.5 py-2 text-center font-black font-mono text-xs border-r border-slate-200 text-slate-900 bg-white align-middle border-b border-slate-200">
+                                                                {row.nota}
+                                                              </td>
+                                                            )}
+                                                            {dIdx === 0 && (
+                                                              <td rowSpan={row.disciplines.length} className={cn("px-3.5 py-2 text-right bg-white align-middle break-words whitespace-normal leading-tight font-black border-b border-slate-200", row.statusClass)}>
+                                                                {row.situacao}
+                                                              </td>
+                                                            )}
                                                           </tr>
                                                         );
                                                       })}
