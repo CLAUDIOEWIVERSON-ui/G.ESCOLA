@@ -321,13 +321,7 @@ export async function GET(req: NextRequest) {
               12000
             );
           } catch (primaryError: any) {
-            const errMsg = String(primaryError?.message || primaryError?.status || primaryError || '').toLowerCase();
-            if (errMsg.includes('429') || errMsg.includes('quota') || errMsg.includes('resource_exhausted')) {
-               console.info('[Gemini API Primary] Quota exceeded on main model. Skipping fallback model and triggering cooldown.');
-               throw primaryError; // Re-throw to be caught by the outer block and trigger cooldown
-            }
-
-            console.info('[Gemini API Primary Model Error or Timeout] Main model gemini-3.5-flash failed or timed out. Retrying with fallback model gemini-3.1-flash-lite. Reason:', primaryError?.message || primaryError);
+            console.warn('[Gemini API Primary Model Error or Timeout] Main model gemini-3.5-flash failed or timed out. Retrying with fallback model gemini-3.1-flash-lite. Reason:', primaryError?.message || primaryError);
             // Try with the other model with 8000ms timeout
             response = await withTimeout(
               getGeminiAI().models.generateContent({
@@ -377,12 +371,12 @@ export async function GET(req: NextRequest) {
             };
           }
         } catch (apiError: any) {
-          console.info('[Gemini API Error or Timeout] Falling back to preloaded thoughts catalog gracefully. Reason:', apiError?.message || apiError);
+          console.warn('[Gemini API Error or Timeout] Falling back to preloaded thoughts catalog gracefully. Reason:', apiError?.message || apiError);
           
           // Cooldown mechanism: block the Gemini API calls for 10 minutes if we hit a 429 rate limit, quota issue, or a timeout!
           const errMsg = String(apiError?.message || apiError?.status || apiError || '').toLowerCase();
           if (errMsg.includes('429') || errMsg.includes('quota') || errMsg.includes('resource_exhausted') || errMsg.includes('timeout')) {
-            console.info('[Gemini API Cooldown] Quota exceeded or limit/timeout hit. Cooldown active for 10 minutes.');
+            console.warn('[Gemini API Cooldown] Quota exceeded or limit/timeout hit. Cooldown active for 10 minutes.');
             geminiBlockedUntil = Date.now() + 10 * 60 * 1000;
           }
 

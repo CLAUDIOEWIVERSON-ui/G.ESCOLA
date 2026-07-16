@@ -1682,19 +1682,19 @@ function BoletimContent() {
                         if (finalGradeValue === null) {
                           if (isClassExpired) {
                             statusLabel = language === 'pt' ? 'NÃO CONCLUIU' : 'NOT COMPLETED';
-                            statusClass = 'text-rose-700 bg-rose-50/50 font-extrabold';
+                            statusClass = 'text-rose-600 font-extrabold';
                           } else {
                             statusLabel = reportT[language as "pt" | "en"].pending;
                           }
                         } else if (finalGradeValue >= settings.media_aprovacao && (freqValue === null || freqValue >= settings.frequencia_minima)) {
                           statusLabel = reportT[language as "pt" | "en"].approved;
-                          statusClass = 'text-emerald-700 bg-emerald-50/50 font-extrabold';
+                          statusClass = 'text-emerald-600 font-extrabold';
                         } else if (freqValue !== null && freqValue < settings.frequencia_minima) {
                           statusLabel = language === 'pt' ? 'FALTA FREQ.' : 'LOW FREQ.';
-                          statusClass = 'text-orange-700 bg-orange-50/50 font-extrabold';
+                          statusClass = 'text-orange-600 font-extrabold';
                         } else if (finalGradeValue >= settings.media_recuperacao) {
                           statusLabel = reportT[language as "pt" | "en"].retake;
-                          statusClass = 'text-amber-700 bg-amber-50/50 font-extrabold';
+                          statusClass = 'text-yellow-600 font-extrabold';
                         } else {
                           statusLabel = reportT[language as "pt" | "en"].reproved;
                           statusClass = 'text-rose-600 font-extrabold';
@@ -1735,28 +1735,28 @@ function BoletimContent() {
                                     {row.disciplines.map((disc: any, dIdx: number) => {
                                       const isLastDisc = dIdx === row.disciplines.length - 1;
                                       return (
-                                        <tr key={`disc-${disc.id || dIdx}`} className="bg-white hover:bg-slate-50/50 transition-colors">
+                                        <tr key={`disc-${disc.id || dIdx}`} className={cn("bg-white hover:bg-slate-50/50 transition-colors", isLastDisc ? "border-b border-slate-200" : "border-b border-slate-100")}>
                                           {dIdx === 0 && (
-                                            <td rowSpan={row.disciplines.length} className="px-4 py-3 font-extrabold text-slate-900 border-r border-slate-200 text-left bg-white align-middle whitespace-nowrap border-b border-slate-200">
+                                            <td rowSpan={row.disciplines.length} className="px-4 py-3 font-extrabold text-slate-900 border-r border-slate-200 text-left bg-white align-middle whitespace-nowrap">
                                               {row.modulo}
                                             </td>
                                           )}
-                                          <td className={cn("px-4 py-3 font-extrabold text-slate-800 border-r border-slate-200 text-left bg-transparent align-middle", isLastDisc ? "border-b border-slate-200" : "border-b border-slate-100")}>
+                                          <td className="px-4 py-3 font-extrabold text-slate-800 border-r border-slate-200 text-left bg-white align-middle">
                                             <div className="flex items-center gap-2 text-xs leading-tight break-words">
                                               <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
                                               <span>{disc.nome}</span>
                                             </div>
                                           </td>
-                                          <td className={cn("px-3 py-3 text-center font-mono text-xs text-slate-500 border-r border-slate-200 bg-transparent align-middle", isLastDisc ? "border-b border-slate-200" : "border-b border-slate-100")}>
+                                          <td className="px-3 py-3 text-center font-mono text-xs text-slate-500 border-r border-slate-200 bg-white align-middle">
                                             {disc.carga_horaria ? `${disc.carga_horaria}h` : '-'}
                                           </td>
                                           {dIdx === 0 && (
-                                            <td rowSpan={row.disciplines.length} className="px-3 py-3 text-center font-black font-mono text-sm border-r border-slate-200 text-slate-900 bg-white align-middle animate-fade-in border-b border-slate-200">
+                                            <td rowSpan={row.disciplines.length} className="px-3 py-3 text-center font-black font-mono text-sm border-r border-slate-200 text-slate-900 bg-white align-middle animate-fade-in">
                                               {row.nota}
                                             </td>
                                           )}
                                           {dIdx === 0 && (
-                                            <td rowSpan={row.disciplines.length} className={cn("px-4 py-3 text-right font-black align-middle break-words whitespace-normal leading-tight border-b border-slate-200", row.statusClass)}>
+                                            <td rowSpan={row.disciplines.length} className={cn("px-4 py-3 text-right font-black bg-white align-middle break-words whitespace-normal leading-tight", row.statusClass)}>
                                               {row.situacao}
                                             </td>
                                           )}
@@ -2759,28 +2759,28 @@ function BoletimContent() {
                                                       {row.disciplines.map((disc: any, dIdx: number) => {
                                                         const isLastDisc = dIdx === row.disciplines.length - 1;
                                                         return (
-                                                          <tr key={`print-disc-${disc.id || dIdx}`} className="bg-white">
+                                                          <tr key={`print-disc-${disc.id || dIdx}`} className={cn("bg-white", isLastDisc ? "border-b border-slate-200" : "border-b border-slate-100/80")}>
                                                             {dIdx === 0 && (
-                                                              <td rowSpan={row.disciplines.length} className="px-3.5 py-2 font-black text-slate-900 border-r border-slate-250 bg-slate-50/70 align-middle whitespace-nowrap text-center border-b border-slate-200">
+                                                              <td rowSpan={row.disciplines.length} className="px-3.5 py-2 font-black text-slate-900 border-r border-slate-250 bg-slate-50/70 align-middle whitespace-nowrap text-center">
                                                                 {row.modulo}
                                                               </td>
                                                             )}
-                                                            <td className={cn("px-3.5 py-2 font-bold text-slate-800 border-r border-slate-200 bg-transparent align-middle", isLastDisc ? "border-b border-slate-200" : "border-b border-slate-100/80")}>
+                                                            <td className="px-3.5 py-2 font-bold text-slate-800 border-r border-slate-200 bg-white align-middle">
                                                               <div className="flex items-center gap-1.5 text-[10px] leading-tight break-words">
                                                                 <span className="w-1 h-1 rounded-full bg-slate-400 shrink-0" />
                                                                 <span>{disc.nome}</span>
                                                               </div>
                                                             </td>
-                                                            <td className={cn("px-3.5 py-2 text-center font-mono text-[9px] text-slate-500 border-r border-slate-200 bg-transparent align-middle", isLastDisc ? "border-b border-slate-200" : "border-b border-slate-100/80")}>
+                                                            <td className="px-3.5 py-2 text-center font-mono text-[9px] text-slate-500 border-r border-slate-200 bg-white align-middle">
                                                               {disc.carga_horaria ? `${disc.carga_horaria}h` : '-'}
                                                             </td>
                                                             {dIdx === 0 && (
-                                                              <td rowSpan={row.disciplines.length} className="px-3.5 py-2 text-center font-black font-mono text-xs border-r border-slate-200 text-slate-900 bg-white align-middle border-b border-slate-200">
+                                                              <td rowSpan={row.disciplines.length} className="px-3.5 py-2 text-center font-black font-mono text-xs border-r border-slate-200 text-slate-900 bg-white align-middle">
                                                                 {row.nota}
                                                               </td>
                                                             )}
                                                             {dIdx === 0 && (
-                                                              <td rowSpan={row.disciplines.length} className={cn("px-3.5 py-2 text-right bg-white align-middle break-words whitespace-normal leading-tight font-black border-b border-slate-200", row.statusClass)}>
+                                                              <td rowSpan={row.disciplines.length} className={cn("px-3.5 py-2 text-right bg-white align-middle break-words whitespace-normal leading-tight font-black", row.statusClass)}>
                                                                 {row.situacao}
                                                               </td>
                                                             )}
