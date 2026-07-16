@@ -1721,21 +1721,22 @@ function BoletimContent() {
                               <th className="px-4 py-3 text-right w-[15%]">{reportT[language as "pt" | "en"].situation}</th>
                             </tr>
                           </thead>
-                          <tbody className="text-xs text-left">
                             {reportRows.length === 0 ? (
-                              <tr>
-                                <td colSpan={5} className="text-center py-6 text-slate-400 font-bold bg-white">
-                                  {language === 'pt' ? 'Nenhuma disciplina cadastrada.' : 'No disciplines registered.'}
-                                </td>
-                              </tr>
+                              <tbody className="text-xs text-left">
+                                <tr>
+                                  <td colSpan={5} className="text-center py-6 text-slate-400 font-bold bg-white">
+                                    {language === 'pt' ? 'Nenhuma disciplina cadastrada.' : 'No disciplines registered.'}
+                                  </td>
+                                </tr>
+                              </tbody>
                             ) : (
                               reportRows.map((row: any, rIdx: number) => {
                                 return (
-                                  <Fragment key={`row-mod-${row.moduleNum}-${rIdx}`}>
+                                  <tbody key={`row-mod-${row.moduleNum}-${rIdx}`} className="text-xs text-left border-b border-slate-200">
                                     {row.disciplines.map((disc: any, dIdx: number) => {
                                       const isLastDisc = dIdx === row.disciplines.length - 1;
                                       return (
-                                        <tr key={`disc-${disc.id || dIdx}`} className={cn("bg-white hover:bg-slate-50/50 transition-colors", isLastDisc ? "border-b border-slate-200" : "border-b border-slate-100")}>
+                                        <tr key={`disc-${disc.id || dIdx}`} className={cn("bg-white hover:bg-slate-50/50 transition-colors", !isLastDisc && "border-b border-slate-100")}>
                                           {dIdx === 0 && (
                                             <td rowSpan={row.disciplines.length} className="px-4 py-3 font-extrabold text-slate-900 border-r border-slate-200 text-left bg-white align-middle whitespace-nowrap">
                                               {row.modulo}
@@ -1763,12 +1764,11 @@ function BoletimContent() {
                                         </tr>
                                       );
                                     })}
-                                  </Fragment>
+                                  </tbody>
                                 );
                               })
                             )}
-                          </tbody>
-                        </table>
+                          </table>
                     );
                   })()}
                 </div>
@@ -2745,21 +2745,22 @@ function BoletimContent() {
                                                 <th className="px-3.5 py-2 text-right w-[15%]">{reportT[language as "pt" | "en"].situation}</th>
                                               </tr>
                                             </thead>
-                                            <tbody className="text-[10px]">
-                                              {rows.length === 0 ? (
+                                            {rows.length === 0 ? (
+                                              <tbody className="text-[10px]">
                                                 <tr>
                                                   <td colSpan={5} className="text-center py-4 text-slate-400 font-bold bg-white">
                                                     {language === 'pt' ? 'Nenhuma disciplina lançada.' : 'No modules submitted.'}
                                                   </td>
                                                 </tr>
+                                              </tbody>
                                               ) : (
                                                 rows.map((row: any, rIdx: number) => {
                                                   return (
-                                                    <Fragment key={`print-row-mod-${row.moduleNum}-${rIdx}`}>
+                                                    <tbody key={`print-row-mod-${row.moduleNum}-${rIdx}`} className="text-[10px] break-inside-avoid border-b border-slate-200">
                                                       {row.disciplines.map((disc: any, dIdx: number) => {
                                                         const isLastDisc = dIdx === row.disciplines.length - 1;
                                                         return (
-                                                          <tr key={`print-disc-${disc.id || dIdx}`} className={cn("bg-white", isLastDisc ? "border-b border-slate-200" : "border-b border-slate-100/80")}>
+                                                          <tr key={`print-disc-${disc.id || dIdx}`} className={cn("bg-white", !isLastDisc && "border-b border-slate-100/80")}>
                                                             {dIdx === 0 && (
                                                               <td rowSpan={row.disciplines.length} className="px-3.5 py-2 font-black text-slate-900 border-r border-slate-250 bg-slate-50/70 align-middle whitespace-nowrap text-center">
                                                                 {row.modulo}
@@ -2787,11 +2788,10 @@ function BoletimContent() {
                                                           </tr>
                                                         );
                                                       })}
-                                                    </Fragment>
+                                                    </tbody>
                                                   );
                                                 })
                                               )}
-                                            </tbody>
                                           </table>
                                         );
                                       })()}
