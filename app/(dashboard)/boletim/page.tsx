@@ -1721,54 +1721,57 @@ function BoletimContent() {
                               <th className="px-4 py-3 text-right w-[15%]">{reportT[language as "pt" | "en"].situation}</th>
                             </tr>
                           </thead>
+                          <tbody className="text-xs text-left">
                             {reportRows.length === 0 ? (
-                              <tbody className="text-xs text-left">
-                                <tr>
-                                  <td colSpan={5} className="text-center py-6 text-slate-400 font-bold bg-white">
-                                    {language === 'pt' ? 'Nenhuma disciplina cadastrada.' : 'No disciplines registered.'}
-                                  </td>
-                                </tr>
-                              </tbody>
+                              <tr>
+                                <td colSpan={5} className="text-center py-6 text-slate-400 font-bold bg-white">
+                                  {language === 'pt' ? 'Nenhuma disciplina cadastrada.' : 'No disciplines registered.'}
+                                </td>
+                              </tr>
                             ) : (
                               reportRows.map((row: any, rIdx: number) => {
                                 return (
-                                  <tbody key={`row-mod-${row.moduleNum}-${rIdx}`} className="text-xs text-left border-b border-slate-200">
-                                    {row.disciplines.map((disc: any, dIdx: number) => {
-                                      const isLastDisc = dIdx === row.disciplines.length - 1;
-                                      return (
-                                        <tr key={`disc-${disc.id || dIdx}`} className={cn("bg-white hover:bg-slate-50/50 transition-colors", !isLastDisc && "border-b border-slate-100")}>
-                                          {dIdx === 0 && (
-                                            <td rowSpan={row.disciplines.length} className="px-4 py-3 font-extrabold text-slate-900 border-r border-slate-200 text-left bg-white align-middle whitespace-nowrap">
-                                              {row.modulo}
-                                            </td>
-                                          )}
-                                          <td className="px-4 py-3 font-extrabold text-slate-800 border-r border-slate-200 text-left bg-white align-middle">
-                                            <div className="flex items-center gap-2 text-xs leading-tight break-words">
-                                              <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
-                                              <span>{disc.nome}</span>
-                                            </div>
-                                          </td>
-                                          <td className="px-3 py-3 text-center font-mono text-xs text-slate-500 border-r border-slate-200 bg-white align-middle">
+                                  <tr key={`row-mod-${row.moduleNum}-${rIdx}`} className="border-b border-slate-200 hover:bg-slate-50/50 transition-colors bg-white">
+                                    <td className="px-4 py-3 font-extrabold text-slate-900 border-r border-slate-200 text-left bg-white align-middle whitespace-nowrap">
+                                      {row.modulo}
+                                    </td>
+                                    <td className="p-0 border-r border-slate-200 bg-white align-top">
+                                      <div className="flex flex-col w-full h-full">
+                                        {row.disciplines.map((disc: any, dIdx: number) => (
+                                          <div key={`disc-name-${disc.id || dIdx}`} className={cn(
+                                            "flex items-center gap-2 px-4 py-3 text-xs leading-tight break-words font-extrabold text-slate-800 flex-1",
+                                            dIdx > 0 && "border-t border-slate-100/80"
+                                          )}>
+                                            <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
+                                            <span>{disc.nome}</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </td>
+                                    <td className="p-0 border-r border-slate-200 bg-white align-top">
+                                      <div className="flex flex-col w-full h-full">
+                                        {row.disciplines.map((disc: any, dIdx: number) => (
+                                          <div key={`disc-ch-${disc.id || dIdx}`} className={cn(
+                                            "flex items-center justify-center px-3 py-3 font-mono text-xs text-slate-500 flex-1",
+                                            dIdx > 0 && "border-t border-slate-100/80"
+                                          )}>
                                             {disc.carga_horaria ? `${disc.carga_horaria}h` : '-'}
-                                          </td>
-                                          {dIdx === 0 && (
-                                            <td rowSpan={row.disciplines.length} className="px-3 py-3 text-center font-black font-mono text-sm border-r border-slate-200 text-slate-900 bg-white align-middle animate-fade-in">
-                                              {row.nota}
-                                            </td>
-                                          )}
-                                          {dIdx === 0 && (
-                                            <td rowSpan={row.disciplines.length} className={cn("px-4 py-3 text-right font-black bg-white align-middle break-words whitespace-normal leading-tight", row.statusClass)}>
-                                              {row.situacao}
-                                            </td>
-                                          )}
-                                        </tr>
-                                      );
-                                    })}
-                                  </tbody>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </td>
+                                    <td className="px-3 py-3 text-center font-black font-mono text-sm border-r border-slate-200 text-slate-900 bg-white align-middle animate-fade-in">
+                                      {row.nota}
+                                    </td>
+                                    <td className={cn("px-4 py-3 text-right font-black bg-white align-middle break-words whitespace-normal leading-tight", row.statusClass)}>
+                                      {row.situacao}
+                                    </td>
+                                  </tr>
                                 );
                               })
                             )}
-                          </table>
+                          </tbody>
+                        </table>
                     );
                   })()}
                 </div>
@@ -2745,53 +2748,56 @@ function BoletimContent() {
                                                 <th className="px-3.5 py-2 text-right w-[15%]">{reportT[language as "pt" | "en"].situation}</th>
                                               </tr>
                                             </thead>
-                                            {rows.length === 0 ? (
-                                              <tbody className="text-[10px]">
+                                            <tbody className="text-[10px]">
+                                              {rows.length === 0 ? (
                                                 <tr>
                                                   <td colSpan={5} className="text-center py-4 text-slate-400 font-bold bg-white">
                                                     {language === 'pt' ? 'Nenhuma disciplina lançada.' : 'No modules submitted.'}
                                                   </td>
                                                 </tr>
-                                              </tbody>
                                               ) : (
                                                 rows.map((row: any, rIdx: number) => {
                                                   return (
-                                                    <tbody key={`print-row-mod-${row.moduleNum}-${rIdx}`} className="text-[10px] break-inside-avoid border-b border-slate-200">
-                                                      {row.disciplines.map((disc: any, dIdx: number) => {
-                                                        const isLastDisc = dIdx === row.disciplines.length - 1;
-                                                        return (
-                                                          <tr key={`print-disc-${disc.id || dIdx}`} className={cn("bg-white", !isLastDisc && "border-b border-slate-100/80")}>
-                                                            {dIdx === 0 && (
-                                                              <td rowSpan={row.disciplines.length} className="px-3.5 py-2 font-black text-slate-900 border-r border-slate-250 bg-slate-50/70 align-middle whitespace-nowrap text-center">
-                                                                {row.modulo}
-                                                              </td>
-                                                            )}
-                                                            <td className="px-3.5 py-2 font-bold text-slate-800 border-r border-slate-200 bg-white align-middle">
-                                                              <div className="flex items-center gap-1.5 text-[10px] leading-tight break-words">
-                                                                <span className="w-1 h-1 rounded-full bg-slate-400 shrink-0" />
-                                                                <span>{disc.nome}</span>
-                                                              </div>
-                                                            </td>
-                                                            <td className="px-3.5 py-2 text-center font-mono text-[9px] text-slate-500 border-r border-slate-200 bg-white align-middle">
+                                                    <tr key={`print-row-mod-${row.moduleNum}-${rIdx}`} className="border-b border-slate-200 bg-white">
+                                                      <td className="px-3.5 py-2 font-black text-slate-900 border-r border-slate-250 bg-slate-50/70 align-middle whitespace-nowrap text-center">
+                                                        {row.modulo}
+                                                      </td>
+                                                      <td className="p-0 border-r border-slate-200 bg-white align-top">
+                                                        <div className="flex flex-col w-full h-full">
+                                                          {row.disciplines.map((disc: any, dIdx: number) => (
+                                                            <div key={`print-disc-${disc.id || dIdx}`} className={cn(
+                                                              "flex items-center gap-1.5 px-3.5 py-2 text-[10px] leading-tight break-words font-bold text-slate-800 flex-1",
+                                                              dIdx > 0 && "border-t border-slate-100/80"
+                                                            )}>
+                                                              <span className="w-1 h-1 rounded-full bg-slate-400 shrink-0" />
+                                                              <span>{disc.nome}</span>
+                                                            </div>
+                                                          ))}
+                                                        </div>
+                                                      </td>
+                                                      <td className="p-0 text-center border-r border-slate-200 bg-white align-top">
+                                                        <div className="flex flex-col w-full h-full">
+                                                          {row.disciplines.map((disc: any, dIdx: number) => (
+                                                            <div key={`print-ch-${disc.id || dIdx}`} className={cn(
+                                                              "flex items-center justify-center px-3.5 py-2 text-[9px] font-mono text-slate-500 flex-1",
+                                                              dIdx > 0 && "border-t border-slate-100/80"
+                                                            )}>
                                                               {disc.carga_horaria ? `${disc.carga_horaria}h` : '-'}
-                                                            </td>
-                                                            {dIdx === 0 && (
-                                                              <td rowSpan={row.disciplines.length} className="px-3.5 py-2 text-center font-black font-mono text-xs border-r border-slate-200 text-slate-900 bg-white align-middle">
-                                                                {row.nota}
-                                                              </td>
-                                                            )}
-                                                            {dIdx === 0 && (
-                                                              <td rowSpan={row.disciplines.length} className={cn("px-3.5 py-2 text-right bg-white align-middle break-words whitespace-normal leading-tight font-black", row.statusClass)}>
-                                                                {row.situacao}
-                                                              </td>
-                                                            )}
-                                                          </tr>
-                                                        );
-                                                      })}
-                                                    </tbody>
+                                                            </div>
+                                                          ))}
+                                                        </div>
+                                                      </td>
+                                                      <td className="px-3.5 py-2 text-center font-black font-mono text-xs border-r border-slate-200 text-slate-900 bg-white align-middle">
+                                                        {row.nota}
+                                                      </td>
+                                                      <td className={cn("px-3.5 py-2 text-right bg-white align-middle break-words whitespace-normal leading-tight font-black", row.statusClass)}>
+                                                        {row.situacao}
+                                                      </td>
+                                                    </tr>
                                                   );
                                                 })
                                               )}
+                                            </tbody>
                                           </table>
                                         );
                                       })()}
