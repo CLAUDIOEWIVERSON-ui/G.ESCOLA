@@ -63,6 +63,25 @@ export default function DashboardPage() {
   const [currentPage, setCurrentPage] = useState<number>(1);
 
   useEffect(() => {
+    if (dashboardData) {
+      const cardDataMap: Record<string, number> = {
+        'exterior': stats.alunosExterior,
+        'expedito': stats.turmasExpedito,
+        'carreira': stats.turmasCarreira,
+        'especial': stats.turmasEspeciais,
+        'pre_inscritos': stats.turmasPreInscritas
+      };
+
+      if (cardDataMap[selectedCard] === 0) {
+        const firstAvailable = Object.entries(cardDataMap).find(([_, value]) => value > 0);
+        if (firstAvailable) {
+          setSelectedCard(firstAvailable[0]);
+        }
+      }
+    }
+  }, [dashboardData, stats, selectedCard]);
+
+  useEffect(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('items_per_page_dashboard_alunos');
       if (saved) {
@@ -270,7 +289,7 @@ export default function DashboardPage() {
       value: stats.alunosExterior, 
       icon: GraduationCap, 
       color: 'bg-purple-600',
-      shouldShow: true
+      shouldShow: stats.alunosExterior > 0
     },
     { 
       id: 'expedito',
@@ -278,7 +297,7 @@ export default function DashboardPage() {
       value: stats.turmasExpedito, 
       icon: BookOpen, 
       color: 'bg-amber-500',
-      shouldShow: true
+      shouldShow: stats.turmasExpedito > 0
     },
     { 
       id: 'carreira',
@@ -286,7 +305,7 @@ export default function DashboardPage() {
       value: stats.turmasCarreira, 
       icon: BookMarked, 
       color: 'bg-emerald-600',
-      shouldShow: true
+      shouldShow: stats.turmasCarreira > 0
     },
     { 
       id: 'especial',
@@ -294,7 +313,7 @@ export default function DashboardPage() {
       value: stats.turmasEspeciais, 
       icon: Award, 
       color: 'bg-blue-600',
-      shouldShow: true
+      shouldShow: stats.turmasEspeciais > 0
     },
     { 
       id: 'pre_inscritos',
@@ -302,7 +321,7 @@ export default function DashboardPage() {
       value: stats.turmasPreInscritas, 
       icon: Users, 
       color: 'bg-cyan-600',
-      shouldShow: true
+      shouldShow: stats.turmasPreInscritas > 0
     },
   ];
 
@@ -622,9 +641,9 @@ export default function DashboardPage() {
         </span>
       </div>
 
-      {statCards.length > 0 && (
+      {statCards.filter(c => c.shouldShow).length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {statCards.map((card: any, i: number) => {
+          {statCards.filter(c => c.shouldShow).map((card: any, i: number) => {
             const isSelected = selectedCard === card.id;
             return (
               <motion.div
