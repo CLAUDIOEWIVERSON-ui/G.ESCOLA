@@ -32,14 +32,21 @@ export function useCursos() {
       if (dbError) throw dbError;
       if (!dbData) return [];
 
-      let filteredData = dbData;
+      const mappedData = dbData.map((t: any) => {
+        if (t.status === 'ativa' && t.ativa === false) {
+          return { ...t, status: 'pré-inscrito(a)(s)' };
+        }
+        return t;
+      });
+
+      let filteredData = mappedData;
       if (role === 'instrutor' && grupoResponsavel) {
         if (grupoResponsavel === 'MAN') {
-          filteredData = dbData.filter((c: any) => c.grupo_responsavel === 'MAN');
+          filteredData = mappedData.filter((c: any) => c.grupo_responsavel === 'MAN');
         } else if (grupoResponsavel === 'GAT') {
-          filteredData = dbData.filter((c: any) => c.grupo_responsavel === 'GAT');
+          filteredData = mappedData.filter((c: any) => c.grupo_responsavel === 'GAT');
         } else if (grupoResponsavel === 'AMBOS') {
-          filteredData = dbData.filter((c: any) => c.grupo_responsavel === 'MAN' || c.grupo_responsavel === 'GAT');
+          filteredData = mappedData.filter((c: any) => c.grupo_responsavel === 'MAN' || c.grupo_responsavel === 'GAT');
         }
       }
 
@@ -90,9 +97,16 @@ export function useTurmas() {
       if (dbError) throw dbError;
       if (!dbData) return [];
 
-      let filteredData = dbData;
+      const mappedData = dbData.map((t: any) => {
+        if (t.status === 'ativa' && t.ativa === false) {
+          return { ...t, status: 'pré-inscrito(a)(s)' };
+        }
+        return t;
+      });
+
+      let filteredData = mappedData;
       if (role === 'instrutor' && grupoResponsavel) {
-        filteredData = dbData.filter((t: any) => {
+        filteredData = mappedData.filter((t: any) => {
           const courseGroup = t.curso?.grupo_responsavel || t.grupo_responsavel;
           if (!courseGroup) return false;
           if (grupoResponsavel === 'MAN') {
@@ -265,7 +279,12 @@ export function useDashboardStats() {
       if (alunosRes.error) throw alunosRes.error;
 
       const activeCursos = cursosRes.data || [];
-      const activeTurmas = turmasRes.data || [];
+      const activeTurmas = (turmasRes.data || []).map((t: any) => {
+        if (t.status === 'ativa' && t.ativa === false) {
+          return { ...t, status: 'pré-inscrito(a)(s)' };
+        }
+        return t;
+      });
       const activeAlunos = alunosRes.data || [];
       const alunosExteriorData = alunosExteriorRes.data || [];
 

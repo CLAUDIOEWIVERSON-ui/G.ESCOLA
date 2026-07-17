@@ -203,6 +203,11 @@ export async function GET(req: NextRequest) {
         } catch (dbReadErr) {
           console.warn('[DB Read Warning] Failed reading pensée from DB:', dbReadErr);
         }
+
+        // FIRST FIX: Prevent Gemini spam by reusing memory cache if DB insert failed previously (e.g. RLS blocked anonymous insert)
+        if (thoughtCache && thoughtCache.data_exibicao === todayStr && thoughtCache.data) {
+          return thoughtCache.data;
+        }
       }
 
       // Checking table existence or another check by executing a select query

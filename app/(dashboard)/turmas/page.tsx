@@ -709,7 +709,7 @@ function TurmasContent() {
 
     setSavingStudent(true);
     try {
-      const fileExt = file.name.split('.').pop();
+      const fileExt = file.name.includes('.') ? file.name.split('.').pop() : 'jpg';
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 11)}.${fileExt}`;
       const filePath = `alunos/${fileName}`;
 
@@ -1002,6 +1002,13 @@ function TurmasContent() {
         }
       }
 
+      let dbStatus = currentTurma.status || 'ativa';
+      let dbAtiva = dbStatus === 'ativa';
+      if (dbStatus === 'pré-inscrito(a)(s)') {
+        dbStatus = 'ativa';
+        dbAtiva = false;
+      }
+
       const payload = {
         nome: currentTurma.nome || '',
         curso_id: currentTurma.curso_id,
@@ -1010,8 +1017,8 @@ function TurmasContent() {
         periodo: currentTurma.periodo || 'manhã',
         capacidade_max: currentTurma.capacidade_max || 40,
         instrutor: currentTurma.instrutor || '',
-        status: currentTurma.status || 'ativa',
-        ativa: (currentTurma.status || 'ativa') === 'ativa',
+        status: dbStatus,
+        ativa: dbAtiva,
         data_inicio: currentTurma.internacional ? null : (typeof currentTurma.data_inicio === 'string' ? currentTurma.data_inicio.trim() || null : null),
         data_fim: currentTurma.internacional ? null : (typeof currentTurma.data_fim === 'string' ? currentTurma.data_fim.trim() || null : null),
         data_postergacao: currentTurma.internacional ? null : (typeof currentTurma.data_postergacao === 'string' ? currentTurma.data_postergacao.trim() || null : null),

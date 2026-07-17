@@ -63,7 +63,7 @@ export default function DashboardPage() {
   const [currentPage, setCurrentPage] = useState<number>(1);
 
   useEffect(() => {
-    if (dashboardData) {
+    if (dashboardData && stats) {
       const cardDataMap: Record<string, number> = {
         'exterior': stats.alunosExterior,
         'expedito': stats.turmasExpedito,
@@ -641,9 +641,9 @@ export default function DashboardPage() {
         </span>
       </div>
 
-      {statCards.filter(c => c.shouldShow).length > 0 && (
+      {statCards.filter((c: any) => c.shouldShow).length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {statCards.filter(c => c.shouldShow).map((card: any, i: number) => {
+          {statCards.filter((c: any) => c.shouldShow).map((card: any, i: number) => {
             const isSelected = selectedCard === card.id;
             return (
               <motion.div
