@@ -29,6 +29,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import ExchangeRateTicker from '@/components/ExchangeRateTicker';
 import Image from 'next/image';
 import { toast } from 'sonner';
 import maleAvatar from '@/src/assets/images/avatar_male_1778977230783.png';
@@ -327,6 +328,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      <ExchangeRateTicker />
       {profile && !profile.has_changed_password && (
         <motion.div
           initial={{ opacity: 0, y: -15, scale: 0.98 }}

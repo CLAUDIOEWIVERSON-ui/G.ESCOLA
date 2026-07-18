@@ -780,17 +780,8 @@ function TurmasContent() {
         dataToSave.observacoes = currentAluno.observacoes ? currentAluno.observacoes : null;
       }
       
-      if (isCiabaOrCiaga) {
-        if (currentAluno.data_inicio_curso !== undefined) {
-          dataToSave.data_inicio_curso = currentAluno.data_inicio_curso ? currentAluno.data_inicio_curso : null;
-        }
-        if (currentAluno.data_fim_curso !== undefined) {
-          dataToSave.data_fim_curso = currentAluno.data_fim_curso ? currentAluno.data_fim_curso : null;
-        }
-      } else {
-        dataToSave.data_inicio_curso = null;
-        dataToSave.data_fim_curso = null;
-      }
+      dataToSave.data_inicio_curso = null;
+      dataToSave.data_fim_curso = null;
       
       const parsedAno = currentAluno.ano_admissao ? parseInt(currentAluno.ano_admissao.toString()) : NaN;
       if (!isNaN(parsedAno)) dataToSave.ano_admissao = parsedAno;
@@ -1019,9 +1010,9 @@ function TurmasContent() {
         instrutor: currentTurma.instrutor || '',
         status: dbStatus,
         ativa: dbAtiva,
-        data_inicio: currentTurma.internacional ? null : (typeof currentTurma.data_inicio === 'string' ? currentTurma.data_inicio.trim() || null : null),
-        data_fim: currentTurma.internacional ? null : (typeof currentTurma.data_fim === 'string' ? currentTurma.data_fim.trim() || null : null),
-        data_postergacao: currentTurma.internacional ? null : (typeof currentTurma.data_postergacao === 'string' ? currentTurma.data_postergacao.trim() || null : null),
+        data_inicio: typeof currentTurma.data_inicio === 'string' ? currentTurma.data_inicio.trim() || null : null,
+        data_fim: typeof currentTurma.data_fim === 'string' ? currentTurma.data_fim.trim() || null : null,
+        data_postergacao: typeof currentTurma.data_postergacao === 'string' ? currentTurma.data_postergacao.trim() || null : null,
         internacional: currentTurma.internacional || false,
         localizacao: currentTurma.localizacao || '',
         grupo_responsavel: targetGroup,
@@ -1779,8 +1770,7 @@ function TurmasContent() {
               </datalist>
             </div>
 
-            {!currentTurma?.internacional && (
-              <>
+            
                 <div>
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{t.classes.startDate}</label>
                   <input
@@ -1817,8 +1807,6 @@ function TurmasContent() {
                       : 'Extends class closure, student access and final survey completion.'}
                   </p>
                 </div>
-              </>
-            )}
 
             <div className="md:col-span-2 space-y-4 pt-4 border-t border-slate-100">
                <label className="flex items-center gap-4 cursor-pointer group p-4 border border-slate-100 rounded-2xl hover:bg-slate-50 transition-all">
@@ -2079,18 +2067,7 @@ function TurmasContent() {
                         </div>
                       )}
 
-                      {isCiabaOrCiaga && (aluno.data_inicio_curso || aluno.data_fim_curso) && (
-                        <div className="text-[9px] font-black text-blue-700 bg-blue-50 border border-blue-100 rounded px-1.5 py-0.5 mt-1 inline-block">
-                          {language === 'pt' ? 'Curso: ' : 'Course: '}
-                          <span className="font-mono text-blue-900">
-                            {aluno.data_inicio_curso ? aluno.data_inicio_curso.split('-').reverse().join('/') : '—'}
-                          </span>
-                          {' a '}
-                          <span className="font-mono text-blue-900">
-                            {aluno.data_fim_curso ? aluno.data_fim_curso.split('-').reverse().join('/') : '—'}
-                          </span>
-                        </div>
-                      )}
+
                     </div>
                   </div>
                     <div className="flex items-center gap-2">
@@ -2575,32 +2552,7 @@ function TurmasContent() {
             </div>
           )}
 
-          {isCiabaOrCiaga && (
-            <div className="grid grid-cols-2 gap-3 p-3 bg-blue-50/40 rounded-xl border border-blue-100">
-              <div>
-                <label className="block text-[10px] font-extrabold text-blue-700 uppercase tracking-wider mb-1">
-                  {language === 'pt' ? 'Início do Curso' : 'Course Start Date'}
-                </label>
-                <input
-                  type="date"
-                  value={currentAluno?.data_inicio_curso || ''}
-                  onChange={(e) => setCurrentAluno({ ...currentAluno, data_inicio_curso: e.target.value })}
-                  className="w-full px-3 py-2 bg-white border border-blue-200 text-blue-900 rounded text-sm focus:ring-2 focus:ring-blue-500/20 outline-none font-bold"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-extrabold text-blue-700 uppercase tracking-wider mb-1">
-                  {language === 'pt' ? 'Término do Curso' : 'Course End Date'}
-                </label>
-                <input
-                  type="date"
-                  value={currentAluno?.data_fim_curso || ''}
-                  onChange={(e) => setCurrentAluno({ ...currentAluno, data_fim_curso: e.target.value })}
-                  className="w-full px-3 py-2 bg-white border border-blue-200 text-blue-900 rounded text-sm focus:ring-2 focus:ring-blue-500/20 outline-none font-bold"
-                />
-              </div>
-            </div>
-          )}
+
 
           <div className="flex gap-3 pt-4">
             <button
@@ -3043,18 +2995,7 @@ function TurmasContent() {
                                 <span className={cn(isCiabaOrCiaga ? "text-[8px] truncate block" : "")}>
                                   {student.posto_graduacao ? `${student.posto_graduacao} ${student.nome}` : student.nome}
                                 </span>
-                                {isCiabaOrCiaga && (student.data_inicio_curso || student.data_fim_curso) && (
-                                  <span className="text-[6px] text-neutral-500 font-extrabold normal-case mt-0.5 whitespace-nowrap overflow-hidden block">
-                                    {language === 'pt' ? 'período: ' : 'period: '}
-                                    <span className="font-mono text-black">
-                                      {student.data_inicio_curso ? student.data_inicio_curso.split('-').reverse().join('/') : '—'}
-                                    </span>
-                                    {' a '}
-                                    <span className="font-mono text-black">
-                                      {student.data_fim_curso ? student.data_fim_curso.split('-').reverse().join('/') : '—'}
-                                    </span>
-                                  </span>
-                                )}
+
                               </div>
                             </td>
                             {daysToRender.map((day) => {
