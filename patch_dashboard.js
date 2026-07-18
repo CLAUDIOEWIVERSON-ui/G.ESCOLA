@@ -1,26 +1,18 @@
 const fs = require('fs');
-let content = fs.readFileSync('app/(dashboard)/dashboard/page.tsx', 'utf8');
+let content = fs.readFileSync('hooks/useCachedData.ts', 'utf8');
 
-content = content.replace(
-  "const [selectedCard, setSelectedCard] = useState<string>('exterior');",
-  "const [selectedCard, setSelectedCard] = useState<string>('pre_inscritos');"
-);
+const target = `      const activeCursos = cursosRes.data || [];
+      const activeTurmas = turmasRes.data || [];
+      const activeAlunos = alunosRes.data || [];`;
 
-content = content.replace(
-`      const cardDataMap: Record<string, number> = {
-        'exterior': stats.alunosExterior,
-        'expedito': stats.turmasExpedito,
-        'carreira': stats.turmasCarreira,
-        'especial': stats.turmasEspeciais,
-        'pre_inscritos': stats.turmasPreInscritas
-      };`,
-`      const cardDataMap: Record<string, number> = {
-        'pre_inscritos': stats.turmasPreInscritas,
-        'exterior': stats.alunosExterior,
-        'expedito': stats.turmasExpedito,
-        'carreira': stats.turmasCarreira,
-        'especial': stats.turmasEspeciais,
-      };`
-);
+const replacement = `      const activeCursos = cursosRes.data || [];
+      const activeTurmas = (turmasRes.data || []).map((t: any) => {
+        if (t.status === 'ativa' && t.ativa === false) {
+          return { ...t, status: 'pré-inscrito(a)(s)' };
+        }
+        return t;
+      });
+      const activeAlunos = alunosRes.data || [];`;
 
-fs.writeFileSync('app/(dashboard)/dashboard/page.tsx', content);
+content = content.replace(target, replacement);
+fs.writeFileSync('hooks/useCachedData.ts', content);
