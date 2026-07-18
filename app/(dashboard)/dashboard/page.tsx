@@ -59,18 +59,18 @@ export default function DashboardPage() {
     turmasPreInscritasList = [],
   } = dashboardData || {};
 
-  const [selectedCard, setSelectedCard] = useState<string>('exterior');
+  const [selectedCard, setSelectedCard] = useState<string>('pre_inscritos');
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState<number>(1);
 
   useEffect(() => {
     if (dashboardData && stats) {
       const cardDataMap: Record<string, number> = {
+        'pre_inscritos': stats.turmasPreInscritas,
         'exterior': stats.alunosExterior,
         'expedito': stats.turmasExpedito,
         'carreira': stats.turmasCarreira,
         'especial': stats.turmasEspeciais,
-        'pre_inscritos': stats.turmasPreInscritas
       };
 
       if (cardDataMap[selectedCard] === 0) {

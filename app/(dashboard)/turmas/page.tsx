@@ -1122,6 +1122,8 @@ function TurmasContent() {
   const q = searchParams ? (searchParams.get('q')?.toLowerCase() || '') : '';
 
   const filteredTurmas = turmas.filter((t: any) => {
+    if (t.status === 'pré-inscrito(a)(s)') return false;
+    
     if (q) {
       const nomeMatch = t.nome?.toLowerCase().includes(q);
       const cursoMatch = t.curso?.nome?.toLowerCase().includes(q);
