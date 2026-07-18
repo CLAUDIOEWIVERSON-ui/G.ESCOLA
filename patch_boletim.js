@@ -1,21 +1,29 @@
 const fs = require('fs');
-const path = './app/(dashboard)/boletim/page.tsx';
-let content = fs.readFileSync(path, 'utf8');
+let content = fs.readFileSync('app/(dashboard)/boletim/page.tsx', 'utf8');
 
-const target1 = "        const studentGrades = (grades || []).filter((g: any) => g.aluno_id === student.id);\n        const existingGrade = studentGrades[0];";
+const target = `                                    <div className="col-span-1 flex flex-col gap-0.5 mt-2 pt-1.5 border-t border-slate-200/60">
+                                      <span className="text-[8px] font-black tracking-widest text-slate-400 uppercase leading-none">{reportT[language as "pt" | "en"].period}</span>
+                                      <span className="text-[10px] font-extrabold text-slate-850 uppercase tracking-wide mt-1 leading-normal">
+                                        {reportData.classObj?.periodo === 'manhã' ? t.common.morning :
+                                         reportData.classObj?.periodo === 'tarde' ? t.common.afternoon :
+                                         reportData.classObj?.periodo === 'noite' ? t.common.night : reportData.classObj?.periodo}
+                                      </span>
+                                    </div>`;
 
-const replacement1 = `        const studentGrades = (grades || []).filter((g: any) => g.aluno_id === student.id);
-        
-        // Find the first discipline alphabetically to match notas/page.tsx default behavior
-        const alphabeticalDisciplines = [...(turmaDisciplines || [])].sort((a: any, b: any) => 
-          (a.nome || '').localeCompare(b.nome || '', 'pt-BR')
-        );
-        const mainDiscId = alphabeticalDisciplines[0]?.id;
-        
-        // Prefer the grade row of the main discipline
-        let existingGrade = studentGrades.find((g: any) => g.disciplina_id === mainDiscId) || studentGrades[0];
-`;
+const replacement = `                                    <div className="col-span-1 flex flex-col gap-0.5 mt-2 pt-1.5 border-t border-slate-200/60">
+                                      <span className="text-[8px] font-black tracking-widest text-slate-400 uppercase leading-none">{reportT[language as "pt" | "en"].period}</span>
+                                      <span className="text-[10px] font-extrabold text-slate-850 uppercase tracking-wide mt-1 leading-normal">
+                                        {reportData.classObj?.periodo === 'manhã' ? t.common.morning :
+                                         reportData.classObj?.periodo === 'tarde' ? t.common.afternoon :
+                                         reportData.classObj?.periodo === 'noite' ? t.common.night : reportData.classObj?.periodo}
+                                      </span>
+                                    </div>
+                                    <div className="col-span-4 flex flex-col gap-0.5 mt-2 pt-1.5 border-t border-slate-200/60">
+                                      <span className="text-[8px] font-black tracking-widest text-slate-400 uppercase leading-none">{language === 'pt' ? 'Período de Realização' : 'Class Period'}</span>
+                                      <span className="text-[10px] font-extrabold text-slate-850 uppercase tracking-wide mt-1 leading-normal font-mono">
+                                        {reportData.classObj?.data_inicio ? reportData.classObj.data_inicio.split('-').reverse().join('/') : '—'} {language === 'pt' ? 'a' : 'to'} {reportData.classObj?.data_fim ? reportData.classObj.data_fim.split('-').reverse().join('/') : '—'}
+                                      </span>
+                                    </div>`;
 
-content = content.replace(target1, replacement1);
-
-fs.writeFileSync(path, content, 'utf8');
+content = content.replace(target, replacement);
+fs.writeFileSync('app/(dashboard)/boletim/page.tsx', content);
