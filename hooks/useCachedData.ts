@@ -349,7 +349,18 @@ export function useDashboardStats() {
       const especialTurmasList: any[] = [];
       const preInscritasTurmasList: any[] = [];
 
+      // Map to count students per turma
+      const turmaAlunosCount = new Map<string, number>();
+      activeAlunos.forEach((al: any) => {
+        if (al.turma_id) {
+          turmaAlunosCount.set(al.turma_id, (turmaAlunosCount.get(al.turma_id) || 0) + 1);
+        }
+      });
+
       filteredTurmas.forEach((t: any) => {
+        const alunosCount = turmaAlunosCount.get(t.id) || 0;
+        if (alunosCount === 0) return; // Only show cards/counts for turmas with students > 0
+
         const isAtiva = t.status === 'ativa' || !t.status;
         const isPreInscrito = t.status === 'pré-inscrito(a)(s)';
         

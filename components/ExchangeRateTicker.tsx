@@ -5,6 +5,7 @@ import { DollarSign, ArrowRightLeft, Loader2, TrendingUp } from 'lucide-react';
 
 export default function ExchangeRateTicker() {
   const [rates, setRates] = useState<{ BRL: number; EUR: number; STN: number } | null>(null);
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -18,6 +19,9 @@ export default function ExchangeRateTicker() {
             EUR: data.rates.EUR,
             STN: data.rates.STN
           });
+          if (data.time_last_update_unix) {
+            setLastUpdate(new Date(data.time_last_update_unix * 1000));
+          }
         }
       } catch (error) {
         console.error('Failed to fetch exchange rates', error);
@@ -42,7 +46,7 @@ export default function ExchangeRateTicker() {
   }
 
   return (
-    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100 rounded-xl p-3 mb-6 shadow-sm">
+    <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100 rounded-xl p-3 mb-6 shadow-sm">
       <div className="flex items-center gap-2">
         <div className="p-1.5 bg-emerald-500 text-white rounded-lg shadow-sm">
           <DollarSign size={16} strokeWidth={2.5} />
@@ -52,20 +56,43 @@ export default function ExchangeRateTicker() {
         </span>
       </div>
 
-      <div className="flex flex-wrap items-center gap-4 text-sm font-bold text-slate-700">
-        <div className="flex items-center gap-1.5">
-          <span className="text-slate-400 text-[10px] uppercase font-black tracking-wider">Real</span>
-          <span className="text-emerald-700 font-mono tracking-tight">R$ {rates.BRL.toFixed(2)}</span>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 w-full xl:w-auto justify-end">
+        <div className="flex flex-wrap items-center gap-4 text-sm font-bold text-slate-700">
+          <div className="flex items-center gap-1.5">
+            <span className="text-slate-400 text-[10px] uppercase font-black tracking-wider">Real</span>
+            <span className="text-emerald-700 font-mono tracking-tight">R$ {rates.BRL.toFixed(2)}</span>
+          </div>
+          <div className="h-4 w-px bg-emerald-200/60 hidden sm:block"></div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-slate-400 text-[10px] uppercase font-black tracking-wider">Euro</span>
+            <span className="text-emerald-700 font-mono tracking-tight">€ {rates.EUR.toFixed(2)}</span>
+          </div>
+          <div className="h-4 w-px bg-emerald-200/60 hidden sm:block"></div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-slate-400 text-[10px] uppercase font-black tracking-wider">Dobras</span>
+            <span className="text-emerald-700 font-mono tracking-tight">Db {rates.STN.toFixed(2)}</span>
+          </div>
         </div>
-        <div className="h-4 w-px bg-emerald-200/60 hidden sm:block"></div>
-        <div className="flex items-center gap-1.5">
-          <span className="text-slate-400 text-[10px] uppercase font-black tracking-wider">Euro</span>
-          <span className="text-emerald-700 font-mono tracking-tight">€ {rates.EUR.toFixed(2)}</span>
-        </div>
-        <div className="h-4 w-px bg-emerald-200/60 hidden sm:block"></div>
-        <div className="flex items-center gap-1.5">
-          <span className="text-slate-400 text-[10px] uppercase font-black tracking-wider">Dobras</span>
-          <span className="text-emerald-700 font-mono tracking-tight">Db {rates.STN.toFixed(2)}</span>
+
+        <div className="hidden sm:block h-4 w-px bg-emerald-200/60"></div>
+        
+        <div className="flex flex-col gap-0.5 mt-1 sm:mt-0 pt-2 sm:pt-0 border-t sm:border-none border-emerald-100 w-full sm:w-auto">
+          {lastUpdate && (
+            <div className="text-[9px] text-slate-400 font-medium uppercase tracking-wider flex items-center gap-1">
+              Atualizado: {lastUpdate.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+            </div>
+          )}
+          <div className="text-[10px] text-slate-500 font-medium flex items-center gap-1">
+            Fonte: 
+            <a 
+              href="https://www.xe.com/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-emerald-600 hover:text-emerald-800 hover:underline flex items-center gap-0.5"
+            >
+              XE.com
+            </a>
+          </div>
         </div>
       </div>
     </div>
