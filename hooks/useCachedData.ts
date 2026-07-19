@@ -359,10 +359,14 @@ export function useDashboardStats() {
 
       filteredTurmas.forEach((t: any) => {
         const alunosCount = turmaAlunosCount.get(t.id) || 0;
-        if (alunosCount === 0) return; // Only show cards/counts for turmas with students > 0
+        const isPreInscrito = t.status === 'pré-inscrito(a)(s)';
+        
+        // Only skip turmas with 0 students if they are NOT pre-registered.
+        // Pre-registered turmas should be counted even if they don't have students yet,
+        // or if the user explicitly wants their card open.
+        if (alunosCount === 0 && !isPreInscrito) return;
 
         const isAtiva = t.status === 'ativa' || !t.status;
-        const isPreInscrito = t.status === 'pré-inscrito(a)(s)';
         
         if (t.curso_id) {
           const course = courseMap.get(t.curso_id);

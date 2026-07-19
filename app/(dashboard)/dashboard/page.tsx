@@ -322,7 +322,7 @@ export default function DashboardPage() {
       value: stats.turmasPreInscritas, 
       icon: Users, 
       color: 'bg-cyan-600',
-      shouldShow: stats.turmasPreInscritas > 0
+      shouldShow: true
     },
   ];
 
