@@ -1,22 +1,23 @@
-import type {Metadata} from 'next';
 import './globals.css';
-import { LanguageProvider } from '@/lib/i18n/LanguageContext';
+import { Inter, JetBrains_Mono } from 'next/font/google';
 import { UserProvider } from '@/lib/auth/UserContext';
-import { Toaster } from 'sonner';
+import { LanguageProvider } from '@/lib/i18n/LanguageContext';
 
-export const metadata: Metadata = {
-  title: 'SISTEMA DE GESTÃO ESCOLAR',
-  description: 'Sistema completo de gerenciamento escolar',
+const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
+const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono' });
+
+export const metadata = {
+  title: 'CEFOMA',
+  description: 'CEFOMA Platform',
 };
 
-export default function RootLayout({children}: {children: React.ReactNode}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt">
-      <body suppressHydrationWarning className="antialiased min-h-screen bg-slate-50">
+    <html lang="pt" className={`${inter.variable} ${jetbrainsMono.variable}`}>
+      <body className="font-sans antialiased text-slate-900 bg-slate-50 min-h-screen">
         <LanguageProvider>
           <UserProvider>
             {children}
-            <Toaster position="top-right" richColors closeButton />
           </UserProvider>
         </LanguageProvider>
       </body>

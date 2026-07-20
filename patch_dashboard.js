@@ -1,18 +1,17 @@
 const fs = require('fs');
-let content = fs.readFileSync('hooks/useCachedData.ts', 'utf8');
+const path = '/app/applet/app/(dashboard)/dashboard/page.tsx';
+let code = fs.readFileSync(path, 'utf8');
 
-const target = `      const activeCursos = cursosRes.data || [];
-      const activeTurmas = turmasRes.data || [];
-      const activeAlunos = alunosRes.data || [];`;
+code = code.replace(
+  /value: stats\.turmasPreInscritas,\s*icon: Users,\s*color: 'bg-cyan-600',/g,
+  `value: stats.studentsPreInscritos,
+      icon: Users,
+      color: 'bg-cyan-600',`
+);
 
-const replacement = `      const activeCursos = cursosRes.data || [];
-      const activeTurmas = (turmasRes.data || []).map((t: any) => {
-        if (t.status === 'ativa' && t.ativa === false) {
-          return { ...t, status: 'pré-inscrito(a)(s)' };
-        }
-        return t;
-      });
-      const activeAlunos = alunosRes.data || [];`;
+code = code.replace(
+  /shouldShow: true/g,
+  `shouldShow: stats.studentsPreInscritos > 0 || stats.turmasPreInscritas > 0`
+);
 
-content = content.replace(target, replacement);
-fs.writeFileSync('hooks/useCachedData.ts', content);
+fs.writeFileSync(path, code);
