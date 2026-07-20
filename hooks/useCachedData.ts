@@ -251,8 +251,6 @@ export function useDashboardStats() {
               ano,
               data_inicio,
               data_fim,
-              status,
-              ativa,
               internacional,
               localizacao,
               grupo_responsavel,
@@ -308,16 +306,9 @@ export function useDashboardStats() {
       }
 
       // Filter international/exterior students by responsibility group of their class/turma
-      let filteredAlunosExterior = alunosExteriorData.filter((aluno: any) => {
-        const tData = Array.isArray(aluno.turma) ? aluno.turma[0] : aluno.turma;
-        if (!tData) return false;
-        const statusLower = (tData.status || '').toLowerCase();
-        const isPreInscrito = statusLower.includes('pré-inscrit') || statusLower.includes('pre-inscrit') || (statusLower === 'ativa' && tData.ativa === false) || statusLower === 'pré-inscrito(a)(s)' || (tData.nome && tData.nome.toLowerCase().includes('cefoma'));
-        return !isPreInscrito;
-      });
-
+      let filteredAlunosExterior = alunosExteriorData;
       if (role === 'instrutor' && grupoResponsavel) {
-        filteredAlunosExterior = filteredAlunosExterior.filter((aluno: any) => {
+        filteredAlunosExterior = alunosExteriorData.filter((aluno: any) => {
           const tData = Array.isArray(aluno.turma) ? aluno.turma[0] : aluno.turma;
           if (!tData) return false;
           
@@ -368,21 +359,20 @@ export function useDashboardStats() {
 
       filteredTurmas.forEach((t: any) => {
         const alunosCount = turmaAlunosCount.get(t.id) || 0;
-        const statusLower = (t.status || '').toLowerCase();
-        const isPreInscrito = statusLower.includes('pré-inscrit') || statusLower.includes('pre-inscrit') || (statusLower === 'ativa' && t.ativa === false) || statusLower === 'pré-inscrito(a)(s)' || (t.nome && t.nome.toLowerCase().includes('cefoma'));
+        const isPreInscrito = t.status === 'pré-inscrito(a)(s)';
         
         // Only skip turmas with 0 students if they are NOT pre-registered.
         // Pre-registered turmas should be counted even if they don't have students yet,
         // or if the user explicitly wants their card open.
         if (alunosCount === 0 && !isPreInscrito) return;
 
-        const isAtiva = (statusLower === 'ativa' || !t.status) && !isPreInscrito;
+        const isAtiva = t.status === 'ativa' || !t.status;
         
         if (t.curso_id) {
           const course = courseMap.get(t.curso_id);
           if (course) {
             const cat = course.categoria?.toLowerCase();
-            const tWithCourse = { ...t, curso: course, alunosCount };
+            const tWithCourse = { ...t, curso: course };
             
             if (isAtiva) {
               if (cat === 'expedito') {
@@ -409,9 +399,8 @@ export function useDashboardStats() {
         if (al.turma_id) {
           const course = turmaCoursesMap.get(al.turma_id);
           if (course) {
-            const statusLower = (course.status || '').toLowerCase();
-            const isPreInscrito = statusLower.includes('pré-inscrit') || statusLower.includes('pre-inscrit') || (statusLower === 'ativa' && course.ativa === false) || statusLower === 'pré-inscrito(a)(s)' || (course.nome && course.nome.toLowerCase().includes('cefoma'));
-            const isAtiva = (statusLower === 'ativa' || !course.status) && !isPreInscrito;
+            const isAtiva = course.status === 'ativa' || !course.status;
+            const isPreInscrito = course.status === 'pré-inscrito(a)(s)';
             
             if (isAtiva) {
               const cat = course.categoria?.toLowerCase();

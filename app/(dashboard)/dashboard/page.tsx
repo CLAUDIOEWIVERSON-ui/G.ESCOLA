@@ -319,10 +319,10 @@ export default function DashboardPage() {
     { 
       id: 'pre_inscritos',
       name: language === 'pt' ? 'Turmas Pré-Inscritas' : 'Pre-registered Classes', 
-      value: stats.studentsPreInscritos,
-      icon: Users,
+      value: stats.turmasPreInscritas, 
+      icon: Users, 
       color: 'bg-cyan-600',
-      shouldShow: stats.studentsPreInscritos > 0 || stats.turmasPreInscritas > 0
+      shouldShow: true
     },
   ];
 
@@ -1086,7 +1086,7 @@ function TurmasListTable({ turmas, title, onDelete }: { turmas: any[], title: st
                   </td>
                   <td className="px-6 py-4 text-center">
                     <span className="inline-block px-2.5 py-1 text-xs font-bold text-slate-700 bg-slate-100 rounded-lg">
-                      {turma.alunosCount || 0} {isPt ? 'alunos' : 'students'} / {turma.capacidade_max || 40} {isPt ? 'vagas' : 'seats'}
+                      {turma.capacidade_max || 40} {isPt ? 'vagas' : 'seats'}
                     </span>
                   </td>
                   <td className="px-6 py-4">
