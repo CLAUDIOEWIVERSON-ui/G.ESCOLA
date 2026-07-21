@@ -167,7 +167,7 @@ export default function ConfiguracoesPage() {
     if (!isAdmin) return;
     setDbSizeLoading(true);
     try {
-      const res = await fetch('/api/admin/db-size');
+      const res = await fetchWithAuth('/api/admin/db-size');
       if (res.ok) {
         const contentType = res.headers.get('content-type') || '';
         if (contentType.includes('application/json')) {
@@ -198,7 +198,7 @@ export default function ConfiguracoesPage() {
     if (!isAdmin) return;
     setSmtpLoading(true);
     try {
-      const res = await fetch('/api/admin/smtp-status');
+      const res = await fetchWithAuth('/api/admin/smtp-status');
       if (res.ok) {
         const contentType = res.headers.get('content-type') || '';
         if (contentType.includes('application/json')) {
@@ -219,7 +219,7 @@ export default function ConfiguracoesPage() {
     if (!isAdmin) return;
     setDbLoading(true);
     try {
-      const res = await fetch('/api/admin/migrations');
+      const res = await fetchWithAuth('/api/admin/migrations');
       if (res.ok) {
         const contentType = res.headers.get('content-type') || '';
         if (contentType.includes('application/json')) {
@@ -269,7 +269,7 @@ export default function ConfiguracoesPage() {
     setSendingTest(true);
     const toastId = toast.loading('Enviando e-mail de teste...');
     try {
-      const res = await fetch('/api/admin/smtp-status', {
+      const res = await fetchWithAuth('/api/admin/smtp-status', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ testEmail })

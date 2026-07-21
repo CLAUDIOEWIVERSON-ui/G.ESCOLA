@@ -33,6 +33,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 
 import { useUser } from '@/lib/auth/UserContext';
+import { fetchWithAuth } from '@/lib/api';
 import { ProximityAlert } from '@/components/ProximityAlert';
 import { EventMarquee } from '@/components/EventMarquee';
 import { HeaderClock } from '@/components/HeaderClock';
@@ -85,7 +86,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const fetchOnlineUsers = async () => {
     if (!isAdmin) return;
     try {
-      const res = await fetch('/api/auth/heartbeat');
+      const res = await fetchWithAuth('/api/auth/heartbeat');
       const data = await res.json();
       if (data.success) {
         setOnlineCount(data.count || 0);

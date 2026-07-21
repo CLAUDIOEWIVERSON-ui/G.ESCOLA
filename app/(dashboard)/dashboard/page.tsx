@@ -6,6 +6,7 @@ import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
 import { useDashboardStats } from '@/hooks/useCachedData';
 import { supabase } from '@/lib/supabase/client';
+import { fetchWithAuth } from '@/lib/api';
 import Link from 'next/link';
 import { 
   Users, 
@@ -181,7 +182,7 @@ export default function DashboardPage() {
       if (forceRegenerate && category) {
         url += `&category=${category}`;
       }
-      const res = await fetch(url);
+      const res = await fetchWithAuth(url);
       const contentType = res.headers.get('content-type');
       if (contentType && contentType.includes('application/json')) {
         const json = await res.json();
@@ -218,7 +219,7 @@ export default function DashboardPage() {
   const gerarPensamentoComIa = async () => {
     try {
       setGeneratingModalPensamento(true);
-      const res = await fetch(`/api/v1/pensamento-dia?force=true&category=${selectedIaCategory}`);
+      const res = await fetchWithAuth(`/api/v1/pensamento-dia?force=true&category=${selectedIaCategory}`);
       const json = await res.json();
       if (json.success && json.data) {
         setEditTexto(json.data.texto);
@@ -246,7 +247,7 @@ export default function DashboardPage() {
     const todayStr = new Date().toISOString().split('T')[0];
     try {
       setSavingPensamento(true);
-      const res = await fetch('/api/v1/pensamento-dia', {
+      const res = await fetchWithAuth('/api/v1/pensamento-dia', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
