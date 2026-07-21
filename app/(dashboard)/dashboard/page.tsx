@@ -315,15 +315,7 @@ export default function DashboardPage() {
       icon: Award, 
       color: 'bg-blue-600',
       shouldShow: stats.turmasEspeciais > 0
-    },
-    { 
-      id: 'pre_inscritos',
-      name: language === 'pt' ? 'Turmas Pré-Inscritas' : 'Pre-registered Classes', 
-      value: stats.turmasPreInscritas, 
-      icon: Users, 
-      color: 'bg-cyan-600',
-      shouldShow: true
-    },
+    }
   ];
 
   return (
@@ -936,21 +928,6 @@ export default function DashboardPage() {
           </motion.div>
         )}
 
-        {selectedCard === 'pre_inscritos' && (
-          <motion.div
-            key="pre_inscritos"
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -15 }}
-            transition={{ duration: 0.2 }}
-          >
-            <TurmasListTable 
-              turmas={turmasPreInscritasList} 
-              title={language === 'pt' ? 'Turmas Pré-Inscritas' : 'Pre-registered Classes'} 
-              onDelete={handleDeleteTurma}
-            />
-          </motion.div>
-        )}
       </AnimatePresence>
 
       <AnimatePresence>

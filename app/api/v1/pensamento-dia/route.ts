@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import { GoogleGenAI } from '@google/genai';
 
 export const dynamic = 'force-dynamic';
@@ -187,7 +188,7 @@ export async function GET(req: NextRequest) {
       // 2. Attempt to query today's thought from the database if not forced to regenerate
       if (!force) {
         try {
-          const { data, error } = await supabase
+          const { data, error } = await supabaseAdmin
             .from('pensamento_dia')
             .select('*')
             .eq('data_exibicao', todayStr)
@@ -211,7 +212,7 @@ export async function GET(req: NextRequest) {
       }
 
       // Checking table existence or another check by executing a select query
-      const { error: checkTableError } = await supabase
+      const { error: checkTableError } = await supabaseAdmin
         .from('pensamento_dia')
         .select('id')
         .limit(1);
@@ -419,7 +420,7 @@ export async function GET(req: NextRequest) {
             data_exibicao: todayStr
           };
 
-          let { data: insertedData, error: insertError } = await supabase
+          let { data: insertedData, error: insertError } = await supabaseAdmin
             .from('pensamento_dia')
             .upsert(upsertPayload, { onConflict: 'data_exibicao' })
             .select('*')
@@ -429,7 +430,7 @@ export async function GET(req: NextRequest) {
           if (insertError && (insertError.code === '42703' || String(insertError.message || '').includes('reflexao'))) {
             console.warn('[Reflexao column missing in DB - Retrying insertion without it]');
             delete upsertPayload.reflexao;
-            const retryRes = await supabase
+            const retryRes = await supabaseAdmin
               .from('pensamento_dia')
               .upsert(upsertPayload, { onConflict: 'data_exibicao' })
               .select('*')
@@ -530,7 +531,7 @@ export async function POST(req: NextRequest) {
       data_exibicao: todayStr
     };
 
-    let { data, error } = await supabase
+    let { data, error } = await supabaseAdmin
       .from('pensamento_dia')
       .upsert(upsertPayload, { onConflict: 'data_exibicao' })
       .select('*')
@@ -540,7 +541,7 @@ export async function POST(req: NextRequest) {
     if (error && (error.code === '42703' || String(error.message || '').includes('reflexao'))) {
       console.warn('[POST thoughts reflexao column missing - Retrying without reflexao]');
       delete upsertPayload.reflexao;
-      const retryRes = await supabase
+      const retryRes = await supabaseAdmin
         .from('pensamento_dia')
         .upsert(upsertPayload, { onConflict: 'data_exibicao' })
         .select('*')
