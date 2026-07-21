@@ -1061,6 +1061,11 @@ function TurmasListTable({ turmas, title, onDelete }: { turmas: any[], title: st
                     <div className="text-[10px] text-slate-400 uppercase font-bold">
                        {turma.periodo || '-'}
                     </div>
+                    {(turma.data_inicio || turma.data_fim) && (
+                      <div className="text-[10px] text-blue-500 uppercase font-bold mt-0.5 tracking-wider">
+                        {turma.data_inicio ? turma.data_inicio.split('-').reverse().join('/') : '—'} - {turma.data_fim ? turma.data_fim.split('-').reverse().join('/') : '—'}
+                      </div>
+                    )}
                   </td>
                   <td className="px-6 py-4 text-center">
                     <span className="inline-block px-2.5 py-1 text-xs font-bold text-slate-700 bg-slate-100 rounded-lg">
