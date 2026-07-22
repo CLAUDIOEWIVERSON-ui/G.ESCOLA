@@ -251,6 +251,7 @@ export function useDashboardStats() {
               ano,
               data_inicio,
               data_fim,
+              status,
               internacional,
               localizacao,
               grupo_responsavel,

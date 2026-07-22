@@ -7,6 +7,7 @@ import { useUser } from '@/lib/auth/UserContext';
 import { useDashboardStats } from '@/hooks/useCachedData';
 import { supabase } from '@/lib/supabase/client';
 import { fetchWithAuth } from '@/lib/api';
+import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { 
   Users, 
@@ -724,10 +725,14 @@ export default function DashboardPage() {
                     paginatedAlunos.map((aluno: any) => {
                       const turmaData = Array.isArray((aluno as any).turma) ? (aluno as any).turma[0] : (aluno as any).turma;
                       const curso = Array.isArray(turmaData?.curso) ? turmaData.curso[0] : turmaData?.curso;
+                      const isPreInscrito = turmaData?.status === 'pré-inscrito(a)(s)';
                       return (
                         <tr 
                           key={aluno.id} 
-                          className="hover:bg-slate-50 transition-colors cursor-pointer"
+                          className={cn(
+                            "transition-colors cursor-pointer",
+                            isPreInscrito ? "bg-amber-50 hover:bg-amber-100/80" : "hover:bg-slate-50"
+                          )}
                           onClick={() => {
                             router.push(`/turmas?action=edit-student&studentId=${aluno.id}&turmaId=${aluno.turma_id || turmaData?.id}`);
                           }}
@@ -788,17 +793,23 @@ export default function DashboardPage() {
                             {turmaData?.internacional ? (
                               <div className="flex flex-col items-center justify-center leading-normal">
                                 <span className="text-slate-800 font-bold whitespace-nowrap">
-                                  {aluno.data_inicio_curso ? aluno.data_inicio_curso.split('-').reverse().join('/') : '—'}
+                                  {aluno.data_inicio_curso?.trim() ? aluno.data_inicio_curso.split('-').reverse().join('/') : (turmaData?.data_inicio?.trim() ? turmaData.data_inicio.split('-').reverse().join('/') : '—')}
                                 </span>
                                 <span className="text-[10px] text-slate-400 font-sans uppercase font-extrabold my-0.5">a</span>
                                 <span className="text-slate-800 font-bold whitespace-nowrap">
-                                  {aluno.data_fim_curso ? aluno.data_fim_curso.split('-').reverse().join('/') : '—'}
+                                  {aluno.data_fim_curso?.trim() ? aluno.data_fim_curso.split('-').reverse().join('/') : (turmaData?.data_fim?.trim() ? turmaData.data_fim.split('-').reverse().join('/') : '—')}
                                 </span>
                               </div>
                             ) : (
-                              <span>
-                                {turmaData?.data_inicio ? new Date(turmaData.data_inicio).getFullYear() : '-'} / {turmaData?.data_fim ? new Date(turmaData.data_fim).getFullYear() : '-'}
-                              </span>
+                              <div className="flex flex-col items-center justify-center leading-normal">
+                                <span className="text-slate-800 font-bold whitespace-nowrap">
+                                  {turmaData?.data_inicio ? turmaData.data_inicio.split('-').reverse().join('/') : '—'}
+                                </span>
+                                <span className="text-[10px] text-slate-400 font-sans uppercase font-extrabold my-0.5">a</span>
+                                <span className="text-slate-800 font-bold whitespace-nowrap">
+                                  {turmaData?.data_fim ? turmaData.data_fim.split('-').reverse().join('/') : '—'}
+                                </span>
+                              </div>
                             )}
                           </td>
                         </tr>
@@ -1036,10 +1047,15 @@ function TurmasListTable({ turmas, title, onDelete }: { turmas: any[], title: st
                 </td>
               </tr>
             ) : (
-              paginatedTurmas.map((turma) => (
+              paginatedTurmas.map((turma) => {
+                const isPreInscrito = turma.status === 'pré-inscrito(a)(s)';
+                return (
                 <tr 
                   key={turma.id} 
-                  className="hover:bg-slate-50 transition-colors cursor-pointer"
+                  className={cn(
+                    "transition-colors cursor-pointer",
+                    isPreInscrito ? "bg-amber-50 hover:bg-amber-100/80" : "hover:bg-slate-50"
+                  )}
                   onClick={() => {
                     router.push(`/turmas?action=edit-class&turmaId=${turma.id}`);
                   }}
@@ -1074,8 +1090,8 @@ function TurmasListTable({ turmas, title, onDelete }: { turmas: any[], title: st
                   </td>
                   <td className="px-6 py-4">
                     <div className="text-slate-650 font-medium">{turma.instrutor || '-'}</div>
-                    <div className="text-[10px] text-green-600 font-bold uppercase flex items-center gap-1 mt-0.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                    <div className={cn("text-[10px] font-bold uppercase flex items-center gap-1 mt-0.5", isPreInscrito ? "text-amber-600" : "text-green-600")}>
+                      <span className={cn("w-1.5 h-1.5 rounded-full animate-pulse", isPreInscrito ? "bg-amber-500" : "bg-green-500")} />
                       Class {turma.status || 'ativa'}
                     </div>
                   </td>
@@ -1094,7 +1110,8 @@ function TurmasListTable({ turmas, title, onDelete }: { turmas: any[], title: st
                     </td>
                   )}
                 </tr>
-              ))
+              );
+            })
             )}
           </tbody>
         </table>
