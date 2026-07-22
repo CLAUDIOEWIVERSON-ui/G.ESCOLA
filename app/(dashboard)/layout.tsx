@@ -426,7 +426,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   {t.auth.academic}
                 </div>
                 <div className="space-y-1.5">
-                  {visibleSecondItems.map((item) => {
+                  {visibleSecondItems.map((item, idx) => {
                     const isActive = pathname === item.path;
                     const isCalendar = item.path === '/calendario';
                     const isSettings = item.path === '/configuracoes';
@@ -434,7 +434,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     
                     return (
                       <Link 
-                        key={item.path} 
+                        key={`nav-sec-${item.path}-${idx}`} 
                         href={item.path}
                         className={cn(
                           "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group relative overflow-hidden",
@@ -530,7 +530,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
                         className="overflow-hidden space-y-1.5 pl-2 border-l border-white/5 ml-3"
                       >
-                        {hiddenSecondItems.map((item) => {
+                        {hiddenSecondItems.map((item, idx) => {
                           const isActive = pathname === item.path;
                           const isCalendar = item.path === '/calendario';
                           const isSettings = item.path === '/configuracoes';
@@ -538,7 +538,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                           
                           return (
                             <Link 
-                              key={item.path} 
+                              key={`nav-hid-${item.path}-${idx}`} 
                               href={item.path}
                               className={cn(
                                 "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group relative overflow-hidden",
@@ -708,14 +708,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             return ['/boletim', '/horario'].includes(item.path);
           }
           return ['/dashboard', '/cursos', '/turmas', '/horario', '/calendario', '/configuracoes'].includes(item.path);
-        }).map((item) => {
+        }).map((item, idx) => {
           const isActive = pathname === item.path;
           const isSettings = item.path === '/configuracoes';
           const needsPasswordChange = isSettings && profile && !profile.has_changed_password;
           
           return (
             <Link 
-              key={item.path} 
+              key={`mobile-nav-${item.path}-${idx}`} 
               href={item.path}
               className={cn(
                 "flex flex-col items-center gap-1 p-1 transition-all min-w-0 flex-1 max-w-[64px] relative",

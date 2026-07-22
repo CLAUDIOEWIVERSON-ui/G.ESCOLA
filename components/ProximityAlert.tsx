@@ -256,9 +256,9 @@ export function ProximityAlert() {
                 : `Você tem ${upcomingEvents.length} eventos próximos!`}
             </h4>
             <div className="space-y-3 max-h-[250px] overflow-y-auto pr-1">
-              {upcomingEvents.slice(0, 3).map((event) => (
+              {upcomingEvents.slice(0, 3).map((event, idx) => (
                 <Link 
-                  key={event.id}
+                  key={`${event.id}-${idx}`}
                   href="/calendario" 
                   className="block text-left transition-transform hover:scale-[1.01] focus:outline-none"
                 >
