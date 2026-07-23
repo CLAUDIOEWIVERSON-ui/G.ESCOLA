@@ -943,24 +943,37 @@ function RelatorioAvaliacaoAdminContent() {
     <div className={`max-w-7xl mx-auto px-4 py-8 space-y-8 print:space-y-2 print:py-0 print:px-0 print:max-w-none print:bg-white print:text-black `}>
       <style>{`
         @media print {
-          /* Forçar fundo totalmente branco para todo o layout do relatório e cards principais na impressão */
-          
-          /* Container raiz que poderia ter alguma cor extra puxando do layout */
-          body, main, .print\\:bg-white { 
-            background-color: white !important; 
+          /* 1. Forçar esquema claro (derrota dark modes de navegadores) */
+          :root {
+            color-scheme: light !important;
           }
           
-          /* Sobrescrever especificamente os cards do dashboard se o tema Azul/Escuro for escolhido */
+          /* 2. Forçar fundo totalmente branco para o body e containers estruturais (#FFFFFF) */
+          html, body, main, .print\\:bg-white { 
+            background-color: #FFFFFF !important; 
+          }
+          
+          /* Forçar fundos que normalmente formam o layout para branco puro, eliminando os tons escuros/cinzas */
+          .bg-slate-50, .bg-slate-100, .bg-slate-800, .bg-slate-900, .bg-slate-950, .bg-white {
+             background-color: #FFFFFF !important;
+             background-image: none !important;
+             box-shadow: none !important;
+          }
+
+          /* Preservar barras de progresso que usam bg-slate-800 (ex: médias institucionais) */
+          div.bg-slate-800.rounded-full {
+             background-color: #334155 !important;
+          }
+          
+          /* Garantir a visibilidade das bordas nos cards e gráficos */
           #chart-neon-metrics-card, 
           #chart-neon-distribution-card, 
-          #chart-pie-satisfaction-card {
-            background-color: white !important;
-            color: black !important;
-            border-color: #cbd5e1 !important;
-            box-shadow: none !important;
+          #chart-pie-satisfaction-card,
+          .border-slate-800, .border-slate-200 {
+            border-color: #e2e8f0 !important;
           }
           
-          /* Textos dentro dos cards escuros viram pretos */
+          /* 3. Ajustar os textos para garantir legibilidade no fundo branco (#FFFFFF) */
           #chart-neon-metrics-card h4, 
           #chart-neon-metrics-card span,
           #chart-neon-metrics-card div,
@@ -970,22 +983,22 @@ function RelatorioAvaliacaoAdminContent() {
           #chart-pie-satisfaction-card h4,
           #chart-pie-satisfaction-card span,
           #chart-pie-satisfaction-card div {
-            color: black !important;
+            color: #0f172a !important;
           }
           
-          /* Labels de gráfico de pizza e legendas */
-          text.recharts-text {
-            fill: black !important;
+          /* Labels e textos de gráficos escuros e claros forçados para cor escura legível */
+          text.recharts-text,
+          .text-white, .text-slate-200, .text-slate-300, .text-slate-400 {
+            fill: #0f172a !important;
+            color: #0f172a !important;
+            text-shadow: none !important;
           }
           
-          /* Garantir que as barras de progresso não fiquem invisíveis, preservando as suas cores Inline (style) */
-          
-          /* Força background branco em todos os cards brancos que possam ter print:bg-transparent */
-          .bg-white {
-            background-color: white !important;
+          .text-slate-500, .text-slate-600, .text-slate-700, .text-slate-800, .text-slate-900 {
+            color: #0f172a !important;
           }
           
-          /* O card de 'Inscritos na Turma' e outros do topo */
+          /* O card de 'Inscritos na Turma' e outros que precisam sumir o fundo no topo */
           .bg-slate-50.print\\:bg-transparent, .bg-slate-100.print\\:bg-transparent {
              background-color: transparent !important;
           }
