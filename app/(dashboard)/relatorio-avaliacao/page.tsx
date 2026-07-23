@@ -941,6 +941,56 @@ function RelatorioAvaliacaoAdminContent() {
 
   return (
     <div className={`max-w-7xl mx-auto px-4 py-8 space-y-8 print:space-y-2 print:py-0 print:px-0 print:max-w-none print:bg-white print:text-black ${printMode === "bw" ? "print:grayscale" : ""}`}>
+      <style>{`
+        @media print {
+          /* Forçar fundo totalmente branco para todo o layout do relatório e cards principais na impressão */
+          
+          /* Container raiz que poderia ter alguma cor extra puxando do layout */
+          body, main, .print\\:bg-white { 
+            background-color: white !important; 
+          }
+          
+          /* Sobrescrever especificamente os cards do dashboard se o tema Azul/Escuro for escolhido */
+          #chart-neon-metrics-card, 
+          #chart-neon-distribution-card, 
+          #chart-pie-satisfaction-card {
+            background-color: white !important;
+            color: black !important;
+            border-color: #cbd5e1 !important;
+            box-shadow: none !important;
+          }
+          
+          /* Textos dentro dos cards escuros viram pretos */
+          #chart-neon-metrics-card h4, 
+          #chart-neon-metrics-card span,
+          #chart-neon-metrics-card div,
+          #chart-neon-distribution-card h4,
+          #chart-neon-distribution-card span,
+          #chart-neon-distribution-card div,
+          #chart-pie-satisfaction-card h4,
+          #chart-pie-satisfaction-card span,
+          #chart-pie-satisfaction-card div {
+            color: black !important;
+          }
+          
+          /* Labels de gráfico de pizza e legendas */
+          text.recharts-text {
+            fill: black !important;
+          }
+          
+          /* Garantir que as barras de progresso não fiquem invisíveis, preservando as suas cores Inline (style) */
+          
+          /* Força background branco em todos os cards brancos que possam ter print:bg-transparent */
+          .bg-white {
+            background-color: white !important;
+          }
+          
+          /* O card de 'Inscritos na Turma' e outros do topo */
+          .bg-slate-50.print\\:bg-transparent, .bg-slate-100.print\\:bg-transparent {
+             background-color: transparent !important;
+          }
+        }
+      `}</style>
       {/* PRINT HEADER */}
       <div className="hidden print:block border-b-2 border-slate-900 pb-2 mb-2">
         <h1 className="text-xl font-black text-slate-900 uppercase tracking-tight">Relatório de Avaliações</h1>
