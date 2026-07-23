@@ -2038,7 +2038,7 @@ function RelatorioAvaliacaoAdminContent() {
                       const posto = stud?.posto_graduacao || '';
                       
                       return (
-                        <div key={`comment-${sub.id || index}`} className="border border-slate-200 rounded-xl p-5 bg-slate-50 print:bg-transparent shadow-sm">
+                        <div key={`comment-${sub.id || index}`} className="border border-slate-200 rounded-xl p-5 bg-slate-50 print:bg-transparent shadow-sm break-inside-avoid">
                           <div className="flex items-center gap-2 mb-3 border-b border-slate-100 pb-2">
                             <span className="w-2 h-2 rounded-full bg-slate-400"></span>
                             <span className="text-xs font-bold text-slate-800 font-mono uppercase tracking-wide">

@@ -35,7 +35,7 @@ const newSection = `                )}
                       const posto = stud?.posto_graduacao || '';
                       
                       return (
-                        <div key={\`comment-\${sub.id || index}\`} className="border border-slate-200 rounded-xl p-5 bg-slate-50 print:bg-transparent shadow-sm">
+                        <div key={\`comment-\${sub.id || index}\`} className="border border-slate-200 rounded-xl p-5 bg-slate-50 print:bg-transparent shadow-sm break-inside-avoid">
                           <div className="flex items-center gap-2 mb-3 border-b border-slate-100 pb-2">
                             <span className="w-2 h-2 rounded-full bg-slate-400"></span>
                             <span className="text-xs font-bold text-slate-800 font-mono uppercase tracking-wide">
@@ -92,5 +92,14 @@ if (content.includes(anchor)) {
   fs.writeFileSync(file, content, 'utf8');
   console.log("Successfully replaced Comments section in page.tsx");
 } else {
-  console.log("Anchor not found in page.tsx");
+  console.log("Anchor not found in page.tsx. Trying fallback.");
+  const anchor2 = `                )}
+              </div>
+
+              {/* Card List of Comments on the General Tab */}`;
+  if(content.includes(anchor2)) {
+    console.log("Already replaced!");
+  } else {
+      console.log("Could not find any matching string to replace!");
+  }
 }
