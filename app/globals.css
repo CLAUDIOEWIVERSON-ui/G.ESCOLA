@@ -24,6 +24,9 @@ body {
     padding: 0 !important;
     overflow: visible !important;
     background: white !important;
+    color-scheme: light !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
     color: black !important;
     height: auto !important;
     min-height: auto !important;
@@ -115,3 +118,10 @@ body {
 }
 
 
+
+@media print {
+  /* Force all slate backgrounds to white/transparent to avoid halftone muddy grey on physical printers */
+  .bg-slate-50, .bg-slate-100, .bg-slate-50\/50, .bg-slate-100\/50 {
+    background-color: white !important;
+  }
+}

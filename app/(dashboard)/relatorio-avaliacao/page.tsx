@@ -940,7 +940,7 @@ function RelatorioAvaliacaoAdminContent() {
   }
 
   return (
-    <div className={`max-w-7xl mx-auto px-4 py-8 space-y-8 print:space-y-2 print:py-0 print:px-0 print:max-w-none print:bg-white print:text-black ${printMode === "bw" ? "print:grayscale" : ""}`}>
+    <div className={`max-w-7xl mx-auto px-4 py-8 space-y-8 print:space-y-2 print:py-0 print:px-0 print:max-w-none print:bg-white print:text-black `}>
       <style>{`
         @media print {
           /* Forçar fundo totalmente branco para todo o layout do relatório e cards principais na impressão */
