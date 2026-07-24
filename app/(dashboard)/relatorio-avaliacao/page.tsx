@@ -873,7 +873,7 @@ function RelatorioAvaliacaoAdminContent() {
 
   if (userLoading || loading) {
     return (
-      <div className="flex h-[75vh] items-center justify-center bg-slate-50 print:bg-transparent p-4">
+      <div className="flex h-[75vh] items-center justify-center bg-slate-50 print:bg-white p-4">
         <div className="flex flex-col items-center gap-4 text-center max-w-md p-6 bg-white border border-slate-200 rounded-xl shadow-sm">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900 mx-auto"></div>
           <span className="text-sm text-slate-600 font-bold font-mono">Processando estatísticas gerenciais...</span>
@@ -917,7 +917,7 @@ function RelatorioAvaliacaoAdminContent() {
           A base de dados do projeto ainda não possui a tabela de questionários pós-conclusão. 
           Criamos o arquivo de migração <code className="bg-slate-105 px-1 py-0.5 rounded font-mono text-rose-600">migrations/25_create_questionario_conclusao.sql</code> para você.
         </p>
-        <div className="bg-slate-50 print:bg-transparent p-4 border rounded-lg mb-6">
+        <div className="bg-slate-50 print:bg-white p-4 border rounded-lg mb-6">
           <p className="text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-2 font-mono">Como proceder:</p>
           <ol className="list-decimal list-inside text-xs text-slate-650 space-y-1.5">
             <li>Abra o seu painel do Supabase</li>
@@ -954,7 +954,7 @@ function RelatorioAvaliacaoAdminContent() {
           }
           
           /* Forçar fundos que normalmente formam o layout para branco puro, eliminando os tons escuros/cinzas */
-          .bg-slate-50, .bg-slate-100, .bg-slate-800, .bg-slate-900, .bg-slate-950, .bg-white {
+          .bg-slate-50, .bg-slate-100, .bg-slate-200, .bg-white {
              background-color: #FFFFFF !important;
              background-image: none !important;
              box-shadow: none !important;
@@ -996,11 +996,6 @@ function RelatorioAvaliacaoAdminContent() {
           
           .text-slate-500, .text-slate-600, .text-slate-700, .text-slate-800, .text-slate-900 {
             color: #0f172a !important;
-          }
-          
-          /* O card de 'Inscritos na Turma' e outros que precisam sumir o fundo no topo */
-          .bg-slate-50.print\\:bg-transparent, .bg-slate-100.print\\:bg-transparent {
-             background-color: transparent !important;
           }
         }
       `}</style>
@@ -1046,7 +1041,7 @@ function RelatorioAvaliacaoAdminContent() {
           </select>
           <button
             onClick={handlePrint}
-            className="flex items-center gap-1.5 bg-white text-slate-700 hover:bg-slate-50 print:bg-transparent border border-slate-200 text-xs font-bold px-4 py-2.5 rounded-lg transition shadow-sm cursor-pointer"
+            className="flex items-center gap-1.5 bg-white text-slate-700 hover:bg-slate-50 print:bg-white border border-slate-200 text-xs font-bold px-4 py-2.5 rounded-lg transition shadow-sm cursor-pointer"
           >
             <Printer className="h-3.5 w-3.5" />
             Imprimir Relatório (A4)
@@ -1055,7 +1050,7 @@ function RelatorioAvaliacaoAdminContent() {
       </div>
 
       {/* FILTER BOX */}
-      <div className="bg-slate-900 print:bg-transparent text-white print:text-slate-900 border border-slate-850 rounded-xl shadow-sm p-6 print:hidden">
+      <div className="bg-slate-900 print:bg-white text-white print:text-slate-900 border border-slate-850 rounded-xl shadow-sm p-6 print:hidden">
         <div className="flex items-center gap-2 mb-4 border-b border-slate-800 pb-2.5">
           <SlidersHorizontal className="h-4 w-4 text-slate-400" />
           <h2 className="text-xs font-black uppercase tracking-wider font-mono">Filtros de Pesquisa e Segmentação</h2>
@@ -1084,7 +1079,7 @@ function RelatorioAvaliacaoAdminContent() {
                 // Reset student filter on class change
                 setSelectedStudent('ALL');
               }}
-              className="w-full bg-slate-950 print:bg-transparent border border-slate-800 text-xs rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-sky-500 text-slate-300"
+              className="w-full bg-slate-950 print:bg-white border border-slate-800 text-xs rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-sky-500 text-slate-300"
             >
               <option value="ALL">Todas as Turmas</option>
               {turmas.map(t => (
@@ -1099,7 +1094,7 @@ function RelatorioAvaliacaoAdminContent() {
             <select
               value={selectedInstructor}
               onChange={(e) => setSelectedInstructor(e.target.value)}
-              className="w-full bg-slate-950 print:bg-transparent border border-slate-800 text-xs rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-sky-500 text-slate-300"
+              className="w-full bg-slate-950 print:bg-white border border-slate-800 text-xs rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-sky-500 text-slate-300"
             >
               <option value="ALL">Todos os Instrutores</option>
               {instructorsList.map(inst => (
@@ -1136,7 +1131,7 @@ function RelatorioAvaliacaoAdminContent() {
             <motion.div 
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mt-6 bg-slate-50 print:bg-transparent border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col md:flex-row items-center gap-6 print:hidden"
+              className="mt-6 bg-slate-50 print:bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col md:flex-row items-center gap-6 print:hidden"
             >
               <div className="flex-shrink-0 flex flex-col items-center bg-white p-3 border border-slate-200 rounded-xl shadow-xs">
                 {selectedTurma && typeof window !== 'undefined' && (
@@ -1154,7 +1149,7 @@ function RelatorioAvaliacaoAdminContent() {
 
               <div className="flex-1 space-y-4 text-center md:text-left w-full">
                 <div>
-                  <span className="text-[10px] bg-slate-900 print:bg-transparent text-white print:text-slate-900 font-mono font-bold px-2 py-0.5 rounded uppercase tracking-wider">Acesso Livre - Sem Login</span>
+                  <span className="text-[10px] bg-slate-900 print:bg-white text-white print:text-slate-900 font-mono font-bold px-2 py-0.5 rounded uppercase tracking-wider">Acesso Livre - Sem Login</span>
                   <h3 className="text-base font-bold text-slate-900 mt-2 font-mono">
                     Avaliação da Turma: {selectedTurmaObj.nome}
                   </h3>
@@ -1171,7 +1166,7 @@ function RelatorioAvaliacaoAdminContent() {
                       {selectedTurmaSubmissions.length} de {selectedTurmaStudents.length} matriculados
                     </span>
                   </div>
-                  <div className="w-full bg-slate-100 print:bg-transparent h-2 rounded-full overflow-hidden">
+                  <div className="w-full bg-slate-100 print:bg-white h-2 rounded-full overflow-hidden">
                     <div 
                       className="bg-slate-900 h-full rounded-full transition-all duration-500"
                       style={{ 
@@ -1203,7 +1198,7 @@ function RelatorioAvaliacaoAdminContent() {
                     href={`/avaliacao?turmaId=${selectedTurma}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 bg-white hover:bg-slate-50 print:bg-transparent border border-slate-200 text-slate-700 text-xs font-bold px-4 py-2 rounded-lg transition"
+                    className="flex items-center gap-1.5 bg-white hover:bg-slate-50 print:bg-white border border-slate-200 text-slate-700 text-xs font-bold px-4 py-2 rounded-lg transition"
                   >
                     Abrir Questionário da Turma
                   </a>
@@ -1216,7 +1211,7 @@ function RelatorioAvaliacaoAdminContent() {
 
       {!hasActiveFilter ? (
         <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center shadow-sm max-w-xl mx-auto my-8 space-y-4">
-          <div className="w-16 h-16 bg-slate-50 print:bg-transparent border rounded-2xl flex items-center justify-center mx-auto shadow-sm">
+          <div className="w-16 h-16 bg-slate-50 print:bg-white border rounded-2xl flex items-center justify-center mx-auto shadow-sm">
             <SlidersHorizontal className="h-6 w-6 text-slate-700 animate-pulse" />
           </div>
           <div>
@@ -1260,7 +1255,7 @@ function RelatorioAvaliacaoAdminContent() {
                           <p className="text-3xl font-black text-slate-900 tracking-tight">{numInscritos}</p>
                           <span className="text-[10px] text-slate-500 block font-medium font-mono">Total de Alunos Matriculados</span>
                         </div>
-                        <div className="w-12 h-12 bg-slate-50 print:bg-transparent rounded-lg flex items-center justify-center border">
+                        <div className="w-12 h-12 bg-slate-50 print:bg-white rounded-lg flex items-center justify-center border">
                           <Users className="h-6 w-6 text-slate-700" />
                         </div>
                       </div>
@@ -1296,7 +1291,7 @@ function RelatorioAvaliacaoAdminContent() {
                         <span className="font-bold text-slate-700">Progresso de Preenchimento da Turma</span>
                         <span className="font-black text-slate-900">{numPreenchidos} / {numInscritos} ({fillingPercent.toFixed(1)}%)</span>
                       </div>
-                      <div className="h-3 bg-slate-100 print:bg-transparent rounded-full overflow-hidden">
+                      <div className="h-3 bg-slate-100 print:bg-white rounded-full overflow-hidden">
                         <div 
                           className="h-full bg-emerald-500 transition-all duration-500 rounded-full"
                           style={{ width: `${fillingPercent}%` }}
@@ -1351,7 +1346,7 @@ function RelatorioAvaliacaoAdminContent() {
                             
                             <div className="flex flex-wrap items-center gap-3">
                               {/* Option Selector for Chart Background/Theme with 3D Neon look! */}
-                              <div className="flex items-center gap-2 bg-slate-100 print:bg-transparent/80 border border-slate-200 p-1 rounded-xl shadow-inner text-[10px] font-bold font-mono">
+                              <div className="flex items-center gap-2 bg-slate-100 print:bg-white/80 border border-slate-200 p-1 rounded-xl shadow-inner text-[10px] font-bold font-mono">
                                 <span className="text-[9px] uppercase font-black text-slate-400 font-mono px-2">Fundo:</span>
                                 
                                 <button
@@ -1359,7 +1354,7 @@ function RelatorioAvaliacaoAdminContent() {
                                   onClick={() => setChartTheme('azul')}
                                   className={`px-3 py-1.5 rounded-lg transition-all duration-150 flex items-center gap-1.5 font-black uppercase text-[9px] tracking-wider active:translate-y-[2px] active:border-b-[1px] ${
                                     chartTheme === 'azul'
-                                      ? 'bg-slate-950 print:bg-transparent text-cyan-400 border border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.45)] border-b-[4px] border-r-[2px] border-cyan-405'
+                                      ? 'bg-slate-950 print:bg-white text-cyan-400 border border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.45)] border-b-[4px] border-r-[2px] border-cyan-405'
                                       : 'text-slate-500 border border-transparent border-b-[3px] hover:text-slate-700 hover:bg-slate-200/50'
                                   }`}
                                 >
@@ -1381,7 +1376,7 @@ function RelatorioAvaliacaoAdminContent() {
                                 </button>
                               </div>
 
-                              <div className="text-[10px] bg-slate-50 print:bg-transparent border border-slate-200 text-slate-805 font-bold px-3 py-2 rounded-lg font-mono shadow-sm">
+                              <div className="text-[10px] bg-slate-50 print:bg-white border border-slate-200 text-slate-805 font-bold px-3 py-2 rounded-lg font-mono shadow-sm">
                                 Média Geral da Turma: {overallAverage.toFixed(2)} / 5.0
                               </div>
                             </div>
@@ -1393,7 +1388,7 @@ function RelatorioAvaliacaoAdminContent() {
                              {/* Chart 1: Média Detalhada por Categoria */}
                              <div className={`border rounded-xl p-5 relative overflow-hidden transition-all duration-300 border-b-[4px] border-r-[2px] ${
                                chartTheme === 'azul'
-                                 ? 'bg-slate-950 print:bg-transparent border-slate-800 shadow-[0_0_25px_rgba(6,182,212,0.15)] hover:shadow-[0_0_35px_rgba(6,182,212,0.25)] border-cyan-500/20 text-white'
+                                 ? 'bg-slate-950 print:bg-white border-slate-800 shadow-[0_0_25px_rgba(6,182,212,0.15)] hover:shadow-[0_0_35px_rgba(6,182,212,0.25)] border-cyan-500/20 text-white'
                                  : 'bg-white border-slate-250 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border-cyan-500/30 text-slate-800'
                              }`} id="chart-neon-metrics-card" style={{ pageBreakInside: 'avoid' }}>
                                <div className={`flex items-center justify-between border-b pb-2.5 ${chartTheme === 'azul' ? 'border-slate-800/80' : 'border-slate-100'}`}>
@@ -1419,7 +1414,7 @@ function RelatorioAvaliacaoAdminContent() {
                                    <div className={`h-4 rounded-lg relative overflow-visible border ${
                                      chartTheme === 'azul' 
                                        ? 'bg-slate-900 border-slate-800/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.8)]' 
-                                       : 'bg-slate-100 print:bg-transparent border-slate-200 shadow-[inset_0_1px_3px_rgba(0,0,0,0.1)]'
+                                       : 'bg-slate-100 print:bg-white border-slate-200 shadow-[inset_0_1px_3px_rgba(0,0,0,0.1)]'
                                    }`}>
                                      <div 
                                        className="h-full bg-gradient-to-r from-emerald-600 via-emerald-400 to-emerald-300 rounded-l-lg transition-all duration-500 border-t border-white/30 border-b border-b-emerald-800 shadow-[0_0_12px_rgba(16,185,129,0.7)]" 
@@ -1450,7 +1445,7 @@ function RelatorioAvaliacaoAdminContent() {
                                    <div className={`h-4 rounded-lg relative overflow-visible border ${
                                      chartTheme === 'azul' 
                                        ? 'bg-slate-900 border-slate-800/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.8)]' 
-                                       : 'bg-slate-100 print:bg-transparent border-slate-200 shadow-[inset_0_1px_3px_rgba(0,0,0,0.1)]'
+                                       : 'bg-slate-100 print:bg-white border-slate-200 shadow-[inset_0_1px_3px_rgba(0,0,0,0.1)]'
                                    }`}>
                                      <div 
                                        className="h-full bg-gradient-to-r from-violet-600 via-fuchsia-400 to-purple-300 rounded-l-lg transition-all duration-500 border-t border-white/30 border-b border-b-violet-850 shadow-[0_0_12px_rgba(168,85,247,0.7)]" 
@@ -1479,7 +1474,7 @@ function RelatorioAvaliacaoAdminContent() {
                                    <div className={`h-4 rounded-lg relative overflow-visible border ${
                                      chartTheme === 'azul' 
                                        ? 'bg-slate-900 border-slate-800/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.8)]' 
-                                       : 'bg-slate-100 print:bg-transparent border-slate-200 shadow-[inset_0_1px_3px_rgba(0,0,0,0.1)]'
+                                       : 'bg-slate-100 print:bg-white border-slate-200 shadow-[inset_0_1px_3px_rgba(0,0,0,0.1)]'
                                    }`}>
                                      <div 
                                        className="h-full bg-gradient-to-r from-sky-600 via-cyan-400 to-cyan-300 rounded-l-lg transition-all duration-500 border-t border-white/30 border-b border-b-sky-850 shadow-[0_0_12px_rgba(6,182,212,0.7)]" 
@@ -1508,7 +1503,7 @@ function RelatorioAvaliacaoAdminContent() {
                                    <div className={`h-4 rounded-lg relative overflow-visible border ${
                                      chartTheme === 'azul' 
                                        ? 'bg-slate-900 border-slate-800/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.8)]' 
-                                       : 'bg-slate-100 print:bg-transparent border-slate-200 shadow-[inset_0_1px_3px_rgba(0,0,0,0.1)]'
+                                       : 'bg-slate-100 print:bg-white border-slate-200 shadow-[inset_0_1px_3px_rgba(0,0,0,0.1)]'
                                    }`}>
                                      <div 
                                        className="h-full bg-gradient-to-r from-rose-600 via-pink-400 to-rose-300 rounded-l-lg transition-all duration-500 border-t border-white/30 border-b border-b-rose-850 shadow-[0_0_12px_rgba(244,63,94,0.7)]" 
@@ -1539,7 +1534,7 @@ function RelatorioAvaliacaoAdminContent() {
                              {/* Chart 2: Perfil de Distribuição de Notas */}
                              <div className={`border rounded-xl p-5 relative overflow-hidden transition-all duration-300 border-b-[4px] border-r-[2px] ${
                                chartTheme === 'azul'
-                                 ? 'bg-slate-950 print:bg-transparent border-slate-800 shadow-[0_0_25px_rgba(168,85,247,0.15)] hover:shadow-[0_0_35px_rgba(168,85,247,0.25)] border-purple-500/20 text-white'
+                                 ? 'bg-slate-950 print:bg-white border-slate-800 shadow-[0_0_25px_rgba(168,85,247,0.15)] hover:shadow-[0_0_35px_rgba(168,85,247,0.25)] border-purple-500/20 text-white'
                                  : 'bg-white border-slate-250 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border-purple-500/30 text-slate-800'
                              }`} id="chart-neon-distribution-card" style={{ pageBreakInside: 'avoid' }}>
                                <div className={`flex items-center justify-between border-b pb-2.5 ${chartTheme === 'azul' ? 'border-slate-800/80' : 'border-slate-100'}`}>
@@ -1579,7 +1574,7 @@ function RelatorioAvaliacaoAdminContent() {
                                        <div className={`w-full max-w-[28px] border rounded-t-lg h-24 flex flex-col justify-end overflow-visible relative ${
                                          chartTheme === 'azul'
                                            ? 'bg-slate-900/90 border-slate-800/50 shadow-[inset_0_2px_5px_rgba(0,0,0,0.8)]'
-                                           : 'bg-slate-50 print:bg-transparent border-slate-200 shadow-[inset_0_1px_3px_rgba(0,0,0,0.15)]'
+                                           : 'bg-slate-50 print:bg-white border-slate-200 shadow-[inset_0_1px_3px_rgba(0,0,0,0.15)]'
                                        }`}>
                                          <div 
                                            className={`w-full ${barStyles} transition-all duration-500 rounded-t-md border-t border-white/30`} 
@@ -1619,7 +1614,7 @@ function RelatorioAvaliacaoAdminContent() {
                                return (
                                  <div className={`border rounded-xl p-5 relative overflow-hidden transition-all duration-305 border-b-[4px] border-r-[2px] flex flex-col justify-between ${
                                    chartTheme === 'azul'
-                                     ? 'bg-slate-950 print:bg-transparent border-slate-800 shadow-[0_0_25px_rgba(16,185,129,0.15)] hover:shadow-[0_0_35px_rgba(16,185,129,0.25)] border-emerald-500/20 text-white'
+                                     ? 'bg-slate-950 print:bg-white border-slate-800 shadow-[0_0_25px_rgba(16,185,129,0.15)] hover:shadow-[0_0_35px_rgba(16,185,129,0.25)] border-emerald-500/20 text-white'
                                      : 'bg-white border-slate-205 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border-emerald-500/30 text-slate-800'
                                  }`} id="chart-pie-satisfaction-card" style={{ pageBreakInside: 'avoid' }}>
                                    <div className={`flex items-center justify-between border-b pb-2.5 ${chartTheme === 'azul' ? 'border-slate-800/80' : 'border-slate-100'}`}>
@@ -1753,7 +1748,7 @@ function RelatorioAvaliacaoAdminContent() {
                           {/* PARECER DE APOIO AO COORDENADOR & SUGESTÕES DO SISTEMA */}
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                             {/* Card 1: Parecer Técnico de Apoio ao Coordenador */}
-                            <div className="bg-slate-50 print:bg-transparent border border-slate-200 rounded-xl p-5 shadow-sm space-y-3">
+                            <div className="bg-slate-50 print:bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-3">
                               <h5 className="text-[10px] font-black text-slate-800 uppercase tracking-wider font-mono flex items-center gap-1.5">
                                 <Signature className="h-4 w-4 text-slate-600" />
                                 Parecer de Apoio ao Coordenador
@@ -1872,7 +1867,7 @@ function RelatorioAvaliacaoAdminContent() {
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {filteredPendingStudents.map((stud, index) => (
-                      <div key={`pending-${stud.id || index}`} className="border border-slate-150 rounded-xl p-4 bg-slate-50 print:bg-transparent hover:bg-slate-100 print:bg-transparent transition flex flex-col justify-between space-y-3">
+                      <div key={`pending-${stud.id || index}`} className="border border-slate-150 rounded-xl p-4 bg-slate-50 print:bg-white hover:bg-slate-100 print:bg-white transition flex flex-col justify-between space-y-3">
                         <div className="space-y-1">
                           <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5 font-mono">
                             {stud.posto_graduacao ? (
@@ -1959,7 +1954,7 @@ function RelatorioAvaliacaoAdminContent() {
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {filteredRespondedStudents.map((stud, index) => (
-                      <div key={`responded-${stud.id || index}`} className="border border-slate-150 rounded-xl p-4 bg-slate-50 print:bg-transparent hover:bg-slate-100 print:bg-transparent transition flex flex-col justify-between space-y-3">
+                      <div key={`responded-${stud.id || index}`} className="border border-slate-150 rounded-xl p-4 bg-slate-50 print:bg-white hover:bg-slate-100 print:bg-white transition flex flex-col justify-between space-y-3">
                         <div className="space-y-1">
                           <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5 font-mono">
                             {stud.posto_graduacao ? (
@@ -2038,7 +2033,7 @@ function RelatorioAvaliacaoAdminContent() {
                       const posto = stud?.posto_graduacao || '';
                       
                       return (
-                        <div key={`comment-${sub.id || index}`} className="border border-slate-200 rounded-xl p-5 bg-slate-50 print:bg-transparent shadow-sm break-inside-avoid">
+                        <div key={`comment-${sub.id || index}`} className="border border-slate-200 rounded-xl p-5 bg-slate-50 print:bg-white shadow-sm break-inside-avoid">
                           <div className="flex items-center gap-2 mb-3 border-b border-slate-100 pb-2">
                             <span className="w-2 h-2 rounded-full bg-slate-400"></span>
                             <span className="text-xs font-bold text-slate-800 font-mono uppercase tracking-wide">
@@ -2051,31 +2046,31 @@ function RelatorioAvaliacaoAdminContent() {
                             {sub.sugestoes_melhoria && (
                               <div>
                                 <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Sugestões de Melhoria</h4>
-                                <p className="text-xs text-slate-700 bg-white print:bg-transparent p-3 rounded border border-slate-100">{sub.sugestoes_melhoria}</p>
+                                <p className="text-xs text-slate-700 bg-white print:bg-white p-3 rounded border border-slate-100">{sub.sugestoes_melhoria}</p>
                               </div>
                             )}
                             {sub.criticas_construtivas && (
                               <div>
                                 <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Críticas Construtivas</h4>
-                                <p className="text-xs text-slate-700 bg-white print:bg-transparent p-3 rounded border border-slate-100">{sub.criticas_construtivas}</p>
+                                <p className="text-xs text-slate-700 bg-white print:bg-white p-3 rounded border border-slate-100">{sub.criticas_construtivas}</p>
                               </div>
                             )}
                             {sub.elogios && (
                               <div>
                                 <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Elogios</h4>
-                                <p className="text-xs text-slate-700 bg-white print:bg-transparent p-3 rounded border border-slate-100">{sub.elogios}</p>
+                                <p className="text-xs text-slate-700 bg-white print:bg-white p-3 rounded border border-slate-100">{sub.elogios}</p>
                               </div>
                             )}
                             {sub.necessidades_novos_cursos && (
                               <div>
                                 <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Necessidade de Novos Cursos</h4>
-                                <p className="text-xs text-slate-700 bg-white print:bg-transparent p-3 rounded border border-slate-100">{sub.necessidades_novos_cursos}</p>
+                                <p className="text-xs text-slate-700 bg-white print:bg-white p-3 rounded border border-slate-100">{sub.necessidades_novos_cursos}</p>
                               </div>
                             )}
                             {sub.comentarios_adicionais && (
                               <div>
                                 <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Comentários Adicionais</h4>
-                                <p className="text-xs text-slate-700 bg-white print:bg-transparent p-3 rounded border border-slate-100">{sub.comentarios_adicionais}</p>
+                                <p className="text-xs text-slate-700 bg-white print:bg-white p-3 rounded border border-slate-100">{sub.comentarios_adicionais}</p>
                               </div>
                             )}
                           </div>
@@ -2102,7 +2097,7 @@ function RelatorioAvaliacaoAdminContent() {
                     {CURSO_QUESTIONS.map((q, idx) => {
                       const avg = calculateQuestionAverage(filteredSubmissions, q.key);
                       return (
-                        <div key={q.key} className="border border-slate-100 rounded-lg p-5 hover:bg-slate-50 print:bg-transparent transition">
+                        <div key={q.key} className="border border-slate-100 rounded-lg p-5 hover:bg-slate-50 print:bg-white transition">
                           <p className="text-xs font-extrabold text-slate-500 uppercase tracking-wider font-mono">Questão {idx + 1}</p>
                           <p className="text-sm font-extrabold text-slate-950 mt-1 mb-3">{q.label}</p>
                           
@@ -2112,7 +2107,7 @@ function RelatorioAvaliacaoAdminContent() {
                               {avg.toFixed(2)} - {getScaleLabel(avg)}
                             </span>
                           </div>
-                          <div className="h-2 bg-slate-100 print:bg-transparent rounded-full overflow-hidden">
+                          <div className="h-2 bg-slate-100 print:bg-white rounded-full overflow-hidden">
                             <div 
                               className="h-full bg-slate-900 rounded-full"
                               style={{ width: `${(avg / 5) * 100}%` }}
@@ -2189,7 +2184,7 @@ function RelatorioAvaliacaoAdminContent() {
                   <select
                     value={focusedInstructor}
                     onChange={(e) => setFocusedInstructor(e.target.value)}
-                    className="bg-slate-100 print:bg-transparent border text-xs px-3 py-2 rounded-lg font-semibold focus:outline-none focus:ring-1 text-slate-800 w-full md:w-64"
+                    className="bg-slate-100 print:bg-white border text-xs px-3 py-2 rounded-lg font-semibold focus:outline-none focus:ring-1 text-slate-800 w-full md:w-64"
                   >
                     {instructorsList.map(name => (
                       <option key={name} value={name}>{name}</option>
@@ -2222,7 +2217,7 @@ function RelatorioAvaliacaoAdminContent() {
                       {/* Performance Header summary */}
                       <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                         <div className="flex items-center gap-4">
-                          <div className="w-16 h-16 bg-slate-900 print:bg-transparent text-white print:text-slate-900 rounded-full flex items-center justify-center font-bold text-xl font-mono">
+                          <div className="w-16 h-16 bg-slate-900 print:bg-white text-white print:text-slate-900 rounded-full flex items-center justify-center font-bold text-xl font-mono">
                             {focusedInstructor.slice(0, 2).toUpperCase()}
                           </div>
                           <div>
@@ -2253,7 +2248,7 @@ function RelatorioAvaliacaoAdminContent() {
                                   <span className="font-extrabold text-slate-950">{idx+1}. {q.label}</span>
                                   <span className="font-bold text-slate-900">{q.score.toFixed(2)} / 5.0</span>
                                 </div>
-                                <div className="h-2 bg-slate-100 print:bg-transparent rounded-full overflow-hidden">
+                                <div className="h-2 bg-slate-100 print:bg-white rounded-full overflow-hidden">
                                   <div 
                                     className="h-full bg-slate-900 rounded-full"
                                     style={{ width: `${(q.score / 5) * 100}%` }}
@@ -2430,7 +2425,7 @@ function RelatorioAvaliacaoAdminContent() {
                       <select
                         value={focusedStudent}
                         onChange={(e) => setFocusedStudent(e.target.value)}
-                        className="bg-slate-100 print:bg-transparent border text-xs px-3 py-2 rounded-lg font-semibold focus:outline-none focus:ring-1 text-slate-800 w-full md:w-64"
+                        className="bg-slate-100 print:bg-white border text-xs px-3 py-2 rounded-lg font-semibold focus:outline-none focus:ring-1 text-slate-800 w-full md:w-64"
                       >
                         <option value="">Selecione um aluno...</option>
                         {studentsFilteredByTurma.map(stud => (
@@ -2445,7 +2440,7 @@ function RelatorioAvaliacaoAdminContent() {
               </div>
 
               {focusedStudent && (
-                <div className="bg-slate-50 print:bg-transparent border border-slate-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-sm print:hidden">
+                <div className="bg-slate-50 print:bg-white border border-slate-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-sm print:hidden">
                   <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 shrink-0 animate-pulse" />
                     <span className="text-xs font-bold text-slate-800 font-mono uppercase tracking-wide">
@@ -2540,7 +2535,7 @@ function RelatorioAvaliacaoAdminContent() {
                                             className={`px-2.5 py-1.5 rounded-lg border text-[11px] font-mono font-bold flex items-center justify-center transition-all cursor-pointer ${
                                               isSelected
                                                 ? `${bgSel} font-black scale-105 shadow-md`
-                                                : "bg-slate-50 print:bg-transparent border-slate-200 text-slate-600 hover:bg-slate-100 print:bg-transparent"
+                                                : "bg-slate-50 print:bg-white border-slate-200 text-slate-600 hover:bg-slate-100 print:bg-white"
                                             }`}
                                           >
                                             {label}
@@ -2580,7 +2575,7 @@ function RelatorioAvaliacaoAdminContent() {
                                             className={`px-2.5 py-1.5 rounded-lg border text-[11px] font-mono font-bold flex items-center justify-center transition-all cursor-pointer ${
                                               isSelected
                                                 ? `${bgSel} font-black scale-105 shadow-md`
-                                                : "bg-slate-50 print:bg-transparent border-slate-200 text-slate-600 hover:bg-slate-100 print:bg-transparent"
+                                                : "bg-slate-50 print:bg-white border-slate-200 text-slate-600 hover:bg-slate-100 print:bg-white"
                                             }`}
                                           >
                                             {label}
@@ -2622,7 +2617,7 @@ function RelatorioAvaliacaoAdminContent() {
                                               className={`px-2.5 py-1.5 rounded-lg border text-[11px] font-mono font-bold flex items-center justify-center transition-all cursor-pointer ${
                                                 isSelected
                                                   ? `${bgSel} font-black scale-105 shadow-md`
-                                                  : "bg-slate-50 print:bg-transparent border-slate-200 text-slate-600 hover:bg-slate-100 print:bg-transparent"
+                                                  : "bg-slate-50 print:bg-white border-slate-200 text-slate-600 hover:bg-slate-100 print:bg-white"
                                               }`}
                                             >
                                               {label}
@@ -2662,7 +2657,7 @@ function RelatorioAvaliacaoAdminContent() {
                                               className={`px-2.5 py-1.5 rounded-lg border text-[11px] font-mono font-bold flex items-center justify-center transition-all cursor-pointer ${
                                                 isSelected
                                                   ? `${bgSel} font-black scale-105 shadow-md`
-                                                  : "bg-slate-50 print:bg-transparent border-slate-200 text-slate-650 hover:bg-slate-100 print:bg-transparent"
+                                                  : "bg-slate-50 print:bg-white border-slate-200 text-slate-650 hover:bg-slate-100 print:bg-white"
                                               }`}
                                             >
                                               {label}
@@ -2688,7 +2683,7 @@ function RelatorioAvaliacaoAdminContent() {
                                     value={adminComments.sugestoes_melhoria}
                                     onChange={(e) => setAdminComments(prev => ({ ...prev, sugestoes_melhoria: e.target.value }))}
                                     rows={3}
-                                    className="w-full text-xs text-slate-800 bg-slate-50 print:bg-transparent border border-slate-200 rounded-lg p-2.5 focus:bg-white focus:ring-1 focus:ring-slate-800 focus:outline-none"
+                                    className="w-full text-xs text-slate-800 bg-slate-50 print:bg-white border border-slate-200 rounded-lg p-2.5 focus:bg-white focus:ring-1 focus:ring-slate-800 focus:outline-none"
                                     placeholder="O que pode ser aprimorado..."
                                   />
                                 </div>
@@ -2698,7 +2693,7 @@ function RelatorioAvaliacaoAdminContent() {
                                     value={adminComments.criticas_construtivas}
                                     onChange={(e) => setAdminComments(prev => ({ ...prev, criticas_construtivas: e.target.value }))}
                                     rows={3}
-                                    className="w-full text-xs text-slate-800 bg-slate-50 print:bg-transparent border border-slate-200 rounded-lg p-2.5 focus:bg-white focus:ring-1 focus:ring-slate-800 focus:outline-none"
+                                    className="w-full text-xs text-slate-800 bg-slate-50 print:bg-white border border-slate-200 rounded-lg p-2.5 focus:bg-white focus:ring-1 focus:ring-slate-800 focus:outline-none"
                                     placeholder="Obstáculos ou falhas apontadas..."
                                   />
                                 </div>
@@ -2708,7 +2703,7 @@ function RelatorioAvaliacaoAdminContent() {
                                     value={adminComments.elogios}
                                     onChange={(e) => setAdminComments(prev => ({ ...prev, elogios: e.target.value }))}
                                     rows={3}
-                                    className="w-full text-xs text-slate-800 bg-slate-50 print:bg-transparent border border-slate-200 rounded-lg p-2.5 focus:bg-white focus:ring-1 focus:ring-slate-800 focus:outline-none"
+                                    className="w-full text-xs text-slate-800 bg-slate-50 print:bg-white border border-slate-200 rounded-lg p-2.5 focus:bg-white focus:ring-1 focus:ring-slate-800 focus:outline-none"
                                     placeholder="Pontos de excelência observados..."
                                   />
                                 </div>
@@ -2718,7 +2713,7 @@ function RelatorioAvaliacaoAdminContent() {
                                     value={adminComments.comentarios_adicionais}
                                     onChange={(e) => setAdminComments(prev => ({ ...prev, comentarios_adicionais: e.target.value }))}
                                     rows={3}
-                                    className="w-full text-xs text-slate-800 bg-slate-50 print:bg-transparent border border-slate-200 rounded-lg p-2.5 focus:bg-white focus:ring-1 focus:ring-slate-800 focus:outline-none"
+                                    className="w-full text-xs text-slate-800 bg-slate-50 print:bg-white border border-slate-200 rounded-lg p-2.5 focus:bg-white focus:ring-1 focus:ring-slate-800 focus:outline-none"
                                     placeholder="Análise complementar..."
                                   />
                                 </div>
@@ -2729,7 +2724,7 @@ function RelatorioAvaliacaoAdminContent() {
                               <button
                                 type="button"
                                 onClick={() => setIsAdminFilling(false)}
-                                className="bg-white border text-xs px-5 py-2.5 rounded-lg text-slate-600 font-semibold hover:bg-slate-50 print:bg-transparent transition cursor-pointer"
+                                className="bg-white border text-xs px-5 py-2.5 rounded-lg text-slate-600 font-semibold hover:bg-slate-50 print:bg-white transition cursor-pointer"
                               >
                                 Cancelar
                               </button>
@@ -2759,7 +2754,7 @@ function RelatorioAvaliacaoAdminContent() {
                             O aluno <strong className="text-slate-900">{studentDetails?.nome || "Selecionado"}</strong> ({studentDetails?.posto_graduacao || "Posto/Graduação"}) ainda não enviou as respostas do questionário de conclusão.
                           </p>
                         </div>
-                        <div className="bg-slate-50 print:bg-transparent rounded-lg p-3.5 border text-xs text-slate-600 font-mono text-left space-y-1 max-w-xs mx-auto">
+                        <div className="bg-slate-50 print:bg-white rounded-lg p-3.5 border text-xs text-slate-600 font-mono text-left space-y-1 max-w-xs mx-auto">
                           <p><strong>Matrícula:</strong> {studentDetails?.matricula || "Não disponível"}</p>
                           <p><strong>OM:</strong> {studentDetails?.om || "Não disponível"}</p>
                           <p><strong>Frequência:</strong> Dependente de envio</p>
@@ -2926,7 +2921,7 @@ function RelatorioAvaliacaoAdminContent() {
                                 <span className="font-semibold text-slate-700">I. Expectativas sobre o Curso</span>
                                 <span className="font-bold text-slate-900">{calculateAverage([studentSub], courseAvgKeys).toFixed(1)} / 5</span>
                               </div>
-                              <div className="h-1.5 bg-slate-100 print:bg-transparent rounded-full">
+                              <div className="h-1.5 bg-slate-100 print:bg-white rounded-full">
                                 <div className="h-full bg-slate-800 rounded-full" style={{ width: `${(calculateAverage([studentSub], courseAvgKeys) / 5) * 100}%` }} />
                               </div>
                             </div>
@@ -2937,7 +2932,7 @@ function RelatorioAvaliacaoAdminContent() {
                                 <span className="font-semibold text-slate-700">II. Grau de Satisfação com Instrutor</span>
                                 <span className="font-bold text-slate-900">{calculateAverage([studentSub], instAvgKeys).toFixed(1)} / 5</span>
                               </div>
-                              <div className="h-1.5 bg-slate-100 print:bg-transparent rounded-full">
+                              <div className="h-1.5 bg-slate-100 print:bg-white rounded-full">
                                 <div className="h-full bg-slate-800 rounded-full" style={{ width: `${(calculateAverage([studentSub], instAvgKeys) / 5) * 100}%` }} />
                               </div>
                             </div>
@@ -2948,7 +2943,7 @@ function RelatorioAvaliacaoAdminContent() {
                                 <span className="font-semibold text-slate-700 font-mono font-mono">III. Nota de Autoavaliação do Aluno</span>
                                 <span className="font-bold text-slate-900">{calculateAverage([studentSub], autoAvgKeys).toFixed(1)} / 5</span>
                               </div>
-                              <div className="h-1.5 bg-slate-100 print:bg-transparent rounded-full">
+                              <div className="h-1.5 bg-slate-100 print:bg-white rounded-full">
                                 <div className="h-full bg-slate-800 rounded-full" style={{ width: `${(calculateAverage([studentSub], autoAvgKeys) / 5) * 100}%` }} />
                               </div>
                             </div>
@@ -2959,7 +2954,7 @@ function RelatorioAvaliacaoAdminContent() {
                                 <span className="font-semibold text-slate-700">IV. Avaliação da Infraestrutura</span>
                                 <span className="font-bold text-slate-900">{calculateAverage([studentSub], infraAvgKeys).toFixed(1)} / 5</span>
                               </div>
-                              <div className="h-1.5 bg-slate-100 print:bg-transparent rounded-full">
+                              <div className="h-1.5 bg-slate-100 print:bg-white rounded-full">
                                 <div className="h-full bg-slate-800 rounded-full" style={{ width: `${(calculateAverage([studentSub], infraAvgKeys) / 5) * 100}%` }} />
                               </div>
                             </div>
@@ -2976,19 +2971,19 @@ function RelatorioAvaliacaoAdminContent() {
                             {studentSub.sugestoes_melhoria && (
                               <div>
                                 <span className="font-bold text-slate-650 block">Sugestões de Melhorias:</span>
-                                <p className="text-slate-600 bg-slate-50 print:bg-transparent p-2.5 rounded-lg mt-0.5">{studentSub.sugestoes_melhoria}</p>
+                                <p className="text-slate-600 bg-slate-50 print:bg-white p-2.5 rounded-lg mt-0.5">{studentSub.sugestoes_melhoria}</p>
                               </div>
                             )}
                             {studentSub.criticas_construtivas && (
                               <div>
                                 <span className="font-bold text-slate-650 block">Críticas Construtivas:</span>
-                                <p className="text-slate-600 bg-slate-50 print:bg-transparent p-2.5 rounded-lg mt-0.5">{studentSub.criticas_construtivas}</p>
+                                <p className="text-slate-600 bg-slate-50 print:bg-white p-2.5 rounded-lg mt-0.5">{studentSub.criticas_construtivas}</p>
                               </div>
                             )}
                             {studentSub.elogios && (
                               <div>
                                 <span className="font-bold text-slate-650 block">Elogios Registrados:</span>
-                                <p className="text-slate-600 bg-slate-50 print:bg-transparent p-2.5 rounded-lg mt-0.5">{studentSub.elogios}</p>
+                                <p className="text-slate-600 bg-slate-50 print:bg-white p-2.5 rounded-lg mt-0.5">{studentSub.elogios}</p>
                               </div>
                             )}
                             {!studentSub.sugestoes_melhoria && !studentSub.criticas_construtivas && !studentSub.elogios && (
@@ -3025,15 +3020,15 @@ function RelatorioAvaliacaoAdminContent() {
                               {CURSO_QUESTIONS.map((q, idx) => {
                                 const val = studentSub[q.key];
                                 return (
-                                  <div key={q.key} className="p-3.5 bg-slate-50 print:bg-transparent rounded-lg border border-slate-150 flex flex-col md:flex-row md:items-center md:justify-between gap-4 transition hover:bg-slate-50 print:bg-transparent">
+                                  <div key={q.key} className="p-3.5 bg-slate-50 print:bg-white rounded-lg border border-slate-150 flex flex-col md:flex-row md:items-center md:justify-between gap-4 transition hover:bg-slate-50 print:bg-white">
                                     <p className="text-xs font-bold text-slate-855 leading-relaxed">
                                       {idx + 1}. {q.label}
                                     </p>
                                     <div className="flex max-md:grid max-md:grid-cols-3 gap-2 shrink-0">
                                       {[
-                                        { value: 5, label: "CONCORDO PLENAMENTE", activeClass: "bg-slate-900 print:bg-transparent text-white print:text-slate-900 border-slate-900 shadow-sm" },
-                                        { value: 3, label: "CONCORDO PARCIALMENTE", activeClass: "bg-slate-900 print:bg-transparent text-white print:text-slate-900 border-slate-900 shadow-sm" },
-                                        { value: 1, label: "DISCORDO/ NÃO SE APLICA", activeClass: "bg-slate-900 print:bg-transparent text-white print:text-slate-900 border-slate-900 shadow-sm" }
+                                        { value: 5, label: "CONCORDO PLENAMENTE", activeClass: "bg-slate-900 print:bg-white text-white print:text-slate-900 border-slate-900 shadow-sm" },
+                                        { value: 3, label: "CONCORDO PARCIALMENTE", activeClass: "bg-slate-900 print:bg-white text-white print:text-slate-900 border-slate-900 shadow-sm" },
+                                        { value: 1, label: "DISCORDO/ NÃO SE APLICA", activeClass: "bg-slate-900 print:bg-white text-white print:text-slate-900 border-slate-900 shadow-sm" }
                                       ].map((opt) => {
                                         const isSelected = val === opt.value;
                                         return (
@@ -3065,15 +3060,15 @@ function RelatorioAvaliacaoAdminContent() {
                               {INSTRUTOR_QUESTIONS.map((q, idx) => {
                                 const val = studentSub[q.key];
                                 return (
-                                  <div key={q.key} className="p-3.5 bg-slate-50 print:bg-transparent rounded-lg border border-slate-150 flex flex-col md:flex-row md:items-center md:justify-between gap-4 transition hover:bg-slate-50 print:bg-transparent">
+                                  <div key={q.key} className="p-3.5 bg-slate-50 print:bg-white rounded-lg border border-slate-150 flex flex-col md:flex-row md:items-center md:justify-between gap-4 transition hover:bg-slate-50 print:bg-white">
                                     <p className="text-xs font-bold text-slate-855 leading-relaxed">
                                       {idx + 1}. {q.label}
                                     </p>
                                     <div className="flex max-md:grid max-md:grid-cols-3 gap-2 shrink-0">
                                       {[
-                                        { value: 5, label: "CONCORDO PLENAMENTE", activeClass: "bg-slate-900 print:bg-transparent text-white print:text-slate-900 border-slate-900 shadow-sm" },
-                                        { value: 3, label: "CONCORDO PARCIALMENTE", activeClass: "bg-slate-900 print:bg-transparent text-white print:text-slate-900 border-slate-900 shadow-sm" },
-                                        { value: 1, label: "DISCORDO/ NÃO SE APLICA", activeClass: "bg-slate-900 print:bg-transparent text-white print:text-slate-900 border-slate-900 shadow-sm" }
+                                        { value: 5, label: "CONCORDO PLENAMENTE", activeClass: "bg-slate-900 print:bg-white text-white print:text-slate-900 border-slate-900 shadow-sm" },
+                                        { value: 3, label: "CONCORDO PARCIALMENTE", activeClass: "bg-slate-900 print:bg-white text-white print:text-slate-900 border-slate-900 shadow-sm" },
+                                        { value: 1, label: "DISCORDO/ NÃO SE APLICA", activeClass: "bg-slate-900 print:bg-white text-white print:text-slate-900 border-slate-900 shadow-sm" }
                                       ].map((opt) => {
                                         const isSelected = val === opt.value;
                                         return (
@@ -3105,15 +3100,15 @@ function RelatorioAvaliacaoAdminContent() {
                               {AUTO_QUESTIONS.map((q, idx) => {
                                 const val = studentSub[q.key];
                                 return (
-                                  <div key={q.key} className="p-3.5 bg-slate-50 print:bg-transparent rounded-lg border border-slate-150 flex flex-col md:flex-row md:items-center md:justify-between gap-4 transition hover:bg-slate-50 print:bg-transparent">
+                                  <div key={q.key} className="p-3.5 bg-slate-50 print:bg-white rounded-lg border border-slate-150 flex flex-col md:flex-row md:items-center md:justify-between gap-4 transition hover:bg-slate-50 print:bg-white">
                                     <p className="text-xs font-bold text-slate-855 leading-relaxed">
                                       {idx + 1}. {q.label}
                                     </p>
                                     <div className="flex max-md:grid max-md:grid-cols-3 gap-2 shrink-0">
                                       {[
-                                        { value: 5, label: "CONCORDO PLENAMENTE", activeClass: "bg-slate-900 print:bg-transparent text-white print:text-slate-900 border-slate-900 shadow-sm" },
-                                        { value: 3, label: "CONCORDO PARCIALMENTE", activeClass: "bg-slate-900 print:bg-transparent text-white print:text-slate-900 border-slate-900 shadow-sm" },
-                                        { value: 1, label: "DISCORDO/ NÃO SE APLICA", activeClass: "bg-slate-900 print:bg-transparent text-white print:text-slate-900 border-slate-900 shadow-sm" }
+                                        { value: 5, label: "CONCORDO PLENAMENTE", activeClass: "bg-slate-900 print:bg-white text-white print:text-slate-900 border-slate-900 shadow-sm" },
+                                        { value: 3, label: "CONCORDO PARCIALMENTE", activeClass: "bg-slate-900 print:bg-white text-white print:text-slate-900 border-slate-900 shadow-sm" },
+                                        { value: 1, label: "DISCORDO/ NÃO SE APLICA", activeClass: "bg-slate-900 print:bg-white text-white print:text-slate-900 border-slate-900 shadow-sm" }
                                       ].map((opt) => {
                                         const isSelected = val === opt.value;
                                         return (
@@ -3145,15 +3140,15 @@ function RelatorioAvaliacaoAdminContent() {
                               {INFRA_QUESTIONS.map((q, idx) => {
                                 const val = studentSub[q.key];
                                 return (
-                                  <div key={q.key} className="p-3.5 bg-slate-50 print:bg-transparent rounded-lg border border-slate-150 flex flex-col md:flex-row md:items-center md:justify-between gap-4 transition hover:bg-slate-50 print:bg-transparent">
+                                  <div key={q.key} className="p-3.5 bg-slate-50 print:bg-white rounded-lg border border-slate-150 flex flex-col md:flex-row md:items-center md:justify-between gap-4 transition hover:bg-slate-50 print:bg-white">
                                     <p className="text-xs font-bold text-slate-855 leading-relaxed">
                                       {idx + 1}. {q.label}
                                     </p>
                                     <div className="flex max-md:grid max-md:grid-cols-3 gap-2 shrink-0">
                                       {[
-                                        { value: 5, label: "CONCORDO PLENAMENTE", activeClass: "bg-slate-900 print:bg-transparent text-white print:text-slate-900 border-slate-900 shadow-sm" },
-                                        { value: 3, label: "CONCORDO PARCIALMENTE", activeClass: "bg-slate-900 print:bg-transparent text-white print:text-slate-900 border-slate-900 shadow-sm" },
-                                        { value: 1, label: "DISCORDO/ NÃO SE APLICA", activeClass: "bg-slate-900 print:bg-transparent text-white print:text-slate-900 border-slate-900 shadow-sm" }
+                                        { value: 5, label: "CONCORDO PLENAMENTE", activeClass: "bg-slate-900 print:bg-white text-white print:text-slate-900 border-slate-900 shadow-sm" },
+                                        { value: 3, label: "CONCORDO PARCIALMENTE", activeClass: "bg-slate-900 print:bg-white text-white print:text-slate-900 border-slate-900 shadow-sm" },
+                                        { value: 1, label: "DISCORDO/ NÃO SE APLICA", activeClass: "bg-slate-900 print:bg-white text-white print:text-slate-900 border-slate-900 shadow-sm" }
                                       ].map((opt) => {
                                         const isSelected = val === opt.value;
                                         return (
@@ -3179,12 +3174,12 @@ function RelatorioAvaliacaoAdminContent() {
                       </div>
 
                       {/* Audit verification tag */}
-                      <div className="bg-slate-50 print:bg-transparent border border-slate-200 rounded-lg p-4 text-xs font-mono flex items-center justify-between">
+                      <div className="bg-slate-50 print:bg-white border border-slate-200 rounded-lg p-4 text-xs font-mono flex items-center justify-between">
                         <div>
                           <strong className="text-slate-850">ASSINATURA DIGITAL DO INSTRUMENTO DE QUALIDADE</strong>
                           <p className="text-slate-500 mt-1">{studentSub.assinatura_digital}</p>
                         </div>
-                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider bg-slate-100 print:bg-transparent border px-2 py-1 rounded">AUDITADO</span>
+                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider bg-slate-100 print:bg-white border px-2 py-1 rounded">AUDITADO</span>
                       </div>
 
                       {/* Bottom Return CTA */}
@@ -3195,7 +3190,7 @@ function RelatorioAvaliacaoAdminContent() {
                             setFocusedStudent('');
                             setActiveTab('geral');
                           }}
-                          className="flex items-center gap-2 bg-slate-100 print:bg-transparent hover:bg-slate-200 border border-slate-200 text-slate-800 text-xs font-bold uppercase tracking-wider font-mono px-6 py-3 rounded-lg transition-all cursor-pointer shadow-sm hover:shadow"
+                          className="flex items-center gap-2 bg-slate-100 print:bg-white hover:bg-slate-200 border border-slate-200 text-slate-800 text-xs font-bold uppercase tracking-wider font-mono px-6 py-3 rounded-lg transition-all cursor-pointer shadow-sm hover:shadow"
                         >
                           📊 Voltar para Estatísticas da Turma
                         </button>
@@ -3229,7 +3224,7 @@ function RelatorioAvaliacaoAdminContent() {
 export default function RelatorioAvaliacaoAdminPage() {
   return (
     <Suspense fallback={
-      <div className="py-24 flex flex-col items-center justify-center bg-slate-50 print:bg-transparent min-h-[75vh] print:min-h-0 print:py-8">
+      <div className="py-24 flex flex-col items-center justify-center bg-slate-50 print:bg-white min-h-[75vh] print:min-h-0 print:py-8">
         <div className="relative">
           <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-slate-900"></div>
           <BarChart3 className="absolute inset-0 m-auto text-slate-900" size={24} />

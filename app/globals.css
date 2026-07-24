@@ -125,3 +125,36 @@ body {
     background-color: #FFFFFF !important;
   }
 }
+
+@media print {
+  body, html, main, #__next, .flex.min-h-screen, .bg-slate-50, .print\:bg-transparent, .bg-slate-100 {
+    background-color: #FFFFFF !important;
+    background: #FFFFFF !important;
+  }
+  
+  /* Make sure text is dark so it is readable on white */
+  body, p, span, h1, h2, h3, h4, h5, h6, div {
+    color-scheme: light !important;
+  }
+}
+
+@media print {
+  /* Absolute force of white background for the entire document */
+  * {
+    color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  html, body, main, #__next {
+    background-color: #FFFFFF !important;
+    background-image: none !important;
+  }
+  
+  .bg-slate-50, .bg-slate-100, .bg-white {
+    background-color: #FFFFFF !important;
+  }
+  
+  .print\:bg-transparent {
+    background-color: transparent !important;
+  }
+}
