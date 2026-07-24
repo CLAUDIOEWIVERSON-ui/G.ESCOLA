@@ -34,9 +34,9 @@ import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
 
 // Scaling text helper matches CP: 5, CPa: 3, D/NA: 1
 const getScaleLabel = (val: number) => {
-  if (val >= 4.2) return "Concordância Plena (CP)";
-  if (val >= 2.6) return "Concordância Parcial (CPa)";
-  return "Discordo / Não se Aplica (D/NA)";
+  if (val >= 4.2) return "Concordo Plenamente";
+  if (val >= 2.6) return "Concordo Parcialmente";
+  return "Discordo / Não se Aplica";
 };
 
 // Colors based on score
@@ -1580,25 +1580,40 @@ function RelatorioAvaliacaoAdminContent() {
                                  })}
                                </div>
  
-                               <div className={`grid grid-cols-5 text-center text-[8.5px] font-extrabold font-mono pt-3 border-t mt-4 ${
-                                 chartTheme === 'azul' ? 'text-slate-400 border-slate-800/80' : 'text-slate-500 border-slate-100'
+                               <div className={`grid grid-cols-5 gap-1 text-center pt-4 border-t mt-4 leading-tight ${
+                                 chartTheme === 'azul' ? 'border-slate-800/80' : 'border-slate-100'
                                }`}>
-                                 <div className={chartTheme === 'azul' ? 'text-emerald-400' : 'text-emerald-600'}>CP (5)</div>
-                                 <div className={chartTheme === 'azul' ? 'text-cyan-400' : 'text-cyan-600'}>CPa (4)</div>
-                                 <div className={chartTheme === 'azul' ? 'text-amber-400' : 'text-amber-600'}>Neutro (3)</div>
-                                 <div className={chartTheme === 'azul' ? 'text-orange-400' : 'text-orange-600'}>DPa (2)</div>
-                                 <div className={chartTheme === 'azul' ? 'text-rose-400' : 'text-rose-600'}>DP (1)</div>
+                                 <div className={`flex flex-col items-center ${chartTheme === 'azul' ? 'text-emerald-400' : 'text-emerald-600'}`}>
+                                   <span className="text-[7.5px] font-black uppercase tracking-widest opacity-60 font-mono mb-1">Nota 5</span>
+                                   <span className="text-[8.5px] sm:text-[9.5px] font-bold font-sans uppercase">Concordo<br/>Plenamente</span>
+                                 </div>
+                                 <div className={`flex flex-col items-center ${chartTheme === 'azul' ? 'text-cyan-400' : 'text-cyan-600'}`}>
+                                   <span className="text-[7.5px] font-black uppercase tracking-widest opacity-60 font-mono mb-1">Nota 4</span>
+                                   <span className="text-[8.5px] sm:text-[9.5px] font-bold font-sans uppercase">Concordo<br/>Parcialmente</span>
+                                 </div>
+                                 <div className={`flex flex-col items-center ${chartTheme === 'azul' ? 'text-amber-400' : 'text-amber-600'}`}>
+                                   <span className="text-[7.5px] font-black uppercase tracking-widest opacity-60 font-mono mb-1">Nota 3</span>
+                                   <span className="text-[8.5px] sm:text-[9.5px] font-bold font-sans uppercase">Neutro<br/>(Regular)</span>
+                                 </div>
+                                 <div className={`flex flex-col items-center ${chartTheme === 'azul' ? 'text-orange-400' : 'text-orange-600'}`}>
+                                   <span className="text-[7.5px] font-black uppercase tracking-widest opacity-60 font-mono mb-1">Nota 2</span>
+                                   <span className="text-[8.5px] sm:text-[9.5px] font-bold font-sans uppercase">Discordo<br/>Parcialmente</span>
+                                 </div>
+                                 <div className={`flex flex-col items-center ${chartTheme === 'azul' ? 'text-rose-400' : 'text-rose-600'}`}>
+                                   <span className="text-[7.5px] font-black uppercase tracking-widest opacity-60 font-mono mb-1">Nota 1</span>
+                                   <span className="text-[8.5px] sm:text-[9.5px] font-bold font-sans uppercase">Discordo<br/>Plenamente</span>
+                                 </div>
                                </div>
                              </div>
  
                              {/* Chart 3: Proporção de Níveis de Satisfação (Pie Chart) */}
                              {(() => {
                                const pieData = [
-                                 { name: 'Excelente (★5)', value: distribution[5], color: '#10b981' },
-                                 { name: 'Bom (★4)', value: distribution[4], color: '#06b6d4' },
-                                 { name: 'Regular (★3)', value: distribution[3], color: '#f59e0b' },
-                                 { name: 'Insatisfeito (★1-2)', value: (distribution[1] || 0) + (distribution[2] || 0), color: '#ef4444' }
-                               ].filter(item => item.value > 0);
+  { name: 'Conc. Plenamente (★5)', value: distribution[5], color: '#10b981' },
+  { name: 'Conc. Parcialmente (★4)', value: distribution[4], color: '#06b6d4' },
+  { name: 'Neutro/Regular (★3)', value: distribution[3], color: '#f59e0b' },
+  { name: 'Discordo (★1-2)', value: (distribution[1] || 0) + (distribution[2] || 0), color: '#ef4444' }
+].filter(item => item.value > 0);
  
                                return (
                                  <div className={`border rounded-xl p-5 relative overflow-hidden transition-all duration-305 border-b-[4px] border-r-[2px] flex flex-col justify-between ${
