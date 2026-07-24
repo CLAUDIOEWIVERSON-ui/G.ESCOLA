@@ -2040,9 +2040,9 @@ function RelatorioAvaliacaoAdminContent() {
                         <div key={`comment-${sub.id || index}`} className="border border-slate-200 rounded-xl p-5 bg-slate-50 print:bg-white shadow-sm break-inside-avoid">
                           <div className="flex items-center gap-2 mb-3 border-b border-slate-100 pb-2">
                             <span className="w-2 h-2 rounded-full bg-slate-400"></span>
-                            <span className="text-xs font-bold text-slate-800 font-mono uppercase tracking-wide">
-                              {posto ? <span className="text-slate-500 mr-1">{posto}</span> : null}
-                              {studentName}
+                            <span className="text-sm font-black text-slate-900 font-mono uppercase tracking-wide">
+                              {posto ? <span className="text-xs text-slate-500 font-bold mr-1">{posto}</span> : null}
+                              <span className="text-lg">{studentName}</span>
                             </span>
                           </div>
                           
@@ -2141,7 +2141,7 @@ function RelatorioAvaliacaoAdminContent() {
                           <div key={`elogio-${sub.id || idx}`} className="bg-emerald-50/40 p-3 rounded-lg border border-emerald-100/50 text-xs">
                             <p className="text-slate-800">{sub.elogios}</p>
                             <span className="text-[10px] text-emerald-700 block mt-1.5 font-bold font-mono">
-                              — {sub.aluno?.nome || "Aluno"} ({sub.aluno?.posto_graduacao || "Graduação"})
+                              — <span className="text-sm font-black text-emerald-950 uppercase">{sub.aluno?.nome || "Aluno"}</span> <span className="text-[10px]">({sub.aluno?.posto_graduacao || "Graduação"})</span>
                             </span>
                           </div>
                         ))
@@ -2164,7 +2164,7 @@ function RelatorioAvaliacaoAdminContent() {
                           <div key={`critica-${sub.id || idx}`} className="bg-rose-50/40 p-3 rounded-lg border border-rose-100/55 text-xs">
                             <p className="text-slate-800">{sub.criticas_construtivas}</p>
                             <span className="text-[10px] text-rose-700 block mt-1.5 font-bold font-mono">
-                              — {sub.aluno?.nome || "Aluno"} ({sub.aluno?.posto_graduacao || "Graduação"})
+                              — <span className="text-sm font-black text-rose-950 uppercase">{sub.aluno?.nome || "Aluno"}</span> <span className="text-[10px]">({sub.aluno?.posto_graduacao || "Graduação"})</span>
                             </span>
                           </div>
                         ))
@@ -2755,7 +2755,7 @@ function RelatorioAvaliacaoAdminContent() {
                         <div>
                           <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest font-mono">Avaliação Pendente</h3>
                           <p className="text-slate-500 text-xs mt-1.5 leading-relaxed">
-                            O aluno <strong className="text-slate-900">{studentDetails?.nome || "Selecionado"}</strong> ({studentDetails?.posto_graduacao || "Posto/Graduação"}) ainda não enviou as respostas do questionário de conclusão.
+                            O aluno <strong className="text-xl font-black text-slate-900 uppercase mx-1">{studentDetails?.nome || "Selecionado"}</strong> ({studentDetails?.posto_graduacao || "Posto/Graduação"}) ainda não enviou as respostas do questionário de conclusão.
                           </p>
                         </div>
                         <div className="bg-slate-50 print:bg-white rounded-lg p-3.5 border text-xs text-slate-600 font-mono text-left space-y-1 max-w-xs mx-auto">
@@ -2822,7 +2822,7 @@ function RelatorioAvaliacaoAdminContent() {
                           <div className="flex items-center justify-between gap-4">
                             <div className="flex items-center gap-3">
                               <Building className="h-5 w-5 text-slate-500" />
-                              <h3 className="text-base font-bold text-slate-900">{studentSub.aluno?.nome}</h3>
+                              <h3 className="text-3xl font-black text-slate-900 uppercase tracking-tight shadow-sm px-1" style={{ textShadow: "0 1px 2px rgba(0,0,0,0.1)" }}>{studentSub.aluno?.nome}</h3>
                             </div>
                             <div className="flex flex-wrap items-center gap-2">
                               <button
