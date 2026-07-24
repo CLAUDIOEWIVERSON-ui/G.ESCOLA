@@ -7,8 +7,6 @@ body {
 }
 
 body {
-  -webkit-print-color-adjust: exact;
-  print-color-adjust: exact;
 }
 
 @media print {
@@ -25,8 +23,6 @@ body {
     overflow: visible !important;
     background: #FFFFFF !important;
     color-scheme: light !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
     color: black !important;
     height: auto !important;
     min-height: auto !important;
@@ -65,13 +61,11 @@ body {
     padding: 0 !important;
     margin: 0 !important;
     transform: none !important;
-    background: transparent !important;
+    background-color: #FFFFFF !important;
   }
 
   /* Preserve colors and borders in print */
   * {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
     box-shadow: none !important;
   }
 
@@ -102,59 +96,22 @@ body {
   width: 5px;
   height: 5px;
 }
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.35);
-  border-radius: 10px;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.6);
-}
-.custom-scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
-}
-
-
 
 @media print {
-  /* Force all slate backgrounds to white/transparent to avoid halftone muddy grey on physical printers */
-  .bg-slate-50, .bg-slate-100, .bg-slate-50\/50, .bg-slate-100\/50 {
-    background-color: #FFFFFF !important;
-  }
-}
-
-@media print {
-  body, html, main, #__next, .flex.min-h-screen, .bg-slate-50, .print\:bg-transparent, .bg-slate-100 {
+  body, html, main, #__next, .flex.min-h-screen, .bg-slate-50, .print\:bg-white, .bg-slate-100, .bg-slate-900, .bg-slate-950, .card, .grid {
     background-color: #FFFFFF !important;
     background: #FFFFFF !important;
+    color: #000000 !important;
   }
   
-  /* Make sure text is dark so it is readable on white */
-  body, p, span, h1, h2, h3, h4, h5, h6, div {
-    color-scheme: light !important;
-  }
-}
-
-@media print {
-  /* Absolute force of white background for the entire document */
   * {
     color-adjust: exact !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
-  html, body, main, #__next {
-    background-color: #FFFFFF !important;
-    background-image: none !important;
-  }
   
-  .bg-slate-50, .bg-slate-100, .bg-white {
-    background-color: #FFFFFF !important;
-  }
-  
-  .print\:bg-transparent {
-    background-color: transparent !important;
+  /* Buttons and unnecessary ui */
+  .print\:hidden, .no-print {
+    display: none !important;
   }
 }

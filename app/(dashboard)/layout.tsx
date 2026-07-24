@@ -624,7 +624,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0 print:block print:w-full print:min-h-0">
+      <div className="flex-1 flex flex-col min-w-0 print:block print:w-full print:min-h-0 print:bg-white">
         <div className="print:hidden">
           <EventMarquee />
         </div>

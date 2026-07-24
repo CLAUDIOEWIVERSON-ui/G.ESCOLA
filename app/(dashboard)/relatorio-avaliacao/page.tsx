@@ -942,63 +942,52 @@ function RelatorioAvaliacaoAdminContent() {
   return (
     <div className={`max-w-7xl mx-auto px-4 py-8 space-y-8 print:space-y-2 print:py-0 print:px-0 print:max-w-none print:bg-white print:text-black `}>
       <style>{`
-        @media print {
-          /* 1. Forçar esquema claro (derrota dark modes de navegadores) */
-          :root {
-            color-scheme: light !important;
-          }
-          
-          /* 2. Forçar fundo totalmente branco para o body e containers estruturais (#FFFFFF) */
-          html, body, main, .print\\:bg-white { 
-            background-color: #FFFFFF !important; 
-          }
-          
-          /* Forçar fundos que normalmente formam o layout para branco puro, eliminando os tons escuros/cinzas */
-          .bg-slate-50, .bg-slate-100, .bg-slate-200, .bg-white {
-             background-color: #FFFFFF !important;
-             background-image: none !important;
-             box-shadow: none !important;
-          }
-
-          /* Preservar barras de progresso que usam bg-slate-800 (ex: médias institucionais) */
-          div.bg-slate-800.rounded-full {
-             background-color: #334155 !important;
-          }
-          
-          /* Garantir a visibilidade das bordas nos cards e gráficos */
-          #chart-neon-metrics-card, 
-          #chart-neon-distribution-card, 
-          #chart-pie-satisfaction-card,
-          .border-slate-800, .border-slate-200 {
-            border-color: #e2e8f0 !important;
-          }
-          
-          /* 3. Ajustar os textos para garantir legibilidade no fundo branco (#FFFFFF) */
-          #chart-neon-metrics-card h4, 
-          #chart-neon-metrics-card span,
-          #chart-neon-metrics-card div,
-          #chart-neon-distribution-card h4,
-          #chart-neon-distribution-card span,
-          #chart-neon-distribution-card div,
-          #chart-pie-satisfaction-card h4,
-          #chart-pie-satisfaction-card span,
-          #chart-pie-satisfaction-card div {
-            color: #0f172a !important;
-          }
-          
-          /* Labels e textos de gráficos escuros e claros forçados para cor escura legível */
-          text.recharts-text,
-          .text-white, .text-slate-200, .text-slate-300, .text-slate-400 {
-            fill: #0f172a !important;
-            color: #0f172a !important;
-            text-shadow: none !important;
-          }
-          
-          .text-slate-500, .text-slate-600, .text-slate-700, .text-slate-800, .text-slate-900 {
-            color: #0f172a !important;
-          }
-        }
-      `}</style>
+  @media print {
+    /* Absolute force to white */
+    html, body, main, #__next, .min-h-screen, .flex-1 {
+      background-color: #FFFFFF !important;
+      background: #FFFFFF !important;
+    }
+    
+    /* Make backgrounds transparent except specific progress bars */
+    * {
+      background-color: transparent !important;
+      color: #000000 !important;
+    }
+    
+    .bg-emerald-500 { background-color: #10b981 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    .bg-purple-500 { background-color: #a855f7 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    .bg-cyan-500 { background-color: #06b6d4 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    .bg-rose-500 { background-color: #f43f5e !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    .bg-rose-400 { background-color: #fb7185 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    .bg-amber-500 { background-color: #f59e0b !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    .bg-blue-500 { background-color: #3b82f6 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    .bg-slate-800 { background-color: #334155 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    
+    .text-emerald-500 { color: #10b981 !important; }
+    .text-purple-500 { color: #a855f7 !important; }
+    .text-cyan-500 { color: #06b6d4 !important; }
+    .text-rose-500 { color: #f43f5e !important; }
+    .text-amber-500 { color: #f59e0b !important; }
+    .text-blue-500 { color: #3b82f6 !important; }
+    .text-slate-400 { color: #64748b !important; }
+    
+    
+    div.bg-slate-900.h-full.rounded-full,
+    div.h-full.bg-slate-900.rounded-full {
+      background-color: #0f172a !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    
+    /* Allow printing backgrounds globally */
+    :root {
+      color-scheme: light !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+  }
+`}</style>
       {/* PRINT HEADER */}
       <div className="hidden print:block border-b-2 border-slate-900 pb-2 mb-2">
         <h1 className="text-xl font-black text-slate-900 uppercase tracking-tight">Relatório de Avaliações</h1>
@@ -1346,7 +1335,7 @@ function RelatorioAvaliacaoAdminContent() {
                             
                             <div className="flex flex-wrap items-center gap-3">
                               {/* Option Selector for Chart Background/Theme with 3D Neon look! */}
-                              <div className="flex items-center gap-2 bg-slate-100 print:bg-white/80 border border-slate-200 p-1 rounded-xl shadow-inner text-[10px] font-bold font-mono">
+                              <div className="flex items-center gap-2 bg-slate-100 print:hidden border border-slate-200 p-1 rounded-xl shadow-inner text-[10px] font-bold font-mono">
                                 <span className="text-[9px] uppercase font-black text-slate-400 font-mono px-2">Fundo:</span>
                                 
                                 <button
