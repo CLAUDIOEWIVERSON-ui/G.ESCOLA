@@ -598,14 +598,7 @@ export default function CursosPage() {
 
           {!isReadOnly && (
             <div className="flex gap-2 justify-end">
-              <button 
-                type="button"
-                onClick={() => setIsBulkModalOpen(true)}
-                className="flex items-center gap-2 bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-all shadow-sm whitespace-nowrap cursor-pointer"
-              >
-                <FileText size={18} />
-                {t.common.bulkAdd}
-              </button>
+              
               <button 
                 id="add-course-btn"
                 type="button"
