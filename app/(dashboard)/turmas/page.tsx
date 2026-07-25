@@ -507,6 +507,16 @@ function TurmasContent() {
     return result;
   };
   
+    const groupParam = searchParams ? searchParams.get('group') : null;
+  const activeGroup = (groupParam && ['GAT', 'MAN'].includes(groupParam.toUpperCase())) ? groupParam.toUpperCase() : 'GAT';
+
+  const setActiveGroup = (grp: string) => {
+    const params = new URLSearchParams(searchParams ? searchParams.toString() : '');
+    params.set('group', grp);
+    router.push(`${pathname}?${params.toString()}`);
+    setCurrentPage(1);
+  };
+  
   const activeCategory = (categoryParam && ['all', 'expedito', 'especial', 'carreira', 'ead', 'exterior'].includes(categoryParam)) 
     ? (categoryParam as 'all' | 'expedito' | 'especial' | 'carreira' | 'ead' | 'exterior') 
     : 'all';
@@ -570,6 +580,7 @@ function TurmasContent() {
       data_postergacao: '',
       internacional: activeCategory === 'exterior',
       localizacao: '',
+      grupo_responsavel: activeGroup,
       liberar_formularios: false
     });
     setIsModalOpen(true);
@@ -1122,6 +1133,10 @@ function TurmasContent() {
   const q = searchParams ? (searchParams.get('q')?.toLowerCase() || '') : '';
 
   const filteredTurmas = turmas.filter((t: any) => {
+    const finalGroup = t.grupo_responsavel || t.curso?.grupo_responsavel;
+    if (finalGroup && finalGroup !== activeGroup && finalGroup !== 'AMBOS') {
+      return false;
+    }
     if (q) {
       const nomeMatch = t.nome?.toLowerCase().includes(q);
       const cursoMatch = t.curso?.nome?.toLowerCase().includes(q);
@@ -1148,7 +1163,7 @@ function TurmasContent() {
   return (
     <div className="space-y-8 pb-20">
       {/* Header with Stats Overview potentially here */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <School className="text-blue-600" size={24} />
@@ -1157,8 +1172,27 @@ function TurmasContent() {
           <p className="text-slate-500 text-sm italic font-medium">{t.classes.subtitle}</p>
         </div>
         
-        <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
-          <div className="grid grid-cols-6 gap-1 bg-white p-1 rounded-xl shadow-sm border border-slate-200 w-full sm:w-[620px]">
+        <div className="flex flex-col xl:flex-row items-center gap-3 w-full xl:w-auto">
+          <div className="flex bg-white p-1 rounded-xl shadow-sm border border-slate-200">
+            {['GAT', 'MAN'].map((grp) => (
+              <button
+                key={grp}
+                onClick={() => setActiveGroup(grp)}
+                className={cn(
+                  "px-5 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer",
+                  activeGroup === grp
+                    ? "bg-indigo-600 text-white shadow-md shadow-indigo-200"
+                    : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
+                )}
+              >
+                {grp}
+              </button>
+            ))}
+          </div>
+
+          <div className="h-10 w-[1px] bg-slate-200 mx-1 hidden xl:block" />
+
+          <div className="grid grid-cols-6 gap-1 bg-white p-1 rounded-xl shadow-sm border border-slate-200 w-full xl:w-[620px]">
             {(['all', 'expedito', 'especial', 'carreira', 'ead', 'exterior'] as const).map((cat) => (
               <button
                 key={cat}
@@ -1635,7 +1669,7 @@ function TurmasContent() {
                 className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-sm font-bold text-slate-800 appearance-none cursor-pointer shadow-sm"
               >
                 <option value="">{t.courses.selectCourse}</option>
-                {cursos.map((curso: any) => (
+                {cursos.filter((c: any) => !c.grupo_responsavel || c.grupo_responsavel === activeGroup || c.grupo_responsavel === 'AMBOS').map((curso: any) => (
                   <option key={curso.id} value={curso.id}>
                     {curso.nome} {curso.codigo ? `(${curso.codigo})` : ''}
                   </option>
