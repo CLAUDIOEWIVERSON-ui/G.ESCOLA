@@ -1,5 +1,7 @@
 'use client';
 
+import Image from 'next/image';
+import navalMissionLogo from '@/src/assets/images/regenerated_image_1782409801823.png';
 import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
@@ -989,8 +991,31 @@ function RelatorioAvaliacaoAdminContent() {
   }
 `}</style>
       {/* PRINT HEADER */}
-      <div className="hidden print:block border-b-2 border-slate-900 pb-2 mb-2">
-        <h1 className="text-xl font-black text-slate-900 uppercase tracking-tight">Relatório de Avaliações</h1>
+      <div className="hidden print:flex items-center justify-between pb-4 border-b-2 border-slate-950 mb-4">
+        <div className="flex items-center gap-4">
+          <div className="relative w-24 h-24 shrink-0 flex items-center justify-center overflow-hidden bg-white">
+            <Image
+              src={navalMissionLogo}
+              alt="Logo Missão de Assessoria Naval"
+              fill
+              className="object-contain"
+              referrerPolicy="no-referrer"
+              sizes="96px"
+              priority
+            />
+          </div>
+          <div className="text-left flex flex-col justify-center">
+            <h1 className="text-sm font-black tracking-widest text-slate-900 uppercase leading-none">
+              MISSÃO DE ASSESSORIA NAVAL DO BRASIL EM SÃO TOMÉ E PRÍNCIPE
+            </h1>
+            <p className="text-[9px] font-black tracking-widest text-slate-500 uppercase mt-1 leading-none">
+              Relatório de Avaliações
+            </p>
+          </div>
+        </div>
+      </div>
+      
+      <div className="hidden print:block mb-4">
         {selectedTurma !== 'ALL' ? (
           (() => {
             const t = turmas.find(t => t.id === selectedTurma);
