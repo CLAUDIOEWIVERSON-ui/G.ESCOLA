@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { useCursos } from '@/hooks/useCachedData';
@@ -40,7 +40,7 @@ import { Toaster, toast } from 'sonner';
 
 type Curso = z.infer<typeof cursoSchema> & { id: string };
 
-export default function CursosPage() {
+function CursosContent() {
   const { t, language } = useI18n();
   const { isAdmin, isConvidado, profile } = useUser();
   const isInstrutor = profile?.role === 'instrutor';
@@ -1649,5 +1649,17 @@ export default function CursosPage() {
         )}
       </Modal>
     </div>
+  );
+}
+
+export default function CursosPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    }>
+      <CursosContent />
+    </Suspense>
   );
 }
