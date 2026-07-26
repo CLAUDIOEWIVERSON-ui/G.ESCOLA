@@ -32,6 +32,8 @@ import {
   Home
 } from 'lucide-react';
 import { toast } from 'sonner';
+import Image from 'next/image';
+import navalMissionLogo from '@/src/assets/images/regenerated_image_1782409801823.png';
 
 // Define the scale options
 const EVALUATION_SCALE = [
@@ -849,6 +851,27 @@ function AvaliacaoAlunoForm() {
 
           {/* Show weekly schedule even after submitting for QR Code, as requested! */}
           <div className="pt-6 border-t border-slate-100 text-left">
+            <div className="flex items-center gap-4 mb-6 pb-4 border-b border-slate-100">
+              <div className="relative w-16 h-16 shrink-0 flex items-center justify-center overflow-hidden bg-white">
+                <Image
+                  src={navalMissionLogo}
+                  alt="Logo Missão de Assessoria Naval"
+                  fill
+                  className="object-contain"
+                  referrerPolicy="no-referrer"
+                  sizes="64px"
+                  priority
+                />
+              </div>
+              <div className="text-left flex flex-col justify-center">
+                <h1 className="text-xs font-black tracking-widest text-slate-900 uppercase leading-none">
+                  MISSÃO DE ASSESSORIA NAVAL DO BRASIL EM SÃO TOMÉ E PRÍNCIPE
+                </h1>
+                <p className="text-[9px] font-black tracking-widest text-slate-500 uppercase mt-1 leading-none">
+                  Detalhe Semanal de Aulas
+                </p>
+              </div>
+            </div>
             <h3 className="text-xs font-bold text-slate-705 font-mono flex items-center gap-1.5 mb-4">
               <Clock className="h-4 w-4 text-indigo-650" />
               DETALHE SEMANAL DE AULAS COMPLETO (SÁBADO/DOMINGO LIVRE)
@@ -1381,6 +1404,27 @@ function AvaliacaoAlunoForm() {
                 
                 {showWeeklySchedule && (
                   <div className="p-4 bg-white space-y-4">
+                    <div className="flex items-center gap-4 mb-4 pb-4 border-b border-slate-100">
+                      <div className="relative w-16 h-16 shrink-0 flex items-center justify-center overflow-hidden bg-white">
+                        <Image
+                          src={navalMissionLogo}
+                          alt="Logo Missão de Assessoria Naval"
+                          fill
+                          className="object-contain"
+                          referrerPolicy="no-referrer"
+                          sizes="64px"
+                          priority
+                        />
+                      </div>
+                      <div className="text-left flex flex-col justify-center">
+                        <h1 className="text-xs font-black tracking-widest text-slate-900 uppercase leading-none">
+                          MISSÃO DE ASSESSORIA NAVAL DO BRASIL EM SÃO TOMÉ E PRÍNCIPE
+                        </h1>
+                        <p className="text-[9px] font-black tracking-widest text-slate-500 uppercase mt-1 leading-none">
+                          Detalhe Semanal de Aulas
+                        </p>
+                      </div>
+                    </div>
                     {scheduleLoading ? (
                       <p className="text-xs text-slate-500 italic animate-pulse font-mono py-4 text-center">Carregando cronograma das aulas...</p>
                     ) : Object.keys(scheduleData).length === 0 ? (
