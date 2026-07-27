@@ -87,7 +87,7 @@ export async function createClient() {
   const url = cleanUrl(rawUrl);
   const key = rawKey.trim();
 
-  return createServerClient(
+  const client = createServerClient(
     url,
     key,
     {
@@ -119,4 +119,15 @@ export async function createClient() {
       },
     }
   );
+
+  if (token) {
+    const originalGetUser = client.auth.getUser.bind(client.auth);
+    client.auth.getUser = async (jwt?: string) => {
+      return originalGetUser(jwt || token);
+    };
+  }
+
+  return client;
 }
+
+

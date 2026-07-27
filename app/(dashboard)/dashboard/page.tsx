@@ -725,7 +725,7 @@ export default function DashboardPage() {
                     paginatedAlunos.map((aluno: any) => {
                       const turmaData = Array.isArray((aluno as any).turma) ? (aluno as any).turma[0] : (aluno as any).turma;
                       const curso = Array.isArray(turmaData?.curso) ? turmaData.curso[0] : turmaData?.curso;
-                      const isPreInscrito = turmaData?.status === 'pré-inscrito(a)(s)';
+                      const isPreInscrito = turmaData?.status === 'pré-inscrito';
                       return (
                         <tr 
                           key={aluno.id} 
@@ -1048,7 +1048,7 @@ function TurmasListTable({ turmas, title, onDelete }: { turmas: any[], title: st
               </tr>
             ) : (
               paginatedTurmas.map((turma) => {
-                const isPreInscrito = turma.status === 'pré-inscrito(a)(s)';
+                const isPreInscrito = turma.status === 'pré-inscrito';
                 return (
                 <tr 
                   key={turma.id} 

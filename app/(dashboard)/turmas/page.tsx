@@ -680,7 +680,7 @@ function TurmasContent() {
       email: '', 
       matricula: '', 
       turma_id: viewingTurma?.id || '', 
-      status: 'ativo',
+      status: 'ativa',
       genero: 'masculino',
       tipo_aluno: 'militar',
       nif: '',
@@ -930,7 +930,7 @@ function TurmasContent() {
           nome: cleanNome,
           matricula: (matricula && matricula.length > 2) ? matricula.replace(/['"]/g, '') : fallbackMatricula,
           turma_id: viewingTurma.id,
-          status: 'ativo'
+          status: 'ativa'
         };
 
         if (email && email.includes('@')) studentData.email = email.replace(/['"]/g, '');
@@ -1006,7 +1006,7 @@ function TurmasContent() {
 
       let dbStatus = currentTurma.status || 'ativa';
       let dbAtiva = dbStatus === 'ativa';
-      if (dbStatus === 'pré-inscrito(a)(s)') {
+      if (dbStatus === 'pré-inscrito') {
         dbStatus = 'ativa';
         dbAtiva = false;
       }
@@ -1294,12 +1294,12 @@ function TurmasContent() {
                       "text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border",
                       turma.status === 'concluída' ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
                       turma.status === 'cancelada' ? "bg-red-50 text-red-600 border-red-100" :
-                      turma.status === 'pré-inscrito(a)(s)' ? "bg-cyan-50 text-cyan-600 border-cyan-100" :
+                      turma.status === 'pré-inscrito' ? "bg-cyan-50 text-cyan-600 border-cyan-100" :
                       "bg-blue-50 text-blue-600 border-blue-100"
                     )}>
                       {turma.status === 'concluída' ? t.classes.completed : 
                        turma.status === 'cancelada' ? t.classes.cancelled : 
-                       turma.status === 'pré-inscrito(a)(s)' ? 'PRÉ-INSCRITO(A)(S)' : t.classes.active}
+                       turma.status === 'pré-inscrito' ? 'PRÉ-INSCRITO(A)(S)' : t.classes.active}
                     </span>
                     {turma.internacional && (
                       <span className={cn(
@@ -1778,7 +1778,7 @@ function TurmasContent() {
                 <option value="ativa">{t.classes.active}</option>
                 <option value="concluída">{t.classes.completed}</option>
                 <option value="cancelada">{t.classes.cancelled}</option>
-                <option value="pré-inscrito(a)(s)">Pré-inscrito(a)(s)</option>
+                <option value="pré-inscrito">Pré-inscrito(a)(s)</option>
               </select>
             </div>
 
@@ -2526,7 +2526,7 @@ function TurmasContent() {
                     "inline-flex items-center px-2 py-0.5 mt-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
                     viewingTurma?.status === 'ativa'
                       ? "bg-green-50 text-green-700 border border-green-200"
-                      : viewingTurma?.status === 'pré-inscrito(a)(s)'
+                      : viewingTurma?.status === 'pré-inscrito'
                       ? "bg-blue-50 text-blue-700 border border-blue-200"
                       : viewingTurma?.status === 'cancelada'
                       ? "bg-orange-50 text-orange-700 border border-orange-200"
@@ -2534,7 +2534,7 @@ function TurmasContent() {
                   )}>
                     ● {viewingTurma?.status === 'ativa' 
                         ? 'ATIVA (Acesso Normal)' 
-                        : viewingTurma?.status === 'pré-inscrito(a)(s)'
+                        : viewingTurma?.status === 'pré-inscrito'
                         ? 'PRÉ-INSCRITO(A)(S)'
                         : viewingTurma?.status === 'cancelada'
                         ? 'CANCELADA'

@@ -484,13 +484,13 @@ export async function GET() {
         tableName: 'turmas',
         columnName: 'status',
         fileName: '51_add_pre_inscrito_status.sql',
-        description: 'Adiciona "pré-inscrito(a)(s)" ao enum turma_status_enum para uso nas turmas.',
+        description: 'Adiciona "pré-inscrito" ao enum turma_status_enum para uso nas turmas.',
         isColumn: false,
         checkFn: async () => {
           const { error } = await supabaseAdmin
             .from('turmas')
             .select('status')
-            .eq('status', 'pré-inscrito(a)(s)' as any)
+            .eq('status', 'pré-inscrito' as any)
             .limit(1);
           return error;
         }
@@ -516,7 +516,7 @@ export async function GET() {
             code === '42P01' || 
             code === 'PGRST204' ||
             msg.includes('relation') && (msg.includes('does not exist') || msg.includes('missing')) ||
-            (item.isColumn && (code === '42703' || msg.includes('column') && msg.includes('does not exist')))
+            (item.isColumn && (code === '42703' || msg.includes('column') && msg.includes('does not exist'))) || code === '22P02'
           ) {
             status = 'missing';
             errorMessage = error.message;

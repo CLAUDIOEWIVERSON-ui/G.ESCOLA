@@ -11,6 +11,7 @@ export async function GET() {
     // Validar autenticação do usuário
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
+      console.error('db-size auth error:', authError, 'user:', user);
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
 
