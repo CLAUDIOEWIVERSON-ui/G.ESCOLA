@@ -1,18 +1,13 @@
 const fs = require('fs');
-let content = fs.readFileSync('hooks/useCachedData.ts', 'utf8');
+let file = 'app/(dashboard)/dashboard/page.tsx';
+let content = fs.readFileSync(file, 'utf8');
 
-const target = `      const activeCursos = cursosRes.data || [];
-      const activeTurmas = turmasRes.data || [];
-      const activeAlunos = alunosRes.data || [];`;
+if (!content.includes('Printer')) {
+  content = content.replace("  Trash2\n}", "  Trash2,\n  Printer\n}");
+}
 
-const replacement = `      const activeCursos = cursosRes.data || [];
-      const activeTurmas = (turmasRes.data || []).map((t: any) => {
-        if (t.status === 'ativa' && t.ativa === false) {
-          return { ...t, status: 'pré-inscrito(a)(s)' };
-        }
-        return t;
-      });
-      const activeAlunos = alunosRes.data || [];`;
+if (!content.includes('navalMissionLogo')) {
+  content = content.replace("import Image from 'next/image';", "import Image from 'next/image';\nimport navalMissionLogo from '@/src/assets/images/regenerated_image_1782409801823.png';");
+}
 
-content = content.replace(target, replacement);
-fs.writeFileSync('hooks/useCachedData.ts', content);
+fs.writeFileSync(file, content);
