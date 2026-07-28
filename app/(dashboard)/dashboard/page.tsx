@@ -724,13 +724,14 @@ export default function DashboardPage() {
                   <tr className="text-[10px] font-bold text-slate-400 border-b border-slate-100 uppercase tracking-wider">
                     <th className="px-6 py-4">{t.students.name}</th>
                     <th className="px-6 py-4">{t.dashboard.courseLocation}</th>
+                    <th className="px-6 py-4">{language === 'pt' ? 'Documento' : 'Document'}</th>
                     <th className="px-6 py-4 text-center">{t.dashboard.startEnd}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50 text-sm">
                   {alunosExterior.length === 0 ? (
                     <tr>
-                      <td colSpan={3} className="px-6 py-10 text-center text-slate-400 italic">
+                      <td colSpan={4} className="px-6 py-10 text-center text-slate-400 italic">
                         {t.common.noInternationalStudents}
                       </td>
                     </tr>
@@ -801,6 +802,9 @@ export default function DashboardPage() {
                           <td className="px-6 py-4">
                             <div className="text-slate-600">{curso?.nome || '-'}</div>
                             <div className="text-[10px] text-slate-400 uppercase font-bold">{turmaData?.localizacao || '-'}</div>
+                          </td>
+                          <td className="px-6 py-4 text-slate-500 font-mono text-xs">
+                            {turmaData?.documento_criacao || curso?.documento_criacao || '-'}
                           </td>
                           <td className="px-6 py-4 text-center text-slate-500 font-mono text-xs">
                             {turmaData?.internacional ? (
@@ -1094,13 +1098,14 @@ export default function DashboardPage() {
                   <th className="p-2 border-r border-black font-bold uppercase w-[60px] text-center">{language === 'pt' ? 'Foto' : 'Photo'}</th>
                   <th className="p-2 border-r border-black font-bold uppercase">{t.students.name}</th>
                   <th className="p-2 border-r border-black font-bold uppercase">{t.dashboard.courseLocation}</th>
+                  <th className="p-2 border-r border-black font-bold uppercase">{language === 'pt' ? 'Documento' : 'Document'}</th>
                   <th className="p-2 font-bold uppercase text-center">{t.dashboard.startEnd}</th>
                 </tr>
               </thead>
               <tbody className="text-[11px]">
                 {alunosExterior.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="p-4 text-center italic border-b border-black">
+                    <td colSpan={6} className="p-4 text-center italic border-b border-black">
                       {t.common.noInternationalStudents}
                     </td>
                   </tr>
@@ -1151,11 +1156,9 @@ export default function DashboardPage() {
                           <div className="text-[9px] uppercase mt-0.5 text-slate-600 font-medium">
                             {turmaData?.nome ? `${turmaData.nome} • ` : ''}{turmaData?.localizacao || '-'}
                           </div>
-                          {(turmaData?.documento_criacao || curso?.documento_criacao) && (
-                            <div className="text-[8px] font-bold font-mono text-black uppercase mt-0.5">
-                              Doc: {turmaData?.documento_criacao || curso?.documento_criacao}
-                            </div>
-                          )}
+                        </td>
+                        <td className="p-2 border-r border-black align-middle text-center font-mono font-bold">
+                          {turmaData?.documento_criacao || curso?.documento_criacao || '-'}
                         </td>
                         <td className="p-2 text-center align-middle border-black">
                           {turmaData?.internacional ? (
