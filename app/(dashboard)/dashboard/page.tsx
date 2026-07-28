@@ -1010,12 +1010,14 @@ export default function DashboardPage() {
               @media print {
                 @page {
                   size: A4 portrait;
-                  margin: 12mm 15mm;
+                  margin: 10mm 12mm;
                 }
                 html, body {
-                  background: white !important;
+                  background: #ffffff !important;
+                  color: #000000 !important;
                   margin: 0 !important;
                   padding: 0 !important;
+                  width: 100% !important;
                   height: auto !important;
                   min-height: 0 !important;
                   overflow: visible !important;
@@ -1028,41 +1030,37 @@ export default function DashboardPage() {
                   padding: 0 !important;
                   overflow: hidden !important;
                 }
+                main, div {
+                  overflow: visible !important;
+                }
                 body * {
                   visibility: hidden !important;
-                }
-                *:not(#print-exterior-sheet):not(#print-exterior-sheet *) {
-                  height: 0 !important;
-                  min-height: 0 !important;
-                  max-height: 0 !important;
-                  margin: 0 !important;
-                  padding: 0 !important;
-                  border: none !important;
-                  overflow: hidden !important;
                 }
                 #print-exterior-sheet, #print-exterior-sheet * {
                   visibility: visible !important;
                 }
                 #print-exterior-sheet {
                   display: block !important;
-                  position: static !important;
+                  position: absolute !important;
+                  left: 0 !important;
+                  top: 0 !important;
                   width: 100% !important;
                   height: auto !important;
                   min-height: 0 !important;
-                  margin: 0 auto !important;
+                  margin: 0 !important;
                   padding: 0 !important;
-                  background: white !important;
+                  background: #ffffff !important;
                   box-shadow: none !important;
                   border: none !important;
-                  page-break-inside: auto !important;
                 }
                 table {
                   page-break-inside: auto !important;
                   width: 100% !important;
+                  border-collapse: collapse !important;
                 }
                 tr {
                   page-break-inside: avoid !important;
-                  page-break-after: auto !important;
+                  break-inside: avoid !important;
                 }
                 thead {
                   display: table-header-group !important;
