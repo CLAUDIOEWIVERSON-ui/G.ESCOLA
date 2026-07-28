@@ -255,19 +255,21 @@ export function useDashboardStats() {
               internacional,
               localizacao,
               grupo_responsavel,
+              documento_criacao,
               curso:cursos(
                 nome,
-                grupo_responsavel
+                grupo_responsavel,
+                documento_criacao
               )
             )
           `)
           .eq('turma.internacional', true)
           .is('deleted_at', null),
         supabase.from('cursos')
-          .select('id, nome, categoria')
+          .select('id, nome, categoria, documento_criacao')
           .is('deleted_at', null),
         supabase.from('turmas')
-          .select('id, nome, ano, data_inicio, data_fim, status, internacional, localizacao, periodo, capacidade_max, instrutor, grupo_responsavel, curso_id, curso:cursos(id, nome, categoria, grupo_responsavel)')
+          .select('id, nome, ano, data_inicio, data_fim, status, internacional, localizacao, periodo, capacidade_max, instrutor, grupo_responsavel, curso_id, documento_criacao, curso:cursos(id, nome, categoria, grupo_responsavel, documento_criacao)')
           .is('deleted_at', null),
         supabase.from('alunos')
           .select('id, turma_id')
