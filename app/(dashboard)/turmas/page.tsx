@@ -223,9 +223,9 @@ function TurmasContent() {
   const getStudentPhoto = (student: any) => {
     if (student?.foto_url) return student.foto_url;
     if (student?.tipo_aluno === 'civil') {
-      return student?.genero === 'feminino' ? (femaleAvatar.src || femaleAvatar) : (maleAvatar.src || maleAvatar);
+      return student?.genero === 'feminino' ? femaleAvatar : maleAvatar;
     }
-    return student?.genero === 'feminino' ? (militaryFemaleAvatar.src || militaryFemaleAvatar) : (militaryMaleAvatar.src || militaryMaleAvatar);
+    return student?.genero === 'feminino' ? militaryFemaleAvatar : militaryMaleAvatar;
   };
 
   const handleOpenPrintRoster = async (turma: any) => {
@@ -1455,39 +1455,37 @@ function TurmasContent() {
                   <Camera size={13} className="text-indigo-400 group-hover/print-roster:text-white transition-colors shrink-0" />
                 </button>
 
-                {!turma.internacional && (
-                  <div className="grid grid-cols-2 gap-2">
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDirectPrintAttendance(turma, 'mensal');
-                      }}
-                      className="flex items-center justify-between p-2.5 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white group/print transition-all cursor-pointer"
-                    >
-                      <div className="flex items-center gap-1.5 text-emerald-700 group-hover/print:text-white transition-colors">
-                        <Printer size={13} />
-                        <span className="text-[8.5px] font-black uppercase tracking-wider">
-                          {language === 'pt' ? 'Folha Mensal' : 'Monthly Sheet'}
-                        </span>
-                      </div>
-                    </button>
+                <div className="grid grid-cols-2 gap-2">
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDirectPrintAttendance(turma, 'mensal');
+                    }}
+                    className="flex items-center justify-between p-2.5 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white group/print transition-all cursor-pointer"
+                  >
+                    <div className="flex items-center gap-1.5 text-emerald-700 group-hover/print:text-white transition-colors">
+                      <Printer size={13} />
+                      <span className="text-[8.5px] font-black uppercase tracking-wider">
+                        {language === 'pt' ? 'Folha Mensal' : 'Monthly Sheet'}
+                      </span>
+                    </div>
+                  </button>
 
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDirectPrintAttendance(turma, 'semanal');
-                      }}
-                      className="flex items-center justify-between p-2.5 rounded-xl bg-teal-50 text-teal-700 hover:bg-teal-600 hover:text-white group/print-week transition-all cursor-pointer"
-                    >
-                      <div className="flex items-center gap-1.5 text-teal-700 group-hover/print-week:text-white transition-colors">
-                        <Calendar size={13} />
-                        <span className="text-[8.5px] font-black uppercase tracking-wider">
-                          {language === 'pt' ? 'Folha Semanal' : 'Weekly Sheet'}
-                        </span>
-                      </div>
-                    </button>
-                  </div>
-                )}
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDirectPrintAttendance(turma, 'semanal');
+                    }}
+                    className="flex items-center justify-between p-2.5 rounded-xl bg-teal-50 text-teal-700 hover:bg-teal-600 hover:text-white group/print-week transition-all cursor-pointer"
+                  >
+                    <div className="flex items-center gap-1.5 text-teal-700 group-hover/print-week:text-white transition-colors">
+                      <Calendar size={13} />
+                      <span className="text-[8.5px] font-black uppercase tracking-wider">
+                        {language === 'pt' ? 'Folha Semanal' : 'Weekly Sheet'}
+                      </span>
+                    </div>
+                  </button>
+                </div>
 
                 <div className="space-y-1.5 px-1 pt-1">
                   <div className="flex justify-between items-center text-[8px] font-black uppercase tracking-widest text-slate-400">
@@ -1967,10 +1965,15 @@ function TurmasContent() {
         title={`${t.nav.students} - ${viewingTurma?.nome}`}
       >
         <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-100">
-          <div>
-            <p className="text-xs text-slate-500 font-medium italic">
-              {alunosInTurma.length} {language === 'pt' ? 'alunos matriculados' : 'students enrolled'}
-            </p>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-black text-indigo-800 bg-indigo-50 border border-indigo-200 px-3 py-1 rounded-lg uppercase tracking-wide">
+              {language === 'pt' ? `Total para Contagem: ${alunosInTurma.length} alunos` : `Total Count: ${alunosInTurma.length} students`}
+            </span>
+            {viewingTurma?.internacional && (
+              <span className="bg-amber-100 text-amber-800 border border-amber-300 text-[10px] font-black uppercase px-2.5 py-1 rounded-lg">
+                {language === 'pt' ? 'Exterior' : 'International'}
+              </span>
+            )}
           </div>
           <div className="flex flex-wrap gap-2">
             <button
@@ -1981,15 +1984,13 @@ function TurmasContent() {
               <Printer size={13} strokeWidth={2.5} />
               {language === 'pt' ? 'Relação com Fotos' : 'Roster with Photos'}
             </button>
-            {!viewingTurma?.internacional && (
-              <button
-                onClick={() => handleOpenPrintAttendance(viewingTurma)}
-                className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-100 px-3 py-1.5 rounded-lg hover:bg-emerald-100 hover:text-emerald-800 transition-all cursor-pointer shadow-sm shadow-emerald-100"
-              >
-                <Printer size={13} strokeWidth={2.5} />
-                {language === 'pt' ? 'Folha de Frequência' : 'Attendance Sheet'}
-              </button>
-            )}
+            <button
+              onClick={() => handleOpenPrintAttendance(viewingTurma)}
+              className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-100 px-3 py-1.5 rounded-lg hover:bg-emerald-100 hover:text-emerald-800 transition-all cursor-pointer shadow-sm shadow-emerald-100"
+            >
+              <Printer size={13} strokeWidth={2.5} />
+              {language === 'pt' ? 'Folha de Frequência' : 'Attendance Sheet'}
+            </button>
             {canEditViewingTurma && (
               <>
                 <button
@@ -2112,8 +2113,8 @@ function TurmasContent() {
               {alunosInTurma.map((aluno, index) => (
                 <div key={aluno.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100 group">
                   <div className="flex items-center gap-3">
-                    <span className="font-mono text-xs font-bold text-slate-400 min-w-[1.5rem] text-right shrink-0">
-                      {index + 1}
+                    <span className="font-mono text-xs font-black text-indigo-700 bg-indigo-50 border border-indigo-200/80 px-2 py-1 rounded-md min-w-[2.5rem] text-center shrink-0 shadow-2xs">
+                      Nº {index + 1}
                     </span>
                     <div 
                       className={cn(
@@ -3217,7 +3218,7 @@ function TurmasContent() {
                     {language === 'pt' ? 'Imprimir Relação de Alunos (com Foto)' : 'Print Student Roster (with Photos)'}
                   </h3>
                   <p className="text-xs text-slate-400">
-                    {rosterTurma?.nome} • {rosterAlunos.length} {language === 'pt' ? 'alunos' : 'students'}
+                    {rosterTurma?.nome} • {rosterAlunos.length} {language === 'pt' ? 'alunos matriculados' : 'students registered'}
                   </p>
                 </div>
               </div>
@@ -3382,7 +3383,7 @@ function TurmasContent() {
                   {/* Summary Details Grid */}
                   <div className="grid grid-cols-3 gap-3 font-semibold uppercase text-[10px] bg-slate-50 p-2.5 rounded border border-slate-300">
                     <div className="flex flex-col">
-                      <span className="text-slate-500 font-bold">{language === 'pt' ? 'Turma:' : 'Class/Group:'}</span>
+                      <span className="text-slate-500 font-bold">{language === 'pt' ? 'Turma / Grupo:' : 'Class / Group:'}</span>
                       <span className="font-extrabold text-slate-900 text-xs">{rosterTurma?.nome || '—'}</span>
                     </div>
                     <div className="flex flex-col">
@@ -3390,7 +3391,7 @@ function TurmasContent() {
                       <span className="font-extrabold text-slate-900 text-xs truncate">{rosterTurma?.curso?.nome || rosterTurma?.nome || '—'}</span>
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-slate-500 font-bold">{language === 'pt' ? 'Instrutor / Encarregado:' : 'Instructor:'}</span>
+                      <span className="text-slate-500 font-bold">{language === 'pt' ? 'Instrutor / Responsável:' : 'Instructor:'}</span>
                       <span className="font-extrabold text-slate-900 text-xs">{rosterProfessorName || rosterTurma?.instrutor || '—'}</span>
                     </div>
                     <div className="flex flex-col mt-1">
@@ -3398,8 +3399,10 @@ function TurmasContent() {
                       <span className="font-bold text-slate-800">{rosterTurma?.ano || '—'} • {rosterTurma?.periodo || '—'}</span>
                     </div>
                     <div className="flex flex-col mt-1">
-                      <span className="text-slate-500 font-bold">{language === 'pt' ? 'Total de Alunos:' : 'Total Students:'}</span>
-                      <span className="font-bold text-slate-800">{rosterAlunos.length} {language === 'pt' ? 'alunos' : 'students'}</span>
+                      <span className="text-slate-500 font-bold">{language === 'pt' ? 'Contagem Total:' : 'Total Count:'}</span>
+                      <span className="font-extrabold text-indigo-900 text-xs bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded w-fit">
+                        {rosterAlunos.length} {language === 'pt' ? 'ALUNOS' : 'STUDENTS'}
+                      </span>
                     </div>
                     <div className="flex flex-col mt-1">
                       <span className="text-slate-500 font-bold">{language === 'pt' ? 'Data de Emissão:' : 'Issue Date:'}</span>
@@ -3413,7 +3416,7 @@ function TurmasContent() {
                   <table className="print-roster-table w-full border-collapse border border-black table-fixed">
                     <thead>
                       <tr className="bg-neutral-100 text-[9px] font-extrabold uppercase text-center h-6 text-black border-b border-black">
-                        <th className="w-[32px] border border-black p-1 text-center">#</th>
+                        <th className="w-[42px] border border-black p-1 text-center font-black">Nº</th>
                         <th className="w-[64px] border border-black p-1 text-center">{language === 'pt' ? 'Foto' : 'Photo'}</th>
                         <th className="border border-black p-1 text-left pl-2">
                           {language === 'pt' ? 'Nome Completo do Aluno / Posto / Graduação' : 'Full Student Name / Rank'}
@@ -3421,7 +3424,7 @@ function TurmasContent() {
                         <th className="w-[120px] border border-black p-1 text-center">
                           {language === 'pt' ? 'NIP / Matrícula' : 'NIP / ID'}
                         </th>
-                        <th className="w-[150px] border border-black p-1 text-center">
+                        <th className="w-[140px] border border-black p-1 text-center">
                           {language === 'pt' ? 'Assinatura / Visto' : 'Signature / Notes'}
                         </th>
                       </tr>
@@ -3443,24 +3446,23 @@ function TurmasContent() {
                         rosterAlunos.map((student: any, idx: number) => {
                           const photoSrc = getStudentPhoto(student);
                           const fallbackPhoto = student.tipo_aluno === 'civil'
-                            ? (student.genero === 'feminino' ? femaleAvatar.src : maleAvatar.src)
-                            : (student.genero === 'feminino' ? militaryFemaleAvatar.src : militaryMaleAvatar.src);
+                            ? (student.genero === 'feminino' ? femaleAvatar : maleAvatar)
+                            : (student.genero === 'feminino' ? militaryFemaleAvatar : militaryMaleAvatar);
 
                           return (
                             <tr key={student.id || idx} className="border-b border-black text-black">
-                              <td className="border border-black text-center font-mono font-bold text-xs p-1">
-                                {idx + 1}
+                              <td className="border border-black text-center font-mono font-black text-xs p-1 text-black bg-neutral-50/50">
+                                Nº {idx + 1}
                               </td>
                               <td className="border border-black p-1.5 text-center align-middle">
                                 <div className="w-[44px] h-[58px] mx-auto border border-black rounded-sm overflow-hidden bg-slate-100 flex items-center justify-center relative shadow-xs">
-                                  {/* Standard img tag for high print-rendering reliability */}
                                   {/* eslint-disable-next-line @next/next/no-img-element */}
                                   <img
                                     src={typeof photoSrc === 'string' ? photoSrc : (photoSrc?.src || fallbackPhoto)}
                                     alt={student.nome}
                                     className="w-full h-full object-cover"
                                     onError={(e) => {
-                                      e.currentTarget.src = fallbackPhoto;
+                                      e.currentTarget.src = typeof fallbackPhoto === 'string' ? fallbackPhoto : fallbackPhoto?.src;
                                     }}
                                   />
                                 </div>
