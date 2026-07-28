@@ -494,6 +494,21 @@ export async function GET() {
             .limit(1);
           return error;
         }
+      },
+      {
+        key: 'documento_criacao_turmas',
+        tableName: 'turmas',
+        columnName: 'documento_criacao',
+        fileName: '52_add_documento_criacao_to_turmas.sql',
+        description: 'Coluna documento_criacao na tabela de turmas para armazenar o documento de criação da turma (Ordem Interna, Portaria, CENPEM, ROV ou PGI).',
+        isColumn: true,
+        checkFn: async () => {
+          const { error } = await supabaseAdmin
+            .from('turmas')
+            .select('documento_criacao')
+            .limit(1);
+          return error;
+        }
       }
     ];
 

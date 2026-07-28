@@ -1582,6 +1582,11 @@ function BoletimContent() {
                   {language === 'pt' 
                     ? `Turma(s) ao qual participou: ${reportData.classObj?.nome || 'Não informada'}` 
                     : `Participated Class(es): ${reportData.classObj?.nome || 'Unassigned'}`}
+                  {(reportData.classObj?.documento_criacao || reportData.classObj?.curso?.documento_criacao) && (
+                    <span className="ml-2 font-mono text-slate-700">
+                      • Doc: {reportData.classObj?.documento_criacao || reportData.classObj?.curso?.documento_criacao}
+                    </span>
+                  )}
                 </p>
               </div>
 

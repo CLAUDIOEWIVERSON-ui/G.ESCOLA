@@ -749,6 +749,17 @@ export default function FrequenciaPage() {
                       {students.length} {language === 'pt' ? 'Ativos' : 'Active'}
                     </span>
                   </div>
+                  {(activeTurma?.documento_criacao || cursos.find(c => c.id === selectedCurso)?.documento_criacao) && (
+                    <>
+                      <div className="border-l border-slate-200 h-6 shrink-0" />
+                      <div>
+                        <span className="block opacity-65 font-bold uppercase text-[9px] tracking-wider text-slate-400">{language === 'pt' ? 'DOCUMENTO' : 'DOCUMENT'}</span>
+                        <span className="font-bold text-slate-800 font-mono">
+                          {activeTurma?.documento_criacao || cursos.find(c => c.id === selectedCurso)?.documento_criacao}
+                        </span>
+                      </div>
+                    </>
+                  )}
                   {formattedTurmaPeriod && (
                     <>
                       <div className="border-l border-slate-200 h-6 shrink-0" />

@@ -1148,7 +1148,14 @@ export default function DashboardPage() {
                         </td>
                         <td className="p-2 border-r border-black align-middle">
                           <div className="font-bold text-xs uppercase">{curso?.nome || '-'}</div>
-                          <div className="text-[9px] uppercase mt-0.5 text-slate-600">{turmaData?.localizacao || '-'}</div>
+                          <div className="text-[9px] uppercase mt-0.5 text-slate-600 font-medium">
+                            {turmaData?.nome ? `${turmaData.nome} • ` : ''}{turmaData?.localizacao || '-'}
+                          </div>
+                          {(turmaData?.documento_criacao || curso?.documento_criacao) && (
+                            <div className="text-[8px] font-bold font-mono text-black uppercase mt-0.5">
+                              Doc: {turmaData?.documento_criacao || curso?.documento_criacao}
+                            </div>
+                          )}
                         </td>
                         <td className="p-2 text-center align-middle border-black">
                           {turmaData?.internacional ? (

@@ -608,6 +608,7 @@ function TurmasContent() {
     setCurrentTurma(turma || { 
       nome: '', 
       curso_id: '', 
+      documento_criacao: '',
       categoria: activeCategory === 'all' ? 'expedito' : (activeCategory === 'exterior' ? 'expedito' : activeCategory),
       ano: new Date().getFullYear(), 
       periodo: 'manhã', 
@@ -1053,6 +1054,7 @@ function TurmasContent() {
       const payload = {
         nome: currentTurma.nome || '',
         curso_id: currentTurma.curso_id,
+        documento_criacao: typeof currentTurma.documento_criacao === 'string' ? currentTurma.documento_criacao.trim() || null : null,
         categoria: currentTurma.categoria || 'expedito',
         ano: currentTurma.ano || new Date().getFullYear(),
         periodo: currentTurma.periodo || 'manhã',
@@ -1387,9 +1389,9 @@ function TurmasContent() {
                 )}
                 <div className="flex flex-wrap items-center gap-2 mb-1">
                   <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] truncate">{turma.curso?.nome}</p>
-                  {turma.curso?.documento_criacao && (
-                    <span className="px-1.5 py-0.5 bg-blue-50 text-blue-700 text-[8px] font-bold uppercase rounded border border-blue-100 flex-shrink-0">
-                      Doc: {turma.curso.documento_criacao}
+                  {(turma.documento_criacao || turma.curso?.documento_criacao) && (
+                    <span className="px-1.5 py-0.5 bg-blue-50 text-blue-700 text-[8px] font-bold uppercase rounded border border-blue-100 flex-shrink-0 font-mono">
+                      Doc: {turma.documento_criacao || turma.curso?.documento_criacao}
                     </span>
                   )}
                 </div>
@@ -1641,6 +1643,19 @@ function TurmasContent() {
               />
             </div>
 
+            <div className="md:col-span-2">
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">
+                {language === 'pt' ? 'Documento (Ordem Interna / Portaria / CENPEM / ROV / PGI)' : 'Document (Internal Order / Decree / CENPEM / ROV / PGI)'}
+              </label>
+              <input
+                type="text"
+                value={currentTurma?.documento_criacao || ''}
+                onChange={(e) => setCurrentTurma({ ...currentTurma, documento_criacao: e.target.value })}
+                className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-sm font-bold text-slate-800 placeholder:text-slate-300 shadow-sm"
+                placeholder={language === 'pt' ? 'Ex: Ordem Interna nº 123/2024, Portaria 45/2024, CENPEM...' : 'Ex: Internal Order 123/2024, Decree 45/2024...'}
+              />
+            </div>
+
             <div>
               <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{t.classes.category}</label>
               <select
@@ -1716,7 +1731,14 @@ function TurmasContent() {
               <select
                 required
                 value={currentTurma?.curso_id || ''}
-                onChange={(e) => setCurrentTurma({ ...currentTurma, curso_id: e.target.value })}
+                onChange={(e) => {
+                  const selectedC = cursos.find((c: any) => c.id === e.target.value);
+                  setCurrentTurma({ 
+                    ...currentTurma, 
+                    curso_id: e.target.value,
+                    documento_criacao: currentTurma?.documento_criacao || selectedC?.documento_criacao || ''
+                  });
+                }}
                 className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none text-sm font-bold text-slate-800 appearance-none cursor-pointer shadow-sm"
               >
                 <option value="">{t.courses.selectCourse}</option>
@@ -2999,7 +3021,7 @@ function TurmasContent() {
                       </p>
                     </div>
                   </div>
-                  <div className="grid grid-cols-3 gap-6 font-semibold uppercase text-[10px]">
+                  <div className="grid grid-cols-4 gap-4 font-semibold uppercase text-[10px]">
                     <div className="flex flex-col">
                       <span>{language === 'pt' ? 'Professor(a):' : 'Instructor:'}</span>
                       <div className="border-b border-black h-8 flex items-end pb-1 text-xs font-bold px-1 whitespace-nowrap overflow-hidden">
@@ -3010,6 +3032,15 @@ function TurmasContent() {
                       <span>{language === 'pt' ? 'Turma:' : 'Class/Group:'}</span>
                       <div className="border-b border-black h-8 flex items-end pb-1 text-xs font-bold px-1 whitespace-nowrap overflow-hidden">
                         {printClassName}
+                      </div>
+                    </div>
+                    <div className="flex flex-col">
+                      <span>{language === 'pt' ? 'Documento:' : 'Document:'}</span>
+                      <div className="border-b border-black h-8 flex items-end pb-1 text-xs font-bold px-1 whitespace-nowrap overflow-hidden font-mono">
+                        {(() => {
+                          const targetT = turmas.find(t => t.id === printTurmaId);
+                          return targetT?.documento_criacao || targetT?.curso?.documento_criacao || '—';
+                        })()}
                       </div>
                     </div>
                     <div className="flex flex-col">
@@ -3381,7 +3412,7 @@ function TurmasContent() {
                   </div>
 
                   {/* Summary Details Grid */}
-                  <div className="grid grid-cols-3 gap-3 font-semibold uppercase text-[10px] bg-slate-50 p-2.5 rounded border border-slate-300">
+                  <div className="grid grid-cols-4 gap-3 font-semibold uppercase text-[10px] bg-slate-50 p-2.5 rounded border border-slate-300">
                     <div className="flex flex-col">
                       <span className="text-slate-500 font-bold">{language === 'pt' ? 'Turma / Grupo:' : 'Class / Group:'}</span>
                       <span className="font-extrabold text-slate-900 text-xs">{rosterTurma?.nome || '—'}</span>
@@ -3389,6 +3420,10 @@ function TurmasContent() {
                     <div className="flex flex-col">
                       <span className="text-slate-500 font-bold">{language === 'pt' ? 'Curso:' : 'Course:'}</span>
                       <span className="font-extrabold text-slate-900 text-xs truncate">{rosterTurma?.curso?.nome || rosterTurma?.nome || '—'}</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-slate-500 font-bold">{language === 'pt' ? 'Documento:' : 'Document:'}</span>
+                      <span className="font-extrabold text-blue-900 text-xs font-mono">{rosterTurma?.documento_criacao || rosterTurma?.curso?.documento_criacao || '—'}</span>
                     </div>
                     <div className="flex flex-col">
                       <span className="text-slate-500 font-bold">{language === 'pt' ? 'Instrutor / Responsável:' : 'Instructor:'}</span>
@@ -3404,7 +3439,7 @@ function TurmasContent() {
                         {rosterAlunos.length} {language === 'pt' ? 'ALUNOS' : 'STUDENTS'}
                       </span>
                     </div>
-                    <div className="flex flex-col mt-1">
+                    <div className="flex flex-col mt-1 col-span-2">
                       <span className="text-slate-500 font-bold">{language === 'pt' ? 'Data de Emissão:' : 'Issue Date:'}</span>
                       <span className="font-bold text-slate-800">{new Date().toLocaleDateString(language === 'pt' ? 'pt-BR' : 'en-US')}</span>
                     </div>
