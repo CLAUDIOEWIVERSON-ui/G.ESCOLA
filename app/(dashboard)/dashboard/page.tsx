@@ -1052,36 +1052,66 @@ export default function DashboardPage() {
                   
                   <table className="w-full text-left border-collapse border border-black mb-4">
                     <thead>
-                      <tr className="border-b border-black bg-gray-100">
-                        <th className="p-2 border-r border-black font-bold uppercase text-[11px]">{t.students.name}</th>
-                        <th className="p-2 border-r border-black font-bold uppercase text-[11px]">{t.dashboard.courseLocation}</th>
-                        <th className="p-2 font-bold uppercase text-[11px] text-center">{t.dashboard.startEnd}</th>
+                      <tr className="border-b border-black bg-gray-100 text-[11px]">
+                        <th className="p-2 border-r border-black font-bold uppercase w-[35px] text-center">#</th>
+                        <th className="p-2 border-r border-black font-bold uppercase w-[60px] text-center">{language === 'pt' ? 'Foto' : 'Photo'}</th>
+                        <th className="p-2 border-r border-black font-bold uppercase">{t.students.name}</th>
+                        <th className="p-2 border-r border-black font-bold uppercase">{t.dashboard.courseLocation}</th>
+                        <th className="p-2 font-bold uppercase text-center">{t.dashboard.startEnd}</th>
                       </tr>
                     </thead>
                     <tbody className="text-[11px]">
                       {alunosExterior.length === 0 ? (
                         <tr>
-                          <td colSpan={3} className="p-4 text-center italic border-b border-black">
+                          <td colSpan={5} className="p-4 text-center italic border-b border-black">
                             {t.common.noInternationalStudents}
                           </td>
                         </tr>
                       ) : (
-                        alunosExterior.map((aluno, idx) => {
+                        alunosExterior.map((aluno: any, idx: number) => {
                           const turmaData = Array.isArray(aluno.turma) ? aluno.turma[0] : aluno.turma;
                           const curso = Array.isArray(turmaData?.curso) ? turmaData.curso[0] : turmaData?.curso;
+                          
+                          const photoSrc = aluno.foto_url ||
+                            (aluno.tipo_aluno === 'civil'
+                              ? (aluno.genero === 'feminino' ? femaleAvatar : maleAvatar)
+                              : (aluno.genero === 'feminino' ? militaryFemaleAvatar : militaryMaleAvatar));
+                          const fallbackSrc = aluno.tipo_aluno === 'civil'
+                            ? (aluno.genero === 'feminino' ? femaleAvatar : maleAvatar)
+                            : (aluno.genero === 'feminino' ? militaryFemaleAvatar : militaryMaleAvatar);
+
+                          const photoUrlString = typeof photoSrc === 'string' ? photoSrc : (photoSrc?.src || '');
+                          const fallbackUrlString = typeof fallbackSrc === 'string' ? fallbackSrc : (fallbackSrc?.src || '');
+
                           return (
                             <tr key={`print-ext-${aluno.id || idx}`} className="border-b border-black">
-                              <td className="p-2 border-r border-black">
-                                <div className="font-bold">
+                              <td className="p-1 border-r border-black text-center font-mono font-bold align-middle">
+                                {idx + 1}
+                              </td>
+                              <td className="p-1.5 border-r border-black text-center align-middle">
+                                <div className="w-[42px] h-[56px] mx-auto border border-black rounded-sm overflow-hidden bg-slate-100 flex items-center justify-center relative">
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img
+                                    src={photoUrlString}
+                                    alt={aluno.nome}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      e.currentTarget.src = fallbackUrlString;
+                                    }}
+                                  />
+                                </div>
+                              </td>
+                              <td className="p-2 border-r border-black align-middle">
+                                <div className="font-bold text-xs uppercase">
                                   {aluno.posto_graduacao ? `${aluno.posto_graduacao} ` : ''}{aluno.nome}
                                 </div>
-                                <div className="text-[9px] uppercase mt-0.5">
+                                <div className="text-[9px] uppercase mt-0.5 text-slate-600 font-medium">
                                   {aluno.om || '-'}
                                 </div>
                               </td>
-                              <td className="p-2 border-r border-black">
-                                <div className="font-bold">{curso?.nome || '-'}</div>
-                                <div className="text-[9px] uppercase mt-0.5">{turmaData?.localizacao || '-'}</div>
+                              <td className="p-2 border-r border-black align-middle">
+                                <div className="font-bold text-xs uppercase">{curso?.nome || '-'}</div>
+                                <div className="text-[9px] uppercase mt-0.5 text-slate-600">{turmaData?.localizacao || '-'}</div>
                               </td>
                               <td className="p-2 text-center align-middle border-black">
                                 {turmaData?.internacional ? (
