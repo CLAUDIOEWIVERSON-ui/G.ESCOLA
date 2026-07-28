@@ -1004,149 +1004,187 @@ export default function DashboardPage() {
   
       {selectedCard === 'exterior' && (
         <>
-                {/* PRINT LAYOUT FOR ALUNOS EXTERIOR */}
-              <div className="hidden print:block fixed inset-0 bg-white z-[9999] p-8 overflow-visible">
-                <style dangerouslySetInnerHTML={{__html: `
-                  @media print {
-                    @page {
-                      size: A4 portrait;
-                      margin: 15mm;
-                    }
-                    html, body {
-                      background: white !important;
-                    }
-                    body * {
-                      visibility: hidden;
-                    }
-                    .print-exterior-container, .print-exterior-container * {
-                      visibility: visible;
-                    }
-                    .print-exterior-container {
-                      position: absolute;
-                      left: 0;
-                      top: 0;
-                      width: 100%;
-                    }
-                  }
-                `}} />
-                <div className="print-exterior-container text-black font-sans w-full max-w-full">
-                  <div className="flex flex-col items-center mb-8 border-b-2 border-black pb-4 relative">
-                    <div className="absolute left-0 top-0">
-                      <Image
-                        src={navalMissionLogo}
-                        alt="Logo Missão de Assessoria Naval"
-                        width={64}
-                        height={64}
-                        className="object-contain"
-                        referrerPolicy="no-referrer"
-                        priority
-                      />
-                    </div>
-                    <h1 className="text-xl font-extrabold uppercase tracking-tight text-center mt-2">
-                      {language === 'pt' ? 'MISSÃO DE ASSESSORIA NAVAL' : 'NAVAL ADVISORY MISSION'}
-                    </h1>
-                    <h2 className="text-lg font-bold uppercase tracking-wide text-center mt-1">
-                      {language === 'pt' ? 'ALUNOS NO EXTERIOR' : 'STUDENTS ABROAD'}
-                    </h2>
-                  </div>
-                  
-                  <table className="w-full text-left border-collapse border border-black mb-4">
-                    <thead>
-                      <tr className="border-b border-black bg-gray-100 text-[11px]">
-                        <th className="p-2 border-r border-black font-bold uppercase w-[35px] text-center">#</th>
-                        <th className="p-2 border-r border-black font-bold uppercase w-[60px] text-center">{language === 'pt' ? 'Foto' : 'Photo'}</th>
-                        <th className="p-2 border-r border-black font-bold uppercase">{t.students.name}</th>
-                        <th className="p-2 border-r border-black font-bold uppercase">{t.dashboard.courseLocation}</th>
-                        <th className="p-2 font-bold uppercase text-center">{t.dashboard.startEnd}</th>
-                      </tr>
-                    </thead>
-                    <tbody className="text-[11px]">
-                      {alunosExterior.length === 0 ? (
-                        <tr>
-                          <td colSpan={5} className="p-4 text-center italic border-b border-black">
-                            {t.common.noInternationalStudents}
-                          </td>
-                        </tr>
-                      ) : (
-                        alunosExterior.map((aluno: any, idx: number) => {
-                          const turmaData = Array.isArray(aluno.turma) ? aluno.turma[0] : aluno.turma;
-                          const curso = Array.isArray(turmaData?.curso) ? turmaData.curso[0] : turmaData?.curso;
-                          
-                          const photoSrc = aluno.foto_url ||
-                            (aluno.tipo_aluno === 'civil'
-                              ? (aluno.genero === 'feminino' ? femaleAvatar : maleAvatar)
-                              : (aluno.genero === 'feminino' ? militaryFemaleAvatar : militaryMaleAvatar));
-                          const fallbackSrc = aluno.tipo_aluno === 'civil'
-                            ? (aluno.genero === 'feminino' ? femaleAvatar : maleAvatar)
-                            : (aluno.genero === 'feminino' ? militaryFemaleAvatar : militaryMaleAvatar);
-
-                          const photoUrlString = typeof photoSrc === 'string' ? photoSrc : (photoSrc?.src || '');
-                          const fallbackUrlString = typeof fallbackSrc === 'string' ? fallbackSrc : (fallbackSrc?.src || '');
-
-                          return (
-                            <tr key={`print-ext-${aluno.id || idx}`} className="border-b border-black">
-                              <td className="p-1 border-r border-black text-center font-mono font-bold align-middle">
-                                {idx + 1}
-                              </td>
-                              <td className="p-1.5 border-r border-black text-center align-middle">
-                                <div className="w-[42px] h-[56px] mx-auto border border-black rounded-sm overflow-hidden bg-slate-100 flex items-center justify-center relative">
-                                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                                  <img
-                                    src={photoUrlString}
-                                    alt={aluno.nome}
-                                    className="w-full h-full object-cover"
-                                    onError={(e) => {
-                                      e.currentTarget.src = fallbackUrlString;
-                                    }}
-                                  />
-                                </div>
-                              </td>
-                              <td className="p-2 border-r border-black align-middle">
-                                <div className="font-bold text-xs uppercase">
-                                  {aluno.posto_graduacao ? `${aluno.posto_graduacao} ` : ''}{aluno.nome}
-                                </div>
-                                <div className="text-[9px] uppercase mt-0.5 text-slate-600 font-medium">
-                                  {aluno.om || '-'}
-                                </div>
-                              </td>
-                              <td className="p-2 border-r border-black align-middle">
-                                <div className="font-bold text-xs uppercase">{curso?.nome || '-'}</div>
-                                <div className="text-[9px] uppercase mt-0.5 text-slate-600">{turmaData?.localizacao || '-'}</div>
-                              </td>
-                              <td className="p-2 text-center align-middle border-black">
-                                {turmaData?.internacional ? (
-                                  <div>
-                                    <span className="font-bold whitespace-nowrap">
-                                      {aluno.data_inicio_curso?.trim() ? aluno.data_inicio_curso.split('-').reverse().join('/') : (turmaData?.data_inicio?.trim() ? turmaData.data_inicio.split('-').reverse().join('/') : '—')}
-                                    </span>
-                                    <span className="text-[9px] uppercase font-bold mx-1">a</span>
-                                    <span className="font-bold whitespace-nowrap">
-                                      {aluno.data_fim_curso?.trim() ? aluno.data_fim_curso.split('-').reverse().join('/') : (turmaData?.data_fim?.trim() ? turmaData.data_fim.split('-').reverse().join('/') : '—')}
-                                    </span>
-                                  </div>
-                                ) : (
-                                  <div>
-                                    <span className="font-bold whitespace-nowrap">
-                                      {turmaData?.data_inicio ? turmaData.data_inicio.split('-').reverse().join('/') : '—'}
-                                    </span>
-                                    <span className="text-[9px] uppercase font-bold mx-1">a</span>
-                                    <span className="font-bold whitespace-nowrap">
-                                      {turmaData?.data_fim ? turmaData.data_fim.split('-').reverse().join('/') : '—'}
-                                    </span>
-                                  </div>
-                                )}
-                              </td>
-                            </tr>
-                          );
-                        })
-                      )}
-                    </tbody>
-                  </table>
-                  <div className="text-[9px] text-right">
-                    {language === 'pt' ? 'Gerado em' : 'Generated on'} {new Date().toLocaleDateString(language === 'pt' ? 'pt-BR' : 'en-US')}
-                  </div>
-                </div>
+          {/* PRINT LAYOUT FOR ALUNOS EXTERIOR */}
+          <div id="print-exterior-sheet" className="hidden print:block text-black font-sans w-full max-w-full bg-white p-2">
+            <style dangerouslySetInnerHTML={{__html: `
+              @media print {
+                @page {
+                  size: A4 portrait;
+                  margin: 12mm 15mm;
+                }
+                html, body {
+                  background: white !important;
+                  margin: 0 !important;
+                  padding: 0 !important;
+                  height: auto !important;
+                  min-height: 0 !important;
+                  overflow: visible !important;
+                }
+                header, nav, aside, footer, button, .print\\:hidden, .no-print {
+                  display: none !important;
+                  height: 0 !important;
+                  width: 0 !important;
+                  margin: 0 !important;
+                  padding: 0 !important;
+                  overflow: hidden !important;
+                }
+                body * {
+                  visibility: hidden !important;
+                }
+                *:not(#print-exterior-sheet):not(#print-exterior-sheet *) {
+                  height: 0 !important;
+                  min-height: 0 !important;
+                  max-height: 0 !important;
+                  margin: 0 !important;
+                  padding: 0 !important;
+                  border: none !important;
+                  overflow: hidden !important;
+                }
+                #print-exterior-sheet, #print-exterior-sheet * {
+                  visibility: visible !important;
+                }
+                #print-exterior-sheet {
+                  display: block !important;
+                  position: static !important;
+                  width: 100% !important;
+                  height: auto !important;
+                  min-height: 0 !important;
+                  margin: 0 auto !important;
+                  padding: 0 !important;
+                  background: white !important;
+                  box-shadow: none !important;
+                  border: none !important;
+                  page-break-inside: auto !important;
+                }
+                table {
+                  page-break-inside: auto !important;
+                  width: 100% !important;
+                }
+                tr {
+                  page-break-inside: avoid !important;
+                  page-break-after: auto !important;
+                }
+                thead {
+                  display: table-header-group !important;
+                }
+              }
+            `}} />
+            <div className="flex flex-col items-center mb-6 border-b-2 border-black pb-4 relative">
+              <div className="absolute left-0 top-0">
+                <Image
+                  src={navalMissionLogo}
+                  alt="Logo Missão de Assessoria Naval"
+                  width={60}
+                  height={60}
+                  className="object-contain"
+                  referrerPolicy="no-referrer"
+                  priority
+                />
               </div>
+              <h1 className="text-base font-extrabold uppercase tracking-tight text-center mt-1">
+                {language === 'pt' ? 'MISSÃO DE ASSESSORIA NAVAL DO BRASIL' : 'NAVAL ADVISORY MISSION OF BRAZIL'}
+              </h1>
+              <h2 className="text-sm font-bold uppercase tracking-wide text-center mt-0.5">
+                {language === 'pt' ? 'RELAÇÃO DE ALUNOS NO EXTERIOR' : 'STUDENTS ABROAD ROSTER'}
+              </h2>
+            </div>
+            
+            <table className="w-full text-left border-collapse border border-black mb-4 text-black">
+              <thead>
+                <tr className="border-b border-black bg-gray-100 text-[11px]">
+                  <th className="p-2 border-r border-black font-bold uppercase w-[35px] text-center">#</th>
+                  <th className="p-2 border-r border-black font-bold uppercase w-[60px] text-center">{language === 'pt' ? 'Foto' : 'Photo'}</th>
+                  <th className="p-2 border-r border-black font-bold uppercase">{t.students.name}</th>
+                  <th className="p-2 border-r border-black font-bold uppercase">{t.dashboard.courseLocation}</th>
+                  <th className="p-2 font-bold uppercase text-center">{t.dashboard.startEnd}</th>
+                </tr>
+              </thead>
+              <tbody className="text-[11px]">
+                {alunosExterior.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="p-4 text-center italic border-b border-black">
+                      {t.common.noInternationalStudents}
+                    </td>
+                  </tr>
+                ) : (
+                  alunosExterior.map((aluno: any, idx: number) => {
+                    const turmaData = Array.isArray(aluno.turma) ? aluno.turma[0] : aluno.turma;
+                    const curso = Array.isArray(turmaData?.curso) ? turmaData.curso[0] : turmaData?.curso;
+                    
+                    const photoSrc = aluno.foto_url ||
+                      (aluno.tipo_aluno === 'civil'
+                        ? (aluno.genero === 'feminino' ? femaleAvatar : maleAvatar)
+                        : (aluno.genero === 'feminino' ? militaryFemaleAvatar : militaryMaleAvatar));
+                    const fallbackSrc = aluno.tipo_aluno === 'civil'
+                      ? (aluno.genero === 'feminino' ? femaleAvatar : maleAvatar)
+                      : (aluno.genero === 'feminino' ? militaryFemaleAvatar : militaryMaleAvatar);
+
+                    const photoUrlString = typeof photoSrc === 'string' ? photoSrc : (photoSrc?.src || '');
+                    const fallbackUrlString = typeof fallbackSrc === 'string' ? fallbackSrc : (fallbackSrc?.src || '');
+
+                    return (
+                      <tr key={`print-ext-${aluno.id || idx}`} className="border-b border-black">
+                        <td className="p-1 border-r border-black text-center font-mono font-bold align-middle">
+                          {idx + 1}
+                        </td>
+                        <td className="p-1.5 border-r border-black text-center align-middle">
+                          <div className="w-[42px] h-[56px] mx-auto border border-black rounded-sm overflow-hidden bg-slate-100 flex items-center justify-center relative">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={photoUrlString}
+                              alt={aluno.nome}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.src = fallbackUrlString;
+                              }}
+                            />
+                          </div>
+                        </td>
+                        <td className="p-2 border-r border-black align-middle">
+                          <div className="font-bold text-xs uppercase">
+                            {aluno.posto_graduacao ? `${aluno.posto_graduacao} ` : ''}{aluno.nome}
+                          </div>
+                          <div className="text-[9px] uppercase mt-0.5 text-slate-600 font-medium">
+                            {aluno.om || '-'}
+                          </div>
+                        </td>
+                        <td className="p-2 border-r border-black align-middle">
+                          <div className="font-bold text-xs uppercase">{curso?.nome || '-'}</div>
+                          <div className="text-[9px] uppercase mt-0.5 text-slate-600">{turmaData?.localizacao || '-'}</div>
+                        </td>
+                        <td className="p-2 text-center align-middle border-black">
+                          {turmaData?.internacional ? (
+                            <div>
+                              <span className="font-bold whitespace-nowrap">
+                                {aluno.data_inicio_curso?.trim() ? aluno.data_inicio_curso.split('-').reverse().join('/') : (turmaData?.data_inicio?.trim() ? turmaData.data_inicio.split('-').reverse().join('/') : '—')}
+                              </span>
+                              <span className="text-[9px] uppercase font-bold mx-1">a</span>
+                              <span className="font-bold whitespace-nowrap">
+                                {aluno.data_fim_curso?.trim() ? aluno.data_fim_curso.split('-').reverse().join('/') : (turmaData?.data_fim?.trim() ? turmaData.data_fim.split('-').reverse().join('/') : '—')}
+                              </span>
+                            </div>
+                          ) : (
+                            <div>
+                              <span className="font-bold whitespace-nowrap">
+                                {turmaData?.data_inicio ? turmaData.data_inicio.split('-').reverse().join('/') : '—'}
+                              </span>
+                              <span className="text-[9px] uppercase font-bold mx-1">a</span>
+                              <span className="font-bold whitespace-nowrap">
+                                {turmaData?.data_fim ? turmaData.data_fim.split('-').reverse().join('/') : '—'}
+                              </span>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+            <div className="text-[9px] text-right font-semibold">
+              {language === 'pt' ? 'Gerado em' : 'Generated on'} {new Date().toLocaleDateString(language === 'pt' ? 'pt-BR' : 'en-US')}
+            </div>
+          </div>
         </>
       )}
     </div>
