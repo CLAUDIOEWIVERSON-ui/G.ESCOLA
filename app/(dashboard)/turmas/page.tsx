@@ -116,6 +116,13 @@ function TurmasContent() {
   const [printFrequencia, setPrintFrequencia] = useState<any[]>([]);
   const [loadingFrequencia, setLoadingFrequencia] = useState(false);
 
+  // Student Roster Print state
+  const [isPrintRosterOpen, setIsPrintRosterOpen] = useState(false);
+  const [rosterTurma, setRosterTurma] = useState<any>(null);
+  const [rosterAlunos, setRosterAlunos] = useState<any[]>([]);
+  const [loadingRosterAlunos, setLoadingRosterAlunos] = useState(false);
+  const [rosterProfessorName, setRosterProfessorName] = useState('');
+
   useEffect(() => {
     if (!isPrintAttendanceOpen || !viewingTurma?.id || !printPeriod) {
       setPrintFrequencia([]);
@@ -210,6 +217,38 @@ function TurmasContent() {
       console.error('Error fetching students for print:', err.message);
     } finally {
       setLoadingAlunos(false);
+    }
+  };
+
+  const getStudentPhoto = (student: any) => {
+    if (student?.foto_url) return student.foto_url;
+    if (student?.tipo_aluno === 'civil') {
+      return student?.genero === 'feminino' ? (femaleAvatar.src || femaleAvatar) : (maleAvatar.src || maleAvatar);
+    }
+    return student?.genero === 'feminino' ? (militaryFemaleAvatar.src || militaryFemaleAvatar) : (militaryMaleAvatar.src || militaryMaleAvatar);
+  };
+
+  const handleOpenPrintRoster = async (turma: any) => {
+    if (!turma) return;
+    setRosterTurma(turma);
+    setRosterProfessorName(turma.instrutor || '');
+    setIsPrintRosterOpen(true);
+    setLoadingRosterAlunos(true);
+    try {
+      const { data, error } = await supabase
+        .from('alunos')
+        .select('*')
+        .eq('turma_id', turma.id)
+        .is('deleted_at', null)
+        .order('nome');
+        
+      if (error) throw error;
+      setRosterAlunos(data || []);
+    } catch (err: any) {
+      console.error('Error fetching students for roster print:', err.message);
+      toast.error(language === 'pt' ? 'Erro ao carregar alunos para impressão' : 'Error loading students for print');
+    } finally {
+      setLoadingRosterAlunos(false);
     }
   };
 
@@ -1399,6 +1438,23 @@ function TurmasContent() {
                   <ChevronRight size={13} className="text-slate-300 group-hover/btn:text-white transition-colors" />
                 </button>
 
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleOpenPrintRoster(turma);
+                  }}
+                  className="w-full flex items-center justify-between p-2.5 rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white group/print-roster transition-all cursor-pointer border border-indigo-100/80 shadow-2xs"
+                  title={language === 'pt' ? 'Imprimir Relação de Alunos com Foto' : 'Print Student Roster with Photos'}
+                >
+                  <div className="flex items-center gap-2 text-indigo-700 group-hover/print-roster:text-white transition-colors">
+                    <Printer size={14} className="shrink-0" />
+                    <span className="text-[8.5px] font-black uppercase tracking-wider">
+                      {language === 'pt' ? 'Relação de Alunos (com Foto)' : 'Student Roster (with Photos)'}
+                    </span>
+                  </div>
+                  <Camera size={13} className="text-indigo-400 group-hover/print-roster:text-white transition-colors shrink-0" />
+                </button>
+
                 {!turma.internacional && (
                   <div className="grid grid-cols-2 gap-2">
                     <button 
@@ -1917,6 +1973,14 @@ function TurmasContent() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => handleOpenPrintRoster(viewingTurma)}
+              className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-100 px-3 py-1.5 rounded-lg hover:bg-indigo-100 hover:text-indigo-800 transition-all cursor-pointer shadow-sm shadow-indigo-100"
+              title={language === 'pt' ? 'Imprimir Relação com Foto' : 'Print Roster with Photos'}
+            >
+              <Printer size={13} strokeWidth={2.5} />
+              {language === 'pt' ? 'Relação com Fotos' : 'Roster with Photos'}
+            </button>
             {!viewingTurma?.internacional && (
               <button
                 onClick={() => handleOpenPrintAttendance(viewingTurma)}
@@ -3122,6 +3186,339 @@ function TurmasContent() {
                 {/* Micro-printed controlled copy warning centered (naturally flowing to prevent any overlapping) */}
                 <div className="mt-8 print:mt-4 text-center text-[7px] font-bold tracking-[0.34em] text-neutral-400 uppercase w-full">
                   {language === 'pt' ? 'Documento de uso oficial - Cópia controlada' : 'Official Document - Controlled Copy'}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Printable Student Roster Modal */}
+      <AnimatePresence>
+        {isPrintRosterOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[9999] flex flex-col p-2 sm:p-6 overflow-hidden"
+          >
+            {/* Modal Control Toolbar */}
+            <div className="bg-slate-950/90 border border-slate-800 p-4 rounded-2xl mb-4 flex flex-col md:flex-row items-center justify-between gap-4 shrink-0 shadow-2xl print:hidden">
+              <div className="flex items-center gap-3 w-full md:w-auto">
+                <button
+                  onClick={() => setIsPrintRosterOpen(false)}
+                  className="p-2 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl transition cursor-pointer"
+                >
+                  <X size={20} />
+                </button>
+                <div>
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                    <Printer size={16} className="text-indigo-400" />
+                    {language === 'pt' ? 'Imprimir Relação de Alunos (com Foto)' : 'Print Student Roster (with Photos)'}
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    {rosterTurma?.nome} • {rosterAlunos.length} {language === 'pt' ? 'alunos' : 'students'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Editable Fields & Action Buttons */}
+              <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
+                <div className="flex flex-col">
+                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest pl-1 mb-1">
+                    {language === 'pt' ? 'Professor / Responsável' : 'Instructor'}
+                  </span>
+                  <input
+                    type="text"
+                    value={rosterProfessorName}
+                    onChange={(e) => setRosterProfessorName(e.target.value)}
+                    className="px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs font-bold text-white focus:outline-none focus:border-indigo-500 w-48 h-[34px]"
+                    placeholder="Nome do Instrutor"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2 mt-auto">
+                  <button
+                    onClick={() => setIsPrintRosterOpen(false)}
+                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold text-xs uppercase tracking-widest transition cursor-pointer"
+                  >
+                    {t.common.cancel}
+                  </button>
+                  <button
+                    onClick={() => window.print()}
+                    className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-indigo-950 transition-all active:translate-y-px cursor-pointer"
+                  >
+                    <Printer size={16} />
+                    {language === 'pt' ? 'Imprimir Relação' : 'Print Roster'}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Printable canvas container */}
+            <div className="flex-1 flex justify-center items-start p-6 bg-slate-900 overflow-auto custom-scrollbar">
+              <div
+                id="print-students-roster-sheet"
+                className="bg-white text-black p-[10mm] shadow-2xl relative rounded border border-slate-700 w-[210mm] min-h-[297mm] h-auto shrink-0 font-sans"
+              >
+                {/* Print Styles */}
+                <style dangerouslySetInnerHTML={{ __html: `
+                  #print-students-roster-sheet {
+                    color-adjust: exact;
+                    -webkit-print-color-adjust: exact;
+                  }
+                  .print-roster-table td, .print-roster-table th {
+                    border: 1px solid #000000 !important;
+                  }
+                  @media print {
+                    html, body {
+                      margin: 0 !important;
+                      padding: 0 !important;
+                      background: #ffffff !important;
+                      color: #000000 !important;
+                      width: 100% !important;
+                      height: auto !important;
+                      min-height: auto !important;
+                      overflow: visible !important;
+                    }
+                    header, nav, aside, footer, button, .print\\:hidden, [role="dialog"], [role="group"], .no-print {
+                      display: none !important;
+                      width: 0 !important;
+                      height: 0 !important;
+                      margin: 0 !important;
+                      padding: 0 !important;
+                      overflow: hidden !important;
+                    }
+                    html, body, main, .min-h-screen, #__next, .flex-1, [data-framer-portal-container] {
+                      position: static !important;
+                      width: 100% !important;
+                      height: auto !important;
+                      min-height: 0 !important;
+                      max-height: none !important;
+                      margin: 0 !important;
+                      padding: 0 !important;
+                      box-shadow: none !important;
+                      border: none !important;
+                      transform: none !important;
+                      overflow: visible !important;
+                      background: transparent !important;
+                      animation: none !important;
+                      transition: none !important;
+                      opacity: 1 !important;
+                    }
+                    body * {
+                      visibility: hidden !important;
+                    }
+                    #print-students-roster-sheet, #print-students-roster-sheet * {
+                      visibility: visible !important;
+                    }
+                    *:not(#print-students-roster-sheet):not(#print-students-roster-sheet *) {
+                      height: 0 !important;
+                      min-height: 0 !important;
+                      max-height: 0 !important;
+                      margin: 0 !important;
+                      padding: 0 !important;
+                      border: none !important;
+                      box-shadow: none !important;
+                      overflow: visible !important;
+                    }
+                    #print-students-roster-sheet {
+                      visibility: visible !important;
+                      position: relative !important;
+                      width: 190mm !important;
+                      max-width: 190mm !important;
+                      height: auto !important;
+                      min-height: auto !important;
+                      margin: 0 auto !important;
+                      padding: 0 0 5mm 0 !important;
+                      background: white !important;
+                      box-shadow: none !important;
+                      border: none !important;
+                      page-break-inside: auto !important;
+                      box-sizing: border-box !important;
+                    }
+                    .print-roster-table {
+                      page-break-inside: auto !important;
+                      width: 100% !important;
+                    }
+                    .print-roster-table tr {
+                      page-break-inside: avoid !important;
+                      page-break-after: auto !important;
+                    }
+                    .print-roster-table thead {
+                      display: table-header-group !important;
+                    }
+                    @page {
+                      size: A4 portrait !important;
+                      margin: 10mm 10mm 10mm 10mm !important;
+                    }
+                  }
+                `}} />
+
+                {/* Print Header */}
+                <div className="mb-4">
+                  <div className="flex items-center gap-4 border-b-2 border-black pb-3 mb-3">
+                    <div className="relative w-16 h-16 shrink-0 flex items-center justify-center overflow-hidden bg-white">
+                      <Image
+                        src={navalMissionLogo}
+                        alt="Logo Missão de Assessoria Naval"
+                        fill
+                        className="object-contain"
+                        referrerPolicy="no-referrer"
+                        sizes="64px"
+                        priority
+                      />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <h1 className="text-sm sm:text-base font-extrabold uppercase tracking-tight text-slate-900 leading-tight">
+                        MISSÃO DE ASSESSORIA NAVAL DO BRASIL EM SÃO TOMÉ E PRÍNCIPE
+                      </h1>
+                      <h2 className="text-xs sm:text-sm font-black uppercase text-slate-800 tracking-wide mt-0.5">
+                        {language === 'pt' ? 'RELAÇÃO NOMINAL DE ALUNOS (FOTO IDENTIFICAÇÃO)' : 'NOMINAL STUDENT ROSTER (PHOTO ID)'}
+                      </h2>
+                    </div>
+                  </div>
+
+                  {/* Summary Details Grid */}
+                  <div className="grid grid-cols-3 gap-3 font-semibold uppercase text-[10px] bg-slate-50 p-2.5 rounded border border-slate-300">
+                    <div className="flex flex-col">
+                      <span className="text-slate-500 font-bold">{language === 'pt' ? 'Turma:' : 'Class/Group:'}</span>
+                      <span className="font-extrabold text-slate-900 text-xs">{rosterTurma?.nome || '—'}</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-slate-500 font-bold">{language === 'pt' ? 'Curso:' : 'Course:'}</span>
+                      <span className="font-extrabold text-slate-900 text-xs truncate">{rosterTurma?.curso?.nome || rosterTurma?.nome || '—'}</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-slate-500 font-bold">{language === 'pt' ? 'Instrutor / Encarregado:' : 'Instructor:'}</span>
+                      <span className="font-extrabold text-slate-900 text-xs">{rosterProfessorName || rosterTurma?.instrutor || '—'}</span>
+                    </div>
+                    <div className="flex flex-col mt-1">
+                      <span className="text-slate-500 font-bold">{language === 'pt' ? 'Ano / Período:' : 'Year / Shift:'}</span>
+                      <span className="font-bold text-slate-800">{rosterTurma?.ano || '—'} • {rosterTurma?.periodo || '—'}</span>
+                    </div>
+                    <div className="flex flex-col mt-1">
+                      <span className="text-slate-500 font-bold">{language === 'pt' ? 'Total de Alunos:' : 'Total Students:'}</span>
+                      <span className="font-bold text-slate-800">{rosterAlunos.length} {language === 'pt' ? 'alunos' : 'students'}</span>
+                    </div>
+                    <div className="flex flex-col mt-1">
+                      <span className="text-slate-500 font-bold">{language === 'pt' ? 'Data de Emissão:' : 'Issue Date:'}</span>
+                      <span className="font-bold text-slate-800">{new Date().toLocaleDateString(language === 'pt' ? 'pt-BR' : 'en-US')}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Roster Table */}
+                <div className="overflow-hidden mt-3">
+                  <table className="print-roster-table w-full border-collapse border border-black table-fixed">
+                    <thead>
+                      <tr className="bg-neutral-100 text-[9px] font-extrabold uppercase text-center h-6 text-black border-b border-black">
+                        <th className="w-[32px] border border-black p-1 text-center">#</th>
+                        <th className="w-[64px] border border-black p-1 text-center">{language === 'pt' ? 'Foto' : 'Photo'}</th>
+                        <th className="border border-black p-1 text-left pl-2">
+                          {language === 'pt' ? 'Nome Completo do Aluno / Posto / Graduação' : 'Full Student Name / Rank'}
+                        </th>
+                        <th className="w-[120px] border border-black p-1 text-center">
+                          {language === 'pt' ? 'NIP / Matrícula' : 'NIP / ID'}
+                        </th>
+                        <th className="w-[150px] border border-black p-1 text-center">
+                          {language === 'pt' ? 'Assinatura / Visto' : 'Signature / Notes'}
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {loadingRosterAlunos ? (
+                        <tr>
+                          <td colSpan={5} className="p-8 text-center text-xs font-bold uppercase text-slate-500">
+                            {language === 'pt' ? 'Carregando relação de alunos...' : 'Loading student roster...'}
+                          </td>
+                        </tr>
+                      ) : rosterAlunos.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="p-8 text-center text-xs font-bold uppercase italic text-slate-400">
+                            {language === 'pt' ? 'Nenhum aluno matriculado nesta turma.' : 'No registered students in this class.'}
+                          </td>
+                        </tr>
+                      ) : (
+                        rosterAlunos.map((student: any, idx: number) => {
+                          const photoSrc = getStudentPhoto(student);
+                          const fallbackPhoto = student.tipo_aluno === 'civil'
+                            ? (student.genero === 'feminino' ? femaleAvatar.src : maleAvatar.src)
+                            : (student.genero === 'feminino' ? militaryFemaleAvatar.src : militaryMaleAvatar.src);
+
+                          return (
+                            <tr key={student.id || idx} className="border-b border-black text-black">
+                              <td className="border border-black text-center font-mono font-bold text-xs p-1">
+                                {idx + 1}
+                              </td>
+                              <td className="border border-black p-1.5 text-center align-middle">
+                                <div className="w-[44px] h-[58px] mx-auto border border-black rounded-sm overflow-hidden bg-slate-100 flex items-center justify-center relative shadow-xs">
+                                  {/* Standard img tag for high print-rendering reliability */}
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img
+                                    src={typeof photoSrc === 'string' ? photoSrc : (photoSrc?.src || fallbackPhoto)}
+                                    alt={student.nome}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      e.currentTarget.src = fallbackPhoto;
+                                    }}
+                                  />
+                                </div>
+                              </td>
+                              <td className="border border-black p-2 align-middle">
+                                <div className="font-extrabold text-xs uppercase leading-snug text-black">
+                                  {student.nome}
+                                </div>
+                                <div className="text-[10px] text-neutral-600 font-bold uppercase mt-0.5 flex flex-wrap items-center gap-1">
+                                  {student.posto_graduacao ? (
+                                    <span className="bg-neutral-100 px-1 rounded border border-neutral-300 text-black">
+                                      {student.posto_graduacao}
+                                    </span>
+                                  ) : (
+                                    <span className="text-neutral-500 font-medium">
+                                      {student.tipo_aluno === 'militar' ? 'Militar' : 'Civil'}
+                                    </span>
+                                  )}
+                                  {student.funcao && (
+                                    <span className="italic text-neutral-500">
+                                      • {student.funcao}
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="border border-black p-1 text-center align-middle font-mono text-xs font-bold">
+                                <div>{student.nip || student.matricula || student.cpf || '—'}</div>
+                                <div className="text-[8px] font-sans uppercase font-bold text-neutral-500 mt-0.5">
+                                  {student.tipo_aluno ? student.tipo_aluno.toUpperCase() : 'CIVIL'}
+                                </div>
+                              </td>
+                              <td className="border border-black p-1 text-center align-bottom">
+                                <div className="h-9 border-b border-dashed border-neutral-400 mx-2 mb-1"></div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Signatures & Footer */}
+                <div className="mt-8 pt-6 border-t border-black grid grid-cols-2 gap-12 text-center text-xs uppercase font-bold text-black print:mt-6">
+                  <div>
+                    <div className="border-b border-black h-10 mb-1 w-3/4 mx-auto"></div>
+                    <p>{rosterProfessorName || rosterTurma?.instrutor || 'Instrutor Responsável'}</p>
+                    <p className="text-[9px] text-neutral-500 font-normal">Instrutor / Encarregado</p>
+                  </div>
+                  <div>
+                    <div className="border-b border-black h-10 mb-1 w-3/4 mx-auto"></div>
+                    <p>Chefe da Missão de Assessoria Naval</p>
+                    <p className="text-[9px] text-neutral-500 font-normal">Coordenação / Supervisão</p>
+                  </div>
+                </div>
+
+                <div className="mt-6 text-center text-[8px] font-bold tracking-[0.25em] text-neutral-400 uppercase w-full">
+                  DOCUMENTO DE USO OFICIAL • EMISSÃO EM {new Date().toLocaleDateString(language === 'pt' ? 'pt-BR' : 'en-US')}
                 </div>
               </div>
             </div>
