@@ -556,8 +556,8 @@ function TurmasContent() {
     setCurrentPage(1);
   };
   
-  const activeCategory = (categoryParam && ['all', 'expedito', 'especial', 'carreira', 'ead', 'exterior'].includes(categoryParam)) 
-    ? (categoryParam as 'all' | 'expedito' | 'especial' | 'carreira' | 'ead' | 'exterior') 
+  const activeCategory = (categoryParam && ['all', 'expedito', 'especial', 'carreira', 'ead', 'exterior', 'arquivadas'].includes(categoryParam)) 
+    ? (categoryParam as 'all' | 'expedito' | 'especial' | 'carreira' | 'ead' | 'exterior' | 'arquivadas') 
     : 'all';
 
   const setActiveCategory = (cat: string) => {
@@ -591,6 +591,22 @@ function TurmasContent() {
     revalidateTurmas().finally(() => {
       setRefreshing(false);
     });
+  };
+
+  
+  const handleToggleArchive = async (id: string, archive: boolean) => {
+    try {
+      setRefreshing(true);
+      const { error } = await supabase.from('turmas').update({ arquivada: archive }).eq('id', id);
+      if (error) throw error;
+      toast.success(language === 'pt' 
+        ? (archive ? 'Turma arquivada com sucesso!' : 'Turma desarquivada com sucesso!') 
+        : (archive ? 'Class archived successfully!' : 'Class unarchived successfully!'));
+      refreshData();
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao arquivar turma');
+      setRefreshing(false);
+    }
   };
 
   const handleOpenModal = (turma: any = null) => {
@@ -1174,6 +1190,11 @@ function TurmasContent() {
   const q = searchParams ? (searchParams.get('q')?.toLowerCase() || '') : '';
 
   const filteredTurmas = turmas.filter((t: any) => {
+    if (activeCategory === 'arquivadas') {
+      if (!t.arquivada) return false;
+    } else {
+      if (t.arquivada) return false;
+    }
     const finalGroup = t.grupo_responsavel || t.curso?.grupo_responsavel;
     if (finalGroup && finalGroup !== activeGroup && finalGroup !== 'AMBOS') {
       return false;
@@ -1243,7 +1264,7 @@ function TurmasContent() {
                       : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
                   )}
                 >
-                  {t.classes[`category${cat.charAt(0).toUpperCase() + cat.slice(1)}` as keyof typeof t.classes]}
+                  {cat === 'arquivadas' ? (language === 'pt' ? 'Arquivadas' : 'Archived') : t.classes[`category${cat.charAt(0).toUpperCase() + cat.slice(1)}` as keyof typeof t.classes]}
                 </button>
               ))}
             </div>
@@ -1512,7 +1533,25 @@ function TurmasContent() {
                   className="absolute bottom-4 right-4 flex items-center gap-1.5 z-10" 
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <button 
+                  {turma.status === 'concluída' && !turma.arquivada && (
+                    <button 
+                      onClick={() => handleToggleArchive(turma.id, true)}
+                      className="p-2 bg-slate-100 hover:bg-slate-600 hover:text-white text-slate-600 rounded-xl border border-slate-200/50 shadow-xs transition-all duration-250 cursor-pointer flex items-center justify-center font-bold"
+                      title={language === 'pt' ? 'Arquivar Turma' : 'Archive Class'}
+                    >
+                      <LayersIcon size={13} strokeWidth={2.5} />
+                    </button>
+                  )}
+                  {turma.arquivada && (
+                    <button 
+                      onClick={() => handleToggleArchive(turma.id, false)}
+                      className="p-2 bg-slate-100 hover:bg-emerald-600 hover:text-white text-emerald-600 rounded-xl border border-slate-200/50 shadow-xs transition-all duration-250 cursor-pointer flex items-center justify-center font-bold"
+                      title={language === 'pt' ? 'Desarquivar Turma' : 'Unarchive Class'}
+                    >
+                      <RefreshCcw size={13} strokeWidth={2.5} />
+                    </button>
+                  )}
+                  <button
                     onClick={() => handleOpenModal(turma)}
                     className="p-2 bg-slate-100 hover:bg-blue-600 hover:text-white text-blue-600 rounded-xl border border-slate-200/50 shadow-xs transition-all duration-250 cursor-pointer flex items-center justify-center font-bold"
                     title={t.common.edit}
