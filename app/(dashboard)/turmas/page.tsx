@@ -1207,7 +1207,7 @@ function TurmasContent() {
         return false;
       }
     }
-    if (activeCategory === 'all') {
+    if (activeCategory === 'all' || activeCategory === 'arquivadas') {
       return true;
     }
     if (activeCategory === 'exterior') {
@@ -1252,8 +1252,8 @@ function TurmasContent() {
               ))}
             </div>
             <div className="h-10 w-[1px] bg-slate-200 mx-1 hidden xl:block" />
-            <div className="grid grid-cols-6 gap-1 bg-white p-1 rounded-xl shadow-sm border border-slate-200 w-full xl:w-[620px]">
-              {(['all', 'expedito', 'especial', 'carreira', 'ead', 'exterior'] as const).map((cat) => (
+            <div className="grid grid-cols-6 xl:grid-cols-[repeat(auto-fit,minmax(80px,1fr))] gap-1 bg-white p-1 rounded-xl shadow-sm border border-slate-200 w-full xl:w-auto min-w-[620px]">
+              {(['all', 'expedito', 'especial', 'carreira', 'ead', 'exterior', ...(isAdmin ? ['arquivadas'] : [])] as const).map((cat) => (
                 <button
                   key={cat}
                   onClick={() => setActiveCategory(cat)}
