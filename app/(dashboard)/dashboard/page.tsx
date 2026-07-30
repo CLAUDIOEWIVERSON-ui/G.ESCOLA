@@ -739,13 +739,13 @@ export default function DashboardPage() {
                     paginatedAlunos.map((aluno: any) => {
                       const turmaData = Array.isArray((aluno as any).turma) ? (aluno as any).turma[0] : (aluno as any).turma;
                       const curso = Array.isArray(turmaData?.curso) ? turmaData.curso[0] : turmaData?.curso;
-                      const isPreInscrito = turmaData?.status === 'pré-inscrito';
+                      const isPreInscrito = turmaData?.status?.toLowerCase() === 'pré-inscrito';
                       return (
                         <tr 
                           key={aluno.id} 
                           className={cn(
                             "transition-colors cursor-pointer",
-                            isPreInscrito ? "bg-amber-50 hover:bg-amber-100/80" : "hover:bg-slate-50"
+                            "hover:bg-slate-50"
                           )}
                           onClick={() => {
                             router.push(`/turmas?action=edit-student&studentId=${aluno.id}&turmaId=${aluno.turma_id || turmaData?.id}`);
@@ -790,7 +790,7 @@ export default function DashboardPage() {
                                 </div>
                               )}
                               <div>
-                                <div className="font-bold text-slate-800">
+                                <div className={cn("font-bold", isPreInscrito ? "text-red-600" : "text-slate-800")}>
                                   {aluno.posto_graduacao ? `${aluno.posto_graduacao} ` : ''}{aluno.nome}
                                 </div>
                                 <div className="text-[10px] text-slate-400 font-mono uppercase">
@@ -800,7 +800,7 @@ export default function DashboardPage() {
                             </div>
                           </td>
                           <td className="px-6 py-4">
-                            <div className="text-slate-600">{curso?.nome || '-'}</div>
+                            <div className={cn("", isPreInscrito ? "text-red-500" : "text-slate-600")}>{curso?.nome || '-'}</div>
                             <div className="text-[10px] text-slate-400 uppercase font-bold">{turmaData?.localizacao || '-'}</div>
                           </td>
                           <td className="px-6 py-4 text-slate-500 font-mono text-xs">
@@ -809,21 +809,21 @@ export default function DashboardPage() {
                           <td className="px-6 py-4 text-center text-slate-500 font-mono text-xs">
                             {turmaData?.internacional ? (
                               <div className="flex flex-col items-center justify-center leading-normal">
-                                <span className="text-slate-800 font-bold whitespace-nowrap">
+                                <span className={cn("font-bold whitespace-nowrap", isPreInscrito ? "text-red-600" : "text-slate-800")}>
                                   {aluno.data_inicio_curso?.trim() ? aluno.data_inicio_curso.split('-').reverse().join('/') : (turmaData?.data_inicio?.trim() ? turmaData.data_inicio.split('-').reverse().join('/') : '—')}
                                 </span>
                                 <span className="text-[10px] text-slate-400 font-sans uppercase font-extrabold my-0.5">a</span>
-                                <span className="text-slate-800 font-bold whitespace-nowrap">
+                                <span className={cn("font-bold whitespace-nowrap", isPreInscrito ? "text-red-600" : "text-slate-800")}>
                                   {aluno.data_fim_curso?.trim() ? aluno.data_fim_curso.split('-').reverse().join('/') : (turmaData?.data_fim?.trim() ? turmaData.data_fim.split('-').reverse().join('/') : '—')}
                                 </span>
                               </div>
                             ) : (
                               <div className="flex flex-col items-center justify-center leading-normal">
-                                <span className="text-slate-800 font-bold whitespace-nowrap">
+                                <span className={cn("font-bold whitespace-nowrap", isPreInscrito ? "text-red-600" : "text-slate-800")}>
                                   {turmaData?.data_inicio ? turmaData.data_inicio.split('-').reverse().join('/') : '—'}
                                 </span>
                                 <span className="text-[10px] text-slate-400 font-sans uppercase font-extrabold my-0.5">a</span>
-                                <span className="text-slate-800 font-bold whitespace-nowrap">
+                                <span className={cn("font-bold whitespace-nowrap", isPreInscrito ? "text-red-600" : "text-slate-800")}>
                                   {turmaData?.data_fim ? turmaData.data_fim.split('-').reverse().join('/') : '—'}
                                 </span>
                               </div>
@@ -1124,9 +1124,10 @@ export default function DashboardPage() {
 
                     const photoUrlString = typeof photoSrc === 'string' ? photoSrc : (photoSrc?.src || '');
                     const fallbackUrlString = typeof fallbackSrc === 'string' ? fallbackSrc : (fallbackSrc?.src || '');
+                    const isPreInscrito = turmaData?.status?.toLowerCase() === 'pré-inscrito';
 
                     return (
-                      <tr key={`print-ext-${aluno.id || idx}`} className="border-b border-black">
+                      <tr key={`print-ext-${aluno.id || idx}`} className={cn("border-b border-black", isPreInscrito ? "text-red-700" : "")}>
                         <td className="p-1 border-r border-black text-center font-mono font-bold align-middle">
                           {idx + 1}
                         </td>
@@ -1147,13 +1148,13 @@ export default function DashboardPage() {
                           <div className="font-bold text-xs uppercase">
                             {aluno.posto_graduacao ? `${aluno.posto_graduacao} ` : ''}{aluno.nome}
                           </div>
-                          <div className="text-[9px] uppercase mt-0.5 text-slate-600 font-medium">
+                          <div className={cn("text-[9px] uppercase mt-0.5 font-medium", isPreInscrito ? "text-red-600" : "text-slate-600")}>
                             {aluno.om || '-'}
                           </div>
                         </td>
                         <td className="p-2 border-r border-black align-middle">
                           <div className="font-bold text-xs uppercase">{curso?.nome || '-'}</div>
-                          <div className="text-[9px] uppercase mt-0.5 text-slate-600 font-medium">
+                          <div className={cn("text-[9px] uppercase mt-0.5 font-medium", isPreInscrito ? "text-red-600" : "text-slate-600")}>
                             {turmaData?.nome ? `${turmaData.nome} • ` : ''}{turmaData?.localizacao || '-'}
                           </div>
                         </td>
@@ -1257,26 +1258,26 @@ function TurmasListTable({ turmas, title, onDelete }: { turmas: any[], title: st
               </tr>
             ) : (
               paginatedTurmas.map((turma) => {
-                const isPreInscrito = turma.status === 'pré-inscrito';
+                const isPreInscrito = turma.status?.toLowerCase() === 'pré-inscrito';
                 return (
                 <tr 
                   key={turma.id} 
                   className={cn(
                     "transition-colors cursor-pointer",
-                    isPreInscrito ? "bg-amber-50 hover:bg-amber-100/80" : "hover:bg-slate-50"
+                    "hover:bg-slate-50"
                   )}
                   onClick={() => {
                     router.push(`/turmas?action=edit-class&turmaId=${turma.id}`);
                   }}
                 >
                   <td className="px-6 py-4">
-                    <div className="font-bold text-slate-800">{turma.nome}</div>
-                    <div className="text-[10px] text-slate-400 font-mono uppercase">
+                    <div className={cn("font-bold", isPreInscrito ? "text-red-600" : "text-slate-800")}>{turma.nome}</div>
+                    <div className={cn("text-[10px] font-mono uppercase", isPreInscrito ? "text-red-500" : "text-slate-400")}>
                       ANO: {turma.ano || '-'} {turma.grupo_responsavel ? `• GRUPO: ${turma.grupo_responsavel}` : ''}
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="text-slate-700 font-semibold">{turma.curso?.nome || '-'}</div>
+                    <div className={cn("font-semibold", isPreInscrito ? "text-red-600" : "text-slate-700")}>{turma.curso?.nome || '-'}</div>
                     <div className="text-[10px] text-slate-400 uppercase font-black tracking-wider">
                       {turma.curso?.categoria || '-'}
                     </div>
@@ -1298,9 +1299,9 @@ function TurmasListTable({ turmas, title, onDelete }: { turmas: any[], title: st
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="text-slate-650 font-medium">{turma.instrutor || '-'}</div>
-                    <div className={cn("text-[10px] font-bold uppercase flex items-center gap-1 mt-0.5", isPreInscrito ? "text-amber-600" : "text-green-600")}>
-                      <span className={cn("w-1.5 h-1.5 rounded-full animate-pulse", isPreInscrito ? "bg-amber-500" : "bg-green-500")} />
+                    <div className={cn("font-medium", isPreInscrito ? "text-red-600" : "text-slate-650")}>{turma.instrutor || '-'}</div>
+                    <div className={cn("text-[10px] font-bold uppercase flex items-center gap-1 mt-0.5", isPreInscrito ? "text-red-600" : "text-green-600")}>
+                      <span className={cn("w-1.5 h-1.5 rounded-full animate-pulse", isPreInscrito ? "bg-red-500" : "bg-green-500")} />
                       Class {turma.status || 'ativa'}
                     </div>
                   </td>

@@ -1354,14 +1354,14 @@ function TurmasContent() {
                   <div className="flex flex-col items-end gap-2">
                     <span className={cn(
                       "text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border",
-                      turma.status === 'concluída' ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
-                      turma.status === 'cancelada' ? "bg-red-50 text-red-600 border-red-100" :
-                      turma.status === 'pré-inscrito' ? "bg-cyan-50 text-cyan-600 border-cyan-100" :
+                      turma.status?.toLowerCase() === 'concluída' ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
+                      turma.status?.toLowerCase() === 'cancelada' ? "bg-red-50 text-red-600 border-red-100" :
+                      turma.status?.toLowerCase() === 'pré-inscrito' ? "bg-red-50 text-red-600 border-red-100" :
                       "bg-blue-50 text-blue-600 border-blue-100"
                     )}>
-                      {turma.status === 'concluída' ? t.classes.completed : 
-                       turma.status === 'cancelada' ? t.classes.cancelled : 
-                       turma.status === 'pré-inscrito' ? 'PRÉ-INSCRITO(A)(S)' : t.classes.active}
+                      {turma.status?.toLowerCase() === 'concluída' ? t.classes.completed : 
+                       turma.status?.toLowerCase() === 'cancelada' ? t.classes.cancelled : 
+                       turma.status?.toLowerCase() === 'pré-inscrito' ? 'PRÉ-INSCRITO(A)(S)' : t.classes.active}
                     </span>
                     {turma.internacional && (
                       <span className={cn(
@@ -1409,22 +1409,22 @@ function TurmasContent() {
                   </div>
                 )}
                 <div className="flex flex-wrap items-center gap-2 mb-1">
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] truncate">{turma.curso?.nome}</p>
+                  <p className={cn("text-[10px] font-bold uppercase tracking-[0.2em] truncate", turma.status?.toLowerCase() === 'pré-inscrito' ? 'text-red-500' : 'text-slate-400')}>{turma.curso?.nome}</p>
                   {(turma.documento_criacao || turma.curso?.documento_criacao) && (
-                    <span className="px-1.5 py-0.5 bg-blue-50 text-blue-700 text-[8px] font-bold uppercase rounded border border-blue-100 flex-shrink-0 font-mono">
+                    <span className={cn("px-1.5 py-0.5 text-[8px] font-bold uppercase rounded border flex-shrink-0 font-mono", turma.status?.toLowerCase() === 'pré-inscrito' ? 'bg-red-50 text-red-700 border-red-100' : 'bg-blue-50 text-blue-700 border-blue-100')}>
                       Doc: {turma.documento_criacao || turma.curso?.documento_criacao}
                     </span>
                   )}
                 </div>
-                <h3 className="text-xl font-black text-slate-800 tracking-tight leading-tight group-hover:text-blue-600 transition-colors">{turma.nome}</h3>
+                <h3 className={cn("text-xl font-black tracking-tight leading-tight transition-colors", turma.status?.toLowerCase() === 'pré-inscrito' ? 'text-red-600 group-hover:text-red-700' : 'text-slate-800 group-hover:text-blue-600')}>{turma.nome}</h3>
                 
                 <div className="mt-4 grid grid-cols-2 gap-y-3 gap-x-2">
-                  <div className="flex items-center gap-2 text-slate-500">
-                    <Calendar size={14} className="text-slate-300" />
+                  <div className={cn("flex items-center gap-2", turma.status?.toLowerCase() === 'pré-inscrito' ? 'text-red-500' : 'text-slate-500')}>
+                    <Calendar size={14} className={turma.status?.toLowerCase() === 'pré-inscrito' ? 'text-red-400' : 'text-slate-300'} />
                     <span className="text-[10px] font-bold uppercase tracking-wider">{turma.ano}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-slate-500">
-                    <Clock size={14} className="text-slate-300" />
+                  <div className={cn("flex items-center gap-2", turma.status?.toLowerCase() === 'pré-inscrito' ? 'text-red-500' : 'text-slate-500')}>
+                    <Clock size={14} className={turma.status?.toLowerCase() === 'pré-inscrito' ? 'text-red-400' : 'text-slate-300'} />
                     <span className="text-[10px] font-bold uppercase tracking-wider capitalize">
                       {turma.periodo === 'manhã' ? t.common.morning : 
                        turma.periodo === 'tarde' ? t.common.afternoon : 
@@ -1432,15 +1432,15 @@ function TurmasContent() {
                     </span>
                   </div>
                   {(turma.data_inicio || turma.data_fim) && (
-                    <div className="flex items-center gap-2 text-slate-500 col-span-2">
-                      <Calendar size={14} className="text-blue-500" />
-                      <span className="text-[10px] font-black text-slate-700 uppercase tracking-wider">
+                    <div className={cn("flex items-center gap-2 col-span-2", turma.status?.toLowerCase() === 'pré-inscrito' ? 'text-red-500' : 'text-slate-500')}>
+                      <Calendar size={14} className={turma.status?.toLowerCase() === 'pré-inscrito' ? 'text-red-500' : 'text-blue-500'} />
+                      <span className={cn("text-[10px] font-black uppercase tracking-wider", turma.status?.toLowerCase() === 'pré-inscrito' ? 'text-red-600' : 'text-slate-700')}>
                         {turma.data_inicio ? turma.data_inicio.split('-').reverse().join('/') : '—'} - {turma.data_fim ? turma.data_fim.split('-').reverse().join('/') : '—'}
                       </span>
                     </div>
                   )}
-                  <div className="flex items-center gap-2 text-slate-500 col-span-2">
-                    <Users size={14} className="text-slate-300" />
+                  <div className={cn("flex items-center gap-2 col-span-2", turma.status?.toLowerCase() === 'pré-inscrito' ? 'text-red-500' : 'text-slate-500')}>
+                    <Users size={14} className={turma.status?.toLowerCase() === 'pré-inscrito' ? 'text-red-400' : 'text-slate-300'} />
                     <span className="text-[10px] font-bold uppercase tracking-wider">{turma.instrutor || "S/ Instrutor"}</span>
                   </div>
                 </div>
@@ -1533,7 +1533,7 @@ function TurmasContent() {
                   className="absolute bottom-4 right-4 flex items-center gap-1.5 z-10" 
                   onClick={(e) => e.stopPropagation()}
                 >
-                  {turma.status === 'concluída' && !turma.arquivada && (
+                  {turma.status?.toLowerCase() === 'concluída' && !turma.arquivada && (
                     <button 
                       onClick={() => handleToggleArchive(turma.id, true)}
                       className="p-2 bg-slate-100 hover:bg-slate-600 hover:text-white text-slate-600 rounded-xl border border-slate-200/50 shadow-xs transition-all duration-250 cursor-pointer flex items-center justify-center font-bold"
@@ -2075,13 +2075,15 @@ function TurmasContent() {
                         const printWindow = window.open('', '_blank');
                         if (printWindow) {
                           const cardsHtml = data.map((codeObj: any) => {
+      const isPreInscrito = turmaNome.toLowerCase().includes('pré-inscrito') || (viewingTurma?.status?.toLowerCase() === 'pré-inscrito') || (selectedTurmaData?.status?.toLowerCase() === 'pré-inscrito');
+      const nameColor = isPreInscrito ? '#dc2626' : '#1e3a8a';
                             const student = alunosInTurma.find((a: any) => a.id === codeObj.student_id);
                             const studentName = student ? student.nome : 'Estudante';
                             return `
                               <div class="card">
-                                <h3>CARTEIRINHA DE ACESSO</h3>
+                                <h3 style="color: ${nameColor};">CARTEIRINHA DE ACESSO</h3>
                                 <p class="label">Aluno</p>
-                                <p class="value">${studentName}</p>
+                                <p class="value" style="color: ${nameColor};">${studentName}</p>
                                 <p class="label">Turma</p>
                                 <p class="value">${turmaNome}</p>
                                 <div style="margin: 12px 0;">
@@ -2107,7 +2109,7 @@ function TurmasContent() {
                                   body { font-family: sans-serif; padding: 20px; background: #f8fafc; color: #1e293b; }
                                   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
                                   .card { border: 1px solid #e2e8f0; padding: 20px; border-radius: 12px; background: white; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); page-break-inside: avoid; }
-                                  h3 { margin: 0 0 8px 0; color: #1e3a8a; font-size: 13px; letter-spacing: 0.5px; border-bottom: 2px solid #ef4444; padding-bottom: 6px; text-transform: uppercase; }
+                                  h3 { margin: 0 0 8px 0; font-size: 13px; letter-spacing: 0.5px; border-bottom: 2px solid #ef4444; padding-bottom: 6px; text-transform: uppercase; }
                                   .label { font-size: 9px; text-transform: uppercase; color: #64748b; margin: 6px 0 2px 0; font-weight: bold; }
                                   .value { font-size: 12px; font-weight: bold; margin: 0; color: #334155; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
                                   .code { font-family: monospace; font-size: 13px; font-weight: bold; background: #f1f5f9; padding: 3px 8px; display: inline-block; border-radius: 4px; border: 1px solid #cbd5e1; margin-top: 5px; color: #1d4ed8; }
@@ -2652,8 +2654,8 @@ function TurmasContent() {
                     "inline-flex items-center px-2 py-0.5 mt-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
                     viewingTurma?.status === 'ativa'
                       ? "bg-green-50 text-green-700 border border-green-200"
-                      : viewingTurma?.status === 'pré-inscrito'
-                      ? "bg-blue-50 text-blue-700 border border-blue-200"
+                      : viewingTurma?.status?.toLowerCase() === 'pré-inscrito'
+                      ? "bg-red-50 text-red-600 border border-red-200"
                       : viewingTurma?.status === 'cancelada'
                       ? "bg-orange-50 text-orange-700 border border-orange-200"
                       : "bg-red-50 text-red-700 border border-red-200"
