@@ -1060,11 +1060,22 @@ function TurmasContent() {
         }
       }
 
-      let dbStatus = currentTurma.status || 'ativa';
-      let dbAtiva = dbStatus === 'ativa';
-      if (dbStatus === 'pré-inscrito') {
+      const rawStatus = String(currentTurma.status || 'ativa').toLowerCase().trim();
+      let dbStatus: 'ativa' | 'concluída' | 'cancelada' = 'ativa';
+      let dbAtiva = true;
+
+      if (rawStatus === 'concluída' || rawStatus === 'concluido' || rawStatus === 'concluida') {
+        dbStatus = 'concluída';
+        dbAtiva = false;
+      } else if (rawStatus === 'cancelada' || rawStatus === 'cancelado') {
+        dbStatus = 'cancelada';
+        dbAtiva = false;
+      } else if (rawStatus.includes('pré-inscrito') || rawStatus.includes('pre-inscrito') || rawStatus.includes('pré-inscrita')) {
         dbStatus = 'ativa';
         dbAtiva = false;
+      } else {
+        dbStatus = 'ativa';
+        dbAtiva = true;
       }
 
       const payload = {

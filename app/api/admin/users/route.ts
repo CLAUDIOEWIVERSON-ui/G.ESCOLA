@@ -162,14 +162,18 @@ export async function PUT(request: Request) {
 
     // 1. Update auth user
     const updateData: any = {};
-    if (email) updateData.email = email;
-    if (password) updateData.password = password;
+    if (email && typeof email === 'string' && email.trim()) {
+      updateData.email = email.trim();
+    }
+    if (password && typeof password === 'string' && password.trim()) {
+      updateData.password = password.trim();
+    }
     
     // Merge existing metadata if possible or just set new ones
     updateData.user_metadata = { 
-      full_name: full_name,
-      role: role,
-      grupo_responsavel: grupo_responsavel
+      full_name: full_name || '',
+      role: role || 'aluno',
+      grupo_responsavel: role === 'instrutor' ? (grupo_responsavel || null) : null
     };
     
     // Auth updates
@@ -185,27 +189,26 @@ export async function PUT(request: Request) {
 
     // 2. Update profile
     const profileUpdateData: any = { 
-      full_name, 
-      role,
-      grupo_responsavel: grupo_responsavel || null
+      id,
+      full_name: full_name || '', 
+      role: role || 'aluno',
+      grupo_responsavel: role === 'instrutor' ? (grupo_responsavel || null) : null
     };
-    if (password) {
+    if (password && typeof password === 'string' && password.trim()) {
       profileUpdateData.has_changed_password = false;
     }
 
     let { error: profileError } = await supabaseAdmin
       .from('profiles')
-      .update(profileUpdateData)
-      .eq('id', id);
+      .upsert(profileUpdateData, { onConflict: 'id' });
 
     // If it failed because of has_changed_password column missing, try without it
-    if (profileError && password && (profileError.message?.includes('has_changed_password') || profileError.code === 'PGRST100' || profileError.message?.includes('column'))) {
+    if (profileError && (profileError.message?.includes('has_changed_password') || profileError.code === 'PGRST100' || profileError.message?.includes('column'))) {
       console.warn('Retrying user profile update without has_changed_password column...');
       delete profileUpdateData.has_changed_password;
       const { error: retryError } = await supabaseAdmin
         .from('profiles')
-        .update(profileUpdateData)
-        .eq('id', id);
+        .upsert(profileUpdateData, { onConflict: 'id' });
       profileError = retryError;
     }
 

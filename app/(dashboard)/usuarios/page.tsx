@@ -93,11 +93,20 @@ export default function UsuariosPage() {
       const method = currentUser.id ? 'PUT' : 'POST';
       let result: any = {};
 
+      const payload = {
+        id: currentUser.id,
+        email: currentUser.email ? currentUser.email.trim() : '',
+        password: currentUser.password && currentUser.password.trim() ? currentUser.password.trim() : undefined,
+        full_name: currentUser.full_name ? currentUser.full_name.trim() : '',
+        role: currentUser.role || 'aluno',
+        grupo_responsavel: currentUser.role === 'instrutor' ? (currentUser.grupo_responsavel || null) : null
+      };
+
       try {
         const response = await fetchWithAuth('/api/admin/users', {
           method,
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(currentUser)
+          body: JSON.stringify(payload)
         });
         
         result = await response.json();
@@ -109,15 +118,20 @@ export default function UsuariosPage() {
       // Fallback: If API failed but we are editing, try direct profile update
       if (result.error && currentUser.id) {
         console.log('API failed, attempting direct profile update fallback...');
+        const profilePayload: any = {
+          id: currentUser.id,
+          full_name: payload.full_name,
+          role: payload.role,
+          grupo_responsavel: payload.grupo_responsavel
+        };
+        
         const { error: directError } = await supabase
           .from('profiles')
-          .update({
-            full_name: currentUser.full_name,
-            role: currentUser.role
-          })
-          .eq('id', currentUser.id);
+          .upsert(profilePayload, { onConflict: 'id' });
         
-        if (directError) throw new Error(result.error || directError.message);
+        if (directError) {
+          throw new Error(result.error || directError.message);
+        }
         
         // Success via fallback
         result = { success: true, fallback: true };
@@ -126,7 +140,7 @@ export default function UsuariosPage() {
       }
 
       setIsModalOpen(false);
-      fetchUsers();
+      await fetchUsers();
       toast.success(language === 'pt' ? 'Usuário salvo com sucesso!' : 'User saved successfully!');
     } catch (err: any) {
       console.error('Save error:', err);
