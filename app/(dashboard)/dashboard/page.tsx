@@ -1198,6 +1198,16 @@ export default function DashboardPage() {
           </div>
         </>
       )}
+
+      <StudentDetailEditModal
+        isOpen={!!selectedAlunoForEdit}
+        onClose={() => setSelectedAlunoForEdit(null)}
+        aluno={selectedAlunoForEdit}
+        onSave={async () => {
+          await refreshDashboard();
+          setSelectedAlunoForEdit(null);
+        }}
+      />
     </div>
   );
 }
@@ -1398,16 +1408,6 @@ function TurmasListTable({ turmas, title, onDelete }: { turmas: any[], title: st
           </div>
         </div>
       )}
-    
-      <StudentDetailEditModal
-        isOpen={!!selectedAlunoForEdit}
-        onClose={() => setSelectedAlunoForEdit(null)}
-        aluno={selectedAlunoForEdit}
-        onSave={async () => {
-          await refreshDashboard();
-          setSelectedAlunoForEdit(null);
-        }}
-      />
     </div>
   );
 }

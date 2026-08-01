@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { toast } from 'sonner';
-import { useLanguage } from '@/lib/i18n/LanguageContext';
+import { useI18n } from '@/lib/i18n/LanguageContext';
 import { cn } from '@/lib/utils';
 import maleAvatar from '@/src/assets/images/avatar_male_1778977230783.png';
 import femaleAvatar from '@/src/assets/images/avatar_female_1778977246051.png';
@@ -44,7 +44,7 @@ export default function StudentDetailEditModal({
   turmaId,
   onSave
 }: StudentDetailEditModalProps) {
-  const { language } = useLanguage();
+  const { language } = useI18n();
   const [currentAluno, setCurrentAluno] = useState<any>({});
   const [saving, setSaving] = useState(false);
   const [loadingAttendance, setLoadingAttendance] = useState(false);
@@ -122,8 +122,8 @@ export default function StudentDetailEditModal({
 
       const records = data || [];
       const total = records.length;
-      const presentes = records.filter(r => r.presente).length;
-      const faltas = records.filter(r => !r.presente).length;
+      const presentes = records.filter((r: any) => r.presente).length;
+      const faltas = records.filter((r: any) => !r.presente).length;
 
       const percentPresenca = total > 0 ? Math.round((presentes / total) * 100) : 0;
       const percentFalta = total > 0 ? (100 - percentPresenca) : 0;

@@ -2087,8 +2087,8 @@ function TurmasContent() {
                         const printWindow = window.open('', '_blank');
                         if (printWindow) {
                           const cardsHtml = data.map((codeObj: any) => {
-      const isPreInscrito = turmaNome.toLowerCase().includes('pré-inscrito') || (viewingTurma?.status?.toLowerCase() === 'pré-inscrito') || (selectedTurmaData?.status?.toLowerCase() === 'pré-inscrito');
-      const nameColor = isPreInscrito ? '#dc2626' : '#1e3a8a';
+                            const isPreInscrito = turmaNome.toLowerCase().includes('pré-inscrito') || (viewingTurma?.status?.toLowerCase() === 'pré-inscrito');
+                            const nameColor = isPreInscrito ? '#dc2626' : '#1e3a8a';
                             const student = alunosInTurma.find((a: any) => a.id === codeObj.student_id);
                             const studentName = student ? student.nome : 'Estudante';
                             return `
@@ -2705,10 +2705,7 @@ function TurmasContent() {
                     <div className="flex flex-col">
                       <span>{language === 'pt' ? 'Documento:' : 'Document:'}</span>
                       <div className="border-b border-black h-8 flex items-end pb-1 text-xs font-bold px-1 whitespace-nowrap overflow-hidden font-mono">
-                        {(() => {
-                          const targetT = turmas.find(t => t.id === printTurmaId);
-                          return targetT?.documento_criacao || targetT?.curso?.documento_criacao || '—';
-                        })()}
+                        {viewingTurma?.documento_criacao || viewingTurma?.curso?.documento_criacao || '—'}
                       </div>
                     </div>
                     <div className="flex flex-col">
