@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import ExchangeRateTicker from '@/components/ExchangeRateTicker';
+import StudentDetailEditModal from '@/components/StudentDetailEditModal';
 import Image from 'next/image';
 import navalMissionLogo from '@/src/assets/images/regenerated_image_1782409801823.png';
 import { toast } from 'sonner';
@@ -66,6 +67,7 @@ export default function DashboardPage() {
   const [selectedCard, setSelectedCard] = useState<string>('exterior');
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState<number>(1);
+  const [selectedAlunoForEdit, setSelectedAlunoForEdit] = useState<any | null>(null);
 
   useEffect(() => {
     if (dashboardData && stats) {
@@ -748,7 +750,7 @@ export default function DashboardPage() {
                             "hover:bg-slate-50"
                           )}
                           onClick={() => {
-                            router.push(`/turmas?action=edit-student&studentId=${aluno.id}&turmaId=${aluno.turma_id || turmaData?.id}`);
+                            setSelectedAlunoForEdit(aluno);
                           }}
                         >
                           <td className="px-6 py-4">
@@ -1397,6 +1399,15 @@ function TurmasListTable({ turmas, title, onDelete }: { turmas: any[], title: st
         </div>
       )}
     
+      <StudentDetailEditModal
+        isOpen={!!selectedAlunoForEdit}
+        onClose={() => setSelectedAlunoForEdit(null)}
+        aluno={selectedAlunoForEdit}
+        onSave={async () => {
+          await refreshDashboard();
+          setSelectedAlunoForEdit(null);
+        }}
+      />
     </div>
   );
 }
