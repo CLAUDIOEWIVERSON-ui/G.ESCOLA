@@ -44,6 +44,7 @@ import militaryFemaleAvatar from '@/src/assets/images/avatar_military_female_177
 
 export default function DashboardPage() {
   const { t, language } = useI18n();
+  const isPt = language === 'pt';
   const { profile, isAdmin } = useUser();
   const router = useRouter();
   
@@ -65,9 +66,21 @@ export default function DashboardPage() {
   } = dashboardData || {};
 
   const [selectedCard, setSelectedCard] = useState<string>('exterior');
+  const [hasUserSelectedCard, setHasUserSelectedCard] = useState<boolean>(false);
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [selectedAlunoForEdit, setSelectedAlunoForEdit] = useState<any | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const cardParam = params.get('card');
+      if (cardParam && ['exterior', 'expedito', 'carreira', 'especial', 'pre_inscritos'].includes(cardParam)) {
+        setSelectedCard(cardParam);
+        setHasUserSelectedCard(true);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     if (dashboardData && stats) {
@@ -79,14 +92,14 @@ export default function DashboardPage() {
         'pre_inscritos': stats.turmasPreInscritas
       };
 
-      if (cardDataMap[selectedCard] === 0) {
+      if (!hasUserSelectedCard && cardDataMap[selectedCard] === 0) {
         const firstAvailable = Object.entries(cardDataMap).find(([_, value]) => value > 0);
         if (firstAvailable) {
           setSelectedCard(firstAvailable[0]);
         }
       }
     }
-  }, [dashboardData, stats, selectedCard]);
+  }, [dashboardData, stats, selectedCard, hasUserSelectedCard]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -110,6 +123,7 @@ export default function DashboardPage() {
 
   const handleCardClick = (cardId: string) => {
     setSelectedCard(cardId);
+    setHasUserSelectedCard(true);
     setCurrentPage(1);
     setTimeout(() => {
       detailsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -321,6 +335,14 @@ export default function DashboardPage() {
       icon: Award, 
       color: 'bg-blue-600',
       shouldShow: stats.turmasEspeciais > 0
+    },
+    { 
+      id: 'pre_inscritos',
+      name: isPt ? 'Turmas Pré-Inscritas' : 'Pre-registered Classes', 
+      value: stats.turmasPreInscritas || 0, 
+      icon: Users, 
+      color: 'bg-red-600',
+      shouldShow: (stats.turmasPreInscritas || 0) > 0
     }
   ];
 
@@ -925,6 +947,7 @@ export default function DashboardPage() {
               turmas={turmasExpeditoList} 
               title={t.dashboard.turmasExpedito} 
               onDelete={handleDeleteTurma}
+              selectedCard="expedito"
             />
           </motion.div>
         )}
@@ -941,6 +964,7 @@ export default function DashboardPage() {
               turmas={turmasCarreiraList} 
               title={t.dashboard.turmasCarreira} 
               onDelete={handleDeleteTurma}
+              selectedCard="carreira"
             />
           </motion.div>
         )}
@@ -957,6 +981,24 @@ export default function DashboardPage() {
               turmas={turmasEspeciaisList} 
               title={t.dashboard.turmasEspeciais} 
               onDelete={handleDeleteTurma}
+              selectedCard="especial"
+            />
+          </motion.div>
+        )}
+
+        {selectedCard === 'pre_inscritos' && (
+          <motion.div
+            key="pre_inscritos"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            transition={{ duration: 0.2 }}
+          >
+            <TurmasListTable 
+              turmas={turmasPreInscritasList} 
+              title={isPt ? 'Turmas Pré-Inscritas' : 'Pre-registered Classes'} 
+              onDelete={handleDeleteTurma}
+              selectedCard="pre_inscritos"
             />
           </motion.div>
         )}
@@ -1212,7 +1254,7 @@ export default function DashboardPage() {
   );
 }
 
-function TurmasListTable({ turmas, title, onDelete }: { turmas: any[], title: string, onDelete?: (id: string) => void }) {
+function TurmasListTable({ turmas, title, onDelete, selectedCard }: { turmas: any[], title: string, onDelete?: (id: string) => void, selectedCard?: string }) {
   const { t, language } = useI18n();
   const { isAdmin } = useUser();
   const router = useRouter();
@@ -1279,7 +1321,7 @@ function TurmasListTable({ turmas, title, onDelete }: { turmas: any[], title: st
                     "hover:bg-slate-50"
                   )}
                   onClick={() => {
-                    router.push(`/turmas?action=edit-class&turmaId=${turma.id}`);
+                    router.push(`/turmas?action=view-students&turmaId=${turma.id}&returnTo=dashboard&card=${selectedCard || 'expedito'}`);
                   }}
                 >
                   <td className="px-6 py-4">

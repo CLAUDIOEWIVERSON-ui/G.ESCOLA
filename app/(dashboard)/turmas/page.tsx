@@ -665,6 +665,15 @@ function TurmasContent() {
     }
   };
 
+  const handleCloseStudentsModal = () => {
+    setIsStudentsModalOpen(false);
+    const returnTo = searchParams ? searchParams.get('returnTo') : null;
+    const returnCard = searchParams ? searchParams.get('card') : null;
+    if (returnTo === 'dashboard') {
+      router.push(`/dashboard${returnCard ? `?card=${returnCard}` : ''}`);
+    }
+  };
+
   useEffect(() => {
     if (loading || !turmas || turmas.length === 0) return;
 
@@ -690,6 +699,18 @@ function TurmasContent() {
         }, 0);
       }
       clearParams();
+    } else if (action === 'view-students' && turmaId) {
+      const targetTurma = turmas.find((t: any) => t.id === turmaId);
+      if (targetTurma) {
+        setTimeout(() => {
+          setViewingTurma(targetTurma);
+          handleViewStudents(targetTurma);
+        }, 0);
+      }
+      const newParams = new URLSearchParams(searchParams ? searchParams.toString() : '');
+      newParams.delete('action');
+      newParams.delete('turmaId');
+      router.replace(`${pathname}?${newParams.toString()}`);
     } else if (action === 'edit-student' && studentId && turmaId) {
       const targetTurma = turmas.find((t: any) => t.id === turmaId);
       if (targetTurma) {
@@ -2034,7 +2055,7 @@ function TurmasContent() {
 
       <Modal
         isOpen={isStudentsModalOpen}
-        onClose={() => setIsStudentsModalOpen(false)}
+        onClose={handleCloseStudentsModal}
         title={`${t.nav.students} - ${viewingTurma?.nome}`}
       >
         <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-100">
@@ -2271,7 +2292,7 @@ function TurmasContent() {
         </div>
         <div className="mt-6 flex gap-3">
           <button
-            onClick={() => setIsStudentsModalOpen(false)}
+            onClick={handleCloseStudentsModal}
             className="flex-1 px-4 py-2.5 bg-slate-100 text-slate-600 rounded-lg font-bold text-sm hover:bg-slate-200 transition-all flex items-center justify-center gap-2"
           >
             {t.common.close}
