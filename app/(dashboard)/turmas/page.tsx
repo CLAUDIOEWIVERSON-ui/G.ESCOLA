@@ -674,6 +674,16 @@ function TurmasContent() {
     }
   };
 
+  const handleCloseStudentDetailModal = () => {
+    setIsStudentFormOpen(false);
+    const returnTo = searchParams ? searchParams.get('returnTo') : null;
+    const returnCard = searchParams ? searchParams.get('card') : null;
+    if (returnTo === 'dashboard') {
+      setIsStudentsModalOpen(false);
+      router.push(`/dashboard${returnCard ? `?card=${returnCard}` : ''}`);
+    }
+  };
+
   useEffect(() => {
     if (loading || !turmas || turmas.length === 0) return;
 
@@ -711,8 +721,8 @@ function TurmasContent() {
       newParams.delete('action');
       newParams.delete('turmaId');
       router.replace(`${pathname}?${newParams.toString()}`);
-    } else if (action === 'edit-student' && studentId && turmaId) {
-      const targetTurma = turmas.find((t: any) => t.id === turmaId);
+    } else if (action === 'edit-student' && studentId) {
+      const targetTurma = turmaId ? turmas.find((t: any) => t.id === turmaId) : null;
       if (targetTurma) {
         setTimeout(() => {
           setViewingTurma(targetTurma);
@@ -2364,7 +2374,7 @@ function TurmasContent() {
 
       <StudentDetailEditModal
         isOpen={isStudentFormOpen}
-        onClose={() => setIsStudentFormOpen(false)}
+        onClose={handleCloseStudentDetailModal}
         aluno={currentAluno?.id ? currentAluno : null}
         turmaId={viewingTurma?.id}
         onSave={async () => {

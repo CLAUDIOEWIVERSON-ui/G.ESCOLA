@@ -772,7 +772,10 @@ export default function DashboardPage() {
                             "hover:bg-slate-50"
                           )}
                           onClick={() => {
-                            setSelectedAlunoForEdit(aluno);
+                            const tId = aluno.turma_id || (Array.isArray(aluno.turma) ? aluno.turma[0]?.id : aluno.turma?.id);
+                            if (aluno.id) {
+                              router.push(`/turmas?action=edit-student&studentId=${aluno.id}${tId ? `&turmaId=${tId}` : ''}&returnTo=dashboard&card=exterior`);
+                            }
                           }}
                         >
                           <td className="px-6 py-4">
