@@ -29,7 +29,11 @@ import {
   ChevronRight,
   MousePointerClick,
   Trash2,
-  Printer
+  Printer,
+  Maximize2,
+  Copy,
+  Sprout,
+  Lightbulb
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import ExchangeRateTicker from '@/components/ExchangeRateTicker';
@@ -161,6 +165,8 @@ export default function DashboardPage() {
   const [pensamento, setPensamento] = useState<{ texto: string; autor: string; reflexao?: string; id?: string; isDemo?: boolean } | null>(null);
   const [loadingPensamento, setLoadingPensamento] = useState(true);
   const [isEditingPensamento, setIsEditingPensamento] = useState(false);
+  const [isSementeModalOpen, setIsSementeModalOpen] = useState(false);
+  const [copiedSemente, setCopiedSemente] = useState(false);
   const [editTexto, setEditTexto] = useState('');
   const [editAutor, setEditAutor] = useState('');
   const [editReflexao, setEditReflexao] = useState('');
@@ -392,113 +398,300 @@ export default function DashboardPage() {
         </motion.div>
       )}
 
-      {/* PENSAMENTO DO DIA (SUBLIME & DISCRETO) */}
+      {/* PENSAMENTO DO DIA / SEMENTE DIÁRIA (LAYOUT DEFINIDO E EXPANSÍVEL) */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative flex flex-col md:flex-row md:items-center justify-between gap-3 p-3 bg-slate-50/70 border border-slate-200/50 rounded-xl text-slate-600 text-xs"
+        onClick={() => setIsSementeModalOpen(true)}
+        className="relative flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 bg-gradient-to-r from-emerald-50/70 via-slate-50/90 to-amber-50/50 border border-emerald-200/70 rounded-2xl text-slate-700 shadow-sm hover:shadow-md transition-all cursor-pointer group"
       >
-        <div className="flex items-start md:items-center gap-2.5 flex-1 min-w-0">
-          <Quote size={12} className="text-indigo-500/70 shrink-0 mt-0.5 md:mt-0" />
-          <div className="flex-1 min-w-0 leading-relaxed text-slate-600 font-sans">
+        <div className="flex flex-col gap-2 flex-1 min-w-0">
+          {/* Tag Header: DEFININDO QUEM É SEMENTE E QUEM É REFLEXÃO */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 bg-emerald-100 text-emerald-800 border border-emerald-300/80 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm">
+              <Sprout size={11} className="text-emerald-700" />
+              Semente Diária (Citação)
+            </span>
+            {pensamento?.reflexao && (
+              <span className="inline-flex items-center gap-1.5 bg-amber-100 text-amber-800 border border-amber-300/80 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm">
+                <Lightbulb size={11} className="text-amber-700" />
+                Reflexão Prática
+              </span>
+            )}
+            {pensamento?.isDemo && profile?.role === 'admin' && (
+              <span className="text-[9px] text-amber-600 font-bold px-1.5 py-0.5 rounded border border-amber-200/60 bg-amber-50" title="Tabela pensamento_dia ausente. Vá em Configurações e execute a migração 31_create_pensamento_dia.sql.">
+                ⚠️ Demo
+              </span>
+            )}
+            <span className="text-[10px] text-slate-400 group-hover:text-indigo-600 font-semibold transition-colors flex items-center gap-1 ml-auto">
+              Clique para expandir
+              <Maximize2 size={11} />
+            </span>
+          </div>
+
+          {/* Semente Diária (Quote & Author) */}
+          <div className="leading-relaxed text-slate-700 font-sans">
             {loadingPensamento ? (
-              <span className="animate-pulse bg-slate-200 h-3 w-48 inline-block rounded" />
+              <span className="animate-pulse bg-slate-200 h-4 w-64 inline-block rounded" />
             ) : pensamento ? (
-              <span className="text-xs">
-                <span className="font-bold text-[10px] text-slate-400 uppercase tracking-wider mr-2 select-none">
-                  Semente Diária:
-                </span>
-                <span className="font-serif italic text-slate-700 font-medium leading-normal">
+              <div>
+                <span className="font-serif italic text-slate-800 font-semibold text-sm sm:text-base leading-normal">
                   &ldquo;{pensamento.texto}&rdquo;
                 </span>
-                <span className="text-[11px] text-slate-500 font-medium ml-1.5 not-italic select-all">— {pensamento.autor}</span>
+                <span className="text-xs font-bold text-slate-500 ml-2 not-italic select-all">
+                  — {pensamento.autor}
+                </span>
+
+                {/* Reflexão Diária Preview (Lesson & Application) */}
                 {pensamento.reflexao && (
-                  <span className="block mt-1 pl-3 border-l-2 border-transparent text-[11px] text-slate-500 leading-relaxed font-sans font-medium">
-                    {pensamento.reflexao}
-                  </span>
+                  <div className="mt-2.5 pt-2 border-t border-slate-200/70 flex items-start gap-2">
+                    <span className="font-bold text-[10px] text-amber-800 uppercase tracking-wider shrink-0 mt-0.5">
+                      💡 Reflexão:
+                    </span>
+                    <span className="text-xs text-slate-600 font-sans leading-relaxed line-clamp-2">
+                      {pensamento.reflexao}
+                    </span>
+                  </div>
                 )}
-                {pensamento?.isDemo && profile?.role === 'admin' && (
-                  <span className="text-[9px] text-amber-600 font-bold ml-2 inline-flex items-center gap-0.5 bg-amber-50 px-1 py-0.2 rounded border border-amber-200/40" title="Tabela pensamento_dia ausente. O pensamento de hoje expirará. Vá em Configurações e execute a migração 31_create_pensamento_dia.sql.">
-                    ⚠️ Demo
-                  </span>
-                )}
-              </span>
+              </div>
             ) : (
-              <span className="italic text-slate-400 text-xs">Uma nova reflexão está sendo colhida...</span>
+              <span className="italic text-slate-400 text-xs">Uma nova semente diária está sendo colhida...</span>
             )}
           </div>
         </div>
 
-        {/* Controls for Admin Roles */}
-        {profile?.role === 'admin' && (
-          <div className="flex items-center gap-1.5 shrink-0 self-end md:self-center relative">
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedIaCategory('');
-                setIsEditingPensamento(true);
-              }}
-              className="flex items-center gap-1 bg-white hover:bg-slate-50 text-slate-500 hover:text-slate-800 text-[10px] font-bold px-2.5 py-1 rounded-md transition-all border border-slate-200/60 shadow-none active:scale-95"
-            >
-              <Pencil size={10} className="text-slate-400" />
-              Editar
-            </button>
+        {/* Controls Column */}
+        <div className="flex items-center gap-2 shrink-0 self-end md:self-center relative">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsSementeModalOpen(true);
+            }}
+            className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-all shadow-sm active:scale-95 shrink-0"
+            title="Expandir para ler a Semente Diária e Reflexão na tela popup com fundo distorcido"
+          >
+            <Maximize2 size={13} />
+            Ler no Popup
+          </button>
 
-            <div className="relative">
+          {/* Admin controls */}
+          {profile?.role === 'admin' && (
+            <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
               <button
                 type="button"
-                disabled={regeneratingPensamento}
-                onClick={() => setCategorySelectorOpen(!categorySelectorOpen)}
-                className="flex items-center gap-1 bg-indigo-50/40 hover:bg-indigo-50 text-indigo-600 hover:text-indigo-800 text-[10px] font-bold px-2.5 py-1 rounded-md transition-all border border-indigo-100/40 shadow-none active:scale-95 disabled:opacity-50"
+                onClick={() => {
+                  setSelectedIaCategory('');
+                  setIsEditingPensamento(true);
+                }}
+                className="flex items-center gap-1 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-800 text-[10px] font-bold px-2.5 py-1.5 rounded-lg transition-all border border-slate-200 shadow-none active:scale-95"
               >
-                {regeneratingPensamento ? (
-                  <Loader2 size={10} className="animate-spin text-indigo-400" />
-                ) : (
-                  <Sparkles size={10} className="text-indigo-400" />
-                )}
-                Renovar com IA
-                <ChevronDown size={8} className="text-indigo-400 ml-0.5" />
+                <Pencil size={11} className="text-slate-400" />
+                Editar
               </button>
 
-              {categorySelectorOpen && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setCategorySelectorOpen(false)} />
-                  <div className="absolute right-0 bottom-full mb-1.5 z-50 w-56 bg-white border border-slate-200 rounded-lg shadow-xl py-1 flex flex-col text-[10px] text-slate-700 font-sans max-h-60 overflow-y-auto">
-                    <div className="px-2.5 py-1 text-[8px] font-black uppercase text-slate-400 tracking-wider border-b border-slate-100 mb-1 sticky top-0 bg-white">
-                      Escolher Categoria IA
+              <div className="relative">
+                <button
+                  type="button"
+                  disabled={regeneratingPensamento}
+                  onClick={() => setCategorySelectorOpen(!categorySelectorOpen)}
+                  className="flex items-center gap-1 bg-indigo-50/60 hover:bg-indigo-100/70 text-indigo-700 hover:text-indigo-900 text-[10px] font-bold px-2.5 py-1.5 rounded-lg transition-all border border-indigo-200/60 shadow-none active:scale-95 disabled:opacity-50"
+                >
+                  {regeneratingPensamento ? (
+                    <Loader2 size={11} className="animate-spin text-indigo-500" />
+                  ) : (
+                    <Sparkles size={11} className="text-indigo-500" />
+                  )}
+                  Renovar IA
+                  <ChevronDown size={10} className="text-indigo-500 ml-0.5" />
+                </button>
+
+                {categorySelectorOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setCategorySelectorOpen(false)} />
+                    <div className="absolute right-0 bottom-full mb-1.5 z-50 w-56 bg-white border border-slate-200 rounded-xl shadow-xl py-1 flex flex-col text-[10px] text-slate-700 font-sans max-h-60 overflow-y-auto">
+                      <div className="px-3 py-1.5 text-[9px] font-black uppercase text-slate-400 tracking-wider border-b border-slate-100 mb-1 sticky top-0 bg-white">
+                        Escolher Categoria IA
+                      </div>
+                      {[
+                        { id: '', label: '🎲 Padrão / Geral' },
+                        { id: 'religioso', label: '⛪ Religioso / Fé' },
+                        { id: 'motivacional', label: '💪 Motivacional' },
+                        { id: 'filosofico', label: '📜 Filosófico' },
+                        { id: 'estoico', label: '🏛️ Estoico / Resiliência' },
+                        { id: 'lideranca', label: '👔 Liderança / Carreira' },
+                        { id: 'oriental', label: '🌸 Oriental / Zen' },
+                        { id: 'criatividade', label: '💡 Criatividade' },
+                        { id: 'gratidao', label: '🤝 Gratidão' },
+                        { id: 'otimismo', label: '🌅 Otimismo / Esperança' },
+                        { id: 'educacao', label: '📚 Educação / Sabedoria' }
+                      ].map((cat) => (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          onClick={() => {
+                            setCategorySelectorOpen(false);
+                            fetchPensamento(true, cat.id);
+                          }}
+                          className="w-full text-left px-3 py-2 hover:bg-slate-50 flex items-center gap-1.5 font-semibold text-slate-600 transition-colors text-xs"
+                        >
+                          {cat.label}
+                        </button>
+                      ))}
                     </div>
-                    {[
-                      { id: '', label: '🎲 Padrão / Geral' },
-                      { id: 'religioso', label: '⛪ Religioso / Fé' },
-                      { id: 'motivacional', label: '💪 Motivacional' },
-                      { id: 'filosofico', label: '📜 Filosófico' },
-                      { id: 'estoico', label: '🏛️ Estoico / Resiliência' },
-                      { id: 'lideranca', label: '👔 Liderança / Carreira' },
-                      { id: 'oriental', label: '🌸 Oriental / Zen' },
-                      { id: 'criatividade', label: '💡 Criatividade' },
-                      { id: 'gratidao', label: '🤝 Gratidão' },
-                      { id: 'otimismo', label: '🌅 Otimismo / Esperança' },
-                      { id: 'educacao', label: '📚 Educação / Sabedoria' }
-                    ].map((cat) => (
-                      <button
-                        key={cat.id}
-                        type="button"
-                        onClick={() => {
-                          setCategorySelectorOpen(false);
-                          fetchPensamento(true, cat.id);
-                        }}
-                        className="w-full text-left px-2.5 py-1.5 hover:bg-slate-50 flex items-center gap-1.5 font-semibold text-slate-600 transition-colors"
-                      >
-                        {cat.label}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
+                  </>
+                )}
+              </div>
             </div>
+          )}
+        </div>
+      </motion.div>
+
+      {/* SEMENTE DIÁRIA POPUP MODAL COM FUNDO DISTORCIDO (BACKDROP-BLUR & SATURATE) */}
+      <AnimatePresence>
+        {isSementeModalOpen && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-950/70 backdrop-blur-xl backdrop-saturate-200 transition-all duration-300"
+            onClick={() => setIsSementeModalOpen(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92, y: 24 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 24 }}
+              transition={{ duration: 0.22, ease: 'easeOut' }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-200/80 flex flex-col max-h-[90vh] text-slate-800"
+            >
+              {/* Modal Gradient Header */}
+              <div className="bg-gradient-to-r from-emerald-900 via-slate-900 to-indigo-950 p-6 text-white flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-400">
+                    <Sprout size={22} />
+                  </div>
+                  <div>
+                    <h3 className="text-lg sm:text-xl font-black tracking-tight text-white flex items-center gap-2">
+                      Semente Diária & Reflexão
+                    </h3>
+                    <p className="text-xs text-emerald-200/80 font-medium">
+                      Meditação, inspiração e aplicação prática para a sua jornada
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsSementeModalOpen(false)}
+                  className="p-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-full transition-colors"
+                  title="Fechar popup"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Modal Body with well-defined Semente vs. Reflexão cards */}
+              <div className="p-6 sm:p-8 overflow-y-auto space-y-6 flex-1">
+                {/* BOX 1: SEMENTE DIÁRIA (A Citação) */}
+                <div className="bg-gradient-to-br from-emerald-50/90 to-teal-50/60 border-2 border-emerald-300/80 rounded-2xl p-6 sm:p-7 shadow-sm relative">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="inline-flex items-center gap-1.5 bg-emerald-600 text-white text-[11px] font-black uppercase tracking-wider px-3 py-1 rounded-full shadow-sm">
+                      <Sprout size={12} />
+                      1. Semente Diária (Citação)
+                    </span>
+                  </div>
+                  <blockquote className="text-lg sm:text-2xl font-serif italic text-emerald-950 leading-relaxed font-semibold my-2">
+                    &ldquo;{pensamento?.texto}&rdquo;
+                  </blockquote>
+                  <div className="mt-4 pt-3 border-t border-emerald-200/60 flex items-center justify-between">
+                    <span className="text-sm sm:text-base font-bold text-emerald-800 tracking-wide">
+                      — {pensamento?.autor}
+                    </span>
+                    <span className="text-[11px] font-bold text-emerald-600/80 uppercase tracking-wider">
+                      Sabedoria & Fé
+                    </span>
+                  </div>
+                </div>
+
+                {/* BOX 2: REFLEXÃO & APLICAÇÃO PRÁTICA (A Lição) */}
+                <div className="bg-gradient-to-br from-amber-50/90 to-orange-50/60 border-2 border-amber-300/80 rounded-2xl p-6 sm:p-7 shadow-sm relative">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="inline-flex items-center gap-1.5 bg-amber-600 text-white text-[11px] font-black uppercase tracking-wider px-3 py-1 rounded-full shadow-sm">
+                      <Lightbulb size={12} />
+                      2. Reflexão & Aplicação Prática
+                    </span>
+                  </div>
+                  {pensamento?.reflexao ? (
+                    <p className="text-sm sm:text-lg text-slate-800 font-sans leading-relaxed font-medium my-2">
+                      {pensamento.reflexao}
+                    </p>
+                  ) : (
+                    <p className="text-sm sm:text-base text-slate-500 italic my-2">
+                      Sem reflexão adicional cadastrada para esta Semente Diária. Dedique um momento para contemplar a mensagem de {pensamento?.autor || 'hoje'}.
+                    </p>
+                  )}
+                  <div className="mt-4 pt-3 border-t border-amber-200/60 flex items-center justify-between">
+                    <span className="text-xs font-semibold text-amber-800/80">
+                      Como aplicar essa lição no dia a dia da turma
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-4 sm:p-5 bg-slate-50 border-t border-slate-200/80 flex flex-wrap items-center justify-between gap-3 shrink-0">
+                <div className="flex items-center gap-2">
+                  {profile?.role === 'admin' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsSementeModalOpen(false);
+                        setIsEditingPensamento(true);
+                      }}
+                      className="flex items-center gap-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-sm active:scale-95"
+                    >
+                      <Pencil size={13} className="text-slate-500" />
+                      Editar Semente
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 ml-auto">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!pensamento) return;
+                      const copyText = `🌱 Semente Diária (Citação):\n"${pensamento.texto}" — ${pensamento.autor}\n\n💡 Reflexão Prática:\n${pensamento.reflexao || 'Contemple esta mensagem para o seu dia.'}`;
+                      navigator.clipboard.writeText(copyText);
+                      setCopiedSemente(true);
+                      toast.success('Semente Diária e Reflexão copiadas!');
+                      setTimeout(() => setCopiedSemente(false), 2500);
+                    }}
+                    className="flex items-center gap-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl transition-all shadow-sm active:scale-95"
+                  >
+                    {copiedSemente ? (
+                      <>
+                        <Check size={14} className="text-emerald-600" />
+                        <span className="text-emerald-700 font-bold">Copiado!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy size={14} className="text-slate-500" />
+                        Copiar Semente
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsSementeModalOpen(false)}
+                    className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl transition-all shadow-md active:scale-95"
+                  >
+                    Fechar
+                  </button>
+                </div>
+              </div>
+            </motion.div>
           </div>
         )}
-      </motion.div>
+      </AnimatePresence>
 
       {/* EDIT MODAL */}
       <AnimatePresence>
@@ -584,8 +777,9 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
-                    Pensamento / Citação
+                  <label className="text-xs font-black text-emerald-800 uppercase tracking-wider flex items-center gap-1.5">
+                    <Sprout size={13} className="text-emerald-600" />
+                    1. Semente Diária (Citação / Pensamento)
                   </label>
                   <textarea
                     rows={4}
@@ -600,7 +794,7 @@ export default function DashboardPage() {
 
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
-                    Autor
+                    👤 Autor da Semente Diária
                   </label>
                   <input
                     type="text"
@@ -613,8 +807,9 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
-                    Reflexão e Lição Prática
+                  <label className="text-xs font-black text-amber-800 uppercase tracking-wider flex items-center gap-1.5">
+                    <Lightbulb size={13} className="text-amber-600" />
+                    2. Reflexão Diária (Lição Prática e Aplicação)
                   </label>
                   <textarea
                     rows={3}
@@ -772,10 +967,7 @@ export default function DashboardPage() {
                             "hover:bg-slate-50"
                           )}
                           onClick={() => {
-                            const tId = aluno.turma_id || (Array.isArray(aluno.turma) ? aluno.turma[0]?.id : aluno.turma?.id);
-                            if (aluno.id) {
-                              router.push(`/turmas?action=edit-student&studentId=${aluno.id}${tId ? `&turmaId=${tId}` : ''}&returnTo=dashboard&card=exterior`);
-                            }
+                            setSelectedAlunoForEdit(aluno);
                           }}
                         >
                           <td className="px-6 py-4">
