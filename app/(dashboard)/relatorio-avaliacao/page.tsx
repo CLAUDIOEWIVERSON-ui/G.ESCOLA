@@ -486,6 +486,7 @@ function RelatorioAvaliacaoAdminContent() {
         }, 0);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userLoading, isAdmin, profile]);
 
   // Re-apply filters using a pure memo (no effect side-effects)

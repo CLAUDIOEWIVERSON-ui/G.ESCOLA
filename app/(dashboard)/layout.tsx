@@ -101,6 +101,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     fetchOnlineUsers();
     const interval = setInterval(fetchOnlineUsers, 15000); // refresh every 15s for admins
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin]);
 
   const toggleSubmenu = (path: string, e: React.MouseEvent) => {
@@ -132,6 +133,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  useEffect(() => {
+    if (window.innerWidth < 1024) {
+      setSidebarOpen(false);
+    }
+  }, [pathname]);
 
   const isNifStudent = profile?.role === 'aluno' && (profile as any).isNifStudent;
 

@@ -1255,6 +1255,7 @@ function BoletimContent() {
       setBoletimData([]);
       setClassStats({ avg: 0, total: 0 });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTurma, selectedAno, disciplinasLength]);
 
   const getStatus = (final: number | null, freq: number | null) => {
