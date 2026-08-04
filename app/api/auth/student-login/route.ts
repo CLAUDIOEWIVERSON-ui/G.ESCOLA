@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     // Search for student in database
     const { data: student, error: studentError } = await supabaseAdmin
       .from('alunos')
-      .select('id, nome, turma_id, genero, matricula, posto_graduacao, om')
+      .select('id, nome, turma_id, genero, matricula, posto_graduacao, nome_guerra, om')
       .eq('id', accessRecord.student_id)
       .maybeSingle();
 

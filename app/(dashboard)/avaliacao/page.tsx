@@ -352,7 +352,7 @@ function AvaliacaoAlunoForm() {
       // 2. Fetch Alunos (students enrolled)
       const { data: students, error: studErr } = await supabase
         .from('alunos')
-        .select('id, nome, posto_graduacao, om, matricula')
+        .select('id, nome, posto_graduacao, nome_guerra, om, matricula')
         .eq('turma_id', tId)
         .is('deleted_at', null);
 
@@ -389,6 +389,7 @@ function AvaliacaoAlunoForm() {
         id: unusedStudent.id,
         nome: "Aluno da Turma - Entrada via QR Code",
         posto_graduacao: "Não especificado",
+        nome_guerra: "Não especificado",
         om: "Não especificada",
         matricula: "QR-Code",
         turma_id: tId,
@@ -427,6 +428,7 @@ function AvaliacaoAlunoForm() {
           id,
           nome,
           posto_graduacao,
+          nome_guerra,
           om,
           matricula,
           turma_id,
@@ -1036,6 +1038,15 @@ function AvaliacaoAlunoForm() {
               </div>
               <div>
                 <span className="inline-flex items-center gap-1 font-bold text-slate-500 uppercase text-[9px]">
+                  <User size={10} className="text-slate-500" />
+                  Nome de Guerra:
+                </span>
+                <p className="text-xs font-semibold text-slate-900 mt-1 border-b border-dashed border-slate-400 pb-0.5 h-5">
+                  {studentDetails?.nome_guerra || ""}
+                </p>
+              </div>
+              <div>
+                <span className="inline-flex items-center gap-1 font-bold text-slate-500 uppercase text-[9px]">
                   <Home size={10} className="text-slate-500" />
                   Organização Militar (OM):
                 </span>
@@ -1313,6 +1324,14 @@ function AvaliacaoAlunoForm() {
                     <span className="text-xs font-bold font-mono uppercase tracking-wide">Posto / Graduação</span>
                   </div>
                   <p className="text-sm font-bold text-slate-800 mt-1">{studentDetails.posto_graduacao || "Soldado/Cadete"}</p>
+                </div>
+
+                <div className="border border-slate-100 rounded-lg p-4 bg-slate-50/50">
+                  <div className="flex items-center gap-2 text-slate-500">
+                    <User className="h-4 w-4" />
+                    <span className="text-xs font-bold font-mono uppercase tracking-wide">Nome de Guerra</span>
+                  </div>
+                  <p className="text-sm font-bold text-slate-800 mt-1">{studentDetails.nome_guerra || "Não especificado"}</p>
                 </div>
 
                 <div className="border border-slate-100 rounded-lg p-4 bg-slate-50/50">

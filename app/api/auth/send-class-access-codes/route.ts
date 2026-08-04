@@ -29,14 +29,14 @@ export async function POST(req: NextRequest) {
     // 2. Fetch all students in this class
     const { data: students, error: studentsErr } = await supabaseAdmin
       .from('alunos')
-      .select('id, nome, email, posto_graduacao, om')
+      .select('id, nome, email, posto_graduacao, nome_guerra, om')
       .eq('id_turma_delete_check', classId) // Or use a fallback column if needed, wait let's query standard turma_id
       .is('deleted_at', null);
 
     // Let's fallback to standard query
     const { data: studentsStandard, error: standardErr } = await supabaseAdmin
       .from('alunos')
-      .select('id, nome, email, posto_graduacao, om')
+      .select('id, nome, email, posto_graduacao, nome_guerra, om')
       .eq('turma_id', classId)
       .is('deleted_at', null);
 

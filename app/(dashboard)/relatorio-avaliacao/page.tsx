@@ -366,7 +366,7 @@ function RelatorioAvaliacaoAdminContent() {
       // Fetch Alunos
       const { data: alunosData } = await supabase
         .from('alunos')
-        .select('id, nome, turma_id, posto_graduacao, om, matricula, email')
+        .select('id, nome, turma_id, posto_graduacao, nome_guerra, om, matricula, email')
         .is('deleted_at', null);
 
       // Filter out students belonging to international/exterior classes or classes outside instructor's group
@@ -554,6 +554,7 @@ function RelatorioAvaliacaoAdminContent() {
           id: stud.id,
           nome: stud.nome,
           posto_graduacao: stud.posto_graduacao,
+          nome_guerra: stud.nome_guerra,
           om: stud.om,
           matricula: stud.matricula,
           turma_id: stud.turma_id,
@@ -575,6 +576,7 @@ function RelatorioAvaliacaoAdminContent() {
             id: sub.aluno_id,
             nome: sub.aluno.nome,
             posto_graduacao: sub.aluno.posto_graduacao,
+            nome_guerra: sub.aluno.nome_guerra,
             om: sub.aluno.om,
             matricula: sub.aluno.matricula,
             turma_id: sub.turma_id,
