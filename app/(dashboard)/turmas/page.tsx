@@ -2251,8 +2251,12 @@ function TurmasContent() {
                       )}
                     </div>
                     <div>
-                      <div className="font-bold text-slate-800 text-sm">{aluno.nome}</div>
-                      <div className="text-[10px] text-slate-500 font-medium">{aluno.posto_graduacao || ''} • {aluno.matricula}</div>
+                      <div className="font-bold text-slate-800 text-sm">
+                        {aluno.nome}
+                      </div>
+                      <div className="text-[10px] text-slate-500 font-medium">
+                        {[aluno.posto_graduacao, aluno.nome_guerra].filter(Boolean).join(' ') || 'Aluno'} • {aluno.matricula}
+                      </div>
                       
                       {(aluno.data_nascimento || aluno.funcao) && (
                         <div className="flex flex-wrap gap-1.5 mt-1">
@@ -2816,7 +2820,7 @@ function TurmasContent() {
                             >
                               <div className="flex flex-col justify-center py-0.5 leading-tight">
                                 <span className={cn(isCiabaOrCiaga ? "text-[8px] truncate block" : "")}>
-                                  {student.posto_graduacao ? `${student.posto_graduacao} ${student.nome}` : student.nome}
+                                  {student.posto_graduacao || student.nome_guerra ? `${student.posto_graduacao || ''} ${student.nome_guerra || student.nome}`.trim() : student.nome}
                                 </span>
 
                               </div>
@@ -3203,9 +3207,9 @@ function TurmasContent() {
                                   {student.nome}
                                 </div>
                                 <div className="text-[10px] text-neutral-600 font-bold uppercase mt-0.5 flex flex-wrap items-center gap-1">
-                                  {student.posto_graduacao ? (
+                                  {(student.posto_graduacao || student.nome_guerra) ? (
                                     <span className="bg-neutral-100 px-1 rounded border border-neutral-300 text-black">
-                                      {student.posto_graduacao}
+                                      {[student.posto_graduacao, student.nome_guerra].filter(Boolean).join(' ')}
                                     </span>
                                   ) : (
                                     <span className="text-neutral-500 font-medium">

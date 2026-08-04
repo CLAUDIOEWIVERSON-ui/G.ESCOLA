@@ -969,7 +969,7 @@ function BoletimContent() {
       // 1. Fetch all students currently enrolled in this class and not deleted
       const { data: students, error: studentsError } = await supabase
         .from('alunos')
-        .select('id, nome, matricula, foto_url, turma_id, status, posto_graduacao')
+        .select('id, nome, matricula, foto_url, turma_id, status, posto_graduacao, nome_guerra')
         .eq('turma_id', activeTurmaId)
         .is('deleted_at', null)
         .order('nome');
@@ -1603,6 +1603,10 @@ function BoletimContent() {
                   <div className="flex flex-col gap-0.5">
                     <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">{reportT[language as "pt" | "en"].rank}</span>
                     <span className="font-bold text-slate-800 uppercase">{reportData.student.posto_graduacao || (language === 'pt' ? 'Não declarado' : 'Not declared')}</span>
+                  </div>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">{language === 'pt' ? 'Nome de Guerra' : 'War Name'}</span>
+                    <span className="font-bold text-slate-800 uppercase">{reportData.student.nome_guerra || (language === 'pt' ? 'Não declarado' : 'Not declared')}</span>
                   </div>
                   <div className="flex flex-col gap-0.5">
                     <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Matrícula</span>
@@ -2639,10 +2643,14 @@ function BoletimContent() {
                                       <span className="text-xs font-black uppercase text-slate-800 tracking-wide mt-1 leading-tight">{reportData.student.posto_graduacao || (language === 'pt' ? 'Membro' : 'Member')}</span>
                                     </div>
                                     <div className="flex flex-col gap-0.5">
+                                      <span className="text-[8px] font-black tracking-widest text-slate-400 uppercase leading-none">{language === 'pt' ? 'Guerra' : 'War Name'}</span>
+                                      <span className="text-xs font-black uppercase text-slate-800 tracking-wide mt-1 leading-tight">{reportData.student.nome_guerra || '—'}</span>
+                                    </div>
+                                    <div className="flex flex-col gap-0.5 mt-2 pt-1.5 border-t border-slate-200/60">
                                       <span className="text-[8px] font-black tracking-widest text-slate-400 uppercase leading-none">Matrícula</span>
                                       <span className="text-xs font-mono font-black text-slate-800 mt-1 leading-tight">#{reportData.student.matricula}</span>
                                     </div>
-                                    <div className="col-span-2 flex flex-col gap-0.5 mt-2 pt-1.5 border-t border-slate-200/60">
+                                    <div className="col-span-1 flex flex-col gap-0.5 mt-2 pt-1.5 border-t border-slate-200/60">
                                       <span className="text-[8px] font-black tracking-widest text-slate-400 uppercase leading-none">{reportT[language as "pt" | "en"].course}</span>
                                       <span className="text-[10px] font-extrabold text-slate-850 break-words whitespace-normal mt-1 leading-normal">{reportData.courseObj?.nome || (language === 'pt' ? 'Não disponível' : 'Not available')}</span>
                                     </div>

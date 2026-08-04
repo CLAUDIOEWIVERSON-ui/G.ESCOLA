@@ -1,0 +1,1 @@
+DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='alunos' AND column_name='nome_guerra') THEN ALTER TABLE public.alunos ADD COLUMN nome_guerra TEXT; END IF; END $$;

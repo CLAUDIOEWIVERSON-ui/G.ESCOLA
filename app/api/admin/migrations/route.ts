@@ -509,6 +509,21 @@ export async function GET() {
             .limit(1);
           return error;
         }
+      },
+      {
+        key: 'alunos_nome_guerra',
+        tableName: 'alunos',
+        columnName: 'nome_guerra',
+        fileName: '54_add_nome_guerra_to_alunos.sql',
+        description: 'Adiciona a coluna nome_guerra na tabela de alunos.',
+        isColumn: true,
+        checkFn: async () => {
+          const { error } = await supabaseAdmin
+            .from('alunos')
+            .select('nome_guerra')
+            .limit(1);
+          return error;
+        }
       }
     ];
 

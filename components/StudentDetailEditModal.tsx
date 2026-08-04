@@ -213,7 +213,8 @@ export default function StudentDetailEditModal({
 
       dataToSave.email = (currentAluno.email && currentAluno.email.includes('@')) ? currentAluno.email.trim() : null;
       dataToSave.tipo_aluno = currentAluno.tipo_aluno || 'militar';
-      if (currentAluno.posto_graduacao) dataToSave.posto_graduacao = currentAluno.posto_graduacao;
+      if (currentAluno.posto_graduacao !== undefined) dataToSave.posto_graduacao = currentAluno.posto_graduacao;
+      if (currentAluno.nome_guerra !== undefined) dataToSave.nome_guerra = currentAluno.nome_guerra;
       if (currentAluno.rg) dataToSave.rg = currentAluno.rg;
       if (currentAluno.titulo_eleitor) dataToSave.titulo_eleitor = currentAluno.titulo_eleitor;
       if (currentAluno.nome_pai) dataToSave.nome_pai = currentAluno.nome_pai;
@@ -521,6 +522,33 @@ export default function StudentDetailEditModal({
                     placeholder={language === 'pt' ? 'Nome completo do aluno' : 'Student full name'}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-sm transition-all"
                   />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                      {language === 'pt' ? 'Posto / Graduação' : 'Rank / Grade'}
+                    </label>
+                    <input
+                      type="text"
+                      value={currentAluno?.posto_graduacao || ''}
+                      onChange={(e) => setCurrentAluno({ ...currentAluno, posto_graduacao: e.target.value })}
+                      placeholder={language === 'pt' ? 'Ex: 1º Ten, Sgt' : 'Rank'}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                      {language === 'pt' ? 'Nome de Guerra' : 'War Name'}
+                    </label>
+                    <input
+                      type="text"
+                      value={currentAluno?.nome_guerra || ''}
+                      onChange={(e) => setCurrentAluno({ ...currentAluno, nome_guerra: e.target.value })}
+                      placeholder={language === 'pt' ? 'Ex: Silva, Santos' : 'War Name'}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500"
+                    />
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

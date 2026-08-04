@@ -1010,7 +1010,7 @@ export default function DashboardPage() {
                               )}
                               <div>
                                 <div className={cn("font-bold", isPreInscrito ? "text-red-600" : "text-slate-800")}>
-                                  {aluno.posto_graduacao ? `${aluno.posto_graduacao} ` : ''}{aluno.nome}
+                                  {aluno.posto_graduacao || aluno.nome_guerra ? `${aluno.posto_graduacao || ''} ${aluno.nome_guerra || aluno.nome}`.trim() : aluno.nome}
                                 </div>
                                 <div className="text-[10px] text-slate-400 font-mono uppercase">
                                   {aluno.om || '-'}
@@ -1385,7 +1385,7 @@ export default function DashboardPage() {
                         </td>
                         <td className="p-2 border-r border-black align-middle">
                           <div className="font-bold text-xs uppercase">
-                            {aluno.posto_graduacao ? `${aluno.posto_graduacao} ` : ''}{aluno.nome}
+                            {aluno.posto_graduacao || aluno.nome_guerra ? `${aluno.posto_graduacao || ''} ${aluno.nome_guerra || aluno.nome}`.trim() : aluno.nome}
                           </div>
                           <div className={cn("text-[9px] uppercase mt-0.5 font-medium", isPreInscrito ? "text-red-600" : "text-slate-600")}>
                             {aluno.om || '-'}
