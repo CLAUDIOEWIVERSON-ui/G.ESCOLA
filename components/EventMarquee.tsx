@@ -233,11 +233,20 @@ export function EventMarquee({ thought }: EventMarqueeProps = {}) {
     }
   });
 
-  if (loading) return null;
+    const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  if (loading || isMobile) return null;
   if (filteredEventos.length === 0 && !activeThought && evaluationBanners.length === 0) return null;
 
   return (
-    <div className="w-full bg-slate-900 text-white overflow-hidden h-9 flex items-center border-b border-white/10 relative z-50 shrink-0">
+    <div className="w-full bg-slate-900 hidden md:flex text-white overflow-hidden h-9 flex items-center border-b border-white/10 relative z-50 shrink-0">
       <div className="absolute left-0 top-0 bottom-0 px-4 bg-blue-600 flex items-center gap-2 z-20 shadow-[4px_0_15px_rgba(0,0,0,0.3)]">
         <Bell size={14} className="animate-pulse text-white" />
         <span className="text-[10px] font-black uppercase tracking-tighter whitespace-nowrap">Eventos Próximos</span>
