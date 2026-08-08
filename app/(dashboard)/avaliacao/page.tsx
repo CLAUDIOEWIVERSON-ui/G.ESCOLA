@@ -1706,7 +1706,7 @@ function AvaliacaoAlunoForm() {
                 className="flex items-center gap-1 bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs font-bold px-5 py-2.5 rounded-lg transition-colors cursor-pointer"
               >
                 <ChevronLeft className="h-4 w-4" />
-                {(qrTurmaId ? currentStep === 2 : currentStep === 1) ? 'Sair' : 'Voltar'}
+                Voltar
               </button>
               <button 
                 onClick={handleNext}
@@ -1766,7 +1766,7 @@ function AvaliacaoAlunoForm() {
                 className="flex items-center gap-1 bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs font-bold px-5 py-2.5 rounded-lg transition-colors cursor-pointer"
               >
                 <ChevronLeft className="h-4 w-4" />
-                {(qrTurmaId ? currentStep === 2 : currentStep === 1) ? 'Sair' : 'Voltar'}
+                Voltar
               </button>
               <button 
                 onClick={handleNext}
@@ -1866,7 +1866,7 @@ function AvaliacaoAlunoForm() {
                 className="flex items-center gap-1 bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs font-bold px-5 py-2.5 rounded-lg transition-colors cursor-pointer"
               >
                 <ChevronLeft className="h-4 w-4" />
-                {(qrTurmaId ? currentStep === 2 : currentStep === 1) ? 'Sair' : 'Voltar'}
+                Voltar
               </button>
               <button 
                 onClick={handleNext}
@@ -1949,7 +1949,7 @@ function AvaliacaoAlunoForm() {
                 className="flex items-center gap-1 bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs font-bold px-5 py-2.5 rounded-lg transition-colors cursor-pointer"
               >
                 <ChevronLeft className="h-4 w-4" />
-                {(qrTurmaId ? currentStep === 2 : currentStep === 1) ? 'Sair' : 'Voltar'}
+                Voltar
               </button>
               
               <button 

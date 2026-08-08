@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase/client';
 import { fetchWithAuth } from '@/lib/api';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
-import { Plus, Search, User, Shield, ShieldAlert, Mail, Trash2, Pencil, Loader2, CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Search, User, Shield, ShieldAlert, Mail, Trash2, Pencil, Loader2, CheckCircle2, ChevronLeft, ChevronRight , RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import Modal from '@/components/Modal';
@@ -22,6 +22,7 @@ export default function UsuariosPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [saving, setSaving] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -74,6 +75,28 @@ export default function UsuariosPage() {
       init();
     }
   }, [isAdmin, fetchUsers]);
+
+  const handleSync = async () => {
+    if (!confirm(language === 'pt' ? 'Deseja sincronizar as contas de alunos com o módulo de turmas?' : 'Do you want to sync student accounts with the classes module?')) return;
+    
+    setIsSyncing(true);
+    try {
+      const response = await fetchWithAuth('/api/admin/users/sync', {
+        method: 'POST'
+      });
+      const data = await response.json();
+      
+      if (data.error) throw new Error(data.error);
+      
+      toast.success(data.message || (language === 'pt' ? 'Sincronização concluída com sucesso!' : 'Sync completed successfully!'));
+      fetchUsers();
+    } catch (err: any) {
+      console.error('Error syncing:', err);
+      toast.error(err.message || (language === 'pt' ? 'Erro ao sincronizar' : 'Error syncing'));
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const handleOpenModal = (user: any = null) => {
     setCurrentUser(user || { 
@@ -236,13 +259,23 @@ export default function UsuariosPage() {
           <p className="text-slate-500 text-sm mt-1">{t.users.subtitle}</p>
         </div>
         {!isConvidado && (
-          <button
-            onClick={() => handleOpenModal()}
+          <div className="flex gap-2">
+            <button
+              onClick={handleSync}
+              disabled={isSyncing}
+              className="flex items-center gap-2 bg-slate-100 text-slate-700 px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-slate-200 transition-all active:scale-[0.98] disabled:opacity-50"
+            >
+              {isSyncing ? <Loader2 size={18} className="animate-spin" /> : <RefreshCw size={18} />}
+              {language === 'pt' ? 'Sincronizar com Turmas' : 'Sync with Classes'}
+            </button>
+            <button
+              onClick={() => handleOpenModal()}
             className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 active:scale-[0.98]"
           >
             <Plus size={18} />
             {t.users.add}
-          </button>
+            </button>
+          </div>
         )}
       </div>
 
