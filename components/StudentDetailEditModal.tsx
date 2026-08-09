@@ -18,7 +18,8 @@ import {
   Copy,
   Check,
   Percent,
-  Clock
+  Clock,
+  Printer
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { toast } from 'sonner';
@@ -823,15 +824,23 @@ export default function StudentDetailEditModal({
         <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 sticky bottom-0 bg-white pb-1">
           <button
             type="button"
+            onClick={() => window.print()}
+            className="px-4 py-2 bg-slate-800 text-white rounded-xl text-sm font-bold hover:bg-slate-900 transition-colors flex items-center gap-2 print:hidden mr-auto"
+          >
+            <Printer size={16} />
+            {language === 'pt' ? 'Imprimir' : 'Print'}
+          </button>
+          <button
+            type="button"
             onClick={onClose}
-            className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-sm font-bold hover:bg-slate-50 transition-colors"
+            className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-sm font-bold hover:bg-slate-50 transition-colors print:hidden"
           >
             {language === 'pt' ? 'Cancelar / Fechar' : 'Cancel / Close'}
           </button>
           <button
             type="submit"
             disabled={saving}
-            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold shadow-sm transition-colors disabled:opacity-50"
+            className="px-6 py-2 bg-blue-600 print:hidden hover:bg-blue-700 text-white rounded-xl text-sm font-bold shadow-sm transition-colors disabled:opacity-50"
           >
             {saving 
               ? (language === 'pt' ? 'Salvando...' : 'Saving...') 

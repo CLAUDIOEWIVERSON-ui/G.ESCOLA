@@ -22,7 +22,7 @@ export default function Modal({ isOpen, onClose, title, children, className }: M
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-[rgba(15,23,42,0.4)] z-50 flex items-center justify-center p-4"
+            className="fixed print:absolute print:inset-auto print:bg-white inset-0 bg-[rgba(15,23,42,0.4)] z-50 flex items-center justify-center p-4"
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
@@ -30,7 +30,7 @@ export default function Modal({ isOpen, onClose, title, children, className }: M
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
               onClick={(e) => e.stopPropagation()}
               className={cn(
-                "bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]",
+                "bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] print:max-h-none print:shadow-none print:w-full print:max-w-full",
                 className
               )}
             >
@@ -38,13 +38,13 @@ export default function Modal({ isOpen, onClose, title, children, className }: M
                 <h2 className="text-xl font-bold text-slate-900 tracking-tight">{title}</h2>
                 <button
                   onClick={onClose}
-                  className="p-2 hover:bg-slate-50 rounded-full text-slate-400 hover:text-slate-600 transition-colors"
+                  className="print:hidden p-2 hover:bg-slate-50 rounded-full text-slate-400 hover:text-slate-600 transition-colors"
                 >
                   <X size={20} />
                 </button>
               </div>
               
-              <div className="p-6 overflow-y-auto">
+              <div className="p-6 overflow-y-auto print:overflow-visible">
                 {children}
               </div>
             </motion.div>
