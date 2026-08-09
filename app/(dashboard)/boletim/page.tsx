@@ -25,7 +25,7 @@ import {
   User,
   Percent
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';

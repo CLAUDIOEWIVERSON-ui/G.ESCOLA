@@ -35,7 +35,7 @@ import {
   Sprout,
   Lightbulb
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import ExchangeRateTicker from '@/components/ExchangeRateTicker';
 import StudentDetailEditModal from '@/components/StudentDetailEditModal';
 import Image from 'next/image';

@@ -7,7 +7,7 @@ import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
 import { Logo } from '@/components/Logo';
 import { LogIn, Mail, Lock, AlertCircle, FileText, QrCode, RefreshCw } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import jsQR from 'jsqr';
 

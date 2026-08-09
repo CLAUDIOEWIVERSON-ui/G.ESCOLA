@@ -7,7 +7,7 @@ import { useTurmas, useCursos, useDisciplinas } from '@/hooks/useCachedData';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
 import { Plus, Search, Layers as LayersIcon, Library, Calendar, Clock, MapPin, Pencil, Trash2, Loader2, CheckCircle2, RefreshCcw, Users, Mail, Phone, Building, Camera, MessageCircle, XCircle, FileText, X, GraduationCap, School, ChevronLeft, ChevronRight, Printer, Monitor, Globe, Anchor, Swords } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import Modal from '@/components/Modal';
 import StudentDetailEditModal from '@/components/StudentDetailEditModal';

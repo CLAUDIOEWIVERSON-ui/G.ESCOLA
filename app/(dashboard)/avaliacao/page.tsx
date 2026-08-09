@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { useUser } from '@/lib/auth/UserContext';
-import { motion, AnimatePresence } from 'motion/react';
+
 import { format, startOfWeek, addDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { 

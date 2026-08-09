@@ -30,7 +30,7 @@ import {
   MousePointer2,
   AlertCircle
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
 import { useUser } from '@/lib/auth/UserContext';

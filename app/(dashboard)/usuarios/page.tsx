@@ -6,7 +6,7 @@ import { fetchWithAuth } from '@/lib/api';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
 import { Plus, Search, User, Shield, ShieldAlert, Mail, Trash2, Pencil, Loader2, CheckCircle2, ChevronLeft, ChevronRight , RefreshCw } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import Modal from '@/components/Modal';
 
