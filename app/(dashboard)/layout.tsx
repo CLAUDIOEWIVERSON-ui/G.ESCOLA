@@ -27,7 +27,8 @@ import {
   ArrowRight,
   Home,
   MessageSquare,
-  MousePointer2
+  MousePointer2,
+  AlertCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
@@ -284,6 +285,33 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <Suspense fallback={null}>
           {children}
         </Suspense>
+      </div>
+    );
+  }
+
+  if (!authLoading && profile?.role === 'aluno' && !profile?.turma_id) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 relative p-6 font-sans text-slate-900">
+        <div className="flex flex-col items-center justify-center py-16 text-slate-500 gap-4 bg-white border border-slate-200 rounded-3xl p-8 shadow-sm text-center max-w-md w-full">
+          <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-2 border border-red-100">
+             <AlertCircle className="text-red-500" size={32} />
+          </div>
+          <h2 className="text-xl font-black tracking-tight text-slate-800">
+            {language === 'pt' ? 'Nenhuma matrícula' : 'No enrollment'}
+          </h2>
+          <p className="text-sm text-slate-600 font-medium leading-relaxed">
+            {language === 'pt' 
+              ? 'Não foi encontrado nenhuma matricula em turma do aluno, favor procurar a coordenação de cursos.'
+              : 'No enrollment was found for the student, please contact the course coordination.'}
+          </p>
+          <button 
+            onClick={handleLogout}
+            className="mt-6 flex items-center justify-center gap-2 w-full px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold uppercase tracking-wider rounded-xl transition-colors text-xs shadow-md"
+          >
+            <LogOut size={16} />
+            {language === 'pt' ? 'Sair da Conta' : 'Sign Out'}
+          </button>
+        </div>
       </div>
     );
   }
