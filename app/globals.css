@@ -116,52 +116,42 @@ body {
   }
 
   /* When printing Student Ficha Individual specifically, isolate the printable document */
+  @page {
+    size: A4 portrait;
+    margin: 10mm;
+  }
+
   body.printing-student-ficha {
     background: #ffffff !important;
     margin: 0 !important;
     padding: 0 !important;
   }
 
-  body.printing-student-ficha * {
-    visibility: hidden !important;
-  }
-
-  body.printing-student-ficha #print-exterior-sheet,
-  body.printing-student-ficha #print-exterior-sheet *,
-  body.printing-student-ficha #print-attendance-sheet,
-  body.printing-student-ficha #print-attendance-sheet *,
-  body.printing-student-ficha #print-students-roster-sheet,
-  body.printing-student-ficha #print-students-roster-sheet *,
-  body.printing-student-ficha #print-page-1,
-  body.printing-student-ficha #print-page-1 *,
-  body.printing-student-ficha #print-page-2,
-  body.printing-student-ficha #print-page-2 *,
-  body.printing-student-ficha table:not(.student-ficha-printable-doc table),
-  body.printing-student-ficha table:not(.student-ficha-printable-doc table) * {
+  body.printing-student-ficha > *:not(.student-ficha-printable-doc) {
     display: none !important;
     visibility: hidden !important;
     height: 0 !important;
-    min-height: 0 !important;
     max-height: 0 !important;
     overflow: hidden !important;
   }
 
-  body.printing-student-ficha .student-ficha-printable-doc,
-  body.printing-student-ficha .student-ficha-printable-doc * {
-    visibility: visible !important;
-  }
-
   body.printing-student-ficha .student-ficha-printable-doc {
     display: block !important;
-    position: absolute !important;
-    left: 0 !important;
-    top: 0 !important;
+    visibility: visible !important;
+    position: static !important;
     width: 100% !important;
-    height: auto !important;
+    max-width: 100% !important;
     margin: 0 !important;
-    padding: 10px !important;
+    padding: 0 !important;
     background: #ffffff !important;
     color: #000000 !important;
-    z-index: 9999999 !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  body.printing-student-ficha .student-ficha-printable-doc * {
+    visibility: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 }
