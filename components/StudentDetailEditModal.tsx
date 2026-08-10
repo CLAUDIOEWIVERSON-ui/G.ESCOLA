@@ -299,6 +299,14 @@ export default function StudentDetailEditModal({
     return currentAluno?.genero === 'feminino' ? militaryFemaleAvatar : militaryMaleAvatar;
   };
 
+  const handlePrint = () => {
+    document.body.classList.add('printing-student-ficha');
+    window.print();
+    setTimeout(() => {
+      document.body.classList.remove('printing-student-ficha');
+    }, 1000);
+  };
+
   const pieData = attendanceStats.total > 0 ? [
     {
       name: language === 'pt' ? 'Presenças' : 'Present',
@@ -847,7 +855,7 @@ export default function StudentDetailEditModal({
         <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 sticky bottom-0 bg-white pb-1">
           <button
             type="button"
-            onClick={() => window.print()}
+            onClick={handlePrint}
             className="px-4 py-2 bg-slate-800 text-white rounded-xl text-sm font-bold hover:bg-slate-900 transition-colors flex items-center gap-2 print:hidden mr-auto"
           >
             <Printer size={16} />
@@ -875,16 +883,15 @@ export default function StudentDetailEditModal({
       {/* ========================================================================= */}
       {/* PRINT-ONLY OFFICIAL DOCUMENT: FICHA INDIVIDUAL DO ALUNO */}
       {/* ========================================================================= */}
-      <div className="hidden print:block text-slate-900 bg-white p-2 font-sans text-xs w-full">
+      <div className="hidden print:block student-ficha-printable-doc text-slate-900 bg-white p-2 font-sans text-xs w-full">
         {/* Cabeçalho Institucional */}
         <div className="border-b-2 border-slate-900 pb-3 mb-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-16 h-16 relative shrink-0">
-              <Image
-                src={navalMissionLogo}
+            <div className="w-16 h-16 shrink-0 flex items-center justify-center">
+              <img
+                src={typeof navalMissionLogo === 'string' ? navalMissionLogo : (navalMissionLogo as any)?.src || navalMissionLogo}
                 alt="Brasão"
-                fill
-                className="object-contain"
+                className="w-16 h-16 object-contain shrink-0"
               />
             </div>
             <div>
@@ -916,21 +923,12 @@ export default function StudentDetailEditModal({
         <div className="grid grid-cols-12 gap-3 border border-slate-400 rounded-lg p-3 mb-4 bg-slate-50/50">
           {/* Foto 3x4 */}
           <div className="col-span-3 flex flex-col items-center justify-center border-r border-slate-300 pr-3">
-            <div className="w-28 h-36 border-2 border-slate-800 rounded bg-white overflow-hidden relative shadow-sm">
-              {currentAluno?.foto_url ? (
-                <img
-                  src={currentAluno.foto_url}
-                  alt={currentAluno.nome || 'Foto do Aluno'}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <Image
-                  src={getAvatarImage()}
-                  alt="Foto do Aluno"
-                  fill
-                  className="object-cover"
-                />
-              )}
+            <div className="w-28 h-36 border-2 border-slate-800 rounded bg-white overflow-hidden shadow-sm flex items-center justify-center">
+              <img
+                src={currentAluno?.foto_url || (typeof getAvatarImage() === 'string' ? getAvatarImage() : (getAvatarImage() as any)?.src)}
+                alt={currentAluno?.nome || 'Foto do Aluno'}
+                className="w-full h-full object-cover"
+              />
             </div>
             <span className="text-[8px] font-bold text-slate-500 uppercase tracking-wider mt-1">FOTO 3x4 OFICIAL</span>
           </div>
