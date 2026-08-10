@@ -118,6 +118,23 @@ body {
   /* When printing Student Ficha Individual specifically, isolate the printable document */
   body.printing-student-ficha {
     background: #ffffff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  body.printing-student-ficha #print-exterior-sheet,
+  body.printing-student-ficha #print-attendance-sheet,
+  body.printing-student-ficha #print-students-roster-sheet,
+  body.printing-student-ficha #print-page-1,
+  body.printing-student-ficha #print-page-2,
+  body.printing-student-ficha table:not(.student-ficha-printable-doc table),
+  body.printing-student-ficha main > div:not([role="dialog"]) {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    max-height: 0 !important;
+    overflow: hidden !important;
   }
 
   body.printing-student-ficha * {
@@ -137,9 +154,9 @@ body {
     width: 100% !important;
     height: auto !important;
     margin: 0 !important;
-    padding: 15px !important;
+    padding: 10px !important;
     background: #ffffff !important;
     color: #000000 !important;
-    z-index: 999999 !important;
+    z-index: 9999999 !important;
   }
 }

@@ -301,10 +301,14 @@ export default function StudentDetailEditModal({
 
   const handlePrint = () => {
     document.body.classList.add('printing-student-ficha');
-    window.print();
-    setTimeout(() => {
-      document.body.classList.remove('printing-student-ficha');
-    }, 1000);
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        window.print();
+        setTimeout(() => {
+          document.body.classList.remove('printing-student-ficha');
+        }, 1500);
+      }, 50);
+    });
   };
 
   const pieData = attendanceStats.total > 0 ? [
