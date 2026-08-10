@@ -2649,12 +2649,19 @@ function TurmasContent() {
                     body * {
                       visibility: hidden !important;
                     }
-                    #print-attendance-sheet, #print-attendance-sheet * {
+                    body:not(.printing-student-ficha) #print-attendance-sheet,
+                    body:not(.printing-student-ficha) #print-attendance-sheet * {
                       visibility: visible !important;
+                    }
+                    body.printing-student-ficha #print-attendance-sheet {
+                      display: none !important;
+                      visibility: hidden !important;
+                      height: 0 !important;
+                      overflow: hidden !important;
                     }
                     
                     /* Collapse all elements except the printable area and its descendants */
-                    *:not(#print-attendance-sheet):not(#print-attendance-sheet *) {
+                    body:not(.printing-student-ficha) *:not(#print-attendance-sheet):not(#print-attendance-sheet *) {
                       height: 0 !important;
                       min-height: 0 !important;
                       max-height: 0 !important;
@@ -2665,7 +2672,7 @@ function TurmasContent() {
                       overflow: visible !important;
                     }
 
-                    #print-attendance-sheet {
+                    body:not(.printing-student-ficha) #print-attendance-sheet {
                       visibility: visible !important;
                       position: relative !important;
                       width: ${printSheetType === 'semanal' ? '190mm' : '277mm'} !important;
@@ -3038,13 +3045,20 @@ function TurmasContent() {
                       transition: none !important;
                       opacity: 1 !important;
                     }
-                    body * {
+                    body:not(.printing-student-ficha) * {
                       visibility: hidden !important;
                     }
-                    #print-students-roster-sheet, #print-students-roster-sheet * {
+                    body:not(.printing-student-ficha) #print-students-roster-sheet,
+                    body:not(.printing-student-ficha) #print-students-roster-sheet * {
                       visibility: visible !important;
                     }
-                    *:not(#print-students-roster-sheet):not(#print-students-roster-sheet *) {
+                    body.printing-student-ficha #print-students-roster-sheet {
+                      display: none !important;
+                      visibility: hidden !important;
+                      height: 0 !important;
+                      overflow: hidden !important;
+                    }
+                    body:not(.printing-student-ficha) *:not(#print-students-roster-sheet):not(#print-students-roster-sheet *) {
                       height: 0 !important;
                       min-height: 0 !important;
                       max-height: 0 !important;
@@ -3054,7 +3068,7 @@ function TurmasContent() {
                       box-shadow: none !important;
                       overflow: visible !important;
                     }
-                    #print-students-roster-sheet {
+                    body:not(.printing-student-ficha) #print-students-roster-sheet {
                       visibility: visible !important;
                       position: relative !important;
                       width: 190mm !important;

@@ -122,23 +122,28 @@ body {
     padding: 0 !important;
   }
 
+  body.printing-student-ficha * {
+    visibility: hidden !important;
+  }
+
   body.printing-student-ficha #print-exterior-sheet,
+  body.printing-student-ficha #print-exterior-sheet *,
   body.printing-student-ficha #print-attendance-sheet,
+  body.printing-student-ficha #print-attendance-sheet *,
   body.printing-student-ficha #print-students-roster-sheet,
+  body.printing-student-ficha #print-students-roster-sheet *,
   body.printing-student-ficha #print-page-1,
+  body.printing-student-ficha #print-page-1 *,
   body.printing-student-ficha #print-page-2,
+  body.printing-student-ficha #print-page-2 *,
   body.printing-student-ficha table:not(.student-ficha-printable-doc table),
-  body.printing-student-ficha main > div:not([role="dialog"]) {
+  body.printing-student-ficha table:not(.student-ficha-printable-doc table) * {
     display: none !important;
     visibility: hidden !important;
     height: 0 !important;
     min-height: 0 !important;
     max-height: 0 !important;
     overflow: hidden !important;
-  }
-
-  body.printing-student-ficha * {
-    visibility: hidden !important;
   }
 
   body.printing-student-ficha .student-ficha-printable-doc,
@@ -148,7 +153,7 @@ body {
 
   body.printing-student-ficha .student-ficha-printable-doc {
     display: block !important;
-    position: fixed !important;
+    position: absolute !important;
     left: 0 !important;
     top: 0 !important;
     width: 100% !important;

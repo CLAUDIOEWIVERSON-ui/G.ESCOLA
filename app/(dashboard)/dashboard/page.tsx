@@ -1276,13 +1276,14 @@ export default function DashboardPage() {
                 main, div {
                   overflow: visible !important;
                 }
-                body * {
+                body:not(.printing-student-ficha) * {
                   visibility: hidden !important;
                 }
-                #print-exterior-sheet, #print-exterior-sheet * {
+                body:not(.printing-student-ficha) #print-exterior-sheet,
+                body:not(.printing-student-ficha) #print-exterior-sheet * {
                   visibility: visible !important;
                 }
-                #print-exterior-sheet {
+                body:not(.printing-student-ficha) #print-exterior-sheet {
                   display: block !important;
                   position: absolute !important;
                   left: 0 !important;
@@ -1295,6 +1296,12 @@ export default function DashboardPage() {
                   background: #ffffff !important;
                   box-shadow: none !important;
                   border: none !important;
+                }
+                body.printing-student-ficha #print-exterior-sheet {
+                  display: none !important;
+                  visibility: hidden !important;
+                  height: 0 !important;
+                  overflow: hidden !important;
                 }
                 table {
                   page-break-inside: auto !important;
