@@ -34,7 +34,7 @@ export default function Modal({ isOpen, onClose, title, children, className }: M
                 className
               )}
             >
-              <div className="flex items-center justify-between p-6 border-b border-slate-100">
+              <div className="flex items-center justify-between p-6 border-b border-slate-100 print:hidden">
                 <h2 className="text-xl font-bold text-slate-900 tracking-tight">{title}</h2>
                 <button
                   onClick={onClose}
@@ -44,7 +44,7 @@ export default function Modal({ isOpen, onClose, title, children, className }: M
                 </button>
               </div>
               
-              <div className="p-6 overflow-y-auto print:overflow-visible">
+              <div className="p-6 overflow-y-auto print:overflow-visible print:p-0">
                 {children}
               </div>
             </motion.div>
