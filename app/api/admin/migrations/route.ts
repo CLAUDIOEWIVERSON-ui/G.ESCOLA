@@ -524,6 +524,21 @@ export async function GET() {
             .limit(1);
           return error;
         }
+      },
+      {
+        key: 'alunos_dados_saude_civis',
+        tableName: 'alunos',
+        columnName: 'tipo_sanguineo',
+        fileName: '55_add_student_health_and_civil_fields.sql',
+        description: 'Adiciona campos de saúde e civis aos alunos (tipo sanguíneo, fator rh, altura, peso, estado civil).',
+        isColumn: true,
+        checkFn: async () => {
+          const { error } = await supabaseAdmin
+            .from('alunos')
+            .select('tipo_sanguineo')
+            .limit(1);
+          return error;
+        }
       }
     ];
 

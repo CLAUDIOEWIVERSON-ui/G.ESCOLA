@@ -255,6 +255,11 @@ export default function StudentDetailEditModal({
       if (currentAluno.whatsapp) dataToSave.whatsapp = currentAluno.whatsapp;
       if (currentAluno.foto_url) dataToSave.foto_url = currentAluno.foto_url;
       if (currentAluno.status) dataToSave.status = currentAluno.status;
+      if (currentAluno.tipo_sanguineo) dataToSave.tipo_sanguineo = currentAluno.tipo_sanguineo;
+      if (currentAluno.fator_rh) dataToSave.fator_rh = currentAluno.fator_rh;
+      if (currentAluno.altura) dataToSave.altura = currentAluno.altura;
+      if (currentAluno.peso) dataToSave.peso = currentAluno.peso;
+      if (currentAluno.estado_civil) dataToSave.estado_civil = currentAluno.estado_civil;
 
       if (currentAluno.data_nascimento !== undefined) {
         dataToSave.data_nascimento = currentAluno.data_nascimento ? currentAluno.data_nascimento : null;
@@ -789,7 +794,85 @@ export default function StudentDetailEditModal({
                       className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500"
                     />
                   </div>
+                </div>
 
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                      {language === 'pt' ? 'Tipo Sanguíneo' : 'Blood Type'}
+                    </label>
+                    <select
+                      value={currentAluno?.tipo_sanguineo || ''}
+                      onChange={(e) => setCurrentAluno({ ...currentAluno, tipo_sanguineo: e.target.value })}
+                      className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500"
+                    >
+                      <option value="">{language === 'pt' ? 'Selecione' : 'Select'}</option>
+                      <option value="A">A</option>
+                      <option value="B">B</option>
+                      <option value="AB">AB</option>
+                      <option value="O">O</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                      {language === 'pt' ? 'Fator RH' : 'RH Factor'}
+                    </label>
+                    <select
+                      value={currentAluno?.fator_rh || ''}
+                      onChange={(e) => setCurrentAluno({ ...currentAluno, fator_rh: e.target.value })}
+                      className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500"
+                    >
+                      <option value="">{language === 'pt' ? 'Selecione' : 'Select'}</option>
+                      <option value="+">Positivo (+)</option>
+                      <option value="-">Negativo (-)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                      {language === 'pt' ? 'Estado Civil' : 'Marital Status'}
+                    </label>
+                    <select
+                      value={currentAluno?.estado_civil || ''}
+                      onChange={(e) => setCurrentAluno({ ...currentAluno, estado_civil: e.target.value })}
+                      className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500"
+                    >
+                      <option value="">{language === 'pt' ? 'Selecione' : 'Select'}</option>
+                      <option value="Solteiro(a)">{language === 'pt' ? 'Solteiro(a)' : 'Single'}</option>
+                      <option value="Casado(a)">{language === 'pt' ? 'Casado(a)' : 'Married'}</option>
+                      <option value="Divorciado(a)">{language === 'pt' ? 'Divorciado(a)' : 'Divorced'}</option>
+                      <option value="Viúvo(a)">{language === 'pt' ? 'Viúvo(a)' : 'Widowed'}</option>
+                      <option value="União Estável">{language === 'pt' ? 'União Estável' : 'Domestic Partnership'}</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                      {language === 'pt' ? 'Altura (m)' : 'Height (m)'}
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={currentAluno?.altura || ''}
+                      onChange={(e) => setCurrentAluno({ ...currentAluno, altura: e.target.value })}
+                      placeholder="Ex: 1.75"
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                      {language === 'pt' ? 'Peso (kg)' : 'Weight (kg)'}
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={currentAluno?.peso || ''}
+                      onChange={(e) => setCurrentAluno({ ...currentAluno, peso: e.target.value })}
+                      placeholder="Ex: 70.5"
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500"
+                    />
+                  </div>
                   <div>
                     <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
                       {language === 'pt' ? 'Função / Cargo' : 'Role / Function'}
@@ -1007,6 +1090,18 @@ export default function StudentDetailEditModal({
                   <td className="p-1 font-mono">{currentAluno?.titulo_eleitor || '-'}</td>
                 </tr>
                 <tr className="border-b border-slate-200">
+                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-300">Estado Civil:</td>
+                  <td className="p-1 border-r border-slate-300">{currentAluno?.estado_civil || '-'}</td>
+                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-300">Tipo Sanguíneo/Fator RH:</td>
+                  <td className="p-1 font-mono">{currentAluno?.tipo_sanguineo || '-'}{currentAluno?.fator_rh || ''}</td>
+                </tr>
+                <tr className="border-b border-slate-200">
+                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-300">Altura:</td>
+                  <td className="p-1 font-mono border-r border-slate-300">{currentAluno?.altura ? `${currentAluno.altura} m` : '-'}</td>
+                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-300">Peso:</td>
+                  <td className="p-1 font-mono">{currentAluno?.peso ? `${currentAluno.peso} kg` : '-'}</td>
+                </tr>
+                <tr className="border-b border-slate-200">
                   <td className="p-1 font-bold bg-slate-100 border-r border-slate-300">Nome do Pai:</td>
                   <td className="p-1 uppercase border-r border-slate-300" colSpan={3}>{currentAluno?.nome_pai || '-'}</td>
                 </tr>
@@ -1099,15 +1194,10 @@ export default function StudentDetailEditModal({
           </div>
 
           {/* Termo de Assinaturas */}
-          <div className="pt-6 border-t border-slate-300 grid grid-cols-2 gap-8 text-center text-xs">
-            <div>
+          <div className="pt-8 mt-8 flex justify-center text-center text-xs">
+            <div className="w-1/2">
               <div className="border-b border-slate-800 w-4/5 mx-auto mb-1"></div>
-              <p className="font-bold text-slate-800 uppercase">{currentAluno?.nome || 'Aluno'}</p>
-              <p className="text-[8px] text-slate-500 uppercase">Assinatura do Aluno</p>
-            </div>
-            <div>
-              <div className="border-b border-slate-800 w-4/5 mx-auto mb-1"></div>
-              <p className="font-bold text-slate-800 uppercase">Secretaria Acadêmica / Comando</p>
+              <p className="font-bold text-slate-800 uppercase">Coordenador da Escola</p>
               <p className="text-[8px] text-slate-500 uppercase">Carimbo e Assinatura</p>
             </div>
           </div>
