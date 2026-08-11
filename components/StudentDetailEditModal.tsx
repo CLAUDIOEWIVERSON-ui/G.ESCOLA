@@ -1194,10 +1194,15 @@ export default function StudentDetailEditModal({
           </div>
 
           {/* Termo de Assinaturas */}
-          <div className="pt-8 mt-8 flex justify-center text-center text-xs">
-            <div className="w-1/2">
+          <div className="pt-8 mt-8 grid grid-cols-2 gap-8 text-center text-xs">
+            <div>
               <div className="border-b border-slate-800 w-4/5 mx-auto mb-1"></div>
-              <p className="font-bold text-slate-800 uppercase">Coordenador da Escola</p>
+              <p className="font-bold text-slate-800 uppercase">{currentAluno?.nome || 'Aluno'}</p>
+              <p className="text-[8px] text-slate-500 uppercase">Assinatura do Aluno</p>
+            </div>
+            <div>
+              <div className="border-b border-slate-800 w-4/5 mx-auto mb-1"></div>
+              <p className="font-bold text-slate-800 uppercase">Coordenador de Cursos</p>
               <p className="text-[8px] text-slate-500 uppercase">Carimbo e Assinatura</p>
             </div>
           </div>
