@@ -38,8 +38,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   const SUPER_ADMIN_EMAIL = 'claudiomarinha2012@gmail.com';
 
-  const fetchProfile = async () => {
-    if (isFetchingRef.current) return;
+  const fetchProfile = async (force = false) => {
+    if (isFetchingRef.current && !force) return;
     isFetchingRef.current = true;
     try {
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -169,22 +169,30 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    // Fail-safe timer to guarantee loading is set to false within 3.5 seconds
+    const safetyTimer = setTimeout(() => {
+      setLoading(false);
+    }, 3500);
+
     const init = async () => {
-      await fetchProfile();
+      await fetchProfile(true);
+      clearTimeout(safetyTimer);
     };
     init();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event: any, session: any) => {
       if (session) {
-        setLoading(true);
-        fetchProfile();
+        fetchProfile(true);
       } else {
         setProfile(null);
         setLoading(false);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(safetyTimer);
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Send heartbeat periodically when user profile is loaded
