@@ -124,16 +124,19 @@ export default function StudentDetailEditModal({
     if (isOpen) {
       loadAllTurmasAndCursos();
       if (aluno) {
-        setCurrentAluno({ ...aluno });
+        const studentCursoId = aluno.curso_id || aluno.curso?.id || '';
+        setCurrentAluno({ ...aluno, curso_id: studentCursoId });
+        setSelectedCursoId(studentCursoId);
         loadAttendance(aluno.id);
         loadStudentAccess(aluno.id);
-        loadTurmaInfo(aluno.turma_id || turmaId);
+        loadTurmaInfo(aluno.turma_id || turmaId, studentCursoId);
       } else {
         setCurrentAluno({
           tipo_aluno: 'militar',
           genero: 'masculino',
           status: 'Ativo',
-          turma_id: turmaId || null
+          turma_id: turmaId || null,
+          curso_id: null
         });
         setAttendanceStats({
           presentes: 0,
@@ -144,14 +147,17 @@ export default function StudentDetailEditModal({
         });
         setStudentAccess(null);
         setSelectedCursoId('');
-        loadTurmaInfo(turmaId);
+        loadTurmaInfo(turmaId, '');
       }
     }
   }, [isOpen, aluno]);
 
-  const loadTurmaInfo = async (tId?: string) => {
+  const loadTurmaInfo = async (tId?: string, initialCursoId?: string) => {
     if (!tId) {
       setTurmaInfo(null);
+      if (initialCursoId) {
+        setSelectedCursoId(initialCursoId);
+      }
       return;
     }
     try {
@@ -162,7 +168,9 @@ export default function StudentDetailEditModal({
         .maybeSingle();
       if (data) {
         setTurmaInfo(data);
-        if (data.curso_id || data.curso?.id) {
+        if (initialCursoId) {
+          setSelectedCursoId(initialCursoId);
+        } else if (data.curso_id || data.curso?.id) {
           setSelectedCursoId(data.curso_id || data.curso?.id);
         }
       } else {
@@ -317,6 +325,11 @@ export default function StudentDetailEditModal({
       const parsedAno = currentAluno.ano_admissao ? parseInt(currentAluno.ano_admissao.toString()) : NaN;
       if (!isNaN(parsedAno)) dataToSave.ano_admissao = parsedAno;
 
+      const targetCursoId = currentAluno.curso_id || selectedCursoId || null;
+      if (targetCursoId) {
+        dataToSave.curso_id = targetCursoId;
+      }
+
       let saveError;
       if (currentAluno.id) {
         const { error } = await supabase
@@ -329,6 +342,22 @@ export default function StudentDetailEditModal({
           .from('alunos')
           .insert([dataToSave]);
         saveError = error;
+      }
+
+      if (saveError && (saveError.code === '42703' || (saveError.message && saveError.message.includes('curso_id')))) {
+        delete dataToSave.curso_id;
+        if (currentAluno.id) {
+          const { error: retryError } = await supabase
+            .from('alunos')
+            .update(dataToSave)
+            .eq('id', currentAluno.id);
+          saveError = retryError;
+        } else {
+          const { error: retryError } = await supabase
+            .from('alunos')
+            .insert([dataToSave]);
+          saveError = retryError;
+        }
       }
 
       if (saveError) throw saveError;
@@ -808,35 +837,30 @@ export default function StudentDetailEditModal({
                     )}
                   </div>
 
-                  {/* 1. SELEÇÃO DIRETA DO CURSO */}
+                  {/* 1. SELEÇÃO DIRETA DO CURSO (INDIVIDUAL DO ALUNO) */}
                   <div>
                     <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1">
                       {language === 'pt' ? 'Curso ao qual está Matriculado' : 'Enrolled Course'} <span className="text-red-500">*</span>
                     </label>
                     <select
-                      value={selectedCursoId || ''}
+                      value={selectedCursoId || currentAluno?.curso_id || ''}
                       onChange={(e) => {
                         const cId = e.target.value;
                         setSelectedCursoId(cId);
+                        setCurrentAluno((prev: any) => ({ ...prev, curso_id: cId }));
+
                         // Filter turmas for this chosen course
                         const matchingTurmas = allTurmas.filter((t: any) => t.curso_id === cId || t.curso?.id === cId);
-                        if (matchingTurmas.length === 1) {
-                          const tId = matchingTurmas[0].id;
-                          setCurrentAluno((prev: any) => ({ ...prev, turma_id: tId }));
-                          loadTurmaInfo(tId);
-                        } else if (matchingTurmas.length > 1) {
-                          const currentMatches = matchingTurmas.some((t: any) => t.id === currentAluno?.turma_id);
-                          if (!currentMatches) {
-                            const tId = matchingTurmas[0].id;
-                            setCurrentAluno((prev: any) => ({ ...prev, turma_id: tId }));
-                            loadTurmaInfo(tId);
+                        if (matchingTurmas.length > 0) {
+                          const isCurrentTurmaInNewCourse = matchingTurmas.some((t: any) => t.id === currentAluno?.turma_id);
+                          if (!isCurrentTurmaInNewCourse) {
+                            const firstTId = matchingTurmas[0].id;
+                            setCurrentAluno((prev: any) => ({ ...prev, turma_id: firstTId, curso_id: cId }));
+                            loadTurmaInfo(firstTId, cId);
                           }
-                        } else {
-                          // No turmas for this course or unselected
-                          if (!cId) {
-                            setCurrentAluno((prev: any) => ({ ...prev, turma_id: null }));
-                            setTurmaInfo(null);
-                          }
+                        } else if (!cId) {
+                          setCurrentAluno((prev: any) => ({ ...prev, turma_id: null, curso_id: null }));
+                          setTurmaInfo(null);
                         }
                       }}
                       className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 font-semibold text-slate-800 shadow-2xs"
@@ -863,7 +887,9 @@ export default function StudentDetailEditModal({
                         if (selectedTId) {
                           const tObj = allTurmas.find((t: any) => t.id === selectedTId);
                           if (tObj && (tObj.curso_id || tObj.curso?.id)) {
-                            setSelectedCursoId(tObj.curso_id || tObj.curso?.id);
+                            const tCursoId = tObj.curso_id || tObj.curso?.id;
+                            setSelectedCursoId(tCursoId);
+                            setCurrentAluno((prev: any) => ({ ...prev, curso_id: tCursoId }));
                           }
                         }
                         loadTurmaInfo(selectedTId);

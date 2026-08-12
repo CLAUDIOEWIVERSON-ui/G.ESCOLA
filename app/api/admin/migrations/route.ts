@@ -539,6 +539,21 @@ export async function GET() {
             .limit(1);
           return error;
         }
+      },
+      {
+        key: 'alunos_curso_id',
+        tableName: 'alunos',
+        columnName: 'curso_id',
+        fileName: '56_add_curso_id_to_alunos.sql',
+        description: 'Coluna curso_id na tabela de alunos para atribuição individual de curso a cada aluno.',
+        isColumn: true,
+        checkFn: async () => {
+          const { error } = await supabaseAdmin
+            .from('alunos')
+            .select('curso_id')
+            .limit(1);
+          return error;
+        }
       }
     ];
 
