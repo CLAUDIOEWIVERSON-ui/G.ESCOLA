@@ -784,11 +784,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           );
         })}
         <button
-          onClick={() => setSidebarOpen(true)}
-          className="flex flex-col items-center gap-1 p-0.5 text-slate-400 hover:text-slate-600 min-w-0 flex-1 max-w-[56px] shrink-0"
+          onClick={() => setSidebarOpen(prev => !prev)}
+          className={cn(
+            "flex flex-col items-center gap-1 p-0.5 transition-all min-w-0 flex-1 max-w-[56px] shrink-0 relative",
+            sidebarOpen ? "text-blue-600 scale-110" : "text-slate-400 hover:text-slate-600"
+          )}
         >
-          <Menu size={19} />
-          <span className="text-[8px] font-black uppercase tracking-widest truncate w-full">{t.common.menu || 'Menu'}</span>
+          {sidebarOpen ? <X size={19} className="text-blue-600" /> : <Menu size={19} />}
+          <span className={cn(
+            "text-[8px] font-black uppercase tracking-widest truncate w-full text-center",
+            sidebarOpen ? "text-blue-600" : "text-slate-400"
+          )}>
+            {t.common.menu || 'Menu'}
+          </span>
+          {sidebarOpen && (
+            <motion.div 
+              layoutId="bottom-nav-indicator"
+              className="absolute -bottom-2 w-8 h-1 bg-blue-600 rounded-t-full"
+            />
+          )}
         </button>
       </nav>
     </div>
