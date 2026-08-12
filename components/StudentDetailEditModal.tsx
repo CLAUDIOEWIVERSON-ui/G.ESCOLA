@@ -74,22 +74,33 @@ export default function StudentDetailEditModal({
   const [isAdmin, setIsAdmin] = useState(false);
   const [turmaInfo, setTurmaInfo] = useState<any>(null);
   const [allTurmas, setAllTurmas] = useState<any[]>([]);
+  const [allCursos, setAllCursos] = useState<any[]>([]);
+  const [selectedCursoId, setSelectedCursoId] = useState<string>('');
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const loadAllTurmas = async () => {
+  const loadAllTurmasAndCursos = async () => {
     try {
-      const { data } = await supabase
-        .from('turmas')
-        .select('id, nome, codigo, internacional, localizacao, curso:cursos(id, nome)')
-        .is('deleted_at', null)
-        .order('nome');
-      if (data) setAllTurmas(data);
+      const [cursosRes, turmasRes] = await Promise.all([
+        supabase
+          .from('cursos')
+          .select('id, nome, categoria, grupo_responsavel')
+          .is('deleted_at', null)
+          .order('nome'),
+        supabase
+          .from('turmas')
+          .select('id, nome, codigo, curso_id, internacional, localizacao, curso:cursos(id, nome, categoria)')
+          .is('deleted_at', null)
+          .order('nome')
+      ]);
+
+      if (cursosRes.data) setAllCursos(cursosRes.data);
+      if (turmasRes.data) setAllTurmas(turmasRes.data);
     } catch (err) {
-      console.error('Error loading turmas:', err);
+      console.error('Error loading turmas & cursos:', err);
     }
   };
 
@@ -111,7 +122,7 @@ export default function StudentDetailEditModal({
 
   useEffect(() => {
     if (isOpen) {
-      loadAllTurmas();
+      loadAllTurmasAndCursos();
       if (aluno) {
         setCurrentAluno({ ...aluno });
         loadAttendance(aluno.id);
@@ -132,6 +143,7 @@ export default function StudentDetailEditModal({
           percentFalta: 0
         });
         setStudentAccess(null);
+        setSelectedCursoId('');
         loadTurmaInfo(turmaId);
       }
     }
@@ -148,8 +160,14 @@ export default function StudentDetailEditModal({
         .select('id, nome, codigo, internacional, localizacao, curso_id, curso:cursos(id, nome, categoria)')
         .eq('id', tId)
         .maybeSingle();
-      if (data) setTurmaInfo(data);
-      else setTurmaInfo(null);
+      if (data) {
+        setTurmaInfo(data);
+        if (data.curso_id || data.curso?.id) {
+          setSelectedCursoId(data.curso_id || data.curso?.id);
+        }
+      } else {
+        setTurmaInfo(null);
+      }
     } catch (err) {
       console.error('Error loading turma info:', err);
     }
@@ -776,36 +794,98 @@ export default function StudentDetailEditModal({
                   />
                 </div>
 
-                {/* Seleção de Turma e Curso do Aluno (especial para alunos no exterior) */}
-                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
-                  <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider flex items-center justify-between">
-                    <span>🎓 {language === 'pt' ? 'Turma & Curso ao qual está Inscrito' : 'Enrolled Class & Course'}</span>
+                {/* Seleção de Curso e Turma do Aluno */}
+                <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-3">
+                  <div className="flex items-center justify-between border-b border-slate-200/80 pb-2">
+                    <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                      <GraduationCap className="text-blue-600" size={16} />
+                      <span>{language === 'pt' ? 'Curso & Turma de Matrícula' : 'Enrolled Course & Class'}</span>
+                    </label>
                     {turmaInfo?.internacional && (
                       <span className="text-[9px] bg-blue-600 text-white font-black px-2 py-0.5 rounded uppercase tracking-wider">
                         🌐 {language === 'pt' ? 'Inscrição no Exterior' : 'International'}
                       </span>
                     )}
-                  </label>
-                  <select
-                    value={currentAluno?.turma_id || turmaId || ''}
-                    onChange={(e) => {
-                      const selectedTId = e.target.value;
-                      setCurrentAluno({ ...currentAluno, turma_id: selectedTId });
-                      loadTurmaInfo(selectedTId);
-                    }}
-                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 font-medium text-slate-800 shadow-sm"
-                  >
-                    <option value="">{language === 'pt' ? '-- Selecione a Turma / Curso --' : '-- Select Class / Course --'}</option>
-                    {allTurmas.map((t: any) => {
-                      const cursoNome = t.curso?.nome || '';
-                      return (
-                        <option key={t.id} value={t.id}>
-                          {t.nome} {t.codigo ? `(${t.codigo})` : ''} {cursoNome ? `• Curso: ${cursoNome}` : ''} {t.internacional ? '🌐 [EXTERIOR]' : ''}
+                  </div>
+
+                  {/* 1. SELEÇÃO DIRETA DO CURSO */}
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1">
+                      {language === 'pt' ? 'Curso ao qual está Matriculado' : 'Enrolled Course'} <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={selectedCursoId || ''}
+                      onChange={(e) => {
+                        const cId = e.target.value;
+                        setSelectedCursoId(cId);
+                        // Filter turmas for this chosen course
+                        const matchingTurmas = allTurmas.filter((t: any) => t.curso_id === cId || t.curso?.id === cId);
+                        if (matchingTurmas.length === 1) {
+                          const tId = matchingTurmas[0].id;
+                          setCurrentAluno((prev: any) => ({ ...prev, turma_id: tId }));
+                          loadTurmaInfo(tId);
+                        } else if (matchingTurmas.length > 1) {
+                          const currentMatches = matchingTurmas.some((t: any) => t.id === currentAluno?.turma_id);
+                          if (!currentMatches) {
+                            const tId = matchingTurmas[0].id;
+                            setCurrentAluno((prev: any) => ({ ...prev, turma_id: tId }));
+                            loadTurmaInfo(tId);
+                          }
+                        } else {
+                          // No turmas for this course or unselected
+                          if (!cId) {
+                            setCurrentAluno((prev: any) => ({ ...prev, turma_id: null }));
+                            setTurmaInfo(null);
+                          }
+                        }
+                      }}
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 font-semibold text-slate-800 shadow-2xs"
+                    >
+                      <option value="">{language === 'pt' ? '-- Selecione o Curso --' : '-- Select Course --'}</option>
+                      {allCursos.map((curso: any) => (
+                        <option key={curso.id} value={curso.id}>
+                          {curso.nome} {curso.categoria ? `(${curso.categoria})` : ''} {curso.grupo_responsavel ? `• [${curso.grupo_responsavel}]` : ''}
                         </option>
-                      );
-                    })}
-                  </select>
-                  {(turmaInfo?.internacional || turmaInfo?.curso?.nome) && (
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* 2. SELEÇÃO DA TURMA */}
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1">
+                      {language === 'pt' ? 'Turma da Matrícula' : 'Enrolled Class'}
+                    </label>
+                    <select
+                      value={currentAluno?.turma_id || turmaId || ''}
+                      onChange={(e) => {
+                        const selectedTId = e.target.value;
+                        setCurrentAluno((prev: any) => ({ ...prev, turma_id: selectedTId }));
+                        if (selectedTId) {
+                          const tObj = allTurmas.find((t: any) => t.id === selectedTId);
+                          if (tObj && (tObj.curso_id || tObj.curso?.id)) {
+                            setSelectedCursoId(tObj.curso_id || tObj.curso?.id);
+                          }
+                        }
+                        loadTurmaInfo(selectedTId);
+                      }}
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 font-medium text-slate-800 shadow-2xs"
+                    >
+                      <option value="">{language === 'pt' ? '-- Selecione a Turma --' : '-- Select Class --'}</option>
+                      {(selectedCursoId 
+                        ? allTurmas.filter((t: any) => t.curso_id === selectedCursoId || t.curso?.id === selectedCursoId)
+                        : allTurmas
+                      ).map((t: any) => {
+                        const cursoNome = t.curso?.nome || '';
+                        return (
+                          <option key={t.id} value={t.id}>
+                            {t.nome} {t.codigo ? `(${t.codigo})` : ''} {!selectedCursoId && cursoNome ? `• Curso: ${cursoNome}` : ''} {t.internacional ? '🌐 [EXTERIOR]' : ''}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
+
+                  {(turmaInfo?.internacional || turmaInfo?.curso?.nome || selectedCursoId) && (
                     <div className="p-2.5 bg-blue-50/90 border border-blue-200 rounded-lg flex items-center justify-between text-xs text-blue-900 shadow-2xs">
                       <div className="flex items-center gap-2">
                         <GraduationCap className="text-blue-600 shrink-0" size={18} />
@@ -814,7 +894,7 @@ export default function StudentDetailEditModal({
                             {language === 'pt' ? 'Curso ao qual está inscrito:' : 'Enrolled Course:'}
                           </span>
                           <span className="font-black text-blue-900 text-xs">
-                            {turmaInfo?.curso?.nome || (language === 'pt' ? 'Curso Geral' : 'General Course')}
+                            {turmaInfo?.curso?.nome || allCursos.find(c => c.id === selectedCursoId)?.nome || (language === 'pt' ? 'Curso Geral' : 'General Course')}
                           </span>
                         </div>
                       </div>
