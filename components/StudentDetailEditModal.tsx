@@ -269,58 +269,52 @@ export default function StudentDetailEditModal({
     }
   };
 
-  const handleSaveStudent = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSaveStudent = async (e?: React.FormEvent | React.MouseEvent) => {
+    if (e) e.preventDefault();
+    if (saving) return;
     setSaving(true);
 
     try {
-      if (!currentAluno.nome || currentAluno.nome.trim().length < 2) {
-        throw new Error(language === 'pt' ? 'Nome é obrigatório (mínimo 2 caracteres)' : 'Name is required (min 2 characters)');
+      if (!currentAluno?.nome || currentAluno.nome.trim().length < 2) {
+        toast.error(language === 'pt' ? 'Nome é obrigatório (mínimo 2 caracteres)' : 'Name is required (min 2 characters)');
+        setSaving(false);
+        return;
       }
 
       let matricula = currentAluno.matricula;
-      if (!matricula || matricula.length < 2) {
+      if (!matricula || matricula.trim().length < 2) {
         matricula = `MAT${new Date().getFullYear()}${Math.floor(100000 + Math.random() * 899999)}`;
       }
 
       const dataToSave: any = {
         nome: currentAluno.nome.trim(),
-        matricula: matricula,
+        matricula: matricula.trim(),
         turma_id: currentAluno.turma_id || turmaId || null,
       };
 
       dataToSave.email = (currentAluno.email && currentAluno.email.includes('@')) ? currentAluno.email.trim() : null;
       dataToSave.tipo_aluno = currentAluno.tipo_aluno || 'militar';
-      if (currentAluno.posto_graduacao !== undefined) dataToSave.posto_graduacao = currentAluno.posto_graduacao;
-      if (currentAluno.nome_guerra !== undefined) dataToSave.nome_guerra = currentAluno.nome_guerra;
-      if (currentAluno.rg) dataToSave.rg = currentAluno.rg;
-      if (currentAluno.titulo_eleitor) dataToSave.titulo_eleitor = currentAluno.titulo_eleitor;
-      if (currentAluno.nome_pai) dataToSave.nome_pai = currentAluno.nome_pai;
-      if (currentAluno.nome_mae) dataToSave.nome_mae = currentAluno.nome_mae;
-      if (currentAluno.om) dataToSave.om = currentAluno.om;
-      if (currentAluno.genero) dataToSave.genero = currentAluno.genero;
-      if (currentAluno.telefone) dataToSave.telefone = currentAluno.telefone;
-      if (currentAluno.whatsapp) dataToSave.whatsapp = currentAluno.whatsapp;
-      if (currentAluno.endereco !== undefined) {
-        dataToSave.endereco = currentAluno.endereco ? currentAluno.endereco.trim() : null;
-      }
-      if (currentAluno.foto_url) dataToSave.foto_url = currentAluno.foto_url;
-      if (currentAluno.status) dataToSave.status = currentAluno.status;
-      if (currentAluno.tipo_sanguineo) dataToSave.tipo_sanguineo = currentAluno.tipo_sanguineo;
-      if (currentAluno.fator_rh) dataToSave.fator_rh = currentAluno.fator_rh;
-      if (currentAluno.altura) dataToSave.altura = currentAluno.altura;
-      if (currentAluno.peso) dataToSave.peso = currentAluno.peso;
-      if (currentAluno.estado_civil) dataToSave.estado_civil = currentAluno.estado_civil;
-
-      if (currentAluno.data_nascimento !== undefined) {
-        dataToSave.data_nascimento = currentAluno.data_nascimento ? currentAluno.data_nascimento : null;
-      }
-      if (currentAluno.funcao !== undefined) {
-        dataToSave.funcao = currentAluno.funcao ? currentAluno.funcao : null;
-      }
-      if (currentAluno.observacoes !== undefined) {
-        dataToSave.observacoes = currentAluno.observacoes ? currentAluno.observacoes : null;
-      }
+      dataToSave.posto_graduacao = currentAluno.posto_graduacao ? currentAluno.posto_graduacao.trim() : null;
+      dataToSave.nome_guerra = currentAluno.nome_guerra ? currentAluno.nome_guerra.trim() : null;
+      dataToSave.rg = currentAluno.rg ? currentAluno.rg.trim() : null;
+      dataToSave.titulo_eleitor = currentAluno.titulo_eleitor ? currentAluno.titulo_eleitor.trim() : null;
+      dataToSave.nome_pai = currentAluno.nome_pai ? currentAluno.nome_pai.trim() : null;
+      dataToSave.nome_mae = currentAluno.nome_mae ? currentAluno.nome_mae.trim() : null;
+      dataToSave.om = currentAluno.om ? currentAluno.om.trim() : null;
+      dataToSave.genero = currentAluno.genero || 'masculino';
+      dataToSave.telefone = currentAluno.telefone ? currentAluno.telefone.trim() : null;
+      dataToSave.whatsapp = currentAluno.whatsapp ? currentAluno.whatsapp.trim() : null;
+      dataToSave.endereco = currentAluno.endereco ? currentAluno.endereco.trim() : null;
+      dataToSave.foto_url = currentAluno.foto_url || null;
+      dataToSave.status = currentAluno.status || 'Ativo';
+      dataToSave.tipo_sanguineo = currentAluno.tipo_sanguineo || null;
+      dataToSave.fator_rh = currentAluno.fator_rh || null;
+      dataToSave.altura = currentAluno.altura || null;
+      dataToSave.peso = currentAluno.peso || null;
+      dataToSave.estado_civil = currentAluno.estado_civil || null;
+      dataToSave.data_nascimento = currentAluno.data_nascimento || null;
+      dataToSave.funcao = currentAluno.funcao || null;
+      dataToSave.observacoes = currentAluno.observacoes || null;
 
       const parsedAno = currentAluno.ano_admissao ? parseInt(currentAluno.ano_admissao.toString()) : NaN;
       if (!isNaN(parsedAno)) dataToSave.ano_admissao = parsedAno;
@@ -330,37 +324,62 @@ export default function StudentDetailEditModal({
         dataToSave.curso_id = targetCursoId;
       }
 
-      let saveError;
-      if (currentAluno.id) {
-        const { error } = await supabase
-          .from('alunos')
-          .update(dataToSave)
-          .eq('id', currentAluno.id);
-        saveError = error;
-      } else {
-        const { error } = await supabase
-          .from('alunos')
-          .insert([dataToSave]);
-        saveError = error;
+      let savedSuccessfully = false;
+
+      // 1. Try server-side API route first (bypasses RLS issues)
+      try {
+        const apiRes = await fetch('/api/alunos/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: currentAluno.id || null, dataToSave })
+        });
+
+        if (apiRes.ok) {
+          const resJson = await apiRes.json();
+          if (resJson.success) {
+            savedSuccessfully = true;
+          } else if (resJson.error) {
+            console.warn('[handleSaveStudent] API route warning:', resJson.error);
+          }
+        }
+      } catch (apiErr) {
+        console.warn('[handleSaveStudent] API route fetch failed, trying direct Supabase client fallback:', apiErr);
       }
 
-      if (saveError && (saveError.code === '42703' || (saveError.message && saveError.message.includes('curso_id')))) {
-        delete dataToSave.curso_id;
+      // 2. Direct Supabase client fallback if API route was not successful
+      if (!savedSuccessfully) {
+        let saveError;
         if (currentAluno.id) {
-          const { error: retryError } = await supabase
+          const { error } = await supabase
             .from('alunos')
             .update(dataToSave)
             .eq('id', currentAluno.id);
-          saveError = retryError;
+          saveError = error;
         } else {
-          const { error: retryError } = await supabase
+          const { error } = await supabase
             .from('alunos')
             .insert([dataToSave]);
-          saveError = retryError;
+          saveError = error;
         }
-      }
 
-      if (saveError) throw saveError;
+        if (saveError && (saveError.code === '42703' || (saveError.message && saveError.message.includes('curso_id')))) {
+          delete dataToSave.curso_id;
+          if (currentAluno.id) {
+            const { error: retryError } = await supabase
+              .from('alunos')
+              .update(dataToSave)
+              .eq('id', currentAluno.id);
+            saveError = retryError;
+          } else {
+            const { error: retryError } = await supabase
+              .from('alunos')
+              .insert([dataToSave]);
+            saveError = retryError;
+          }
+        }
+
+        if (saveError) throw saveError;
+      }
 
       toast.success(language === 'pt' ? 'Aluno salvo com sucesso!' : 'Student saved successfully!');
       if (onSave) {
@@ -424,7 +443,7 @@ export default function StudentDetailEditModal({
         title={currentAluno?.id ? (language === 'pt' ? 'Detalhes e Edição do Aluno' : 'Student Details & Edit') : (language === 'pt' ? 'Adicionar Novo Aluno' : 'Add New Student')}
         className="max-w-lg lg:max-w-6xl xl:max-w-[1150px] lg:w-[94vw] lg:h-[94vh] lg:max-h-[960px] transition-all duration-200"
       >
-        <form onSubmit={handleSaveStudent} className="space-y-5 max-h-[82vh] lg:max-h-none overflow-y-auto px-1 print:hidden">
+        <form onSubmit={handleSaveStudent} noValidate className="space-y-5 max-h-[82vh] lg:max-h-none overflow-y-auto px-1 print:hidden">
           {/* BANNER INSTITUCIONAL OFICIAL (Exibido em modo PC para espelhar a Ficha Individual de Impressão) */}
           <div className="hidden lg:flex items-center justify-between p-3.5 bg-slate-900 text-white rounded-xl shadow-sm border border-slate-800">
             <div className="flex items-center gap-3">
@@ -1196,7 +1215,8 @@ export default function StudentDetailEditModal({
           <button
             type="submit"
             disabled={saving}
-            className="px-6 py-2 bg-blue-600 print:hidden hover:bg-blue-700 text-white rounded-xl text-sm font-bold shadow-sm transition-colors disabled:opacity-50"
+            onClick={(e) => handleSaveStudent(e)}
+            className="px-6 py-2 bg-blue-600 print:hidden hover:bg-blue-700 text-white rounded-xl text-sm font-bold shadow-sm transition-colors disabled:opacity-50 cursor-pointer"
           >
             {saving 
               ? (language === 'pt' ? 'Salvando...' : 'Saving...') 
