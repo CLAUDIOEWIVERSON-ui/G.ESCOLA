@@ -28,7 +28,8 @@ import {
   Home,
   MessageSquare,
   MousePointer2,
-  AlertCircle
+  AlertCircle,
+  UserCheck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -225,7 +226,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: t.nav.classes, icon: Library, path: '/turmas' },
     { name: t.nav.reportCard, icon: FileText, path: '/boletim' },
     { name: t.schedule.title, icon: Calendar, path: '/horario' },
-    { name: t.nav.attendance, icon: CalendarDays, path: '/frequencia' },
+    { name: t.nav.attendance, icon: UserCheck, path: '/frequencia' },
     { name: t.calendar.title, icon: CalendarDays, path: '/calendario' },
     ...((isAdmin || isConvidado) ? [{ name: t.users.title, icon: Users, path: '/usuarios' }] : []),
     ...((isAdmin || isInstrutor || isConvidado) ? [{ name: "Análise de Avaliações", icon: FileCheck, path: '/relatorio-avaliacao' }] : []),
@@ -737,12 +738,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </div>
 
       {/* Bottom Nav for Mobile */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-2 py-2 flex items-center justify-around z-50 h-16 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] print:hidden">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-1 py-2 flex items-center justify-around z-50 h-16 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] print:hidden overflow-x-auto custom-scrollbar">
         {navItems.filter(item => {
           if (isNifStudent) {
             return ['/boletim', '/horario'].includes(item.path);
           }
-          return ['/dashboard', '/cursos', '/turmas', '/horario', '/calendario', '/configuracoes'].includes(item.path);
+          return ['/dashboard', '/cursos', '/turmas', '/frequencia', '/horario', '/calendario', '/configuracoes'].includes(item.path);
         }).map((item, idx) => {
           const isActive = pathname === item.path;
           const isSettings = item.path === '/configuracoes';
@@ -753,7 +754,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               key={`mobile-nav-${item.path}-${idx}`} 
               href={item.path}
               className={cn(
-                "flex flex-col items-center gap-1 p-1 transition-all min-w-0 flex-1 max-w-[64px] relative",
+                "flex flex-col items-center gap-1 p-0.5 transition-all min-w-0 flex-1 max-w-[56px] shrink-0 relative",
                 isActive ? "text-blue-600 scale-110" : "text-slate-400 hover:text-slate-600"
               )}
             >
@@ -765,7 +766,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 "text-[8px] font-black uppercase tracking-widest text-center truncate w-full",
                 isActive ? "text-blue-600" : needsPasswordChange ? "text-amber-500 font-bold" : "text-slate-400"
               )}>
-                {item.path === '/calendario' ? 'AGENDA' : item.name.split(' ')[0]}
+                {item.path === '/calendario' 
+                  ? (language === 'pt' ? 'AGENDA' : 'CALENDAR') 
+                  : item.path === '/frequencia' 
+                    ? (language === 'pt' ? 'FREQ.' : 'ATTEND.') 
+                    : item.name.split(' ')[0]}
               </span>
               {isActive && (
                 <motion.div 
@@ -781,7 +786,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         })}
         <button
           onClick={() => setSidebarOpen(true)}
-          className="flex flex-col items-center gap-1 p-1 text-slate-400 hover:text-slate-600 min-w-0 flex-1 max-w-[64px]"
+          className="flex flex-col items-center gap-1 p-0.5 text-slate-400 hover:text-slate-600 min-w-0 flex-1 max-w-[56px] shrink-0"
         >
           <Menu size={19} />
           <span className="text-[8px] font-black uppercase tracking-widest truncate w-full">{t.common.menu || 'Menu'}</span>
