@@ -20,7 +20,11 @@ import {
   Check,
   Percent,
   Clock,
-  Printer
+  Printer,
+  GraduationCap,
+  MapPin,
+  School,
+  Globe
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { toast } from 'sonner';
@@ -69,11 +73,25 @@ export default function StudentDetailEditModal({
   const [copiedCode, setCopiedCode] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [turmaInfo, setTurmaInfo] = useState<any>(null);
+  const [allTurmas, setAllTurmas] = useState<any[]>([]);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  const loadAllTurmas = async () => {
+    try {
+      const { data } = await supabase
+        .from('turmas')
+        .select('id, nome, codigo, internacional, localizacao, curso:cursos(id, nome)')
+        .is('deleted_at', null)
+        .order('nome');
+      if (data) setAllTurmas(data);
+    } catch (err) {
+      console.error('Error loading turmas:', err);
+    }
+  };
 
   useEffect(() => {
     // Check admin role
@@ -92,30 +110,34 @@ export default function StudentDetailEditModal({
   }, []);
 
   useEffect(() => {
-    if (isOpen && aluno) {
-      setCurrentAluno({ ...aluno });
-      loadAttendance(aluno.id);
-      loadStudentAccess(aluno.id);
-      loadTurmaInfo(aluno.turma_id || turmaId);
-    } else if (isOpen && !aluno) {
-      setCurrentAluno({
-        tipo_aluno: 'militar',
-        genero: 'masculino',
-        status: 'Ativo'
-      });
-      setAttendanceStats({
-        presentes: 0,
-        faltas: 0,
-        total: 0,
-        percentPresenca: 0,
-        percentFalta: 0
-      });
-      setStudentAccess(null);
-      loadTurmaInfo(turmaId);
+    if (isOpen) {
+      loadAllTurmas();
+      if (aluno) {
+        setCurrentAluno({ ...aluno });
+        loadAttendance(aluno.id);
+        loadStudentAccess(aluno.id);
+        loadTurmaInfo(aluno.turma_id || turmaId);
+      } else {
+        setCurrentAluno({
+          tipo_aluno: 'militar',
+          genero: 'masculino',
+          status: 'Ativo',
+          turma_id: turmaId || null
+        });
+        setAttendanceStats({
+          presentes: 0,
+          faltas: 0,
+          total: 0,
+          percentPresenca: 0,
+          percentFalta: 0
+        });
+        setStudentAccess(null);
+        loadTurmaInfo(turmaId);
+      }
     }
   }, [isOpen, aluno]);
 
-    const loadTurmaInfo = async (tId?: string) => {
+  const loadTurmaInfo = async (tId?: string) => {
     if (!tId) {
       setTurmaInfo(null);
       return;
@@ -123,7 +145,7 @@ export default function StudentDetailEditModal({
     try {
       const { data } = await supabase
         .from('turmas')
-        .select('nome, codigo')
+        .select('id, nome, codigo, internacional, localizacao, curso_id, curso:cursos(id, nome, categoria)')
         .eq('id', tId)
         .maybeSingle();
       if (data) setTurmaInfo(data);
@@ -253,6 +275,9 @@ export default function StudentDetailEditModal({
       if (currentAluno.genero) dataToSave.genero = currentAluno.genero;
       if (currentAluno.telefone) dataToSave.telefone = currentAluno.telefone;
       if (currentAluno.whatsapp) dataToSave.whatsapp = currentAluno.whatsapp;
+      if (currentAluno.endereco !== undefined) {
+        dataToSave.endereco = currentAluno.endereco ? currentAluno.endereco.trim() : null;
+      }
       if (currentAluno.foto_url) dataToSave.foto_url = currentAluno.foto_url;
       if (currentAluno.status) dataToSave.status = currentAluno.status;
       if (currentAluno.tipo_sanguineo) dataToSave.tipo_sanguineo = currentAluno.tipo_sanguineo;
@@ -702,6 +727,71 @@ export default function StudentDetailEditModal({
                   </div>
                 </div>
 
+                {/* Campo de Endereço do Aluno */}
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    {language === 'pt' ? 'Endereço Residencial Completo' : 'Full Residential Address'}
+                  </label>
+                  <input
+                    type="text"
+                    value={currentAluno?.endereco || ''}
+                    onChange={(e) => setCurrentAluno({ ...currentAluno, endereco: e.target.value })}
+                    placeholder={language === 'pt' ? 'Rua, nº, complemento, bairro, cidade - UF, CEP' : 'Street address, Apt/Suite, City, State, Zip'}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                {/* Seleção de Turma e Curso do Aluno (especial para alunos no exterior) */}
+                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
+                  <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider flex items-center justify-between">
+                    <span>🎓 {language === 'pt' ? 'Turma & Curso ao qual está Inscrito' : 'Enrolled Class & Course'}</span>
+                    {turmaInfo?.internacional && (
+                      <span className="text-[9px] bg-blue-600 text-white font-black px-2 py-0.5 rounded uppercase tracking-wider">
+                        🌐 {language === 'pt' ? 'Inscrição no Exterior' : 'International'}
+                      </span>
+                    )}
+                  </label>
+                  <select
+                    value={currentAluno?.turma_id || turmaId || ''}
+                    onChange={(e) => {
+                      const selectedTId = e.target.value;
+                      setCurrentAluno({ ...currentAluno, turma_id: selectedTId });
+                      loadTurmaInfo(selectedTId);
+                    }}
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 font-medium text-slate-800 shadow-sm"
+                  >
+                    <option value="">{language === 'pt' ? '-- Selecione a Turma / Curso --' : '-- Select Class / Course --'}</option>
+                    {allTurmas.map((t: any) => {
+                      const cursoNome = t.curso?.nome || '';
+                      return (
+                        <option key={t.id} value={t.id}>
+                          {t.nome} {t.codigo ? `(${t.codigo})` : ''} {cursoNome ? `• Curso: ${cursoNome}` : ''} {t.internacional ? '🌐 [EXTERIOR]' : ''}
+                        </option>
+                      );
+                    })}
+                  </select>
+                  {(turmaInfo?.internacional || turmaInfo?.curso?.nome) && (
+                    <div className="p-2.5 bg-blue-50/90 border border-blue-200 rounded-lg flex items-center justify-between text-xs text-blue-900 shadow-2xs">
+                      <div className="flex items-center gap-2">
+                        <GraduationCap className="text-blue-600 shrink-0" size={18} />
+                        <div>
+                          <span className="font-bold text-slate-500 block text-[9px] uppercase tracking-wider">
+                            {language === 'pt' ? 'Curso ao qual está inscrito:' : 'Enrolled Course:'}
+                          </span>
+                          <span className="font-black text-blue-900 text-xs">
+                            {turmaInfo?.curso?.nome || (language === 'pt' ? 'Curso Geral' : 'General Course')}
+                          </span>
+                        </div>
+                      </div>
+                      {turmaInfo?.internacional && (
+                        <span className="text-[10px] font-extrabold text-blue-800 bg-blue-100 border border-blue-200 px-2 py-0.5 rounded uppercase">
+                          {language === 'pt' ? 'Aluno no Exterior' : 'Abroad Student'}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
@@ -1060,9 +1150,18 @@ export default function StudentDetailEditModal({
                 </tr>
                 <tr>
                   <td colSpan={2} className="pt-1">
-                    <span className="text-[8px] font-bold text-slate-500 uppercase block leading-none">Turma / Curso</span>
+                    <span className="text-[8px] font-bold text-slate-500 uppercase block leading-none">
+                      {turmaInfo?.internacional ? 'Curso (Inscrição no Exterior) / Turma' : 'Turma / Curso'}
+                    </span>
                     <span className="font-bold text-blue-900 uppercase leading-snug">
-                      {turmaInfo?.nome ? `${turmaInfo.nome} ${turmaInfo.codigo ? `(${turmaInfo.codigo})` : ''}` : 'Turma Geral'}
+                      {turmaInfo?.curso?.nome ? (
+                        <>
+                          <span className="text-blue-900 font-extrabold">CURSO: {turmaInfo.curso.nome}</span>
+                          {turmaInfo?.nome && <span className="text-slate-700 font-bold ml-1 font-mono">({turmaInfo.nome})</span>}
+                        </>
+                      ) : (
+                        turmaInfo?.nome ? `${turmaInfo.nome} ${turmaInfo.codigo ? `(${turmaInfo.codigo})` : ''}` : 'Turma Geral'
+                      )}
                     </span>
                   </td>
                 </tr>
@@ -1132,11 +1231,17 @@ export default function StudentDetailEditModal({
                   <td className="p-1 font-bold bg-slate-100 w-1/6 border-r border-slate-300">Telefone:</td>
                   <td className="p-1 font-mono w-2/6">{currentAluno?.telefone || '-'}</td>
                 </tr>
-                <tr>
+                <tr className="border-b border-slate-200">
                   <td className="p-1 font-bold bg-slate-100 border-r border-slate-300">WhatsApp:</td>
                   <td className="p-1 font-mono border-r border-slate-300">{currentAluno?.whatsapp || '-'}</td>
                   <td className="p-1 font-bold bg-slate-100 border-r border-slate-300">Código de Acesso:</td>
                   <td className="p-1 font-mono font-bold text-blue-900">{studentAccess?.access_code || '-'}</td>
+                </tr>
+                <tr>
+                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-300">Endereço Residencial:</td>
+                  <td className="p-1 uppercase border-r border-slate-300 font-medium" colSpan={3}>
+                    {currentAluno?.endereco || '-'}
+                  </td>
                 </tr>
               </tbody>
             </table>
