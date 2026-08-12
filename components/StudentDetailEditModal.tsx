@@ -372,11 +372,46 @@ export default function StudentDetailEditModal({
   return (
     <>
       <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={currentAluno?.id ? (language === 'pt' ? 'Detalhes e Edição do Aluno' : 'Student Details & Edit') : (language === 'pt' ? 'Adicionar Novo Aluno' : 'Add New Student')}
-    >
-      <form onSubmit={handleSaveStudent} className="space-y-6 max-h-[82vh] overflow-y-auto px-1 print:hidden">
+        isOpen={isOpen}
+        onClose={onClose}
+        title={currentAluno?.id ? (language === 'pt' ? 'Detalhes e Edição do Aluno' : 'Student Details & Edit') : (language === 'pt' ? 'Adicionar Novo Aluno' : 'Add New Student')}
+        className="max-w-lg lg:max-w-6xl xl:max-w-[1150px] lg:w-[94vw] lg:h-[94vh] lg:max-h-[960px] transition-all duration-200"
+      >
+        <form onSubmit={handleSaveStudent} className="space-y-5 max-h-[82vh] lg:max-h-none overflow-y-auto px-1 print:hidden">
+          {/* BANNER INSTITUCIONAL OFICIAL (Exibido em modo PC para espelhar a Ficha Individual de Impressão) */}
+          <div className="hidden lg:flex items-center justify-between p-3.5 bg-slate-900 text-white rounded-xl shadow-sm border border-slate-800">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 shrink-0 bg-white/10 rounded-lg p-1 flex items-center justify-center">
+                <img
+                  src={typeof navalMissionLogo === 'string' ? navalMissionLogo : (navalMissionLogo as any)?.src || navalMissionLogo}
+                  alt="Brasão"
+                  className="w-8 h-8 object-contain"
+                />
+              </div>
+              <div>
+                <span className="text-[9px] font-black tracking-widest text-blue-300 uppercase block leading-none">
+                  SISTEMA ESCOLAR E ACADÊMICO • FICHA INDIVIDUAL DO ALUNO
+                </span>
+                <h2 className="text-sm font-extrabold uppercase tracking-wide text-white mt-1">
+                  {currentAluno?.nome ? `FICHA OFICIAL: ${currentAluno.nome}` : 'FICHA DE CADASTRO DO ALUNO'}
+                </h2>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="text-right font-mono text-xs text-slate-300 bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700">
+                MATRÍCULA: <span className="font-extrabold text-blue-400">{currentAluno?.matricula || 'N/A'}</span>
+              </div>
+              <button
+                type="button"
+                onClick={handlePrint}
+                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 shadow-sm"
+              >
+                <Printer size={14} />
+                <span>{language === 'pt' ? 'Imprimir Ficha A4' : 'Print A4 Sheet'}</span>
+              </button>
+            </div>
+          </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* LEFT COLUMN: Photo, Summary & Attendance Donut Chart */}
           <div className="lg:col-span-5 space-y-4">
