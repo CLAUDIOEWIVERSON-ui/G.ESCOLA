@@ -306,8 +306,11 @@ export default function StudentDetailEditModal({
       dataToSave.whatsapp = currentAluno.whatsapp ? currentAluno.whatsapp.trim() : null;
       dataToSave.endereco = currentAluno.endereco ? currentAluno.endereco.trim() : null;
       dataToSave.foto_url = currentAluno.foto_url || null;
-      dataToSave.status = (currentAluno.status || 'ativo').toString().toLowerCase();
-      if (dataToSave.status === 'pré-inscrito') dataToSave.status = 'pre_inscrito';
+      let st = (currentAluno.status || 'ativo').toString().toLowerCase();
+      if (st !== 'ativo' && st !== 'inativo' && st !== 'transferido') {
+        st = 'inativo';
+      }
+      dataToSave.status = st;
       dataToSave.tipo_sanguineo = currentAluno.tipo_sanguineo || null;
       dataToSave.fator_rh = currentAluno.fator_rh || null;
       dataToSave.altura = currentAluno.altura || null;
@@ -760,15 +763,13 @@ export default function StudentDetailEditModal({
                       {language === 'pt' ? 'Status' : 'Status'}
                     </label>
                     <select
-                      value={currentAluno?.status || 'Ativo'}
+                      value={(currentAluno?.status || 'ativo').toString().toLowerCase()}
                       onChange={(e) => setCurrentAluno({ ...currentAluno, status: e.target.value })}
                       className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500"
                     >
-                      <option value="Ativo">{language === 'pt' ? 'Ativo' : 'Active'}</option>
-                      <option value="Inativo">{language === 'pt' ? 'Inativo' : 'Inactive'}</option>
-                      <option value="Concluído">{language === 'pt' ? 'Concluído' : 'Completed'}</option>
-                      <option value="Desistente">{language === 'pt' ? 'Desistente' : 'Dropped Out'}</option>
-                      <option value="Transferido">{language === 'pt' ? 'Transferido' : 'Transferred'}</option>
+                      <option value="ativo">{language === 'pt' ? 'Ativo' : 'Active'}</option>
+                      <option value="inativo">{language === 'pt' ? 'Inativo' : 'Inactive'}</option>
+                      <option value="transferido">{language === 'pt' ? 'Transferido' : 'Transferred'}</option>
                     </select>
                   </div>
                 </div>
@@ -1214,10 +1215,10 @@ export default function StudentDetailEditModal({
             {language === 'pt' ? 'Cancelar / Fechar' : 'Cancel / Close'}
           </button>
           <button
-            type="submit"
+            type="button"
             disabled={saving}
             onClick={(e) => handleSaveStudent(e)}
-            className="px-6 py-2 bg-blue-600 print:hidden hover:bg-blue-700 text-white rounded-xl text-sm font-bold shadow-sm transition-colors disabled:opacity-50 cursor-pointer"
+            className="px-6 py-2 bg-blue-600 print:hidden hover:bg-blue-700 text-white rounded-xl text-sm font-bold shadow-sm transition-colors disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
           >
             {saving 
               ? (language === 'pt' ? 'Salvando...' : 'Saving...') 

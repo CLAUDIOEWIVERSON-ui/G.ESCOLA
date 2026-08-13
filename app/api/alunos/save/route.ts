@@ -18,13 +18,13 @@ export async function POST(request: Request) {
       dataToSave.matricula = `MAT${new Date().getFullYear()}${Math.floor(100000 + Math.random() * 899999)}`;
     }
 
-    // Ensure status is valid lowercase enum value
+    // Ensure status is valid lowercase enum value ('ativo', 'inativo', 'transferido')
     if (dataToSave.status) {
       const lowerStatus = dataToSave.status.toString().toLowerCase();
-      if (lowerStatus === 'ativo' || lowerStatus === 'inativo' || lowerStatus === 'desistente' || lowerStatus === 'pre_inscrito' || lowerStatus === 'pré-inscrito') {
-        dataToSave.status = lowerStatus === 'pré-inscrito' ? 'pre_inscrito' : lowerStatus;
+      if (lowerStatus === 'ativo' || lowerStatus === 'inativo' || lowerStatus === 'transferido') {
+        dataToSave.status = lowerStatus;
       } else {
-        dataToSave.status = 'ativo';
+        dataToSave.status = 'inativo';
       }
     } else {
       dataToSave.status = 'ativo';
