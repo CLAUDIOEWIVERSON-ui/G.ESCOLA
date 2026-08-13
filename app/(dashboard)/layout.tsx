@@ -28,7 +28,8 @@ import {
   Home,
   MessageSquare,
   MousePointer2,
-  AlertCircle
+  AlertCircle,
+  Sparkles
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -83,6 +84,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const [showMoreModules, setShowMoreModules] = useState(false);
   const [onlineCount, setOnlineCount] = useState<number>(0);
+  const [showAssistant, setShowAssistant] = useState(false);
 
   const fetchOnlineUsers = async () => {
     if (!isAdmin) return;
@@ -694,6 +696,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                </Suspense>
             </div>
             <HeaderClock />
+            {/* Assistente IA toggle on régua / header */}
+            <button
+              onClick={() => setShowAssistant(!showAssistant)}
+              className={cn(
+                "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-bold transition-all cursor-pointer shadow-xs",
+                showAssistant 
+                  ? "bg-indigo-600 text-white border-indigo-600 shadow-indigo-500/20" 
+                  : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 hover:text-slate-900"
+              )}
+              title={language === 'pt' ? 'Solicitar Assistente IA' : 'Request AI Assistant'}
+            >
+              <Sparkles size={14} className={cn("shrink-0", showAssistant ? "text-amber-300 animate-spin" : "text-indigo-500")} />
+              <span className="hidden sm:inline">{language === 'pt' ? 'Assistente' : 'Assistant'}</span>
+            </button>
             {/* Language toggle */}
             <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 p-0.5 rounded-lg shadow-inner">
               <button
@@ -732,7 +748,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </AnimatePresence>
         </main>
         <ProximityAlert />
-        <FormGuidanceAssistant />
+        <FormGuidanceAssistant isOpen={showAssistant} onClose={() => setShowAssistant(false)} />
         <SuggestionsModal isOpen={suggestionsOpen} onClose={() => setSuggestionsOpen(false)} />
       </div>
 

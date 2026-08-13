@@ -152,12 +152,17 @@ function WizardAvatar({ onClick, isGlow }: { onClick: () => void; isGlow: boolea
   );
 }
 
-export function FormGuidanceAssistant() {
+interface FormGuidanceAssistantProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export function FormGuidanceAssistant({ isOpen = false, onClose }: FormGuidanceAssistantProps) {
   const { language } = useI18n();
   const [activeForm, setActiveForm] = useState<HTMLFormElement | null>(null);
   const [activeInput, setActiveInput] = useState<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null>(null);
   const [emptyFields, setEmptyFields] = useState<EmptyFieldConsequence[]>([]);
-  const [bubbleVisible, setBubbleVisible] = useState(false);
+  const [bubbleVisible, setBubbleVisible] = useState(isOpen);
   const [autoTriggerAllowed, setAutoTriggerAllowed] = useState(true);
   const [recentAction, setRecentAction] = useState<string>('');
   const [completionPercent, setCompletionPercent] = useState<number>(0);
@@ -184,6 +189,16 @@ export function FormGuidanceAssistant() {
       autoHideTimerRef.current = null;
     }
   }, []);
+
+  // Sync with isOpen prop from ruler header
+  useEffect(() => {
+    if (isOpen) {
+      setBubbleVisible(true);
+      clearAutoHideTimer();
+    } else {
+      setBubbleVisible(false);
+    }
+  }, [isOpen, clearAutoHideTimer]);
 
   // Set 5-second auto hide timer
   const startAutoHideTimer = useCallback(() => {
@@ -509,7 +524,7 @@ export function FormGuidanceAssistant() {
     });
   }, [clearAutoHideTimer]);
 
-  if (!activeForm) return null;
+  if (!isOpen) return null;
 
   const currentLabel = activeInput ? getLabelOrPlaceholder(activeInput) : '';
   const currentInfo = activeInput ? getFieldGuidanceAndConsequences(activeInput.getAttribute('name') || '', currentLabel) : null;
@@ -530,18 +545,18 @@ export function FormGuidanceAssistant() {
               {/* Top Row / Header */}
               <div className="flex items-center justify-between border-b border-indigo-500/10 pb-2">
                 <div className="flex items-center gap-2">
-                  <Sparkles size={14} className="text-cyan-405 text-cyan-400 animate-pulse" />
+                  <Sparkles size={14} className="text-cyan-400 animate-pulse" />
                   <span className="text-[10px] font-black uppercase tracking-[0.15em] text-indigo-300">
-                    {language === 'pt' ? 'Mago Consultor' : 'Wizard Advisor'}
+                    {language === 'pt' ? 'Assistente IA de Formulários' : 'AI Form Assistant'}
                   </span>
                 </div>
                 <button
                   onClick={() => {
                     setBubbleVisible(false);
-                    setAutoTriggerAllowed(true);
+                    if (onClose) onClose();
                   }}
                   className="p-1 hover:bg-white/10 rounded text-slate-400 hover:text-white transition-colors cursor-pointer"
-                  title={language === 'pt' ? 'Fechar' : 'Close'}
+                  title={language === 'pt' ? 'Fechar Assistente' : 'Close Assistant'}
                   type="button"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
@@ -550,97 +565,110 @@ export function FormGuidanceAssistant() {
                 </button>
               </div>
 
-              {/* Progress Completion Bar */}
-              <div className="space-y-1">
-                <div className="flex items-center justify-between text-[9px] text-slate-400 font-bold uppercase tracking-wider">
-                  <span>{language === 'pt' ? 'Progresso do Cadastro' : 'Form Completion'}</span>
-                  <span className="text-cyan-400 font-extrabold">{completionPercent}%</span>
-                </div>
-                <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden border border-white/5">
-                  <motion.div 
-                    initial={{ width: 0 }}
-                    animate={{ width: `${completionPercent}%` }}
-                    className="h-full bg-gradient-to-r from-cyan-400 to-indigo-500 rounded-full"
-                  />
-                </div>
-              </div>
-
-              {/* Active Input Guidance or General Help */}
-              {activeInput ? (
-                <div className="p-2.5 rounded-xl bg-indigo-500/5 border border-indigo-500/10 text-[11px] leading-relaxed text-slate-200">
-                  <div className="flex items-center gap-1.5 mb-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                    <span className="flex h-1.5 w-1.5 rounded-full bg-cyan-400 animate-pulse" />
-                    <span>{language === 'pt' ? 'Campo Atual:' : 'Active Input:'} <strong className="text-white normal-case">{currentLabel}</strong></span>
+              {activeForm ? (
+                <>
+                  {/* Progress Completion Bar */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-[9px] text-slate-400 font-bold uppercase tracking-wider">
+                      <span>{language === 'pt' ? 'Progresso do Cadastro' : 'Form Completion'}</span>
+                      <span className="text-cyan-400 font-extrabold">{completionPercent}%</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden border border-white/5">
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${completionPercent}%` }}
+                        className="h-full bg-gradient-to-r from-cyan-400 to-indigo-500 rounded-full"
+                      />
+                    </div>
                   </div>
-                  {currentInfo && (
-                    <p className="font-medium text-slate-300">
-                       💡 {currentInfo.guidance}
-                    </p>
-                  )}
-                  {recentAction && (
-                    <motion.div 
-                      key={recentAction}
-                      initial={{ opacity: 0, y: 1 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="text-[10px] text-emerald-400 font-bold flex items-center gap-1 mt-1.5"
-                    >
-                      <CheckCircle2 size={10} /> {recentAction}
-                    </motion.div>
-                  )}
-                </div>
-              ) : (
-                <div className="p-2.5 rounded-xl bg-indigo-950/20 border border-indigo-500/10 text-center py-3.5">
-                  <p className="text-[11px] text-slate-300 font-medium italic">
-                    {language === 'pt' 
-                      ? '"Preencha os campos com sabedoria! Revelarei as consequências do preenchimento através da minha bola de cristal..."' 
-                      : '"Fill in the fields with wisdom! I will peek into my crystal ball to reveal compliance rules..."'}
-                  </p>
-                </div>
-              )}
 
-              {/* Empty Fields & Warnings */}
-              {emptyFields.length > 0 ? (
-                <div className="space-y-1.5">
-                  <span className="text-[9px] font-black uppercase tracking-wider text-slate-500 block">
-                    {language === 'pt' ? 'Campos Pendentes Importantes:' : 'Pending Critical Fields:'}
-                  </span>
-                  <div className="max-h-[110px] overflow-y-auto pr-0.5 space-y-1.5 scrollbar-thin scrollbar-thumb-white/10">
-                    {emptyFields.slice(0, 3).map((field, idx) => (
-                      <div 
-                        key={`${field.fieldName}-${idx}`}
-                        className={`p-2 rounded-lg border text-[10px] ${
-                          field.isCrucial 
-                            ? 'bg-rose-500/5 border-rose-500/20 text-rose-200' 
-                            : 'bg-amber-500/5 border-amber-500/10 text-amber-200'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between font-bold mb-0.5">
-                          <span>{field.fieldName}</span>
-                          <span className="text-[8px] font-black uppercase tracking-widest opacity-80">
-                            {field.isCrucial 
-                              ? (language === 'pt' ? 'obrigatório' : 'required') 
-                              : (language === 'pt' ? 'filtro' : 'optional')}
-                          </span>
-                        </div>
-                        <p className="text-[9px] opacity-90 leading-normal">
-                          ⚠️ <span className="font-bold">{language === 'pt' ? 'Se pular:' : 'If skipped:'}</span> {field.consequence}
+                  {/* Active Input Guidance or General Help */}
+                  {activeInput ? (
+                    <div className="p-2.5 rounded-xl bg-indigo-500/5 border border-indigo-500/10 text-[11px] leading-relaxed text-slate-200">
+                      <div className="flex items-center gap-1.5 mb-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        <span className="flex h-1.5 w-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                        <span>{language === 'pt' ? 'Campo Atual:' : 'Active Input:'} <strong className="text-white normal-case">{currentLabel}</strong></span>
+                      </div>
+                      {currentInfo && (
+                        <p className="font-medium text-slate-300">
+                           💡 {currentInfo.guidance}
                         </p>
+                      )}
+                      {recentAction && (
+                        <motion.div 
+                          key={recentAction}
+                          initial={{ opacity: 0, y: 1 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="text-[10px] text-emerald-400 font-bold flex items-center gap-1 mt-1.5"
+                        >
+                          <CheckCircle2 size={10} /> {recentAction}
+                        </motion.div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="p-2.5 rounded-xl bg-indigo-950/20 border border-indigo-500/10 text-center py-3.5">
+                      <p className="text-[11px] text-slate-300 font-medium italic">
+                        {language === 'pt' 
+                          ? '"Preencha os campos com sabedoria! Revelarei as consequências do preenchimento através da minha bola de cristal..."' 
+                          : '"Fill in the fields with wisdom! I will peek into my crystal ball to reveal compliance rules..."'}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Empty Fields & Warnings */}
+                  {emptyFields.length > 0 ? (
+                    <div className="space-y-1.5">
+                      <span className="text-[9px] font-black uppercase tracking-wider text-slate-500 block">
+                        {language === 'pt' ? 'Campos Pendentes Importantes:' : 'Pending Critical Fields:'}
+                      </span>
+                      <div className="max-h-[110px] overflow-y-auto pr-0.5 space-y-1.5 scrollbar-thin scrollbar-thumb-white/10">
+                        {emptyFields.slice(0, 3).map((field, idx) => (
+                          <div 
+                            key={`${field.fieldName}-${idx}`}
+                            className={`p-2 rounded-lg border text-[10px] ${
+                              field.isCrucial 
+                                ? 'bg-rose-500/5 border-rose-500/20 text-rose-200' 
+                                : 'bg-amber-500/5 border-amber-500/10 text-amber-200'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between font-bold mb-0.5">
+                              <span>{field.fieldName}</span>
+                              <span className="text-[8px] font-black uppercase tracking-widest opacity-80">
+                                {field.isCrucial 
+                                  ? (language === 'pt' ? 'obrigatório' : 'required') 
+                                  : (language === 'pt' ? 'filtro' : 'optional')}
+                              </span>
+                            </div>
+                            <p className="text-[9px] opacity-90 leading-normal">
+                              ⚠️ <span className="font-bold">{language === 'pt' ? 'Se pular:' : 'If skipped:'}</span> {field.consequence}
+                            </p>
+                          </div>
+                        ))}
+                        {emptyFields.length > 3 && (
+                          <div className="text-center text-[9px] font-black uppercase tracking-widest text-indigo-400/80 mt-1 animate-pulse">
+                            {language === 'pt' ? `e mais ${emptyFields.length - 3} importantes` : `and ${emptyFields.length - 3} more`}
+                          </div>
+                        )}
                       </div>
-                    ))}
-                    {emptyFields.length > 3 && (
-                      <div className="text-center text-[9px] font-black uppercase tracking-widest text-indigo-400/80 mt-1 animate-pulse">
-                        {language === 'pt' ? `e mais ${emptyFields.length - 3} importantes` : `and ${emptyFields.length - 3} more`}
-                      </div>
-                    )}
-                  </div>
-                </div>
+                    </div>
+                  ) : (
+                    <div className="p-2 rounded-lg bg-emerald-500/5 border border-emerald-500/20 flex items-center gap-2">
+                      <ShieldCheck size={14} className="text-emerald-400 shrink-0" />
+                      <p className="text-[10px] text-emerald-300 font-bold leading-normal">
+                        {language === 'pt' 
+                          ? 'Incrível! Todas as informações essenciais estão preenchidas!' 
+                          : 'Outstanding! Form fully completed with precision!'}
+                      </p>
+                    </div>
+                  )}
+                </>
               ) : (
-                <div className="p-2 rounded-lg bg-emerald-500/5 border border-emerald-500/20 flex items-center gap-2">
-                  <ShieldCheck size={14} className="text-emerald-400 shrink-0" />
-                  <p className="text-[10px] text-emerald-300 font-bold leading-normal">
-                    {language === 'pt' 
-                      ? 'Incrível! Todas as informações essenciais estão preenchidas!' 
-                      : 'Outstanding! Form fully completed with precision!'}
+                <div className="p-3 rounded-xl bg-indigo-950/30 border border-indigo-500/20 text-center space-y-2 py-4">
+                  <Sparkles size={20} className="mx-auto text-amber-300 animate-bounce" />
+                  <p className="text-xs text-slate-200 font-medium leading-relaxed">
+                    {language === 'pt'
+                      ? 'Assistente IA Ativo! Clique ou abra um formulário (como Cadastro/Edição de Alunos, Turmas ou Configurações) para obter orientações e validações em tempo real.'
+                      : 'AI Assistant Active! Focus or open a form (such as Student Edit, Classes, or Settings) to get real-time guidance and field validation.'}
                   </p>
                 </div>
               )}
