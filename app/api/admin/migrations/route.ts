@@ -554,6 +554,21 @@ export async function GET() {
             .limit(1);
           return error;
         }
+      },
+      {
+        key: 'alunos_endereco',
+        tableName: 'alunos',
+        columnName: 'endereco',
+        fileName: '57_add_endereco_to_alunos.sql',
+        description: 'Coluna endereco na tabela de alunos para registro de endereço residencial do estudante.',
+        isColumn: true,
+        checkFn: async () => {
+          const { error } = await supabaseAdmin
+            .from('alunos')
+            .select('endereco')
+            .limit(1);
+          return error;
+        }
       }
     ];
 

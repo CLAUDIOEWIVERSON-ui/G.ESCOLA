@@ -306,7 +306,8 @@ export default function StudentDetailEditModal({
       dataToSave.whatsapp = currentAluno.whatsapp ? currentAluno.whatsapp.trim() : null;
       dataToSave.endereco = currentAluno.endereco ? currentAluno.endereco.trim() : null;
       dataToSave.foto_url = currentAluno.foto_url || null;
-      dataToSave.status = currentAluno.status || 'Ativo';
+      dataToSave.status = (currentAluno.status || 'ativo').toString().toLowerCase();
+      if (dataToSave.status === 'pré-inscrito') dataToSave.status = 'pre_inscrito';
       dataToSave.tipo_sanguineo = currentAluno.tipo_sanguineo || null;
       dataToSave.fator_rh = currentAluno.fator_rh || null;
       dataToSave.altura = currentAluno.altura || null;
