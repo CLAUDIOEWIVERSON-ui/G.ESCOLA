@@ -709,11 +709,33 @@ export default function StudentDetailEditModal({
                     </label>
                     <input
                       type="text"
+                      list="list-posto-graduacao"
                       value={currentAluno?.posto_graduacao || ''}
                       onChange={(e) => setCurrentAluno({ ...currentAluno, posto_graduacao: e.target.value })}
-                      placeholder={language === 'pt' ? 'Ex: 1º Ten, Sgt' : 'Rank'}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500"
+                      placeholder={language === 'pt' ? 'Selecione ou digite o posto (Ex: 1º Ten, Sgt...)' : 'Select or type rank'}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 font-medium"
                     />
+                    <datalist id="list-posto-graduacao">
+                      <option value="Almirante de Esquadra" />
+                      <option value="Vice-Almirante" />
+                      <option value="Contra-Almirante" />
+                      <option value="Capitão de Mar e Guerra" />
+                      <option value="Capitão de Fragata" />
+                      <option value="Capitão de Corveta" />
+                      <option value="Capitão-Tenente" />
+                      <option value="1º Tenente" />
+                      <option value="2º Tenente" />
+                      <option value="Guarda-Marinha" />
+                      <option value="Suboficial" />
+                      <option value="1º Sargento" />
+                      <option value="2º Sargento" />
+                      <option value="3º Sargento" />
+                      <option value="Cabo" />
+                      <option value="Marinheiro" />
+                      <option value="Soldado" />
+                      <option value="Cadete" />
+                      <option value="Civil" />
+                    </datalist>
                   </div>
                   <div>
                     <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
@@ -724,7 +746,7 @@ export default function StudentDetailEditModal({
                       value={currentAluno?.nome_guerra || ''}
                       onChange={(e) => setCurrentAluno({ ...currentAluno, nome_guerra: e.target.value })}
                       placeholder={language === 'pt' ? 'Ex: Silva, Santos' : 'War Name'}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500"
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 font-medium"
                     />
                   </div>
                 </div>
@@ -734,43 +756,60 @@ export default function StudentDetailEditModal({
                     <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
                       {language === 'pt' ? 'Militar / Civil' : 'Military / Civil'}
                     </label>
-                    <select
-                      value={currentAluno?.tipo_aluno || 'militar'}
+                    <input
+                      type="text"
+                      list="list-tipo-aluno"
+                      value={currentAluno?.tipo_aluno || ''}
                       onChange={(e) => setCurrentAluno({ ...currentAluno, tipo_aluno: e.target.value })}
-                      className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500"
-                    >
+                      placeholder={language === 'pt' ? 'militar, civil ou digite...' : 'militar, civil or type...'}
+                      className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 font-medium"
+                    />
+                    <datalist id="list-tipo-aluno">
                       <option value="militar">{language === 'pt' ? 'Militar' : 'Military'}</option>
                       <option value="civil">{language === 'pt' ? 'Civil' : 'Civilian'}</option>
-                    </select>
+                      <option value="militar estrangeiro">{language === 'pt' ? 'Militar Estrangeiro' : 'Foreign Military'}</option>
+                      <option value="policial">{language === 'pt' ? 'Policial / Segurança' : 'Police / Security'}</option>
+                    </datalist>
                   </div>
 
                   <div>
                     <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
                       {language === 'pt' ? 'Gênero' : 'Gender'}
                     </label>
-                    <select
-                      value={currentAluno?.genero || 'masculino'}
+                    <input
+                      type="text"
+                      list="list-genero"
+                      value={currentAluno?.genero || ''}
                       onChange={(e) => setCurrentAluno({ ...currentAluno, genero: e.target.value })}
-                      className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500"
-                    >
+                      placeholder={language === 'pt' ? 'masculino, feminino...' : 'male, female...'}
+                      className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 font-medium"
+                    />
+                    <datalist id="list-genero">
                       <option value="masculino">{language === 'pt' ? 'Masculino' : 'Male'}</option>
                       <option value="feminino">{language === 'pt' ? 'Feminino' : 'Female'}</option>
-                    </select>
+                    </datalist>
                   </div>
 
                   <div>
                     <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
                       {language === 'pt' ? 'Status' : 'Status'}
                     </label>
-                    <select
-                      value={(currentAluno?.status || 'ativo').toString().toLowerCase()}
+                    <input
+                      type="text"
+                      list="list-status-aluno"
+                      value={currentAluno?.status || ''}
                       onChange={(e) => setCurrentAluno({ ...currentAluno, status: e.target.value })}
-                      className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500"
-                    >
+                      placeholder={language === 'pt' ? 'ativo, inativo...' : 'ativo, inativo...'}
+                      className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 font-medium capitalize"
+                    />
+                    <datalist id="list-status-aluno">
                       <option value="ativo">{language === 'pt' ? 'Ativo' : 'Active'}</option>
                       <option value="inativo">{language === 'pt' ? 'Inativo' : 'Inactive'}</option>
                       <option value="transferido">{language === 'pt' ? 'Transferido' : 'Transferred'}</option>
-                    </select>
+                      <option value="desligado">{language === 'pt' ? 'Desligado' : 'Dismissed'}</option>
+                      <option value="trancado">{language === 'pt' ? 'Trancado' : 'On Leave'}</option>
+                      <option value="concluido">{language === 'pt' ? 'Concluído' : 'Completed'}</option>
+                    </datalist>
                   </div>
                 </div>
 
@@ -1053,48 +1092,57 @@ export default function StudentDetailEditModal({
                     <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
                       {language === 'pt' ? 'Tipo Sanguíneo' : 'Blood Type'}
                     </label>
-                    <select
+                    <input
+                      type="text"
+                      list="list-tipo-sanguineo"
                       value={currentAluno?.tipo_sanguineo || ''}
                       onChange={(e) => setCurrentAluno({ ...currentAluno, tipo_sanguineo: e.target.value })}
-                      className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500"
-                    >
-                      <option value="">{language === 'pt' ? 'Selecione' : 'Select'}</option>
+                      placeholder={language === 'pt' ? 'Ex: A, B, AB, O' : 'A, B, AB, O'}
+                      className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 font-medium uppercase"
+                    />
+                    <datalist id="list-tipo-sanguineo">
                       <option value="A">A</option>
                       <option value="B">B</option>
                       <option value="AB">AB</option>
                       <option value="O">O</option>
-                    </select>
+                    </datalist>
                   </div>
                   <div>
                     <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
                       {language === 'pt' ? 'Fator RH' : 'RH Factor'}
                     </label>
-                    <select
+                    <input
+                      type="text"
+                      list="list-fator-rh"
                       value={currentAluno?.fator_rh || ''}
                       onChange={(e) => setCurrentAluno({ ...currentAluno, fator_rh: e.target.value })}
-                      className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500"
-                    >
-                      <option value="">{language === 'pt' ? 'Selecione' : 'Select'}</option>
+                      placeholder={language === 'pt' ? 'Ex: + ou -' : '+ or -'}
+                      className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 font-medium"
+                    />
+                    <datalist id="list-fator-rh">
                       <option value="+">Positivo (+)</option>
                       <option value="-">Negativo (-)</option>
-                    </select>
+                    </datalist>
                   </div>
                   <div>
                     <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
                       {language === 'pt' ? 'Estado Civil' : 'Marital Status'}
                     </label>
-                    <select
+                    <input
+                      type="text"
+                      list="list-estado-civil"
                       value={currentAluno?.estado_civil || ''}
                       onChange={(e) => setCurrentAluno({ ...currentAluno, estado_civil: e.target.value })}
-                      className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500"
-                    >
-                      <option value="">{language === 'pt' ? 'Selecione' : 'Select'}</option>
+                      placeholder={language === 'pt' ? 'Ex: Solteiro(a), Casado(a)' : 'Single, Married'}
+                      className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 font-medium"
+                    />
+                    <datalist id="list-estado-civil">
                       <option value="Solteiro(a)">{language === 'pt' ? 'Solteiro(a)' : 'Single'}</option>
                       <option value="Casado(a)">{language === 'pt' ? 'Casado(a)' : 'Married'}</option>
                       <option value="Divorciado(a)">{language === 'pt' ? 'Divorciado(a)' : 'Divorced'}</option>
                       <option value="Viúvo(a)">{language === 'pt' ? 'Viúvo(a)' : 'Widowed'}</option>
                       <option value="União Estável">{language === 'pt' ? 'União Estável' : 'Domestic Partnership'}</option>
-                    </select>
+                    </datalist>
                   </div>
                 </div>
 
