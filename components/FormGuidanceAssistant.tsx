@@ -152,6 +152,36 @@ function WizardAvatar({ onClick, isGlow }: { onClick: () => void; isGlow: boolea
   );
 }
 
+// Sound chime helper using Web Audio API
+function playMagicChimeSound() {
+  try {
+    const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    if (ctx.state === 'suspended') {
+      ctx.resume();
+    }
+    const now = ctx.currentTime;
+    // Harmonious short 4-note chime (C5, E5, G5, C6)
+    const freqs = [523.25, 659.25, 783.99, 1046.50];
+    freqs.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now + i * 0.07);
+      gain.gain.setValueAtTime(0.001, now + i * 0.07);
+      gain.gain.exponentialRampToValueAtTime(0.2, now + i * 0.07 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.07 + 0.3);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now + i * 0.07);
+      osc.stop(now + i * 0.07 + 0.32);
+    });
+  } catch {
+    // Ignore audio permission or context restrictions
+  }
+}
+
 interface FormGuidanceAssistantProps {
   isOpen?: boolean;
   onClose?: () => void;
@@ -162,51 +192,59 @@ export function FormGuidanceAssistant({ isOpen = false, onClose }: FormGuidanceA
   const [activeForm, setActiveForm] = useState<HTMLFormElement | null>(null);
   const [activeInput, setActiveInput] = useState<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null>(null);
   const [emptyFields, setEmptyFields] = useState<EmptyFieldConsequence[]>([]);
-  const [bubbleVisible, setBubbleVisible] = useState(isOpen);
+  
+  // Step 1: Avatar appearance | Step 2: Pop-up window appearance
+  const [avatarVisible, setAvatarVisible] = useState(false);
+  const [popUpVisible, setPopUpVisible] = useState(false);
   const [autoTriggerAllowed, setAutoTriggerAllowed] = useState(true);
   const [recentAction, setRecentAction] = useState<string>('');
   const [completionPercent, setCompletionPercent] = useState<number>(0);
 
   const autoHideTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const popupTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const closeTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Keep state refs to avoid stale closures inside event listeners
   const autoTriggerAllowedRef = useRef(autoTriggerAllowed);
-  const bubbleVisibleRef = useRef(bubbleVisible);
+  const popUpVisibleRef = useRef(popUpVisible);
 
   useEffect(() => {
     autoTriggerAllowedRef.current = autoTriggerAllowed;
   }, [autoTriggerAllowed]);
 
   useEffect(() => {
-    bubbleVisibleRef.current = bubbleVisible;
-  }, [bubbleVisible]);
+    popUpVisibleRef.current = popUpVisible;
+  }, [popUpVisible]);
 
-  // Clear 5-second auto hide timer
-  const clearAutoHideTimer = useCallback(() => {
-    if (autoHideTimerRef.current) {
-      clearTimeout(autoHideTimerRef.current);
-      autoHideTimerRef.current = null;
-    }
+  // Clear timers
+  const clearTimers = useCallback(() => {
+    if (autoHideTimerRef.current) clearTimeout(autoHideTimerRef.current);
+    if (popupTimerRef.current) clearTimeout(popupTimerRef.current);
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
   }, []);
 
   // Sync with isOpen prop from ruler header
   useEffect(() => {
+    clearTimers();
     if (isOpen) {
-      setBubbleVisible(true);
-      clearAutoHideTimer();
-    } else {
-      setBubbleVisible(false);
-    }
-  }, [isOpen, clearAutoHideTimer]);
+      // 1. Play magic short sound
+      playMagicChimeSound();
+      
+      // 2. Avatar appears first
+      setAvatarVisible(true);
+      setPopUpVisible(false);
 
-  // Set 5-second auto hide timer
-  const startAutoHideTimer = useCallback(() => {
-    clearAutoHideTimer();
-    autoHideTimerRef.current = setTimeout(() => {
-      setBubbleVisible(false);
-    }, 5000);
-  }, [clearAutoHideTimer]);
+      // 3. After a short delay, the miniature pop-up window appears
+      popupTimerRef.current = setTimeout(() => {
+        setPopUpVisible(true);
+      }, 350);
+    } else {
+      setPopUpVisible(false);
+      closeTimerRef.current = setTimeout(() => {
+        setAvatarVisible(false);
+      }, 200);
+    }
+  }, [isOpen, clearTimers]);
 
   // Define database field mapping, names & exact real-world consequences in PT/EN
   const getFieldGuidanceAndConsequences = useCallback((nameAttr: string, labelText: string): { 
@@ -435,11 +473,6 @@ export function FormGuidanceAssistant({ isOpen = false, onClose }: FormGuidanceA
         target.tagName === 'SELECT' || 
         target.tagName === 'TEXTAREA'
       ) {
-        if (hideTimeoutRef.current) {
-          clearTimeout(hideTimeoutRef.current);
-          hideTimeoutRef.current = null;
-        }
-
         const inputEl = target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
         const formEl = inputEl.form;
 
@@ -447,13 +480,6 @@ export function FormGuidanceAssistant({ isOpen = false, onClose }: FormGuidanceA
         if (formEl) {
           setActiveForm(formEl);
           analyzeFormState(formEl, inputEl);
-          
-          // Fulfill original requirement: Clicking/focusing on form fields automatically displays layout for 5s
-          if (autoTriggerAllowedRef.current) {
-            setBubbleVisible(true);
-            startAutoHideTimer();
-            setAutoTriggerAllowed(false);
-          }
         }
       }
     };
@@ -478,53 +504,36 @@ export function FormGuidanceAssistant({ isOpen = false, onClose }: FormGuidanceA
 
         if (formEl) {
           analyzeFormState(formEl, inputEl);
-          
-          // Ensure typing also auto-reveals the bubble for 5 seconds if not triggered yet
-          if (autoTriggerAllowedRef.current) {
-            setBubbleVisible(true);
-            startAutoHideTimer();
-            setAutoTriggerAllowed(false);
-          }
         }
       }
-    };
-
-    const handleFocusOut = () => {
-      hideTimeoutRef.current = setTimeout(() => {
-        // Keep active form for background contexts, soft blur
-      }, 300);
     };
 
     window.addEventListener('focusin', handleFocusIn);
     window.addEventListener('input', handleInputOrChange);
     window.addEventListener('change', handleInputOrChange);
-    window.addEventListener('focusout', handleFocusOut);
 
     return () => {
       window.removeEventListener('focusin', handleFocusIn);
       window.removeEventListener('input', handleInputOrChange);
       window.removeEventListener('change', handleInputOrChange);
-      window.removeEventListener('focusout', handleFocusOut);
-      if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
     };
-  }, [language, getLabelOrPlaceholder, analyzeFormState, startAutoHideTimer]);
+  }, [language, getLabelOrPlaceholder, analyzeFormState]);
 
   // Toggle bubble manually by clicking directly on the avatar
   const toggleBubbleManual = useCallback(() => {
-    setBubbleVisible(prev => {
+    setPopUpVisible(prev => {
       const nextValue = !prev;
       if (nextValue) {
-        // Clear active 5-second auto hide timer so the user can keep it open while reading
-        clearAutoHideTimer();
+        playMagicChimeSound();
+        clearTimers();
       } else {
-        // Re-enable automatic trigger next time they interact with forms if they manually dismissed
         setAutoTriggerAllowed(true);
       }
       return nextValue;
     });
-  }, [clearAutoHideTimer]);
+  }, [clearTimers]);
 
-  if (!isOpen) return null;
+  if (!isOpen && !avatarVisible) return null;
 
   const currentLabel = activeInput ? getLabelOrPlaceholder(activeInput) : '';
   const currentInfo = activeInput ? getFieldGuidanceAndConsequences(activeInput.getAttribute('name') || '', currentLabel) : null;
@@ -532,13 +541,14 @@ export function FormGuidanceAssistant({ isOpen = false, onClose }: FormGuidanceA
   return (
     <div className="fixed bottom-24 md:bottom-8 right-8 z-50 font-sans max-w-[320px] md:max-w-[360px] w-full print:hidden">
       <div className="relative flex flex-col items-end">
+        {/* Step 2: Miniature Pop-up window appearing after Avatar */}
         <AnimatePresence>
-          {bubbleVisible && (
+          {popUpVisible && (
             <motion.div
               id="wizard-speech-bubble"
-              initial={{ opacity: 0, y: 15, scale: 0.92 }}
+              initial={{ opacity: 0, y: 15, scale: 0.88 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 15, scale: 0.92 }}
+              exit={{ opacity: 0, y: 15, scale: 0.88 }}
               transition={{ type: "spring", stiffness: 350, damping: 24 }}
               className="w-full bg-slate-950/95 text-white rounded-[24px] border border-indigo-500/30 shadow-2xl overflow-hidden p-4 mb-3 relative flex flex-col gap-3.5 backdrop-blur-md shadow-indigo-500/20"
             >
@@ -552,7 +562,7 @@ export function FormGuidanceAssistant({ isOpen = false, onClose }: FormGuidanceA
                 </div>
                 <button
                   onClick={() => {
-                    setBubbleVisible(false);
+                    setPopUpVisible(false);
                     if (onClose) onClose();
                   }}
                   className="p-1 hover:bg-white/10 rounded text-slate-400 hover:text-white transition-colors cursor-pointer"
@@ -679,11 +689,22 @@ export function FormGuidanceAssistant({ isOpen = false, onClose }: FormGuidanceA
           )}
         </AnimatePresence>
 
-        {/* Wizard Avatar with crystal ball */}
-        <WizardAvatar 
-          onClick={toggleBubbleManual} 
-          isGlow={bubbleVisible || emptyFields.filter(f => f.isCrucial).length > 0} 
-        />
+        {/* Step 1: Avatar appears first */}
+        <AnimatePresence>
+          {avatarVisible && (
+            <motion.div
+              initial={{ scale: 0, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0, opacity: 0, y: 20 }}
+              transition={{ type: "spring", stiffness: 400, damping: 22 }}
+            >
+              <WizardAvatar 
+                onClick={toggleBubbleManual} 
+                isGlow={popUpVisible || emptyFields.filter(f => f.isCrucial).length > 0} 
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
