@@ -124,17 +124,22 @@ export default function StudentDetailEditModal({
     if (isOpen) {
       loadAllTurmasAndCursos();
       if (aluno) {
-        const studentCursoId = aluno.curso_id || aluno.curso?.id || '';
-        setCurrentAluno({ ...aluno, curso_id: studentCursoId });
+        const studentCursoId = aluno.curso_id || aluno.curso?.id || aluno.turma?.curso_id || aluno.turma?.curso?.id || '';
+        const effectiveTurmaId = aluno.turma_id || aluno.turma?.id || turmaId || null;
+        setCurrentAluno({
+          ...aluno,
+          curso_id: studentCursoId,
+          turma_id: effectiveTurmaId
+        });
         setSelectedCursoId(studentCursoId);
         loadAttendance(aluno.id);
         loadStudentAccess(aluno.id);
-        loadTurmaInfo(aluno.turma_id || turmaId, studentCursoId);
+        loadTurmaInfo(effectiveTurmaId, studentCursoId);
       } else {
         setCurrentAluno({
           tipo_aluno: 'militar',
           genero: 'masculino',
-          status: 'Ativo',
+          status: 'ativo',
           turma_id: turmaId || null,
           curso_id: null
         });
@@ -152,7 +157,7 @@ export default function StudentDetailEditModal({
     }
   }, [isOpen, aluno]);
 
-  const loadTurmaInfo = async (tId?: string, initialCursoId?: string) => {
+  const loadTurmaInfo = async (tId?: string | null, initialCursoId?: string) => {
     if (!tId) {
       setTurmaInfo(null);
       if (initialCursoId) {
@@ -168,10 +173,14 @@ export default function StudentDetailEditModal({
         .maybeSingle();
       if (data) {
         setTurmaInfo(data);
-        if (initialCursoId) {
-          setSelectedCursoId(initialCursoId);
-        } else if (data.curso_id || data.curso?.id) {
-          setSelectedCursoId(data.curso_id || data.curso?.id);
+        const associatedCursoId = data.curso_id || data.curso?.id || '';
+        const finalCursoId = initialCursoId || associatedCursoId;
+        if (finalCursoId) {
+          setSelectedCursoId(finalCursoId);
+          setCurrentAluno((prev: any) => ({
+            ...prev,
+            curso_id: prev?.curso_id || finalCursoId
+          }));
         }
       } else {
         setTurmaInfo(null);
@@ -289,7 +298,7 @@ export default function StudentDetailEditModal({
       const dataToSave: any = {
         nome: currentAluno.nome.trim(),
         matricula: matricula.trim(),
-        turma_id: currentAluno.turma_id || turmaId || null,
+        turma_id: currentAluno.turma_id !== undefined ? (currentAluno.turma_id || null) : (turmaId || null),
       };
 
       dataToSave.email = (currentAluno.email && currentAluno.email.includes('@')) ? currentAluno.email.trim() : null;
@@ -306,11 +315,7 @@ export default function StudentDetailEditModal({
       dataToSave.whatsapp = currentAluno.whatsapp ? currentAluno.whatsapp.trim() : null;
       dataToSave.endereco = currentAluno.endereco ? currentAluno.endereco.trim() : null;
       dataToSave.foto_url = currentAluno.foto_url || null;
-      let st = (currentAluno.status || 'ativo').toString().toLowerCase();
-      if (st !== 'ativo' && st !== 'inativo' && st !== 'transferido') {
-        st = 'inativo';
-      }
-      dataToSave.status = st;
+      dataToSave.status = (currentAluno.status || 'ativo').toString().toLowerCase().trim();
       dataToSave.tipo_sanguineo = currentAluno.tipo_sanguineo || null;
       dataToSave.fator_rh = currentAluno.fator_rh || null;
       dataToSave.altura = currentAluno.altura || null;
@@ -324,9 +329,7 @@ export default function StudentDetailEditModal({
       if (!isNaN(parsedAno)) dataToSave.ano_admissao = parsedAno;
 
       const targetCursoId = currentAluno.curso_id || selectedCursoId || null;
-      if (targetCursoId) {
-        dataToSave.curso_id = targetCursoId;
-      }
+      dataToSave.curso_id = targetCursoId;
 
       let savedSuccessfully = false;
 
@@ -903,27 +906,28 @@ export default function StudentDetailEditModal({
                       {language === 'pt' ? 'Curso ao qual está Matriculado' : 'Enrolled Course'} <span className="text-red-500">*</span>
                     </label>
                     <select
-                      value={selectedCursoId || currentAluno?.curso_id || ''}
+                      value={currentAluno?.curso_id || selectedCursoId || ''}
                       onChange={(e) => {
-                        const cId = e.target.value;
-                        setSelectedCursoId(cId);
-                        setCurrentAluno((prev: any) => ({ ...prev, curso_id: cId }));
-
-                        // Filter turmas for this chosen course
-                        const matchingTurmas = allTurmas.filter((t: any) => t.curso_id === cId || t.curso?.id === cId);
-                        if (matchingTurmas.length > 0) {
-                          const isCurrentTurmaInNewCourse = matchingTurmas.some((t: any) => t.id === currentAluno?.turma_id);
-                          if (!isCurrentTurmaInNewCourse) {
-                            const firstTId = matchingTurmas[0].id;
-                            setCurrentAluno((prev: any) => ({ ...prev, turma_id: firstTId, curso_id: cId }));
-                            loadTurmaInfo(firstTId, cId);
+                        const cId = e.target.value || null;
+                        setSelectedCursoId(cId || '');
+                        
+                        setCurrentAluno((prev: any) => {
+                          const updated = { ...prev, curso_id: cId };
+                          if (cId) {
+                            const matchingTurmas = allTurmas.filter((t: any) => t.curso_id === cId || t.curso?.id === cId);
+                            const isCurrentTurmaInCourse = matchingTurmas.some((t: any) => t.id === prev?.turma_id);
+                            if (!isCurrentTurmaInCourse && matchingTurmas.length > 0) {
+                              updated.turma_id = matchingTurmas[0].id;
+                              loadTurmaInfo(matchingTurmas[0].id, cId);
+                            }
+                          } else {
+                            updated.turma_id = null;
+                            setTurmaInfo(null);
                           }
-                        } else if (!cId) {
-                          setCurrentAluno((prev: any) => ({ ...prev, turma_id: null, curso_id: null }));
-                          setTurmaInfo(null);
-                        }
+                          return updated;
+                        });
                       }}
-                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 font-semibold text-slate-800 shadow-2xs"
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 font-semibold text-slate-800 shadow-2xs cursor-pointer"
                     >
                       <option value="">{language === 'pt' ? '-- Selecione o Curso --' : '-- Select Course --'}</option>
                       {allCursos.map((curso: any) => (
@@ -940,34 +944,54 @@ export default function StudentDetailEditModal({
                       {language === 'pt' ? 'Turma da Matrícula' : 'Enrolled Class'}
                     </label>
                     <select
-                      value={currentAluno?.turma_id || turmaId || ''}
+                      value={currentAluno?.turma_id || ''}
                       onChange={(e) => {
-                        const selectedTId = e.target.value;
-                        setCurrentAluno((prev: any) => ({ ...prev, turma_id: selectedTId }));
-                        if (selectedTId) {
-                          const tObj = allTurmas.find((t: any) => t.id === selectedTId);
-                          if (tObj && (tObj.curso_id || tObj.curso?.id)) {
-                            const tCursoId = tObj.curso_id || tObj.curso?.id;
-                            setSelectedCursoId(tCursoId);
-                            setCurrentAluno((prev: any) => ({ ...prev, curso_id: tCursoId }));
+                        const selectedTId = e.target.value || null;
+                        
+                        setCurrentAluno((prev: any) => {
+                          const updated = { ...prev, turma_id: selectedTId };
+                          if (selectedTId) {
+                            const tObj = allTurmas.find((t: any) => t.id === selectedTId);
+                            const tCursoId = tObj?.curso_id || tObj?.curso?.id;
+                            if (tCursoId) {
+                              setSelectedCursoId(tCursoId);
+                              updated.curso_id = tCursoId;
+                            }
                           }
+                          return updated;
+                        });
+
+                        if (selectedTId) {
+                          loadTurmaInfo(selectedTId);
+                        } else {
+                          setTurmaInfo(null);
                         }
-                        loadTurmaInfo(selectedTId);
                       }}
-                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 font-medium text-slate-800 shadow-2xs"
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 font-medium text-slate-800 shadow-2xs cursor-pointer"
                     >
                       <option value="">{language === 'pt' ? '-- Selecione a Turma --' : '-- Select Class --'}</option>
-                      {(selectedCursoId 
-                        ? allTurmas.filter((t: any) => t.curso_id === selectedCursoId || t.curso?.id === selectedCursoId)
-                        : allTurmas
-                      ).map((t: any) => {
-                        const cursoNome = t.curso?.nome || '';
-                        return (
-                          <option key={t.id} value={t.id}>
-                            {t.nome} {t.codigo ? `(${t.codigo})` : ''} {!selectedCursoId && cursoNome ? `• Curso: ${cursoNome}` : ''} {t.internacional ? '🌐 [EXTERIOR]' : ''}
-                          </option>
-                        );
-                      })}
+                      {(() => {
+                        const effectiveCourseId = currentAluno?.curso_id || selectedCursoId;
+                        let turmasToShow = allTurmas;
+                        if (effectiveCourseId) {
+                          turmasToShow = allTurmas.filter((t: any) => {
+                            const isFromCourse = t.curso_id === effectiveCourseId || t.curso?.id === effectiveCourseId;
+                            const isCurrentStudentTurma = currentAluno?.turma_id && t.id === currentAluno.turma_id;
+                            return isFromCourse || isCurrentStudentTurma;
+                          });
+                        }
+                        if (turmasToShow.length === 0 && allTurmas.length > 0) {
+                          turmasToShow = allTurmas;
+                        }
+                        return turmasToShow.map((t: any) => {
+                          const cursoNome = t.curso?.nome || '';
+                          return (
+                            <option key={t.id} value={t.id}>
+                              {t.nome} {t.codigo ? `(${t.codigo})` : ''} {cursoNome ? `• Curso: ${cursoNome}` : ''} {t.internacional ? '🌐 [EXTERIOR]' : ''}
+                            </option>
+                          );
+                        });
+                      })()}
                     </select>
                   </div>
 

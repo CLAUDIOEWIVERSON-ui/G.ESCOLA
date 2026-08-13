@@ -18,14 +18,9 @@ export async function POST(request: Request) {
       dataToSave.matricula = `MAT${new Date().getFullYear()}${Math.floor(100000 + Math.random() * 899999)}`;
     }
 
-    // Ensure status is valid lowercase enum value ('ativo', 'inativo', 'transferido')
+    // Ensure status is valid string or fallback to 'ativo' if empty
     if (dataToSave.status) {
-      const lowerStatus = dataToSave.status.toString().toLowerCase();
-      if (lowerStatus === 'ativo' || lowerStatus === 'inativo' || lowerStatus === 'transferido') {
-        dataToSave.status = lowerStatus;
-      } else {
-        dataToSave.status = 'inativo';
-      }
+      dataToSave.status = dataToSave.status.toString().trim().toLowerCase();
     } else {
       dataToSave.status = 'ativo';
     }
