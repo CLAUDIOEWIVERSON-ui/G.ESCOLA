@@ -665,12 +665,15 @@ function TurmasContent() {
     }
   };
 
+  const [openedFromTurmaId, setOpenedFromTurmaId] = useState<string | null>(null);
+
   const handleCloseStudentsModal = () => {
     setIsStudentsModalOpen(false);
     const returnTo = searchParams ? searchParams.get('returnTo') : null;
     const returnCard = searchParams ? searchParams.get('card') : null;
+    const tId = viewingTurma?.id || openedFromTurmaId || (searchParams ? searchParams.get('turmaId') : null);
     if (returnTo === 'dashboard') {
-      router.push(`/dashboard${returnCard ? `?card=${returnCard}` : ''}`);
+      router.push(`/dashboard${returnCard ? `?card=${returnCard}` : ''}${tId ? `&highlightTurma=${tId}` : ''}`);
     }
   };
 
@@ -678,9 +681,10 @@ function TurmasContent() {
     setIsStudentFormOpen(false);
     const returnTo = searchParams ? searchParams.get('returnTo') : null;
     const returnCard = searchParams ? searchParams.get('card') : null;
+    const tId = viewingTurma?.id || openedFromTurmaId || (searchParams ? searchParams.get('turmaId') : null);
     if (returnTo === 'dashboard') {
       setIsStudentsModalOpen(false);
-      router.push(`/dashboard${returnCard ? `?card=${returnCard}` : ''}`);
+      router.push(`/dashboard${returnCard ? `?card=${returnCard}` : ''}${tId ? `&highlightTurma=${tId}` : ''}`);
     }
   };
 
@@ -710,6 +714,7 @@ function TurmasContent() {
       }
       clearParams();
     } else if (action === 'view-students' && turmaId) {
+      setOpenedFromTurmaId(turmaId);
       const targetTurma = turmas.find((t: any) => t.id === turmaId);
       if (targetTurma) {
         setTimeout(() => {

@@ -74,17 +74,41 @@ export default function DashboardPage() {
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [selectedAlunoForEdit, setSelectedAlunoForEdit] = useState<any | null>(null);
+  const [highlightedTurmaId, setHighlightedTurmaId] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const cardParam = params.get('card');
+      const highlightParam = params.get('highlightTurma');
+      if (highlightParam) {
+        setHighlightedTurmaId(highlightParam);
+      }
       if (cardParam && ['exterior', 'expedito', 'carreira', 'especial', 'pre_inscritos'].includes(cardParam)) {
         setSelectedCard(cardParam);
         setHasUserSelectedCard(true);
       }
     }
   }, []);
+
+  // Auto-select correct category if highlightTurma is provided
+  useEffect(() => {
+    if (highlightedTurmaId && dashboardData) {
+      if (turmasExpeditoList?.some((t: any) => t.id === highlightedTurmaId)) {
+        setSelectedCard('expedito');
+        setHasUserSelectedCard(true);
+      } else if (turmasCarreiraList?.some((t: any) => t.id === highlightedTurmaId)) {
+        setSelectedCard('carreira');
+        setHasUserSelectedCard(true);
+      } else if (turmasEspeciaisList?.some((t: any) => t.id === highlightedTurmaId)) {
+        setSelectedCard('especial');
+        setHasUserSelectedCard(true);
+      } else if (turmasPreInscritasList?.some((t: any) => t.id === highlightedTurmaId)) {
+        setSelectedCard('pre_inscritos');
+        setHasUserSelectedCard(true);
+      }
+    }
+  }, [highlightedTurmaId, dashboardData, turmasExpeditoList, turmasCarreiraList, turmasEspeciaisList, turmasPreInscritasList]);
 
   useEffect(() => {
     if (dashboardData && stats) {
@@ -1143,6 +1167,7 @@ export default function DashboardPage() {
               title={t.dashboard.turmasExpedito} 
               onDelete={handleDeleteTurma}
               selectedCard="expedito"
+              highlightedTurmaId={highlightedTurmaId}
             />
           </motion.div>
         )}
@@ -1160,6 +1185,7 @@ export default function DashboardPage() {
               title={t.dashboard.turmasCarreira} 
               onDelete={handleDeleteTurma}
               selectedCard="carreira"
+              highlightedTurmaId={highlightedTurmaId}
             />
           </motion.div>
         )}
@@ -1177,6 +1203,7 @@ export default function DashboardPage() {
               title={t.dashboard.turmasEspeciais} 
               onDelete={handleDeleteTurma}
               selectedCard="especial"
+              highlightedTurmaId={highlightedTurmaId}
             />
           </motion.div>
         )}
@@ -1194,6 +1221,7 @@ export default function DashboardPage() {
               title={isPt ? 'Turmas Pré-Inscritas' : 'Pre-registered Classes'} 
               onDelete={handleDeleteTurma}
               selectedCard="pre_inscritos"
+              highlightedTurmaId={highlightedTurmaId}
             />
           </motion.div>
         )}
@@ -1456,7 +1484,19 @@ export default function DashboardPage() {
   );
 }
 
-function TurmasListTable({ turmas, title, onDelete, selectedCard }: { turmas: any[], title: string, onDelete?: (id: string) => void, selectedCard?: string }) {
+function TurmasListTable({ 
+  turmas, 
+  title, 
+  onDelete, 
+  selectedCard,
+  highlightedTurmaId
+}: { 
+  turmas: any[], 
+  title: string, 
+  onDelete?: (id: string) => void, 
+  selectedCard?: string,
+  highlightedTurmaId?: string | null
+}) {
   const { t, language } = useI18n();
   const { isAdmin } = useUser();
   const router = useRouter();
@@ -1464,6 +1504,7 @@ function TurmasListTable({ turmas, title, onDelete, selectedCard }: { turmas: an
 
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState<number>(1);
+  const [activeHighlight, setActiveHighlight] = useState<string | null>(highlightedTurmaId || null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -1475,6 +1516,41 @@ function TurmasListTable({ turmas, title, onDelete, selectedCard }: { turmas: an
       }
     }
   }, []);
+
+  // Ensure pagination is automatically on the page that contains the highlighted class
+  useEffect(() => {
+    if (highlightedTurmaId && turmas.length > 0) {
+      setActiveHighlight(highlightedTurmaId);
+      const targetIndex = turmas.findIndex(t => t.id === highlightedTurmaId);
+      if (targetIndex !== -1) {
+        const targetPage = Math.floor(targetIndex / itemsPerPage) + 1;
+        setCurrentPage(targetPage);
+      }
+    }
+  }, [highlightedTurmaId, turmas, itemsPerPage]);
+
+  // Smoothly scroll and focus on the chosen class row when loaded
+  useEffect(() => {
+    if (activeHighlight) {
+      const scrollTimer = setTimeout(() => {
+        const rowEl = document.getElementById(`turma-row-${activeHighlight}`);
+        if (rowEl) {
+          rowEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          rowEl.focus();
+        }
+      }, 250);
+
+      // Auto fade the ring after 5 seconds
+      const fadeTimer = setTimeout(() => {
+        setActiveHighlight(null);
+      }, 5000);
+
+      return () => {
+        clearTimeout(scrollTimer);
+        clearTimeout(fadeTimer);
+      };
+    }
+  }, [activeHighlight, currentPage]);
 
   const totalItems = turmas.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
@@ -1515,19 +1591,31 @@ function TurmasListTable({ turmas, title, onDelete, selectedCard }: { turmas: an
             ) : (
               paginatedTurmas.map((turma) => {
                 const isPreInscrito = turma.status?.toLowerCase() === 'pré-inscrito';
+                const isHighlighted = turma.id === activeHighlight;
                 return (
                 <tr 
+                  id={`turma-row-${turma.id}`}
                   key={turma.id} 
+                  tabIndex={0}
                   className={cn(
-                    "transition-colors cursor-pointer",
-                    "hover:bg-slate-50"
+                    "transition-all duration-500 cursor-pointer outline-none",
+                    isHighlighted
+                      ? "bg-amber-50/90 ring-2 ring-amber-500 ring-offset-2 shadow-md scale-[1.003]"
+                      : "hover:bg-slate-50 focus:bg-slate-50 focus:ring-1 focus:ring-blue-400"
                   )}
                   onClick={() => {
                     router.push(`/turmas?action=view-students&turmaId=${turma.id}&returnTo=dashboard&card=${selectedCard || 'expedito'}`);
                   }}
                 >
                   <td className="px-6 py-4">
-                    <div className={cn("font-bold", isPreInscrito ? "text-red-600" : "text-slate-800")}>{turma.nome}</div>
+                    <div className="flex items-center gap-2">
+                      {isHighlighted && (
+                        <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider bg-amber-500 text-white px-2 py-0.5 rounded-full shadow-xs animate-bounce">
+                          👉 Turma Escolhida
+                        </span>
+                      )}
+                      <div className={cn("font-bold", isPreInscrito ? "text-red-600" : "text-slate-800")}>{turma.nome}</div>
+                    </div>
                     <div className={cn("text-[10px] font-mono uppercase", isPreInscrito ? "text-red-500" : "text-slate-400")}>
                       ANO: {turma.ano || '-'} {turma.grupo_responsavel ? `• GRUPO: ${turma.grupo_responsavel}` : ''}
                     </div>
