@@ -27,6 +27,7 @@ import {
   Globe
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
+import { mutate } from 'swr';
 import { toast } from 'sonner';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { cn } from '@/lib/utils';
@@ -135,13 +136,41 @@ export default function StudentDetailEditModal({
         loadAttendance(aluno.id);
         loadStudentAccess(aluno.id);
         loadTurmaInfo(effectiveTurmaId, studentCursoId);
+
+        // Fetch fresh full student record from database to guarantee 100% synchronization across all modules
+        if (aluno.id) {
+          supabase
+            .from('alunos')
+            .select('*, turma:turmas(id, nome, codigo, curso_id, internacional, localizacao, data_inicio, data_fim, curso:cursos(id, nome, categoria))')
+            .eq('id', aluno.id)
+            .maybeSingle()
+            .then(({ data: freshAluno, error }) => {
+              if (!error && freshAluno) {
+                const freshCursoId = freshAluno.curso_id || freshAluno.curso?.id || freshAluno.turma?.curso_id || freshAluno.turma?.curso?.id || studentCursoId;
+                const freshTurmaId = freshAluno.turma_id || freshAluno.turma?.id || effectiveTurmaId;
+                setCurrentAluno((prev: any) => ({
+                  ...(prev || {}),
+                  ...freshAluno,
+                  curso_id: freshCursoId,
+                  turma_id: freshTurmaId
+                }));
+                if (freshCursoId) {
+                  setSelectedCursoId(freshCursoId);
+                }
+                loadTurmaInfo(freshTurmaId, freshCursoId);
+              }
+            });
+        }
       } else {
         setCurrentAluno({
           tipo_aluno: 'militar',
           genero: 'masculino',
           status: 'ativo',
           turma_id: turmaId || null,
-          curso_id: null
+          curso_id: null,
+          data_inicio_curso: '',
+          data_fim_curso: '',
+          nif: ''
         });
         setAttendanceStats({
           presentes: 0,
@@ -155,7 +184,7 @@ export default function StudentDetailEditModal({
         loadTurmaInfo(turmaId, '');
       }
     }
-  }, [isOpen, aluno]);
+  }, [isOpen, aluno, turmaId]);
 
   const loadTurmaInfo = async (tId?: string | null, initialCursoId?: string) => {
     if (!tId) {
@@ -325,6 +354,10 @@ export default function StudentDetailEditModal({
       dataToSave.funcao = currentAluno.funcao || null;
       dataToSave.observacoes = currentAluno.observacoes || null;
 
+      dataToSave.nif = currentAluno.nif ? currentAluno.nif.trim() : null;
+      dataToSave.data_inicio_curso = currentAluno.data_inicio_curso || null;
+      dataToSave.data_fim_curso = currentAluno.data_fim_curso || null;
+
       const parsedAno = currentAluno.ano_admissao ? parseInt(currentAluno.ano_admissao.toString()) : NaN;
       if (!isNaN(parsedAno)) dataToSave.ano_admissao = parsedAno;
 
@@ -386,6 +419,20 @@ export default function StudentDetailEditModal({
         }
 
         if (saveError) throw saveError;
+      }
+
+      // Trigger SWR cache invalidation and custom event to sync all modules immediately
+      try {
+        mutate(
+          (key: any) => typeof key === 'string' && (key.startsWith('supabase:') || key.includes('alunos') || key.includes('turmas') || key.includes('dashboard')),
+          undefined,
+          { revalidate: true }
+        );
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('student-updated', { detail: { id: currentAluno.id } }));
+        }
+      } catch (mutateErr) {
+        console.warn('Cache mutate error:', mutateErr);
       }
 
       toast.success(language === 'pt' ? 'Aluno salvo com sucesso!' : 'Student saved successfully!');
@@ -1017,7 +1064,7 @@ export default function StudentDetailEditModal({
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
                     <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
                       {language === 'pt' ? 'Data de Nascimento' : 'Date of Birth'}
@@ -1029,8 +1076,6 @@ export default function StudentDetailEditModal({
                       className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500"
                     />
                   </div>
-
-
                   <div>
                     <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
                       {language === 'pt' ? 'RG' : 'ID Document (RG)'}
@@ -1043,6 +1088,46 @@ export default function StudentDetailEditModal({
                       className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500"
                     />
                   </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                      {language === 'pt' ? 'NIF (Identificação Fiscal)' : 'Tax ID (NIF)'}
+                    </label>
+                    <input
+                      type="text"
+                      value={currentAluno?.nif || ''}
+                      onChange={(e) => setCurrentAluno({ ...currentAluno, nif: e.target.value })}
+                      placeholder="NIF / Identificação Fiscal"
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                      {language === 'pt' ? 'Início do Curso / Missão' : 'Course / Mission Start'}
+                    </label>
+                    <input
+                      type="date"
+                      value={currentAluno?.data_inicio_curso || ''}
+                      onChange={(e) => setCurrentAluno({ ...currentAluno, data_inicio_curso: e.target.value })}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                      {language === 'pt' ? 'Término do Curso / Missão' : 'Course / Mission End'}
+                    </label>
+                    <input
+                      type="date"
+                      value={currentAluno?.data_fim_curso || ''}
+                      onChange={(e) => setCurrentAluno({ ...currentAluno, data_fim_curso: e.target.value })}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
                       {language === 'pt' ? 'Organização Militar (OM)' : 'Military Organization'}
@@ -1383,8 +1468,8 @@ export default function StudentDetailEditModal({
                     <span className="font-bold text-slate-800 uppercase leading-snug">{currentAluno?.om || '-'}</span>
                   </td>
                 </tr>
-                <tr>
-                  <td colSpan={2} className="pt-1">
+                <tr className="border-b border-slate-200">
+                  <td colSpan={2} className="py-1">
                     <span className="text-[8px] font-bold text-slate-500 uppercase block leading-none">
                       {turmaInfo?.internacional ? 'Curso (Inscrição no Exterior) / Turma' : 'Turma / Curso'}
                     </span>
@@ -1397,6 +1482,21 @@ export default function StudentDetailEditModal({
                       ) : (
                         turmaInfo?.nome ? `${turmaInfo.nome} ${turmaInfo.codigo ? `(${turmaInfo.codigo})` : ''}` : 'Turma Geral'
                       )}
+                      {turmaInfo?.localizacao && (
+                        <span className="ml-2 text-slate-600 font-semibold text-[10px]">📍 {turmaInfo.localizacao}</span>
+                      )}
+                    </span>
+                  </td>
+                </tr>
+                <tr>
+                  <td colSpan={2} className="pt-1">
+                    <span className="text-[8px] font-bold text-slate-500 uppercase block leading-none">
+                      Período de Realização do Curso / Missão
+                    </span>
+                    <span className="font-bold text-slate-800 uppercase leading-snug font-mono text-[11px]">
+                      {currentAluno?.data_inicio_curso ? format(new Date(currentAluno.data_inicio_curso), 'dd/MM/yyyy') : (turmaInfo?.data_inicio ? format(new Date(turmaInfo.data_inicio), 'dd/MM/yyyy') : '-')}
+                      {' a '}
+                      {currentAluno?.data_fim_curso ? format(new Date(currentAluno.data_fim_curso), 'dd/MM/yyyy') : (turmaInfo?.data_fim ? format(new Date(turmaInfo.data_fim), 'dd/MM/yyyy') : '-')}
                     </span>
                   </td>
                 </tr>
@@ -1420,20 +1520,22 @@ export default function StudentDetailEditModal({
                 <tr className="border-b border-slate-200">
                   <td className="p-1 font-bold bg-slate-100 border-r border-slate-300">RG:</td>
                   <td className="p-1 font-mono border-r border-slate-300">{currentAluno?.rg || '-'}</td>
+                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-300">NIF (Identificação Fiscal):</td>
+                  <td className="p-1 font-mono">{currentAluno?.nif || '-'}</td>
+                </tr>
+                <tr className="border-b border-slate-200">
                   <td className="p-1 font-bold bg-slate-100 border-r border-slate-300">Título de Eleitor:</td>
-                  <td className="p-1 font-mono">{currentAluno?.titulo_eleitor || '-'}</td>
-                </tr>
-                <tr className="border-b border-slate-200">
+                  <td className="p-1 font-mono border-r border-slate-300">{currentAluno?.titulo_eleitor || '-'}</td>
                   <td className="p-1 font-bold bg-slate-100 border-r border-slate-300">Estado Civil:</td>
-                  <td className="p-1 border-r border-slate-300">{currentAluno?.estado_civil || '-'}</td>
-                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-300">Tipo Sanguíneo/Fator RH:</td>
-                  <td className="p-1 font-mono">{currentAluno?.tipo_sanguineo || '-'}{currentAluno?.fator_rh || ''}</td>
+                  <td className="p-1">{currentAluno?.estado_civil || '-'}</td>
                 </tr>
                 <tr className="border-b border-slate-200">
-                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-300">Altura:</td>
-                  <td className="p-1 font-mono border-r border-slate-300">{currentAluno?.altura ? `${currentAluno.altura} m` : '-'}</td>
-                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-300">Peso:</td>
-                  <td className="p-1 font-mono">{currentAluno?.peso ? `${currentAluno.peso} kg` : '-'}</td>
+                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-300">Tipo Sanguíneo/Fator RH:</td>
+                  <td className="p-1 font-mono border-r border-slate-300">{currentAluno?.tipo_sanguineo || '-'}{currentAluno?.fator_rh || ''}</td>
+                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-300">Altura / Peso:</td>
+                  <td className="p-1 font-mono">
+                    {currentAluno?.altura ? `${currentAluno.altura} m` : '-'} / {currentAluno?.peso ? `${currentAluno.peso} kg` : '-'}
+                  </td>
                 </tr>
                 <tr className="border-b border-slate-200">
                   <td className="p-1 font-bold bg-slate-100 border-r border-slate-300">Nome do Pai:</td>

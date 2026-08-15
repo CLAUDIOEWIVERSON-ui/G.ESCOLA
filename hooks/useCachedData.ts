@@ -235,44 +235,10 @@ export function useDashboardStats() {
       ] = await Promise.all([
         supabase.from('alunos')
           .select(`
-            id,
-            nome,
-            turma_id,
-            posto_graduacao,
-            nome_guerra,
-            matricula,
-            rg,
-            titulo_eleitor,
-            nome_pai,
-            nome_mae,
-            email,
-            telefone,
-            whatsapp,
-            status,
-            data_nascimento,
-            funcao,
-            om,
-            foto_url,
-            genero,
-            tipo_aluno,
-            data_inicio_curso,
-            data_fim_curso,
+            *,
             turma:turmas!inner(
-              id,
-              nome,
-              ano,
-              data_inicio,
-              data_fim,
-              status,
-              internacional,
-              localizacao,
-              grupo_responsavel,
-              documento_criacao,
-              curso:cursos(
-                nome,
-                grupo_responsavel,
-                documento_criacao
-              )
+              *,
+              curso:cursos(*)
             )
           `)
           .eq('turma.internacional', true)
