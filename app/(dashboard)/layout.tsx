@@ -29,10 +29,14 @@ import {
   MessageSquare,
   MousePointer2,
   AlertCircle,
-  Sparkles
+  Sparkles,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+
+import { useTheme } from '@/lib/theme/ThemeContext';
 
 import { useUser } from '@/lib/auth/UserContext';
 import { fetchWithAuth } from '@/lib/api';
@@ -77,6 +81,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const pathname = usePathname();
   const { t, language, setLanguage } = useI18n();
+  const { isDark, toggleTheme } = useTheme();
   const { profile, isAdmin, isAluno, isInstrutor, isConvidado, loading: authLoading } = useUser();
   const isReadOnly = !isAdmin;
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -731,6 +736,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 EN
               </button>
             </div>
+
+            {/* Dark Mode Toggle */}
+            <button
+              onClick={toggleTheme}
+              className={cn(
+                "p-1.5 rounded-lg border text-xs font-bold transition-all cursor-pointer shadow-xs flex items-center justify-center",
+                isDark
+                  ? "bg-slate-800 text-amber-400 border-slate-700 hover:bg-slate-700 hover:text-amber-300"
+                  : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 hover:text-slate-900"
+              )}
+              title={
+                isDark 
+                  ? (language === 'pt' ? 'Mudar para Modo Claro' : 'Switch to Light Mode')
+                  : (language === 'pt' ? 'Mudar para Modo Escuro' : 'Switch to Dark Mode')
+              }
+              aria-label="Alternar modo escuro / claro"
+            >
+              {isDark ? (
+                <Sun size={15} className="text-amber-400 transition-transform hover:rotate-45" />
+              ) : (
+                <Moon size={15} className="text-slate-600 transition-transform hover:-rotate-12" />
+              )}
+            </button>
           </div>
         </header>
 
