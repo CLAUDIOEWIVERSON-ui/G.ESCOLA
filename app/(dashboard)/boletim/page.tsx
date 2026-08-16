@@ -1526,9 +1526,20 @@ function BoletimContent() {
                   #student-report-print-area .pt-1\.5 {
                     padding-top: 4px !important;
                   }
-                  #student-report-print-area .w-24.h-24 {
+                  #student-report-print-area .w-20.h-20,
+                  #student-report-print-area .w-24.h-24,
+                  #class-bulletin-print-area .w-20.h-20,
+                  #class-bulletin-print-area .w-24.h-24 {
                     width: 60px !important;
                     height: 60px !important;
+                  }
+                  #student-report-print-area img,
+                  #class-bulletin-print-area img {
+                    object-fit: contain !important;
+                    max-width: 100% !important;
+                    max-height: 100% !important;
+                    width: auto !important;
+                    height: auto !important;
                   }
                   
                   /* Preserve side-by-side columns on print pages */
@@ -1933,19 +1944,19 @@ function BoletimContent() {
 
                         if (percentualPresenca < settings.frequencia_minima) {
                           overallLabel = language === 'pt' ? 'REPROVADO POR FREQUÊNCIA' : 'FAILED BY ATTENDANCE';
-                          overallClass = 'bg-rose-100 text-rose-700';
+                          overallClass = 'bg-rose-100 text-rose-700 border border-rose-300';
                         } else if (hasReprovedDiscipline) {
                           overallLabel = language === 'pt' ? 'REPROVADO POR NOTA' : 'FAILED BY ACADEMICS';
-                          overallClass = 'bg-red-100 text-red-700';
+                          overallClass = 'bg-red-100 text-red-700 border border-red-300';
                         } else if (averageGrade >= settings.media_aprovacao) {
                           overallLabel = reportT[language as "pt" | "en"].approved;
-                          overallClass = 'bg-emerald-100 text-emerald-700 font-extrabold';
+                          overallClass = 'bg-emerald-100 text-emerald-700 border border-emerald-300 font-extrabold';
                         } else if (averageGrade >= settings.media_recuperacao) {
                           overallLabel = reportT[language as "pt" | "en"].retake;
-                          overallClass = 'bg-yellow-100 text-yellow-700';
+                          overallClass = 'bg-yellow-100 text-yellow-700 border border-yellow-300';
                         } else {
                           overallLabel = reportT[language as "pt" | "en"].reproved;
-                          overallClass = 'bg-rose-100 text-rose-700';
+                          overallClass = 'bg-rose-100 text-rose-700 border border-rose-300';
                         }
                       }
 
@@ -1954,7 +1965,7 @@ function BoletimContent() {
                           <div className="flex justify-between items-center text-xs p-1">
                             <span className="font-extrabold text-slate-500 uppercase text-[9px] tracking-wide">{reportT[language as "pt" | "en"].overallAverage}:</span>
                             <span className={cn(
-                              "inline-flex items-center justify-center text-center min-w-[64px] font-black font-mono text-base px-2 py-0.5 rounded border",
+                              "inline-flex items-center justify-center text-center min-w-[64px] font-black font-mono text-base px-2.5 py-1 rounded-md border leading-none shadow-2xs",
                               averageGrade !== null && averageGrade >= settings.media_aprovacao ? "text-blue-700 bg-blue-50 border-blue-600" : "text-rose-700 bg-rose-50 border-rose-600"
                             )}>
                               {averageGrade !== null ? averageGrade.toFixed(2) : '-'}
@@ -1964,7 +1975,7 @@ function BoletimContent() {
                           <div className="flex justify-between items-center text-xs p-1 border-t border-slate-100">
                             <span className="font-extrabold text-slate-500 uppercase text-[9px] tracking-wide">{reportT[language as "pt" | "en"].overallStatus}:</span>
                             <span className={cn(
-                              "text-[10px] font-black uppercase px-2.5 py-1 rounded",
+                              "inline-flex items-center justify-center text-center min-w-[90px] text-[10px] font-black uppercase px-2.5 py-1 rounded-md border leading-none shadow-2xs",
                               overallClass
                             )}>
                               {overallLabel}
@@ -2548,9 +2559,17 @@ function BoletimContent() {
                                       #student-report-print-area .grid {
                                         gap: 8px !important;
                                       }
+                                      #student-report-print-area .w-20.h-20,
                                       #student-report-print-area .w-24.h-24 {
                                         width: 60px !important;
                                         height: 60px !important;
+                                      }
+                                      #student-report-print-area img {
+                                        object-fit: contain !important;
+                                        max-width: 100% !important;
+                                        max-height: 100% !important;
+                                        width: auto !important;
+                                        height: auto !important;
                                       }
                                       #student-report-print-area .pt-6 {
                                         padding-top: 4px !important;
@@ -2609,14 +2628,15 @@ function BoletimContent() {
                                   {/* Premium Official Header Layout */}
                                   <div className="flex items-center justify-between pb-4 border-b border-slate-950">
                                     <div className="flex items-center gap-4">
-                                      <div className="relative w-24 h-24 shrink-0 flex items-center justify-center overflow-hidden bg-white">
+                                      <div className="relative w-20 h-20 shrink-0 flex items-center justify-center bg-white">
                                         <Image
                                           src={navalMissionLogo}
                                           alt="Logo Missão de Assessoria Naval"
-                                          fill
-                                          className="object-contain"
+                                          width={80}
+                                          height={71}
+                                          className="w-auto h-auto max-w-full max-h-full object-contain"
+                                          style={{ objectFit: 'contain', width: 'auto', height: 'auto', maxHeight: '100%', maxWidth: '100%' }}
                                           referrerPolicy="no-referrer"
-                                          sizes="96px"
                                           priority
                                         />
                                       </div>
@@ -2929,11 +2949,11 @@ function BoletimContent() {
                                          const isClassExpired = expirationDate ? expirationDate < todayStr : false;
 
                                          let overallLabel = language === 'pt' ? 'EM DESENVOLVIMENTO' : 'UNDER REVIEW';
-                                         let overallClass = 'bg-slate-100 text-slate-700 border border-slate-200/60';
+                                         let overallClass = 'bg-slate-100 text-slate-700 border border-slate-300';
 
                                          if (averageGrade === null && isClassExpired) {
                                            overallLabel = language === 'pt' ? 'NÃO CONCLUIU O CURSO' : 'COURSE NOT COMPLETED';
-                                           overallClass = 'bg-rose-50 text-rose-700 border border-rose-150 font-black';
+                                           overallClass = 'bg-rose-50 text-rose-700 border border-rose-300 font-black';
                                          } else if (averageGrade !== null) {
                                           const hasReprovedDiscipline = computedDisciplines.some((cd) => cd.finalGradeValue !== null && cd.finalGradeValue < settings.media_aprovacao);
                                           const totalAulas = reportData.attendance?.length || 0;
@@ -2950,19 +2970,19 @@ function BoletimContent() {
 
                                           if (percentualPresenca < settings.frequencia_minima) {
                                             overallLabel = language === 'pt' ? 'REP. FREQUÊNCIA' : 'FAILED FREQ.';
-                                            overallClass = 'bg-rose-50 text-rose-700 border border-rose-150';
+                                            overallClass = 'bg-rose-50 text-rose-700 border border-rose-300 font-black';
                                           } else if (hasReprovedDiscipline) {
                                             overallLabel = language === 'pt' ? 'REP. NOTA' : 'FAILED ACADEMICS';
-                                            overallClass = 'bg-rose-50 text-rose-700 border border-rose-150';
+                                            overallClass = 'bg-rose-50 text-rose-700 border border-rose-300 font-black';
                                           } else if (averageGrade >= settings.media_aprovacao) {
                                             overallLabel = reportT[language as "pt" | "en"].approved;
-                                            overallClass = 'bg-emerald-50 text-emerald-700 border border-emerald-150 font-black';
+                                            overallClass = 'bg-emerald-50 text-emerald-700 border border-emerald-300 font-black';
                                           } else if (averageGrade >= settings.media_recuperacao) {
                                             overallLabel = reportT[language as "pt" | "en"].retake;
-                                            overallClass = 'bg-amber-50 text-amber-700 border border-amber-150';
+                                            overallClass = 'bg-amber-50 text-amber-700 border border-amber-300 font-black';
                                           } else {
                                             overallLabel = reportT[language as "pt" | "en"].reproved;
-                                            overallClass = 'bg-rose-50 text-rose-700 border border-rose-150';
+                                            overallClass = 'bg-rose-50 text-rose-700 border border-rose-300 font-black';
                                           }
                                         }
 
@@ -2970,14 +2990,17 @@ function BoletimContent() {
                                           <div className="flex flex-col gap-2">
                                             <div className="flex items-center justify-between">
                                               <span className="text-[8px] font-bold text-slate-500 uppercase tracking-wide leading-none">{reportT[language as "pt" | "en"].overallAverage}:</span>
-                                              <span className="inline-flex items-center justify-center text-center min-w-[50px] text-[11px] font-black font-mono px-2 py-0.5 rounded bg-blue-50 border border-blue-600 text-blue-700">
+                                              <span className="inline-flex items-center justify-center text-center min-w-[56px] text-[11px] font-black font-mono px-2 py-0.5 rounded-md bg-blue-50 border border-blue-600 text-blue-700 leading-none shadow-2xs">
                                                 {averageGrade !== null ? averageGrade.toFixed(2) : '-'}
                                               </span>
                                             </div>
 
                                             <div className="flex items-center justify-between border-t border-slate-200/60 pt-1.5">
                                               <span className="text-[8px] font-bold text-slate-500 uppercase tracking-wide leading-none">{reportT[language as "pt" | "en"].overallStatus}:</span>
-                                              <span className={cn("text-[8px] font-black uppercase px-2 py-0.5 rounded", overallClass)}>
+                                              <span className={cn(
+                                                "inline-flex items-center justify-center text-center min-w-[80px] text-[8px] font-black uppercase px-2 py-0.5 rounded-md leading-none shadow-2xs",
+                                                overallClass
+                                              )}>
                                                 {overallLabel}
                                               </span>
                                             </div>
@@ -3170,14 +3193,15 @@ function BoletimContent() {
                                  {/* Header */}
                                  <div className="flex items-center justify-between pb-4 border-b border-slate-950">
                                    <div className="flex items-center gap-4">
-                                     <div className="relative w-24 h-24 shrink-0 flex items-center justify-center overflow-hidden bg-white">
+                                     <div className="relative w-20 h-20 shrink-0 flex items-center justify-center bg-white">
                                        <Image
                                          src={navalMissionLogo}
                                          alt="Logo Missão de Assessoria Naval"
-                                         fill
-                                         className="object-contain"
+                                         width={80}
+                                         height={71}
+                                         className="w-auto h-auto max-w-full max-h-full object-contain"
+                                         style={{ objectFit: 'contain', width: 'auto', height: 'auto', maxHeight: '100%', maxWidth: '100%' }}
                                          referrerPolicy="no-referrer"
-                                         sizes="96px"
                                          priority
                                        />
                                      </div>
