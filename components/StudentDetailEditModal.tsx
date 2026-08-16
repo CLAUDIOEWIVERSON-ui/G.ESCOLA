@@ -77,6 +77,10 @@ export default function StudentDetailEditModal({
   const [allTurmas, setAllTurmas] = useState<any[]>([]);
   const [allCursos, setAllCursos] = useState<any[]>([]);
   const [selectedCursoId, setSelectedCursoId] = useState<string>('');
+  const [turmaInputText, setTurmaInputText] = useState<string>('');
+  const [cursoInputText, setCursoInputText] = useState<string>('');
+  const [manualTurmaMode, setManualTurmaMode] = useState<boolean>(false);
+  const [manualCursoMode, setManualCursoMode] = useState<boolean>(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -127,12 +131,19 @@ export default function StudentDetailEditModal({
       if (aluno) {
         const studentCursoId = aluno.curso_id || aluno.curso?.id || aluno.turma?.curso_id || aluno.turma?.curso?.id || '';
         const effectiveTurmaId = aluno.turma_id || aluno.turma?.id || turmaId || null;
+        const initialTurmaName = aluno.turma?.nome || aluno.turma_nome || aluno.turma_manual || '';
+        const initialCursoName = aluno.curso?.nome || aluno.curso_nome || '';
+
         setCurrentAluno({
           ...aluno,
           curso_id: studentCursoId,
-          turma_id: effectiveTurmaId
+          turma_id: effectiveTurmaId,
+          turma_nome: initialTurmaName,
+          curso_nome: initialCursoName
         });
         setSelectedCursoId(studentCursoId);
+        setTurmaInputText(initialTurmaName);
+        setCursoInputText(initialCursoName);
         loadAttendance(aluno.id);
         loadStudentAccess(aluno.id);
         loadTurmaInfo(effectiveTurmaId, studentCursoId);
@@ -148,12 +159,19 @@ export default function StudentDetailEditModal({
               if (!error && freshAluno) {
                 const freshCursoId = freshAluno.curso_id || freshAluno.curso?.id || freshAluno.turma?.curso_id || freshAluno.turma?.curso?.id || studentCursoId;
                 const freshTurmaId = freshAluno.turma_id || freshAluno.turma?.id || effectiveTurmaId;
+                const freshTurmaName = freshAluno.turma?.nome || freshAluno.turma_nome || freshAluno.turma_manual || initialTurmaName;
+                const freshCursoName = freshAluno.turma?.curso?.nome || freshAluno.curso?.nome || freshAluno.curso_nome || initialCursoName;
+
                 setCurrentAluno((prev: any) => ({
                   ...(prev || {}),
                   ...freshAluno,
                   curso_id: freshCursoId,
-                  turma_id: freshTurmaId
+                  turma_id: freshTurmaId,
+                  turma_nome: freshTurmaName,
+                  curso_nome: freshCursoName
                 }));
+                setTurmaInputText(freshTurmaName);
+                setCursoInputText(freshCursoName);
                 if (freshCursoId) {
                   setSelectedCursoId(freshCursoId);
                 }
@@ -167,7 +185,9 @@ export default function StudentDetailEditModal({
           genero: 'masculino',
           status: 'ativo',
           turma_id: turmaId || null,
+          turma_nome: '',
           curso_id: null,
+          curso_nome: '',
           data_inicio_curso: '',
           data_fim_curso: '',
           nif: ''
@@ -181,10 +201,87 @@ export default function StudentDetailEditModal({
         });
         setStudentAccess(null);
         setSelectedCursoId('');
+        setTurmaInputText('');
+        setCursoInputText('');
         loadTurmaInfo(turmaId, '');
       }
     }
   }, [isOpen, aluno, turmaId]);
+
+  const handleTurmaChange = (val: string) => {
+    setTurmaInputText(val);
+    const trimmedVal = val.trim();
+    
+    // Procura por ID ou Nome ou Código
+    const foundTurma = allTurmas.find(t => 
+      t.id === trimmedVal || 
+      t.nome?.toLowerCase() === trimmedVal.toLowerCase() ||
+      `${t.nome} (${t.codigo})`.toLowerCase() === trimmedVal.toLowerCase() ||
+      (t.codigo && t.codigo.toLowerCase() === trimmedVal.toLowerCase())
+    );
+
+    if (foundTurma) {
+      const associatedCursoId = foundTurma.curso_id || foundTurma.curso?.id || '';
+      const associatedCursoNome = foundTurma.curso?.nome || allCursos.find(c => c.id === associatedCursoId)?.nome || '';
+
+      setCurrentAluno((prev: any) => ({
+        ...prev,
+        turma_id: foundTurma.id,
+        turma_nome: foundTurma.nome,
+        turma_manual: null,
+        curso_id: associatedCursoId || prev?.curso_id,
+        curso_nome: associatedCursoNome || prev?.curso_nome
+      }));
+
+      if (associatedCursoId) {
+        setSelectedCursoId(associatedCursoId);
+      }
+      if (associatedCursoNome) {
+        setCursoInputText(associatedCursoNome);
+      }
+      loadTurmaInfo(foundTurma.id, associatedCursoId);
+    } else {
+      // Valor digitado manualmente
+      setCurrentAluno((prev: any) => ({
+        ...prev,
+        turma_id: null,
+        turma_nome: val,
+        turma_manual: val
+      }));
+      setTurmaInfo(null);
+    }
+  };
+
+  const handleCursoChange = (val: string) => {
+    setCursoInputText(val);
+    const trimmedVal = val.trim();
+
+    // Procura curso por ID ou Nome
+    const foundCurso = allCursos.find(c => 
+      c.id === trimmedVal || 
+      c.nome?.toLowerCase() === trimmedVal.toLowerCase() ||
+      `${c.nome} (${c.categoria})`.toLowerCase() === trimmedVal.toLowerCase()
+    );
+
+    if (foundCurso) {
+      setSelectedCursoId(foundCurso.id);
+      setCurrentAluno((prev: any) => ({
+        ...prev,
+        curso_id: foundCurso.id,
+        curso_nome: foundCurso.nome,
+        curso_manual: null
+      }));
+    } else {
+      // Valor de curso digitado manualmente
+      setSelectedCursoId('');
+      setCurrentAluno((prev: any) => ({
+        ...prev,
+        curso_id: null,
+        curso_nome: val,
+        curso_manual: val
+      }));
+    }
+  };
 
   const loadTurmaInfo = async (tId?: string | null, initialCursoId?: string) => {
     if (!tId) {
@@ -940,118 +1037,195 @@ export default function StudentDetailEditModal({
                       <GraduationCap className="text-blue-600" size={16} />
                       <span>{language === 'pt' ? 'Curso & Turma de Matrícula' : 'Enrolled Course & Class'}</span>
                     </label>
-                    {turmaInfo?.internacional && (
-                      <span className="text-[9px] bg-blue-600 text-white font-black px-2 py-0.5 rounded uppercase tracking-wider">
-                        🌐 {language === 'pt' ? 'Inscrição no Exterior' : 'International'}
+                    <div className="flex items-center gap-2">
+                      {turmaInfo?.internacional && (
+                        <span className="text-[9px] bg-blue-600 text-white font-black px-2 py-0.5 rounded uppercase tracking-wider">
+                          🌐 {language === 'pt' ? 'Inscrição no Exterior' : 'International'}
+                        </span>
+                      )}
+                      <span className="text-[10px] text-slate-500 font-medium hidden sm:inline">
+                        {language === 'pt' ? '✍️ Digitação livre ou seleção da lista' : '✍️ Free typing or select from list'}
                       </span>
-                    )}
+                    </div>
                   </div>
 
-                  {/* 1. SELEÇÃO DIRETA DO CURSO (INDIVIDUAL DO ALUNO) */}
+                  {/* 1. SELEÇÃO / DIGITAÇÃO DO CURSO (INDIVIDUAL DO ALUNO) */}
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1">
-                      {language === 'pt' ? 'Curso ao qual está Matriculado' : 'Enrolled Course'} <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      value={currentAluno?.curso_id || selectedCursoId || ''}
-                      onChange={(e) => {
-                        const cId = e.target.value || null;
-                        setSelectedCursoId(cId || '');
-                        
-                        setCurrentAluno((prev: any) => {
-                          const updated = { ...prev, curso_id: cId };
-                          if (cId) {
-                            const matchingTurmas = allTurmas.filter((t: any) => t.curso_id === cId || t.curso?.id === cId);
-                            const isCurrentTurmaInCourse = matchingTurmas.some((t: any) => t.id === prev?.turma_id);
-                            if (!isCurrentTurmaInCourse && matchingTurmas.length > 0) {
-                              updated.turma_id = matchingTurmas[0].id;
-                              loadTurmaInfo(matchingTurmas[0].id, cId);
-                            }
-                          } else {
-                            updated.turma_id = null;
-                            setTurmaInfo(null);
-                          }
-                          return updated;
-                        });
-                      }}
-                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 font-semibold text-slate-800 shadow-2xs cursor-pointer"
-                    >
-                      <option value="">{language === 'pt' ? '-- Selecione o Curso --' : '-- Select Course --'}</option>
-                      {allCursos.map((curso: any) => (
-                        <option key={curso.id} value={curso.id}>
-                          {curso.nome} {curso.categoria ? `(${curso.categoria})` : ''} {curso.grupo_responsavel ? `• [${curso.grupo_responsavel}]` : ''}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider">
+                        {language === 'pt' ? 'Curso ao qual está Matriculado' : 'Enrolled Course'} <span className="text-red-500">*</span>
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setManualCursoMode(!manualCursoMode)}
+                        className="text-[10px] text-blue-600 hover:text-blue-800 font-bold hover:underline"
+                      >
+                        {manualCursoMode ? (language === 'pt' ? '📋 Ver Menu de Cursos' : '📋 Show Course Dropdown') : (language === 'pt' ? '✍️ Digitar Livremente' : '✍️ Free Text Typing')}
+                      </button>
+                    </div>
 
-                  {/* 2. SELEÇÃO DA TURMA */}
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1">
-                      {language === 'pt' ? 'Turma da Matrícula' : 'Enrolled Class'}
-                    </label>
-                    <select
-                      value={currentAluno?.turma_id || ''}
-                      onChange={(e) => {
-                        const selectedTId = e.target.value || null;
-                        
-                        setCurrentAluno((prev: any) => {
-                          const updated = { ...prev, turma_id: selectedTId };
-                          if (selectedTId) {
-                            const tObj = allTurmas.find((t: any) => t.id === selectedTId);
-                            const tCursoId = tObj?.curso_id || tObj?.curso?.id;
-                            if (tCursoId) {
-                              setSelectedCursoId(tCursoId);
-                              updated.curso_id = tCursoId;
-                            }
-                          }
-                          return updated;
-                        });
-
-                        if (selectedTId) {
-                          loadTurmaInfo(selectedTId);
-                        } else {
-                          setTurmaInfo(null);
-                        }
-                      }}
-                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 font-medium text-slate-800 shadow-2xs cursor-pointer"
-                    >
-                      <option value="">{language === 'pt' ? '-- Selecione a Turma --' : '-- Select Class --'}</option>
-                      {(() => {
-                        const effectiveCourseId = currentAluno?.curso_id || selectedCursoId;
-                        let turmasToShow = allTurmas;
-                        if (effectiveCourseId) {
-                          turmasToShow = allTurmas.filter((t: any) => {
-                            const isFromCourse = t.curso_id === effectiveCourseId || t.curso?.id === effectiveCourseId;
-                            const isCurrentStudentTurma = currentAluno?.turma_id && t.id === currentAluno.turma_id;
-                            return isFromCourse || isCurrentStudentTurma;
-                          });
-                        }
-                        if (turmasToShow.length === 0 && allTurmas.length > 0) {
-                          turmasToShow = allTurmas;
-                        }
-                        return turmasToShow.map((t: any) => {
-                          const cursoNome = t.curso?.nome || '';
-                          return (
-                            <option key={t.id} value={t.id}>
-                              {t.nome} {t.codigo ? `(${t.codigo})` : ''} {cursoNome ? `• Curso: ${cursoNome}` : ''} {t.internacional ? '🌐 [EXTERIOR]' : ''}
+                    <div className="space-y-1.5">
+                      {/* Campo com Autocomplete / Digitação Livre */}
+                      <div className="relative">
+                        <input
+                          type="text"
+                          list="list-cursos-options"
+                          value={cursoInputText || ''}
+                          onChange={(e) => handleCursoChange(e.target.value)}
+                          placeholder={language === 'pt' ? 'Digite ou escolha o curso na lista...' : 'Type or select course from list...'}
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 font-semibold text-slate-800 shadow-2xs"
+                        />
+                        <datalist id="list-cursos-options">
+                          {allCursos.map((curso: any) => (
+                            <option key={curso.id} value={curso.nome}>
+                              {curso.categoria ? `(${curso.categoria})` : ''} {curso.grupo_responsavel ? `• [${curso.grupo_responsavel}]` : ''}
                             </option>
-                          );
-                        });
-                      })()}
-                    </select>
+                          ))}
+                        </datalist>
+                      </div>
+
+                      {/* Dropdown seletor rápido auxiliar */}
+                      {(!manualCursoMode && allCursos.length > 0) && (
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider shrink-0">
+                            {language === 'pt' ? 'Opções Rápidas:' : 'Quick Select:'}
+                          </span>
+                          <select
+                            value={currentAluno?.curso_id || selectedCursoId || ''}
+                            onChange={(e) => {
+                              const cId = e.target.value;
+                              const cObj = allCursos.find((c: any) => c.id === cId);
+                              if (cObj) {
+                                handleCursoChange(cObj.nome);
+                              } else {
+                                handleCursoChange('');
+                              }
+                            }}
+                            className="w-full px-2.5 py-1 bg-slate-100/80 hover:bg-slate-100 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-500 font-medium text-slate-700 cursor-pointer"
+                          >
+                            <option value="">{language === 'pt' ? '-- Escolha rápida de curso cadastrado --' : '-- Quick pick registered course --'}</option>
+                            {allCursos.map((curso: any) => (
+                              <option key={curso.id} value={curso.id}>
+                                {curso.nome} {curso.categoria ? `(${curso.categoria})` : ''} {curso.grupo_responsavel ? `• [${curso.grupo_responsavel}]` : ''}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
-                  {(turmaInfo?.internacional || turmaInfo?.curso?.nome || selectedCursoId) && (
+                  {/* 2. SELEÇÃO / DIGITAÇÃO DA TURMA */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider">
+                        {language === 'pt' ? 'Turma da Matrícula' : 'Enrolled Class'}
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setManualTurmaMode(!manualTurmaMode)}
+                        className="text-[10px] text-blue-600 hover:text-blue-800 font-bold hover:underline"
+                      >
+                        {manualTurmaMode ? (language === 'pt' ? '📋 Ver Menu de Turmas' : '📋 Show Class Dropdown') : (language === 'pt' ? '✍️ Digitar Livremente' : '✍️ Free Text Typing')}
+                      </button>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      {/* Campo com Autocomplete / Digitação Livre da Turma */}
+                      <div className="relative">
+                        <input
+                          type="text"
+                          list="list-turmas-options"
+                          value={turmaInputText || ''}
+                          onChange={(e) => handleTurmaChange(e.target.value)}
+                          placeholder={language === 'pt' ? 'Digite o nome da turma ou escolha na lista...' : 'Type class name or select from list...'}
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 font-medium text-slate-800 shadow-2xs"
+                        />
+                        <datalist id="list-turmas-options">
+                          {(() => {
+                            const effectiveCourseId = currentAluno?.curso_id || selectedCursoId;
+                            let turmasToShow = allTurmas;
+                            if (effectiveCourseId) {
+                              turmasToShow = allTurmas.filter((t: any) => {
+                                const isFromCourse = t.curso_id === effectiveCourseId || t.curso?.id === effectiveCourseId;
+                                const isCurrentStudentTurma = currentAluno?.turma_id && t.id === currentAluno.turma_id;
+                                return isFromCourse || isCurrentStudentTurma;
+                              });
+                            }
+                            if (turmasToShow.length === 0 && allTurmas.length > 0) {
+                              turmasToShow = allTurmas;
+                            }
+                            return turmasToShow.map((t: any) => {
+                              const cursoNome = t.curso?.nome || '';
+                              return (
+                                <option key={t.id} value={t.nome}>
+                                  {t.codigo ? `(${t.codigo})` : ''} {cursoNome ? `• Curso: ${cursoNome}` : ''} {t.internacional ? '🌐 [EXTERIOR]' : ''}
+                                </option>
+                              );
+                            });
+                          })()}
+                        </datalist>
+                      </div>
+
+                      {/* Dropdown seletor rápido auxiliar */}
+                      {(!manualTurmaMode && allTurmas.length > 0) && (
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider shrink-0">
+                            {language === 'pt' ? 'Opções Rápidas:' : 'Quick Select:'}
+                          </span>
+                          <select
+                            value={currentAluno?.turma_id || ''}
+                            onChange={(e) => {
+                              const tId = e.target.value;
+                              const tObj = allTurmas.find((t: any) => t.id === tId);
+                              if (tObj) {
+                                handleTurmaChange(tObj.nome);
+                              } else {
+                                handleTurmaChange('');
+                              }
+                            }}
+                            className="w-full px-2.5 py-1 bg-slate-100/80 hover:bg-slate-100 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-500 font-medium text-slate-700 cursor-pointer"
+                          >
+                            <option value="">{language === 'pt' ? '-- Escolha rápida de turma cadastrada --' : '-- Quick pick registered class --'}</option>
+                            {(() => {
+                              const effectiveCourseId = currentAluno?.curso_id || selectedCursoId;
+                              let turmasToShow = allTurmas;
+                              if (effectiveCourseId) {
+                                turmasToShow = allTurmas.filter((t: any) => {
+                                  const isFromCourse = t.curso_id === effectiveCourseId || t.curso?.id === effectiveCourseId;
+                                  const isCurrentStudentTurma = currentAluno?.turma_id && t.id === currentAluno.turma_id;
+                                  return isFromCourse || isCurrentStudentTurma;
+                                });
+                              }
+                              if (turmasToShow.length === 0 && allTurmas.length > 0) {
+                                turmasToShow = allTurmas;
+                              }
+                              return turmasToShow.map((t: any) => {
+                                const cursoNome = t.curso?.nome || '';
+                                return (
+                                  <option key={t.id} value={t.id}>
+                                    {t.nome} {t.codigo ? `(${t.codigo})` : ''} {cursoNome ? `• Curso: ${cursoNome}` : ''} {t.internacional ? '🌐 [EXTERIOR]' : ''}
+                                  </option>
+                                );
+                              });
+                            })()}
+                          </select>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {(turmaInfo?.internacional || turmaInfo?.curso?.nome || selectedCursoId || cursoInputText || turmaInputText) && (
                     <div className="p-2.5 bg-blue-50/90 border border-blue-200 rounded-lg flex items-center justify-between text-xs text-blue-900 shadow-2xs">
                       <div className="flex items-center gap-2">
                         <GraduationCap className="text-blue-600 shrink-0" size={18} />
                         <div>
                           <span className="font-bold text-slate-500 block text-[9px] uppercase tracking-wider">
-                            {language === 'pt' ? 'Curso ao qual está inscrito:' : 'Enrolled Course:'}
+                            {language === 'pt' ? 'Curso & Turma Atribuídos:' : 'Assigned Course & Class:'}
                           </span>
                           <span className="font-black text-blue-900 text-xs">
-                            {turmaInfo?.curso?.nome || allCursos.find(c => c.id === selectedCursoId)?.nome || (language === 'pt' ? 'Curso Geral' : 'General Course')}
+                            {cursoInputText || turmaInfo?.curso?.nome || allCursos.find(c => c.id === selectedCursoId)?.nome || (language === 'pt' ? 'Curso Geral' : 'General Course')}
+                            {(turmaInputText || turmaInfo?.nome) ? ` • Turma: ${turmaInputText || turmaInfo?.nome}` : ''}
                           </span>
                         </div>
                       </div>
@@ -1134,11 +1308,36 @@ export default function StudentDetailEditModal({
                     </label>
                     <input
                       type="text"
+                      list="list-om-options"
                       value={currentAluno?.om || ''}
                       onChange={(e) => setCurrentAluno({ ...currentAluno, om: e.target.value })}
-                      placeholder="OM"
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500"
+                      placeholder={language === 'pt' ? 'Ex: CIAMPA, CIAA, ComOpNav, 1º DN ou digite...' : 'OM (select or type...)'}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 font-medium"
                     />
+                    <datalist id="list-om-options">
+                      <option value="CIAMPA (Centro de Instrução Almirante Milcíades Portela Alves)" />
+                      <option value="CIAA (Centro de Instrução Almirante Alexandrino)" />
+                      <option value="ComOpNav (Comando de Operações Navais)" />
+                      <option value="ComFFE (Comando da Força de Fuzileiros da Esquadra)" />
+                      <option value="1º Distrito Naval (1º DN - RJ)" />
+                      <option value="2º Distrito Naval (2º DN - BA)" />
+                      <option value="3º Distrito Naval (3º DN - RN)" />
+                      <option value="4º Distrito Naval (4º DN - PA)" />
+                      <option value="5º Distrito Naval (5º DN - RS)" />
+                      <option value="6º Distrito Naval (6º DN - MS)" />
+                      <option value="7º Distrito Naval (7º DN - DF)" />
+                      <option value="8º Distrito Naval (8º DN - SP)" />
+                      <option value="9º Distrito Naval (9º DN - AM)" />
+                      <option value="DEnsM (Diretoria de Ensino da Marinha)" />
+                      <option value="Arsenal de Marinha do Rio de Janeiro (AMRJ)" />
+                      <option value="Batalhão Naval" />
+                      <option value="Marinha do Brasil (MB)" />
+                      <option value="Exército Brasileiro (EB)" />
+                      <option value="Força Aérea Brasileira (FAB)" />
+                      <option value="Polícia Militar (PM)" />
+                      <option value="Corpo de Bombeiros Militar (CBM)" />
+                      <option value="Órgão Público / Ministério" />
+                    </datalist>
                   </div>
                 </div>
 
@@ -1288,11 +1487,24 @@ export default function StudentDetailEditModal({
                     </label>
                     <input
                       type="text"
+                      list="list-funcoes-options"
                       value={currentAluno?.funcao || ''}
                       onChange={(e) => setCurrentAluno({ ...currentAluno, funcao: e.target.value })}
-                      placeholder={language === 'pt' ? 'Função que exerce' : 'Current function'}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500"
+                      placeholder={language === 'pt' ? 'Ex: Aluno, Chefe de Turma, Monitor ou digite...' : 'Role (select or type...)'}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 font-medium"
                     />
+                    <datalist id="list-funcoes-options">
+                      <option value="Aluno(a)" />
+                      <option value="Chefe de Turma" />
+                      <option value="Subchefe de Turma" />
+                      <option value="Oficial Aluno" />
+                      <option value="Monitor de Turma" />
+                      <option value="Auxiliar de Instrução" />
+                      <option value="Encarregado de Divisão" />
+                      <option value="Membro de Comitiva" />
+                      <option value="Especialista" />
+                      <option value="Estagiário(a)" />
+                    </datalist>
                   </div>
                 </div>
 
@@ -1474,17 +1686,29 @@ export default function StudentDetailEditModal({
                 <tr className="border-b border-slate-200">
                   <td colSpan={2} className="py-1">
                     <span className="text-[8px] font-bold text-slate-500 uppercase block leading-none">
-                      {turmaInfo?.internacional ? 'Curso (Inscrição no Exterior) / Turma' : 'Turma / Curso'}
+                      {turmaInfo?.internacional ? 'Curso (Inscrição no Exterior) / Turma' : 'Curso & Turma de Matrícula'}
                     </span>
                     <span className="font-bold text-blue-900 uppercase leading-snug">
-                      {turmaInfo?.curso?.nome ? (
-                        <>
-                          <span className="text-blue-900 font-extrabold">CURSO: {turmaInfo.curso.nome}</span>
-                          {turmaInfo?.nome && <span className="text-slate-700 font-bold ml-1 font-mono">({turmaInfo.nome})</span>}
-                        </>
-                      ) : (
-                        turmaInfo?.nome ? `${turmaInfo.nome} ${turmaInfo.codigo ? `(${turmaInfo.codigo})` : ''}` : 'Turma Geral'
-                      )}
+                      {(() => {
+                        const cursoNome = cursoInputText || turmaInfo?.curso?.nome || allCursos.find(c => c.id === currentAluno?.curso_id || c.id === selectedCursoId)?.nome || currentAluno?.curso_nome || currentAluno?.curso;
+                        const turmaNome = turmaInputText || turmaInfo?.nome || allTurmas.find(t => t.id === currentAluno?.turma_id)?.nome || currentAluno?.turma_nome || currentAluno?.turma || currentAluno?.turma_manual;
+
+                        if (cursoNome && turmaNome) {
+                          return (
+                            <>
+                              <span className="text-blue-900 font-extrabold">CURSO: {cursoNome}</span>
+                              <span className="text-slate-700 font-bold ml-1 font-mono">({turmaNome})</span>
+                            </>
+                          );
+                        }
+                        if (cursoNome) {
+                          return <span className="text-blue-900 font-extrabold">CURSO: {cursoNome}</span>;
+                        }
+                        if (turmaNome) {
+                          return <span className="text-blue-900 font-extrabold">TURMA: {turmaNome}</span>;
+                        }
+                        return <span className="text-slate-700">Turma Geral</span>;
+                      })()}
                       {turmaInfo?.localizacao && (
                         <span className="ml-2 text-slate-600 font-semibold text-[10px]">📍 {turmaInfo.localizacao}</span>
                       )}

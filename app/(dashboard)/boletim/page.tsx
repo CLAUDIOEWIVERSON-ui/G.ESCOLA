@@ -134,10 +134,39 @@ function BoletimContent() {
   const [selectedAno, setSelectedAno] = useState<string>('');
 
   useEffect(() => {
-    if (searchParams && turmas.length > 0) {
-      const paramTurma = searchParams.get('turmaId');
-      if (paramTurma) {
-        const foundTurma = turmas.find((t: any) => t.id === paramTurma);
+    if (typeof window !== 'undefined') {
+      const savedCurso = sessionStorage.getItem('boletim_selected_curso');
+      const savedAno = sessionStorage.getItem('boletim_selected_ano');
+      const savedTurma = sessionStorage.getItem('boletim_selected_turma');
+
+      if (!searchParams?.get('turmaId') && !searchParams?.get('cursoId')) {
+        if (savedCurso) setSelectedCurso(savedCurso);
+        if (savedAno) setSelectedAno(savedAno);
+        if (savedTurma) setSelectedTurma(savedTurma);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (selectedCurso) sessionStorage.setItem('boletim_selected_curso', selectedCurso);
+      else sessionStorage.removeItem('boletim_selected_curso');
+
+      if (selectedAno) sessionStorage.setItem('boletim_selected_ano', selectedAno);
+      else sessionStorage.removeItem('boletim_selected_ano');
+
+      if (selectedTurma) sessionStorage.setItem('boletim_selected_turma', selectedTurma);
+      else sessionStorage.removeItem('boletim_selected_turma');
+    }
+  }, [selectedCurso, selectedAno, selectedTurma]);
+
+  useEffect(() => {
+    if (turmas.length > 0) {
+      const paramTurma = searchParams?.get('turmaId');
+      const targetTurmaId = paramTurma || (typeof window !== 'undefined' ? sessionStorage.getItem('boletim_selected_turma') : null);
+
+      if (targetTurmaId) {
+        const foundTurma = turmas.find((t: any) => t.id === targetTurmaId);
         if (foundTurma) {
           if (foundTurma.curso_id) {
             setSelectedCurso(foundTurma.curso_id);
@@ -145,10 +174,11 @@ function BoletimContent() {
           if (foundTurma.ano) {
             setSelectedAno(String(foundTurma.ano));
           }
-          setSelectedTurma(paramTurma);
+          setSelectedTurma(targetTurmaId);
+          handleSearch(targetTurmaId);
         }
       } else {
-        const paramCurso = searchParams.get('cursoId');
+        const paramCurso = searchParams?.get('cursoId') || (typeof window !== 'undefined' ? sessionStorage.getItem('boletim_selected_curso') : null);
         if (paramCurso) {
           setSelectedCurso(paramCurso);
         }
@@ -2319,6 +2349,17 @@ function BoletimContent() {
                           </h3>
                         </div>
                         <div className="flex items-center gap-2.5">
+                          {/* Print Button */}
+                          <button
+                            onClick={handlePrint}
+                            disabled={loadingReport || !reportData}
+                            className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all border border-slate-700 shadow-md cursor-pointer"
+                            title={language === 'pt' ? 'Imprimir documento' : 'Print document'}
+                          >
+                            <Printer size={13} className="text-blue-400" />
+                            <span>{language === 'pt' ? 'Imprimir' : 'Print'}</span>
+                          </button>
+
                           {/* PDF Download Button */}
                           <button
                             onClick={handleDownloadPDF}
@@ -3065,6 +3106,23 @@ function BoletimContent() {
                       {/* Modal Actions Footer */}
                       <div className="p-4 border-t border-slate-700/50 flex justify-end gap-3 no-print bg-slate-900 rounded-none">
                         <button
+                          onClick={handlePrint}
+                          disabled={loadingReport || !reportData}
+                          className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all border border-slate-700 cursor-pointer"
+                          title={language === 'pt' ? 'Imprimir documento' : 'Print document'}
+                        >
+                          <Printer size={14} className="text-blue-400" />
+                          <span>{language === 'pt' ? 'Imprimir' : 'Print'}</span>
+                        </button>
+                        <button
+                          onClick={handleDownloadPDF}
+                          disabled={loadingReport || !reportData || downloadingPDF}
+                          className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-md shadow-emerald-500/10 cursor-pointer"
+                        >
+                          {downloadingPDF ? <Loader2 className="animate-spin" size={14} /> : <Download size={14} />}
+                          <span>{language === 'pt' ? 'Baixar PDF' : 'Download PDF'}</span>
+                        </button>
+                        <button
                           onClick={() => setSelectedStudentForReport(null)}
                           className="bg-slate-800 hover:bg-slate-700 px-5 py-2.5 rounded-xl text-xs font-bold text-slate-300 transition-all cursor-pointer"
                         >
@@ -3087,6 +3145,17 @@ function BoletimContent() {
                           </h3>
                         </div>
                         <div className="flex items-center gap-2.5">
+                          {/* Print Button */}
+                          <button
+                            onClick={handlePrint}
+                            disabled={downloadingClassPDF || !selectedTurma || boletimData.length === 0}
+                            className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all border border-slate-700 shadow-md cursor-pointer"
+                            title={language === 'pt' ? 'Imprimir documento' : 'Print document'}
+                          >
+                            <Printer size={13} className="text-blue-400" />
+                            <span>{language === 'pt' ? 'Imprimir' : 'Print'}</span>
+                          </button>
+
                           {/* PDF Download Button */}
                           <button
                             onClick={handleDownloadClassBulletinPDF}
@@ -3348,6 +3417,23 @@ function BoletimContent() {
 
                       {/* Modal Footer */}
                       <div className="p-4 border-t border-slate-700/50 flex justify-end gap-3 no-print bg-slate-900 rounded-none">
+                        <button
+                          onClick={handlePrint}
+                          disabled={downloadingClassPDF || !selectedTurma || boletimData.length === 0}
+                          className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all border border-slate-700 cursor-pointer"
+                          title={language === 'pt' ? 'Imprimir documento' : 'Print document'}
+                        >
+                          <Printer size={14} className="text-blue-400" />
+                          <span>{language === 'pt' ? 'Imprimir' : 'Print'}</span>
+                        </button>
+                        <button
+                          onClick={handleDownloadClassBulletinPDF}
+                          disabled={downloadingClassPDF || !selectedTurma || boletimData.length === 0}
+                          className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-md shadow-emerald-500/10 cursor-pointer"
+                        >
+                          {downloadingClassPDF ? <Loader2 className="animate-spin" size={14} /> : <Download size={14} />}
+                          <span>{language === 'pt' ? 'Baixar PDF' : 'Download PDF'}</span>
+                        </button>
                         <button
                           onClick={() => setViewingClassBulletinPDF(false)}
                           className="bg-slate-800 hover:bg-slate-700 px-5 py-2.5 rounded-xl text-xs font-bold text-slate-300 transition-all cursor-pointer"
