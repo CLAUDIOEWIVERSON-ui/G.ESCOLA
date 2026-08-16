@@ -79,16 +79,16 @@ export function Logo({
           className={cn("flex flex-col justify-center", isVertical ? "items-center text-center w-full" : "items-start flex-1")}
         >
           <span className={cn(
-            "font-bold tracking-tight leading-none",
+            "font-bold tracking-tight leading-none transition-colors",
             finalSize === 'lg' ? "text-2xl" : "text-sm",
-            dark ? "text-slate-900" : "text-white"
+            dark ? "text-slate-900 dark:text-white" : "text-white"
           )}>
             SISTEMA DE
           </span>
           <span className={cn(
-            "font-black uppercase tracking-wider mt-1 leading-none whitespace-normal break-words",
-            finalSize === 'lg' ? "text-sm text-yellow-500" : "text-[10px]",
-            dark ? "text-[#002776]" : "text-yellow-400"
+            "font-black uppercase tracking-wider mt-1 leading-none whitespace-normal break-words transition-colors",
+            finalSize === 'lg' ? "text-sm" : "text-[10px]",
+            dark ? "text-[#002776] dark:text-white" : "text-white dark:text-white"
           )}>
             GESTÃO ESCOLAR
           </span>
@@ -98,15 +98,15 @@ export function Logo({
                 "inline-flex items-center px-2.5 py-0.5 text-[9px] font-black tracking-widest rounded-full uppercase transition-all duration-300 select-none",
                 userRole.toLowerCase() === 'administrador' || userRole.toLowerCase() === 'administrator' || userRole.toLowerCase() === 'admin'
                   ? dark 
-                    ? "bg-gradient-to-b from-blue-50 to-blue-100/50 border-t border-t-white border-x border-x-blue-100/80 border-b-2 border-b-blue-300/80 text-blue-700 shadow-[0_2px_3px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.8)]" 
-                    : "bg-gradient-to-b from-blue-500/25 to-blue-600/5 border-t border-t-blue-400/40 border-x border-x-blue-500/20 border-b-2 border-b-blue-600/50 text-blue-300 shadow-[0_2.5px_4px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.15)]"
+                    ? "bg-gradient-to-b from-blue-50 to-blue-100/50 border-t border-t-white border-x border-x-blue-100/80 border-b-2 border-b-blue-300/80 text-blue-700 dark:text-white dark:from-blue-900/60 dark:to-blue-800/40 dark:border-blue-600/50 shadow-[0_2px_3px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.8)]" 
+                    : "bg-gradient-to-b from-blue-500/25 to-blue-600/5 border-t border-t-blue-400/40 border-x border-x-blue-500/20 border-b-2 border-b-blue-600/50 text-white shadow-[0_2.5px_4px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.15)]"
                   : userRole.toLowerCase() === 'instrutor' || userRole.toLowerCase() === 'instructor'
                     ? dark 
-                      ? "bg-gradient-to-b from-amber-50 to-amber-100/50 border-t border-t-white border-x border-x-amber-100/80 border-b-2 border-b-amber-300/80 text-amber-700 shadow-[0_2px_3px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.8)]" 
-                      : "bg-gradient-to-b from-amber-500/25 to-amber-600/5 border-t border-t-amber-400/40 border-x border-x-amber-500/20 border-b-2 border-b-amber-600/50 text-amber-300 shadow-[0_2.5px_4px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.15)]"
+                      ? "bg-gradient-to-b from-amber-50 to-amber-100/50 border-t border-t-white border-x border-x-amber-100/80 border-b-2 border-b-amber-300/80 text-amber-700 dark:text-white dark:from-amber-900/60 dark:to-amber-800/40 dark:border-amber-600/50 shadow-[0_2px_3px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.8)]" 
+                      : "bg-gradient-to-b from-amber-500/25 to-amber-600/5 border-t border-t-amber-400/40 border-x border-x-amber-500/20 border-b-2 border-b-amber-600/50 text-white shadow-[0_2.5px_4px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.15)]"
                     : dark 
-                      ? "bg-gradient-to-b from-slate-100 to-slate-200/50 border-t border-t-white border-x border-x-slate-200/80 border-b-2 border-b-slate-300 text-slate-700 shadow-[0_2px_3px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.8)]" 
-                      : "bg-gradient-to-b from-slate-500/25 to-slate-600/5 border-t border-t-slate-400/30 border-x border-x-slate-500/10 border-b-2 border-b-slate-600/50 text-slate-300 shadow-[0_2.5px_4px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.1)]"
+                      ? "bg-gradient-to-b from-slate-100 to-slate-200/50 border-t border-t-white border-x border-x-slate-200/80 border-b-2 border-b-slate-300 text-slate-700 dark:text-white dark:from-slate-800/60 dark:to-slate-700/40 dark:border-slate-600/50 shadow-[0_2px_3px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.8)]" 
+                      : "bg-gradient-to-b from-slate-500/25 to-slate-600/5 border-t border-t-slate-400/30 border-x border-x-slate-500/10 border-b-2 border-b-slate-600/50 text-white shadow-[0_2.5px_4px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.1)]"
               )}>
                 {userRole}
               </span>

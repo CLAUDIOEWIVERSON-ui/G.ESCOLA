@@ -9,7 +9,9 @@ body {
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-/* Screen-only Dark Mode styles so print is NEVER contaminated by dark themes */
+/* =========================================================================
+   DARK MODE STYLES (Screen Only)
+   ========================================================================= */
 @media screen {
   html.dark {
     color-scheme: dark;
@@ -88,6 +90,88 @@ body {
   .dark .hover\:bg-slate-100:hover {
     background-color: #24324d !important;
   }
+
+  /* LOGO NO MODO DARK: Texto e emblemas em branco puro */
+  .dark .logo-container,
+  .dark [data-logo],
+  .dark aside header,
+  .dark aside .logo-title {
+    color: #FFFFFF !important;
+  }
+
+  .dark [data-logo] span,
+  .dark [data-logo] p,
+  .dark [data-logo] h1,
+  .dark [data-logo] h2,
+  .dark [data-logo] h3 {
+    color: #FFFFFF !important;
+  }
+}
+
+/* =========================================================================
+   REGRAS DE CONTRASTE:
+   1) Onde o fundo é AZUL -> Letras BRANCAS
+   2) Onde o fundo é BRANCO -> Letras PRETAS
+   ========================================================================= */
+
+/* --- 1) FUNDO AZUL -> LETRAS BRANCAS --- */
+.bg-blue-500, .bg-blue-600, .bg-blue-700, .bg-blue-800, .bg-blue-900, .bg-blue-950,
+.bg-sky-500, .bg-sky-600, .bg-sky-700, .bg-sky-800, .bg-sky-900, .bg-sky-950,
+.bg-indigo-500, .bg-indigo-600, .bg-indigo-700, .bg-indigo-800, .bg-indigo-900, .bg-indigo-950,
+.bg-cyan-600, .bg-cyan-700, .bg-cyan-800, .bg-cyan-900,
+[class*="bg-blue-600"], [class*="bg-blue-700"], [class*="bg-blue-800"], [class*="bg-blue-900"],
+[class*="bg-sky-600"], [class*="bg-sky-700"], [class*="bg-sky-800"],
+[class*="bg-indigo-600"], [class*="bg-indigo-700"], [class*="bg-indigo-800"],
+[class*="from-blue-600"], [class*="to-blue-700"], [class*="to-blue-800"], [class*="to-blue-900"],
+button[class*="bg-blue-"]:not([class*="bg-blue-50"]):not([class*="bg-blue-100"]),
+button[class*="bg-sky-"]:not([class*="bg-sky-50"]):not([class*="bg-sky-100"]),
+button[class*="bg-indigo-"]:not([class*="bg-indigo-50"]):not([class*="bg-indigo-100"]),
+a[class*="bg-blue-"]:not([class*="bg-blue-50"]):not([class*="bg-blue-100"]),
+a[class*="bg-sky-"]:not([class*="bg-sky-50"]):not([class*="bg-sky-100"]),
+a[class*="bg-indigo-"]:not([class*="bg-indigo-50"]):not([class*="bg-indigo-100"]),
+[style*="background-color: #002776"], [style*="background-color: #0b1b3d"], [style*="background-color: rgb(0, 39, 118)"],
+[style*="background: #002776"], [style*="background: #0b1b3d"] {
+  color: #FFFFFF !important;
+}
+
+.bg-blue-500 *, .bg-blue-600 *, .bg-blue-700 *, .bg-blue-800 *, .bg-blue-900 *, .bg-blue-950 *,
+.bg-sky-500 *, .bg-sky-600 *, .bg-sky-700 *, .bg-sky-800 *, .bg-sky-900 *,
+.bg-indigo-500 *, .bg-indigo-600 *, .bg-indigo-700 *, .bg-indigo-800 *, .bg-indigo-900 *,
+[class*="bg-blue-600"] *:not([class*="bg-white"] *):not([class*="bg-slate-50"] *):not(input):not(select):not(textarea),
+[class*="bg-blue-700"] *:not([class*="bg-white"] *):not([class*="bg-slate-50"] *):not(input):not(select):not(textarea),
+[class*="bg-blue-800"] *:not([class*="bg-white"] *):not([class*="bg-slate-50"] *):not(input):not(select):not(textarea),
+[class*="bg-sky-600"] *:not([class*="bg-white"] *):not([class*="bg-slate-50"] *):not(input):not(select):not(textarea),
+[class*="bg-indigo-600"] *:not([class*="bg-white"] *):not([class*="bg-slate-50"] *):not(input):not(select):not(textarea) {
+  color: #FFFFFF !important;
+}
+
+/* --- 2) FUNDO BRANCO -> LETRAS PRETAS --- */
+html:not(.dark) .bg-white:not([class*="text-white"]):not([class*="bg-blue"]):not([class*="bg-indigo"]):not([class*="bg-sky"]):not([class*="bg-emerald"]):not([class*="bg-rose"]):not([class*="bg-amber"]),
+html:not(.dark) [style*="background-color: #ffffff"],
+html:not(.dark) [style*="background-color: #fff"],
+html:not(.dark) [style*="background: #ffffff"],
+html:not(.dark) [style*="background: #fff"],
+html:not(.dark) [style*="background: white"],
+html:not(.dark) [style*="background-color: rgb(255, 255, 255)"] {
+  color: #000000 !important;
+}
+
+html:not(.dark) .bg-white h1,
+html:not(.dark) .bg-white h2,
+html:not(.dark) .bg-white h3,
+html:not(.dark) .bg-white h4,
+html:not(.dark) .bg-white h5,
+html:not(.dark) .bg-white h6,
+html:not(.dark) .bg-white p:not([class*="text-blue-"]):not([class*="text-emerald-"]):not([class*="text-rose-"]):not([class*="text-amber-"]):not([class*="text-purple-"]):not([class*="text-cyan-"]):not([class*="text-sky-"]),
+html:not(.dark) .bg-white span:not([class*="text-blue-"]):not([class*="text-emerald-"]):not([class*="text-rose-"]):not([class*="text-amber-"]):not([class*="text-purple-"]):not([class*="text-cyan-"]):not([class*="text-sky-"]):not([class*="bg-"]):not([class*="badge"]),
+html:not(.dark) .bg-white strong,
+html:not(.dark) .bg-white b,
+html:not(.dark) .bg-white td:not([class*="text-blue-"]):not([class*="text-emerald-"]):not([class*="text-rose-"]):not([class*="text-amber-"]):not([class*="text-purple-"]):not([class*="text-cyan-"]):not([class*="text-sky-"]),
+html:not(.dark) .bg-white th:not([class*="text-blue-"]):not([class*="text-emerald-"]):not([class*="text-rose-"]):not([class*="text-amber-"]):not([class*="text-purple-"]):not([class*="text-cyan-"]):not([class*="text-sky-"]),
+html:not(.dark) .bg-white .text-slate-900,
+html:not(.dark) .bg-white .text-slate-800,
+html:not(.dark) .bg-white .text-slate-700 {
+  color: #000000 !important;
 }
 
 /* Custom elegant scrollbar */
@@ -121,7 +205,7 @@ body {
     background: #FFFFFF !important;
     background-color: #FFFFFF !important;
     color-scheme: light !important;
-    color: #0f172a !important;
+    color: #000000 !important;
     height: auto !important;
     min-height: 0 !important;
     max-height: none !important;
@@ -148,7 +232,7 @@ body {
   h1, h2, h3, h4, h5, h6,
   p, span, b, strong, em, i,
   td, th, li, label {
-    color: #0f172a !important;
+    color: #000000 !important;
   }
 
   .text-white,
@@ -169,7 +253,7 @@ body {
   .text-slate-800,
   .text-slate-900,
   .text-slate-950 {
-    color: #0f172a !important;
+    color: #000000 !important;
   }
 
   /* Card and container resets for print */
@@ -182,7 +266,7 @@ body {
   .dark .bg-slate-100 {
     background-color: #FFFFFF !important;
     background: #FFFFFF !important;
-    color: #0f172a !important;
+    color: #000000 !important;
   }
 
   /* Borders normalization for clear contrast */
