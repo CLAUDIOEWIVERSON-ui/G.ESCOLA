@@ -669,7 +669,8 @@ export default function FrequenciaPage() {
 
             <div 
               id="frequency-print-area"
-              className="bg-white rounded-[2rem] border border-slate-200 shadow-xl shadow-slate-200/50 p-6 md:p-8 relative overflow-hidden"
+              data-document-sheet="true"
+              className="official-document-sheet bg-white rounded-[2rem] border border-slate-200 shadow-xl shadow-slate-200/50 p-6 md:p-8 relative overflow-hidden text-slate-900"
             >
               {/* Elegant Header Block for Screen Display & Official Print Layouts */}
               <div className="mb-6 border-b border-slate-200 pb-5 flex flex-col md:flex-row md:items-center justify-between gap-4">

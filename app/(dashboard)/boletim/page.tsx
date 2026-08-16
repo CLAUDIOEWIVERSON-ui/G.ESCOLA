@@ -1358,7 +1358,8 @@ function BoletimContent() {
           <div className="max-w-4xl mx-auto w-full">
             <div 
               id="student-report-print-area" 
-              className="bg-white text-slate-900 border border-slate-200 shadow-xl p-8 rounded-lg flex flex-col gap-6 font-sans relative text-left text-xs overflow-y-auto scrollbar-thin"
+              data-document-sheet="true"
+              className="official-document-sheet bg-white text-slate-900 border border-slate-200 shadow-xl p-8 rounded-lg flex flex-col gap-6 font-sans relative text-left text-xs overflow-y-auto scrollbar-thin"
               style={{ width: '100%', boxSizing: 'border-box', maxHeight: '297mm' }}
             >
                <style dangerouslySetInnerHTML={{ __html: `
@@ -2414,7 +2415,8 @@ function BoletimContent() {
                                 {/* THE INDIVIDUAL REPORT PRINT CONTAINER */}
                                 <div 
                                    id="student-report-print-area"
-                                   className="w-[210mm] bg-white text-slate-900 p-8 flex flex-col justify-between font-sans relative text-left text-xs box-border border border-slate-100 overflow-y-auto scrollbar-thin cursor-pointer select-none transition-all duration-200 group/report hover:border-blue-400/40"
+                                   data-document-sheet="true"
+                                   className="official-document-sheet w-[210mm] bg-white text-slate-900 p-8 flex flex-col justify-between font-sans relative text-left text-xs box-border border border-slate-100 overflow-y-auto scrollbar-thin cursor-pointer select-none transition-all duration-200 group/report hover:border-blue-400/40"
                                    onClick={handleCopyAsImage}
                                    title={language === 'pt' ? 'Clique com o botão esquerdo para copiar o Histórico como imagem' : 'Left click to copy Transcript as image'}
                                    style={downloadingPDF ? { height: 'auto', maxHeight: 'none', overflow: 'visible' } : { height: '297mm', maxHeight: '297mm' }}
@@ -3129,7 +3131,8 @@ function BoletimContent() {
                               {/* THE CLASS REPORT PRINT CONTAINER */}
                               <div 
                                  id="class-bulletin-print-area"
-                                 className="w-[210mm] bg-white text-slate-900 p-8 flex flex-col justify-between font-sans relative text-left text-xs box-border border border-slate-100 overflow-y-auto scrollbar-thin cursor-pointer select-none transition-all duration-200"
+                                 data-document-sheet="true"
+                                 className="official-document-sheet w-[210mm] bg-white text-slate-900 p-8 flex flex-col justify-between font-sans relative text-left text-xs box-border border border-slate-100 overflow-y-auto scrollbar-thin cursor-pointer select-none transition-all duration-200"
                                  style={downloadingClassPDF ? { height: 'auto', maxHeight: 'none', overflow: 'visible' } : { height: '297mm', maxHeight: '297mm' }}
                                >
                                  <style dangerouslySetInnerHTML={{ __html: `

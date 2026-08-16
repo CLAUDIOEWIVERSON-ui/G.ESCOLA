@@ -2598,7 +2598,8 @@ function TurmasContent() {
             <div className="flex-1 flex justify-center items-start p-6 bg-slate-900 overflow-auto custom-scrollbar">
               <div 
                 id="print-attendance-sheet"
-                className="bg-white text-black p-[10mm] shadow-2xl relative rounded border border-slate-700 w-[297mm] min-h-[210mm] h-auto shrink-0 font-sans"
+                data-document-sheet="true"
+                className="official-document-sheet bg-white text-black p-[10mm] shadow-2xl relative rounded border border-slate-700 w-[297mm] min-h-[210mm] h-auto shrink-0 font-sans"
               >
                 {/* Print Styles */}
                 <style dangerouslySetInnerHTML={{ __html: `
@@ -3003,7 +3004,8 @@ function TurmasContent() {
             <div className="flex-1 flex justify-center items-start p-6 bg-slate-900 overflow-auto custom-scrollbar">
               <div
                 id="print-students-roster-sheet"
-                className="bg-white text-black p-[10mm] shadow-2xl relative rounded border border-slate-700 w-[210mm] min-h-[297mm] h-auto shrink-0 font-sans"
+                data-document-sheet="true"
+                className="official-document-sheet bg-white text-black p-[10mm] shadow-2xl relative rounded border border-slate-700 w-[210mm] min-h-[297mm] h-auto shrink-0 font-sans"
               >
                 {/* Print Styles */}
                 <style dangerouslySetInnerHTML={{ __html: `

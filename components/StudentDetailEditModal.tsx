@@ -1389,7 +1389,10 @@ export default function StudentDetailEditModal({
       {/* PRINT-ONLY OFFICIAL DOCUMENT: FICHA INDIVIDUAL DO ALUNO */}
       {/* ========================================================================= */}
       {mounted && isOpen && createPortal(
-        <div className="hidden print:block student-ficha-printable-doc text-slate-900 bg-white p-2 font-sans text-xs w-full">
+        <div 
+          data-document-sheet="true"
+          className="hidden print:block student-ficha-printable-doc official-document-sheet text-slate-900 bg-white p-2 font-sans text-xs w-full"
+        >
           {/* Cabeçalho Institucional */}
           <div className="border-b-2 border-slate-900 pb-2 mb-3 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">

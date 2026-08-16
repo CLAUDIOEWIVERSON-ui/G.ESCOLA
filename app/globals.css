@@ -109,7 +109,189 @@ body {
 }
 
 /* =========================================================================
-   REGRAS DE CONTRASTE:
+   PROTEÇÃO DE FOLHAS E DOCUMENTOS OFICIAIS CONTRA O MODO DARK NA TELA
+   Folhas Semanais, Folhas Mensais, Boletim Individual, Boletim de Turma
+   e Fichas apresentam-se SEMPRE como folha de papel normal (branca com texto escuro).
+   ========================================================================= */
+
+#frequency-print-area,
+#print-attendance-sheet,
+#print-students-roster-sheet,
+#student-report-print-area,
+#class-bulletin-print-area,
+#student-report-frame-box,
+#class-report-frame-box,
+.student-ficha-printable-doc,
+.print-container,
+.official-document-sheet,
+[data-document-sheet="true"],
+.dark #frequency-print-area,
+.dark #print-attendance-sheet,
+.dark #print-students-roster-sheet,
+.dark #student-report-print-area,
+.dark #class-bulletin-print-area,
+.dark #student-report-frame-box,
+.dark #class-report-frame-box,
+.dark .student-ficha-printable-doc,
+.dark .print-container,
+.dark .official-document-sheet,
+.dark [data-document-sheet="true"] {
+  background-color: #FFFFFF !important;
+  background: #FFFFFF !important;
+  color: #000000 !important;
+  color-scheme: light !important;
+}
+
+#frequency-print-area *,
+#print-attendance-sheet *,
+#print-students-roster-sheet *,
+#student-report-print-area *,
+#class-bulletin-print-area *,
+#student-report-frame-box *,
+#class-report-frame-box *,
+.student-ficha-printable-doc *,
+.print-container *,
+.official-document-sheet *,
+[data-document-sheet="true"] *,
+.dark #frequency-print-area *,
+.dark #print-attendance-sheet *,
+.dark #print-students-roster-sheet *,
+.dark #student-report-print-area *,
+.dark #class-bulletin-print-area *,
+.dark #student-report-frame-box *,
+.dark #class-report-frame-box *,
+.dark .student-ficha-printable-doc *,
+.dark .print-container *,
+.dark .official-document-sheet *,
+.dark [data-document-sheet="true"] * {
+  color-scheme: light !important;
+  text-shadow: none !important;
+}
+
+/* Backgrounds de containers/tabelas dentro dos documentos */
+.dark #frequency-print-area .bg-white,
+.dark #print-attendance-sheet .bg-white,
+.dark #print-students-roster-sheet .bg-white,
+.dark #student-report-print-area .bg-white,
+.dark #class-bulletin-print-area .bg-white,
+.dark .student-ficha-printable-doc .bg-white,
+.dark .official-document-sheet .bg-white,
+.dark [data-document-sheet="true"] .bg-white {
+  background-color: #FFFFFF !important;
+  color: #000000 !important;
+}
+
+.dark #frequency-print-area .bg-slate-50,
+.dark #frequency-print-area .bg-slate-100,
+.dark #print-attendance-sheet .bg-slate-50,
+.dark #print-attendance-sheet .bg-slate-100,
+.dark #student-report-print-area .bg-slate-50,
+.dark #student-report-print-area .bg-slate-100,
+.dark #class-bulletin-print-area .bg-slate-50,
+.dark #class-bulletin-print-area .bg-slate-100,
+.dark .student-ficha-printable-doc .bg-slate-50,
+.dark .student-ficha-printable-doc .bg-slate-100,
+.dark .official-document-sheet .bg-slate-50,
+.dark [data-document-sheet="true"] .bg-slate-50 {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+/* Textos e cabeçalhos dentro dos documentos */
+.dark #frequency-print-area h1, .dark #frequency-print-area h2, .dark #frequency-print-area h3, .dark #frequency-print-area h4,
+.dark #print-attendance-sheet h1, .dark #print-attendance-sheet h2, .dark #print-attendance-sheet h3, .dark #print-attendance-sheet h4,
+.dark #print-students-roster-sheet h1, .dark #print-students-roster-sheet h2, .dark #print-students-roster-sheet h3,
+.dark #student-report-print-area h1, .dark #student-report-print-area h2, .dark #student-report-print-area h3, .dark #student-report-print-area h4,
+.dark #class-bulletin-print-area h1, .dark #class-bulletin-print-area h2, .dark #class-bulletin-print-area h3,
+.dark .student-ficha-printable-doc h1, .dark .student-ficha-printable-doc h2, .dark .student-ficha-printable-doc h3,
+.dark .official-document-sheet h1, .dark .official-document-sheet h2, .dark .official-document-sheet h3,
+.dark [data-document-sheet="true"] h1, .dark [data-document-sheet="true"] h2, .dark [data-document-sheet="true"] h3 {
+  color: #0f172a !important;
+}
+
+.dark #frequency-print-area .text-slate-900, .dark #frequency-print-area .text-slate-800, .dark #frequency-print-area .text-slate-700,
+.dark #print-attendance-sheet .text-slate-900, .dark #print-attendance-sheet .text-slate-800, .dark #print-attendance-sheet .text-slate-700,
+.dark #student-report-print-area .text-slate-900, .dark #student-report-print-area .text-slate-800, .dark #student-report-print-area .text-slate-700,
+.dark #class-bulletin-print-area .text-slate-900, .dark #class-bulletin-print-area .text-slate-800, .dark #class-bulletin-print-area .text-slate-700,
+.dark .student-ficha-printable-doc .text-slate-900, .dark .student-ficha-printable-doc .text-slate-800,
+.dark .official-document-sheet .text-slate-900, .dark .official-document-sheet .text-slate-800 {
+  color: #0f172a !important;
+}
+
+.dark #frequency-print-area .text-slate-500, .dark #frequency-print-area .text-slate-600,
+.dark #student-report-print-area .text-slate-500, .dark #student-report-print-area .text-slate-600,
+.dark #class-bulletin-print-area .text-slate-500, .dark #class-bulletin-print-area .text-slate-600,
+.dark .student-ficha-printable-doc .text-slate-500, .dark .student-ficha-printable-doc .text-slate-600 {
+  color: #475569 !important;
+}
+
+.dark #frequency-print-area .text-slate-400,
+.dark #student-report-print-area .text-slate-400,
+.dark #class-bulletin-print-area .text-slate-400,
+.dark .student-ficha-printable-doc .text-slate-400 {
+  color: #64748b !important;
+}
+
+/* Tabelas e células para as folhas */
+.dark #frequency-print-area table,
+.dark #print-attendance-sheet table,
+.dark #print-students-roster-sheet table,
+.dark #student-report-print-area table,
+.dark #class-bulletin-print-area table,
+.dark .student-ficha-printable-doc table,
+.dark .official-document-sheet table {
+  background-color: #FFFFFF !important;
+  color: #000000 !important;
+}
+
+.dark #frequency-print-area th,
+.dark #print-attendance-sheet th,
+.dark #print-students-roster-sheet th,
+.dark #student-report-print-area th,
+.dark #class-bulletin-print-area th,
+.dark .student-ficha-printable-doc th {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+.dark #frequency-print-area td,
+.dark #print-attendance-sheet td,
+.dark #print-students-roster-sheet td,
+.dark #student-report-print-area td,
+.dark #class-bulletin-print-area td,
+.dark .student-ficha-printable-doc td {
+  background-color: #FFFFFF !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+.dark #frequency-print-area td.sticky,
+.dark #frequency-print-area th.sticky {
+  background-color: #FFFFFF !important;
+  color: #0f172a !important;
+  border-right-color: #94a3b8 !important;
+}
+.dark #frequency-print-area th.sticky {
+  background-color: #f8fafc !important;
+}
+
+/* Bordas dentro dos documentos */
+.dark #frequency-print-area .border-slate-200,
+.dark #frequency-print-area .border-slate-100,
+.dark #print-attendance-sheet .border-slate-200,
+.dark #student-report-print-area .border-slate-200,
+.dark #student-report-print-area .border-slate-100,
+.dark #class-bulletin-print-area .border-slate-200,
+.dark #class-bulletin-print-area .border-slate-100,
+.dark .student-ficha-printable-doc .border-slate-200,
+.dark .student-ficha-printable-doc .border-slate-300,
+.dark .student-ficha-printable-doc .border-slate-400 {
+  border-color: #cbd5e1 !important;
+}
+
+/* =========================================================================
+   REGRAS DE CONTRASTE GERAIS:
    1) Onde o fundo é AZUL -> Letras BRANCAS
    2) Onde o fundo é BRANCO -> Letras PRETAS
    ========================================================================= */
