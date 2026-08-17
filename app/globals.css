@@ -292,7 +292,7 @@ body {
   background-color: #f8fafc !important;
 }
 
-/* Bordas dentro dos documentos */
+/* Bordas dentro dos documentos - Alta nitidez e destaque para impressão */
 .dark #frequency-print-area .border-slate-200,
 .dark #frequency-print-area .border-slate-100,
 .dark #print-attendance-sheet .border-slate-200,
@@ -302,8 +302,14 @@ body {
 .dark #class-bulletin-print-area .border-slate-100,
 .dark .student-ficha-printable-doc .border-slate-200,
 .dark .student-ficha-printable-doc .border-slate-300,
-.dark .student-ficha-printable-doc .border-slate-400 {
-  border-color: #cbd5e1 !important;
+.dark .student-ficha-printable-doc .border-slate-400,
+.student-ficha-printable-doc .border-slate-200,
+.student-ficha-printable-doc .border-slate-300,
+.official-document-sheet .border-slate-200,
+.official-document-sheet .border-slate-300,
+[data-document-sheet="true"] .border-slate-200,
+[data-document-sheet="true"] .border-slate-300 {
+  border-color: #64748b !important;
 }
 
 /* =========================================================================
@@ -467,20 +473,29 @@ html:not(.dark) .bg-white .text-slate-700 {
     color: #000000 !important;
   }
 
-  /* Borders normalization for clear contrast */
+  /* Borders normalization for clear contrast and strong line definition */
   .border-slate-800,
   .border-slate-850,
   .border-slate-900,
   .border-slate-700,
   .dark .border-slate-800,
-  .dark .border-slate-700,
+  .dark .border-slate-700 {
+    border-color: #1e293b !important;
+  }
+
+  .border-slate-600,
+  .border-slate-500,
+  .border-slate-400,
+  .border-slate-300,
+  .border-slate-200,
+  .border-slate-100,
   .dark .border-slate-200,
   .dark .border-slate-100,
   .border-white\/10,
   .border-cyan-500\/20,
   .border-purple-500\/20,
   .border-emerald-500\/20 {
-    border-color: #cbd5e1 !important;
+    border-color: #475569 !important;
   }
 
   /* Preserve data visualization progress and metric colors */
@@ -540,7 +555,7 @@ html:not(.dark) .bg-white .text-slate-700 {
     page-break-inside: avoid !important;
   }
 
-  /* Tables layout */
+  /* Tables layout & high contrast lines for all printable sheets and forms */
   table {
     width: 100% !important;
     border-collapse: collapse !important;
@@ -556,7 +571,56 @@ html:not(.dark) .bg-white .text-slate-700 {
   td, th {
     font-size: 10px !important;
     padding: 4px !important;
-    border-color: #cbd5e1 !important;
+    border-color: #475569 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Destacar linhas e bordas em todos os relatórios e formulários de impressão */
+  .student-ficha-printable-doc table,
+  .student-ficha-printable-doc th,
+  .student-ficha-printable-doc td,
+  .official-document-sheet table,
+  .official-document-sheet th,
+  .official-document-sheet td,
+  [data-document-sheet="true"] table,
+  [data-document-sheet="true"] th,
+  [data-document-sheet="true"] td,
+  #frequency-print-area table,
+  #frequency-print-area th,
+  #frequency-print-area td,
+  #print-attendance-sheet table,
+  #print-attendance-sheet th,
+  #print-attendance-sheet td,
+  #print-students-roster-sheet table,
+  #print-students-roster-sheet th,
+  #print-students-roster-sheet td,
+  #student-report-print-area table,
+  #student-report-print-area th,
+  #student-report-print-area td,
+  #class-bulletin-print-area table,
+  #class-bulletin-print-area th,
+  #class-bulletin-print-area td,
+  #print-exterior-sheet table,
+  #print-exterior-sheet th,
+  #print-exterior-sheet td {
+    border-color: #475569 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .student-ficha-printable-doc .border-slate-300,
+  .student-ficha-printable-doc .border-slate-200,
+  .student-ficha-printable-doc .border-slate-400,
+  .official-document-sheet .border-slate-300,
+  .official-document-sheet .border-slate-200,
+  .official-document-sheet .border-slate-400,
+  [data-document-sheet="true"] .border-slate-300,
+  [data-document-sheet="true"] .border-slate-200,
+  [data-document-sheet="true"] .border-slate-400 {
+    border-color: #475569 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   /* When printing Student Ficha Individual specifically, isolate the printable document */

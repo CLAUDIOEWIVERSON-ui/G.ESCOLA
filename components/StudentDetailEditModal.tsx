@@ -1476,9 +1476,9 @@ export default function StudentDetailEditModal({
           </div>
 
           {/* Perfil do Aluno: Foto 3x4 + Identificadores Principais */}
-          <div className="flex border border-slate-400 rounded-lg p-2.5 mb-3 bg-slate-50/50 gap-3">
+          <div className="flex border border-slate-500 rounded-lg p-2.5 mb-3 bg-slate-50/50 gap-3">
             {/* Foto 3x4 */}
-            <div className="w-24 shrink-0 flex flex-col items-center justify-center border-r border-slate-300 pr-3">
+            <div className="w-24 shrink-0 flex flex-col items-center justify-center border-r border-slate-400 pr-3">
               <div className="w-20 h-28 border-2 border-slate-800 rounded bg-white overflow-hidden shadow-sm flex items-center justify-center">
                 <img
                   src={currentAluno?.foto_url || (typeof getAvatarImage() === 'string' ? getAvatarImage() : (getAvatarImage() as any)?.src)}
@@ -1486,19 +1486,19 @@ export default function StudentDetailEditModal({
                   className="w-full h-full object-cover"
                 />
               </div>
-              <span className="text-[7px] font-bold text-slate-500 uppercase tracking-wider mt-1">FOTO 3x4 OFICIAL</span>
+              <span className="text-[7px] font-bold text-slate-600 uppercase tracking-wider mt-1">FOTO 3x4 OFICIAL</span>
             </div>
 
             {/* Identificação do Aluno em Tabela para Alinhamento Perfeito na Impressão */}
             <table className="w-full text-xs border-collapse">
               <tbody>
-                <tr className="border-b border-slate-200">
+                <tr className="border-b border-slate-400">
                   <td colSpan={2} className="pb-1">
                     <span className="text-[8px] font-bold text-slate-500 uppercase block leading-none">Nome Completo</span>
                     <span className="text-xs font-black text-slate-900 uppercase leading-tight">{currentAluno?.nome || 'NÃO INFORMADO'}</span>
                   </td>
                 </tr>
-                <tr className="border-b border-slate-200">
+                <tr className="border-b border-slate-400">
                   <td className="py-1 w-1/2 pr-2">
                     <span className="text-[8px] font-bold text-slate-500 uppercase block leading-none">Nome de Guerra / Apelido</span>
                     <span className="font-bold text-slate-800 uppercase leading-snug">{currentAluno?.nome_guerra || '-'}</span>
@@ -1508,7 +1508,7 @@ export default function StudentDetailEditModal({
                     <span className="font-bold text-slate-800 uppercase leading-snug">{currentAluno?.posto_graduacao || '-'}</span>
                   </td>
                 </tr>
-                <tr className="border-b border-slate-200">
+                <tr className="border-b border-slate-400">
                   <td className="py-1 pr-2">
                     <span className="text-[8px] font-bold text-slate-500 uppercase block leading-none">Categoria / Tipo</span>
                     <span className="font-bold text-slate-800 uppercase leading-snug">{currentAluno?.tipo_aluno || 'Militar'}</span>
@@ -1518,7 +1518,7 @@ export default function StudentDetailEditModal({
                     <span className="font-bold text-slate-800 uppercase leading-snug">{currentAluno?.om || '-'}</span>
                   </td>
                 </tr>
-                <tr className="border-b border-slate-200">
+                <tr className="border-b border-slate-400">
                   <td colSpan={2} className="py-1">
                     <span className="text-[8px] font-bold text-slate-500 uppercase block leading-none">
                       {turmaInfo?.internacional ? 'Curso (Inscrição no Exterior) / Turma' : 'Curso de Matrícula'}
@@ -1579,46 +1579,46 @@ export default function StudentDetailEditModal({
             >
               1. DADOS PESSOAIS E DOCUMENTAÇÃO CIVIL
             </h3>
-            <table className="w-full border-collapse border border-slate-300 text-xs">
+            <table className="w-full border-collapse border border-slate-500 text-xs">
               <tbody>
-                <tr className="border-b border-slate-200">
-                  <td className="p-1 font-bold bg-slate-100 w-1/4 border-r border-slate-300">Gênero:</td>
-                  <td className="p-1 w-1/4 border-r border-slate-300 capitalize">{currentAluno?.genero || '-'}</td>
-                  <td className="p-1 font-bold bg-slate-100 w-1/4 border-r border-slate-300">Data de Nascimento:</td>
+                <tr className="border-b border-slate-400">
+                  <td className="p-1 font-bold bg-slate-100 w-1/4 border-r border-slate-400">Gênero:</td>
+                  <td className="p-1 w-1/4 border-r border-slate-400 capitalize">{currentAluno?.genero || '-'}</td>
+                  <td className="p-1 font-bold bg-slate-100 w-1/4 border-r border-slate-400">Data de Nascimento:</td>
                   <td className="p-1 w-1/4 font-mono">{currentAluno?.data_nascimento ? format(new Date(currentAluno.data_nascimento), 'dd/MM/yyyy') : '-'}</td>
                 </tr>
-                <tr className="border-b border-slate-200">
-                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-300">RG:</td>
-                  <td className="p-1 font-mono border-r border-slate-300">{currentAluno?.rg || '-'}</td>
-                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-300">NIF (Identificação Fiscal):</td>
+                <tr className="border-b border-slate-400">
+                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-400">RG:</td>
+                  <td className="p-1 font-mono border-r border-slate-400">{currentAluno?.rg || '-'}</td>
+                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-400">NIF (Identificação Fiscal):</td>
                   <td className="p-1 font-mono">{currentAluno?.nif || '-'}</td>
                 </tr>
-                <tr className="border-b border-slate-200">
-                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-300">Título de Eleitor:</td>
-                  <td className="p-1 font-mono border-r border-slate-300">{currentAluno?.titulo_eleitor || '-'}</td>
-                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-300">Estado Civil:</td>
+                <tr className="border-b border-slate-400">
+                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-400">Título de Eleitor:</td>
+                  <td className="p-1 font-mono border-r border-slate-400">{currentAluno?.titulo_eleitor || '-'}</td>
+                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-400">Estado Civil:</td>
                   <td className="p-1">{currentAluno?.estado_civil || '-'}</td>
                 </tr>
-                <tr className="border-b border-slate-200">
-                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-300">Tipo Sanguíneo/Fator RH:</td>
-                  <td className="p-1 font-mono border-r border-slate-300">{currentAluno?.tipo_sanguineo || '-'}{currentAluno?.fator_rh || ''}</td>
-                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-300">Altura / Peso:</td>
+                <tr className="border-b border-slate-400">
+                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-400">Tipo Sanguíneo/Fator RH:</td>
+                  <td className="p-1 font-mono border-r border-slate-400">{currentAluno?.tipo_sanguineo || '-'}{currentAluno?.fator_rh || ''}</td>
+                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-400">Altura / Peso:</td>
                   <td className="p-1 font-mono">
                     {currentAluno?.altura ? `${currentAluno.altura} m` : '-'} / {currentAluno?.peso ? `${currentAluno.peso} kg` : '-'}
                   </td>
                 </tr>
-                <tr className="border-b border-slate-200">
-                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-300">Nome do Pai:</td>
-                  <td className="p-1 uppercase border-r border-slate-300" colSpan={3}>{currentAluno?.nome_pai || '-'}</td>
+                <tr className="border-b border-slate-400">
+                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-400">Nome do Pai:</td>
+                  <td className="p-1 uppercase border-r border-slate-400" colSpan={3}>{currentAluno?.nome_pai || '-'}</td>
                 </tr>
-                <tr className="border-b border-slate-200">
-                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-300">Nome da Mãe:</td>
-                  <td className="p-1 uppercase border-r border-slate-300" colSpan={3}>{currentAluno?.nome_mae || '-'}</td>
+                <tr className="border-b border-slate-400">
+                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-400">Nome da Mãe:</td>
+                  <td className="p-1 uppercase border-r border-slate-400" colSpan={3}>{currentAluno?.nome_mae || '-'}</td>
                 </tr>
                 <tr>
-                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-300">Ano de Admissão:</td>
-                  <td className="p-1 font-mono border-r border-slate-300">{currentAluno?.ano_admissao || '-'}</td>
-                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-300">Função / Cargo:</td>
+                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-400">Ano de Admissão:</td>
+                  <td className="p-1 font-mono border-r border-slate-400">{currentAluno?.ano_admissao || '-'}</td>
+                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-400">Função / Cargo:</td>
                   <td className="p-1 uppercase">{currentAluno?.funcao || '-'}</td>
                 </tr>
               </tbody>
@@ -1633,23 +1633,23 @@ export default function StudentDetailEditModal({
             >
               2. CONTATO E COMUNICAÇÃO
             </h3>
-            <table className="w-full border-collapse border border-slate-300 text-xs">
+            <table className="w-full border-collapse border border-slate-500 text-xs">
               <tbody>
-                <tr className="border-b border-slate-200">
-                  <td className="p-1 font-bold bg-slate-100 w-1/6 border-r border-slate-300">E-mail:</td>
-                  <td className="p-1 font-mono w-2/6 border-r border-slate-300">{currentAluno?.email || '-'}</td>
-                  <td className="p-1 font-bold bg-slate-100 w-1/6 border-r border-slate-300">Telefone:</td>
+                <tr className="border-b border-slate-400">
+                  <td className="p-1 font-bold bg-slate-100 w-1/6 border-r border-slate-400">E-mail:</td>
+                  <td className="p-1 font-mono w-2/6 border-r border-slate-400">{currentAluno?.email || '-'}</td>
+                  <td className="p-1 font-bold bg-slate-100 w-1/6 border-r border-slate-400">Telefone:</td>
                   <td className="p-1 font-mono w-2/6">{currentAluno?.telefone || '-'}</td>
                 </tr>
-                <tr className="border-b border-slate-200">
-                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-300">WhatsApp:</td>
-                  <td className="p-1 font-mono border-r border-slate-300">{currentAluno?.whatsapp || '-'}</td>
-                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-300">Código de Acesso:</td>
+                <tr className="border-b border-slate-400">
+                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-400">WhatsApp:</td>
+                  <td className="p-1 font-mono border-r border-slate-400">{currentAluno?.whatsapp || '-'}</td>
+                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-400">Código de Acesso:</td>
                   <td className="p-1 font-mono font-bold text-blue-900">{studentAccess?.access_code || '-'}</td>
                 </tr>
                 <tr>
-                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-300">Endereço Residencial:</td>
-                  <td className="p-1 uppercase border-r border-slate-300 font-medium" colSpan={3}>
+                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-400">Endereço Residencial:</td>
+                  <td className="p-1 uppercase border-r border-slate-400 font-medium" colSpan={3}>
                     {currentAluno?.endereco || '-'}
                   </td>
                 </tr>
@@ -1665,22 +1665,22 @@ export default function StudentDetailEditModal({
             >
               3. REGISTRO DE FREQUÊNCIA E ASSIDUIDADE
             </h3>
-            <table className="w-full border-collapse border border-slate-300 text-xs text-center">
+            <table className="w-full border-collapse border border-slate-500 text-xs text-center">
               <thead>
-                <tr className="bg-slate-100 font-bold border-b border-slate-300">
-                  <th className="p-1 border-r border-slate-300">Total de Aulas</th>
-                  <th className="p-1 border-r border-slate-300">Presenças (%)</th>
-                  <th className="p-1 border-r border-slate-300">Faltas (%)</th>
+                <tr className="bg-slate-100 font-bold border-b border-slate-400">
+                  <th className="p-1 border-r border-slate-400">Total de Aulas</th>
+                  <th className="p-1 border-r border-slate-400">Presenças (%)</th>
+                  <th className="p-1 border-r border-slate-400">Faltas (%)</th>
                   <th className="p-1">Situação da Frequência</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td className="p-1 font-mono border-r border-slate-300">{attendanceStats.total} aulas</td>
-                  <td className="p-1 font-mono font-bold text-emerald-800 border-r border-slate-300">
+                  <td className="p-1 font-mono border-r border-slate-400">{attendanceStats.total} aulas</td>
+                  <td className="p-1 font-mono font-bold text-emerald-800 border-r border-slate-400">
                     {attendanceStats.presentes} ({attendanceStats.percentPresenca}%)
                   </td>
-                  <td className="p-1 font-mono font-bold text-rose-800 border-r border-slate-300">
+                  <td className="p-1 font-mono font-bold text-rose-800 border-r border-slate-400">
                     {attendanceStats.faltas} ({attendanceStats.percentFalta}%)
                   </td>
                   <td className="p-1 font-bold uppercase">
@@ -1705,7 +1705,7 @@ export default function StudentDetailEditModal({
             >
               4. OBSERVAÇÕES PEDAGÓGICAS E DISCIPLINARES
             </h3>
-            <div className="border border-slate-300 p-2 text-xs font-sans min-h-[40px] bg-slate-50/30">
+            <div className="border border-slate-500 p-2 text-xs font-sans min-h-[40px] bg-slate-50/30">
               {currentAluno?.observacoes ? (
                 <p className="whitespace-pre-wrap leading-relaxed">{currentAluno.observacoes}</p>
               ) : (
@@ -1717,12 +1717,12 @@ export default function StudentDetailEditModal({
           {/* Termo de Assinaturas */}
           <div className="pt-8 mt-8 grid grid-cols-2 gap-8 text-center text-xs">
             <div>
-              <div className="border-b border-slate-800 w-4/5 mx-auto mb-1"></div>
+              <div className="border-b-2 border-slate-800 w-4/5 mx-auto mb-1"></div>
               <p className="font-bold text-slate-800 uppercase">{currentAluno?.nome || 'Aluno'}</p>
               <p className="text-[8px] text-slate-500 uppercase">Assinatura do Aluno</p>
             </div>
             <div>
-              <div className="border-b border-slate-800 w-4/5 mx-auto mb-1"></div>
+              <div className="border-b-2 border-slate-800 w-4/5 mx-auto mb-1"></div>
               <p className="font-bold text-slate-800 uppercase">Coordenador de Cursos</p>
               <p className="text-[8px] text-slate-500 uppercase">Carimbo e Assinatura</p>
             </div>
