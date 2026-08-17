@@ -1037,205 +1037,119 @@ export default function StudentDetailEditModal({
                       <GraduationCap className="text-blue-600" size={16} />
                       <span>{language === 'pt' ? 'Curso & Turma de Matrícula' : 'Enrolled Course & Class'}</span>
                     </label>
-                    <div className="flex items-center gap-2">
-                      {turmaInfo?.internacional && (
-                        <span className="text-[9px] bg-blue-600 text-white font-black px-2 py-0.5 rounded uppercase tracking-wider">
-                          🌐 {language === 'pt' ? 'Inscrição no Exterior' : 'International'}
-                        </span>
-                      )}
-                      <span className="text-[10px] text-slate-500 font-medium hidden sm:inline">
-                        {language === 'pt' ? '✍️ Digitação livre ou seleção da lista' : '✍️ Free typing or select from list'}
+                    {turmaInfo?.internacional && (
+                      <span className="text-[9px] bg-blue-600 text-white font-black px-2 py-0.5 rounded uppercase tracking-wider">
+                        🌐 {language === 'pt' ? 'Inscrição no Exterior' : 'International'}
                       </span>
-                    </div>
+                    )}
                   </div>
 
-                  {/* 1. SELEÇÃO / DIGITAÇÃO DO CURSO (INDIVIDUAL DO ALUNO) */}
+                  {/* 1. SELEÇÃO DIRETA DO CURSO (INDIVIDUAL DO ALUNO) */}
                   <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider">
-                        {language === 'pt' ? 'Curso ao qual está Matriculado' : 'Enrolled Course'} <span className="text-red-500">*</span>
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() => setManualCursoMode(!manualCursoMode)}
-                        className="text-[10px] text-blue-600 hover:text-blue-800 font-bold hover:underline"
-                      >
-                        {manualCursoMode ? (language === 'pt' ? '📋 Ver Menu de Cursos' : '📋 Show Course Dropdown') : (language === 'pt' ? '✍️ Digitar Livremente' : '✍️ Free Text Typing')}
-                      </button>
-                    </div>
+                    <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1">
+                      {language === 'pt' ? 'Curso ao qual está Matriculado' : 'Enrolled Course'} <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={currentAluno?.curso_id || selectedCursoId || ''}
+                      onChange={(e) => {
+                        const cId = e.target.value || null;
+                        setSelectedCursoId(cId || '');
+                        const cObj = allCursos.find((c: any) => c.id === cId);
+                        setCurrentAluno((prev: any) => {
+                          const updated = { 
+                            ...prev, 
+                            curso_id: cId,
+                            curso_nome: cObj?.nome || ''
+                          };
+                          if (cId) {
+                            const matchingTurmas = allTurmas.filter((t: any) => t.curso_id === cId || t.curso?.id === cId);
+                            const isCurrentTurmaInCourse = matchingTurmas.some((t: any) => t.id === prev?.turma_id);
+                            if (!isCurrentTurmaInCourse && matchingTurmas.length > 0) {
+                              updated.turma_id = matchingTurmas[0].id;
+                              updated.turma_nome = matchingTurmas[0].nome;
+                              loadTurmaInfo(matchingTurmas[0].id, cId);
+                            }
+                          } else {
+                            updated.turma_id = null;
+                            updated.turma_nome = '';
+                            setTurmaInfo(null);
+                          }
+                          return updated;
+                        });
+                      }}
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 font-semibold text-slate-800 shadow-2xs cursor-pointer"
+                    >
+                      <option value="">{language === 'pt' ? '-- Selecione o Curso --' : '-- Select Course --'}</option>
+                      {allCursos.map((curso: any) => (
+                        <option key={curso.id} value={curso.id}>
+                          {curso.nome} {curso.categoria ? `(${curso.categoria})` : ''} {curso.grupo_responsavel ? `• [${curso.grupo_responsavel}]` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-                    <div className="space-y-1.5">
-                      {/* Campo com Autocomplete / Digitação Livre */}
-                      <div className="relative">
-                        <input
-                          type="text"
-                          list="list-cursos-options"
-                          value={cursoInputText || ''}
-                          onChange={(e) => handleCursoChange(e.target.value)}
-                          placeholder={language === 'pt' ? 'Digite ou escolha o curso na lista...' : 'Type or select course from list...'}
-                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 font-semibold text-slate-800 shadow-2xs"
-                        />
-                        <datalist id="list-cursos-options">
-                          {allCursos.map((curso: any) => (
-                            <option key={curso.id} value={curso.nome}>
-                              {curso.categoria ? `(${curso.categoria})` : ''} {curso.grupo_responsavel ? `• [${curso.grupo_responsavel}]` : ''}
+                  {/* 2. SELEÇÃO DA TURMA */}
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1">
+                      {language === 'pt' ? 'Turma da Matrícula' : 'Enrolled Class'}
+                    </label>
+                    <select
+                      value={currentAluno?.turma_id || ''}
+                      onChange={(e) => {
+                        const selectedTId = e.target.value || null;
+                        const tObj = allTurmas.find((t: any) => t.id === selectedTId);
+                        
+                        setCurrentAluno((prev: any) => {
+                          const updated = { 
+                            ...prev, 
+                            turma_id: selectedTId,
+                            turma_nome: tObj?.nome || ''
+                          };
+                          if (selectedTId) {
+                            const tCursoId = tObj?.curso_id || tObj?.curso?.id;
+                            if (tCursoId) {
+                              setSelectedCursoId(tCursoId);
+                              updated.curso_id = tCursoId;
+                              const cObj = allCursos.find((c: any) => c.id === tCursoId);
+                              updated.curso_nome = cObj?.nome || '';
+                            }
+                          }
+                          return updated;
+                        });
+
+                        if (selectedTId) {
+                          loadTurmaInfo(selectedTId);
+                        } else {
+                          setTurmaInfo(null);
+                        }
+                      }}
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 font-medium text-slate-800 shadow-2xs cursor-pointer"
+                    >
+                      <option value="">{language === 'pt' ? '-- Selecione a Turma --' : '-- Select Class --'}</option>
+                      {(() => {
+                        const effectiveCourseId = currentAluno?.curso_id || selectedCursoId;
+                        let turmasToShow = allTurmas;
+                        if (effectiveCourseId) {
+                          turmasToShow = allTurmas.filter((t: any) => {
+                            const isFromCourse = t.curso_id === effectiveCourseId || t.curso?.id === effectiveCourseId;
+                            const isCurrentStudentTurma = currentAluno?.turma_id && t.id === currentAluno.turma_id;
+                            return isFromCourse || isCurrentStudentTurma;
+                          });
+                        }
+                        if (turmasToShow.length === 0 && allTurmas.length > 0) {
+                          turmasToShow = allTurmas;
+                        }
+                        return turmasToShow.map((t: any) => {
+                          const cursoNome = t.curso?.nome || '';
+                          return (
+                            <option key={t.id} value={t.id}>
+                              {t.nome} {t.codigo ? `(${t.codigo})` : ''} {cursoNome ? `• Curso: ${cursoNome}` : ''} {t.internacional ? '🌐 [EXTERIOR]' : ''}
                             </option>
-                          ))}
-                        </datalist>
-                      </div>
-
-                      {/* Dropdown seletor rápido auxiliar */}
-                      {(!manualCursoMode && allCursos.length > 0) && (
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider shrink-0">
-                            {language === 'pt' ? 'Opções Rápidas:' : 'Quick Select:'}
-                          </span>
-                          <select
-                            value={currentAluno?.curso_id || selectedCursoId || ''}
-                            onChange={(e) => {
-                              const cId = e.target.value;
-                              const cObj = allCursos.find((c: any) => c.id === cId);
-                              if (cObj) {
-                                handleCursoChange(cObj.nome);
-                              } else {
-                                handleCursoChange('');
-                              }
-                            }}
-                            className="w-full px-2.5 py-1 bg-slate-100/80 hover:bg-slate-100 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-500 font-medium text-slate-700 cursor-pointer"
-                          >
-                            <option value="">{language === 'pt' ? '-- Escolha rápida de curso cadastrado --' : '-- Quick pick registered course --'}</option>
-                            {allCursos.map((curso: any) => (
-                              <option key={curso.id} value={curso.id}>
-                                {curso.nome} {curso.categoria ? `(${curso.categoria})` : ''} {curso.grupo_responsavel ? `• [${curso.grupo_responsavel}]` : ''}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      )}
-                    </div>
+                          );
+                        });
+                      })()}
+                    </select>
                   </div>
-
-                  {/* 2. SELEÇÃO / DIGITAÇÃO DA TURMA */}
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider">
-                        {language === 'pt' ? 'Turma da Matrícula' : 'Enrolled Class'}
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() => setManualTurmaMode(!manualTurmaMode)}
-                        className="text-[10px] text-blue-600 hover:text-blue-800 font-bold hover:underline"
-                      >
-                        {manualTurmaMode ? (language === 'pt' ? '📋 Ver Menu de Turmas' : '📋 Show Class Dropdown') : (language === 'pt' ? '✍️ Digitar Livremente' : '✍️ Free Text Typing')}
-                      </button>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      {/* Campo com Autocomplete / Digitação Livre da Turma */}
-                      <div className="relative">
-                        <input
-                          type="text"
-                          list="list-turmas-options"
-                          value={turmaInputText || ''}
-                          onChange={(e) => handleTurmaChange(e.target.value)}
-                          placeholder={language === 'pt' ? 'Digite o nome da turma ou escolha na lista...' : 'Type class name or select from list...'}
-                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 font-medium text-slate-800 shadow-2xs"
-                        />
-                        <datalist id="list-turmas-options">
-                          {(() => {
-                            const effectiveCourseId = currentAluno?.curso_id || selectedCursoId;
-                            let turmasToShow = allTurmas;
-                            if (effectiveCourseId) {
-                              turmasToShow = allTurmas.filter((t: any) => {
-                                const isFromCourse = t.curso_id === effectiveCourseId || t.curso?.id === effectiveCourseId;
-                                const isCurrentStudentTurma = currentAluno?.turma_id && t.id === currentAluno.turma_id;
-                                return isFromCourse || isCurrentStudentTurma;
-                              });
-                            }
-                            if (turmasToShow.length === 0 && allTurmas.length > 0) {
-                              turmasToShow = allTurmas;
-                            }
-                            return turmasToShow.map((t: any) => {
-                              const cursoNome = t.curso?.nome || '';
-                              return (
-                                <option key={t.id} value={t.nome}>
-                                  {t.codigo ? `(${t.codigo})` : ''} {cursoNome ? `• Curso: ${cursoNome}` : ''} {t.internacional ? '🌐 [EXTERIOR]' : ''}
-                                </option>
-                              );
-                            });
-                          })()}
-                        </datalist>
-                      </div>
-
-                      {/* Dropdown seletor rápido auxiliar */}
-                      {(!manualTurmaMode && allTurmas.length > 0) && (
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider shrink-0">
-                            {language === 'pt' ? 'Opções Rápidas:' : 'Quick Select:'}
-                          </span>
-                          <select
-                            value={currentAluno?.turma_id || ''}
-                            onChange={(e) => {
-                              const tId = e.target.value;
-                              const tObj = allTurmas.find((t: any) => t.id === tId);
-                              if (tObj) {
-                                handleTurmaChange(tObj.nome);
-                              } else {
-                                handleTurmaChange('');
-                              }
-                            }}
-                            className="w-full px-2.5 py-1 bg-slate-100/80 hover:bg-slate-100 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-500 font-medium text-slate-700 cursor-pointer"
-                          >
-                            <option value="">{language === 'pt' ? '-- Escolha rápida de turma cadastrada --' : '-- Quick pick registered class --'}</option>
-                            {(() => {
-                              const effectiveCourseId = currentAluno?.curso_id || selectedCursoId;
-                              let turmasToShow = allTurmas;
-                              if (effectiveCourseId) {
-                                turmasToShow = allTurmas.filter((t: any) => {
-                                  const isFromCourse = t.curso_id === effectiveCourseId || t.curso?.id === effectiveCourseId;
-                                  const isCurrentStudentTurma = currentAluno?.turma_id && t.id === currentAluno.turma_id;
-                                  return isFromCourse || isCurrentStudentTurma;
-                                });
-                              }
-                              if (turmasToShow.length === 0 && allTurmas.length > 0) {
-                                turmasToShow = allTurmas;
-                              }
-                              return turmasToShow.map((t: any) => {
-                                const cursoNome = t.curso?.nome || '';
-                                return (
-                                  <option key={t.id} value={t.id}>
-                                    {t.nome} {t.codigo ? `(${t.codigo})` : ''} {cursoNome ? `• Curso: ${cursoNome}` : ''} {t.internacional ? '🌐 [EXTERIOR]' : ''}
-                                  </option>
-                                );
-                              });
-                            })()}
-                          </select>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {(turmaInfo?.internacional || turmaInfo?.curso?.nome || selectedCursoId || cursoInputText || turmaInputText) && (
-                    <div className="p-2.5 bg-blue-50/90 border border-blue-200 rounded-lg flex items-center justify-between text-xs text-blue-900 shadow-2xs">
-                      <div className="flex items-center gap-2">
-                        <GraduationCap className="text-blue-600 shrink-0" size={18} />
-                        <div>
-                          <span className="font-bold text-slate-500 block text-[9px] uppercase tracking-wider">
-                            {language === 'pt' ? 'Curso & Turma Atribuídos:' : 'Assigned Course & Class:'}
-                          </span>
-                          <span className="font-black text-blue-900 text-xs">
-                            {cursoInputText || turmaInfo?.curso?.nome || allCursos.find(c => c.id === selectedCursoId)?.nome || (language === 'pt' ? 'Curso Geral' : 'General Course')}
-                            {(turmaInputText || turmaInfo?.nome) ? ` • Turma: ${turmaInputText || turmaInfo?.nome}` : ''}
-                          </span>
-                        </div>
-                      </div>
-                      {turmaInfo?.internacional && (
-                        <span className="text-[10px] font-extrabold text-blue-800 bg-blue-100 border border-blue-200 px-2 py-0.5 rounded uppercase">
-                          {language === 'pt' ? 'Aluno no Exterior' : 'Abroad Student'}
-                        </span>
-                      )}
-                    </div>
-                  )}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
