@@ -1521,28 +1521,33 @@ export default function StudentDetailEditModal({
                 <tr className="border-b border-slate-200">
                   <td colSpan={2} className="py-1">
                     <span className="text-[8px] font-bold text-slate-500 uppercase block leading-none">
-                      {turmaInfo?.internacional ? 'Curso (Inscrição no Exterior) / Turma' : 'Curso & Turma de Matrícula'}
+                      {turmaInfo?.internacional ? 'Curso (Inscrição no Exterior) / Turma' : 'Curso de Matrícula'}
                     </span>
                     <span className="font-bold text-blue-900 uppercase leading-snug">
                       {(() => {
-                        const cursoNome = cursoInputText || turmaInfo?.curso?.nome || allCursos.find(c => c.id === currentAluno?.curso_id || c.id === selectedCursoId)?.nome || currentAluno?.curso_nome || currentAluno?.curso;
-                        const turmaNome = turmaInputText || turmaInfo?.nome || allTurmas.find(t => t.id === currentAluno?.turma_id)?.nome || currentAluno?.turma_nome || currentAluno?.turma || currentAluno?.turma_manual;
+                        const cursoNome = (cursoInputText || turmaInfo?.curso?.nome || allCursos.find(c => c.id === currentAluno?.curso_id || c.id === selectedCursoId)?.nome || currentAluno?.curso_nome || currentAluno?.curso || '').trim();
+                        const turmaNome = (turmaInputText || turmaInfo?.nome || allTurmas.find(t => t.id === currentAluno?.turma_id)?.nome || currentAluno?.turma_nome || currentAluno?.turma || currentAluno?.turma_manual || '').trim();
 
-                        if (cursoNome && turmaNome) {
+                        const isDuplicated = !turmaNome || 
+                          cursoNome.toLowerCase() === turmaNome.toLowerCase() || 
+                          cursoNome.toLowerCase().includes(turmaNome.toLowerCase()) || 
+                          turmaNome.toLowerCase().includes(cursoNome.toLowerCase());
+
+                        if (cursoNome && turmaNome && !isDuplicated) {
                           return (
                             <>
-                              <span className="text-blue-900 font-extrabold">CURSO: {cursoNome}</span>
+                              <span className="text-blue-900 font-extrabold">{cursoNome}</span>
                               <span className="text-slate-700 font-bold ml-1 font-mono">({turmaNome})</span>
                             </>
                           );
                         }
                         if (cursoNome) {
-                          return <span className="text-blue-900 font-extrabold">CURSO: {cursoNome}</span>;
+                          return <span className="text-blue-900 font-extrabold">{cursoNome}</span>;
                         }
                         if (turmaNome) {
-                          return <span className="text-blue-900 font-extrabold">TURMA: {turmaNome}</span>;
+                          return <span className="text-blue-900 font-extrabold">{turmaNome}</span>;
                         }
-                        return <span className="text-slate-700">Turma Geral</span>;
+                        return <span className="text-slate-700">Não informado</span>;
                       })()}
                       {turmaInfo?.localizacao && (
                         <span className="ml-2 text-slate-600 font-semibold text-[10px]">📍 {turmaInfo.localizacao}</span>
