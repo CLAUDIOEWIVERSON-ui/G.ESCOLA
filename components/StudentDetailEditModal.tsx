@@ -1030,12 +1030,12 @@ export default function StudentDetailEditModal({
                   />
                 </div>
 
-                {/* Seleção de Curso e Turma do Aluno */}
+                {/* Seleção de Curso do Aluno */}
                 <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-3">
                   <div className="flex items-center justify-between border-b border-slate-200/80 pb-2">
                     <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
                       <GraduationCap className="text-blue-600" size={16} />
-                      <span>{language === 'pt' ? 'Curso & Turma de Matrícula' : 'Enrolled Course & Class'}</span>
+                      <span>{language === 'pt' ? 'Curso de Matrícula' : 'Enrolled Course'}</span>
                     </label>
                     {turmaInfo?.internacional && (
                       <span className="text-[9px] bg-blue-600 text-white font-black px-2 py-0.5 rounded uppercase tracking-wider">
@@ -1044,7 +1044,7 @@ export default function StudentDetailEditModal({
                     )}
                   </div>
 
-                  {/* 1. SELEÇÃO DIRETA DO CURSO (INDIVIDUAL DO ALUNO) */}
+                  {/* SELEÇÃO DIRETA DO CURSO (INDIVIDUAL DO ALUNO) */}
                   <div>
                     <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1">
                       {language === 'pt' ? 'Curso ao qual está Matriculado' : 'Enrolled Course'} <span className="text-red-500">*</span>
@@ -1055,27 +1055,11 @@ export default function StudentDetailEditModal({
                         const cId = e.target.value || null;
                         setSelectedCursoId(cId || '');
                         const cObj = allCursos.find((c: any) => c.id === cId);
-                        setCurrentAluno((prev: any) => {
-                          const updated = { 
-                            ...prev, 
-                            curso_id: cId,
-                            curso_nome: cObj?.nome || ''
-                          };
-                          if (cId) {
-                            const matchingTurmas = allTurmas.filter((t: any) => t.curso_id === cId || t.curso?.id === cId);
-                            const isCurrentTurmaInCourse = matchingTurmas.some((t: any) => t.id === prev?.turma_id);
-                            if (!isCurrentTurmaInCourse && matchingTurmas.length > 0) {
-                              updated.turma_id = matchingTurmas[0].id;
-                              updated.turma_nome = matchingTurmas[0].nome;
-                              loadTurmaInfo(matchingTurmas[0].id, cId);
-                            }
-                          } else {
-                            updated.turma_id = null;
-                            updated.turma_nome = '';
-                            setTurmaInfo(null);
-                          }
-                          return updated;
-                        });
+                        setCurrentAluno((prev: any) => ({ 
+                          ...prev, 
+                          curso_id: cId,
+                          curso_nome: cObj?.nome || ''
+                        }));
                       }}
                       className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 font-semibold text-slate-800 shadow-2xs cursor-pointer"
                     >
@@ -1085,69 +1069,6 @@ export default function StudentDetailEditModal({
                           {curso.nome} {curso.categoria ? `(${curso.categoria})` : ''} {curso.grupo_responsavel ? `• [${curso.grupo_responsavel}]` : ''}
                         </option>
                       ))}
-                    </select>
-                  </div>
-
-                  {/* 2. SELEÇÃO DA TURMA */}
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1">
-                      {language === 'pt' ? 'Turma da Matrícula' : 'Enrolled Class'}
-                    </label>
-                    <select
-                      value={currentAluno?.turma_id || ''}
-                      onChange={(e) => {
-                        const selectedTId = e.target.value || null;
-                        const tObj = allTurmas.find((t: any) => t.id === selectedTId);
-                        
-                        setCurrentAluno((prev: any) => {
-                          const updated = { 
-                            ...prev, 
-                            turma_id: selectedTId,
-                            turma_nome: tObj?.nome || ''
-                          };
-                          if (selectedTId) {
-                            const tCursoId = tObj?.curso_id || tObj?.curso?.id;
-                            if (tCursoId) {
-                              setSelectedCursoId(tCursoId);
-                              updated.curso_id = tCursoId;
-                              const cObj = allCursos.find((c: any) => c.id === tCursoId);
-                              updated.curso_nome = cObj?.nome || '';
-                            }
-                          }
-                          return updated;
-                        });
-
-                        if (selectedTId) {
-                          loadTurmaInfo(selectedTId);
-                        } else {
-                          setTurmaInfo(null);
-                        }
-                      }}
-                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 font-medium text-slate-800 shadow-2xs cursor-pointer"
-                    >
-                      <option value="">{language === 'pt' ? '-- Selecione a Turma --' : '-- Select Class --'}</option>
-                      {(() => {
-                        const effectiveCourseId = currentAluno?.curso_id || selectedCursoId;
-                        let turmasToShow = allTurmas;
-                        if (effectiveCourseId) {
-                          turmasToShow = allTurmas.filter((t: any) => {
-                            const isFromCourse = t.curso_id === effectiveCourseId || t.curso?.id === effectiveCourseId;
-                            const isCurrentStudentTurma = currentAluno?.turma_id && t.id === currentAluno.turma_id;
-                            return isFromCourse || isCurrentStudentTurma;
-                          });
-                        }
-                        if (turmasToShow.length === 0 && allTurmas.length > 0) {
-                          turmasToShow = allTurmas;
-                        }
-                        return turmasToShow.map((t: any) => {
-                          const cursoNome = t.curso?.nome || '';
-                          return (
-                            <option key={t.id} value={t.id}>
-                              {t.nome} {t.codigo ? `(${t.codigo})` : ''} {cursoNome ? `• Curso: ${cursoNome}` : ''} {t.internacional ? '🌐 [EXTERIOR]' : ''}
-                            </option>
-                          );
-                        });
-                      })()}
                     </select>
                   </div>
                 </div>
@@ -1647,7 +1568,10 @@ export default function StudentDetailEditModal({
 
           {/* Seção 1: Dados Pessoais e Documentação Civil */}
           <div className="mb-3">
-            <h3 className="text-[9px] font-black uppercase tracking-wider bg-slate-800 text-white px-2 py-0.5 rounded-t">
+            <h3 
+              style={{ backgroundColor: '#002776', color: '#ffffff', WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}
+              className="text-[9px] font-black uppercase tracking-wider bg-[#002776] text-white px-2 py-1 rounded-t section-blue-bar !text-white !bg-[#002776]"
+            >
               1. DADOS PESSOAIS E DOCUMENTAÇÃO CIVIL
             </h3>
             <table className="w-full border-collapse border border-slate-300 text-xs">
@@ -1698,7 +1622,10 @@ export default function StudentDetailEditModal({
 
           {/* Seção 2: Contato e Comunicação */}
           <div className="mb-3">
-            <h3 className="text-[9px] font-black uppercase tracking-wider bg-slate-800 text-white px-2 py-0.5 rounded-t">
+            <h3 
+              style={{ backgroundColor: '#002776', color: '#ffffff', WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}
+              className="text-[9px] font-black uppercase tracking-wider bg-[#002776] text-white px-2 py-1 rounded-t section-blue-bar !text-white !bg-[#002776]"
+            >
               2. CONTATO E COMUNICAÇÃO
             </h3>
             <table className="w-full border-collapse border border-slate-300 text-xs">
@@ -1727,7 +1654,10 @@ export default function StudentDetailEditModal({
 
           {/* Seção 3: Registro de Frequência e Assiduidade */}
           <div className="mb-3">
-            <h3 className="text-[9px] font-black uppercase tracking-wider bg-slate-800 text-white px-2 py-0.5 rounded-t">
+            <h3 
+              style={{ backgroundColor: '#002776', color: '#ffffff', WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}
+              className="text-[9px] font-black uppercase tracking-wider bg-[#002776] text-white px-2 py-1 rounded-t section-blue-bar !text-white !bg-[#002776]"
+            >
               3. REGISTRO DE FREQUÊNCIA E ASSIDUIDADE
             </h3>
             <table className="w-full border-collapse border border-slate-300 text-xs text-center">
@@ -1764,7 +1694,10 @@ export default function StudentDetailEditModal({
 
           {/* Seção 4: Observações Pedagógicas */}
           <div className="mb-4">
-            <h3 className="text-[9px] font-black uppercase tracking-wider bg-slate-800 text-white px-2 py-0.5 rounded-t">
+            <h3 
+              style={{ backgroundColor: '#002776', color: '#ffffff', WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}
+              className="text-[9px] font-black uppercase tracking-wider bg-[#002776] text-white px-2 py-1 rounded-t section-blue-bar !text-white !bg-[#002776]"
+            >
               4. OBSERVAÇÕES PEDAGÓGICAS E DISCIPLINARES
             </h3>
             <div className="border border-slate-300 p-2 text-xs font-sans min-h-[40px] bg-slate-50/30">

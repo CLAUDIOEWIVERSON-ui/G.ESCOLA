@@ -203,10 +203,26 @@ body {
 .dark #print-students-roster-sheet h1, .dark #print-students-roster-sheet h2, .dark #print-students-roster-sheet h3,
 .dark #student-report-print-area h1, .dark #student-report-print-area h2, .dark #student-report-print-area h3, .dark #student-report-print-area h4,
 .dark #class-bulletin-print-area h1, .dark #class-bulletin-print-area h2, .dark #class-bulletin-print-area h3,
-.dark .student-ficha-printable-doc h1, .dark .student-ficha-printable-doc h2, .dark .student-ficha-printable-doc h3,
-.dark .official-document-sheet h1, .dark .official-document-sheet h2, .dark .official-document-sheet h3,
-.dark [data-document-sheet="true"] h1, .dark [data-document-sheet="true"] h2, .dark [data-document-sheet="true"] h3 {
+.dark .student-ficha-printable-doc h1, .dark .student-ficha-printable-doc h2, .dark .student-ficha-printable-doc h3:not(.section-blue-bar):not([class*="bg-blue"]):not([class*="bg-slate-800"]):not([class*="bg-slate-900"]),
+.dark .official-document-sheet h1, .dark .official-document-sheet h2, .dark .official-document-sheet h3:not(.section-blue-bar):not([class*="bg-blue"]):not([class*="bg-slate-800"]):not([class*="bg-slate-900"]),
+.dark [data-document-sheet="true"] h1, .dark [data-document-sheet="true"] h2, .dark [data-document-sheet="true"] h3:not(.section-blue-bar):not([class*="bg-blue"]):not([class*="bg-slate-800"]):not([class*="bg-slate-900"]) {
   color: #0f172a !important;
+}
+
+/* Faixas azuis na ficha do aluno e relatórios impressos -> SEMPRE Fundo Azul e Letras Brancas */
+.student-ficha-printable-doc .section-blue-bar,
+.dark .student-ficha-printable-doc .section-blue-bar,
+.student-ficha-printable-doc h3.section-blue-bar,
+.dark .student-ficha-printable-doc h3.section-blue-bar,
+.official-document-sheet .section-blue-bar,
+.dark .official-document-sheet .section-blue-bar,
+[data-document-sheet="true"] .section-blue-bar,
+.dark [data-document-sheet="true"] .section-blue-bar {
+  background-color: #002776 !important;
+  background: #002776 !important;
+  color: #FFFFFF !important;
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
 }
 
 .dark #frequency-print-area .text-slate-900, .dark #frequency-print-area .text-slate-800, .dark #frequency-print-area .text-slate-700,
@@ -574,6 +590,15 @@ html:not(.dark) .bg-white .text-slate-700 {
 
   body.printing-student-ficha .student-ficha-printable-doc * {
     visibility: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body.printing-student-ficha .student-ficha-printable-doc .section-blue-bar,
+  .student-ficha-printable-doc .section-blue-bar {
+    background-color: #002776 !important;
+    background: #002776 !important;
+    color: #ffffff !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
