@@ -151,11 +151,10 @@ export default function DashboardPage() {
     }
   }, []);
 
-  // Filters, grouping and sorting states for Alunos no Exterior
+  // Filters and sorting states for Alunos no Exterior
   const [selectedCursoFilter, setSelectedCursoFilter] = useState<string>('all');
   const [exteriorSearchQuery, setExteriorSearchQuery] = useState<string>('');
   const [exteriorSortBy, setExteriorSortBy] = useState<string>('nome_asc');
-  const [exteriorGroupBy, setExteriorGroupBy] = useState<'none' | 'documento' | 'data' | 'alfabetica' | 'curso'>('none');
 
   // Helper to parse dates for robust chronological sorting
   const parseDateValue = (dateStr?: string | null): number => {
@@ -178,59 +177,6 @@ export default function DashboardPage() {
     const curso = Array.isArray(turmaData?.curso) ? turmaData.curso[0] : turmaData?.curso;
     const doc = (aluno.documento_criacao || turmaData?.documento_criacao || curso?.documento_criacao || '').trim();
     return doc || (language === 'pt' ? 'Sem Documento Cadastrado' : 'No Document Specified');
-  }, [language]);
-
-  // Helper to extract course name safely
-  const getAlunoCursoNome = useCallback((aluno: any): string => {
-    const turmaData = Array.isArray(aluno.turma) ? aluno.turma[0] : aluno.turma;
-    const curso = Array.isArray(turmaData?.curso) ? turmaData.curso[0] : turmaData?.curso;
-    return (curso?.nome || aluno.curso_nome || turmaData?.nome || '').trim() || (language === 'pt' ? 'Curso Não Informado' : 'Unspecified Course');
-  }, [language]);
-
-  // Helper to extract date period/month group
-  const getAlunoDateGroup = useCallback((aluno: any): { key: string; title: string; timestamp: number } => {
-    const turmaData = Array.isArray(aluno.turma) ? aluno.turma[0] : aluno.turma;
-    const dateStr = (aluno.data_inicio_curso || turmaData?.data_inicio || '').trim();
-    if (!dateStr) {
-      return { 
-        key: 'sem-data', 
-        title: language === 'pt' ? 'Data a Definir / Não Informada' : 'To Be Defined / Unspecified', 
-        timestamp: 0 
-      };
-    }
-
-    let parsedDate: Date | null = null;
-    if (/^\d{4}-\d{1,2}-\d{1,2}/.test(dateStr)) {
-      const [y, m, d] = dateStr.split('-').map(Number);
-      parsedDate = new Date(y, m - 1, d);
-    } else if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr)) {
-      const [d, m, y] = dateStr.split('/').map(Number);
-      parsedDate = new Date(y, m - 1, d);
-    }
-
-    if (parsedDate && !isNaN(parsedDate.getTime())) {
-      const monthNamesPt = [
-        'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
-      ];
-      const monthNamesEn = [
-        'January', 'February', 'March', 'April', 'May', 'June',
-        'July', 'August', 'September', 'October', 'November', 'December'
-      ];
-      const monthName = language === 'pt' ? monthNamesPt[parsedDate.getMonth()] : monthNamesEn[parsedDate.getMonth()];
-      const year = parsedDate.getFullYear();
-      return {
-        key: `${year}-${String(parsedDate.getMonth() + 1).padStart(2, '0')}`,
-        title: `${monthName} / ${year}`,
-        timestamp: parsedDate.getTime()
-      };
-    }
-
-    return {
-      key: dateStr,
-      title: dateStr,
-      timestamp: parseDateValue(dateStr)
-    };
   }, [language]);
 
   // Distinct courses found among exterior students
@@ -340,78 +286,6 @@ export default function DashboardPage() {
 
     return result;
   }, [alunosExterior, selectedCursoFilter, exteriorSearchQuery, exteriorSortBy, getAlunoDocumento]);
-
-  // Grouped students list
-  const groupedAlunosExterior = useMemo(() => {
-    if (exteriorGroupBy === 'none') return null;
-
-    const groupsMap = new Map<string, { title: string; subtitle?: string; sortKey: string | number; alunos: any[] }>();
-
-    filteredAndSortedAlunosExterior.forEach((aluno: any) => {
-      let groupKey = '';
-      let groupTitle = '';
-      let groupSubtitle = '';
-      let groupSortKey: string | number = '';
-
-      if (exteriorGroupBy === 'documento') {
-        const doc = getAlunoDocumento(aluno);
-        groupKey = doc;
-        groupTitle = doc;
-        groupSubtitle = language === 'pt' ? 'Portaria / Documento de Autorização' : 'Authorization / Creation Document';
-        groupSortKey = doc.toLowerCase();
-      } else if (exteriorGroupBy === 'data') {
-        const dateInfo = getAlunoDateGroup(aluno);
-        groupKey = dateInfo.key;
-        groupTitle = dateInfo.title;
-        groupSubtitle = language === 'pt' ? 'Período de Início do Curso' : 'Course Start Period';
-        groupSortKey = dateInfo.timestamp;
-      } else if (exteriorGroupBy === 'alfabetica') {
-        const firstLetter = (aluno.nome || aluno.nome_guerra || '').trim().charAt(0).toUpperCase() || '#';
-        groupKey = firstLetter;
-        groupTitle = `${language === 'pt' ? 'Letra' : 'Letter'} ${firstLetter}`;
-        groupSubtitle = language === 'pt' ? 'Ordem Alfabética dos Nomes' : 'Alphabetical Order by Name';
-        groupSortKey = firstLetter;
-      } else if (exteriorGroupBy === 'curso') {
-        const cursoNome = getAlunoCursoNome(aluno);
-        groupKey = cursoNome;
-        groupTitle = cursoNome;
-        groupSubtitle = language === 'pt' ? 'Curso / Missão no Exterior' : 'Course / Mission Abroad';
-        groupSortKey = cursoNome.toLowerCase();
-      }
-
-      if (!groupsMap.has(groupKey)) {
-        groupsMap.set(groupKey, {
-          title: groupTitle,
-          subtitle: groupSubtitle,
-          sortKey: groupSortKey,
-          alunos: []
-        });
-      }
-
-      groupsMap.get(groupKey)!.alunos.push(aluno);
-    });
-
-    const groupsArray = Array.from(groupsMap.entries()).map(([key, data]) => ({
-      key,
-      ...data
-    }));
-
-    if (exteriorGroupBy === 'data') {
-      groupsArray.sort((a, b) => {
-        const timeA = typeof a.sortKey === 'number' ? a.sortKey : 0;
-        const timeB = typeof b.sortKey === 'number' ? b.sortKey : 0;
-        return exteriorSortBy.includes('desc') || exteriorSortBy === 'data_desc' ? timeB - timeA : timeA - timeB;
-      });
-    } else {
-      groupsArray.sort((a, b) => {
-        const strA = String(a.sortKey);
-        const strB = String(b.sortKey);
-        return strA.localeCompare(strB, 'pt-BR');
-      });
-    }
-
-    return groupsArray;
-  }, [filteredAndSortedAlunosExterior, exteriorGroupBy, exteriorSortBy, language, getAlunoCursoNome, getAlunoDateGroup, getAlunoDocumento]);
 
   // Click handler for column sorting
   const handleSortColumn = (column: 'nome' | 'curso' | 'documento' | 'data') => {
@@ -1251,9 +1125,9 @@ export default function DashboardPage() {
               </button>
             </div>
 
-            {/* BARRA DE FILTROS, AGRUPAMENTO E ORDENAÇÃO */}
+            {/* BARRA DE FILTROS E ORDENAÇÃO (TABELA CORRIDA) */}
             <div className="p-3.5 bg-slate-50/90 border-b border-slate-200/90 flex flex-col gap-3 text-xs print:hidden">
-              {/* Linha Superior: Busca e Filtro de Curso */}
+              {/* Linha: Busca, Filtro de Curso e Ordenação */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
                 {/* Campo de Busca Rápida */}
                 <div className="relative flex-1 min-w-[220px]">
@@ -1282,62 +1156,37 @@ export default function DashboardPage() {
                   )}
                 </div>
 
-                {/* Filtro por Curso */}
-                <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 shadow-2xs shrink-0">
-                  <Filter size={13} className="text-blue-600 shrink-0" />
-                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider shrink-0">
-                    {language === 'pt' ? 'Curso:' : 'Course:'}
-                  </span>
-                  <select
-                    value={selectedCursoFilter}
-                    onChange={(e) => {
-                      setSelectedCursoFilter(e.target.value);
-                      setCurrentPage(1);
-                    }}
-                    className="bg-transparent text-slate-800 font-semibold text-xs outline-none cursor-pointer pr-1 max-w-[190px] sm:max-w-[240px] truncate"
-                  >
-                    <option value="all">
-                      {language === 'pt' ? `Todos os Cursos (${alunosExterior.length})` : `All Courses (${alunosExterior.length})`}
-                    </option>
-                    {availableCursosExterior.map((c) => (
-                      <option key={c.nome} value={c.nome}>
-                        {c.nome} ({c.count})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Linha Inferior: Agrupamento e Ordenação */}
-              <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-200/50">
                 <div className="flex flex-wrap items-center gap-2">
-                  {/* Seletor de Agrupamento */}
-                  <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 shadow-2xs">
-                    <FolderTree size={13} className="text-indigo-600 shrink-0" />
+                  {/* Filtro por Curso */}
+                  <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 shadow-2xs shrink-0">
+                    <Filter size={13} className="text-blue-600 shrink-0" />
                     <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider shrink-0">
-                      {language === 'pt' ? 'Agrupar por:' : 'Group by:'}
+                      {language === 'pt' ? 'Curso:' : 'Course:'}
                     </span>
                     <select
-                      value={exteriorGroupBy}
+                      value={selectedCursoFilter}
                       onChange={(e) => {
-                        setExteriorGroupBy(e.target.value as any);
+                        setSelectedCursoFilter(e.target.value);
                         setCurrentPage(1);
                       }}
-                      className="bg-transparent text-slate-800 font-bold text-xs outline-none cursor-pointer pr-1"
+                      className="bg-transparent text-slate-800 font-semibold text-xs outline-none cursor-pointer pr-1 max-w-[170px] sm:max-w-[210px] truncate"
                     >
-                      <option value="none">{language === 'pt' ? '📋 Sem Agrupamento (Tabela Corrida)' : '📋 No Grouping (Flat Table)'}</option>
-                      <option value="documento">{language === 'pt' ? '📄 Por Documento / Portaria' : '📄 By Document / Order'}</option>
-                      <option value="data">{language === 'pt' ? '📅 Por Data / Período de Início' : '📅 By Date / Start Period'}</option>
-                      <option value="alfabetica">{language === 'pt' ? '🔤 Por Ordem Alfabética (Letra)' : '🔤 By Alphabetical Letter'}</option>
-                      <option value="curso">{language === 'pt' ? '📚 Por Curso / Missão' : '📚 By Course / Mission'}</option>
+                      <option value="all">
+                        {language === 'pt' ? `Todos os Cursos (${alunosExterior.length})` : `All Courses (${alunosExterior.length})`}
+                      </option>
+                      {availableCursosExterior.map((c) => (
+                        <option key={c.nome} value={c.nome}>
+                          {c.nome} ({c.count})
+                        </option>
+                      ))}
                     </select>
                   </div>
 
                   {/* Ordenação Principal */}
-                  <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 shadow-2xs">
+                  <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 shadow-2xs shrink-0">
                     <ArrowUpDown size={13} className="text-blue-600 shrink-0" />
                     <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider shrink-0">
-                      {language === 'pt' ? 'Ordenar por:' : 'Sort by:'}
+                      {language === 'pt' ? 'Ordenar:' : 'Sort:'}
                     </span>
                     <select
                       value={exteriorSortBy}
@@ -1345,40 +1194,39 @@ export default function DashboardPage() {
                         setExteriorSortBy(e.target.value);
                         setCurrentPage(1);
                       }}
-                      className="bg-transparent text-slate-800 font-semibold text-xs outline-none cursor-pointer pr-1"
+                      className="bg-transparent text-slate-800 font-semibold text-xs outline-none cursor-pointer pr-1 max-w-[160px] sm:max-w-[200px] truncate"
                     >
-                      <option value="nome_asc">{language === 'pt' ? '🔤 Nome do Aluno (A → Z)' : '🔤 Student Name (A → Z)'}</option>
-                      <option value="nome_desc">{language === 'pt' ? '🔤 Nome do Aluno (Z → A)' : '🔤 Student Name (Z → A)'}</option>
-                      <option value="documento_asc">{language === 'pt' ? '📄 Documento (A → Z)' : '📄 Document (A → Z)'}</option>
-                      <option value="documento_desc">{language === 'pt' ? '📄 Documento (Z → A)' : '📄 Document (Z → A)'}</option>
-                      <option value="data_desc">{language === 'pt' ? '📅 Data de Início (Mais Recente)' : '📅 Start Date (Newest)'}</option>
-                      <option value="data_asc">{language === 'pt' ? '📅 Data de Início (Mais Antigo)' : '📅 Start Date (Oldest)'}</option>
-                      <option value="data_fim_desc">{language === 'pt' ? '🏁 Data de Término (Mais Recente)' : '🏁 End Date (Newest)'}</option>
-                      <option value="data_fim_asc">{language === 'pt' ? '🏁 Data de Término (Mais Antigo)' : '🏁 End Date (Oldest)'}</option>
-                      <option value="curso_asc">{language === 'pt' ? '📚 Curso (A → Z)' : '📚 Course (A → Z)'}</option>
-                      <option value="curso_desc">{language === 'pt' ? '📚 Curso (Z → A)' : '📚 Course (Z → A)'}</option>
+                      <option value="nome_asc">{language === 'pt' ? 'Nome (A → Z)' : 'Name (A → Z)'}</option>
+                      <option value="nome_desc">{language === 'pt' ? 'Nome (Z → A)' : 'Name (Z → A)'}</option>
+                      <option value="documento_asc">{language === 'pt' ? 'Documento (A → Z)' : 'Document (A → Z)'}</option>
+                      <option value="documento_desc">{language === 'pt' ? 'Documento (Z → A)' : 'Document (Z → A)'}</option>
+                      <option value="data_desc">{language === 'pt' ? 'Início (Recente)' : 'Start (Newest)'}</option>
+                      <option value="data_asc">{language === 'pt' ? 'Início (Antigo)' : 'Start (Oldest)'}</option>
+                      <option value="data_fim_desc">{language === 'pt' ? 'Término (Recente)' : 'End (Newest)'}</option>
+                      <option value="data_fim_asc">{language === 'pt' ? 'Término (Antigo)' : 'End (Oldest)'}</option>
+                      <option value="curso_asc">{language === 'pt' ? 'Curso (A → Z)' : 'Course (A → Z)'}</option>
+                      <option value="curso_desc">{language === 'pt' ? 'Curso (Z → A)' : 'Course (Z → A)'}</option>
                     </select>
                   </div>
-                </div>
 
-                {/* Botão Limpar Filtros e Agrupamentos */}
-                {(selectedCursoFilter !== 'all' || exteriorSearchQuery || exteriorSortBy !== 'nome_asc' || exteriorGroupBy !== 'none') && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedCursoFilter('all');
-                      setExteriorSearchQuery('');
-                      setExteriorSortBy('nome_asc');
-                      setExteriorGroupBy('none');
-                      setCurrentPage(1);
-                    }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-slate-600 hover:text-slate-900 bg-slate-200/70 hover:bg-slate-200 rounded-lg text-xs font-bold transition cursor-pointer"
-                    title={language === 'pt' ? 'Redefinir filtros, agrupamento e ordenação' : 'Reset filters, grouping and sorting'}
-                  >
-                    <RotateCcw size={12} />
-                    <span>{language === 'pt' ? 'Redefinir' : 'Reset'}</span>
-                  </button>
-                )}
+                  {/* Botão Limpar Filtros e Ordenação */}
+                  {(selectedCursoFilter !== 'all' || exteriorSearchQuery || exteriorSortBy !== 'nome_asc') && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedCursoFilter('all');
+                        setExteriorSearchQuery('');
+                        setExteriorSortBy('nome_asc');
+                        setCurrentPage(1);
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-slate-600 hover:text-slate-900 bg-slate-200/70 hover:bg-slate-200 rounded-lg text-xs font-bold transition cursor-pointer"
+                      title={language === 'pt' ? 'Redefinir filtros e ordenação' : 'Reset filters and sorting'}
+                    >
+                      <RotateCcw size={12} />
+                      <span>{language === 'pt' ? 'Redefinir' : 'Reset'}</span>
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -1424,7 +1272,7 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {/* TABELA DE ALUNOS NO EXTERIOR */}
+            {/* TABELA DE ALUNOS NO EXTERIOR (TABELA CORRIDA) */}
             {filteredAndSortedAlunosExterior.length === 0 ? (
               <div className="p-12 text-center text-slate-500">
                 {alunosExterior.length === 0 ? (
@@ -1442,7 +1290,6 @@ export default function DashboardPage() {
                         setSelectedCursoFilter('all');
                         setExteriorSearchQuery('');
                         setExteriorSortBy('nome_asc');
-                        setExteriorGroupBy('none');
                         setCurrentPage(1);
                       }}
                       className="px-3 py-1 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-xs font-bold transition cursor-pointer border border-blue-200"
@@ -1451,144 +1298,6 @@ export default function DashboardPage() {
                     </button>
                   </div>
                 )}
-              </div>
-            ) : exteriorGroupBy !== 'none' && groupedAlunosExterior ? (
-              /* MODO AGRUPADO */
-              <div className="p-4 space-y-6 bg-slate-50/40">
-                {groupedAlunosExterior.map((group) => (
-                  <div 
-                    key={group.key} 
-                    className="bg-white border border-slate-200/90 rounded-xl shadow-xs overflow-hidden"
-                  >
-                    {/* Cabeçalho do Grupo */}
-                    <div className="px-5 py-3.5 bg-slate-100/70 border-b border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                      <div className="flex items-center gap-2.5">
-                        <div className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg border border-indigo-100 shadow-2xs">
-                          {exteriorGroupBy === 'documento' && <FileText size={15} />}
-                          {exteriorGroupBy === 'data' && <Calendar size={15} />}
-                          {exteriorGroupBy === 'alfabetica' && <SortAsc size={15} />}
-                          {exteriorGroupBy === 'curso' && <BookOpen size={15} />}
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-slate-800 text-sm">{group.title}</h4>
-                          {group.subtitle && (
-                            <p className="text-[11px] text-slate-400 font-medium">{group.subtitle}</p>
-                          )}
-                        </div>
-                      </div>
-                      <span className="px-2.5 py-0.5 bg-indigo-50 text-indigo-700 font-bold text-xs rounded-full border border-indigo-200/60 shadow-2xs">
-                        {group.alunos.length} {group.alunos.length === 1 ? (language === 'pt' ? 'aluno' : 'student') : (language === 'pt' ? 'alunos' : 'students')}
-                      </span>
-                    </div>
-
-                    {/* Tabela do Grupo */}
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left border-collapse">
-                        <thead>
-                          <tr className="text-[10px] font-bold text-slate-400 border-b border-slate-100 uppercase tracking-wider bg-slate-50/50">
-                            <th className="px-6 py-3">{t.students.name}</th>
-                            <th className="px-6 py-3">{t.dashboard.courseLocation}</th>
-                            <th className="px-6 py-3">{language === 'pt' ? 'Documento' : 'Document'}</th>
-                            <th className="px-6 py-3 text-center">{t.dashboard.startEnd}</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-50 text-sm">
-                          {group.alunos.map((aluno: any) => {
-                            const turmaData = Array.isArray(aluno.turma) ? aluno.turma[0] : aluno.turma;
-                            const curso = Array.isArray(turmaData?.curso) ? turmaData.curso[0] : turmaData?.curso;
-                            const isPreInscrito = turmaData?.status?.toLowerCase() === 'pré-inscrito';
-                            return (
-                              <tr 
-                                key={aluno.id} 
-                                className="transition-colors cursor-pointer hover:bg-slate-50/80"
-                                onClick={() => setSelectedAlunoForEdit(aluno)}
-                              >
-                                <td className="px-6 py-3.5">
-                                  <div className="flex items-center gap-3">
-                                    {aluno.foto_url ? (
-                                      <div 
-                                        className="w-11 h-14 rounded-lg overflow-hidden border border-slate-200 shrink-0 shadow-xs hover:scale-105 transition-transform cursor-pointer relative bg-slate-100 group"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setExpandedPhoto({ url: aluno.foto_url, name: aluno.nome });
-                                        }}
-                                      >
-                                        <Image 
-                                          src={aluno.foto_url} 
-                                          alt={aluno.nome} 
-                                          fill
-                                          className="object-cover" 
-                                          referrerPolicy="no-referrer" 
-                                          sizes="44px"
-                                        />
-                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                                          <LayersIcon size={13} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-                                        </div>
-                                      </div>
-                                    ) : (
-                                      <div className="w-11 h-14 rounded-lg overflow-hidden border border-slate-200 shrink-0 shadow-xs relative bg-slate-100">
-                                        <Image 
-                                          src={
-                                            aluno.tipo_aluno === 'civil'
-                                              ? (aluno.genero === 'feminino' ? femaleAvatar : maleAvatar)
-                                              : (aluno.genero === 'feminino' ? militaryFemaleAvatar : militaryMaleAvatar)
-                                          } 
-                                          alt={aluno.nome} 
-                                          fill
-                                          className="object-cover opacity-60" 
-                                          referrerPolicy="no-referrer" 
-                                          sizes="44px"
-                                        />
-                                      </div>
-                                    )}
-                                    <div>
-                                      <div className={cn("font-bold text-xs sm:text-sm", isPreInscrito ? "text-red-600" : "text-slate-800")}>
-                                        {aluno.posto_graduacao || aluno.nome_guerra ? `${aluno.posto_graduacao || ''} ${aluno.nome_guerra || aluno.nome}`.trim() : aluno.nome}
-                                      </div>
-                                      <div className="text-[10px] text-slate-400 font-mono uppercase">
-                                        {aluno.om || '-'}
-                                      </div>
-                                    </div>
-                                  </div>
-                                </td>
-                                <td className="px-6 py-3.5">
-                                  <div className={cn("font-medium text-xs", isPreInscrito ? "text-red-500" : "text-slate-700")}>{curso?.nome || aluno.curso_nome || '-'}</div>
-                                  <div className="text-[10px] text-slate-400 uppercase font-bold">{turmaData?.localizacao || '-'}</div>
-                                </td>
-                                <td className="px-6 py-3.5 text-slate-600 font-mono text-xs font-semibold">
-                                  {turmaData?.documento_criacao || curso?.documento_criacao || aluno.documento_criacao || '-'}
-                                </td>
-                                <td className="px-6 py-3.5 text-center text-slate-600 font-mono text-xs">
-                                  {turmaData?.internacional ? (
-                                    <div className="flex flex-col items-center justify-center leading-tight">
-                                      <span className={cn("font-bold whitespace-nowrap", isPreInscrito ? "text-red-600" : "text-slate-800")}>
-                                        {aluno.data_inicio_curso?.trim() ? aluno.data_inicio_curso.split('-').reverse().join('/') : (turmaData?.data_inicio?.trim() ? turmaData.data_inicio.split('-').reverse().join('/') : '—')}
-                                      </span>
-                                      <span className="text-[9px] text-slate-400 font-sans uppercase font-extrabold my-0.5">a</span>
-                                      <span className={cn("font-bold whitespace-nowrap", isPreInscrito ? "text-red-600" : "text-slate-800")}>
-                                        {aluno.data_fim_curso?.trim() ? aluno.data_fim_curso.split('-').reverse().join('/') : (turmaData?.data_fim?.trim() ? turmaData.data_fim.split('-').reverse().join('/') : '—')}
-                                      </span>
-                                    </div>
-                                  ) : (
-                                    <div className="flex flex-col items-center justify-center leading-tight">
-                                      <span className={cn("font-bold whitespace-nowrap", isPreInscrito ? "text-red-600" : "text-slate-800")}>
-                                        {turmaData?.data_inicio ? turmaData.data_inicio.split('-').reverse().join('/') : '—'}
-                                      </span>
-                                      <span className="text-[9px] text-slate-400 font-sans uppercase font-extrabold my-0.5">a</span>
-                                      <span className={cn("font-bold whitespace-nowrap", isPreInscrito ? "text-red-600" : "text-slate-800")}>
-                                        {turmaData?.data_fim ? turmaData.data_fim.split('-').reverse().join('/') : '—'}
-                                      </span>
-                                    </div>
-                                  )}
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                ))}
               </div>
             ) : (
               /* MODO TABELA CORRIDA (COM CABEÇALHOS ORDENÁVEIS) */
@@ -2052,21 +1761,13 @@ export default function DashboardPage() {
               <h2 className="text-sm font-bold uppercase tracking-wide text-center mt-0.5">
                 {language === 'pt' ? 'RELAÇÃO DE ALUNOS NO EXTERIOR' : 'STUDENTS ABROAD ROSTER'}
               </h2>
-              {(selectedCursoFilter !== 'all' || exteriorSearchQuery || exteriorSortBy !== 'nome_asc' || exteriorGroupBy !== 'none') && (
+              {(selectedCursoFilter !== 'all' || exteriorSearchQuery || exteriorSortBy !== 'nome_asc') && (
                 <div className="text-[10px] font-semibold text-slate-700 mt-1 flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5">
                   {selectedCursoFilter !== 'all' && (
                     <span><strong>CURSO:</strong> {selectedCursoFilter.toUpperCase()}</span>
                   )}
                   {exteriorSearchQuery && (
                     <span><strong>BUSCA:</strong> &quot;{exteriorSearchQuery}&quot;</span>
-                  )}
-                  {exteriorGroupBy !== 'none' && (
-                    <span>
-                      <strong>AGRUPAMENTO:</strong>{' '}
-                      {exteriorGroupBy === 'documento' ? 'POR DOCUMENTO / PORTARIA' :
-                       exteriorGroupBy === 'data' ? 'POR DATA / PERÍODO' :
-                       exteriorGroupBy === 'alfabetica' ? 'POR ORDEM ALFABÉTICA (LETRA)' : 'POR CURSO / MISSÃO'}
-                    </span>
                   )}
                   <span>
                     <strong>ORDENAÇÃO:</strong>{' '}
@@ -2085,159 +1786,26 @@ export default function DashboardPage() {
               )}
             </div>
             
-            {/* PRINT CONTENT: GROUPED OR FLAT MATCHING ACTIVE SCREEN VIEW */}
-            {filteredAndSortedAlunosExterior.length === 0 ? (
-              <table className="w-full text-left border-collapse border border-black mb-4 text-black">
-                <thead>
-                  <tr className="border-b border-black bg-gray-100 text-[11px]">
-                    <th className="p-2 border-r border-black font-bold uppercase w-[35px] text-center">#</th>
-                    <th className="p-2 border-r border-black font-bold uppercase w-[60px] text-center">{language === 'pt' ? 'Foto' : 'Photo'}</th>
-                    <th className="p-2 border-r border-black font-bold uppercase">{t.students.name}</th>
-                    <th className="p-2 border-r border-black font-bold uppercase">{t.dashboard.courseLocation}</th>
-                    <th className="p-2 border-r border-black font-bold uppercase">{language === 'pt' ? 'Documento' : 'Document'}</th>
-                    <th className="p-2 font-bold uppercase text-center">{t.dashboard.startEnd}</th>
-                  </tr>
-                </thead>
-                <tbody className="text-[11px]">
+            <table className="w-full text-left border-collapse border border-black mb-4 text-black">
+              <thead>
+                <tr className="border-b border-black bg-gray-100 text-[11px]">
+                  <th className="p-2 border-r border-black font-bold uppercase w-[35px] text-center">#</th>
+                  <th className="p-2 border-r border-black font-bold uppercase w-[60px] text-center">{language === 'pt' ? 'Foto' : 'Photo'}</th>
+                  <th className="p-2 border-r border-black font-bold uppercase">{t.students.name}</th>
+                  <th className="p-2 border-r border-black font-bold uppercase">{t.dashboard.courseLocation}</th>
+                  <th className="p-2 border-r border-black font-bold uppercase">{language === 'pt' ? 'Documento' : 'Document'}</th>
+                  <th className="p-2 font-bold uppercase text-center">{t.dashboard.startEnd}</th>
+                </tr>
+              </thead>
+              <tbody className="text-[11px]">
+                {filteredAndSortedAlunosExterior.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="p-4 text-center italic border-b border-black">
                       {t.common.noInternationalStudents}
                     </td>
                   </tr>
-                </tbody>
-              </table>
-            ) : exteriorGroupBy !== 'none' && groupedAlunosExterior ? (
-              /* PRINT MODO AGRUPADO */
-              <div className="space-y-4 mb-4">
-                {groupedAlunosExterior.map((group, gIdx) => (
-                  <div key={`print-group-${group.key || gIdx}`} className="border border-black rounded-xs overflow-hidden break-inside-avoid">
-                    {/* Cabeçalho do Grupo na Impressão */}
-                    <div className="px-3 py-1.5 bg-gray-100 border-b border-black flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="font-extrabold text-xs uppercase tracking-wide">
-                          {group.title}
-                        </span>
-                        {group.subtitle && (
-                          <span className="text-[9px] text-gray-700 font-medium italic">
-                            ({group.subtitle})
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-[10px] font-bold uppercase bg-white px-2 py-0.5 border border-black rounded-xs">
-                        {group.alunos.length} {group.alunos.length === 1 ? (language === 'pt' ? 'aluno' : 'student') : (language === 'pt' ? 'alunos' : 'students')}
-                      </span>
-                    </div>
-
-                    {/* Tabela do Grupo */}
-                    <table className="w-full text-left border-collapse text-black">
-                      <thead>
-                        <tr className="border-b border-black bg-gray-50 text-[10px]">
-                          <th className="p-1.5 border-r border-black font-bold uppercase w-[35px] text-center">#</th>
-                          <th className="p-1.5 border-r border-black font-bold uppercase w-[55px] text-center">{language === 'pt' ? 'Foto' : 'Photo'}</th>
-                          <th className="p-1.5 border-r border-black font-bold uppercase">{t.students.name}</th>
-                          <th className="p-1.5 border-r border-black font-bold uppercase">{t.dashboard.courseLocation}</th>
-                          <th className="p-1.5 border-r border-black font-bold uppercase text-center">{language === 'pt' ? 'Documento' : 'Document'}</th>
-                          <th className="p-1.5 font-bold uppercase text-center">{t.dashboard.startEnd}</th>
-                        </tr>
-                      </thead>
-                      <tbody className="text-[11px]">
-                        {group.alunos.map((aluno: any, aIdx: number) => {
-                          const turmaData = Array.isArray(aluno.turma) ? aluno.turma[0] : aluno.turma;
-                          const curso = Array.isArray(turmaData?.curso) ? turmaData.curso[0] : turmaData?.curso;
-                          
-                          const photoSrc = aluno.foto_url ||
-                            (aluno.tipo_aluno === 'civil'
-                              ? (aluno.genero === 'feminino' ? femaleAvatar : maleAvatar)
-                              : (aluno.genero === 'feminino' ? militaryFemaleAvatar : militaryMaleAvatar));
-                          const fallbackSrc = aluno.tipo_aluno === 'civil'
-                            ? (aluno.genero === 'feminino' ? femaleAvatar : maleAvatar)
-                            : (aluno.genero === 'feminino' ? militaryFemaleAvatar : militaryMaleAvatar);
-
-                          const photoUrlString = typeof photoSrc === 'string' ? photoSrc : (photoSrc?.src || '');
-                          const fallbackUrlString = typeof fallbackSrc === 'string' ? fallbackSrc : (fallbackSrc?.src || '');
-                          const isPreInscrito = turmaData?.status?.toLowerCase() === 'pré-inscrito';
-
-                          return (
-                            <tr key={`print-group-aluno-${aluno.id || aIdx}`} className={cn("border-b border-black last:border-b-0", isPreInscrito ? "text-red-700" : "")}>
-                              <td className="p-1 border-r border-black text-center font-mono font-bold align-middle">
-                                {aIdx + 1}
-                              </td>
-                              <td className="p-1 border-r border-black text-center align-middle">
-                                <div className="w-[38px] h-[50px] mx-auto border border-black rounded-xs overflow-hidden bg-slate-100 flex items-center justify-center relative">
-                                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                                  <img
-                                    src={photoUrlString}
-                                    alt={aluno.nome}
-                                    className="w-full h-full object-cover"
-                                    onError={(e) => {
-                                      e.currentTarget.src = fallbackUrlString;
-                                    }}
-                                  />
-                                </div>
-                              </td>
-                              <td className="p-1.5 border-r border-black align-middle">
-                                <div className="font-bold text-xs uppercase">
-                                  {aluno.posto_graduacao || aluno.nome_guerra ? `${aluno.posto_graduacao || ''} ${aluno.nome_guerra || aluno.nome}`.trim() : aluno.nome}
-                                </div>
-                                <div className={cn("text-[9px] uppercase font-medium", isPreInscrito ? "text-red-600" : "text-slate-600")}>
-                                  {aluno.om || '-'}
-                                </div>
-                              </td>
-                              <td className="p-1.5 border-r border-black align-middle">
-                                <div className="font-bold text-xs uppercase">{curso?.nome || aluno.curso_nome || '-'}</div>
-                                <div className={cn("text-[9px] uppercase font-medium", isPreInscrito ? "text-red-600" : "text-slate-600")}>
-                                  {turmaData?.nome ? `${turmaData.nome} • ` : ''}{turmaData?.localizacao || '-'}
-                                </div>
-                              </td>
-                              <td className="p-1.5 border-r border-black align-middle text-center font-mono font-bold text-xs">
-                                {turmaData?.documento_criacao || curso?.documento_criacao || aluno.documento_criacao || '-'}
-                              </td>
-                              <td className="p-1.5 text-center align-middle border-black">
-                                {turmaData?.internacional ? (
-                                  <div>
-                                    <span className="font-bold whitespace-nowrap">
-                                      {aluno.data_inicio_curso?.trim() ? aluno.data_inicio_curso.split('-').reverse().join('/') : (turmaData?.data_inicio?.trim() ? turmaData.data_inicio.split('-').reverse().join('/') : '—')}
-                                    </span>
-                                    <span className="text-[9px] uppercase font-bold mx-1">a</span>
-                                    <span className="font-bold whitespace-nowrap">
-                                      {aluno.data_fim_curso?.trim() ? aluno.data_fim_curso.split('-').reverse().join('/') : (turmaData?.data_fim?.trim() ? turmaData.data_fim.split('-').reverse().join('/') : '—')}
-                                    </span>
-                                  </div>
-                                ) : (
-                                  <div>
-                                    <span className="font-bold whitespace-nowrap">
-                                      {turmaData?.data_inicio ? turmaData.data_inicio.split('-').reverse().join('/') : '—'}
-                                    </span>
-                                    <span className="text-[9px] uppercase font-bold mx-1">a</span>
-                                    <span className="font-bold whitespace-nowrap">
-                                      {turmaData?.data_fim ? turmaData.data_fim.split('-').reverse().join('/') : '—'}
-                                    </span>
-                                  </div>
-                                )}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              /* PRINT MODO TABELA CORRIDA */
-              <table className="w-full text-left border-collapse border border-black mb-4 text-black">
-                <thead>
-                  <tr className="border-b border-black bg-gray-100 text-[11px]">
-                    <th className="p-2 border-r border-black font-bold uppercase w-[35px] text-center">#</th>
-                    <th className="p-2 border-r border-black font-bold uppercase w-[60px] text-center">{language === 'pt' ? 'Foto' : 'Photo'}</th>
-                    <th className="p-2 border-r border-black font-bold uppercase">{t.students.name}</th>
-                    <th className="p-2 border-r border-black font-bold uppercase">{t.dashboard.courseLocation}</th>
-                    <th className="p-2 border-r border-black font-bold uppercase text-center">{language === 'pt' ? 'Documento' : 'Document'}</th>
-                    <th className="p-2 font-bold uppercase text-center">{t.dashboard.startEnd}</th>
-                  </tr>
-                </thead>
-                <tbody className="text-[11px]">
-                  {filteredAndSortedAlunosExterior.map((aluno: any, idx: number) => {
+                ) : (
+                  filteredAndSortedAlunosExterior.map((aluno: any, idx: number) => {
                     const turmaData = Array.isArray(aluno.turma) ? aluno.turma[0] : aluno.turma;
                     const curso = Array.isArray(turmaData?.curso) ? turmaData.curso[0] : turmaData?.curso;
                     
@@ -2280,13 +1848,13 @@ export default function DashboardPage() {
                           </div>
                         </td>
                         <td className="p-2 border-r border-black align-middle">
-                          <div className="font-bold text-xs uppercase">{curso?.nome || aluno.curso_nome || '-'}</div>
+                          <div className="font-bold text-xs uppercase">{curso?.nome || '-'}</div>
                           <div className={cn("text-[9px] uppercase mt-0.5 font-medium", isPreInscrito ? "text-red-600" : "text-slate-600")}>
                             {turmaData?.nome ? `${turmaData.nome} • ` : ''}{turmaData?.localizacao || '-'}
                           </div>
                         </td>
                         <td className="p-2 border-r border-black align-middle text-center font-mono font-bold">
-                          {turmaData?.documento_criacao || curso?.documento_criacao || aluno.documento_criacao || '-'}
+                          {turmaData?.documento_criacao || curso?.documento_criacao || '-'}
                         </td>
                         <td className="p-2 text-center align-middle border-black">
                           {turmaData?.internacional ? (
@@ -2313,10 +1881,10 @@ export default function DashboardPage() {
                         </td>
                       </tr>
                     );
-                  })}
-                </tbody>
-              </table>
-            )}
+                  })
+                )}
+              </tbody>
+            </table>
             <div className="text-[9px] text-right font-semibold">
               {language === 'pt' ? 'Gerado em' : 'Generated on'} {new Date().toLocaleDateString(language === 'pt' ? 'pt-BR' : 'en-US')}
             </div>
