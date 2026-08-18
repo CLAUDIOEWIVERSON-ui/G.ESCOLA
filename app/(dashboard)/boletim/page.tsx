@@ -145,7 +145,7 @@ function BoletimContent() {
         if (savedTurma) setSelectedTurma(savedTurma);
       }
     }
-  }, []);
+  }, [searchParams]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -184,6 +184,7 @@ function BoletimContent() {
         }
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, turmas]);
   const [courseModules, setCourseModules] = useState(4);
   
@@ -457,7 +458,7 @@ function BoletimContent() {
       // Let the DOM update to full-scale resolution and expanded dimensions
       await new Promise((resolve) => setTimeout(resolve, 300));
 
-      const html2canvas = (await import('html2canvas')).default;
+      const html2canvas = (await import('html2canvas-pro')).default;
       const { jsPDF } = await import('jspdf');
 
       const canvas = await html2canvas(element, {
@@ -601,7 +602,7 @@ function BoletimContent() {
     const toastId = toast.loading(language === 'pt' ? 'Processando imagem para área de transferência...' : 'Processing image for clipboard...');
     
     try {
-      const html2canvas = (await import('html2canvas')).default;
+      const html2canvas = (await import('html2canvas-pro')).default;
       const element = document.getElementById('student-report-print-area');
       if (!element) throw new Error('Report element not found');
 
@@ -728,7 +729,7 @@ function BoletimContent() {
 
     try {
       // Lazy load html2canvas and jspdf
-      const html2canvas = (await import('html2canvas')).default;
+      const html2canvas = (await import('html2canvas-pro')).default;
       const { jsPDF } = await import('jspdf');
 
       const printArea = document.getElementById('class-bulletin-print-area');

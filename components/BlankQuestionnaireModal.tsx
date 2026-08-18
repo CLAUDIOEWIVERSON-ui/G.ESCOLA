@@ -24,7 +24,7 @@ export default function BlankQuestionnaireModal({ isOpen, onClose }: BlankQuesti
       setGenerating(true);
       toast.loading('Rendendo alta fidelidade do questionário PDF...');
 
-      const html2canvas = (await import('html2canvas')).default;
+      const html2canvas = (await import('html2canvas-pro')).default;
       const { jsPDF } = await import('jspdf');
 
       const page1Element = document.getElementById('print-page-1');

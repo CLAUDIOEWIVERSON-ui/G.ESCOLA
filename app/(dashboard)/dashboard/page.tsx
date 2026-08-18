@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
@@ -33,7 +33,18 @@ import {
   Maximize2,
   Copy,
   Sprout,
-  Lightbulb
+  Lightbulb,
+  Filter,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  Search,
+  RotateCcw,
+  FileText,
+  Calendar,
+  FolderTree,
+  LayoutGrid,
+  SortAsc
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ExchangeRateTicker from '@/components/ExchangeRateTicker';
@@ -140,11 +151,286 @@ export default function DashboardPage() {
     }
   }, []);
 
-  const totalAlunosExterior = alunosExterior.length;
-  const totalPagesAlunos = Math.ceil(totalAlunosExterior / itemsPerPage);
+  // Filters, grouping and sorting states for Alunos no Exterior
+  const [selectedCursoFilter, setSelectedCursoFilter] = useState<string>('all');
+  const [exteriorSearchQuery, setExteriorSearchQuery] = useState<string>('');
+  const [exteriorSortBy, setExteriorSortBy] = useState<string>('nome_asc');
+  const [exteriorGroupBy, setExteriorGroupBy] = useState<'none' | 'documento' | 'data' | 'alfabetica' | 'curso'>('none');
+
+  // Helper to parse dates for robust chronological sorting
+  const parseDateValue = (dateStr?: string | null): number => {
+    if (!dateStr || !dateStr.trim()) return 0;
+    const clean = dateStr.trim();
+    if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(clean)) {
+      const [d, m, y] = clean.split('/').map(Number);
+      return new Date(y, m - 1, d).getTime() || 0;
+    }
+    if (/^\d{4}-\d{1,2}-\d{1,2}/.test(clean)) {
+      return new Date(clean).getTime() || 0;
+    }
+    const parsed = Date.parse(clean);
+    return isNaN(parsed) ? 0 : parsed;
+  };
+
+  // Helper to extract student document safely
+  const getAlunoDocumento = useCallback((aluno: any): string => {
+    const turmaData = Array.isArray(aluno.turma) ? aluno.turma[0] : aluno.turma;
+    const curso = Array.isArray(turmaData?.curso) ? turmaData.curso[0] : turmaData?.curso;
+    const doc = (aluno.documento_criacao || turmaData?.documento_criacao || curso?.documento_criacao || '').trim();
+    return doc || (language === 'pt' ? 'Sem Documento Cadastrado' : 'No Document Specified');
+  }, [language]);
+
+  // Helper to extract course name safely
+  const getAlunoCursoNome = useCallback((aluno: any): string => {
+    const turmaData = Array.isArray(aluno.turma) ? aluno.turma[0] : aluno.turma;
+    const curso = Array.isArray(turmaData?.curso) ? turmaData.curso[0] : turmaData?.curso;
+    return (curso?.nome || aluno.curso_nome || turmaData?.nome || '').trim() || (language === 'pt' ? 'Curso Não Informado' : 'Unspecified Course');
+  }, [language]);
+
+  // Helper to extract date period/month group
+  const getAlunoDateGroup = useCallback((aluno: any): { key: string; title: string; timestamp: number } => {
+    const turmaData = Array.isArray(aluno.turma) ? aluno.turma[0] : aluno.turma;
+    const dateStr = (aluno.data_inicio_curso || turmaData?.data_inicio || '').trim();
+    if (!dateStr) {
+      return { 
+        key: 'sem-data', 
+        title: language === 'pt' ? 'Data a Definir / Não Informada' : 'To Be Defined / Unspecified', 
+        timestamp: 0 
+      };
+    }
+
+    let parsedDate: Date | null = null;
+    if (/^\d{4}-\d{1,2}-\d{1,2}/.test(dateStr)) {
+      const [y, m, d] = dateStr.split('-').map(Number);
+      parsedDate = new Date(y, m - 1, d);
+    } else if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr)) {
+      const [d, m, y] = dateStr.split('/').map(Number);
+      parsedDate = new Date(y, m - 1, d);
+    }
+
+    if (parsedDate && !isNaN(parsedDate.getTime())) {
+      const monthNamesPt = [
+        'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+      ];
+      const monthNamesEn = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+      ];
+      const monthName = language === 'pt' ? monthNamesPt[parsedDate.getMonth()] : monthNamesEn[parsedDate.getMonth()];
+      const year = parsedDate.getFullYear();
+      return {
+        key: `${year}-${String(parsedDate.getMonth() + 1).padStart(2, '0')}`,
+        title: `${monthName} / ${year}`,
+        timestamp: parsedDate.getTime()
+      };
+    }
+
+    return {
+      key: dateStr,
+      title: dateStr,
+      timestamp: parseDateValue(dateStr)
+    };
+  }, [language]);
+
+  // Distinct courses found among exterior students
+  const availableCursosExterior = useMemo(() => {
+    const map = new Map<string, number>();
+    alunosExterior.forEach((aluno: any) => {
+      const turmaData = Array.isArray(aluno.turma) ? aluno.turma[0] : aluno.turma;
+      const curso = Array.isArray(turmaData?.curso) ? turmaData.curso[0] : turmaData?.curso;
+      const cursoNome = (curso?.nome || aluno.curso_nome || turmaData?.nome || '').trim();
+      if (cursoNome) {
+        map.set(cursoNome, (map.get(cursoNome) || 0) + 1);
+      }
+    });
+    return Array.from(map.entries())
+      .map(([nome, count]) => ({ nome, count }))
+      .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+  }, [alunosExterior]);
+
+  // Filtered and sorted students abroad list
+  const filteredAndSortedAlunosExterior = useMemo(() => {
+    let result = [...alunosExterior];
+
+    // 1. Course Filter
+    if (selectedCursoFilter !== 'all') {
+      result = result.filter((aluno: any) => {
+        const turmaData = Array.isArray(aluno.turma) ? aluno.turma[0] : aluno.turma;
+        const curso = Array.isArray(turmaData?.curso) ? turmaData.curso[0] : turmaData?.curso;
+        const cursoNome = (curso?.nome || aluno.curso_nome || turmaData?.nome || '').trim();
+        return cursoNome.toLowerCase() === selectedCursoFilter.toLowerCase();
+      });
+    }
+
+    // 2. Search Query (Name, War Name, Rank, OM, Course, Location, Document)
+    if (exteriorSearchQuery.trim()) {
+      const q = exteriorSearchQuery.toLowerCase().trim();
+      result = result.filter((aluno: any) => {
+        const turmaData = Array.isArray(aluno.turma) ? aluno.turma[0] : aluno.turma;
+        const curso = Array.isArray(turmaData?.curso) ? turmaData.curso[0] : turmaData?.curso;
+        const nome = (aluno.nome || '').toLowerCase();
+        const nomeGuerra = (aluno.nome_guerra || '').toLowerCase();
+        const posto = (aluno.posto_graduacao || '').toLowerCase();
+        const om = (aluno.om || '').toLowerCase();
+        const cursoNome = (curso?.nome || aluno.curso_nome || turmaData?.nome || '').toLowerCase();
+        const localizacao = (turmaData?.localizacao || '').toLowerCase();
+        const doc = (turmaData?.documento_criacao || curso?.documento_criacao || aluno.documento_criacao || '').toLowerCase();
+        return (
+          nome.includes(q) ||
+          nomeGuerra.includes(q) ||
+          posto.includes(q) ||
+          om.includes(q) ||
+          cursoNome.includes(q) ||
+          localizacao.includes(q) ||
+          doc.includes(q)
+        );
+      });
+    }
+
+    // 3. Sorting (Alphabetical A-Z/Z-A, Date, Course, Document)
+    result.sort((a: any, b: any) => {
+      const turmaDataA = Array.isArray(a.turma) ? a.turma[0] : a.turma;
+      const turmaDataB = Array.isArray(b.turma) ? b.turma[0] : b.turma;
+      const cursoA = Array.isArray(turmaDataA?.curso) ? turmaDataA.curso[0] : turmaDataA?.curso;
+      const cursoB = Array.isArray(turmaDataB?.curso) ? turmaDataB.curso[0] : turmaDataB?.curso;
+
+      const nomeA = (a.nome || '').trim().toLowerCase();
+      const nomeB = (b.nome || '').trim().toLowerCase();
+
+      const dataInicioA = parseDateValue(a.data_inicio_curso || turmaDataA?.data_inicio);
+      const dataInicioB = parseDateValue(b.data_inicio_curso || turmaDataB?.data_inicio);
+
+      const dataFimA = parseDateValue(a.data_fim_curso || turmaDataA?.data_fim);
+      const dataFimB = parseDateValue(b.data_fim_curso || turmaDataB?.data_fim);
+
+      const docA = getAlunoDocumento(a).toLowerCase();
+      const docB = getAlunoDocumento(b).toLowerCase();
+
+      const cA = (cursoA?.nome || a.curso_nome || '').toLowerCase();
+      const cB = (cursoB?.nome || b.curso_nome || '').toLowerCase();
+
+      if (exteriorSortBy === 'nome_asc' || exteriorSortBy === 'nome-asc') {
+        return nomeA.localeCompare(nomeB, 'pt-BR');
+      } else if (exteriorSortBy === 'nome_desc' || exteriorSortBy === 'nome-desc') {
+        return nomeB.localeCompare(nomeA, 'pt-BR');
+      } else if (exteriorSortBy === 'data_desc' || exteriorSortBy === 'data-desc') {
+        if (dataInicioA !== dataInicioB) return dataInicioB - dataInicioA;
+        return nomeA.localeCompare(nomeB, 'pt-BR');
+      } else if (exteriorSortBy === 'data_asc' || exteriorSortBy === 'data-asc') {
+        if (dataInicioA !== dataInicioB) return dataInicioA - dataInicioB;
+        return nomeA.localeCompare(nomeB, 'pt-BR');
+      } else if (exteriorSortBy === 'data_fim_desc' || exteriorSortBy === 'data-fim-desc') {
+        if (dataFimA !== dataFimB) return dataFimB - dataFimA;
+        return nomeA.localeCompare(nomeB, 'pt-BR');
+      } else if (exteriorSortBy === 'data_fim_asc' || exteriorSortBy === 'data-fim-asc') {
+        if (dataFimA !== dataFimB) return dataFimA - dataFimB;
+        return nomeA.localeCompare(nomeB, 'pt-BR');
+      } else if (exteriorSortBy === 'documento_asc') {
+        return docA.localeCompare(docB, 'pt-BR') || nomeA.localeCompare(nomeB, 'pt-BR');
+      } else if (exteriorSortBy === 'documento_desc') {
+        return docB.localeCompare(docA, 'pt-BR') || nomeA.localeCompare(nomeB, 'pt-BR');
+      } else if (exteriorSortBy === 'curso_asc' || exteriorSortBy === 'curso-asc') {
+        return cA.localeCompare(cB, 'pt-BR') || nomeA.localeCompare(nomeB, 'pt-BR');
+      } else if (exteriorSortBy === 'curso_desc') {
+        return cB.localeCompare(cA, 'pt-BR') || nomeA.localeCompare(nomeB, 'pt-BR');
+      }
+      return 0;
+    });
+
+    return result;
+  }, [alunosExterior, selectedCursoFilter, exteriorSearchQuery, exteriorSortBy, getAlunoDocumento]);
+
+  // Grouped students list
+  const groupedAlunosExterior = useMemo(() => {
+    if (exteriorGroupBy === 'none') return null;
+
+    const groupsMap = new Map<string, { title: string; subtitle?: string; sortKey: string | number; alunos: any[] }>();
+
+    filteredAndSortedAlunosExterior.forEach((aluno: any) => {
+      let groupKey = '';
+      let groupTitle = '';
+      let groupSubtitle = '';
+      let groupSortKey: string | number = '';
+
+      if (exteriorGroupBy === 'documento') {
+        const doc = getAlunoDocumento(aluno);
+        groupKey = doc;
+        groupTitle = doc;
+        groupSubtitle = language === 'pt' ? 'Portaria / Documento de Autorização' : 'Authorization / Creation Document';
+        groupSortKey = doc.toLowerCase();
+      } else if (exteriorGroupBy === 'data') {
+        const dateInfo = getAlunoDateGroup(aluno);
+        groupKey = dateInfo.key;
+        groupTitle = dateInfo.title;
+        groupSubtitle = language === 'pt' ? 'Período de Início do Curso' : 'Course Start Period';
+        groupSortKey = dateInfo.timestamp;
+      } else if (exteriorGroupBy === 'alfabetica') {
+        const firstLetter = (aluno.nome || aluno.nome_guerra || '').trim().charAt(0).toUpperCase() || '#';
+        groupKey = firstLetter;
+        groupTitle = `${language === 'pt' ? 'Letra' : 'Letter'} ${firstLetter}`;
+        groupSubtitle = language === 'pt' ? 'Ordem Alfabética dos Nomes' : 'Alphabetical Order by Name';
+        groupSortKey = firstLetter;
+      } else if (exteriorGroupBy === 'curso') {
+        const cursoNome = getAlunoCursoNome(aluno);
+        groupKey = cursoNome;
+        groupTitle = cursoNome;
+        groupSubtitle = language === 'pt' ? 'Curso / Missão no Exterior' : 'Course / Mission Abroad';
+        groupSortKey = cursoNome.toLowerCase();
+      }
+
+      if (!groupsMap.has(groupKey)) {
+        groupsMap.set(groupKey, {
+          title: groupTitle,
+          subtitle: groupSubtitle,
+          sortKey: groupSortKey,
+          alunos: []
+        });
+      }
+
+      groupsMap.get(groupKey)!.alunos.push(aluno);
+    });
+
+    const groupsArray = Array.from(groupsMap.entries()).map(([key, data]) => ({
+      key,
+      ...data
+    }));
+
+    if (exteriorGroupBy === 'data') {
+      groupsArray.sort((a, b) => {
+        const timeA = typeof a.sortKey === 'number' ? a.sortKey : 0;
+        const timeB = typeof b.sortKey === 'number' ? b.sortKey : 0;
+        return exteriorSortBy.includes('desc') || exteriorSortBy === 'data_desc' ? timeB - timeA : timeA - timeB;
+      });
+    } else {
+      groupsArray.sort((a, b) => {
+        const strA = String(a.sortKey);
+        const strB = String(b.sortKey);
+        return strA.localeCompare(strB, 'pt-BR');
+      });
+    }
+
+    return groupsArray;
+  }, [filteredAndSortedAlunosExterior, exteriorGroupBy, exteriorSortBy, language, getAlunoCursoNome, getAlunoDateGroup, getAlunoDocumento]);
+
+  // Click handler for column sorting
+  const handleSortColumn = (column: 'nome' | 'curso' | 'documento' | 'data') => {
+    if (column === 'nome') {
+      setExteriorSortBy(prev => prev === 'nome_asc' ? 'nome_desc' : 'nome_asc');
+    } else if (column === 'curso') {
+      setExteriorSortBy(prev => prev === 'curso_asc' ? 'curso_desc' : 'curso_asc');
+    } else if (column === 'documento') {
+      setExteriorSortBy(prev => prev === 'documento_asc' ? 'documento_desc' : 'documento_asc');
+    } else if (column === 'data') {
+      setExteriorSortBy(prev => prev === 'data_desc' ? 'data_asc' : 'data_desc');
+    }
+  };
+
+  const totalAlunosExterior = filteredAndSortedAlunosExterior.length;
+  const totalPagesAlunos = Math.max(1, Math.ceil(totalAlunosExterior / itemsPerPage));
   const startIndexAlunos = (currentPage - 1) * itemsPerPage;
   const endIndexAlunos = Math.min(startIndexAlunos + itemsPerPage, totalAlunosExterior);
-  const paginatedAlunos = alunosExterior.slice(startIndexAlunos, endIndexAlunos);
+  const paginatedAlunos = filteredAndSortedAlunosExterior.slice(startIndexAlunos, endIndexAlunos);
 
   const [expandedPhoto, setExpandedPhoto] = useState<{url: string, name: string} | null>(null);
   const detailsRef = useRef<HTMLDivElement>(null);
@@ -941,213 +1227,616 @@ export default function DashboardPage() {
             transition={{ duration: 0.2 }}
             className="bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col overflow-hidden"
           >
-            <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between print:hidden">
-              <div className="flex items-center gap-2">
+            <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 print:hidden">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
                   <Users size={16} className="text-slate-400" />
                   {t.dashboard.studentsAbroad}
                 </h3>
-                <span className="text-xs text-slate-550 font-bold bg-slate-100 px-3 py-1 rounded-full border border-slate-200/50 ml-2">
-                  {alunosExterior.length} {language === 'pt' ? 'Alunos' : 'Students'}
+                <span className="text-xs text-slate-550 font-bold bg-slate-100 px-3 py-1 rounded-full border border-slate-200/50">
+                  {filteredAndSortedAlunosExterior.length === alunosExterior.length ? (
+                    `${alunosExterior.length} ${language === 'pt' ? 'Alunos' : 'Students'}`
+                  ) : (
+                    `${filteredAndSortedAlunosExterior.length} de ${alunosExterior.length} ${language === 'pt' ? 'Alunos' : 'Students'}`
+                  )}
                 </span>
               </div>
               <button
                 type="button"
                 onClick={() => window.print()}
-                className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-xs font-bold transition-colors shadow-sm border border-blue-200"
+                className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-xs font-bold transition-colors shadow-sm border border-blue-200 cursor-pointer"
               >
                 <Printer size={14} />
-                {language === 'pt' ? 'Imprimir' : 'Print'}
+                {language === 'pt' ? 'Imprimir Relação' : 'Print Roster'}
               </button>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="text-[10px] font-bold text-slate-400 border-b border-slate-100 uppercase tracking-wider">
-                    <th className="px-6 py-4">{t.students.name}</th>
-                    <th className="px-6 py-4">{t.dashboard.courseLocation}</th>
-                    <th className="px-6 py-4">{language === 'pt' ? 'Documento' : 'Document'}</th>
-                    <th className="px-6 py-4 text-center">{t.dashboard.startEnd}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50 text-sm">
-                  {alunosExterior.length === 0 ? (
-                    <tr>
-                      <td colSpan={4} className="px-6 py-10 text-center text-slate-400 italic">
-                        {t.common.noInternationalStudents}
-                      </td>
-                    </tr>
-                  ) : (
-                    paginatedAlunos.map((aluno: any) => {
-                      const turmaData = Array.isArray((aluno as any).turma) ? (aluno as any).turma[0] : (aluno as any).turma;
-                      const curso = Array.isArray(turmaData?.curso) ? turmaData.curso[0] : turmaData?.curso;
-                      const isPreInscrito = turmaData?.status?.toLowerCase() === 'pré-inscrito';
-                      return (
-                        <tr 
-                          key={aluno.id} 
-                          className={cn(
-                            "transition-colors cursor-pointer",
-                            "hover:bg-slate-50"
-                          )}
-                          onClick={() => {
-                            setSelectedAlunoForEdit(aluno);
-                          }}
-                        >
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-3">
-                              {aluno.foto_url ? (
-                                <div 
-                                  className="w-12 h-16 rounded-lg overflow-hidden border border-slate-200 shrink-0 shadow-sm hover:scale-105 transition-transform cursor-pointer relative bg-slate-100 group"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setExpandedPhoto({ url: aluno.foto_url, name: aluno.nome });
-                                  }}
-                                >
-                                  <Image 
-                                    src={aluno.foto_url} 
-                                    alt={aluno.nome} 
-                                    fill
-                                    className="object-cover" 
-                                    referrerPolicy="no-referrer" 
-                                    sizes="48px"
-                                  />
-                                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                                    <LayersIcon size={14} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className="w-12 h-16 rounded-lg overflow-hidden border border-slate-200 shrink-0 shadow-sm relative bg-slate-100">
-                                  <Image 
-                                    src={
-                                      aluno.tipo_aluno === 'civil'
-                                        ? (aluno.genero === 'feminino' ? femaleAvatar : maleAvatar)
-                                        : (aluno.genero === 'feminino' ? militaryFemaleAvatar : militaryMaleAvatar)
-                                    } 
-                                    alt={aluno.nome} 
-                                    fill
-                                    className="object-cover opacity-60" 
-                                    referrerPolicy="no-referrer" 
-                                    sizes="48px"
-                                  />
-                                </div>
-                              )}
-                              <div>
-                                <div className={cn("font-bold", isPreInscrito ? "text-red-600" : "text-slate-800")}>
-                                  {aluno.posto_graduacao || aluno.nome_guerra ? `${aluno.posto_graduacao || ''} ${aluno.nome_guerra || aluno.nome}`.trim() : aluno.nome}
-                                </div>
-                                <div className="text-[10px] text-slate-400 font-mono uppercase">
-                                  {aluno.om || '-'}
-                                </div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className={cn("", isPreInscrito ? "text-red-500" : "text-slate-600")}>{curso?.nome || '-'}</div>
-                            <div className="text-[10px] text-slate-400 uppercase font-bold">{turmaData?.localizacao || '-'}</div>
-                          </td>
-                          <td className="px-6 py-4 text-slate-500 font-mono text-xs">
-                            {turmaData?.documento_criacao || curso?.documento_criacao || '-'}
-                          </td>
-                          <td className="px-6 py-4 text-center text-slate-500 font-mono text-xs">
-                            {turmaData?.internacional ? (
-                              <div className="flex flex-col items-center justify-center leading-normal">
-                                <span className={cn("font-bold whitespace-nowrap", isPreInscrito ? "text-red-600" : "text-slate-800")}>
-                                  {aluno.data_inicio_curso?.trim() ? aluno.data_inicio_curso.split('-').reverse().join('/') : (turmaData?.data_inicio?.trim() ? turmaData.data_inicio.split('-').reverse().join('/') : '—')}
-                                </span>
-                                <span className="text-[10px] text-slate-400 font-sans uppercase font-extrabold my-0.5">a</span>
-                                <span className={cn("font-bold whitespace-nowrap", isPreInscrito ? "text-red-600" : "text-slate-800")}>
-                                  {aluno.data_fim_curso?.trim() ? aluno.data_fim_curso.split('-').reverse().join('/') : (turmaData?.data_fim?.trim() ? turmaData.data_fim.split('-').reverse().join('/') : '—')}
-                                </span>
-                              </div>
-                            ) : (
-                              <div className="flex flex-col items-center justify-center leading-normal">
-                                <span className={cn("font-bold whitespace-nowrap", isPreInscrito ? "text-red-600" : "text-slate-800")}>
-                                  {turmaData?.data_inicio ? turmaData.data_inicio.split('-').reverse().join('/') : '—'}
-                                </span>
-                                <span className="text-[10px] text-slate-400 font-sans uppercase font-extrabold my-0.5">a</span>
-                                <span className={cn("font-bold whitespace-nowrap", isPreInscrito ? "text-red-600" : "text-slate-800")}>
-                                  {turmaData?.data_fim ? turmaData.data_fim.split('-').reverse().join('/') : '—'}
-                                </span>
-                              </div>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Painel de Paginação de Alunos */}
-            {totalAlunosExterior > 0 && (
-              <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-sans text-slate-500 font-semibold shrink-0">
-                <div className="flex items-center gap-2">
-                  <span>{language === 'pt' ? 'Exibir:' : 'Show:'}</span>
-                  <select
-                    value={itemsPerPage}
+            {/* BARRA DE FILTROS, AGRUPAMENTO E ORDENAÇÃO */}
+            <div className="p-3.5 bg-slate-50/90 border-b border-slate-200/90 flex flex-col gap-3 text-xs print:hidden">
+              {/* Linha Superior: Busca e Filtro de Curso */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+                {/* Campo de Busca Rápida */}
+                <div className="relative flex-1 min-w-[220px]">
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    value={exteriorSearchQuery}
                     onChange={(e) => {
-                      const val = Number(e.target.value);
-                      setItemsPerPage(val);
+                      setExteriorSearchQuery(e.target.value);
                       setCurrentPage(1);
-                      if (typeof window !== 'undefined') {
-                        localStorage.setItem('items_per_page_dashboard_alunos', String(val));
-                      }
                     }}
-                    className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-700 outline-none focus:ring-1 focus:ring-indigo-500 font-bold cursor-pointer"
-                  >
-                    <option value={5}>5</option>
-                    <option value={10}>10</option>
-                    <option value={15}>15</option>
-                    <option value={20}>20</option>
-                  </select>
-                  <span>{language === 'pt' ? 'alunos por página' : 'students per page'}</span>
-                </div>
-
-                <div className="font-medium text-slate-400 font-mono">
-                  {language === 'pt' 
-                    ? `Exibindo ${totalAlunosExterior > 0 ? startIndexAlunos + 1 : 0}-${endIndexAlunos} de ${totalAlunosExterior} alunos`
-                    : `Showing ${totalAlunosExterior > 0 ? startIndexAlunos + 1 : 0}-${endIndexAlunos} of ${totalAlunosExterior} students`}
-                </div>
-
-                <div className="flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    disabled={currentPage === 1}
-                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                    className="p-1 px-2 hover:bg-slate-100 disabled:opacity-45 rounded-lg border border-slate-200 text-slate-500 transition cursor-pointer flex items-center justify-center disabled:cursor-not-allowed"
-                    title={language === 'pt' ? 'Anterior' : 'Previous'}
-                  >
-                    <ChevronLeft size={14} />
-                  </button>
-                  
-                  {Array.from({ length: totalPagesAlunos }, (_, i) => i + 1).map((p) => (
+                    placeholder={language === 'pt' ? 'Buscar por aluno, OM, curso, país ou documento...' : 'Search by student, OM, course, country, document...'}
+                    className="w-full pl-8 pr-7 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs transition"
+                  />
+                  {exteriorSearchQuery && (
                     <button
-                      key={p}
                       type="button"
-                      onClick={() => setCurrentPage(p)}
-                      className={`p-1 px-3 rounded-lg text-xs font-bold transition-colors select-none ${
-                        currentPage === p
-                          ? 'bg-indigo-600 border border-indigo-600 text-white shadow-sm'
-                          : 'bg-white border border-slate-200 hover:bg-slate-50 text-slate-600'
-                      }`}
+                      onClick={() => {
+                        setExteriorSearchQuery('');
+                        setCurrentPage(1);
+                      }}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
                     >
-                      {p}
+                      <X size={13} />
                     </button>
-                  ))}
+                  )}
+                </div>
 
-                  <button
-                    type="button"
-                    disabled={currentPage === totalPagesAlunos || totalPagesAlunos === 0}
-                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPagesAlunos))}
-                    className="p-1 px-2 hover:bg-slate-100 disabled:opacity-45 rounded-lg border border-slate-200 text-slate-500 transition cursor-pointer flex items-center justify-center disabled:cursor-not-allowed"
-                    title={language === 'pt' ? 'Próximo' : 'Next'}
+                {/* Filtro por Curso */}
+                <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 shadow-2xs shrink-0">
+                  <Filter size={13} className="text-blue-600 shrink-0" />
+                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider shrink-0">
+                    {language === 'pt' ? 'Curso:' : 'Course:'}
+                  </span>
+                  <select
+                    value={selectedCursoFilter}
+                    onChange={(e) => {
+                      setSelectedCursoFilter(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="bg-transparent text-slate-800 font-semibold text-xs outline-none cursor-pointer pr-1 max-w-[190px] sm:max-w-[240px] truncate"
                   >
-                    <ChevronRight size={14} />
-                  </button>
+                    <option value="all">
+                      {language === 'pt' ? `Todos os Cursos (${alunosExterior.length})` : `All Courses (${alunosExterior.length})`}
+                    </option>
+                    {availableCursosExterior.map((c) => (
+                      <option key={c.nome} value={c.nome}>
+                        {c.nome} ({c.count})
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
+
+              {/* Linha Inferior: Agrupamento e Ordenação */}
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-200/50">
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* Seletor de Agrupamento */}
+                  <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 shadow-2xs">
+                    <FolderTree size={13} className="text-indigo-600 shrink-0" />
+                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider shrink-0">
+                      {language === 'pt' ? 'Agrupar por:' : 'Group by:'}
+                    </span>
+                    <select
+                      value={exteriorGroupBy}
+                      onChange={(e) => {
+                        setExteriorGroupBy(e.target.value as any);
+                        setCurrentPage(1);
+                      }}
+                      className="bg-transparent text-slate-800 font-bold text-xs outline-none cursor-pointer pr-1"
+                    >
+                      <option value="none">{language === 'pt' ? '📋 Sem Agrupamento (Tabela Corrida)' : '📋 No Grouping (Flat Table)'}</option>
+                      <option value="documento">{language === 'pt' ? '📄 Por Documento / Portaria' : '📄 By Document / Order'}</option>
+                      <option value="data">{language === 'pt' ? '📅 Por Data / Período de Início' : '📅 By Date / Start Period'}</option>
+                      <option value="alfabetica">{language === 'pt' ? '🔤 Por Ordem Alfabética (Letra)' : '🔤 By Alphabetical Letter'}</option>
+                      <option value="curso">{language === 'pt' ? '📚 Por Curso / Missão' : '📚 By Course / Mission'}</option>
+                    </select>
+                  </div>
+
+                  {/* Ordenação Principal */}
+                  <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 shadow-2xs">
+                    <ArrowUpDown size={13} className="text-blue-600 shrink-0" />
+                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider shrink-0">
+                      {language === 'pt' ? 'Ordenar por:' : 'Sort by:'}
+                    </span>
+                    <select
+                      value={exteriorSortBy}
+                      onChange={(e) => {
+                        setExteriorSortBy(e.target.value);
+                        setCurrentPage(1);
+                      }}
+                      className="bg-transparent text-slate-800 font-semibold text-xs outline-none cursor-pointer pr-1"
+                    >
+                      <option value="nome_asc">{language === 'pt' ? '🔤 Nome do Aluno (A → Z)' : '🔤 Student Name (A → Z)'}</option>
+                      <option value="nome_desc">{language === 'pt' ? '🔤 Nome do Aluno (Z → A)' : '🔤 Student Name (Z → A)'}</option>
+                      <option value="documento_asc">{language === 'pt' ? '📄 Documento (A → Z)' : '📄 Document (A → Z)'}</option>
+                      <option value="documento_desc">{language === 'pt' ? '📄 Documento (Z → A)' : '📄 Document (Z → A)'}</option>
+                      <option value="data_desc">{language === 'pt' ? '📅 Data de Início (Mais Recente)' : '📅 Start Date (Newest)'}</option>
+                      <option value="data_asc">{language === 'pt' ? '📅 Data de Início (Mais Antigo)' : '📅 Start Date (Oldest)'}</option>
+                      <option value="data_fim_desc">{language === 'pt' ? '🏁 Data de Término (Mais Recente)' : '🏁 End Date (Newest)'}</option>
+                      <option value="data_fim_asc">{language === 'pt' ? '🏁 Data de Término (Mais Antigo)' : '🏁 End Date (Oldest)'}</option>
+                      <option value="curso_asc">{language === 'pt' ? '📚 Curso (A → Z)' : '📚 Course (A → Z)'}</option>
+                      <option value="curso_desc">{language === 'pt' ? '📚 Curso (Z → A)' : '📚 Course (Z → A)'}</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Botão Limpar Filtros e Agrupamentos */}
+                {(selectedCursoFilter !== 'all' || exteriorSearchQuery || exteriorSortBy !== 'nome_asc' || exteriorGroupBy !== 'none') && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedCursoFilter('all');
+                      setExteriorSearchQuery('');
+                      setExteriorSortBy('nome_asc');
+                      setExteriorGroupBy('none');
+                      setCurrentPage(1);
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-slate-600 hover:text-slate-900 bg-slate-200/70 hover:bg-slate-200 rounded-lg text-xs font-bold transition cursor-pointer"
+                    title={language === 'pt' ? 'Redefinir filtros, agrupamento e ordenação' : 'Reset filters, grouping and sorting'}
+                  >
+                    <RotateCcw size={12} />
+                    <span>{language === 'pt' ? 'Redefinir' : 'Reset'}</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Chips Rápidos de Cursos */}
+            {availableCursosExterior.length > 1 && (
+              <div className="px-4 py-2 bg-slate-50/40 border-b border-slate-100 flex items-center gap-1.5 overflow-x-auto text-[11px] scrollbar-none print:hidden">
+                <span className="text-slate-400 font-bold uppercase text-[9px] mr-1 shrink-0">
+                  {language === 'pt' ? 'Cursos:' : 'Courses:'}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedCursoFilter('all');
+                    setCurrentPage(1);
+                  }}
+                  className={cn(
+                    "px-2.5 py-0.5 rounded-full font-bold whitespace-nowrap transition cursor-pointer shrink-0 border text-[11px]",
+                    selectedCursoFilter === 'all'
+                      ? "bg-blue-600 text-white border-blue-600 shadow-xs"
+                      : "bg-white text-slate-600 border-slate-200 hover:bg-slate-100"
+                  )}
+                >
+                  {language === 'pt' ? 'Todos' : 'All'} ({alunosExterior.length})
+                </button>
+                {availableCursosExterior.map((c) => (
+                  <button
+                    key={`pill-${c.nome}`}
+                    type="button"
+                    onClick={() => {
+                      setSelectedCursoFilter(c.nome === selectedCursoFilter ? 'all' : c.nome);
+                      setCurrentPage(1);
+                    }}
+                    className={cn(
+                      "px-2.5 py-0.5 rounded-full font-bold whitespace-nowrap transition cursor-pointer shrink-0 border text-[11px]",
+                      selectedCursoFilter === c.nome
+                        ? "bg-blue-600 text-white border-blue-600 shadow-xs"
+                        : "bg-white text-slate-600 border-slate-200 hover:bg-slate-100"
+                    )}
+                  >
+                    {c.nome} ({c.count})
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* TABELA DE ALUNOS NO EXTERIOR */}
+            {filteredAndSortedAlunosExterior.length === 0 ? (
+              <div className="p-12 text-center text-slate-500">
+                {alunosExterior.length === 0 ? (
+                  <div className="italic text-slate-400">
+                    {t.common.noInternationalStudents}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center gap-2">
+                    <span className="font-semibold text-slate-600">
+                      {language === 'pt' ? 'Nenhum aluno encontrado para os filtros selecionados.' : 'No students found matching selected filters.'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedCursoFilter('all');
+                        setExteriorSearchQuery('');
+                        setExteriorSortBy('nome_asc');
+                        setExteriorGroupBy('none');
+                        setCurrentPage(1);
+                      }}
+                      className="px-3 py-1 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-xs font-bold transition cursor-pointer border border-blue-200"
+                    >
+                      {language === 'pt' ? 'Limpar Filtros de Busca' : 'Reset Search Filters'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : exteriorGroupBy !== 'none' && groupedAlunosExterior ? (
+              /* MODO AGRUPADO */
+              <div className="p-4 space-y-6 bg-slate-50/40">
+                {groupedAlunosExterior.map((group) => (
+                  <div 
+                    key={group.key} 
+                    className="bg-white border border-slate-200/90 rounded-xl shadow-xs overflow-hidden"
+                  >
+                    {/* Cabeçalho do Grupo */}
+                    <div className="px-5 py-3.5 bg-slate-100/70 border-b border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                      <div className="flex items-center gap-2.5">
+                        <div className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg border border-indigo-100 shadow-2xs">
+                          {exteriorGroupBy === 'documento' && <FileText size={15} />}
+                          {exteriorGroupBy === 'data' && <Calendar size={15} />}
+                          {exteriorGroupBy === 'alfabetica' && <SortAsc size={15} />}
+                          {exteriorGroupBy === 'curso' && <BookOpen size={15} />}
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-slate-800 text-sm">{group.title}</h4>
+                          {group.subtitle && (
+                            <p className="text-[11px] text-slate-400 font-medium">{group.subtitle}</p>
+                          )}
+                        </div>
+                      </div>
+                      <span className="px-2.5 py-0.5 bg-indigo-50 text-indigo-700 font-bold text-xs rounded-full border border-indigo-200/60 shadow-2xs">
+                        {group.alunos.length} {group.alunos.length === 1 ? (language === 'pt' ? 'aluno' : 'student') : (language === 'pt' ? 'alunos' : 'students')}
+                      </span>
+                    </div>
+
+                    {/* Tabela do Grupo */}
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="text-[10px] font-bold text-slate-400 border-b border-slate-100 uppercase tracking-wider bg-slate-50/50">
+                            <th className="px-6 py-3">{t.students.name}</th>
+                            <th className="px-6 py-3">{t.dashboard.courseLocation}</th>
+                            <th className="px-6 py-3">{language === 'pt' ? 'Documento' : 'Document'}</th>
+                            <th className="px-6 py-3 text-center">{t.dashboard.startEnd}</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-50 text-sm">
+                          {group.alunos.map((aluno: any) => {
+                            const turmaData = Array.isArray(aluno.turma) ? aluno.turma[0] : aluno.turma;
+                            const curso = Array.isArray(turmaData?.curso) ? turmaData.curso[0] : turmaData?.curso;
+                            const isPreInscrito = turmaData?.status?.toLowerCase() === 'pré-inscrito';
+                            return (
+                              <tr 
+                                key={aluno.id} 
+                                className="transition-colors cursor-pointer hover:bg-slate-50/80"
+                                onClick={() => setSelectedAlunoForEdit(aluno)}
+                              >
+                                <td className="px-6 py-3.5">
+                                  <div className="flex items-center gap-3">
+                                    {aluno.foto_url ? (
+                                      <div 
+                                        className="w-11 h-14 rounded-lg overflow-hidden border border-slate-200 shrink-0 shadow-xs hover:scale-105 transition-transform cursor-pointer relative bg-slate-100 group"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setExpandedPhoto({ url: aluno.foto_url, name: aluno.nome });
+                                        }}
+                                      >
+                                        <Image 
+                                          src={aluno.foto_url} 
+                                          alt={aluno.nome} 
+                                          fill
+                                          className="object-cover" 
+                                          referrerPolicy="no-referrer" 
+                                          sizes="44px"
+                                        />
+                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                                          <LayersIcon size={13} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <div className="w-11 h-14 rounded-lg overflow-hidden border border-slate-200 shrink-0 shadow-xs relative bg-slate-100">
+                                        <Image 
+                                          src={
+                                            aluno.tipo_aluno === 'civil'
+                                              ? (aluno.genero === 'feminino' ? femaleAvatar : maleAvatar)
+                                              : (aluno.genero === 'feminino' ? militaryFemaleAvatar : militaryMaleAvatar)
+                                          } 
+                                          alt={aluno.nome} 
+                                          fill
+                                          className="object-cover opacity-60" 
+                                          referrerPolicy="no-referrer" 
+                                          sizes="44px"
+                                        />
+                                      </div>
+                                    )}
+                                    <div>
+                                      <div className={cn("font-bold text-xs sm:text-sm", isPreInscrito ? "text-red-600" : "text-slate-800")}>
+                                        {aluno.posto_graduacao || aluno.nome_guerra ? `${aluno.posto_graduacao || ''} ${aluno.nome_guerra || aluno.nome}`.trim() : aluno.nome}
+                                      </div>
+                                      <div className="text-[10px] text-slate-400 font-mono uppercase">
+                                        {aluno.om || '-'}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="px-6 py-3.5">
+                                  <div className={cn("font-medium text-xs", isPreInscrito ? "text-red-500" : "text-slate-700")}>{curso?.nome || aluno.curso_nome || '-'}</div>
+                                  <div className="text-[10px] text-slate-400 uppercase font-bold">{turmaData?.localizacao || '-'}</div>
+                                </td>
+                                <td className="px-6 py-3.5 text-slate-600 font-mono text-xs font-semibold">
+                                  {turmaData?.documento_criacao || curso?.documento_criacao || aluno.documento_criacao || '-'}
+                                </td>
+                                <td className="px-6 py-3.5 text-center text-slate-600 font-mono text-xs">
+                                  {turmaData?.internacional ? (
+                                    <div className="flex flex-col items-center justify-center leading-tight">
+                                      <span className={cn("font-bold whitespace-nowrap", isPreInscrito ? "text-red-600" : "text-slate-800")}>
+                                        {aluno.data_inicio_curso?.trim() ? aluno.data_inicio_curso.split('-').reverse().join('/') : (turmaData?.data_inicio?.trim() ? turmaData.data_inicio.split('-').reverse().join('/') : '—')}
+                                      </span>
+                                      <span className="text-[9px] text-slate-400 font-sans uppercase font-extrabold my-0.5">a</span>
+                                      <span className={cn("font-bold whitespace-nowrap", isPreInscrito ? "text-red-600" : "text-slate-800")}>
+                                        {aluno.data_fim_curso?.trim() ? aluno.data_fim_curso.split('-').reverse().join('/') : (turmaData?.data_fim?.trim() ? turmaData.data_fim.split('-').reverse().join('/') : '—')}
+                                      </span>
+                                    </div>
+                                  ) : (
+                                    <div className="flex flex-col items-center justify-center leading-tight">
+                                      <span className={cn("font-bold whitespace-nowrap", isPreInscrito ? "text-red-600" : "text-slate-800")}>
+                                        {turmaData?.data_inicio ? turmaData.data_inicio.split('-').reverse().join('/') : '—'}
+                                      </span>
+                                      <span className="text-[9px] text-slate-400 font-sans uppercase font-extrabold my-0.5">a</span>
+                                      <span className={cn("font-bold whitespace-nowrap", isPreInscrito ? "text-red-600" : "text-slate-800")}>
+                                        {turmaData?.data_fim ? turmaData.data_fim.split('-').reverse().join('/') : '—'}
+                                      </span>
+                                    </div>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              /* MODO TABELA CORRIDA (COM CABEÇALHOS ORDENÁVEIS) */
+              <>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="text-[10px] font-bold text-slate-400 border-b border-slate-100 uppercase tracking-wider select-none">
+                        {/* Coluna Nome (Clicável para Ordenar) */}
+                        <th 
+                          onClick={() => handleSortColumn('nome')}
+                          className="px-6 py-4 cursor-pointer hover:text-blue-600 transition group"
+                        >
+                          <div className="flex items-center gap-1.5">
+                            <span>{t.students.name}</span>
+                            {exteriorSortBy === 'nome_asc' ? (
+                              <ArrowUp size={12} className="text-blue-600" />
+                            ) : exteriorSortBy === 'nome_desc' ? (
+                              <ArrowDown size={12} className="text-blue-600" />
+                            ) : (
+                              <ArrowUpDown size={11} className="text-slate-300 opacity-0 group-hover:opacity-100 transition" />
+                            )}
+                          </div>
+                        </th>
+
+                        {/* Coluna Curso (Clicável para Ordenar) */}
+                        <th 
+                          onClick={() => handleSortColumn('curso')}
+                          className="px-6 py-4 cursor-pointer hover:text-blue-600 transition group"
+                        >
+                          <div className="flex items-center gap-1.5">
+                            <span>{t.dashboard.courseLocation}</span>
+                            {exteriorSortBy === 'curso_asc' ? (
+                              <ArrowUp size={12} className="text-blue-600" />
+                            ) : exteriorSortBy === 'curso_desc' ? (
+                              <ArrowDown size={12} className="text-blue-600" />
+                            ) : (
+                              <ArrowUpDown size={11} className="text-slate-300 opacity-0 group-hover:opacity-100 transition" />
+                            )}
+                          </div>
+                        </th>
+
+                        {/* Coluna Documento (Clicável para Ordenar) */}
+                        <th 
+                          onClick={() => handleSortColumn('documento')}
+                          className="px-6 py-4 cursor-pointer hover:text-blue-600 transition group"
+                        >
+                          <div className="flex items-center gap-1.5">
+                            <span>{language === 'pt' ? 'Documento' : 'Document'}</span>
+                            {exteriorSortBy === 'documento_asc' ? (
+                              <ArrowUp size={12} className="text-blue-600" />
+                            ) : exteriorSortBy === 'documento_desc' ? (
+                              <ArrowDown size={12} className="text-blue-600" />
+                            ) : (
+                              <ArrowUpDown size={11} className="text-slate-300 opacity-0 group-hover:opacity-100 transition" />
+                            )}
+                          </div>
+                        </th>
+
+                        {/* Coluna Datas (Clicável para Ordenar) */}
+                        <th 
+                          onClick={() => handleSortColumn('data')}
+                          className="px-6 py-4 text-center cursor-pointer hover:text-blue-600 transition group"
+                        >
+                          <div className="flex items-center justify-center gap-1.5">
+                            <span>{t.dashboard.startEnd}</span>
+                            {exteriorSortBy.startsWith('data_') && exteriorSortBy.includes('desc') ? (
+                              <ArrowDown size={12} className="text-blue-600" />
+                            ) : exteriorSortBy.startsWith('data_') && exteriorSortBy.includes('asc') ? (
+                              <ArrowUp size={12} className="text-blue-600" />
+                            ) : (
+                              <ArrowUpDown size={11} className="text-slate-300 opacity-0 group-hover:opacity-100 transition" />
+                            )}
+                          </div>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50 text-sm">
+                      {paginatedAlunos.map((aluno: any) => {
+                        const turmaData = Array.isArray((aluno as any).turma) ? (aluno as any).turma[0] : (aluno as any).turma;
+                        const curso = Array.isArray(turmaData?.curso) ? turmaData.curso[0] : turmaData?.curso;
+                        const isPreInscrito = turmaData?.status?.toLowerCase() === 'pré-inscrito';
+                        return (
+                          <tr 
+                            key={aluno.id} 
+                            className={cn(
+                              "transition-colors cursor-pointer",
+                              "hover:bg-slate-50"
+                            )}
+                            onClick={() => {
+                              setSelectedAlunoForEdit(aluno);
+                            }}
+                          >
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-3">
+                                {aluno.foto_url ? (
+                                  <div 
+                                    className="w-12 h-16 rounded-lg overflow-hidden border border-slate-200 shrink-0 shadow-sm hover:scale-105 transition-transform cursor-pointer relative bg-slate-100 group"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setExpandedPhoto({ url: aluno.foto_url, name: aluno.nome });
+                                    }}
+                                  >
+                                    <Image 
+                                      src={aluno.foto_url} 
+                                      alt={aluno.nome} 
+                                      fill
+                                      className="object-cover" 
+                                      referrerPolicy="no-referrer" 
+                                      sizes="48px"
+                                    />
+                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                                      <LayersIcon size={14} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="w-12 h-16 rounded-lg overflow-hidden border border-slate-200 shrink-0 shadow-sm relative bg-slate-100">
+                                    <Image 
+                                      src={
+                                        aluno.tipo_aluno === 'civil'
+                                          ? (aluno.genero === 'feminino' ? femaleAvatar : maleAvatar)
+                                          : (aluno.genero === 'feminino' ? militaryFemaleAvatar : militaryMaleAvatar)
+                                      } 
+                                      alt={aluno.nome} 
+                                      fill
+                                      className="object-cover opacity-60" 
+                                      referrerPolicy="no-referrer" 
+                                      sizes="48px"
+                                    />
+                                  </div>
+                                )}
+                                <div>
+                                  <div className={cn("font-bold", isPreInscrito ? "text-red-600" : "text-slate-800")}>
+                                    {aluno.posto_graduacao || aluno.nome_guerra ? `${aluno.posto_graduacao || ''} ${aluno.nome_guerra || aluno.nome}`.trim() : aluno.nome}
+                                  </div>
+                                  <div className="text-[10px] text-slate-400 font-mono uppercase">
+                                    {aluno.om || '-'}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className={cn("", isPreInscrito ? "text-red-500" : "text-slate-600")}>{curso?.nome || aluno.curso_nome || '-'}</div>
+                              <div className="text-[10px] text-slate-400 uppercase font-bold">{turmaData?.localizacao || '-'}</div>
+                            </td>
+                            <td className="px-6 py-4 text-slate-500 font-mono text-xs">
+                              {turmaData?.documento_criacao || curso?.documento_criacao || aluno.documento_criacao || '-'}
+                            </td>
+                            <td className="px-6 py-4 text-center text-slate-500 font-mono text-xs">
+                              {turmaData?.internacional ? (
+                                <div className="flex flex-col items-center justify-center leading-normal">
+                                  <span className={cn("font-bold whitespace-nowrap", isPreInscrito ? "text-red-600" : "text-slate-800")}>
+                                    {aluno.data_inicio_curso?.trim() ? aluno.data_inicio_curso.split('-').reverse().join('/') : (turmaData?.data_inicio?.trim() ? turmaData.data_inicio.split('-').reverse().join('/') : '—')}
+                                  </span>
+                                  <span className="text-[10px] text-slate-400 font-sans uppercase font-extrabold my-0.5">a</span>
+                                  <span className={cn("font-bold whitespace-nowrap", isPreInscrito ? "text-red-600" : "text-slate-800")}>
+                                    {aluno.data_fim_curso?.trim() ? aluno.data_fim_curso.split('-').reverse().join('/') : (turmaData?.data_fim?.trim() ? turmaData.data_fim.split('-').reverse().join('/') : '—')}
+                                  </span>
+                                </div>
+                              ) : (
+                                <div className="flex flex-col items-center justify-center leading-normal">
+                                  <span className={cn("font-bold whitespace-nowrap", isPreInscrito ? "text-red-600" : "text-slate-800")}>
+                                    {turmaData?.data_inicio ? turmaData.data_inicio.split('-').reverse().join('/') : '—'}
+                                  </span>
+                                  <span className="text-[10px] text-slate-400 font-sans uppercase font-extrabold my-0.5">a</span>
+                                  <span className={cn("font-bold whitespace-nowrap", isPreInscrito ? "text-red-600" : "text-slate-800")}>
+                                    {turmaData?.data_fim ? turmaData.data_fim.split('-').reverse().join('/') : '—'}
+                                  </span>
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Painel de Paginação de Alunos (Modo Tabela Corrida) */}
+                {totalAlunosExterior > 0 && (
+                  <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-sans text-slate-500 font-semibold shrink-0">
+                    <div className="flex items-center gap-2">
+                      <span>{language === 'pt' ? 'Exibir:' : 'Show:'}</span>
+                      <select
+                        value={itemsPerPage}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          setItemsPerPage(val);
+                          setCurrentPage(1);
+                          if (typeof window !== 'undefined') {
+                            localStorage.setItem('items_per_page_dashboard_alunos', String(val));
+                          }
+                        }}
+                        className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-700 outline-none focus:ring-1 focus:ring-indigo-500 font-bold cursor-pointer"
+                      >
+                        <option value={5}>5</option>
+                        <option value={10}>10</option>
+                        <option value={15}>15</option>
+                        <option value={20}>20</option>
+                      </select>
+                      <span>{language === 'pt' ? 'alunos por página' : 'students per page'}</span>
+                    </div>
+
+                    <div className="font-medium text-slate-400 font-mono">
+                      {language === 'pt' 
+                        ? `Exibindo ${totalAlunosExterior > 0 ? startIndexAlunos + 1 : 0}-${endIndexAlunos} de ${totalAlunosExterior} alunos`
+                        : `Showing ${totalAlunosExterior > 0 ? startIndexAlunos + 1 : 0}-${endIndexAlunos} of ${totalAlunosExterior} students`}
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        disabled={currentPage === 1}
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        className="p-1 px-2 hover:bg-slate-100 disabled:opacity-45 rounded-lg border border-slate-200 text-slate-500 transition cursor-pointer flex items-center justify-center disabled:cursor-not-allowed"
+                        title={language === 'pt' ? 'Anterior' : 'Previous'}
+                      >
+                        <ChevronLeft size={14} />
+                      </button>
+                      
+                      {Array.from({ length: totalPagesAlunos }, (_, i) => i + 1).map((p) => (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() => setCurrentPage(p)}
+                          className={`p-1 px-3 rounded-lg text-xs font-bold transition-colors select-none ${
+                            currentPage === p
+                              ? 'bg-indigo-600 border border-indigo-600 text-white shadow-sm'
+                              : 'bg-white border border-slate-200 hover:bg-slate-50 text-slate-600'
+                          }`}
+                        >
+                          {p}
+                        </button>
+                      ))}
+
+                      <button
+                        type="button"
+                        disabled={currentPage === totalPagesAlunos || totalPagesAlunos === 0}
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPagesAlunos))}
+                        className="p-1 px-2 hover:bg-slate-100 disabled:opacity-45 rounded-lg border border-slate-200 text-slate-500 transition cursor-pointer flex items-center justify-center disabled:cursor-not-allowed"
+                        title={language === 'pt' ? 'Próximo' : 'Next'}
+                      >
+                        <ChevronRight size={14} />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
             
           </motion.div>
@@ -1363,6 +2052,37 @@ export default function DashboardPage() {
               <h2 className="text-sm font-bold uppercase tracking-wide text-center mt-0.5">
                 {language === 'pt' ? 'RELAÇÃO DE ALUNOS NO EXTERIOR' : 'STUDENTS ABROAD ROSTER'}
               </h2>
+              {(selectedCursoFilter !== 'all' || exteriorSearchQuery || exteriorSortBy !== 'nome_asc' || exteriorGroupBy !== 'none') && (
+                <div className="text-[10px] font-semibold text-slate-700 mt-1 flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5">
+                  {selectedCursoFilter !== 'all' && (
+                    <span><strong>CURSO:</strong> {selectedCursoFilter.toUpperCase()}</span>
+                  )}
+                  {exteriorSearchQuery && (
+                    <span><strong>BUSCA:</strong> &quot;{exteriorSearchQuery}&quot;</span>
+                  )}
+                  {exteriorGroupBy !== 'none' && (
+                    <span>
+                      <strong>AGRUPAMENTO:</strong>{' '}
+                      {exteriorGroupBy === 'documento' ? 'POR DOCUMENTO / PORTARIA' :
+                       exteriorGroupBy === 'data' ? 'POR DATA / PERÍODO' :
+                       exteriorGroupBy === 'alfabetica' ? 'POR ORDEM ALFABÉTICA (LETRA)' : 'POR CURSO / MISSÃO'}
+                    </span>
+                  )}
+                  <span>
+                    <strong>ORDENAÇÃO:</strong>{' '}
+                    {exteriorSortBy === 'nome_asc' ? 'NOME (A → Z)' :
+                     exteriorSortBy === 'nome_desc' ? 'NOME (Z → A)' :
+                     exteriorSortBy === 'documento_asc' ? 'DOCUMENTO (A → Z)' :
+                     exteriorSortBy === 'documento_desc' ? 'DOCUMENTO (Z → A)' :
+                     exteriorSortBy === 'data_desc' ? 'DATA DE INÍCIO (MAIS RECENTE)' :
+                     exteriorSortBy === 'data_asc' ? 'DATA DE INÍCIO (MAIS ANTIGO)' :
+                     exteriorSortBy === 'data_fim_desc' ? 'DATA DE TÉRMINO (MAIS RECENTE)' :
+                     exteriorSortBy === 'data_fim_asc' ? 'DATA DE TÉRMINO (MAIS ANTIGO)' :
+                     exteriorSortBy === 'curso_asc' ? 'CURSO (A → Z)' : 'CURSO (Z → A)'}
+                  </span>
+                  <span><strong>TOTAL:</strong> {filteredAndSortedAlunosExterior.length} ALUNO(S)</span>
+                </div>
+              )}
             </div>
             
             <table className="w-full text-left border-collapse border border-black mb-4 text-black">
@@ -1377,14 +2097,14 @@ export default function DashboardPage() {
                 </tr>
               </thead>
               <tbody className="text-[11px]">
-                {alunosExterior.length === 0 ? (
+                {filteredAndSortedAlunosExterior.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="p-4 text-center italic border-b border-black">
                       {t.common.noInternationalStudents}
                     </td>
                   </tr>
                 ) : (
-                  alunosExterior.map((aluno: any, idx: number) => {
+                  filteredAndSortedAlunosExterior.map((aluno: any, idx: number) => {
                     const turmaData = Array.isArray(aluno.turma) ? aluno.turma[0] : aluno.turma;
                     const curso = Array.isArray(turmaData?.curso) ? turmaData.curso[0] : turmaData?.curso;
                     

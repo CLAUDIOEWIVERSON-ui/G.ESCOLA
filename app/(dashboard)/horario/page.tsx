@@ -29,7 +29,7 @@ import Image from "next/image";
 import navalMissionLogo from '@/src/assets/images/regenerated_image_1782409801823.png';
 import { format, startOfWeek, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import html2canvas from "html2canvas";
+import html2canvas from "html2canvas-pro";
 import { jsPDF } from "jspdf";
 import { toast } from "sonner";
 import { useUser } from "@/lib/auth/UserContext";
