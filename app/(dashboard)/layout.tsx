@@ -87,7 +87,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
-  const [showMoreModules, setShowMoreModules] = useState(false);
   const [onlineCount, setOnlineCount] = useState<number>(0);
   const [showAssistant, setShowAssistant] = useState(false);
 
@@ -222,7 +221,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     );
   }
 
-  const navItems = isNifStudent ? [
+  const rawNavItems = isNifStudent ? [
     { name: t.nav.reportCard, icon: FileText, path: '/boletim' },
     { name: t.schedule.title, icon: Calendar, path: '/horario' },
     { name: "Avaliação Pós-Curso", icon: FileCheck, path: '/avaliacao' },
@@ -240,15 +239,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: t.nav.settings, icon: Settings, path: '/configuracoes' },
   ];
 
-  const firstGroup = isNifStudent ? [] : navItems.slice(0, 3);
-  const secondGroup = isNifStudent ? navItems : navItems.slice(3);
-
-  // Split secondGroup into visible items and those hidden under "See More" at the height of user management module
-  const hiddenPaths = ['/relatorio-avaliacao', '/links', '/configuracoes'];
-  const visibleSecondItems = secondGroup.filter(item => !hiddenPaths.includes(item.path));
-  const hiddenSecondItems = secondGroup.filter(item => hiddenPaths.includes(item.path));
-  const isAnyHiddenActive = hiddenSecondItems.some(item => pathname === item.path);
-  const isExpanded = showMoreModules || isAnyHiddenActive;
+  // Ordenar todos os módulos por ordem alfabética de acordo com o idioma ativo
+  const navItems = [...rawNavItems].sort((a, b) =>
+    a.name.localeCompare(b.name, language === 'pt' ? 'pt-BR' : 'en', { sensitivity: 'base' })
+  );
 
   const userInitials = profile?.full_name ? profile.full_name.slice(0, 2).toUpperCase() : 'US';
   const roleName = profile?.role === 'admin' 
@@ -351,59 +345,86 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
 
           <div className="flex-1 flex flex-col min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar">
-            <nav id="sidebar-nav" className="px-4 py-6 space-y-8">
+            <nav id="sidebar-nav" className="px-4 py-6 space-y-6">
               <div>
                 <div className={cn("text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4 px-3 flex items-center gap-2", !sidebarOpen && "opacity-0 invisible h-0")}>
                   <div className="w-1 h-1 rounded-full bg-blue-500" />
-                  {t.auth.management}
+                  {language === 'pt' ? 'Módulos' : 'Modules'}
                 </div>
                 <div className="space-y-1.5">
-                  {firstGroup.map((item: any) => {
+                  {navItems.map((item: any, idx: number) => {
                     const subItemPaths = item.subItems?.map((s: any) => s.path) || [];
                     const isAnySubActive = subItemPaths.some((p: string) => (pathname + (typeof window !== 'undefined' ? window.location.search : '')) === p);
-                    const isParentActive = pathname === item.path || isAnySubActive;
-                    
-                    // A menu is expanded if its path is in expandedMenus OR if one of its subitems is active
-                    const isExpanded = sidebarOpen && (expandedMenus.includes(item.path) || isAnySubActive);
+                    const isActive = pathname === item.path || isAnySubActive;
+                    const isItemExpanded = sidebarOpen && (expandedMenus.includes(item.path) || isAnySubActive);
                     const hasSubItems = !!item.subItems;
+                    const isCalendar = item.path === '/calendario';
+                    const isSettings = item.path === '/configuracoes';
+                    const needsPasswordChange = isSettings && profile && !profile.has_changed_password;
 
                     const Content = (
                       <div className={cn(
                         "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group relative overflow-hidden",
-                        isParentActive 
-                          ? "text-white" 
-                          : "text-slate-400 hover:text-white hover:bg-white/[0.03]",
-                        isExpanded && hasSubItems && "bg-slate-900 rounded-b-none"
+                        isActive 
+                          ? "bg-blue-600/10 text-white border border-blue-500/20 shadow-[0_0_15px_rgba(37,99,235,0.1)]" 
+                          : isCalendar
+                            ? "bg-amber-500/5 text-amber-500/70 hover:bg-amber-500/10 hover:text-amber-400 border border-transparent hover:border-amber-500/20"
+                            : "text-slate-400 hover:text-white hover:bg-white/[0.03]",
+                        isItemExpanded && hasSubItems && "bg-slate-900 rounded-b-none"
                       )}>
-                        {/* Blue indicator for active OR expanded with subitems */}
-                        {(isParentActive || (isExpanded && hasSubItems)) && (
+                        {/* Blue indicator for active item */}
+                        {isActive && (
                           <motion.div 
-                            layoutId={hasSubItems ? `expanded-indicator-${item.path}` : "active-indicator"}
+                            layoutId="active-indicator"
                             className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-r-full z-10"
                           />
                         )}
                         
                         {item.name === t.nav.classes ? (
                           <div className="shrink-0 w-[18px] flex justify-center text-xs font-bold" style={{ letterSpacing: '-2px' }}>
-                            <span className={cn(isParentActive ? "text-blue-400" : "text-slate-500 group-hover:text-slate-300")}>||\</span>
+                            <span className={cn(isActive ? "text-blue-400" : "text-slate-500 group-hover:text-slate-300")}>||\</span>
                           </div>
                         ) : (
-                          <item.icon size={18} className={cn("shrink-0 transition-transform group-hover:scale-110", isParentActive ? "text-blue-400" : "text-slate-500 group-hover:text-slate-300")} />
+                          <item.icon size={18} className={cn(
+                            "shrink-0 transition-transform group-hover:scale-110", 
+                            isActive 
+                              ? "text-blue-400" 
+                              : isCalendar 
+                                ? "text-amber-500" 
+                                : needsPasswordChange
+                                  ? "text-amber-500 animate-pulse bg-amber-500/10 p-0.5 rounded-md"
+                                  : "text-slate-500 group-hover:text-slate-300"
+                          )} />
                         )}
                         
                         <span className={cn(
                           "text-sm transition-opacity flex-1 whitespace-nowrap font-medium",
                           !sidebarOpen && "opacity-0 invisible w-0",
+                          needsPasswordChange && "text-amber-500 font-bold"
                         )}>
                           {item.name}
                         </span>
+
+                        {isCalendar && sidebarOpen && (
+                          <span className="ml-auto flex h-2 w-2 rounded-full bg-amber-500 animate-pulse shrink-0" />
+                        )}
+
+                        {needsPasswordChange && sidebarOpen && (
+                          <span className="ml-auto text-[9px] font-black tracking-wider text-amber-500 bg-amber-500/10 border border-amber-500/30 px-1.5 py-0.5 rounded-full uppercase animate-pulse shrink-0 font-sans">
+                            Atenção
+                          </span>
+                        )}
+
+                        {needsPasswordChange && !sidebarOpen && (
+                          <span className="absolute right-2 top-2 flex h-2 w-2 rounded-full bg-amber-500 animate-pulse shrink-0" />
+                        )}
                         
                         {hasSubItems && sidebarOpen && (
                           <ChevronRight 
                             size={14} 
                             className={cn(
-                              "transition-transform text-slate-600 group-hover:text-slate-400", 
-                              isExpanded && "rotate-90 text-blue-400"
+                              "transition-transform text-slate-600 group-hover:text-slate-400 ml-auto shrink-0", 
+                              isItemExpanded && "rotate-90 text-blue-400"
                             )} 
                           />
                         )}
@@ -411,7 +432,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     );
 
                     return (
-                      <div key={item.path} className={cn("flex flex-col rounded-xl overflow-hidden transition-colors", isExpanded && hasSubItems && "bg-slate-900/50")}>
+                      <div key={`nav-item-${item.path}-${idx}`} className={cn("flex flex-col rounded-xl overflow-hidden transition-colors", isItemExpanded && hasSubItems && "bg-slate-900/50")}>
                         {hasSubItems ? (
                           <button 
                             onClick={(e) => toggleSubmenu(item.path, e)}
@@ -426,7 +447,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         )}
 
                         <AnimatePresence>
-                          {hasSubItems && isExpanded && (
+                          {hasSubItems && isItemExpanded && (
                             <motion.div 
                               initial={{ height: 0, opacity: 0 }}
                               animate={{ height: "auto", opacity: 1 }}
@@ -459,178 +480,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       </div>
                     );
                   })}
-                </div>
-              </div>
-
-              <div>
-                <div className={cn("text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4 px-3 flex items-center gap-2", !sidebarOpen && "opacity-0 invisible h-0")}>
-                  <div className="w-1 h-1 rounded-full bg-blue-500" />
-                  {t.auth.academic}
-                </div>
-                <div className="space-y-1.5">
-                  {visibleSecondItems.map((item, idx) => {
-                    const isActive = pathname === item.path;
-                    const isCalendar = item.path === '/calendario';
-                    const isSettings = item.path === '/configuracoes';
-                    const needsPasswordChange = isSettings && profile && !profile.has_changed_password;
-                    
-                    return (
-                      <Link 
-                        key={`nav-sec-${item.path}-${idx}`} 
-                        href={item.path}
-                        className={cn(
-                          "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group relative overflow-hidden",
-                          isActive 
-                            ? "bg-blue-600/10 text-white border border-blue-500/20 shadow-[0_0_15px_rgba(37,99,235,0.1)]" 
-                            : isCalendar
-                              ? "bg-amber-500/5 text-amber-500/70 hover:bg-amber-500/10 hover:text-amber-400 border border-transparent hover:border-amber-500/20"
-                              : "hover:bg-white/[0.03] text-slate-400 hover:text-white"
-                        )}
-                      >
-                        {isActive && (
-                          <motion.div 
-                            layoutId="active-indicator-academic"
-                            className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-r-full"
-                          />
-                        )}
-                        <item.icon size={18} className={cn(
-                          "shrink-0 transition-transform group-hover:scale-110", 
-                          isActive 
-                            ? "text-blue-400" 
-                            : isCalendar 
-                              ? "text-amber-500" 
-                              : needsPasswordChange
-                                ? "text-amber-500 animate-pulse bg-amber-500/10 p-0.5 rounded-md"
-                                : "text-slate-500 group-hover:text-slate-300"
-                        )} />
-                        <span className={cn(
-                          "text-sm transition-opacity whitespace-nowrap font-medium",
-                          !sidebarOpen && "opacity-0 invisible w-0",
-                          needsPasswordChange && "text-amber-500 font-bold"
-                        )}>
-                          {item.name}
-                        </span>
-                        {isCalendar && sidebarOpen && (
-                          <span className="ml-auto flex h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
-                        )}
-                        {needsPasswordChange && sidebarOpen && (
-                          <span className="ml-auto text-[9px] font-black tracking-wider text-amber-500 bg-amber-500/10 border border-amber-500/30 px-1.5 py-0.5 rounded-full uppercase animate-pulse shrink-0 font-sans">
-                            Atenção
-                          </span>
-                        )}
-                        {needsPasswordChange && !sidebarOpen && (
-                          <span className="absolute right-2 top-2 flex h-2 w-2 rounded-full bg-amber-500 animate-pulse shrink-0" />
-                        )}
-                      </Link>
-                    );
-                  })}
-
-                  {/* See More ("Veja mais") toggle at the height of user management, covering academic elements below */}
-                  {hiddenSecondItems.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!sidebarOpen) {
-                          setSidebarOpen(true);
-                          setShowMoreModules(true);
-                        } else {
-                          setShowMoreModules(prev => !prev);
-                        }
-                      }}
-                      className={cn(
-                        "w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all group relative overflow-hidden text-slate-400 hover:text-white hover:bg-white/[0.03]",
-                        isExpanded && "bg-slate-900/50"
-                      )}
-                    >
-                      <div className="flex items-center gap-3">
-                        <ChevronRight 
-                          size={18} 
-                          className={cn(
-                            "shrink-0 text-slate-500 group-hover:text-slate-300 transition-transform duration-200", 
-                            isExpanded && "rotate-90 text-blue-400"
-                          )} 
-                        />
-                        <span className={cn(
-                          "text-sm font-medium transition-all whitespace-nowrap text-left",
-                          !sidebarOpen && "opacity-0 invisible w-0"
-                        )}>
-                          {isExpanded 
-                            ? (language === 'pt' ? 'Veja menos' : 'See less') 
-                            : (language === 'pt' ? 'Veja mais' : 'See more')}
-                        </span>
-                      </div>
-                    </button>
-                  )}
-
-                  {/* Collateral academic folders under Veja mais */}
-                  <AnimatePresence initial={false}>
-                    {isExpanded && hiddenSecondItems.length > 0 && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
-                        className="overflow-hidden space-y-1.5 pl-2 border-l border-white/5 ml-3"
-                      >
-                        {hiddenSecondItems.map((item, idx) => {
-                          const isActive = pathname === item.path;
-                          const isCalendar = item.path === '/calendario';
-                          const isSettings = item.path === '/configuracoes';
-                          const needsPasswordChange = isSettings && profile && !profile.has_changed_password;
-                          
-                          return (
-                            <Link 
-                              key={`nav-hid-${item.path}-${idx}`} 
-                              href={item.path}
-                              className={cn(
-                                "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group relative overflow-hidden",
-                                isActive 
-                                  ? "bg-blue-600/10 text-white border border-blue-500/20 shadow-[0_0_15px_rgba(37,99,235,0.1)]" 
-                                  : isCalendar
-                                    ? "bg-amber-500/5 text-amber-500/70 hover:bg-amber-500/10 hover:text-amber-400 border border-transparent hover:border-amber-500/20"
-                                    : "hover:bg-white/[0.03] text-slate-400 hover:text-white"
-                              )}
-                            >
-                              {isActive && (
-                                <motion.div 
-                                  layoutId="active-indicator-academic"
-                                  className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-r-full"
-                                />
-                              )}
-                              <item.icon size={18} className={cn(
-                                "shrink-0 transition-transform group-hover:scale-110", 
-                                isActive 
-                                  ? "text-blue-400" 
-                                  : isCalendar 
-                                    ? "text-amber-500" 
-                                    : needsPasswordChange
-                                      ? "text-amber-500 animate-pulse bg-amber-500/10 p-0.5 rounded-md"
-                                      : "text-slate-500 group-hover:text-slate-300"
-                              )} />
-                              <span className={cn(
-                                "text-sm transition-opacity whitespace-nowrap font-medium",
-                                !sidebarOpen && "opacity-0 invisible w-0",
-                                needsPasswordChange && "text-amber-500 font-bold"
-                              )}>
-                                {item.name}
-                              </span>
-                              {isCalendar && sidebarOpen && (
-                                <span className="ml-auto flex h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
-                              )}
-                              {needsPasswordChange && sidebarOpen && (
-                                <span className="ml-auto text-[9px] font-black tracking-wider text-amber-500 bg-amber-500/10 border border-amber-500/30 px-1.5 py-0.5 rounded-full uppercase animate-pulse shrink-0 font-sans">
-                                  Atenção
-                                </span>
-                              )}
-                              {needsPasswordChange && !sidebarOpen && (
-                                <span className="absolute right-2 top-2 flex h-2 w-2 rounded-full bg-amber-500 animate-pulse shrink-0" />
-                              )}
-                            </Link>
-                          );
-                        })}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
                 </div>
               </div>
             </nav>
