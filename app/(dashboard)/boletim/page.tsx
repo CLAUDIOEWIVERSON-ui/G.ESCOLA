@@ -43,7 +43,7 @@ const reportT = {
     attendanceReg: "REGISTRO DE FREQUÊNCIA",
     footerText: "Emitido eletronicamente via Sistema de Gestão Escolar",
     observations: "OBSERVAÇÕES PEDAGÓGICAS E DISCIPLINARES",
-    defaultObs: "Atleta/Aluno demonstra comprometimento acadêmico regular, preenchendo os requisitos regulamentares de frequência e aproveitamento didático estabelecidos pelas normas vigentes.",
+    defaultObs: "Aluno(a) demonstra comprometimento acadêmico regular, preenchendo os requisitos regulamentares de frequência e aproveitamento didático estabelecidos pelas normas vigentes.",
     signatureCommander: "Chefe da Missão de Assessoria Naval do Brasil em São Tomé e Príncipe",
     fullName: "Nome Completo",
     rank: "Posto / Graduação",
