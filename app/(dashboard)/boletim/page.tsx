@@ -32,6 +32,7 @@ import { cn, getCleanTurmaName } from '@/lib/utils';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { useUser } from '@/lib/auth/UserContext';
+import { fetchWithAuth } from '@/lib/api';
 import navalMissionLogo from '@/src/assets/images/regenerated_image_1782409801823.png';
 
 const reportT = {
@@ -937,13 +938,24 @@ function BoletimContent() {
           };
         });
 
-        const { data: gradesDataRaw } = await supabase
-          .from('notas')
-          .select('*')
-          .eq('aluno_id', selectedStudentForReport)
-          .eq('turma_id', classId);
+        let gradesData: any[] = [];
+        try {
+          const res = await fetchWithAuth(`/api/v1/notas?turmaId=${classId}&alunoId=${selectedStudentForReport}`);
+          if (res.ok) {
+            gradesData = await res.json();
+          }
+        } catch (e) {
+          console.warn("API fetch fallback to direct supabase:", e);
+        }
 
-        const gradesData = gradesDataRaw || [];
+        if (!gradesData || gradesData.length === 0) {
+          const { data: gradesDataRaw } = await supabase
+            .from('notas')
+            .select('*')
+            .eq('aluno_id', selectedStudentForReport)
+            .eq('turma_id', classId);
+          gradesData = gradesDataRaw || [];
+        }
 
         const { data: attendanceData } = await supabase
           .from('frequencia')
@@ -1008,19 +1020,34 @@ function BoletimContent() {
       if (studentsError) throw studentsError;
 
       // 2. Fetch all grades registered for this class across all disciplines
-      let gradesQuery = supabase
-        .from('notas')
-        .select('*')
-        .eq('turma_id', activeTurmaId);
-
-      if (selectedAno) {
-        gradesQuery = gradesQuery.eq('ano_letivo', parseInt(selectedAno));
+      let grades: any[] = [];
+      try {
+        const queryParams = new URLSearchParams({ turmaId: activeTurmaId });
+        if (selectedAno) queryParams.set('anoLetivo', selectedAno);
+        const res = await fetchWithAuth(`/api/v1/notas?${queryParams.toString()}`);
+        if (res.ok) {
+          grades = await res.json();
+        }
+      } catch (e) {
+        console.warn("API fetch fallback to direct supabase:", e);
       }
 
-      const { data: gradesRaw, error: gradesError } = await gradesQuery;
-      if (gradesError) throw gradesError;
+      if (!grades || grades.length === 0) {
+        let gradesQuery = supabase
+          .from('notas')
+          .select('*')
+          .eq('turma_id', activeTurmaId);
 
-      const grades = gradesRaw || [];
+        if (selectedAno) {
+          gradesQuery = gradesQuery.eq('ano_letivo', parseInt(selectedAno));
+        }
+
+        const { data: gradesRaw, error: gradesError } = await gradesQuery;
+        if (gradesError) {
+          console.warn("Direct grades query error:", gradesError);
+        }
+        grades = gradesRaw || [];
+      }
 
       // Fetch all attendance records for this class to calculate frequency dynamically
       const { data: attendanceList, error: attendanceError } = await supabase
@@ -1232,46 +1259,100 @@ function BoletimContent() {
       const numValue = value === '' ? null : Number(value);
       const fieldName = moduleIndex === 'final' ? 'nota_final' : `nota${moduleIndex}`;
       
-      // Optimistic update
-      setBoletimData(prev => prev.map(r => {
-        if (r.aluno_id === row.aluno_id) {
-          const updated = { ...r, [fieldName]: numValue };
-          // For a simple UX, we won't automatically re-average nota_final here,
-          // because it would require complex recalculation. A refresh does it anyway.
-          return updated;
+      // Calculate updated row and new final average locally
+      let computedFinal = row.nota_final;
+      if (moduleIndex === 'final') {
+        computedFinal = numValue;
+      } else {
+        const validScores: number[] = [];
+        for (let m = 1; m <= courseModules; m++) {
+          const val = m === moduleIndex ? numValue : (row as any)[`nota${m}`];
+          if (val !== null && val !== undefined && val !== '' && !isNaN(Number(val))) {
+            validScores.push(Number(val));
+          }
         }
-        return r;
-      }));
-
-      // Find the base record to update or insert
-      // In boletim, row.disciplina_id is the primary discipline for this student's module/class
-      if (!row.disciplina_id) {
-         toast.error(language === 'pt' ? 'Nenhuma disciplina vinculada para atualizar a nota.' : 'No linked discipline to update grade.');
-         return;
+        if (validScores.length > 0) {
+          const avg = validScores.reduce((a, b) => a + b, 0) / validScores.length;
+          computedFinal = Math.round(avg * 10) / 10;
+        } else {
+          computedFinal = null;
+        }
       }
 
-      const dataToUpsert = {
+      // Optimistic update
+      setBoletimData(prev => {
+        const nextData = prev.map(r => {
+          if (r.aluno_id === row.aluno_id) {
+            return {
+              ...r,
+              [fieldName]: numValue,
+              nota_final: computedFinal
+            };
+          }
+          return r;
+        });
+
+        // Recalculate class stats
+        const finalGrades = nextData
+          .map(r => r.nota_final)
+          .filter(n => n !== null && n !== undefined && !isNaN(Number(n)))
+          .map(Number);
+        
+        const avg = finalGrades.length > 0
+          ? Number((finalGrades.reduce((a, b) => a + b, 0) / finalGrades.length).toFixed(1))
+          : 0;
+
+        setClassStats({
+          avg,
+          total: nextData.length
+        });
+
+        return nextData;
+      });
+
+      // Prepare payload for backend save
+      const payload = {
         aluno_id: row.aluno_id,
         turma_id: row.turma_id,
-        disciplina_id: row.disciplina_id,
-        [fieldName]: numValue,
+        disciplina_id: row.disciplina_id || undefined,
+        curso_id: selectedCurso || row.aluno?.curso_id || undefined,
+        modulo_index: moduleIndex === 'final' ? undefined : moduleIndex,
+        fieldName,
+        fieldValue: numValue,
+        nota_final: computedFinal,
         ano_letivo: row.ano_letivo,
       };
 
-      const { error } = await supabase
-        .from('notas')
-        .upsert(dataToUpsert, { onConflict: 'aluno_id,disciplina_id,turma_id' });
-        
-      if (error) throw error;
+      const res = await fetchWithAuth('/api/v1/notas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || 'Erro ao salvar nota no servidor.');
+      }
+
+      const result = await res.json();
+      if (result?.data) {
+        setBoletimData(prev => prev.map(r => {
+          if (r.aluno_id === row.aluno_id) {
+            return {
+              ...r,
+              id: result.data.id || r.id,
+              disciplina_id: result.data.disciplina_id || r.disciplina_id,
+              ...(result.data.nota_final !== undefined && result.data.nota_final !== null ? { nota_final: Number(result.data.nota_final) } : {})
+            };
+          }
+          return r;
+        }));
+      }
       
-      toast.success(language === 'pt' ? 'Nota atualizada com sucesso!' : 'Grade updated successfully!');
-      
-      // We could optionally call handleSearch(selectedTurma) to refresh and compute averages,
-      // but it might cause the input to lose focus. Optimistic update is enough for quick edits.
+      toast.success(language === 'pt' ? 'Nota salva com sucesso!' : 'Grade saved successfully!');
     } catch (err: any) {
       console.error('Error quick updating grade:', err);
-      toast.error(language === 'pt' ? 'Erro ao salvar a nota.' : 'Error saving grade.');
-      // Optionally trigger handleSearch to revert
+      toast.error(language === 'pt' ? `Erro ao salvar a nota: ${err.message}` : `Error saving grade: ${err.message}`);
       if (selectedTurma) handleSearch(selectedTurma);
     }
   };
@@ -2216,7 +2297,7 @@ function BoletimContent() {
                                  <input
                                    type="number"
                                    min="0"
-                                   max="10"
+                                    max={settings?.nota_maxima || 20}
                                    step="0.1"
                                    value={notaValue !== null && notaValue !== undefined ? Number(notaValue) : ''}
                                    onChange={(e) => {
@@ -2226,7 +2307,8 @@ function BoletimContent() {
                                        r.id === row.id ? { ...r, [`nota${i + 1}`]: val === '' ? null : Number(val) } : r
                                      ));
                                    }}
-                                   onBlur={(e) => handleQuickGradeUpdate(row, i + 1, e.target.value)}
+                                   onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                                    onBlur={(e) => handleQuickGradeUpdate(row, i + 1, e.target.value)}
                                    className={cn(
                                      "w-16 md:w-20 mx-auto px-2 py-1.5 text-center font-mono font-bold text-sm rounded-lg border transition-all shadow-2xs outline-none focus:ring-2 focus:bg-white no-spin grade-input",
                                      notaValue !== null && notaValue !== undefined && Number(notaValue) !== 0
@@ -2247,7 +2329,7 @@ function BoletimContent() {
                              <input
                                type="number"
                                min="0"
-                               max="10"
+                                    max={settings?.nota_maxima || 20}
                                step="0.1"
                                value={row.nota_final !== null && row.nota_final !== undefined ? Number(row.nota_final) : ''}
                                onChange={(e) => {
@@ -2256,7 +2338,8 @@ function BoletimContent() {
                                    r.id === row.id ? { ...r, nota_final: val === '' ? null : Number(val) } : r
                                  ));
                                }}
-                               onBlur={(e) => handleQuickGradeUpdate(row, 'final', e.target.value)}
+                               onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                                onBlur={(e) => handleQuickGradeUpdate(row, "final", e.target.value)}
                                className={cn(
                                  "w-20 md:w-24 mx-auto px-2 py-1.5 text-center font-mono font-black text-sm rounded-lg border-2 transition-all shadow-xs outline-none focus:ring-2 focus:bg-white no-spin grade-input",
                                  row.nota_final !== null && row.nota_final !== undefined
