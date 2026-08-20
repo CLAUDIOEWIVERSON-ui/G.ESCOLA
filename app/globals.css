@@ -108,6 +108,21 @@ body {
   }
 }
 
+/* Remove default browser spinner controls from grade inputs so digits are never covered */
+input.no-spin::-webkit-outer-spin-button,
+input.no-spin::-webkit-inner-spin-button,
+.grade-input::-webkit-outer-spin-button,
+.grade-input::-webkit-inner-spin-button {
+  -webkit-appearance: none !important;
+  margin: 0 !important;
+}
+
+input.no-spin,
+.grade-input {
+  -moz-appearance: textfield !important;
+  appearance: textfield !important;
+}
+
 /* =========================================================================
    PROTEÇÃO DE FOLHAS E DOCUMENTOS OFICIAIS CONTRA O MODO DARK NA TELA
    Folhas Semanais, Folhas Mensais, Boletim Individual, Boletim de Turma

@@ -2168,12 +2168,12 @@ function BoletimContent() {
                       <th className="px-4 lg:px-6 py-4 text-left w-12">#</th>
                       <th className="px-4 lg:px-6 py-4">{t.reportCard.student}</th>
                       {Array.from({ length: courseModules }).map((_, i) => (
-                        <th key={i} className="px-1 lg:px-3 py-4 text-center">MOD {i + 1}</th>
+                        <th key={i} className="px-2 py-4 text-center min-w-[80px]">MOD {i + 1}</th>
                       ))}
-                      <th className="px-2 lg:px-6 py-4 text-center">{t.reportCard.average}</th>
-                      <th className="px-2 lg:px-6 py-4 text-center">{language === 'pt' ? 'Situação' : 'Status'}</th>
+                      <th className="px-3 py-4 text-center min-w-[95px]">{t.reportCard.average}</th>
+                      <th className="px-4 py-4 text-center">{language === 'pt' ? 'Situação' : 'Status'}</th>
 
-                      <th className="px-3 lg:px-6 py-4 text-right print:hidden">{language === 'pt' ? 'Ações' : 'Actions'}</th>
+                      <th className="px-4 py-4 text-right print:hidden">{language === 'pt' ? 'Ações' : 'Actions'}</th>
                    </tr>
                  </thead>
                  <tbody>
@@ -2212,7 +2212,7 @@ function BoletimContent() {
                            {Array.from({ length: courseModules }).map((_, i) => {
                              const notaValue = (row as any)[`nota${i + 1}`];
                              return (
-                               <td key={i} className="px-1 py-2 text-center font-mono text-sm text-slate-500">
+                               <td key={i} className="px-2 py-3 text-center">
                                  <input
                                    type="number"
                                    min="0"
@@ -2227,13 +2227,23 @@ function BoletimContent() {
                                      ));
                                    }}
                                    onBlur={(e) => handleQuickGradeUpdate(row, i + 1, e.target.value)}
-                                   className="w-14 px-1 py-1 text-center border border-transparent hover:border-slate-200 focus:border-blue-500 rounded bg-transparent focus:bg-white focus:outline-none transition-all print:border-none print:bg-transparent print:p-0"
+                                   className={cn(
+                                     "w-16 md:w-20 mx-auto px-2 py-1.5 text-center font-mono font-bold text-sm rounded-lg border transition-all shadow-2xs outline-none focus:ring-2 focus:bg-white no-spin grade-input",
+                                     notaValue !== null && notaValue !== undefined && Number(notaValue) !== 0
+                                       ? (Number(notaValue) >= settings.media_aprovacao
+                                           ? "text-blue-700 bg-blue-50/70 border-blue-200 hover:border-blue-400 focus:border-blue-600 focus:ring-blue-500/20"
+                                           : Number(notaValue) >= settings.media_recuperacao
+                                           ? "text-amber-700 bg-amber-50/70 border-amber-200 hover:border-amber-400 focus:border-amber-600 focus:ring-amber-500/20"
+                                           : "text-red-600 bg-red-50/70 border-red-200 hover:border-red-400 focus:border-red-600 focus:ring-red-500/20")
+                                       : "text-slate-700 bg-slate-50/80 border-slate-200 hover:border-slate-300 hover:bg-white focus:border-blue-500 focus:ring-blue-500/20"
+                                   )}
                                    placeholder="-"
+                                   title={language === 'pt' ? 'Clique para alterar a nota' : 'Click to change grade'}
                                  />
                                </td>
                              );
                            })}
-                           <td className="px-3 py-2 text-center">
+                           <td className="px-2 py-3 text-center">
                              <input
                                type="number"
                                min="0"
@@ -2248,10 +2258,17 @@ function BoletimContent() {
                                }}
                                onBlur={(e) => handleQuickGradeUpdate(row, 'final', e.target.value)}
                                className={cn(
-                                 "w-16 px-1 py-1 text-center border border-transparent hover:border-slate-200 focus:border-blue-500 rounded bg-transparent focus:bg-white focus:outline-none transition-all font-bold font-mono text-sm print:border-none print:bg-transparent print:p-0",
-                                 (row.nota_final || 0) >= settings.media_aprovacao ? "text-blue-600" : (row.nota_final || 0) >= settings.media_recuperacao ? "text-yellow-600" : "text-red-500"
+                                 "w-20 md:w-24 mx-auto px-2 py-1.5 text-center font-mono font-black text-sm rounded-lg border-2 transition-all shadow-xs outline-none focus:ring-2 focus:bg-white no-spin grade-input",
+                                 row.nota_final !== null && row.nota_final !== undefined
+                                   ? (Number(row.nota_final) >= settings.media_aprovacao
+                                       ? "text-blue-800 bg-blue-100/80 border-blue-400 hover:border-blue-500 focus:border-blue-600 focus:ring-blue-500/25"
+                                       : Number(row.nota_final) >= settings.media_recuperacao
+                                       ? "text-amber-800 bg-amber-100/80 border-amber-400 hover:border-amber-500 focus:border-amber-600 focus:ring-amber-500/25"
+                                       : "text-red-800 bg-red-100/80 border-red-400 hover:border-red-500 focus:border-red-600 focus:ring-red-500/25")
+                                   : "text-slate-400 bg-slate-50 border-slate-200 hover:border-slate-300 focus:border-blue-500 focus:ring-blue-500/20"
                                )}
                                placeholder="-"
+                               title={language === 'pt' ? 'Média final (clique para alterar)' : 'Final average (click to edit)'}
                              />
                            </td>
                             <td className="px-6 py-4 text-center">
