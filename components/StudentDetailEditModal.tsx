@@ -190,7 +190,8 @@ export default function StudentDetailEditModal({
           curso_nome: '',
           data_inicio_curso: '',
           data_fim_curso: '',
-          nif: ''
+          nif: '',
+          passaporte: ''
         });
         setAttendanceStats({
           presentes: 0,
@@ -452,6 +453,7 @@ export default function StudentDetailEditModal({
       dataToSave.observacoes = currentAluno.observacoes || null;
 
       dataToSave.nif = currentAluno.nif ? currentAluno.nif.trim() : null;
+      dataToSave.passaporte = currentAluno.passaporte ? currentAluno.passaporte.trim() : null;
       dataToSave.data_inicio_curso = currentAluno.data_inicio_curso || null;
       dataToSave.data_fim_curso = currentAluno.data_fim_curso || null;
 
@@ -1073,7 +1075,7 @@ export default function StudentDetailEditModal({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                   <div>
                     <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
                       {language === 'pt' ? 'Data de Nascimento' : 'Date of Birth'}
@@ -1107,6 +1109,29 @@ export default function StudentDetailEditModal({
                       onChange={(e) => setCurrentAluno({ ...currentAluno, nif: e.target.value })}
                       placeholder="NIF / Identificação Fiscal"
                       className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1 flex items-center justify-between">
+                      <span className="flex items-center gap-1">
+                        <Globe size={11} className={turmaInfo?.internacional ? "text-amber-500" : "text-blue-500"} />
+                        {language === 'pt' ? 'Passaporte' : 'Passport'}
+                      </span>
+                      {turmaInfo?.internacional && (
+                        <span className="text-[8px] bg-amber-500/10 text-amber-600 font-black px-1 rounded uppercase">Exterior</span>
+                      )}
+                    </label>
+                    <input
+                      type="text"
+                      value={currentAluno?.passaporte || ''}
+                      onChange={(e) => setCurrentAluno({ ...currentAluno, passaporte: e.target.value })}
+                      placeholder={language === 'pt' ? 'Nº do Passaporte' : 'Passport Number'}
+                      className={cn(
+                        "w-full px-3 py-2 border rounded-lg text-sm outline-none transition-colors",
+                        turmaInfo?.internacional
+                          ? "bg-amber-50/60 border-amber-300 focus:border-amber-500 font-semibold text-slate-900 placeholder:text-amber-700/40"
+                          : "bg-slate-50 border-slate-200 focus:border-blue-500"
+                      )}
                     />
                   </div>
                 </div>
@@ -1594,10 +1619,10 @@ export default function StudentDetailEditModal({
                   <td className="p-1 font-mono">{currentAluno?.nif || '-'}</td>
                 </tr>
                 <tr className="border-b border-slate-400">
+                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-400">Passaporte:</td>
+                  <td className="p-1 font-mono border-r border-slate-400 font-bold text-slate-900">{currentAluno?.passaporte || '-'}</td>
                   <td className="p-1 font-bold bg-slate-100 border-r border-slate-400">Título de Eleitor:</td>
-                  <td className="p-1 font-mono border-r border-slate-400">{currentAluno?.titulo_eleitor || '-'}</td>
-                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-400">Estado Civil:</td>
-                  <td className="p-1">{currentAluno?.estado_civil || '-'}</td>
+                  <td className="p-1 font-mono">{currentAluno?.titulo_eleitor || '-'}</td>
                 </tr>
                 <tr className="border-b border-slate-400">
                   <td className="p-1 font-bold bg-slate-100 border-r border-slate-400">Tipo Sanguíneo/Fator RH:</td>

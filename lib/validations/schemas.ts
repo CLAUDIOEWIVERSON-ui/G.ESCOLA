@@ -42,6 +42,7 @@ export const alunoSchema = z.object({
   titulo_eleitor: z.string().optional().nullable(),
   nif: z.string().optional().nullable(),
   rg: z.string().optional().nullable(),
+  passaporte: z.string().optional().nullable(),
   om: z.string().optional().nullable(),
   posto_graduacao: z.string().optional().nullable(),
   ano_admissao: z.number().int().optional().nullable(),

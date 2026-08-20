@@ -83,6 +83,8 @@ CREATE TABLE IF NOT EXISTS public.alunos (
   altura NUMERIC(3,2),
   peso NUMERIC(5,2),
   estado_civil TEXT,
+  passaporte TEXT,
+  endereco TEXT,
   data_inicio_curso DATE,
   data_fim_curso DATE,
   created_at TIMESTAMPTZ DEFAULT NOW(),

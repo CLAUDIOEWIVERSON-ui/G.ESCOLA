@@ -787,6 +787,7 @@ function TurmasContent() {
       data_inicio_curso: '',
       data_fim_curso: '',
       data_nascimento: '',
+      passaporte: '',
       funcao: '',
       observacoes: ''
     };
@@ -873,6 +874,7 @@ function TurmasContent() {
       if (currentAluno.telefone) dataToSave.telefone = currentAluno.telefone;
       if (currentAluno.whatsapp) dataToSave.whatsapp = currentAluno.whatsapp;
       if (currentAluno.foto_url) dataToSave.foto_url = currentAluno.foto_url;
+      if (currentAluno.passaporte) dataToSave.passaporte = currentAluno.passaporte.trim();
       
       if (currentAluno.data_nascimento !== undefined) {
         dataToSave.data_nascimento = currentAluno.data_nascimento ? currentAluno.data_nascimento : null;
@@ -2267,8 +2269,13 @@ function TurmasContent() {
                         {[aluno.posto_graduacao, aluno.nome_guerra].filter(Boolean).join(' ') || 'Aluno'} • {aluno.matricula}
                       </div>
                       
-                      {(aluno.data_nascimento || aluno.funcao) && (
+                      {(aluno.data_nascimento || aluno.funcao || aluno.passaporte) && (
                         <div className="flex flex-wrap gap-1.5 mt-1">
+                          {aluno.passaporte && (
+                            <span className="text-[9px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 whitespace-nowrap flex items-center gap-1">
+                              🛂 Passaporte: <span className="font-mono">{aluno.passaporte}</span>
+                            </span>
+                          )}
                           {aluno.data_nascimento && (
                             <span className="text-[9px] text-slate-600 bg-slate-100 border border-slate-200 rounded px-1.5 py-0.5 whitespace-nowrap">
                               🎂 {aluno.data_nascimento.split('-').reverse().join('/')}
@@ -3250,6 +3257,11 @@ function TurmasContent() {
                               </td>
                               <td className="border border-black p-1 text-center align-middle font-mono text-xs font-bold">
                                 <div>{student.nip || student.matricula || student.cpf || '—'}</div>
+                                {student.passaporte && (
+                                  <div className="text-[8px] font-mono font-bold text-amber-900 bg-amber-50 border border-amber-200 rounded px-1 py-0.2 mt-0.5">
+                                    PASS: {student.passaporte}
+                                  </div>
+                                )}
                                 <div className="text-[8px] font-sans uppercase font-bold text-neutral-500 mt-0.5">
                                   {student.tipo_aluno ? student.tipo_aluno.toUpperCase() : 'CIVIL'}
                                 </div>

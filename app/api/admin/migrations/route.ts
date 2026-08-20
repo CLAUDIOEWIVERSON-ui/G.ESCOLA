@@ -569,6 +569,21 @@ export async function GET() {
             .limit(1);
           return error;
         }
+      },
+      {
+        key: 'alunos_passaporte',
+        tableName: 'alunos',
+        columnName: 'passaporte',
+        fileName: '58_add_passaporte_to_alunos.sql',
+        description: 'Coluna passaporte na tabela de alunos para turmas no exterior e identificação de documento internacional.',
+        isColumn: true,
+        checkFn: async () => {
+          const { error } = await supabaseAdmin
+            .from('alunos')
+            .select('passaporte')
+            .limit(1);
+          return error;
+        }
       }
     ];
 
