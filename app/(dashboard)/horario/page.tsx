@@ -24,7 +24,7 @@ import {
   Layers,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { cn } from "@/lib/utils";
+import { cn, getCleanTurmaName } from "@/lib/utils";
 import Image from "next/image";
 import navalMissionLogo from '@/src/assets/images/regenerated_image_1782409801823.png';
 import { format, startOfWeek, addDays } from "date-fns";
@@ -1139,7 +1139,7 @@ export default function HorarioPage() {
                       </span>
                     </div>
                     <h2 className="text-4xl md:text-5xl font-black tracking-tighter leading-none text-slate-900 animate-fade-in">
-                      {selectedTurma?.nome}
+                      {getCleanTurmaName(selectedTurma, selectedCurso?.nome, language === 'pt' ? 'Turma Única' : 'Single Class')}
                     </h2>
                   </div>
 

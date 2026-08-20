@@ -32,7 +32,7 @@ import femaleAvatar from '@/src/assets/images/avatar_female_1778977246051.png';
 import militaryMaleAvatar from '@/src/assets/images/avatar_military_male_1779964887322.png';
 import militaryFemaleAvatar from '@/src/assets/images/avatar_military_female_1779964903107.png';
 import navalMissionLogo from '@/src/assets/images/regenerated_image_1782409801823.png';
-import { cn } from '@/lib/utils';
+import { cn, getCleanTurmaName } from '@/lib/utils';
 import { toast } from 'sonner';
 import { 
   format, 
@@ -740,7 +740,7 @@ export default function FrequenciaPage() {
                   <div>
                     <span className="block opacity-65 font-bold uppercase text-[9px] tracking-wider text-slate-400">{language === 'pt' ? 'TURMA' : 'CLASS'}</span>
                     <span className="font-bold text-slate-700 font-mono">
-                      {activeTurma?.nome || (language === 'pt' ? 'Todas' : 'All')}
+                      {activeTurma ? getCleanTurmaName(activeTurma, cursos.find(c => c.id === selectedCurso)?.nome, language === 'pt' ? 'Turma Única' : 'Single Class') : (language === 'pt' ? 'Todas' : 'All')}
                     </span>
                   </div>
                   <div className="border-l border-slate-200 h-6 shrink-0" />

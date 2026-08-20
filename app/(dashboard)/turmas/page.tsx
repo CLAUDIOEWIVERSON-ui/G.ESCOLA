@@ -8,7 +8,7 @@ import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
 import { Plus, Search, Layers as LayersIcon, Library, Calendar, Clock, MapPin, Pencil, Trash2, Loader2, CheckCircle2, RefreshCcw, Users, Mail, Phone, Building, Camera, MessageCircle, XCircle, FileText, X, GraduationCap, School, ChevronLeft, ChevronRight, Printer, Monitor, Globe, Anchor, Swords } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '@/lib/utils';
+import { cn, getCleanTurmaName } from '@/lib/utils';
 import Modal from '@/components/Modal';
 import StudentDetailEditModal from '@/components/StudentDetailEditModal';
 import { getCardStyleForItem, getCardColorSettings, CardColorSettings } from '@/lib/cardColors';
@@ -3139,12 +3139,12 @@ function TurmasContent() {
                   {/* Summary Details Grid */}
                   <div className="grid grid-cols-4 gap-3 font-semibold uppercase text-[10px] bg-slate-50 p-2.5 rounded border border-slate-300">
                     <div className="flex flex-col">
-                      <span className="text-slate-500 font-bold">{language === 'pt' ? 'Turma / Grupo:' : 'Class / Group:'}</span>
-                      <span className="font-extrabold text-slate-900 text-xs">{rosterTurma?.nome || '—'}</span>
+                      <span className="text-slate-500 font-bold">{language === 'pt' ? 'Curso:' : 'Course:'}</span>
+                      <span className="font-extrabold text-slate-900 text-xs truncate">{rosterTurma?.curso?.nome || rosterTurma?.curso_nome || rosterTurma?.nome || '—'}</span>
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-slate-500 font-bold">{language === 'pt' ? 'Curso:' : 'Course:'}</span>
-                      <span className="font-extrabold text-slate-900 text-xs truncate">{rosterTurma?.curso?.nome || rosterTurma?.nome || '—'}</span>
+                      <span className="text-slate-500 font-bold">{language === 'pt' ? 'Turma / Grupo:' : 'Class / Group:'}</span>
+                      <span className="font-extrabold text-slate-900 text-xs">{getCleanTurmaName(rosterTurma, rosterTurma?.curso || rosterTurma?.curso_nome, language === 'pt' ? 'Turma Única' : 'Single Class')}</span>
                     </div>
                     <div className="flex flex-col">
                       <span className="text-slate-500 font-bold">{language === 'pt' ? 'Documento:' : 'Document:'}</span>

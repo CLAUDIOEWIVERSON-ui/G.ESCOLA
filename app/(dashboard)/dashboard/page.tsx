@@ -7,7 +7,7 @@ import { useUser } from '@/lib/auth/UserContext';
 import { useDashboardStats } from '@/hooks/useCachedData';
 import { supabase } from '@/lib/supabase/client';
 import { fetchWithAuth } from '@/lib/api';
-import { cn } from '@/lib/utils';
+import { cn, getCleanTurmaName } from '@/lib/utils';
 import Link from 'next/link';
 import { 
   Users, 
@@ -1543,7 +1543,14 @@ export default function DashboardPage() {
                             <td className="p-2 border-r border-black align-middle">
                               <div className="font-bold text-xs uppercase">{curso?.nome || '-'}</div>
                               <div className={cn("text-[9px] uppercase mt-0.5 font-medium", isPreInscrito ? "text-red-600" : "text-slate-600")}>
-                                {turmaData?.nome ? `${turmaData.nome} • ` : ''}{turmaData?.localizacao || '-'}
+                                {(() => {
+                                  const cleanTurma = getCleanTurmaName(turmaData, curso?.nome, '');
+                                  const location = turmaData?.localizacao || '-';
+                                  if (cleanTurma && cleanTurma !== 'Turma Única') {
+                                    return `${cleanTurma} • ${location}`;
+                                  }
+                                  return location;
+                                })()}
                               </div>
                             </td>
                             <td className="p-2 border-r border-black align-middle text-center font-mono font-bold">

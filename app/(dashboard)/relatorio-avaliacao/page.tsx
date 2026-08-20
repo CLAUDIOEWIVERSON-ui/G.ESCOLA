@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
+import { getCleanTurmaName } from '@/lib/utils';
 
 // Scaling text helper matches CP: 5, CPa: 3, D/NA: 1
 const getScaleLabel = (val: number) => {
@@ -2371,7 +2372,7 @@ function RelatorioAvaliacaoAdminContent() {
                           toast.promise(
                             (async () => {
                               const currentTurmaObj = turmas.find(t => t.id === selectedTurma);
-                              const turmaNome = currentTurmaObj ? currentTurmaObj.nome : 'Turma';
+                              const turmaNome = currentTurmaObj ? getCleanTurmaName(currentTurmaObj, currentTurmaObj.curso?.nome, 'Turma Única') : 'Turma';
 
                               const { data, error } = await supabase
                                 .from('student_access_codes')
@@ -2924,12 +2925,12 @@ function RelatorioAvaliacaoAdminContent() {
                               <span className="text-slate-800 font-semibold">{studentSub.aluno?.om || "Não especificado"}</span>
                             </div>
                             <div>
-                              <span className="text-slate-400 block font-bold">TURMA EM CURSO:</span>
-                              <span className="text-slate-800 font-semibold">{studentSub.turma?.nome}</span>
+                              <span className="text-slate-400 block font-bold">CURSO REALIZADO:</span>
+                              <span className="text-slate-800 font-semibold">{studentSub.turma?.curso?.nome || "Não especificado"}</span>
                             </div>
                             <div>
-                              <span className="text-slate-400 block font-bold">CURSO REALIZADO:</span>
-                              <span className="text-slate-800 font-semibold">{studentSub.turma?.curso?.nome}</span>
+                              <span className="text-slate-400 block font-bold">TURMA EM CURSO:</span>
+                              <span className="text-slate-800 font-semibold">{getCleanTurmaName(studentSub.turma, studentSub.turma?.curso?.nome, "Turma Única")}</span>
                             </div>
                           </div>
                         </div>

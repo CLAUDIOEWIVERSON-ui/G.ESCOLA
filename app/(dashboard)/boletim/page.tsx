@@ -28,7 +28,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
-import { cn } from '@/lib/utils';
+import { cn, getCleanTurmaName } from '@/lib/utils';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { useUser } from '@/lib/auth/UserContext';
@@ -2721,7 +2721,9 @@ function BoletimContent() {
                                     </div>
                                     <div className="col-span-1 flex flex-col gap-0.5 mt-2 pt-1.5 border-t border-slate-200/60">
                                       <span className="text-[8px] font-black tracking-widest text-slate-400 uppercase leading-none">{reportT[language as "pt" | "en"].class}</span>
-                                      <span className="text-[10px] font-extrabold text-slate-850 break-words whitespace-normal mt-1 leading-normal">{reportData.classObj?.nome || (language === 'pt' ? 'Não disponível' : 'Not available')}</span>
+                                      <span className="text-[10px] font-extrabold text-slate-850 break-words whitespace-normal mt-1 leading-normal">
+                                        {getCleanTurmaName(reportData.classObj, reportData.courseObj?.nome, language === 'pt' ? 'Turma Única' : 'Single Class')}
+                                      </span>
                                     </div>
                                     <div className="col-span-1 flex flex-col gap-0.5 mt-2 pt-1.5 border-t border-slate-200/60">
                                       <span className="text-[8px] font-black tracking-widest text-slate-400 uppercase leading-none">{reportT[language as "pt" | "en"].period}</span>
@@ -3303,7 +3305,11 @@ function BoletimContent() {
                                    <div className="flex flex-col gap-0.5">
                                      <span className="text-[8px] font-black tracking-widest text-slate-400 uppercase leading-none">{language === 'pt' ? 'TURMA' : 'CLASS'}</span>
                                      <span className="text-xs font-black uppercase text-slate-800 tracking-wide mt-1 leading-tight">
-                                       {turmas.find((t: any) => t.id === selectedTurma)?.nome}
+                                       {(() => {
+                                         const currentTurmaObj = turmas.find((t: any) => t.id === selectedTurma);
+                                         const courseName = currentTurmaObj?.curso?.nome || 'C-E-BBS';
+                                         return getCleanTurmaName(currentTurmaObj, courseName, language === 'pt' ? 'Turma Única' : 'Single Class');
+                                       })()}
                                      </span>
                                    </div>
                                    <div className="flex flex-col gap-0.5">
