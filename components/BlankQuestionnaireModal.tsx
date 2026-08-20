@@ -220,9 +220,9 @@ export default function BlankQuestionnaireModal({ isOpen, onClose }: BlankQuesti
 
               {/* Section I */}
               <div className="mb-4">
-                <div className="bg-indigo-900 text-white px-3 py-1.5 rounded-lg text-[10px] md:text-[11px] font-black uppercase tracking-wider mb-2 font-mono flex justify-between items-center">
-                  <span>I. Avaliação do Curso</span>
-                  <span className="text-[9px] text-white/70 font-mono">Págn. 1</span>
+                <div className="bg-indigo-900 !text-white text-white px-3 py-1.5 rounded-lg text-[10px] md:text-[11px] font-black uppercase tracking-wider mb-2 font-mono flex justify-between items-center">
+                  <span className="!text-white text-white">I. Avaliação do Curso</span>
+                  <span className="text-[9px] !text-white text-white font-mono">Págn. 1</span>
                 </div>
                 <table className="w-full text-[10px] md:text-[11px] border-collapse font-sans text-slate-800">
                   <tbody>
@@ -253,9 +253,9 @@ export default function BlankQuestionnaireModal({ isOpen, onClose }: BlankQuesti
 
               {/* Section II */}
               <div className="mb-4">
-                <div className="bg-indigo-900 text-white px-3 py-1.5 rounded-lg text-[10px] md:text-[11px] font-black uppercase tracking-wider mb-2 font-mono flex justify-between items-center">
-                  <span>II. Avaliação do Instrutor</span>
-                  <span className="text-[9px] text-white/70 font-mono">Págn. 1</span>
+                <div className="bg-indigo-900 !text-white text-white px-3 py-1.5 rounded-lg text-[10px] md:text-[11px] font-black uppercase tracking-wider mb-2 font-mono flex justify-between items-center">
+                  <span className="!text-white text-white">II. Avaliação do Instrutor</span>
+                  <span className="text-[9px] !text-white text-white font-mono">Págn. 1</span>
                 </div>
                 <table className="w-full text-[10px] md:text-[11px] border-collapse font-sans text-slate-800">
                   <tbody>
@@ -286,9 +286,9 @@ export default function BlankQuestionnaireModal({ isOpen, onClose }: BlankQuesti
 
               {/* Section III */}
               <div className="mb-4">
-                <div className="bg-indigo-900 text-white px-3 py-1.5 rounded-lg text-[10px] md:text-[11px] font-black uppercase tracking-wider mb-2 font-mono flex justify-between items-center">
-                  <span>III. Autoavaliação do Aluno</span>
-                  <span className="text-[9px] text-white/70 font-mono">Págn. 1</span>
+                <div className="bg-indigo-900 !text-white text-white px-3 py-1.5 rounded-lg text-[10px] md:text-[11px] font-black uppercase tracking-wider mb-2 font-mono flex justify-between items-center">
+                  <span className="!text-white text-white">III. Autoavaliação do Aluno</span>
+                  <span className="text-[9px] !text-white text-white font-mono">Págn. 1</span>
                 </div>
                 <table className="w-full text-[10px] md:text-[11px] border-collapse font-sans text-slate-800">
                   <tbody>
@@ -341,9 +341,9 @@ export default function BlankQuestionnaireModal({ isOpen, onClose }: BlankQuesti
 
               {/* Section IV */}
               <div className="mb-4">
-                <div className="bg-indigo-900 text-white px-3 py-1.5 rounded-lg text-[10px] md:text-[11px] font-black uppercase tracking-wider mb-2 font-mono flex justify-between items-center">
-                  <span>IV. Infraestrutura e Apoio Administrativo</span>
-                  <span className="text-[9px] text-white/70 font-mono">Págn. 2</span>
+                <div className="bg-indigo-900 !text-white text-white px-3 py-1.5 rounded-lg text-[10px] md:text-[11px] font-black uppercase tracking-wider mb-2 font-mono flex justify-between items-center">
+                  <span className="!text-white text-white">IV. Infraestrutura e Apoio Administrativo</span>
+                  <span className="text-[9px] !text-white text-white font-mono">Págn. 2</span>
                 </div>
                 <table className="w-full text-[10px] md:text-[11px] border-collapse font-sans text-slate-800">
                   <tbody>
@@ -374,9 +374,9 @@ export default function BlankQuestionnaireModal({ isOpen, onClose }: BlankQuesti
 
               {/* Section V */}
               <div className="mb-4">
-                <div className="bg-indigo-900 text-white px-3 py-1.5 rounded-lg text-[10px] md:text-[11px] font-black uppercase tracking-wider mb-2 font-mono flex justify-between items-center">
-                  <span>V. Impacto do Curso</span>
-                  <span className="text-[9px] text-white/70 font-mono">Págn. 2</span>
+                <div className="bg-indigo-900 !text-white text-white px-3 py-1.5 rounded-lg text-[10px] md:text-[11px] font-black uppercase tracking-wider mb-2 font-mono flex justify-between items-center">
+                  <span className="!text-white text-white">V. Impacto do Curso</span>
+                  <span className="text-[9px] !text-white text-white font-mono">Págn. 2</span>
                 </div>
                 <table className="w-full text-[10px] md:text-[11px] border-collapse font-sans text-slate-800">
                   <tbody>
@@ -407,9 +407,9 @@ export default function BlankQuestionnaireModal({ isOpen, onClose }: BlankQuesti
 
               {/* Section VI */}
               <div className="mb-2">
-                <div className="bg-indigo-900 text-white px-3 py-1.5 rounded-lg text-[10px] md:text-[11px] font-black uppercase tracking-wider mb-3 font-mono flex justify-between items-center">
-                  <span>VI. Comentários, Elogios e Sugestões</span>
-                  <span className="text-[9px] text-white/70 font-mono">Págn. 2</span>
+                <div className="bg-indigo-900 !text-white text-white px-3 py-1.5 rounded-lg text-[10px] md:text-[11px] font-black uppercase tracking-wider mb-3 font-mono flex justify-between items-center">
+                  <span className="!text-white text-white">VI. Comentários, Elogios e Sugestões</span>
+                  <span className="text-[9px] !text-white text-white font-mono">Págn. 2</span>
                 </div>
                 
                 {/* Visual Dotted Comments Block */}

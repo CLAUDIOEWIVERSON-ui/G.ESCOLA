@@ -659,10 +659,57 @@ html:not(.dark) .bg-white .text-slate-700 {
   }
 
   body.printing-student-ficha .student-ficha-printable-doc .section-blue-bar,
-  .student-ficha-printable-doc .section-blue-bar {
+  .student-ficha-printable-doc .section-blue-bar,
+  .section-blue-bar {
     background-color: #002776 !important;
     background: #002776 !important;
     color: #ffffff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Universal high-contrast rule: White text for any printed element with blue or dark/black background */
+  [class*="bg-[#002776]"],
+  [class*="bg-[#002060]"],
+  [class*="bg-[#002244]"],
+  [class*="bg-slate-900"],
+  [class*="bg-slate-950"],
+  [class*="bg-slate-800"],
+  [class*="bg-neutral-900"],
+  [class*="bg-black"],
+  [class*="bg-indigo-900"],
+  [class*="bg-indigo-950"],
+  [class*="bg-blue-900"],
+  [class*="bg-blue-950"],
+  .bg-dark-print,
+  th.bg-slate-900,
+  tr.bg-slate-900 th,
+  tr.bg-slate-900 td,
+  th.bg-black,
+  tr.bg-black th,
+  tr.bg-black td {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  [class*="bg-[#002776]"] *,
+  [class*="bg-[#002060]"] *,
+  [class*="bg-[#002244]"] *,
+  [class*="bg-slate-900"] *,
+  [class*="bg-slate-950"] *,
+  [class*="bg-slate-800"] *,
+  [class*="bg-neutral-900"] *,
+  [class*="bg-black"] *,
+  [class*="bg-indigo-900"] *,
+  [class*="bg-indigo-950"] *,
+  [class*="bg-blue-900"] *,
+  [class*="bg-blue-950"] *,
+  .bg-dark-print *,
+  .section-blue-bar * {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }

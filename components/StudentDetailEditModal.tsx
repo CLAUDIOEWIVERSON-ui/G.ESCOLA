@@ -1724,7 +1724,7 @@ export default function StudentDetailEditModal({
             <div>
               <div className="border-b-2 border-slate-800 w-4/5 mx-auto mb-1"></div>
               <p className="font-bold text-slate-800 uppercase">Coordenador de Cursos</p>
-              <p className="text-[8px] text-slate-500 uppercase">Carimbo e Assinatura</p>
+              <p className="text-[8px] text-slate-500 uppercase">Assinatura</p>
             </div>
           </div>
         </div>,

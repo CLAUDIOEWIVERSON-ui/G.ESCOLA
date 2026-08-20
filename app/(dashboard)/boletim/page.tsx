@@ -2824,12 +2824,12 @@ function BoletimContent() {
                                         return (
                                           <table className="w-full text-left border-collapse bg-white table-auto">
                                             <thead>
-                                              <tr className="bg-slate-900 text-[8px] font-black text-white uppercase tracking-widest border-b border-slate-850">
-                                                <th className="px-3.5 py-2 border-r border-slate-800 w-[15%]">{language === 'pt' ? 'Módulo' : 'Module'}</th>
-                                                <th className="px-3.5 py-2 border-r border-slate-800 w-[45%]">{language === 'pt' ? 'Disciplina' : 'Discipline'}</th>
-                                                <th className="px-3.5 py-2 border-r border-slate-800 w-[10%] text-center">{language === 'pt' ? 'C.H.' : 'Hours'}</th>
-                                                <th className="px-3.5 py-2 text-center border-r border-slate-800 font-mono w-[15%]">{reportT[language as "pt" | "en"].finalGrade}</th>
-                                                <th className="px-3.5 py-2 text-right w-[15%]">{reportT[language as "pt" | "en"].situation}</th>
+                                              <tr className="bg-slate-900 text-[8px] font-black !text-white text-white uppercase tracking-widest border-b border-slate-850">
+                                                <th className="px-3.5 py-2 border-r border-slate-800 w-[15%] !text-white text-white">{language === 'pt' ? 'Módulo' : 'Module'}</th>
+                                                <th className="px-3.5 py-2 border-r border-slate-800 w-[45%] !text-white text-white">{language === 'pt' ? 'Disciplina' : 'Discipline'}</th>
+                                                <th className="px-3.5 py-2 border-r border-slate-800 w-[10%] text-center !text-white text-white">{language === 'pt' ? 'C.H.' : 'Hours'}</th>
+                                                <th className="px-3.5 py-2 text-center border-r border-slate-800 font-mono w-[15%] !text-white text-white">{reportT[language as "pt" | "en"].finalGrade}</th>
+                                                <th className="px-3.5 py-2 text-right w-[15%] !text-white text-white">{reportT[language as "pt" | "en"].situation}</th>
                                               </tr>
                                             </thead>
                                             <tbody className="text-[10px]">
@@ -3079,7 +3079,7 @@ function BoletimContent() {
                                     </span>
                                   </div>
 
-                                  {/* Single Signature & Stamp (Carimbo) Panel */}
+                                  {/* Single Signature Panel */}
                                   <div className="flex flex-col items-center justify-center pt-5 mt-3 border-t border-dashed border-slate-300">
                                     <div className="flex flex-col items-center text-center max-w-lg w-full">
                                       <div className="w-72 border-b-2 border-slate-700 h-8 mb-2"></div>
@@ -3089,7 +3089,7 @@ function BoletimContent() {
                                         </span>
                                       </div>
                                       <span className="text-[7px] font-bold text-slate-400 uppercase mt-1.5 leading-none tracking-widest">
-                                        {language === 'pt' ? 'Assinatura e Carimbo Oficial' : 'Official Signature and Stamp'}
+                                        {language === 'pt' ? 'Assinatura' : 'Signature'}
                                       </span>
                                     </div>
                                   </div>
@@ -3326,14 +3326,14 @@ function BoletimContent() {
                                    <div className="border border-slate-200 rounded-xl overflow-hidden shadow-xs">
                                      <table className="w-full text-left border-collapse bg-white table-auto">
                                        <thead>
-                                         <tr className="bg-slate-900 text-[8px] font-black text-white uppercase tracking-widest border-b border-slate-850">
-                                           <th className="px-3.5 py-2 border-r border-slate-800 w-[5%] text-center">#</th>
-                                           <th className="px-3.5 py-2 border-r border-slate-800 w-[45%]">{language === 'pt' ? 'Aluno' : 'Student'}</th>
+                                         <tr className="bg-slate-900 text-[8px] font-black !text-white text-white uppercase tracking-widest border-b border-slate-850">
+                                           <th className="px-3.5 py-2 border-r border-slate-800 w-[5%] text-center !text-white text-white">#</th>
+                                           <th className="px-3.5 py-2 border-r border-slate-800 w-[45%] !text-white text-white">{language === 'pt' ? 'Aluno' : 'Student'}</th>
                                            {Array.from({ length: courseModules }).map((_, i) => (
-                                             <th key={i} className="px-1 py-2 text-center border-r border-slate-800 w-[8%]">MOD {i + 1}</th>
+                                             <th key={i} className="px-1 py-2 text-center border-r border-slate-800 w-[8%] !text-white text-white">MOD {i + 1}</th>
                                            ))}
-                                           <th className="px-3.5 py-2 text-center border-r border-slate-800 w-[12%]">{language === 'pt' ? 'Média' : 'Avg'}</th>
-                                           <th className="px-3.5 py-2 text-right w-[14%]">{language === 'pt' ? 'Situação' : 'Status'}</th>
+                                           <th className="px-3.5 py-2 text-center border-r border-slate-800 w-[12%] !text-white text-white">{language === 'pt' ? 'Média' : 'Avg'}</th>
+                                           <th className="px-3.5 py-2 text-right w-[14%] !text-white text-white">{language === 'pt' ? 'Situação' : 'Status'}</th>
                                          </tr>
                                        </thead>
                                        <tbody className="text-[9px]">
@@ -3396,7 +3396,7 @@ function BoletimContent() {
                                    </div>
                                  </div>
 
-                                 {/* Single Signature & Stamp (Carimbo) Panel */}
+                                 {/* Single Signature Panel */}
                                  <div className="flex flex-col items-center justify-center pt-5 mt-3 border-t border-dashed border-slate-300">
                                    <div className="flex flex-col items-center text-center max-w-lg w-full">
                                      <div className="w-72 border-b-2 border-slate-700 h-8 mb-2"></div>
@@ -3406,7 +3406,7 @@ function BoletimContent() {
                                        </span>
                                      </div>
                                      <span className="text-[7px] font-bold text-slate-400 uppercase mt-1.5 leading-none tracking-widest">
-                                       {language === 'pt' ? 'Assinatura e Carimbo Oficial' : 'Official Signature and Stamp'}
+                                       {language === 'pt' ? 'Assinatura' : 'Signature'}
                                      </span>
                                    </div>
                                  </div>
