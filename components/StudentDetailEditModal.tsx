@@ -1597,7 +1597,7 @@ export default function StudentDetailEditModal({
           </div>
 
           {/* Seção 1: Dados Pessoais e Documentação Civil */}
-          <div className="mb-3">
+          <div className="mb-3 print-avoid-break break-inside-avoid">
             <h3 
               style={{ backgroundColor: '#002776', color: '#ffffff', WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}
               className="text-[9px] font-black uppercase tracking-wider bg-[#002776] text-white px-2 py-1 rounded-t section-blue-bar !text-white !bg-[#002776]"
@@ -1651,7 +1651,7 @@ export default function StudentDetailEditModal({
           </div>
 
           {/* Seção 2: Contato e Comunicação */}
-          <div className="mb-3">
+          <div className="mb-3 print-avoid-break break-inside-avoid">
             <h3 
               style={{ backgroundColor: '#002776', color: '#ffffff', WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}
               className="text-[9px] font-black uppercase tracking-wider bg-[#002776] text-white px-2 py-1 rounded-t section-blue-bar !text-white !bg-[#002776]"
@@ -1683,7 +1683,7 @@ export default function StudentDetailEditModal({
           </div>
 
           {/* Seção 3: Registro de Frequência e Assiduidade */}
-          <div className="mb-3">
+          <div className="mb-3 print-avoid-break break-inside-avoid">
             <h3 
               style={{ backgroundColor: '#002776', color: '#ffffff', WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}
               className="text-[9px] font-black uppercase tracking-wider bg-[#002776] text-white px-2 py-1 rounded-t section-blue-bar !text-white !bg-[#002776]"
@@ -1723,7 +1723,7 @@ export default function StudentDetailEditModal({
           </div>
 
           {/* Seção 4: Observações Pedagógicas */}
-          <div className="mb-4">
+          <div className="mb-4 print-avoid-break break-inside-avoid">
             <h3 
               style={{ backgroundColor: '#002776', color: '#ffffff', WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}
               className="text-[9px] font-black uppercase tracking-wider bg-[#002776] text-white px-2 py-1 rounded-t section-blue-bar !text-white !bg-[#002776]"
@@ -1740,7 +1740,7 @@ export default function StudentDetailEditModal({
           </div>
 
           {/* Termo de Assinaturas */}
-          <div className="pt-8 mt-8 grid grid-cols-2 gap-8 text-center text-xs">
+          <div className="pt-8 mt-8 grid grid-cols-2 gap-8 text-center text-xs print-avoid-break break-inside-avoid">
             <div>
               <div className="border-b-2 border-slate-800 w-4/5 mx-auto mb-1"></div>
               <p className="font-bold text-slate-800 uppercase">{currentAluno?.nome || 'Aluno'}</p>

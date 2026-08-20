@@ -167,6 +167,24 @@ export default function BlankQuestionnaireModal({ isOpen, onClose }: BlankQuesti
 
         {/* Paper Sheet Interactive Scroller */}
         <div className="p-6 md:p-8 overflow-y-auto bg-slate-50 flex flex-col items-center gap-8 print:p-0 print:bg-white print:overflow-visible shrink">
+          <style dangerouslySetInnerHTML={{ __html: `
+            @media print {
+              #print-page-1 {
+                page-break-after: always !important;
+                break-after: page !important;
+                min-height: 270mm !important;
+              }
+              #print-page-2 {
+                page-break-before: always !important;
+                break-before: page !important;
+                min-height: 270mm !important;
+              }
+              .question-section-block {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+              }
+            }
+          `}} />
           
           {/* ==================== PAGE 1 ==================== */}
           <div 
@@ -201,7 +219,7 @@ export default function BlankQuestionnaireModal({ isOpen, onClose }: BlankQuesti
               </div>
 
               {/* Evaluation score criteria details box */}
-              <div className="border border-indigo-100 bg-indigo-50/45 rounded-xl p-3 mb-5 font-sans text-[10px] md:text-[11px] text-slate-780">
+              <div className="border border-indigo-100 bg-indigo-50/45 rounded-xl p-3 mb-5 font-sans text-[10px] md:text-[11px] text-slate-780 print-avoid-break">
                 <p className="font-extrabold text-indigo-900 border-b border-indigo-100/60 pb-1 uppercase tracking-wider text-[10px] mb-2">
                   Escala de Avaliação / Critério de Pontuação:
                 </p>
@@ -219,7 +237,7 @@ export default function BlankQuestionnaireModal({ isOpen, onClose }: BlankQuesti
               </div>
 
               {/* Section I */}
-              <div className="mb-4">
+              <div className="mb-4 question-section-block print-avoid-break">
                 <div className="bg-indigo-900 !text-white text-white px-3 py-1.5 rounded-lg text-[10px] md:text-[11px] font-black uppercase tracking-wider mb-2 font-mono flex justify-between items-center">
                   <span className="!text-white text-white">I. Avaliação do Curso</span>
                   <span className="text-[9px] !text-white text-white font-mono">Págn. 1</span>
@@ -252,7 +270,7 @@ export default function BlankQuestionnaireModal({ isOpen, onClose }: BlankQuesti
               </div>
 
               {/* Section II */}
-              <div className="mb-4">
+              <div className="mb-4 question-section-block print-avoid-break">
                 <div className="bg-indigo-900 !text-white text-white px-3 py-1.5 rounded-lg text-[10px] md:text-[11px] font-black uppercase tracking-wider mb-2 font-mono flex justify-between items-center">
                   <span className="!text-white text-white">II. Avaliação do Instrutor</span>
                   <span className="text-[9px] !text-white text-white font-mono">Págn. 1</span>
@@ -285,7 +303,7 @@ export default function BlankQuestionnaireModal({ isOpen, onClose }: BlankQuesti
               </div>
 
               {/* Section III */}
-              <div className="mb-4">
+              <div className="mb-4 question-section-block print-avoid-break">
                 <div className="bg-indigo-900 !text-white text-white px-3 py-1.5 rounded-lg text-[10px] md:text-[11px] font-black uppercase tracking-wider mb-2 font-mono flex justify-between items-center">
                   <span className="!text-white text-white">III. Autoavaliação do Aluno</span>
                   <span className="text-[9px] !text-white text-white font-mono">Págn. 1</span>
@@ -319,7 +337,7 @@ export default function BlankQuestionnaireModal({ isOpen, onClose }: BlankQuesti
             </div>
 
             {/* Footer page identifier */}
-            <div className="border-t border-slate-200 pt-3 text-right text-[8px] md:text-[9px] text-slate-400 font-mono mt-10">
+            <div className="border-t border-slate-200 pt-3 text-right text-[8px] md:text-[9px] text-slate-400 font-mono mt-10 print-avoid-break">
               Página 1 de 2
             </div>
           </div>
@@ -340,7 +358,7 @@ export default function BlankQuestionnaireModal({ isOpen, onClose }: BlankQuesti
               </div>
 
               {/* Section IV */}
-              <div className="mb-4">
+              <div className="mb-4 question-section-block print-avoid-break">
                 <div className="bg-indigo-900 !text-white text-white px-3 py-1.5 rounded-lg text-[10px] md:text-[11px] font-black uppercase tracking-wider mb-2 font-mono flex justify-between items-center">
                   <span className="!text-white text-white">IV. Infraestrutura e Apoio Administrativo</span>
                   <span className="text-[9px] !text-white text-white font-mono">Págn. 2</span>

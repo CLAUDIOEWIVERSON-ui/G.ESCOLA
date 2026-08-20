@@ -400,9 +400,10 @@ html:not(.dark) .bg-white .text-slate-700 {
 }
 
 /* =========================================================================
-   UNIVERSAL PRINT STYLES
+   UNIVERSAL PRINT STYLES & ELEGANT PAGE-BREAK CONTROLS
    Ensures ALL pages, charts, questionnaires and reports print with pristine
-   black/dark text on clean white backgrounds, regardless of Dark Mode.
+   black/dark text on clean white backgrounds, without sliced tables, orphaned
+   headers, or clipped content across page breaks.
    ========================================================================= */
 @media print {
   @page {
@@ -447,11 +448,34 @@ html:not(.dark) .bg-white .text-slate-700 {
     animation: none !important;
   }
 
+  /* Container and overflow unwrapping for seamless pagination */
+  .overflow-x-auto,
+  .overflow-y-auto,
+  .overflow-hidden,
+  .custom-scrollbar,
+  [class*="overflow-"] {
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+  }
+
   /* Ensure text colors are dark & legible in print */
   h1, h2, h3, h4, h5, h6,
   p, span, b, strong, em, i,
   td, th, li, label {
     color: #000000 !important;
+  }
+
+  /* Prevent headings from being orphaned at the bottom of a page */
+  h1, h2, h3, h4, h5, h6,
+  .print-header,
+  .print-section-header,
+  .section-blue-bar,
+  .print-title,
+  .print-card-header {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+    break-after: avoid-page !important;
   }
 
   .text-white,
@@ -563,30 +587,79 @@ html:not(.dark) .bg-white .text-slate-700 {
     padding: 0 !important;
   }
 
-  /* Specialized print layout overrides */
+  /* Specialized print layout overrides and break prevention */
   .print-avoid-break,
-  .break-inside-avoid {
+  .break-inside-avoid,
+  .print-signature-panel,
+  .print-legend,
+  .signature-block,
+  .print-summary-box,
+  .stat-card,
+  .summary-box,
+  .student-card,
+  .observation-box,
+  .qr-card,
+  .print-section,
+  .official-seal {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
+    break-before: auto !important;
   }
 
-  /* Tables layout & high contrast lines for all printable sheets and forms */
+  .print-page-break,
+  .page-break-before {
+    page-break-before: always !important;
+    break-before: page !important;
+  }
+
+  .page-break-after {
+    page-break-after: always !important;
+    break-after: page !important;
+  }
+
+  /* =========================================================================
+     TABLES INTEGRITY & AUTOMATIC HEADER REPEATING ACROSS PAGES
+     Ensures thead repeats at the top of subsequent pages, tr never splits in half,
+     and tables can paginate smoothly without truncating.
+     ========================================================================= */
   table {
     width: 100% !important;
     border-collapse: collapse !important;
     page-break-inside: auto !important;
+    break-inside: auto !important;
     background-color: #FFFFFF !important;
+  }
+
+  thead {
+    display: table-header-group !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    break-after: avoid !important;
+  }
+
+  tfoot {
+    display: table-footer-group !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  tbody {
+    display: table-row-group !important;
   }
 
   tr {
     page-break-inside: avoid !important;
+    break-inside: avoid !important;
     page-break-after: auto !important;
+    break-after: auto !important;
   }
 
   td, th {
     font-size: 10px !important;
     padding: 4px !important;
     border-color: #475569 !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }

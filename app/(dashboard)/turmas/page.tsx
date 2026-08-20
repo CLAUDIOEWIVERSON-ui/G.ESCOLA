@@ -2785,7 +2785,7 @@ function TurmasContent() {
                 </div>
 
                 {/* Table container wrapping the exact styled attendance grid */}
-                <div className="overflow-hidden mt-3">
+                <div className="overflow-visible mt-3">
                   <table className="print-attendance-table w-full border-collapse border border-black table-fixed">
                     <thead>
                       <tr className="bg-neutral-100 text-[8px] font-bold uppercase text-center h-5">
@@ -2884,64 +2884,66 @@ function TurmasContent() {
                 </div>
 
                 {/* Legenda & Signature Section flowing naturally directly below the sheet in the blank space */}
-                <div className="mt-5 print:mt-1.5 grid grid-cols-2 gap-8 print:gap-4 items-start">
-                  <div>
-                    <div className="text-[10px] font-black uppercase tracking-wider mb-1.5 print:mb-0.5">
-                      {language === 'pt' ? 'Legenda:' : 'Legend:'}
+                <div className="print-avoid-break break-inside-avoid">
+                  <div className="mt-5 print:mt-1.5 grid grid-cols-2 gap-8 print:gap-4 items-start">
+                    <div>
+                      <div className="text-[10px] font-black uppercase tracking-wider mb-1.5 print:mb-0.5">
+                        {language === 'pt' ? 'Legenda:' : 'Legend:'}
+                      </div>
+                      <div className="flex select-none flex-wrap gap-x-3 gap-y-1 text-[8px] font-black border border-black p-2 print:p-1 rounded-lg bg-neutral-50 shadow-sm">
+                        <span className="text-emerald-700"><strong>P</strong> = {language === 'pt' ? 'Presente' : 'Present'}</span>
+                        <span className="text-rose-700"><strong>F</strong> = {language === 'pt' ? 'Falta' : 'Absent'}</span>
+                        <span className="text-amber-700"><strong>FJ</strong> = {language === 'pt' ? 'Justificada' : 'Excused'}</span>
+                        <span className="text-orange-700"><strong>A</strong> = {language === 'pt' ? 'Atraso' : 'Delay'}</span>
+                        <span className="text-sky-700"><strong>D</strong> = {language === 'pt' ? 'Dispensado' : 'Exempt'}</span>
+                        <span className="text-red-700 border-l border-black pl-2"><strong>FE</strong> = {language === 'pt' ? 'Feriado' : 'Holiday'}</span>
+                        <span className="text-neutral-600 border-l border-black pl-2"><strong>S/D</strong> = Sáb/Dom</span>
+                      </div>
                     </div>
-                    <div className="flex select-none flex-wrap gap-x-3 gap-y-1 text-[8px] font-black border border-black p-2 print:p-1 rounded-lg bg-neutral-50 shadow-sm">
-                      <span className="text-emerald-700"><strong>P</strong> = {language === 'pt' ? 'Presente' : 'Present'}</span>
-                      <span className="text-rose-700"><strong>F</strong> = {language === 'pt' ? 'Falta' : 'Absent'}</span>
-                      <span className="text-amber-700"><strong>FJ</strong> = {language === 'pt' ? 'Justificada' : 'Excused'}</span>
-                      <span className="text-orange-700"><strong>A</strong> = {language === 'pt' ? 'Atraso' : 'Delay'}</span>
-                      <span className="text-sky-700"><strong>D</strong> = {language === 'pt' ? 'Dispensado' : 'Exempt'}</span>
-                      <span className="text-red-700 border-l border-black pl-2"><strong>FE</strong> = {language === 'pt' ? 'Feriado' : 'Holiday'}</span>
-                      <span className="text-neutral-600 border-l border-black pl-2"><strong>S/D</strong> = Sáb/Dom</span>
+                    <div>
+                      <div className="text-[10px] font-black uppercase tracking-wider mb-1.5 print:mb-0.5 flex justify-between items-center">
+                        <span>{language === 'pt' ? 'Feriados Descritos (Motivo):' : 'Holidays Described (Reason):'}</span>
+                        <span className="text-[7px] text-neutral-400 font-bold tracking-widest uppercase">São Tomé e Príncipe</span>
+                      </div>
+                      <div className="flex flex-col gap-1 text-[7.5px] font-black border border-dashed border-red-500 p-2 print:p-1 rounded-lg bg-red-50/50 min-h-[46px] print:min-h-0 justify-center">
+                        {(() => {
+                          const activeHolidays = getHolidaysForDays(daysToRender);
+
+                          return activeHolidays.length > 0 ? (
+                            activeHolidays.map((holiday, hIdx) => (
+                              <div key={hIdx} className="text-red-700 flex items-start gap-1 justify-start leading-tight">
+                                <span className="bg-red-600 text-white font-mono text-[6.5px] px-1 rounded shrink-0 font-extrabold">
+                                  FE {holiday.day}/{String(holiday.month + 1).padStart(2, '0')}
+                                </span>
+                                <span className="font-bold shrink-0">{holiday.name}:</span>
+                                <span className="font-medium text-neutral-700 normal-case italic line-clamp-2">{holiday.meaning}</span>
+                              </div>
+                            ))
+                          ) : (
+                            <span className="text-neutral-500 italic font-mono uppercase tracking-widest text-[7px] text-center block w-full">
+                              {printSheetType === 'semanal'
+                                ? (language === 'pt' ? 'Nenhum feriado nacional nesta semana.' : 'No national holidays this week.')
+                                : (language === 'pt' ? 'Nenhum feriado nacional neste mês.' : 'No national holidays this month.')
+                              }
+                            </span>
+                          );
+                        })()}
+                      </div>
                     </div>
                   </div>
-                  <div>
-                    <div className="text-[10px] font-black uppercase tracking-wider mb-1.5 print:mb-0.5 flex justify-between items-center">
-                      <span>{language === 'pt' ? 'Feriados Descritos (Motivo):' : 'Holidays Described (Reason):'}</span>
-                      <span className="text-[7px] text-neutral-400 font-bold tracking-widest uppercase">São Tomé e Príncipe</span>
-                    </div>
-                    <div className="flex flex-col gap-1 text-[7.5px] font-black border border-dashed border-red-500 p-2 print:p-1 rounded-lg bg-red-50/50 min-h-[46px] print:min-h-0 justify-center">
-                      {(() => {
-                        const activeHolidays = getHolidaysForDays(daysToRender);
 
-                        return activeHolidays.length > 0 ? (
-                          activeHolidays.map((holiday, hIdx) => (
-                            <div key={hIdx} className="text-red-700 flex items-start gap-1 justify-start leading-tight">
-                              <span className="bg-red-600 text-white font-mono text-[6.5px] px-1 rounded shrink-0 font-extrabold">
-                                FE {holiday.day}/{String(holiday.month + 1).padStart(2, '0')}
-                              </span>
-                              <span className="font-bold shrink-0">{holiday.name}:</span>
-                              <span className="font-medium text-neutral-700 normal-case italic line-clamp-2">{holiday.meaning}</span>
-                            </div>
-                          ))
-                        ) : (
-                          <span className="text-neutral-500 italic font-mono uppercase tracking-widest text-[7px] text-center block w-full">
-                            {printSheetType === 'semanal'
-                              ? (language === 'pt' ? 'Nenhum feriado nacional nesta semana.' : 'No national holidays this week.')
-                              : (language === 'pt' ? 'Nenhum feriado nacional neste mês.' : 'No national holidays this month.')
-                            }
-                          </span>
-                        );
-                      })()}
-                    </div>
+                  {/* Observation Warning Block */}
+                  <div className="mt-4 print:mt-1 border border-red-500 bg-red-50/50 p-2.5 print:p-1 rounded-lg text-center font-extrabold text-[8.5px] print:text-[7.5px] text-red-800 tracking-wide leading-relaxed">
+                    {language === 'pt' 
+                      ? 'OBS.: Esta folha de presença deverá ser entregue diariamente ao Coordenador de Cursos para lançamento no controle do aluno.' 
+                      : 'OBS.: This attendance sheet must be submitted daily to the Course Coordinator for entry into the student record.'
+                    }
                   </div>
-                </div>
 
-                {/* Observation Warning Block */}
-                <div className="mt-4 print:mt-1 border border-red-500 bg-red-50/50 p-2.5 print:p-1 rounded-lg text-center font-extrabold text-[8.5px] print:text-[7.5px] text-red-800 tracking-wide leading-relaxed">
-                  {language === 'pt' 
-                    ? 'OBS.: Esta folha de presença deverá ser entregue diariamente ao Coordenador de Cursos para lançamento no controle do aluno.' 
-                    : 'OBS.: This attendance sheet must be submitted daily to the Course Coordinator for entry into the student record.'
-                  }
-                </div>
-
-                {/* Micro-printed controlled copy warning centered (naturally flowing to prevent any overlapping) */}
-                <div className="mt-8 print:mt-4 text-center text-[7px] font-bold tracking-[0.34em] text-neutral-400 uppercase w-full">
-                  {language === 'pt' ? 'Documento de uso oficial - Cópia controlada' : 'Official Document - Controlled Copy'}
+                  {/* Micro-printed controlled copy warning centered (naturally flowing to prevent any overlapping) */}
+                  <div className="mt-8 print:mt-4 text-center text-[7px] font-bold tracking-[0.34em] text-neutral-400 uppercase w-full">
+                    {language === 'pt' ? 'Documento de uso oficial - Cópia controlada' : 'Official Document - Controlled Copy'}
+                  </div>
                 </div>
               </div>
             </div>
@@ -3179,7 +3181,7 @@ function TurmasContent() {
                 </div>
 
                 {/* Roster Table */}
-                <div className="overflow-hidden mt-3">
+                <div className="overflow-visible mt-3">
                   <table className="print-roster-table w-full border-collapse border border-black table-fixed">
                     <thead>
                       <tr className="bg-neutral-100 text-[9px] font-extrabold uppercase text-center h-6 text-black border-b border-black">
@@ -3278,21 +3280,23 @@ function TurmasContent() {
                 </div>
 
                 {/* Signatures & Footer */}
-                <div className="mt-8 pt-6 border-t border-black grid grid-cols-2 gap-12 text-center text-xs uppercase font-bold text-black print:mt-6">
-                  <div>
-                    <div className="border-b border-black h-10 mb-1 w-3/4 mx-auto"></div>
-                    <p>{rosterProfessorName || rosterTurma?.instrutor || 'Instrutor Responsável'}</p>
-                    <p className="text-[9px] text-neutral-500 font-normal">Instrutor / Encarregado</p>
+                <div className="print-avoid-break break-inside-avoid">
+                  <div className="mt-8 pt-6 border-t border-black grid grid-cols-2 gap-12 text-center text-xs uppercase font-bold text-black print:mt-6">
+                    <div>
+                      <div className="border-b border-black h-10 mb-1 w-3/4 mx-auto"></div>
+                      <p>{rosterProfessorName || rosterTurma?.instrutor || 'Instrutor Responsável'}</p>
+                      <p className="text-[9px] text-neutral-500 font-normal">Instrutor / Encarregado</p>
+                    </div>
+                    <div>
+                      <div className="border-b border-black h-10 mb-1 w-3/4 mx-auto"></div>
+                      <p>Chefe da Missão de Assessoria Naval</p>
+                      <p className="text-[9px] text-neutral-500 font-normal">Coordenação / Supervisão</p>
+                    </div>
                   </div>
-                  <div>
-                    <div className="border-b border-black h-10 mb-1 w-3/4 mx-auto"></div>
-                    <p>Chefe da Missão de Assessoria Naval</p>
-                    <p className="text-[9px] text-neutral-500 font-normal">Coordenação / Supervisão</p>
-                  </div>
-                </div>
 
-                <div className="mt-6 text-center text-[8px] font-bold tracking-[0.25em] text-neutral-400 uppercase w-full">
-                  DOCUMENTO DE USO OFICIAL • EMISSÃO EM {new Date().toLocaleDateString(language === 'pt' ? 'pt-BR' : 'en-US')}
+                  <div className="mt-6 text-center text-[8px] font-bold tracking-[0.25em] text-neutral-400 uppercase w-full">
+                    DOCUMENTO DE USO OFICIAL • EMISSÃO EM {new Date().toLocaleDateString(language === 'pt' ? 'pt-BR' : 'en-US')}
+                  </div>
                 </div>
               </div>
             </div>

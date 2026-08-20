@@ -1767,7 +1767,7 @@ export default function HorarioPage() {
                   </table>
                 </div>
                 {/* Footer */}
-                <div className="px-12 py-8 bg-white flex items-center justify-between print-header print-header-bottom border-t border-slate-200">
+                <div className="px-12 py-8 bg-white flex items-center justify-between print-header print-header-bottom border-t border-slate-200 print-avoid-break break-inside-avoid">
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-10 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center">
                       <Shield size={20} className="text-slate-700" />
