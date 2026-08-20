@@ -303,6 +303,8 @@ CREATE TABLE IF NOT EXISTS public.eventos (
   titulo TEXT NOT NULL,
   descricao TEXT,
   data TIMESTAMPTZ NOT NULL,
+  data_fim TIMESTAMPTZ,
+  tipo_data TEXT DEFAULT 'fixa',
   cor TEXT DEFAULT 'bg-blue-600',
   exibir_aluno BOOLEAN DEFAULT false,
   uniforme_dia TEXT,

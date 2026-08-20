@@ -114,10 +114,9 @@ export function EventMarquee({ thought }: EventMarqueeProps = {}) {
         let data: any[] | null = null;
         const { data: primaryData, error } = await supabase
           .from('eventos')
-          .select('id, titulo, descricao, data, cor, exibir_aluno, exibir_instrutor, uniforme_dia, creator_id, is_exclusive')
-          .gte('data', today.toISOString())
+          .select('id, titulo, descricao, data, data_fim, tipo_data, cor, exibir_aluno, exibir_instrutor, uniforme_dia, creator_id, is_exclusive')
           .order('data', { ascending: true })
-          .limit(15);
+          .limit(25);
         
         data = primaryData;
 
@@ -125,18 +124,16 @@ export function EventMarquee({ thought }: EventMarqueeProps = {}) {
         if (error) {
           const { data: fallbackData, error: fallbackError } = await supabase
             .from('eventos')
-            .select('id, titulo, descricao, data, cor, exibir_aluno, uniforme_dia')
-            .gte('data', today.toISOString())
+            .select('id, titulo, descricao, data, cor, exibir_aluno, exibir_instrutor, uniforme_dia, creator_id, is_exclusive')
             .order('data', { ascending: true })
-            .limit(15);
+            .limit(25);
           
           if (fallbackError) {
             const { data: minData, error: minError } = await supabase
               .from('eventos')
               .select('id, titulo, descricao, data, cor')
-              .gte('data', today.toISOString())
               .order('data', { ascending: true })
-              .limit(15);
+              .limit(25);
             if (minError) {
               if (minError.code === '42P01') {
                 setEventos([]);
@@ -171,6 +168,8 @@ export function EventMarquee({ thought }: EventMarqueeProps = {}) {
     let parsedIsExclusive = evt.is_exclusive === true;
     let parsedExibirInstrutor = evt.exibir_instrutor !== false;
     let parsedExibirAluno = evt.exibir_aluno !== false;
+    let parsedDataFim = evt.data_fim ? evt.data_fim.split('T')[0] : null;
+    let parsedTipoData = (evt.tipo_data as 'fixa' | 'periodo') || (parsedDataFim ? 'periodo' : 'fixa');
 
     // Try parsing tags
     const creatorMatch = desc.match(/\[creator:([^\]]+)\]/);
@@ -203,9 +202,24 @@ export function EventMarquee({ thought }: EventMarqueeProps = {}) {
       desc = desc.replace(/\[exibir_aluno:[^\]]+\]/, '');
     }
 
+    const dataFimMatch = desc.match(/\[data_fim:([^\]]+)\]/);
+    if (dataFimMatch) {
+      parsedDataFim = dataFimMatch[1];
+      parsedTipoData = 'periodo';
+      desc = desc.replace(/\[data_fim:[^\]]+\]/, '');
+    }
+
+    const tipoDataMatch = desc.match(/\[tipo_data:([^\]]+)\]/);
+    if (tipoDataMatch) {
+      parsedTipoData = tipoDataMatch[1] as 'fixa' | 'periodo';
+      desc = desc.replace(/\[tipo_data:[^\]]+\]/, '');
+    }
+
     return {
       ...evt,
       descricao: desc,
+      data_fim: parsedDataFim,
+      tipo_data: parsedTipoData,
       creator_id: parsedCreatorId || undefined,
       is_exclusive: parsedIsExclusive,
       exibir_instrutor: parsedExibirInstrutor,
@@ -215,6 +229,24 @@ export function EventMarquee({ thought }: EventMarqueeProps = {}) {
     const currentUserId = profile?.id;
     const isOwner = currentUserId && evt.creator_id === currentUserId;
     const isInstrutor = profile?.role === 'instrutor';
+
+    // Date expiry check
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const eventStart = new Date(evt.data);
+    eventStart.setHours(0, 0, 0, 0);
+
+    if (evt.tipo_data === 'periodo' && evt.data_fim) {
+      const eventEnd = new Date(evt.data_fim);
+      eventEnd.setHours(23, 59, 59, 999);
+      if (today > eventEnd) return false;
+    } else {
+      // For fixed date, show until end of that day
+      const eventEnd = new Date(evt.data);
+      eventEnd.setHours(23, 59, 59, 999);
+      if (today > eventEnd) return false;
+    }
     
     if (isAdmin) {
       if (isOwner) return true;
@@ -306,7 +338,11 @@ export function EventMarquee({ thought }: EventMarqueeProps = {}) {
                     </span>
                   )}
                   <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest whitespace-nowrap">
-                    {new Date(evento.data).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+                    {evento.tipo_data === 'periodo' && evento.data_fim ? (
+                      `${new Date(evento.data).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} a ${new Date(evento.data_fim).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}`
+                    ) : (
+                      new Date(evento.data).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
+                    )}
                   </span>
                 </div>
               ))}

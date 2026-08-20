@@ -63,9 +63,7 @@ export function ProximityAlert() {
         let data: any[] | null = null;
         let { data: primaryData, error } = await supabase
           .from('eventos')
-          .select('id, titulo, descricao, data, cor, exibir_aluno, exibir_instrutor, creator_id, is_exclusive')
-          .gte('data', today.toISOString().split('T')[0])
-          .lte('data', nextWeek.toISOString().split('T')[0])
+          .select('id, titulo, descricao, data, data_fim, tipo_data, cor, exibir_aluno, exibir_instrutor, creator_id, is_exclusive')
           .order('data', { ascending: true });
         data = primaryData;
 
@@ -73,17 +71,13 @@ export function ProximityAlert() {
           // Fallback if the columns do not exist yet
           const { data: fallbackData, error: fallbackError } = await supabase
             .from('eventos')
-            .select('id, titulo, descricao, data, cor, exibir_aluno')
-            .gte('data', today.toISOString().split('T')[0])
-            .lte('data', nextWeek.toISOString().split('T')[0])
+            .select('id, titulo, descricao, data, cor, exibir_aluno, exibir_instrutor, creator_id, is_exclusive')
             .order('data', { ascending: true });
             
           if (fallbackError) {
             const { data: minData, error: minError } = await supabase
               .from('eventos')
               .select('id, titulo, descricao, data, cor')
-              .gte('data', today.toISOString().split('T')[0])
-              .lte('data', nextWeek.toISOString().split('T')[0])
               .order('data', { ascending: true });
             
             if (minError) {
@@ -107,6 +101,8 @@ export function ProximityAlert() {
             let parsedIsExclusive = evt.is_exclusive === true;
             let parsedExibirInstrutor = evt.exibir_instrutor !== false;
             let parsedExibirAluno = evt.exibir_aluno !== false;
+            let parsedDataFim = evt.data_fim ? evt.data_fim.split('T')[0] : null;
+            let parsedTipoData = (evt.tipo_data as 'fixa' | 'periodo') || (parsedDataFim ? 'periodo' : 'fixa');
 
             const creatorMatch = desc.match(/\[creator:([^\]]+)\]/);
             if (creatorMatch) {
@@ -138,9 +134,24 @@ export function ProximityAlert() {
               desc = desc.replace(/\[exibir_aluno:[^\]]+\]/, '');
             }
 
+            const dataFimMatch = desc.match(/\[data_fim:([^\]]+)\]/);
+            if (dataFimMatch) {
+              parsedDataFim = dataFimMatch[1];
+              parsedTipoData = 'periodo';
+              desc = desc.replace(/\[data_fim:[^\]]+\]/, '');
+            }
+
+            const tipoDataMatch = desc.match(/\[tipo_data:([^\]]+)\]/);
+            if (tipoDataMatch) {
+              parsedTipoData = tipoDataMatch[1] as 'fixa' | 'periodo';
+              desc = desc.replace(/\[tipo_data:[^\]]+\]/, '');
+            }
+
             return {
               ...evt,
               descricao: desc.trim(),
+              data_fim: parsedDataFim,
+              tipo_data: parsedTipoData,
               creator_id: parsedCreatorId || undefined,
               is_exclusive: parsedIsExclusive,
               exibir_instrutor: parsedExibirInstrutor,
@@ -148,8 +159,31 @@ export function ProximityAlert() {
             };
           });
 
-          // Filter by owner & exclusivity rules
+          // Filter by proximity (next 3 days or currently active period) & owner & exclusivity rules
+          const todayDate = new Date();
+          todayDate.setHours(0, 0, 0, 0);
+          const limitDate = new Date(todayDate);
+          limitDate.setDate(todayDate.getDate() + 3);
+          limitDate.setHours(23, 59, 59, 999);
+
           const filtered = parsed.filter(evt => {
+            const startDate = new Date(evt.data);
+            startDate.setHours(0, 0, 0, 0);
+
+            if (evt.tipo_data === 'periodo' && evt.data_fim) {
+              const endDate = new Date(evt.data_fim);
+              endDate.setHours(23, 59, 59, 999);
+              // Show if ongoing (today is between start and end) OR starting within next 3 days
+              const isOngoing = todayDate >= startDate && todayDate <= endDate;
+              const isUpcomingSoon = startDate >= todayDate && startDate <= limitDate;
+              if (!isOngoing && !isUpcomingSoon) return false;
+            } else {
+              const endDate = new Date(evt.data);
+              endDate.setHours(23, 59, 59, 999);
+              // Show if today or within next 3 days
+              if (startDate > limitDate || endDate < todayDate) return false;
+            }
+
             const currentUserId = profile?.id;
             const isOwner = currentUserId && evt.creator_id === currentUserId;
             const isInstrutor = profile?.role === 'instrutor';
@@ -275,7 +309,11 @@ export function ProximityAlert() {
                       )}
                       <p className="text-[10px] text-slate-500 flex items-center gap-1 mt-1.5 font-medium">
                         <Calendar size={11} className="text-slate-400" />
-                        {new Date(event.data).toLocaleDateString('pt-BR')}
+                        {event.tipo_data === 'periodo' && event.data_fim ? (
+                          `${new Date(event.data).toLocaleDateString('pt-BR')} até ${new Date(event.data_fim).toLocaleDateString('pt-BR')}`
+                        ) : (
+                          new Date(event.data).toLocaleDateString('pt-BR')
+                        )}
                       </p>
                     </div>
                   </div>

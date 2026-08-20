@@ -8,13 +8,17 @@ import {
   Plus, 
   Search, 
   Calendar as CalendarIcon, 
+  CalendarDays,
+  CalendarRange,
   Clock, 
   MoreVertical, 
   Trash2, 
   Edit2,
   Bell,
   CheckCircle2,
-  AlertTriangle
+  AlertTriangle,
+  Pin,
+  Flame
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -25,6 +29,8 @@ interface Evento {
   titulo: string;
   descricao: string;
   data: string;
+  data_fim?: string | null;
+  tipo_data?: 'fixa' | 'periodo';
   cor: string;
   exibir_aluno?: boolean;
   exibir_instrutor?: boolean;
@@ -74,7 +80,9 @@ export default function CalendarPage() {
   const [formData, setFormData] = useState({
     titulo: '',
     descricao: '',
+    tipo_data: 'fixa' as 'fixa' | 'periodo',
     data: new Date().toISOString().split('T')[0],
+    data_fim: '',
     cor: 'bg-blue-600',
     exibir_aluno: true,
     exibir_instrutor: true,
@@ -92,6 +100,8 @@ export default function CalendarPage() {
       let parsedExibirInstrutor = evt.exibir_instrutor !== false;
       let parsedExibirAluno = evt.exibir_aluno !== false;
       let parsedTargetGrupo = evt.target_grupo || 'AMBOS';
+      let parsedDataFim = evt.data_fim ? evt.data_fim.split('T')[0] : null;
+      let parsedTipoData = (evt.tipo_data as 'fixa' | 'periodo') || (parsedDataFim ? 'periodo' : 'fixa');
 
       // Extract details from tag suffix if present
       const creatorMatch = desc.match(/\[creator:([^\]]+)\]/);
@@ -130,11 +140,26 @@ export default function CalendarPage() {
         desc = desc.replace(/\[target_grupo:[^\]]+\]/, '');
       }
 
+      const dataFimMatch = desc.match(/\[data_fim:([^\]]+)\]/);
+      if (dataFimMatch) {
+        parsedDataFim = dataFimMatch[1];
+        parsedTipoData = 'periodo';
+        desc = desc.replace(/\[data_fim:[^\]]+\]/, '');
+      }
+
+      const tipoDataMatch = desc.match(/\[tipo_data:([^\]]+)\]/);
+      if (tipoDataMatch) {
+        parsedTipoData = tipoDataMatch[1] as 'fixa' | 'periodo';
+        desc = desc.replace(/\[tipo_data:[^\]]+\]/, '');
+      }
+
       desc = desc.trim();
 
       return {
         ...evt,
         descricao: desc,
+        data_fim: parsedDataFim,
+        tipo_data: parsedTipoData,
         creator_id: parsedCreatorId || undefined,
         is_exclusive: parsedIsExclusive,
         exibir_instrutor: parsedExibirInstrutor,
@@ -248,8 +273,15 @@ export default function CalendarPage() {
       }
     }
 
+    const isPeriod = formData.tipo_data === 'periodo';
+    if (isPeriod && formData.data_fim && formData.data_fim < formData.data) {
+      toast.error('A data final do período não pode ser anterior à data inicial.');
+      return;
+    }
+
     // Ensure we send a valid timestamp to Postgres
     const timestamp = new Date(`${formData.data}T12:00:00`).toISOString();
+    const endTimestamp = isPeriod && formData.data_fim ? new Date(`${formData.data_fim}T23:59:59`).toISOString() : null;
 
     const currentUserId = profile.id;
     const isExclusiveRoutine = !isAdmin; // Admin's routines are general, ordinary users' are exclusive
@@ -257,13 +289,20 @@ export default function CalendarPage() {
     // Add hidden markers at the end of the description to ensure perfect compatibility
     // with any state of the remote database schema.
     const cleanDesc = formData.descricao;
-    const tagSuffix = `\n\n[creator:${currentUserId}][exclusive:${isExclusiveRoutine}][exibir_instrutor:${formData.exibir_instrutor}][exibir_aluno:${formData.exibir_aluno}][target_grupo:${formData.target_grupo}]`;
+    let tagSuffix = `\n\n[creator:${currentUserId}][exclusive:${isExclusiveRoutine}][exibir_instrutor:${formData.exibir_instrutor}][exibir_aluno:${formData.exibir_aluno}][target_grupo:${formData.target_grupo}]`;
+    if (isPeriod && formData.data_fim) {
+      tagSuffix += `[tipo_data:periodo][data_fim:${formData.data_fim}]`;
+    } else {
+      tagSuffix += `[tipo_data:fixa]`;
+    }
     const fullDescWithTags = cleanDesc + tagSuffix;
 
     const eventPayload: any = {
       titulo: formData.titulo,
       descricao: fullDescWithTags,
       data: timestamp,
+      data_fim: endTimestamp,
+      tipo_data: formData.tipo_data,
       cor: formData.cor,
       exibir_aluno: isAdmin ? formData.exibir_aluno : false,
       exibir_instrutor: isAdmin ? formData.exibir_instrutor : true,
@@ -282,7 +321,7 @@ export default function CalendarPage() {
           .eq('id', editingEvent.id);
         
         if (error) {
-          // If custom columns (creator_id, is_exclusive, or others) fail, run safe graceful fallback
+          // If custom columns (data_fim, tipo_data, etc.) fail, run safe graceful fallback
           const fallbackPayload = {
             titulo: eventPayload.titulo,
             descricao: eventPayload.descricao,
@@ -367,7 +406,9 @@ export default function CalendarPage() {
       setFormData({
         titulo: '',
         descricao: '',
+        tipo_data: 'fixa',
         data: new Date().toISOString().split('T')[0],
+        data_fim: '',
         cor: 'bg-blue-600',
         exibir_aluno: true,
         exibir_instrutor: true,
@@ -413,10 +454,16 @@ export default function CalendarPage() {
 
   const openEditModal = (evento: Evento) => {
     setEditingEvent(evento);
+    const dateStr = evento.data ? evento.data.split('T')[0] : '';
+    const dateFimStr = evento.data_fim ? evento.data_fim.split('T')[0] : '';
+    const tipo = evento.tipo_data || (dateFimStr ? 'periodo' : 'fixa');
+
     setFormData({
       titulo: evento.titulo,
       descricao: evento.descricao,
-      data: evento.data.split('T')[0],
+      tipo_data: tipo,
+      data: dateStr,
+      data_fim: dateFimStr,
       cor: evento.cor,
       exibir_aluno: evento.exibir_aluno !== false,
       exibir_instrutor: evento.exibir_instrutor !== false,
@@ -469,7 +516,9 @@ export default function CalendarPage() {
               setFormData({
                 titulo: '',
                 descricao: '',
+                tipo_data: 'fixa',
                 data: new Date().toISOString().split('T')[0],
+                data_fim: '',
                 cor: 'bg-blue-600',
                 exibir_aluno: true,
                 exibir_instrutor: true,
@@ -510,8 +559,20 @@ export default function CalendarPage() {
           ) : (
             filteredEventos.map((evento) => {
               const eventDate = new Date(evento.data);
+              const eventEndDate = evento.data_fim ? new Date(evento.data_fim) : null;
+              const isPeriod = evento.tipo_data === 'periodo' && !!evento.data_fim;
+              
               const today = new Date();
               today.setHours(0,0,0,0);
+              
+              // Calculation for periods vs fixed date
+              const startDateZero = new Date(evento.data);
+              startDateZero.setHours(0,0,0,0);
+              
+              const endDateZero = eventEndDate ? new Date(evento.data_fim!) : null;
+              if (endDateZero) endDateZero.setHours(23,59,59,999);
+
+              const isCurrentlyActive = isPeriod && endDateZero && today >= startDateZero && today <= endDateZero;
               const diffTime = eventDate.getTime() - today.getTime();
               const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
               const isUpcoming = diffDays >= 0 && diffDays <= 7;
@@ -523,21 +584,33 @@ export default function CalendarPage() {
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   onClick={() => openViewModal(evento)}
-                  className="group relative bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all active:scale-[0.98] cursor-pointer"
+                  className="group relative bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all active:scale-[0.98] cursor-pointer flex flex-col"
                 >
                   <div className={cn("h-2", evento.cor)} />
-                  <div className="p-5">
+                  <div className="p-5 flex-1 flex flex-col">
                     <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <div className={cn("p-2 rounded-lg text-white", evento.cor)}>
-                          <CalendarIcon size={16} />
+                      <div className="flex items-center gap-2.5">
+                        <div className={cn("p-2.5 rounded-xl text-white shadow-sm", evento.cor)}>
+                          {isPeriod ? <CalendarRange size={16} /> : <CalendarIcon size={16} />}
                         </div>
                         <div className="flex flex-col">
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                            {eventDate.toLocaleDateString('pt-BR', { weekday: 'long' })}
-                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                              {isPeriod ? (
+                                <span className="text-indigo-600 font-extrabold flex items-center gap-1">
+                                  <CalendarRange size={10} /> Período
+                                </span>
+                              ) : (
+                                eventDate.toLocaleDateString('pt-BR', { weekday: 'long' })
+                              )}
+                            </span>
+                          </div>
                           <span className="text-sm font-bold text-slate-800">
-                            {eventDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })}
+                            {isPeriod && eventEndDate ? (
+                              `${eventDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })} a ${eventEndDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}`
+                            ) : (
+                              eventDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })
+                            )}
                           </span>
                         </div>
                       </div>
@@ -587,6 +660,18 @@ export default function CalendarPage() {
                             </>
                           )}
                         </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                      {isPeriod ? (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-indigo-50 border border-indigo-200 text-indigo-700 text-[9px] font-bold uppercase tracking-wider leading-none">
+                          🗓️ Período do Aviso
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-slate-600 text-[9px] font-bold uppercase tracking-wider leading-none">
+                          📌 Data Fixa
+                        </span>
                       )}
                     </div>
 
@@ -646,7 +731,20 @@ export default function CalendarPage() {
                           {eventDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </div>
-                      {isUpcoming && (
+                      
+                      {isPeriod ? (
+                        isCurrentlyActive ? (
+                          <div className="flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide bg-emerald-100 text-emerald-800 animate-pulse">
+                            <Flame size={10} />
+                            {t.calendar.activePeriod || 'Em Período Ativo'}
+                          </div>
+                        ) : isUpcoming ? (
+                          <div className="flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide bg-indigo-100 text-indigo-700">
+                            <Bell size={10} />
+                            {isToday ? t.calendar.startsToday : t.calendar.daysRemaining.replace('{count}', diffDays.toString())}
+                          </div>
+                        ) : null
+                      ) : isUpcoming ? (
                         <div className={cn(
                           "flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide",
                           isToday ? "bg-amber-100 text-amber-700 animate-pulse" : "bg-emerald-100 text-emerald-700"
@@ -654,7 +752,7 @@ export default function CalendarPage() {
                           <Bell size={10} />
                           {isToday ? t.calendar.startsToday : t.calendar.daysRemaining.replace('{count}', diffDays.toString())}
                         </div>
-                      )}
+                      ) : null}
                     </div>
                   </div>
                 </motion.div>
@@ -686,11 +784,23 @@ export default function CalendarPage() {
               <div className="p-8 overflow-y-auto custom-scrollbar">
                 <div className="flex items-center gap-4 mb-6">
                   <div className={cn("p-4 rounded-2xl text-white shadow-lg", viewingEvent.cor)}>
-                    <CalendarIcon size={24} />
+                    {viewingEvent.tipo_data === 'periodo' ? <CalendarRange size={24} /> : <CalendarIcon size={24} />}
                   </div>
                   <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={cn(
+                        "px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider",
+                        viewingEvent.tipo_data === 'periodo' ? "bg-indigo-50 text-indigo-700 border border-indigo-100" : "bg-slate-100 text-slate-600"
+                      )}>
+                        {viewingEvent.tipo_data === 'periodo' ? '🗓️ Período do Aviso' : '📌 Data Fixa'}
+                      </span>
+                    </div>
                     <span className="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-1">
-                      {new Date(viewingEvent.data).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}
+                      {viewingEvent.tipo_data === 'periodo' && viewingEvent.data_fim ? (
+                        `${new Date(viewingEvent.data).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })} até ${new Date(viewingEvent.data_fim).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}`
+                      ) : (
+                        new Date(viewingEvent.data).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })
+                      )}
                     </span>
                     <h3 className="text-2xl font-bold text-slate-800 leading-tight">
                       {viewingEvent.titulo}
@@ -699,6 +809,43 @@ export default function CalendarPage() {
                 </div>
 
                 <div className="space-y-6">
+                  {/* Period Cards Box */}
+                  {viewingEvent.tipo_data === 'periodo' && viewingEvent.data_fim && (
+                    <div className="p-4 bg-indigo-50/70 border border-indigo-100 rounded-2xl space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-black text-indigo-900 uppercase tracking-wider flex items-center gap-1.5">
+                          <CalendarRange size={14} /> Intervalo do Período do Aviso
+                        </span>
+                        {(() => {
+                          const today = new Date(); today.setHours(0,0,0,0);
+                          const s = new Date(viewingEvent.data); s.setHours(0,0,0,0);
+                          const e = new Date(viewingEvent.data_fim); e.setHours(23,59,59,999);
+                          if (today >= s && today <= e) {
+                            return <span className="px-2 py-0.5 rounded-full bg-emerald-500 text-white text-[10px] font-black uppercase tracking-wider">Ativo Agora</span>;
+                          } else if (today < s) {
+                            return <span className="px-2 py-0.5 rounded-full bg-indigo-500 text-white text-[10px] font-black uppercase tracking-wider">Agendado</span>;
+                          } else {
+                            return <span className="px-2 py-0.5 rounded-full bg-slate-400 text-white text-[10px] font-black uppercase tracking-wider">Finalizado</span>;
+                          }
+                        })()}
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-white p-3 rounded-xl border border-indigo-100/60 shadow-xs">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Início</span>
+                          <span className="text-xs font-bold text-slate-800">
+                            {new Date(viewingEvent.data).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                          </span>
+                        </div>
+                        <div className="bg-white p-3 rounded-xl border border-indigo-100/60 shadow-xs">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Término</span>
+                          <span className="text-xs font-bold text-slate-800">
+                            {new Date(viewingEvent.data_fim).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {viewingEvent.uniforme_dia && (
                     <div>
                       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] block mb-2">
@@ -836,7 +983,7 @@ export default function CalendarPage() {
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden"
+              className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden"
             >
               <form onSubmit={handleSubmit} className="flex flex-col max-h-[90vh]">
                 <div className="p-6 border-b border-slate-100 shrink-0">
@@ -866,6 +1013,115 @@ export default function CalendarPage() {
                     />
                   </div>
 
+                  {/* Seleção do Tipo de Data: Data Fixa ou Período do Aviso */}
+                  <div className="space-y-2 p-4 bg-slate-50 border border-slate-200/80 rounded-2xl">
+                    <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block">
+                      {t.calendar.dateType || 'Tipo de Data da Rotina'}
+                    </label>
+                    <div className="grid grid-cols-2 gap-2 p-1 bg-slate-200/60 rounded-xl">
+                      <button
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, tipo_data: 'fixa' }))}
+                        className={cn(
+                          "flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-lg transition-all",
+                          formData.tipo_data === 'fixa'
+                            ? "bg-white text-blue-700 shadow-sm font-black"
+                            : "text-slate-500 hover:text-slate-800"
+                        )}
+                      >
+                        <CalendarIcon size={14} />
+                        {t.calendar.fixedDate || 'Data Fixa'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormData(prev => ({ 
+                          ...prev, 
+                          tipo_data: 'periodo',
+                          data_fim: prev.data_fim || prev.data 
+                        }))}
+                        className={cn(
+                          "flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-lg transition-all",
+                          formData.tipo_data === 'periodo'
+                            ? "bg-white text-indigo-700 shadow-sm font-black"
+                            : "text-slate-500 hover:text-slate-800"
+                        )}
+                      >
+                        <CalendarRange size={14} />
+                        {t.calendar.periodNotice || 'Período do Aviso'}
+                      </button>
+                    </div>
+
+                    {formData.tipo_data === 'fixa' ? (
+                      <div className="pt-2">
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                          {t.calendar.eventDate || 'Data da Rotina'}
+                        </label>
+                        <input 
+                          required
+                          type="date"
+                          value={formData.data}
+                          onChange={(e) => setFormData(prev => ({ ...prev, data: e.target.value }))}
+                          className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/10 outline-none bg-white"
+                        />
+                      </div>
+                    ) : (
+                      <div className="pt-2 space-y-3">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                              {t.calendar.startDate || 'Data Inicial'}
+                            </label>
+                            <input 
+                              required
+                              type="date"
+                              value={formData.data}
+                              onChange={(e) => {
+                                const newStart = e.target.value;
+                                setFormData(prev => ({
+                                  ...prev,
+                                  data: newStart,
+                                  data_fim: prev.data_fim && prev.data_fim < newStart ? newStart : prev.data_fim
+                                }));
+                              }}
+                              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/10 outline-none bg-white"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                              {t.calendar.endDate || 'Data Final (Término)'}
+                            </label>
+                            <input 
+                              required
+                              type="date"
+                              min={formData.data}
+                              value={formData.data_fim}
+                              onChange={(e) => setFormData(prev => ({ ...prev, data_fim: e.target.value }))}
+                              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/10 outline-none bg-white"
+                            />
+                          </div>
+                        </div>
+                        <div className="p-2.5 bg-indigo-50/70 border border-indigo-100 rounded-xl text-[11px] text-indigo-800 leading-tight flex items-start gap-2">
+                          <span>🗓️</span>
+                          <span>O aviso permanecerá ativo em destaque na agenda durante todo o intervalo compreendido entre a data inicial e a data final.</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t.calendar.eventColor}</label>
+                    <select 
+                      required
+                      value={formData.cor}
+                      onChange={(e) => setFormData(prev => ({ ...prev, cor: e.target.value }))}
+                      className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/10 outline-none appearance-none bg-white"
+                    >
+                      {colors.map(c => (
+                        <option key={c.value} value={c.value}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
                   {isAdmin && (
                     <div className="space-y-1.5">
                       <label className="text-xs font-bold text-slate-500 uppercase tracking-wider font-sans">Uniforme do Dia</label>
@@ -878,32 +1134,6 @@ export default function CalendarPage() {
                       />
                     </div>
                   )}
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t.calendar.eventDate}</label>
-                      <input 
-                        required
-                        type="date"
-                        value={formData.data}
-                        onChange={(e) => setFormData(prev => ({ ...prev, data: e.target.value }))}
-                        className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/10 outline-none"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t.calendar.eventColor}</label>
-                      <select 
-                        required
-                        value={formData.cor}
-                        onChange={(e) => setFormData(prev => ({ ...prev, cor: e.target.value }))}
-                        className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/10 outline-none appearance-none bg-white"
-                      >
-                        {colors.map(c => (
-                          <option key={c.value} value={c.value}>{c.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
 
                   {isAdmin && (
                     <div className="p-4 bg-slate-50 border border-slate-200/60 rounded-2xl space-y-3.5 mt-2">

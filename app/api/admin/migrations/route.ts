@@ -584,6 +584,21 @@ export async function GET() {
             .limit(1);
           return error;
         }
+      },
+      {
+        key: 'eventos_data_fim',
+        tableName: 'eventos',
+        columnName: 'data_fim',
+        fileName: '59_add_data_fim_to_eventos.sql',
+        description: 'Colunas data_fim e tipo_data na tabela de eventos para suporte a Período do Aviso / Data Fixa na Agenda Administrativa.',
+        isColumn: true,
+        checkFn: async () => {
+          const { error } = await supabaseAdmin
+            .from('eventos')
+            .select('data_fim')
+            .limit(1);
+          return error;
+        }
       }
     ];
 
