@@ -3351,34 +3351,30 @@ function BoletimContent() {
                                     </span>
                                   </div>
 
-                                  {/* Single Signature Panel */}
-                                  <div className="flex flex-col items-center justify-center pt-5 mt-3 border-t border-dashed border-slate-300">
-                                    <div className="flex flex-col items-center text-center max-w-lg w-full">
-                                      <div className="w-80 border-b-2 border-slate-800 h-8 mb-2"></div>
+                                  {/* Military 3-Line Signature Panel */}
+                                  <div className="flex flex-col items-center justify-center pt-8 mt-4">
+                                    <div className="flex flex-col items-center text-center max-w-xl w-full">
+                                      {/* Linha de Assinatura */}
+                                      <div className="w-80 border-b border-slate-900 h-8 mb-2"></div>
+                                      
+                                      {/* Linha 1: Nome Completo */}
                                       {signatureName.trim() ? (
-                                        <span className="text-xs font-black text-slate-900 uppercase tracking-wider leading-tight text-center font-mono">
-                                          {signatureName}
-                                        </span>
-                                      ) : (
-                                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider leading-tight text-center font-mono italic">
-                                          {language === 'pt' ? '(Nome Completo do Responsável)' : '(Full Name of Official)'}
-                                        </span>
-                                      )}
+                                        <div className="text-xs font-bold text-slate-900 uppercase tracking-wider leading-tight text-center">
+                                          {signatureName.trim()}
+                                        </div>
+                                      ) : null}
+
+                                      {/* Linha 2: Posto / Graduação */}
                                       {signatureRank.trim() ? (
-                                        <span className="text-[11px] font-bold text-slate-800 uppercase tracking-wider leading-tight text-center mt-0.5 font-mono">
-                                          {signatureRank}
-                                        </span>
-                                      ) : (
-                                        <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wide leading-tight text-center mt-0.5 font-mono italic">
-                                          {language === 'pt' ? '(Posto / Graduação)' : '(Rank / Rate)'}
-                                        </span>
-                                      )}
-                                      <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wide leading-tight text-center mt-1 font-mono max-w-md">
+                                        <div className="text-[11px] font-semibold text-slate-800 uppercase tracking-wide leading-tight text-center mt-0.5">
+                                          {signatureRank.trim()}
+                                        </div>
+                                      ) : null}
+
+                                      {/* Linha 3: Função */}
+                                      <div className="text-[10.5px] font-medium text-slate-800 uppercase tracking-wide leading-tight text-center mt-0.5 max-w-lg">
                                         {signatureRole.trim() || reportT[language as "pt" | "en"].signatureCommander}
-                                      </span>
-                                      <span className="text-[7.5px] font-bold text-slate-400 uppercase mt-1.5 leading-none tracking-widest">
-                                        {language === 'pt' ? 'Assinatura, Posto e Função' : 'Signature, Rank & Title'}
-                                      </span>
+                                      </div>
                                     </div>
                                   </div>
                                 </div>
