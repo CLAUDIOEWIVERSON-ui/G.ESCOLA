@@ -2768,14 +2768,14 @@ function BoletimContent() {
                                   </div>
 
                                   {/* Premium Official Header Layout */}
-                                  <div className="flex items-center justify-between pb-4 border-b border-slate-950">
-                                    <div className="flex items-center gap-4">
-                                      <div className="relative w-20 h-20 shrink-0 flex items-center justify-center bg-white">
+                                  <div className="flex items-center justify-between pb-5 border-b border-slate-950 mb-4">
+                                    <div className="flex items-center gap-5">
+                                      <div className="relative w-36 h-36 shrink-0 flex items-center justify-center bg-white">
                                         <Image
                                           src={navalMissionLogo}
                                           alt="Logo Missão de Assessoria Naval"
-                                          width={80}
-                                          height={71}
+                                          width={144}
+                                          height={128}
                                           className="w-auto h-auto max-w-full max-h-full object-contain"
                                           style={{ objectFit: 'contain', width: 'auto', height: 'auto', maxHeight: '100%', maxWidth: '100%' }}
                                           referrerPolicy="no-referrer"
@@ -2783,10 +2783,10 @@ function BoletimContent() {
                                         />
                                       </div>
                                       <div className="text-left flex flex-col justify-center">
-                                        <h1 className="text-sm font-black tracking-widest text-slate-900 uppercase leading-none">
+                                        <h1 className="text-base font-black tracking-widest text-slate-900 uppercase leading-snug">
                                           {reportT[language as "pt" | "en"].headerTitle}
                                         </h1>
-                                        <p className="text-[9px] font-black tracking-widest text-slate-500 uppercase mt-1 leading-none">
+                                        <p className="text-xs font-black tracking-widest text-slate-500 uppercase mt-1 leading-none">
                                           {reportT[language as "pt" | "en"].headerSubtitle}
                                         </p>
                                       </div>
@@ -3363,14 +3363,14 @@ function BoletimContent() {
                                  ` }} />
 
                                  {/* Header */}
-                                 <div className="flex items-center justify-between pb-4 border-b border-slate-950">
-                                   <div className="flex items-center gap-4">
-                                     <div className="relative w-20 h-20 shrink-0 flex items-center justify-center bg-white">
+                                 <div className="flex items-center justify-between pb-5 border-b border-slate-950 mb-4">
+                                   <div className="flex items-center gap-5">
+                                     <div className="relative w-36 h-36 shrink-0 flex items-center justify-center bg-white">
                                        <Image
                                          src={navalMissionLogo}
                                          alt="Logo Missão de Assessoria Naval"
-                                         width={80}
-                                         height={71}
+                                         width={144}
+                                         height={128}
                                          className="w-auto h-auto max-w-full max-h-full object-contain"
                                          style={{ objectFit: 'contain', width: 'auto', height: 'auto', maxHeight: '100%', maxWidth: '100%' }}
                                          referrerPolicy="no-referrer"
@@ -3378,10 +3378,10 @@ function BoletimContent() {
                                        />
                                      </div>
                                      <div className="text-left flex flex-col justify-center">
-                                       <h1 className="text-sm font-black tracking-widest text-slate-900 uppercase leading-none">
+                                       <h1 className="text-base font-black tracking-widest text-slate-900 uppercase leading-snug">
                                          {reportT[language as "pt" | "en"].headerTitle}
                                        </h1>
-                                       <p className="text-[9px] font-black tracking-widest text-slate-500 uppercase mt-1 leading-none">
+                                       <p className="text-xs font-black tracking-widest text-slate-500 uppercase mt-1 leading-none">
                                          {reportT[language as "pt" | "en"].headerSubtitle}
                                        </p>
                                      </div>

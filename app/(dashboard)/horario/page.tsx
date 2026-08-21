@@ -1109,20 +1109,20 @@ export default function HorarioPage() {
             >
               {/* Specialized Header */}
               <div className="bg-white p-12 text-slate-800 relative overflow-hidden print-header print-header-top border-b border-slate-200">
-                <div className="flex items-center gap-4 mb-8">
-                  <div className="w-24 h-24 shrink-0 flex items-center justify-center overflow-hidden bg-white">
+                <div className="flex items-center gap-6 mb-8">
+                  <div className="w-36 h-36 shrink-0 flex items-center justify-center overflow-hidden bg-white">
                     <img
                       src={typeof navalMissionLogo === 'string' ? navalMissionLogo : (navalMissionLogo as any)?.src || navalMissionLogo}
                       alt="Logo Missão de Assessoria Naval"
-                      className="w-24 h-24 object-contain shrink-0"
-                      style={{ width: '96px', height: '96px' }}
+                      className="w-36 h-36 object-contain shrink-0"
+                      style={{ width: '144px', height: '144px' }}
                     />
                   </div>
                   <div className="text-left flex flex-col justify-center">
-                    <h1 className="text-sm font-black tracking-widest text-slate-900 uppercase leading-none">
+                    <h1 className="text-base md:text-lg font-black tracking-widest text-slate-900 uppercase leading-snug">
                       MISSÃO DE ASSESSORIA NAVAL DO BRASIL EM SÃO TOMÉ E PRÍNCIPE
                     </h1>
-                    <p className="text-[9px] font-black tracking-widest text-slate-500 uppercase mt-1 leading-none">
+                    <p className="text-xs font-black tracking-widest text-slate-500 uppercase mt-1.5 leading-none">
                       Detalhe Semanal de Aulas
                     </p>
                   </div>

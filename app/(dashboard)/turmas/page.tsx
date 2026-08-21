@@ -2724,23 +2724,23 @@ function TurmasContent() {
 
                 {/* Print Header */}
                 <div className="mb-4">
-                  <div className="flex items-center gap-4 border-b-2 border-black pb-2 mb-4">
-                    <div className="w-14 h-14 shrink-0 flex items-center justify-center overflow-hidden bg-white">
+                  <div className="flex items-center gap-6 border-b-2 border-black pb-4 mb-4">
+                    <div className="w-28 h-28 shrink-0 flex items-center justify-center overflow-hidden bg-white">
                       <img
                         src={typeof navalMissionLogo === 'string' ? navalMissionLogo : (navalMissionLogo as any)?.src || navalMissionLogo}
                         alt="Logo Missão de Assessoria Naval"
-                        className="w-14 h-14 object-contain"
-                        style={{ width: '56px', height: '56px' }}
+                        className="w-28 h-28 object-contain"
+                        style={{ width: '112px', height: '112px' }}
                       />
                     </div>
                     <div className="flex-1 text-left">
-                      <h1 className="text-lg font-extrabold uppercase tracking-tight">
+                      <h1 className="text-xl font-extrabold uppercase tracking-tight">
                         {printSheetType === 'semanal' 
                           ? (language === 'pt' ? 'FOLHA DE FREQUÊNCIA SEMANAL' : 'WEEKLY ATTENDANCE SHEET')
                           : (language === 'pt' ? 'FOLHA DE FREQUÊNCIA MENSAL' : 'MONTHLY ATTENDANCE SHEET')
                         }
                       </h1>
-                      <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-0.5 font-mono">
+                      <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest mt-1 font-mono">
                         {language === 'pt' ? 'MISSÃO DE ASSESSORIA NAVAL DO BRASIL EM SÃO TOMÉ E PRÍNCIPE' : 'BRAZILIAN NAVAL ADVISORY MISSION IN SÃO TOMÉ AND PRÍNCIPE'}
                       </p>
                     </div>
@@ -3120,20 +3120,20 @@ function TurmasContent() {
 
                 {/* Print Header */}
                 <div className="mb-4">
-                  <div className="flex items-center gap-4 border-b-2 border-black pb-3 mb-3">
-                    <div className="w-16 h-16 shrink-0 flex items-center justify-center overflow-hidden bg-white">
+                  <div className="flex items-center gap-6 border-b-2 border-black pb-4 mb-4">
+                    <div className="w-28 h-28 shrink-0 flex items-center justify-center overflow-hidden bg-white">
                       <img
                         src={typeof navalMissionLogo === 'string' ? navalMissionLogo : (navalMissionLogo as any)?.src || navalMissionLogo}
                         alt="Logo Missão de Assessoria Naval"
-                        className="w-16 h-16 object-contain"
-                        style={{ width: '64px', height: '64px' }}
+                        className="w-28 h-28 object-contain"
+                        style={{ width: '112px', height: '112px' }}
                       />
                     </div>
                     <div className="flex-1 text-left">
-                      <h1 className="text-sm sm:text-base font-extrabold uppercase tracking-tight text-slate-900 leading-tight">
+                      <h1 className="text-base sm:text-lg font-extrabold uppercase tracking-tight text-slate-900 leading-tight">
                         MISSÃO DE ASSESSORIA NAVAL DO BRASIL EM SÃO TOMÉ E PRÍNCIPE
                       </h1>
-                      <h2 className="text-xs sm:text-sm font-black uppercase text-slate-800 tracking-wide mt-0.5">
+                      <h2 className="text-xs sm:text-sm font-black uppercase text-slate-800 tracking-wide mt-1">
                         {language === 'pt' ? 'RELAÇÃO NOMINAL DE ALUNOS (FOTO IDENTIFICAÇÃO)' : 'NOMINAL STUDENT ROSTER (PHOTO ID)'}
                       </h2>
                     </div>

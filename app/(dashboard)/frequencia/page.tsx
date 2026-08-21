@@ -674,13 +674,13 @@ export default function FrequenciaPage() {
             >
               {/* Elegant Header Block for Screen Display & Official Print Layouts */}
               <div className="mb-6 border-b border-slate-200 pb-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 shrink-0 flex items-center justify-center overflow-hidden bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
+                <div className="flex items-center gap-5">
+                  <div className="w-28 h-28 shrink-0 flex items-center justify-center overflow-hidden bg-white border border-slate-200 rounded-2xl p-1.5 shadow-sm">
                     <img
                       src={typeof navalMissionLogo === 'string' ? navalMissionLogo : (navalMissionLogo as any)?.src || navalMissionLogo}
                       alt="Logo Missão de Assessoria Naval"
-                      className="w-14 h-14 object-contain"
-                      style={{ width: '56px', height: '56px' }}
+                      className="w-24 h-24 object-contain"
+                      style={{ width: '96px', height: '96px' }}
                     />
                   </div>
                   {formattedTurmaPeriod && (

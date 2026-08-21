@@ -194,18 +194,18 @@ export default function BlankQuestionnaireModal({ isOpen, onClose }: BlankQuesti
           >
             <div>
               {/* Header */}
-              <div className="flex items-center justify-center gap-4 border-b-[3px] border-indigo-700 pb-3 mb-4">
+              <div className="flex items-center justify-center gap-6 border-b-[3px] border-indigo-700 pb-4 mb-5">
                 <img
                   src={typeof navalMissionLogo === 'string' ? navalMissionLogo : (navalMissionLogo as any)?.src || navalMissionLogo}
                   alt="Logo Missão de Assessoria Naval"
-                  className="w-14 h-14 object-contain shrink-0"
-                  style={{ width: '56px', height: '56px' }}
+                  className="w-28 h-28 object-contain shrink-0"
+                  style={{ width: '112px', height: '112px' }}
                 />
                 <div className="text-center">
                   <h1 className="text-indigo-900 text-sm md:text-base font-extrabold uppercase tracking-widest font-sans leading-tight">
                     Missão de Assessoria Naval do Brasil em São Tomé e Príncipe
                   </h1>
-                  <h2 className="text-slate-700 text-xs md:text-sm font-bold uppercase tracking-wider mt-1 font-sans">
+                  <h2 className="text-slate-700 text-xs md:text-sm font-bold uppercase tracking-wider mt-1.5 font-sans">
                     Questionário de Avaliação Pós-Curso
                   </h2>
                 </div>
@@ -359,18 +359,18 @@ export default function BlankQuestionnaireModal({ isOpen, onClose }: BlankQuesti
           >
             <div>
               {/* Header Title Mini */}
-              <div className="border-b-[3px] border-indigo-700 pb-2 mb-4">
+              <div className="border-b-[3px] border-indigo-700 pb-3 mb-5">
                 <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
                     <img
                       src={typeof navalMissionLogo === 'string' ? navalMissionLogo : (navalMissionLogo as any)?.src || navalMissionLogo}
                       alt="Logo Missão Naval"
-                      className="w-7 h-7 object-contain shrink-0"
-                      style={{ width: '28px', height: '28px' }}
+                      className="w-14 h-14 object-contain shrink-0"
+                      style={{ width: '56px', height: '56px' }}
                     />
-                    <span className="text-slate-700 font-mono text-[9px] font-black uppercase tracking-wider">Missão de Assessoria Naval do Brasil em STP</span>
+                    <span className="text-slate-800 font-mono text-[10px] font-black uppercase tracking-wider">Missão de Assessoria Naval do Brasil em STP</span>
                   </div>
-                  <span className="text-indigo-900 font-bold text-[9px] md:text-[10px] uppercase">Questionário de Avaliação Pós-Curso</span>
+                  <span className="text-indigo-900 font-bold text-[10px] md:text-[11px] uppercase">Questionário de Avaliação Pós-Curso</span>
                 </div>
               </div>
 
