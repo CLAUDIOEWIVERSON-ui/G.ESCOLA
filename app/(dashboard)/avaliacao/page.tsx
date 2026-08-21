@@ -1009,10 +1009,22 @@ function AvaliacaoAlunoForm() {
 
         {/* The Actual printed sheet */}
         <div className="space-y-6">
-          <div className="text-center border-b-2 border-slate-900 pb-4">
-            <h1 className="text-xl font-bold uppercase tracking-wide font-sans">Escola Digital Mil-Acadêmica</h1>
-            <h2 className="text-base font-bold uppercase tracking-wide mt-1 font-sans">Ficha de Avaliação de Conclusão de Curso (Pós-Curso)</h2>
-            <p className="text-xs italic mt-1 text-slate-500 font-sans">Preenchimento Manual e Confidencial</p>
+          <div className="flex items-center justify-center gap-4 border-b-2 border-slate-900 pb-4">
+            <img
+              src={typeof navalMissionLogo === 'string' ? navalMissionLogo : (navalMissionLogo as any)?.src || navalMissionLogo}
+              alt="Logo Missão de Assessoria Naval"
+              className="w-16 h-16 object-contain shrink-0"
+              style={{ width: '64px', height: '64px' }}
+            />
+            <div className="text-center">
+              <h1 className="text-sm md:text-base font-black uppercase tracking-widest font-sans text-slate-900">
+                MISSÃO DE ASSESSORIA NAVAL DO BRASIL EM SÃO TOMÉ E PRÍNCIPE
+              </h1>
+              <h2 className="text-xs md:text-sm font-bold uppercase tracking-wide mt-1 font-sans text-slate-700">
+                Ficha de Avaliação de Conclusão de Curso (Pós-Curso)
+              </h2>
+              <p className="text-[10px] italic mt-0.5 text-slate-500 font-sans">Preenchimento Manual e Confidencial</p>
+            </div>
           </div>
 
           {/* Student details blanks info */}

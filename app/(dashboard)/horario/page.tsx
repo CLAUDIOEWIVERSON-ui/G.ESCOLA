@@ -1110,15 +1110,12 @@ export default function HorarioPage() {
               {/* Specialized Header */}
               <div className="bg-white p-12 text-slate-800 relative overflow-hidden print-header print-header-top border-b border-slate-200">
                 <div className="flex items-center gap-4 mb-8">
-                  <div className="relative w-24 h-24 shrink-0 flex items-center justify-center overflow-hidden bg-white">
-                    <Image
-                      src={navalMissionLogo}
+                  <div className="w-24 h-24 shrink-0 flex items-center justify-center overflow-hidden bg-white">
+                    <img
+                      src={typeof navalMissionLogo === 'string' ? navalMissionLogo : (navalMissionLogo as any)?.src || navalMissionLogo}
                       alt="Logo Missão de Assessoria Naval"
-                      fill
-                      className="object-contain"
-                      referrerPolicy="no-referrer"
-                      sizes="96px"
-                      priority
+                      className="w-24 h-24 object-contain shrink-0"
+                      style={{ width: '96px', height: '96px' }}
                     />
                   </div>
                   <div className="text-left flex flex-col justify-center">

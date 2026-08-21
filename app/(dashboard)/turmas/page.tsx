@@ -2725,15 +2725,12 @@ function TurmasContent() {
                 {/* Print Header */}
                 <div className="mb-4">
                   <div className="flex items-center gap-4 border-b-2 border-black pb-2 mb-4">
-                    <div className="relative w-14 h-14 shrink-0 flex items-center justify-center overflow-hidden bg-white print:hidden">
-                      <Image
-                        src={navalMissionLogo}
+                    <div className="w-14 h-14 shrink-0 flex items-center justify-center overflow-hidden bg-white">
+                      <img
+                        src={typeof navalMissionLogo === 'string' ? navalMissionLogo : (navalMissionLogo as any)?.src || navalMissionLogo}
                         alt="Logo Missão de Assessoria Naval"
-                        fill
-                        className="object-contain"
-                        referrerPolicy="no-referrer"
-                        sizes="56px"
-                        priority
+                        className="w-14 h-14 object-contain"
+                        style={{ width: '56px', height: '56px' }}
                       />
                     </div>
                     <div className="flex-1 text-left">
@@ -3124,15 +3121,12 @@ function TurmasContent() {
                 {/* Print Header */}
                 <div className="mb-4">
                   <div className="flex items-center gap-4 border-b-2 border-black pb-3 mb-3">
-                    <div className="relative w-16 h-16 shrink-0 flex items-center justify-center overflow-hidden bg-white">
-                      <Image
-                        src={navalMissionLogo}
+                    <div className="w-16 h-16 shrink-0 flex items-center justify-center overflow-hidden bg-white">
+                      <img
+                        src={typeof navalMissionLogo === 'string' ? navalMissionLogo : (navalMissionLogo as any)?.src || navalMissionLogo}
                         alt="Logo Missão de Assessoria Naval"
-                        fill
-                        className="object-contain"
-                        referrerPolicy="no-referrer"
-                        sizes="64px"
-                        priority
+                        className="w-16 h-16 object-contain"
+                        style={{ width: '64px', height: '64px' }}
                       />
                     </div>
                     <div className="flex-1 text-left">

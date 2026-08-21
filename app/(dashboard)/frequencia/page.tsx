@@ -675,25 +675,14 @@ export default function FrequenciaPage() {
               {/* Elegant Header Block for Screen Display & Official Print Layouts */}
               <div className="mb-6 border-b border-slate-200 pb-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                  {(mapGranularity === 'week' || mapGranularity === 'month') ? (
-                    <div className="relative w-16 h-16 shrink-0 flex items-center justify-center overflow-hidden bg-white border border-slate-200 rounded-xl p-1 shadow-sm print:hidden">
-                      <Image
-                        src={navalMissionLogo}
-                        alt="Logo Missão de Assessoria Naval"
-                        fill
-                        className="object-contain"
-                        referrerPolicy="no-referrer"
-                        sizes="64px"
-                        priority
-                      />
-                    </div>
-                  ) : (
-                    <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center border border-blue-100 shrink-0">
-                      <span className="text-sm font-black text-blue-700">
-                        {activeTurma?.nome ? activeTurma.nome.substring(0, 3).toUpperCase() : 'SG'}
-                      </span>
-                    </div>
-                  )}
+                  <div className="w-16 h-16 shrink-0 flex items-center justify-center overflow-hidden bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
+                    <img
+                      src={typeof navalMissionLogo === 'string' ? navalMissionLogo : (navalMissionLogo as any)?.src || navalMissionLogo}
+                      alt="Logo Missão de Assessoria Naval"
+                      className="w-14 h-14 object-contain"
+                      style={{ width: '56px', height: '56px' }}
+                    />
+                  </div>
                   {formattedTurmaPeriod && (
                     <div className="hidden sm:flex items-center gap-2">
                       <div className="flex items-center gap-2 px-4 py-2.5 bg-blue-50 text-blue-700 rounded-2xl text-xs font-black border border-blue-100 shadow-xs">

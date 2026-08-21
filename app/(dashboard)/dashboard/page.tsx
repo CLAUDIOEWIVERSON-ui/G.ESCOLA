@@ -1451,14 +1451,11 @@ export default function DashboardPage() {
             `}} />
             <div className="flex flex-col items-center mb-6 border-b-2 border-black pb-4 relative">
               <div className="absolute left-0 top-0">
-                <Image
-                  src={navalMissionLogo}
+                <img
+                  src={typeof navalMissionLogo === 'string' ? navalMissionLogo : (navalMissionLogo as any)?.src || navalMissionLogo}
                   alt="Logo Missão de Assessoria Naval"
-                  width={60}
-                  height={60}
-                  className="object-contain"
-                  referrerPolicy="no-referrer"
-                  priority
+                  className="w-15 h-15 object-contain"
+                  style={{ width: '60px', height: '60px' }}
                 />
               </div>
               <h1 className="text-base font-extrabold uppercase tracking-tight text-center mt-1">
