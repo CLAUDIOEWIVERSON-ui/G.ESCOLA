@@ -962,12 +962,32 @@ function RelatorioAvaliacaoAdminContent() {
       background: #FFFFFF !important;
     }
     
-    /* Make backgrounds transparent except specific progress bars */
     * {
-      background-color: transparent !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    
+    /* Make document body text black */
+    body {
       color: #000000 !important;
     }
     
+    /* Explicitly enforce colored tower bars in print */
+    .print-tower-bar-5 { background-color: #10b981 !important; background-image: none !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    .print-tower-bar-4 { background-color: #06b6d4 !important; background-image: none !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    .print-tower-bar-3 { background-color: #f59e0b !important; background-image: none !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    .print-tower-bar-2 { background-color: #f97316 !important; background-image: none !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    .print-tower-bar-1 { background-color: #f43f5e !important; background-image: none !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+
+    /* Category progress bars */
+    .print-category-bar-1 { background-color: #10b981 !important; background-image: none !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    .print-category-bar-2 { background-color: #8b5cf6 !important; background-image: none !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    .print-category-bar-3 { background-color: #0ea5e9 !important; background-image: none !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    .print-category-bar-4 { background-color: #ec4899 !important; background-image: none !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+
+    /* Reference line */
+    .print-ref-line { background-color: #f59e0b !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+
     .bg-emerald-500 { background-color: #10b981 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     .bg-purple-500 { background-color: #a855f7 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     .bg-cyan-500 { background-color: #06b6d4 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
@@ -976,15 +996,15 @@ function RelatorioAvaliacaoAdminContent() {
     .bg-amber-500 { background-color: #f59e0b !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     .bg-blue-500 { background-color: #3b82f6 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     .bg-slate-800 { background-color: #334155 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    .bg-slate-900 { background-color: #0f172a !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     
-    .text-emerald-500 { color: #10b981 !important; }
-    .text-purple-500 { color: #a855f7 !important; }
-    .text-cyan-500 { color: #06b6d4 !important; }
-    .text-rose-500 { color: #f43f5e !important; }
-    .text-amber-500 { color: #f59e0b !important; }
-    .text-blue-500 { color: #3b82f6 !important; }
-    .text-slate-400 { color: #64748b !important; }
-    
+    .text-emerald-500, .text-emerald-600 { color: #047857 !important; }
+    .text-purple-500, .text-purple-600 { color: #7e22ce !important; }
+    .text-cyan-500, .text-cyan-600 { color: #0e7490 !important; }
+    .text-rose-500, .text-rose-600 { color: #be123c !important; }
+    .text-amber-500, .text-amber-600 { color: #b45309 !important; }
+    .text-blue-500, .text-blue-600 { color: #1d4ed8 !important; }
+    .text-slate-400, .text-slate-500 { color: #475569 !important; }
     
     div.bg-slate-900.h-full.rounded-full,
     div.h-full.bg-slate-900.rounded-full {
@@ -993,6 +1013,16 @@ function RelatorioAvaliacaoAdminContent() {
       print-color-adjust: exact !important;
     }
     
+    #chart-neon-metrics-card,
+    #chart-neon-distribution-card,
+    #chart-pie-satisfaction-card {
+      background-color: #ffffff !important;
+      border: 1px solid #cbd5e1 !important;
+      box-shadow: none !important;
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+
     /* Allow printing backgrounds globally */
     :root {
       color-scheme: light !important;
@@ -1409,7 +1439,7 @@ function RelatorioAvaliacaoAdminContent() {
                           </div>
 
                            {/* Grid with Grid 1 (Metrics by category), Grid 2 (Distribution) & Grid 3 (Satisfaction Pie Chart) */}
-                           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 print:grid-cols-1 print:gap-6">
+                           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 print:grid-cols-3 print:gap-3">
                             
                              {/* Chart 1: Média Detalhada por Categoria */}
                              <div className={`border rounded-xl p-5 relative overflow-hidden transition-all duration-300 border-b-[4px] border-r-[2px] ${
@@ -1418,11 +1448,11 @@ function RelatorioAvaliacaoAdminContent() {
                                  : 'bg-white border-slate-250 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border-cyan-500/30 text-slate-800'
                              }`} id="chart-neon-metrics-card" style={{ pageBreakInside: 'avoid' }}>
                                <div className={`flex items-center justify-between border-b pb-2.5 ${chartTheme === 'azul' ? 'border-slate-800/80' : 'border-slate-100'}`}>
-                                 <h4 className={`text-xs font-black uppercase tracking-widest font-mono flex items-center gap-1.5 shadow-sm ${chartTheme === 'azul' ? 'text-cyan-400' : 'text-cyan-600'}`}>
+                                 <h4 className={`text-xs font-black uppercase tracking-widest font-mono flex items-center gap-1.5 shadow-sm ${chartTheme === 'azul' ? 'text-cyan-400' : 'text-cyan-600'} print:text-cyan-800`}>
                                    <span className={`w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee] ${chartTheme === 'azul' ? 'animate-pulse' : ''}`}></span>
                                    1. Média por Categoria
                                  </h4>
-                                 <span className={`text-[9px] font-black uppercase font-mono tracking-wider ${chartTheme === 'azul' ? 'text-cyan-500/80' : 'text-cyan-600'}`}>
+                                 <span className={`text-[9px] font-black uppercase font-mono tracking-wider ${chartTheme === 'azul' ? 'text-cyan-500/80' : 'text-cyan-600'} print:text-cyan-800`}>
                                    {chartTheme === 'azul' ? 'TECNOLOGIA NEON 3D' : 'MÉTRICAS CLARAS'}
                                  </span>
                                </div>
@@ -1431,29 +1461,39 @@ function RelatorioAvaliacaoAdminContent() {
                                  {/* Category 1: Curso */}
                                  <div className="space-y-1.5">
                                    <div className="flex justify-between items-center text-xs">
-                                     <span className={`font-extrabold flex items-center gap-1.5 ${chartTheme === 'azul' ? 'text-slate-300' : 'text-slate-600'}`}>
+                                     <span className={`font-extrabold flex items-center gap-1.5 ${chartTheme === 'azul' ? 'text-slate-300' : 'text-slate-600'} print:text-slate-900`}>
                                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#10b981]"></span>
                                        Expectativas sobre o Curso
                                      </span>
-                                     <span className={`font-black font-mono text-[10.5px] ${chartTheme === 'azul' ? 'text-emerald-400' : 'text-emerald-600'}`}>{courseSatisfactionIndex.toFixed(2)} / 5.00</span>
+                                     <span className={`font-black font-mono text-[10.5px] ${chartTheme === 'azul' ? 'text-emerald-400' : 'text-emerald-600'} print:text-emerald-800`}>{courseSatisfactionIndex.toFixed(2)} / 5.00</span>
                                    </div>
                                    <div className={`h-4 rounded-lg relative overflow-visible border ${
                                      chartTheme === 'azul' 
                                        ? 'bg-slate-900 border-slate-800/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.8)]' 
-                                       : 'bg-slate-100 print:bg-white border-slate-200 shadow-[inset_0_1px_3px_rgba(0,0,0,0.1)]'
+                                       : 'bg-slate-100 print:bg-slate-100 border-slate-200 shadow-[inset_0_1px_3px_rgba(0,0,0,0.1)]'
                                    }`}>
                                      <div 
-                                       className="h-full bg-gradient-to-r from-emerald-600 via-emerald-400 to-emerald-300 rounded-l-lg transition-all duration-500 border-t border-white/30 border-b border-b-emerald-800 shadow-[0_0_12px_rgba(16,185,129,0.7)]" 
-                                       style={{ width: `${(courseSatisfactionIndex / 5) * 100}%` }}
+                                       className="h-full bg-gradient-to-r from-emerald-600 via-emerald-400 to-emerald-300 rounded-l-lg transition-all duration-500 border-t border-white/30 border-b border-b-emerald-800 shadow-[0_0_12px_rgba(16,185,129,0.7)] print-category-bar-1" 
+                                       style={{ 
+                                         width: `${(courseSatisfactionIndex / 5) * 100}%`,
+                                         backgroundColor: '#10b981',
+                                         WebkitPrintColorAdjust: 'exact',
+                                         printColorAdjust: 'exact'
+                                       }}
                                      />
                                      {/* Overall Class Average Reference Line */}
                                      <div 
-                                       className={`absolute top-0 bottom-0 w-1 border-x z-10 ${
+                                       className={`absolute top-0 bottom-0 w-1 border-x z-10 print-ref-line ${
                                          chartTheme === 'azul'
                                            ? 'bg-amber-400 shadow-[0_0_8px_#f59e0b] border-amber-200'
                                            : 'bg-amber-500 border-amber-300 shadow-sm'
                                        }`}
-                                       style={{ left: `${(overallAverage / 5) * 100}%` }}
+                                       style={{ 
+                                         left: `${(overallAverage / 5) * 100}%`,
+                                         backgroundColor: '#f59e0b',
+                                         WebkitPrintColorAdjust: 'exact',
+                                         printColorAdjust: 'exact'
+                                       }}
                                        title={`Média Geral da Turma: ${overallAverage.toFixed(2)}`}
                                      />
                                    </div>
@@ -1462,28 +1502,38 @@ function RelatorioAvaliacaoAdminContent() {
                                  {/* Category 2: Instrutor */}
                                  <div className="space-y-1.5">
                                    <div className="flex justify-between items-center text-xs">
-                                     <span className={`font-extrabold flex items-center gap-1.5 ${chartTheme === 'azul' ? 'text-slate-300' : 'text-slate-600'}`}>
+                                     <span className={`font-extrabold flex items-center gap-1.5 ${chartTheme === 'azul' ? 'text-slate-300' : 'text-slate-600'} print:text-slate-900`}>
                                        <span className="w-2.5 h-2.5 rounded-full bg-violet-400 shadow-[0_0_6px_#8b5cf6]"></span>
                                        Desempenho do Instrutor
                                      </span>
-                                     <span className={`font-black font-mono text-[10.5px] ${chartTheme === 'azul' ? 'text-violet-400' : 'text-violet-600'}`}>{instructorIndex.toFixed(2)} / 5.00</span>
+                                     <span className={`font-black font-mono text-[10.5px] ${chartTheme === 'azul' ? 'text-violet-400' : 'text-violet-600'} print:text-purple-800`}>{instructorIndex.toFixed(2)} / 5.00</span>
                                    </div>
                                    <div className={`h-4 rounded-lg relative overflow-visible border ${
                                      chartTheme === 'azul' 
                                        ? 'bg-slate-900 border-slate-800/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.8)]' 
-                                       : 'bg-slate-100 print:bg-white border-slate-200 shadow-[inset_0_1px_3px_rgba(0,0,0,0.1)]'
+                                       : 'bg-slate-100 print:bg-slate-100 border-slate-200 shadow-[inset_0_1px_3px_rgba(0,0,0,0.1)]'
                                    }`}>
                                      <div 
-                                       className="h-full bg-gradient-to-r from-violet-600 via-fuchsia-400 to-purple-300 rounded-l-lg transition-all duration-500 border-t border-white/30 border-b border-b-violet-850 shadow-[0_0_12px_rgba(168,85,247,0.7)]" 
-                                       style={{ width: `${(instructorIndex / 5) * 100}%` }}
+                                       className="h-full bg-gradient-to-r from-violet-600 via-fuchsia-400 to-purple-300 rounded-l-lg transition-all duration-500 border-t border-white/30 border-b border-b-violet-850 shadow-[0_0_12px_rgba(168,85,247,0.7)] print-category-bar-2" 
+                                       style={{ 
+                                         width: `${(instructorIndex / 5) * 100}%`,
+                                         backgroundColor: '#8b5cf6',
+                                         WebkitPrintColorAdjust: 'exact',
+                                         printColorAdjust: 'exact'
+                                       }}
                                      />
                                      <div 
-                                       className={`absolute top-0 bottom-0 w-1 border-x z-10 ${
+                                       className={`absolute top-0 bottom-0 w-1 border-x z-10 print-ref-line ${
                                          chartTheme === 'azul'
                                            ? 'bg-amber-400 shadow-[0_0_8px_#f59e0b] border-amber-200'
                                            : 'bg-amber-500 border-amber-300 shadow-sm'
                                        }`}
-                                       style={{ left: `${(overallAverage / 5) * 100}%` }}
+                                       style={{ 
+                                         left: `${(overallAverage / 5) * 100}%`,
+                                         backgroundColor: '#f59e0b',
+                                         WebkitPrintColorAdjust: 'exact',
+                                         printColorAdjust: 'exact'
+                                       }}
                                      />
                                    </div>
                                  </div>
@@ -1491,28 +1541,38 @@ function RelatorioAvaliacaoAdminContent() {
                                  {/* Category 3: Autoavaliação */}
                                  <div className="space-y-1.5">
                                    <div className="flex justify-between items-center text-xs">
-                                     <span className={`font-extrabold flex items-center gap-1.5 ${chartTheme === 'azul' ? 'text-slate-300' : 'text-slate-605'}`}>
+                                     <span className={`font-extrabold flex items-center gap-1.5 ${chartTheme === 'azul' ? 'text-slate-300' : 'text-slate-605'} print:text-slate-900`}>
                                        <span className="w-2.5 h-2.5 rounded-full bg-sky-400 shadow-[0_0_6px_#0ea5e9]"></span>
                                        Autoavaliação dos Alunos
                                      </span>
-                                     <span className={`font-black font-mono text-[10.5px] ${chartTheme === 'azul' ? 'text-sky-400' : 'text-sky-600'}`}>{studentSelfIndex.toFixed(2)} / 5.00</span>
+                                     <span className={`font-black font-mono text-[10.5px] ${chartTheme === 'azul' ? 'text-sky-400' : 'text-sky-600'} print:text-cyan-800`}>{studentSelfIndex.toFixed(2)} / 5.00</span>
                                    </div>
                                    <div className={`h-4 rounded-lg relative overflow-visible border ${
                                      chartTheme === 'azul' 
                                        ? 'bg-slate-900 border-slate-800/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.8)]' 
-                                       : 'bg-slate-100 print:bg-white border-slate-200 shadow-[inset_0_1px_3px_rgba(0,0,0,0.1)]'
+                                       : 'bg-slate-100 print:bg-slate-100 border-slate-200 shadow-[inset_0_1px_3px_rgba(0,0,0,0.1)]'
                                    }`}>
                                      <div 
-                                       className="h-full bg-gradient-to-r from-sky-600 via-cyan-400 to-cyan-300 rounded-l-lg transition-all duration-500 border-t border-white/30 border-b border-b-sky-850 shadow-[0_0_12px_rgba(6,182,212,0.7)]" 
-                                       style={{ width: `${(studentSelfIndex / 5) * 100}%` }}
+                                       className="h-full bg-gradient-to-r from-sky-600 via-cyan-400 to-cyan-300 rounded-l-lg transition-all duration-500 border-t border-white/30 border-b border-b-sky-850 shadow-[0_0_12px_rgba(6,182,212,0.7)] print-category-bar-3" 
+                                       style={{ 
+                                         width: `${(studentSelfIndex / 5) * 100}%`,
+                                         backgroundColor: '#0ea5e9',
+                                         WebkitPrintColorAdjust: 'exact',
+                                         printColorAdjust: 'exact'
+                                       }}
                                      />
                                      <div 
-                                       className={`absolute top-0 bottom-0 w-1 border-x z-10 ${
+                                       className={`absolute top-0 bottom-0 w-1 border-x z-10 print-ref-line ${
                                          chartTheme === 'azul'
                                            ? 'bg-amber-400 shadow-[0_0_8px_#f59e0b] border-amber-200'
                                            : 'bg-amber-500 border-amber-300 shadow-sm'
                                        }`}
-                                       style={{ left: `${(overallAverage / 5) * 100}%` }}
+                                       style={{ 
+                                         left: `${(overallAverage / 5) * 100}%`,
+                                         backgroundColor: '#f59e0b',
+                                         WebkitPrintColorAdjust: 'exact',
+                                         printColorAdjust: 'exact'
+                                       }}
                                      />
                                    </div>
                                  </div>
@@ -1520,28 +1580,38 @@ function RelatorioAvaliacaoAdminContent() {
                                  {/* Category 4: Infraestrutura */}
                                  <div className="space-y-1.5">
                                    <div className="flex justify-between items-center text-xs">
-                                     <span className={`font-extrabold flex items-center gap-1.5 ${chartTheme === 'azul' ? 'text-slate-300' : 'text-slate-600'}`}>
+                                     <span className={`font-extrabold flex items-center gap-1.5 ${chartTheme === 'azul' ? 'text-slate-300' : 'text-slate-600'} print:text-slate-900`}>
                                        <span className="w-2.5 h-2.5 rounded-full bg-pink-400 shadow-[0_0_6px_#ec4899]"></span>
                                        Infraestrutura e Recursos
                                      </span>
-                                     <span className={`font-black font-mono text-[10.5px] ${chartTheme === 'azul' ? 'text-pink-400' : 'text-pink-600'}`}>{infraIndex.toFixed(2)} / 5.00</span>
+                                     <span className={`font-black font-mono text-[10.5px] ${chartTheme === 'azul' ? 'text-pink-400' : 'text-pink-600'} print:text-rose-800`}>{infraIndex.toFixed(2)} / 5.00</span>
                                    </div>
                                    <div className={`h-4 rounded-lg relative overflow-visible border ${
                                      chartTheme === 'azul' 
                                        ? 'bg-slate-900 border-slate-800/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.8)]' 
-                                       : 'bg-slate-100 print:bg-white border-slate-200 shadow-[inset_0_1px_3px_rgba(0,0,0,0.1)]'
+                                       : 'bg-slate-100 print:bg-slate-100 border-slate-200 shadow-[inset_0_1px_3px_rgba(0,0,0,0.1)]'
                                    }`}>
                                      <div 
-                                       className="h-full bg-gradient-to-r from-rose-600 via-pink-400 to-rose-300 rounded-l-lg transition-all duration-500 border-t border-white/30 border-b border-b-rose-850 shadow-[0_0_12px_rgba(244,63,94,0.7)]" 
-                                       style={{ width: `${(infraIndex / 5) * 100}%` }}
+                                       className="h-full bg-gradient-to-r from-rose-600 via-pink-400 to-rose-300 rounded-l-lg transition-all duration-500 border-t border-white/30 border-b border-b-rose-850 shadow-[0_0_12px_rgba(244,63,94,0.7)] print-category-bar-4" 
+                                       style={{ 
+                                         width: `${(infraIndex / 5) * 100}%`,
+                                         backgroundColor: '#ec4899',
+                                         WebkitPrintColorAdjust: 'exact',
+                                         printColorAdjust: 'exact'
+                                       }}
                                      />
                                      <div 
-                                       className={`absolute top-0 bottom-0 w-1 border-x z-10 ${
+                                       className={`absolute top-0 bottom-0 w-1 border-x z-10 print-ref-line ${
                                          chartTheme === 'azul'
                                            ? 'bg-amber-400 shadow-[0_0_8px_#f59e0b] border-amber-200'
                                            : 'bg-amber-500 border-amber-300 shadow-sm'
                                        }`}
-                                       style={{ left: `${(overallAverage / 5) * 100}%` }}
+                                       style={{ 
+                                         left: `${(overallAverage / 5) * 100}%`,
+                                         backgroundColor: '#f59e0b',
+                                         WebkitPrintColorAdjust: 'exact',
+                                         printColorAdjust: 'exact'
+                                       }}
                                      />
                                    </div>
                                  </div>
@@ -1551,29 +1621,29 @@ function RelatorioAvaliacaoAdminContent() {
                                  chartTheme === 'azul' ? 'border-slate-800/80 text-slate-400' : 'border-slate-100 text-slate-500'
                                }`}>
                                  <div className="flex items-center gap-1.5">
-                                   <span className={`w-3.5 h-1.5 rounded-sm inline-block ${chartTheme === 'azul' ? 'bg-amber-400 shadow-[0_0_6px_#f59e0b]' : 'bg-amber-500'}`}></span>
-                                   <span className={`font-black ${chartTheme === 'azul' ? 'text-amber-400' : 'text-amber-600'}`}>Média Geral ({overallAverage.toFixed(2)})</span>
+                                   <span className={`w-3.5 h-1.5 rounded-sm inline-block ${chartTheme === 'azul' ? 'bg-amber-400 shadow-[0_0_6px_#f59e0b]' : 'bg-amber-500'} print-ref-line`}></span>
+                                   <span className={`font-black ${chartTheme === 'azul' ? 'text-amber-400' : 'text-amber-600'} print:text-amber-800`}>Média Geral ({overallAverage.toFixed(2)})</span>
                                  </div>
                                </div>
                              </div>
  
-                             {/* Chart 2: Perfil de Distribuição de Notas */}
-                             <div className={`border rounded-xl p-5 relative overflow-hidden transition-all duration-300 border-b-[4px] border-r-[2px] ${
+                             {/* Chart 2: Perfil de Distribuição de Notas (Gráfico em Torre) */}
+                             <div className={`border rounded-xl p-5 relative overflow-hidden transition-all duration-300 border-b-[4px] border-r-[2px] flex flex-col justify-between ${
                                chartTheme === 'azul'
                                  ? 'bg-slate-950 print:bg-white border-slate-800 shadow-[0_0_25px_rgba(168,85,247,0.15)] hover:shadow-[0_0_35px_rgba(168,85,247,0.25)] border-purple-500/20 text-white'
                                  : 'bg-white border-slate-250 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border-purple-500/30 text-slate-800'
                              }`} id="chart-neon-distribution-card" style={{ pageBreakInside: 'avoid' }}>
                                <div className={`flex items-center justify-between border-b pb-2.5 ${chartTheme === 'azul' ? 'border-slate-800/80' : 'border-slate-100'}`}>
-                                 <h4 className={`text-xs font-black uppercase tracking-widest font-mono flex items-center gap-1.5 ${chartTheme === 'azul' ? 'text-purple-400' : 'text-purple-600'}`}>
+                                 <h4 className={`text-xs font-black uppercase tracking-widest font-mono flex items-center gap-1.5 ${chartTheme === 'azul' ? 'text-purple-400' : 'text-purple-600'} print:text-purple-800`}>
                                    <span className={`w-2.5 h-2.5 rounded-full bg-purple-400 shadow-[0_0_8px_#a855f7] ${chartTheme === 'azul' ? 'animate-pulse' : ''}`}></span>
                                    2. Distribuição Geral
                                  </h4>
-                                 <span className={`text-[9px] font-black uppercase font-mono tracking-wider ${chartTheme === 'azul' ? 'text-purple-500/80' : 'text-purple-605'}`}>
+                                 <span className={`text-[9px] font-black uppercase font-mono tracking-wider ${chartTheme === 'azul' ? 'text-purple-500/80' : 'text-purple-605'} print:text-purple-800`}>
                                    {totalResponses} respostas
                                  </span>
                                </div>
  
-                               {/* Vertical bars chart for frequencies */}
+                               {/* Vertical bars chart for frequencies (Torres de Frequência) */}
                                <div className="flex items-end justify-between h-40 px-2 pt-5">
                                  {([5, 4, 3, 2, 1] as const).map(score => {
                                    const count = distribution[score];
@@ -1588,26 +1658,33 @@ function RelatorioAvaliacaoAdminContent() {
                                          ? "bg-gradient-to-t from-amber-600 via-amber-400 to-amber-300 border-l border-white/20 border-r border-amber-850 hover:shadow-[0_0_18px_rgba(245,158,11,0.95)] shadow-[0_0_8px_rgba(245,158,11,0.5)]" 
                                          : score === 2 
                                            ? "bg-gradient-to-t from-orange-600 via-orange-400 to-orange-300 border-l border-white/20 border-r border-orange-850 hover:shadow-[0_0_18px_rgba(249,115,22,0.95)] shadow-[0_0_8px_rgba(249,115,22,0.5)]" 
-                                             : "bg-gradient-to-t from-rose-600 via-rose-400 to-rose-300 border-l border-white/20 border-r border-rose-850 hover:shadow-[0_0_18px_rgba(244,63,94,0.95)] shadow-[0_0_8px_rgba(244,63,94,0.5)]";
- 
+                                           : "bg-gradient-to-t from-rose-600 via-rose-400 to-rose-300 border-l border-white/20 border-r border-rose-850 hover:shadow-[0_0_18px_rgba(244,63,94,0.95)] shadow-[0_0_8px_rgba(244,63,94,0.5)]";
+
+                                   const solidColor = score === 5 ? '#10b981' : score === 4 ? '#06b6d4' : score === 3 ? '#f59e0b' : score === 2 ? '#f97316' : '#f43f5e';
+
                                    return (
                                      <div key={score} className="flex flex-col items-center flex-1 group">
-                                       <span className={`text-[9.5px] font-black opacity-0 group-hover:opacity-100 transition-opacity duration-200 mb-1.5 font-mono border px-1.5 py-0.5 rounded shadow-lg ${
+                                       <span className={`text-[9.5px] font-black opacity-0 group-hover:opacity-100 print:opacity-100 transition-opacity duration-200 mb-1.5 font-mono border px-1.5 py-0.5 rounded shadow-lg print:shadow-none print:border-slate-300 print:text-slate-900 print:bg-slate-100 ${
                                          chartTheme === 'azul' ? 'text-slate-100 bg-slate-900 border-slate-700' : 'text-slate-800 bg-white border-slate-200'
                                        }`}>
                                          {count} ({pct.toFixed(0)}%)
                                        </span>
-                                       <div className={`w-full max-w-[28px] border rounded-t-lg h-24 flex flex-col justify-end overflow-visible relative ${
+                                       <div className={`w-full max-w-[28px] sm:max-w-[32px] border rounded-t-lg h-24 flex flex-col justify-end overflow-visible relative print:border-slate-300 print:bg-slate-100 ${
                                          chartTheme === 'azul'
                                            ? 'bg-slate-900/90 border-slate-800/50 shadow-[inset_0_2px_5px_rgba(0,0,0,0.8)]'
-                                           : 'bg-slate-50 print:bg-white border-slate-200 shadow-[inset_0_1px_3px_rgba(0,0,0,0.15)]'
+                                           : 'bg-slate-50 border-slate-200 shadow-[inset_0_1px_3px_rgba(0,0,0,0.15)]'
                                        }`}>
                                          <div 
-                                           className={`w-full ${barStyles} transition-all duration-500 rounded-t-md border-t border-white/30`} 
-                                           style={{ height: `${Math.max(4, pct)}%` }}
+                                           className={`w-full ${barStyles} print-tower-bar-${score} transition-all duration-500 rounded-t-md border-t border-white/30`} 
+                                           style={{ 
+                                             height: `${Math.max(pct > 0 ? 6 : 0, pct)}%`,
+                                             backgroundColor: solidColor,
+                                             WebkitPrintColorAdjust: 'exact',
+                                             printColorAdjust: 'exact',
+                                           }}
                                          />
                                        </div>
-                                       <span className={`text-[10px] font-black mt-2 font-mono flex items-center justify-center gap-0.5 text-center ${
+                                       <span className={`text-[10px] font-black mt-2 font-mono flex items-center justify-center gap-0.5 text-center print:text-slate-900 ${
                                          chartTheme === 'azul' ? 'text-slate-300' : 'text-slate-605'
                                        }`}>
                                          ★{score}
@@ -1620,27 +1697,27 @@ function RelatorioAvaliacaoAdminContent() {
                                <div className={`grid grid-cols-5 gap-1 text-center pt-4 border-t mt-4 leading-tight ${
                                  chartTheme === 'azul' ? 'border-slate-800/80' : 'border-slate-100'
                                }`}>
-                                 <div className={`flex flex-col items-center ${chartTheme === 'azul' ? 'text-emerald-400' : 'text-emerald-600'}`}>
-                                   <span className="text-[7.5px] font-black uppercase tracking-widest opacity-60 font-mono mb-1">Nota 5</span>
+                                 <div className={`flex flex-col items-center ${chartTheme === 'azul' ? 'text-emerald-400' : 'text-emerald-600'} print:text-emerald-800`}>
+                                   <span className="text-[7.5px] font-black uppercase tracking-widest opacity-60 font-mono mb-1 print:text-slate-700">Nota 5</span>
                                    <span className="text-[8.5px] sm:text-[9.5px] font-bold font-sans uppercase">Concordo<br/>Plenamente</span>
                                  </div>
-                                 <div className={`flex flex-col items-center ${chartTheme === 'azul' ? 'text-cyan-400' : 'text-cyan-600'}`}>
-                                   <span className="text-[7.5px] font-black uppercase tracking-widest opacity-60 font-mono mb-1">Nota 4</span>
+                                 <div className={`flex flex-col items-center ${chartTheme === 'azul' ? 'text-cyan-400' : 'text-cyan-600'} print:text-cyan-800`}>
+                                   <span className="text-[7.5px] font-black uppercase tracking-widest opacity-60 font-mono mb-1 print:text-slate-700">Nota 4</span>
                                    <span className="text-[8.5px] sm:text-[9.5px] font-bold font-sans uppercase">Concordo<br/>Parcialmente</span>
                                  </div>
-                                 <div className={`flex flex-col items-center ${chartTheme === 'azul' ? 'text-amber-400' : 'text-amber-600'}`}>
-                                   <span className="text-[7.5px] font-black uppercase tracking-widest opacity-60 font-mono mb-1">Nota 3</span>
+                                 <div className={`flex flex-col items-center ${chartTheme === 'azul' ? 'text-amber-400' : 'text-amber-600'} print:text-amber-800`}>
+                                   <span className="text-[7.5px] font-black uppercase tracking-widest opacity-60 font-mono mb-1 print:text-slate-700">Nota 3</span>
                                    <span className="text-[8.5px] sm:text-[9.5px] font-bold font-sans uppercase">Neutro<br/>(Regular)</span>
                                  </div>
-                                 <div className={`flex flex-col items-center ${chartTheme === 'azul' ? 'text-orange-400' : 'text-orange-600'}`}>
-                                   <span className="text-[7.5px] font-black uppercase tracking-widest opacity-60 font-mono mb-1">Nota 2</span>
+                                 <div className={`flex flex-col items-center ${chartTheme === 'azul' ? 'text-orange-400' : 'text-orange-600'} print:text-orange-800`}>
+                                   <span className="text-[7.5px] font-black uppercase tracking-widest opacity-60 font-mono mb-1 print:text-slate-700">Nota 2</span>
                                    <span className="text-[8.5px] sm:text-[9.5px] font-bold font-sans uppercase">Discordo<br/>Parcialmente</span>
                                  </div>
-                                 <div className={`flex flex-col items-center ${chartTheme === 'azul' ? 'text-rose-400' : 'text-rose-600'}`}>
-                                   <span className="text-[7.5px] font-black uppercase tracking-widest opacity-60 font-mono mb-1">Nota 1</span>
+                                 <div className={`flex flex-col items-center ${chartTheme === 'azul' ? 'text-rose-400' : 'text-rose-600'} print:text-rose-800`}>
+                                   <span className="text-[7.5px] font-black uppercase tracking-widest opacity-60 font-mono mb-1 print:text-slate-700">Nota 1</span>
                                    <span className="text-[8.5px] sm:text-[9.5px] font-bold font-sans uppercase">Discordo<br/>Plenamente</span>
                                  </div>
-                               </div>
+                                </div>
                              </div>
  
                              {/* Chart 3: Proporção de Níveis de Satisfação (Pie Chart) */}
