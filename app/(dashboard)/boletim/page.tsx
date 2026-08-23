@@ -314,6 +314,18 @@ function BoletimContent() {
     return '';
   });
 
+  // Ensure persistent state is synchronized from localStorage on client mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedName = localStorage.getItem('boletim_signature_name');
+      const savedRank = localStorage.getItem('boletim_signature_rank');
+      const savedRole = localStorage.getItem('boletim_signature_role');
+      if (savedName !== null) setSignatureName(savedName);
+      if (savedRank !== null) setSignatureRank(savedRank);
+      if (savedRole !== null) setSignatureRole(savedRole);
+    }
+  }, []);
+
   const handleSignatureNameChange = (val: string) => {
     setSignatureName(val);
     if (typeof window !== 'undefined') {
@@ -336,16 +348,15 @@ function BoletimContent() {
   };
 
   const handleResetSignature = () => {
-    const defaultRole = reportT[language as "pt" | "en"].signatureCommander;
     setSignatureName('');
     setSignatureRank('');
-    setSignatureRole(defaultRole);
+    setSignatureRole('');
     if (typeof window !== 'undefined') {
       localStorage.removeItem('boletim_signature_name');
       localStorage.removeItem('boletim_signature_rank');
-      localStorage.setItem('boletim_signature_role', defaultRole);
+      localStorage.removeItem('boletim_signature_role');
     }
-    toast.success(language === 'pt' ? 'Assinatura redefinida para o padrão.' : 'Signature reset to default.');
+    toast.success(language === 'pt' ? 'Assinatura limpa.' : 'Signature cleared.');
   };
 
   // Dynamic auto-fit calculation based on viewport height or width
@@ -2535,15 +2546,15 @@ function BoletimContent() {
                 {language === 'pt' ? '— Nome completo, Posto/Graduação e Função impressos no documento' : '— Full name, Rank & Role printed on document'}
               </span>
             </div>
-            {(signatureName || signatureRank || (signatureRole && signatureRole !== reportT[language as "pt" | "en"].signatureCommander)) && (
+            {(signatureName || signatureRank || signatureRole) && (
               <button
                 type="button"
                 onClick={handleResetSignature}
                 className="flex items-center gap-1 text-[10px] font-bold text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
-                title={language === 'pt' ? 'Restaurar valores padrão' : 'Reset to default'}
+                title={language === 'pt' ? 'Limpar campos da assinatura' : 'Clear signature fields'}
               >
                 <RotateCcw size={11} />
-                <span>{language === 'pt' ? 'Restaurar Padrão' : 'Reset Default'}</span>
+                <span>{language === 'pt' ? 'Limpar' : 'Clear'}</span>
               </button>
             )}
           </div>
@@ -2580,7 +2591,7 @@ function BoletimContent() {
                 type="text"
                 value={signatureRole}
                 onChange={(e) => handleSignatureRoleChange(e.target.value)}
-                placeholder={reportT[language as "pt" | "en"].signatureCommander}
+                placeholder={language === 'pt' ? 'Ex: Chefe da Missão de Assessoria Naval do Brasil em São Tomé e Príncipe' : 'Ex: Head of Naval Advisory Mission'}
                 className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition"
               />
             </div>
@@ -3023,7 +3034,7 @@ function BoletimContent() {
                             onChange={(e) => handleSignatureNameChange(e.target.value)}
                             placeholder={language === 'pt' ? '1. Nome Completo...' : '1. Signatory Full Name...'}
                             className="flex-1 px-2.5 py-1 bg-slate-800 border border-slate-700 rounded-lg text-[11px] font-semibold text-slate-100 placeholder:text-slate-500 focus:border-blue-500 outline-none transition"
-                            title={language === 'pt' ? 'Alterar Nome Completo do Signatário' : 'Change Signatory Full Name'}
+                            title={language === 'pt' ? 'Alterar Nome Completo' : 'Change Full Name'}
                           />
                           <input
                             type="text"
@@ -3037,16 +3048,16 @@ function BoletimContent() {
                             type="text"
                             value={signatureRole}
                             onChange={(e) => handleSignatureRoleChange(e.target.value)}
-                            placeholder={reportT[language as "pt" | "en"].signatureCommander}
+                            placeholder={language === 'pt' ? '3. Função / Cargo...' : '3. Role / Title...'}
                             className="flex-1 px-2.5 py-1 bg-slate-800 border border-slate-700 rounded-lg text-[11px] font-semibold text-slate-100 placeholder:text-slate-500 focus:border-blue-500 outline-none transition"
                             title={language === 'pt' ? 'Alterar Função / Cargo' : 'Change Role / Title'}
                           />
-                          {(signatureName || signatureRank || (signatureRole && signatureRole !== reportT[language as "pt" | "en"].signatureCommander)) && (
+                          {(signatureName || signatureRank || signatureRole) && (
                             <button
                               type="button"
                               onClick={handleResetSignature}
                               className="p-1 text-slate-400 hover:text-rose-400 transition cursor-pointer"
-                              title={language === 'pt' ? 'Restaurar padrão' : 'Reset default'}
+                              title={language === 'pt' ? 'Limpar assinatura' : 'Clear signature'}
                             >
                               <RotateCcw size={13} />
                             </button>
@@ -3754,7 +3765,7 @@ function BoletimContent() {
                                     </span>
                                   </div>
 
-                                  {/* Military 3-Line Signature Panel */}
+                                  {/* Military Signature Panel */}
                                   <div className="flex flex-col items-center justify-center pt-8 mt-4">
                                     <div className="flex flex-col items-center text-center max-w-xl w-full">
                                       {/* Linha de Assinatura */}
@@ -3775,9 +3786,11 @@ function BoletimContent() {
                                       ) : null}
 
                                       {/* Linha 3: Função */}
-                                      <div className="text-[10.5px] font-medium text-slate-800 uppercase tracking-wide leading-tight text-center mt-0.5 max-w-lg">
-                                        {signatureRole.trim() || reportT[language as "pt" | "en"].signatureCommander}
-                                      </div>
+                                      {signatureRole.trim() ? (
+                                        <div className="text-[10.5px] font-medium text-slate-800 uppercase tracking-wide leading-tight text-center mt-0.5 max-w-lg">
+                                          {signatureRole.trim()}
+                                        </div>
+                                      ) : null}
                                     </div>
                                   </div>
                                 </div>
@@ -3879,7 +3892,7 @@ function BoletimContent() {
                             onChange={(e) => handleSignatureNameChange(e.target.value)}
                             placeholder={language === 'pt' ? '1. Nome Completo...' : '1. Signatory Full Name...'}
                             className="flex-1 px-2.5 py-1 bg-slate-800 border border-slate-700 rounded-lg text-[11px] font-semibold text-slate-100 placeholder:text-slate-500 focus:border-blue-500 outline-none transition"
-                            title={language === 'pt' ? 'Alterar Nome Completo do Signatário' : 'Change Signatory Full Name'}
+                            title={language === 'pt' ? 'Alterar Nome Completo' : 'Change Full Name'}
                           />
                           <input
                             type="text"
@@ -3893,16 +3906,16 @@ function BoletimContent() {
                             type="text"
                             value={signatureRole}
                             onChange={(e) => handleSignatureRoleChange(e.target.value)}
-                            placeholder={reportT[language as "pt" | "en"].signatureCommander}
+                            placeholder={language === 'pt' ? '3. Função / Cargo...' : '3. Role / Title...'}
                             className="flex-1 px-2.5 py-1 bg-slate-800 border border-slate-700 rounded-lg text-[11px] font-semibold text-slate-100 placeholder:text-slate-500 focus:border-blue-500 outline-none transition"
                             title={language === 'pt' ? 'Alterar Função / Cargo' : 'Change Role / Title'}
                           />
-                          {(signatureName || signatureRank || (signatureRole && signatureRole !== reportT[language as "pt" | "en"].signatureCommander)) && (
+                          {(signatureName || signatureRank || signatureRole) && (
                             <button
                               type="button"
                               onClick={handleResetSignature}
                               className="p-1 text-slate-400 hover:text-rose-400 transition cursor-pointer"
-                              title={language === 'pt' ? 'Restaurar padrão' : 'Reset default'}
+                              title={language === 'pt' ? 'Limpar assinatura' : 'Clear signature'}
                             >
                               <RotateCcw size={13} />
                             </button>
@@ -4134,33 +4147,24 @@ function BoletimContent() {
                                  </div>
 
                                  {/* Class Batch Signature Panel */}
-                                 <div className="flex flex-col items-center justify-center pt-5 mt-3 border-t border-dashed border-slate-300">
+                                 <div className="flex flex-col items-center justify-center pt-6 mt-4 border-t border-dashed border-slate-300">
                                    <div className="flex flex-col items-center text-center max-w-lg w-full">
                                      <div className="w-80 border-b-2 border-slate-800 h-8 mb-2"></div>
                                      {signatureName.trim() ? (
                                        <span className="text-xs font-black text-slate-900 uppercase tracking-wider leading-tight text-center font-mono">
-                                         {signatureName}
+                                         {signatureName.trim()}
                                        </span>
-                                     ) : (
-                                       <span className="text-xs font-bold text-slate-400 uppercase tracking-wider leading-tight text-center font-mono italic">
-                                         {language === "pt" ? "(Nome Completo do Responsável)" : "(Full Name of Official)"}
-                                       </span>
-                                     )}
+                                     ) : null}
                                      {signatureRank.trim() ? (
                                        <span className="text-[11px] font-bold text-slate-800 uppercase tracking-wider leading-tight text-center mt-0.5 font-mono">
-                                         {signatureRank}
+                                         {signatureRank.trim()}
                                        </span>
-                                     ) : (
-                                       <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wide leading-tight text-center mt-0.5 font-mono italic">
-                                         {language === "pt" ? "(Posto / Graduação)" : "(Rank / Rate)"}
+                                     ) : null}
+                                     {signatureRole.trim() ? (
+                                       <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wide leading-tight text-center mt-0.5 font-mono max-w-md">
+                                         {signatureRole.trim()}
                                        </span>
-                                     )}
-                                     <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wide leading-tight text-center mt-1 font-mono max-w-md">
-                                       {signatureRole.trim() || reportT[language as "pt" | "en"].signatureCommander}
-                                     </span>
-                                     <span className="text-[7.5px] font-bold text-slate-400 uppercase mt-1.5 leading-none tracking-widest">
-                                       {language === "pt" ? "Assinatura, Posto e Função" : "Signature, Rank & Title"}
-                                     </span>
+                                     ) : null}
                                    </div>
                                  </div>
                               </div>
