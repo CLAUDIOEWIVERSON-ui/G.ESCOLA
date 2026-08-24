@@ -509,7 +509,7 @@ export default function FrequenciaPage() {
 
   return (
     <div className="space-y-6 pb-20 max-w-[1400px] mx-auto">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 print:hidden">
         <div className="flex items-center gap-2 text-sm text-slate-500">
           <span className="hover:text-blue-600 cursor-pointer transition-colors">{t.nav.courses}</span>
           <span className="text-slate-300">›</span>
@@ -804,30 +804,40 @@ export default function FrequenciaPage() {
                 }
 
                 @media print {
+                  @page {
+                    size: ${mapGranularity === 'week' ? 'A4 portrait' : 'A4 landscape'};
+                    margin: 8mm 8mm 8mm 8mm;
+                  }
+
                   /* Reset page context and force standard white/black print output */
                   html, body {
                     margin: 0 !important;
                     padding: 0 !important;
                     background: #ffffff !important;
+                    background-color: #ffffff !important;
                     color: #000000 !important;
                     width: 100% !important;
                     height: auto !important;
-                    min-height: auto !important;
+                    min-height: 0 !important;
+                    max-height: none !important;
                     overflow: visible !important;
+                    -webkit-print-color-adjust: exact !important;
+                    print-color-adjust: exact !important;
                   }
 
                   /* Hide headers, footers, mobile bottom-navs, back buttons, filters, etc. completely from DOM layout flow */
-                  header, nav, aside, footer, button, .print\:hidden, [role="dialog"], [role="group"] {
+                  header, nav, aside, footer, button, .print\:hidden, [role="dialog"], [role="group"], .no-print {
                     display: none !important;
                     width: 0 !important;
                     height: 0 !important;
                     margin: 0 !important;
                     padding: 0 !important;
                     overflow: hidden !important;
+                    visibility: hidden !important;
                   }
                   
-                  /* Collapse only major layout wrappers to prevent overflow, preserving nested elements */
-                  html, body, main, .min-h-screen, #__next, .flex-1, [data-framer-portal-container] {
+                  /* Unset layout wrappers so printer renders natively */
+                  html, body, main, .min-h-screen, #__next, .flex-1, [data-framer-portal-container], div[class*="space-y-"] {
                     position: static !important;
                     width: 100% !important;
                     height: auto !important;
@@ -844,138 +854,98 @@ export default function FrequenciaPage() {
                     transition: none !important;
                     opacity: 1 !important;
                   }
-
-                  body * {
-                    visibility: hidden !important;
-                  }
                   
-                  #frequency-print-area, #frequency-print-area * {
-                    visibility: visible !important;
-                  }
-
-                  /* Collapse all elements except the printable area and its descendants */
-                  *:not(#frequency-print-area):not(#frequency-print-area *) {
-                    height: 0 !important;
-                    min-height: 0 !important;
-                    max-height: 0 !important;
-                    margin: 0 !important;
-                    padding: 0 !important;
-                    border: none !important;
-                    box-shadow: none !important;
-                    overflow: visible !important;
-                  }
-                  
-                  /* Standard relative flow starting at 0,0 of physical page 1 */
+                  /* Standard printable area */
                   #frequency-print-area {
                     visibility: visible !important;
                     position: relative !important;
-                    width: ${mapGranularity === 'week' ? '190mm' : '277mm'} !important;
-                    max-width: ${mapGranularity === 'week' ? '190mm' : '277mm'} !important;
+                    width: 100% !important;
+                    max-width: 100% !important;
                     height: auto !important;
-                    min-height: auto !important;
+                    min-height: 0 !important;
+                    max-height: none !important;
                     overflow: visible !important;
                     padding: 0 !important;
-                    margin: 0 auto !important;
+                    margin: 0 !important;
                     box-shadow: none !important;
                     border: none !important;
                     background: #ffffff !important;
                     color: #000000 !important;
                     display: block !important;
                     page-break-inside: auto !important;
+                    break-inside: auto !important;
                     box-sizing: border-box !important;
                   }
 
+                  #frequency-print-area .overflow-x-auto {
+                    overflow: visible !important;
+                    width: 100% !important;
+                  }
+
                   #frequency-print-area table {
+                    width: 100% !important;
+                    table-layout: auto !important;
+                    border-collapse: collapse !important;
+                    border: 1.5px solid #1e293b !important;
                     page-break-inside: auto !important;
+                    break-inside: auto !important;
                   }
 
                   #frequency-print-area tr {
                     page-break-inside: avoid !important;
+                    break-inside: avoid !important;
                     page-break-after: auto !important;
+                    break-after: auto !important;
                   }
 
                   #frequency-print-area thead {
                     display: table-header-group !important;
+                    page-break-inside: avoid !important;
+                    break-inside: avoid !important;
                   }
 
-                  /* Overwrite global generic flex flattener for our specialized print contents */
-                  #frequency-print-area .flex {
-                    display: flex !important;
-                  }
-                  #frequency-print-area .flex-row {
-                    flex-direction: row !important;
-                  }
-                  #frequency-print-area .flex-col {
-                    flex-direction: column !important;
-                  }
-                  #frequency-print-area .items-center {
-                    align-items: center !important;
-                  }
-                  #frequency-print-area .justify-between {
-                    justify-content: space-between !important;
-                  }
-                  #frequency-print-area .justify-center {
-                    justify-content: center !important;
-                  }
-                  #frequency-print-area .grid {
-                    display: grid !important;
-                  }
-                  #frequency-print-area .grid-cols-2 {
-                    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-                  }
-                  #frequency-print-area .gap-10 {
-                    gap: 40px !important;
+                  #frequency-print-area tbody {
+                    display: table-row-group !important;
                   }
 
                   #frequency-print-area th, 
                   #frequency-print-area td {
                     border: 1px solid #1e293b !important;
                     color: #000000 !important;
-                    padding: 3px 4px !important;
-                    font-size: 9px !important;
+                    padding: ${mapGranularity === 'week' ? '4px 6px' : '2px 2px'} !important;
+                    font-size: ${mapGranularity === 'week' ? '9.5px' : '8px'} !important;
                     background-color: #ffffff !important;
                     -webkit-print-color-adjust: exact !important;
-                    color-adjust: exact !important;
-                    height: auto !important;
-                  }
-                  
-                  #frequency-print-area td .w-full.h-14 {
-                    height: 20px !important;
+                    print-color-adjust: exact !important;
+                    position: static !important;
                   }
 
                   #frequency-print-area th {
-                    padding: 4px 4px !important;
-                    font-size: 8px !important;
                     background-color: #f1f5f9 !important;
-                  }
-                  
-                  #frequency-print-area .overflow-x-auto {
-                    overflow: visible !important;
-                  }
-
-                  #frequency-print-area .mt-8 {
-                    margin-top: 14px !important;
-                  }
-                  
-                  #frequency-print-area .pt-6 {
-                    padding-top: 10px !important;
-                  }
-
-                  #frequency-print-area .w-56 {
-                    width: 150px !important;
+                    font-weight: 850 !important;
+                    font-size: ${mapGranularity === 'week' ? '8.5px' : '7.5px'} !important;
                   }
                   
                   #frequency-print-area td.sticky, 
                   #frequency-print-area th.sticky {
                     position: static !important;
                     background-color: #ffffff !important;
-                    border-right: 1px solid #1e293b !important;
+                    border-right: 1.5px solid #1e293b !important;
+                    box-shadow: none !important;
                   }
-                }
-                
-                @page {
-                  size: ${mapGranularity === 'week' ? 'A4 portrait' : 'A4 landscape'};
-                  margin: 10mm 10mm 10mm 10mm;
+
+                  #frequency-print-area .print-badge {
+                    width: ${mapGranularity === 'week' ? '22px' : '18px'} !important;
+                    height: ${mapGranularity === 'week' ? '22px' : '18px'} !important;
+                    font-size: ${mapGranularity === 'week' ? '10px' : '8px'} !important;
+                    font-weight: 900 !important;
+                    display: inline-flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                    border-radius: 4px !important;
+                    -webkit-print-color-adjust: exact !important;
+                    print-color-adjust: exact !important;
+                  }
                 }
               `}} />
 
@@ -1143,7 +1113,7 @@ export default function FrequenciaPage() {
                               <div className="w-full h-full flex items-center justify-center relative">
                                 {status ? (
                                   <div className={cn(
-                                    "w-7 h-7 rounded-lg flex items-center justify-center font-extrabold text-[11px] shadow-sm transition-transform",
+                                    "w-7 h-7 rounded-lg flex items-center justify-center font-extrabold text-[11px] shadow-sm transition-transform print-badge",
                                     status === 'P' && "bg-emerald-500 text-white border border-emerald-600 shadow-sm",
                                     status === 'F' && "bg-rose-500 text-white border border-rose-600 shadow-sm",
                                     status === 'FJ' && "bg-amber-500 text-white border border-amber-600 shadow-sm",
@@ -1162,7 +1132,8 @@ export default function FrequenciaPage() {
                                   ) : (
                                     <div className="w-1.5 h-1.5 rounded-full bg-slate-200 group-hover:bg-slate-300 transition-colors print:hidden" />
                                   )
-                                )}                               </div>
+                                )}
+                              </div>
                             </td>
                           );
                         })}
@@ -1173,7 +1144,61 @@ export default function FrequenciaPage() {
                 </table>
               </div>
 
+              {/* Official Legend and Signature Footer for Print & Screen */}
+              <div className="mt-6 pt-4 border-t border-slate-200 print-avoid-break">
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+                  {/* Legenda */}
+                  <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap text-[10px] font-bold text-slate-600">
+                    <span className="font-extrabold text-slate-800 uppercase tracking-wider">{language === 'pt' ? 'Legenda:' : 'Legend:'}</span>
+                    <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 px-1.5 py-0.5 rounded font-mono text-[9.5px]">
+                      <strong className="bg-emerald-500 text-white px-1 rounded text-[8.5px]">P</strong> {language === 'pt' ? 'Presente' : 'Present'}
+                    </span>
+                    <span className="inline-flex items-center gap-1 bg-rose-50 text-rose-800 border border-rose-200 px-1.5 py-0.5 rounded font-mono text-[9.5px]">
+                      <strong className="bg-rose-500 text-white px-1 rounded text-[8.5px]">F</strong> {language === 'pt' ? 'Falta' : 'Absent'}
+                    </span>
+                    <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-800 border border-amber-200 px-1.5 py-0.5 rounded font-mono text-[9.5px]">
+                      <strong className="bg-amber-500 text-white px-1 rounded text-[8.5px]">FJ</strong> {language === 'pt' ? 'Justificada' : 'Excused'}
+                    </span>
+                    <span className="inline-flex items-center gap-1 bg-orange-50 text-orange-800 border border-orange-200 px-1.5 py-0.5 rounded font-mono text-[9.5px]">
+                      <strong className="bg-orange-500 text-white px-1 rounded text-[8.5px]">A</strong> {language === 'pt' ? 'Atraso' : 'Delay'}
+                    </span>
+                    <span className="inline-flex items-center gap-1 bg-sky-50 text-sky-800 border border-sky-200 px-1.5 py-0.5 rounded font-mono text-[9.5px]">
+                      <strong className="bg-sky-500 text-white px-1 rounded text-[8.5px]">D</strong> {language === 'pt' ? 'Dispensa' : 'Exempt'}
+                    </span>
+                    <span className="inline-flex items-center gap-1 bg-rose-50 text-rose-700 border border-rose-200 px-1.5 py-0.5 rounded font-mono text-[9.5px]">
+                      <strong className="bg-rose-200 text-rose-800 px-1 rounded text-[8.5px]">H</strong> {language === 'pt' ? 'Feriado' : 'Holiday'}
+                    </span>
+                  </div>
 
+                  {/* Totais rápidos */}
+                  <div className="text-[10px] font-mono text-slate-500">
+                    {language === 'pt' ? 'Emissão: ' : 'Issued: '}
+                    <strong>{format(new Date(), 'dd/MM/yyyy HH:mm')}</strong>
+                  </div>
+                </div>
+
+                {/* Assinaturas Oficiais */}
+                <div className="grid grid-cols-2 gap-8 md:gap-16 pt-8 mt-5 border-t border-dashed border-slate-200 text-center">
+                  <div className="flex flex-col items-center">
+                    <div className="w-52 md:w-64 border-b border-slate-800 mb-1.5" />
+                    <span className="text-[10px] font-black text-slate-800 uppercase tracking-wider">
+                      {language === 'pt' ? 'Assinatura do Instrutor / Responsável' : 'Instructor Signature'}
+                    </span>
+                    <span className="text-[9px] text-slate-500 font-medium">
+                      {language === 'pt' ? 'Encarregado da Disciplina / Turma' : 'Course Instructor'}
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <div className="w-52 md:w-64 border-b border-slate-800 mb-1.5" />
+                    <span className="text-[10px] font-black text-slate-800 uppercase tracking-wider">
+                      {language === 'pt' ? 'Visto da Coordenação do Curso' : 'Course Coordination Visa'}
+                    </span>
+                    <span className="text-[9px] text-slate-500 font-medium">
+                      {language === 'pt' ? 'Missão de Assessoria Naval' : 'Naval Advisory Mission'}
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
           </motion.div>
 
