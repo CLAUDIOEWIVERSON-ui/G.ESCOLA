@@ -742,8 +742,8 @@ function RelatorioAvaliacaoAdminContent() {
           ${hdEnd}
           ${bdStart}
             <div class="card">
-              <div style="display: flex; justify-content: center; margin-bottom: 12px;">
-                <img src="${window.location.origin}${(navalMissionLogo as any)?.src || navalMissionLogo}" alt="Logo Missão Naval" style="width: 100px; height: 100px; object-fit: contain;" />
+              <div style="display: flex; justify-content: center; margin-bottom: 10px;">
+                <img src="${window.location.origin}${(navalMissionLogo as any)?.src || navalMissionLogo}" alt="Logo Missão Naval" style="width: 55px; height: 55px; object-fit: contain;" />
               </div>
               <h2 style="margin: 0 0 5px 0; color: #1e3a8a; font-size: 18px; text-transform: uppercase;">MISSÃO DE ASSESSORIA NAVAL</h2>
               <p style="font-size: 10px; font-weight: bold; color: #64748b; margin-top: 0; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">São Tomé e Príncipe • Carteirinha do Aluno</p>
@@ -1002,28 +1002,28 @@ function RelatorioAvaliacaoAdminContent() {
   }
 `}</style>
       {/* PRINT HEADER */}
-      <div className="hidden print:flex items-center justify-between pb-5 border-b-2 border-slate-950 mb-5">
-        <div className="flex items-center gap-6">
-          <div className="w-36 h-36 shrink-0 flex items-center justify-center bg-white">
+      <div className="hidden print:flex items-center justify-between pb-4 border-b-2 border-slate-950 mb-4">
+        <div className="flex items-center gap-4">
+          <div className="w-20 h-20 shrink-0 flex items-center justify-center bg-white">
             <img
               src={typeof navalMissionLogo === "string" ? navalMissionLogo : (navalMissionLogo as any)?.src || navalMissionLogo}
               alt="Logo Missão de Assessoria Naval"
-              className="w-36 h-36 object-contain shrink-0"
-              style={{ width: "144px", height: "144px", maxHeight: "144px", maxWidth: "144px" }}
+              className="w-20 h-20 object-contain shrink-0"
+              style={{ width: "80px", height: "80px", maxHeight: "80px", maxWidth: "80px" }}
             />
           </div>
           <div className="text-left flex flex-col justify-center">
-            <h1 className="text-base font-black tracking-widest text-slate-900 uppercase leading-snug">
+            <h1 className="text-sm font-black tracking-widest text-slate-900 uppercase leading-none">
               MISSÃO DE ASSESSORIA NAVAL DO BRASIL EM SÃO TOMÉ E PRÍNCIPE
             </h1>
-            <p className="text-xs font-black tracking-widest text-slate-600 uppercase mt-1.5 leading-none">
+            <p className="text-[10px] font-black tracking-widest text-slate-600 uppercase mt-1 leading-none">
               Relatório de Avaliação e Indicadores de Qualidade Pedagógica
             </p>
           </div>
         </div>
-        <div className="text-right text-[10px] font-mono text-slate-500 hidden print:block">
-          <p className="font-bold text-slate-800">DOCUMENTO OFICIAL DE AVALIAÇÃO</p>
-          <p className="mt-1">Emissão: {new Date().toLocaleDateString("pt-BR")}</p>
+        <div className="text-right text-[9px] font-mono text-slate-500 hidden print:block">
+          <p className="font-bold text-slate-700">DOCUMENTO OFICIAL DE AVALIAÇÃO</p>
+          <p>Emissão: {new Date().toLocaleDateString("pt-BR")}</p>
         </div>
       </div>
       
@@ -2396,9 +2396,6 @@ function RelatorioAvaliacaoAdminContent() {
                                   const studentName = student ? (student.posto_graduacao ? `${student.posto_graduacao} ${student.nome}` : student.nome) : 'Estudante';
                                   return `
                                     <div class="card">
-                                      <div style="display: flex; justify-content: center; margin-bottom: 8px;">
-                                        <img src="${window.location.origin}${(navalMissionLogo as any)?.src || navalMissionLogo}" alt="Logo Missão Naval" style="width: 60px; height: 60px; object-fit: contain;" />
-                                      </div>
                                       <h3>CARTEIRINHA DE ACESSO</h3>
                                       <p class="label">Aluno</p>
                                       <p class="value">${studentName}</p>
@@ -2439,11 +2436,11 @@ function RelatorioAvaliacaoAdminContent() {
                                       </style>
                                     ${hdEnd}
                                     ${bdStart}
-                                      <div style="margin-bottom: 24px; border-bottom: 2px solid #1e3a8a; padding-bottom: 14px; display: flex; align-items: center; gap: 20px;">
-                                        <img src="${window.location.origin}${(navalMissionLogo as any)?.src || navalMissionLogo}" alt="Logo Missão Naval" style="width: 80px; height: 80px; object-fit: contain;" />
+                                      <div style="margin-bottom: 20px; border-bottom: 2px solid #1e3a8a; padding-bottom: 12px; display: flex; align-items: center; gap: 16px;">
+                                        <img src="${window.location.origin}${(navalMissionLogo as any)?.src || navalMissionLogo}" alt="Logo Missão Naval" style="width: 50px; height: 50px; object-fit: contain;" />
                                         <div>
-                                          <h1 style="margin: 0; font-size: 15px; font-weight: 900; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px;">MISSÃO DE ASSESSORIA NAVAL DO BRASIL EM SÃO TOMÉ E PRÍNCIPE</h1>
-                                          <h2 style="margin: 3px 0 0 0; font-size: 13px; color: #1e3a8a;">Carteirinhas de Acesso QR da Turma: ${turmaNome} (${data.length} carteirinhas)</h2>
+                                          <h1 style="margin: 0; font-size: 14px; font-weight: 900; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px;">MISSÃO DE ASSESSORIA NAVAL DO BRASIL EM SÃO TOMÉ E PRÍNCIPE</h1>
+                                          <h2 style="margin: 2px 0 0 0; font-size: 12px; color: #1e3a8a;">Carteirinhas de Acesso QR da Turma: ${turmaNome} (${data.length} carteirinhas)</h2>
                                         </div>
                                       </div>
                                       <div class="grid">${cardsHtml}</div>

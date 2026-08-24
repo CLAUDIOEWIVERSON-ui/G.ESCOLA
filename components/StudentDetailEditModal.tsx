@@ -598,20 +598,20 @@ export default function StudentDetailEditModal({
       >
         <form onSubmit={handleSaveStudent} noValidate className="space-y-5 max-h-[82vh] lg:max-h-none overflow-y-auto px-1 print:hidden">
           {/* BANNER INSTITUCIONAL OFICIAL (Exibido em modo PC para espelhar a Ficha Individual de Impressão) */}
-          <div className="hidden lg:flex items-center justify-between p-4 bg-slate-900 text-white rounded-xl shadow-sm border border-slate-800">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 shrink-0 bg-white/10 rounded-xl p-1.5 flex items-center justify-center">
+          <div className="hidden lg:flex items-center justify-between p-3.5 bg-slate-900 text-white rounded-xl shadow-sm border border-slate-800">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 shrink-0 bg-white/10 rounded-lg p-1 flex items-center justify-center">
                 <img
                   src={typeof navalMissionLogo === 'string' ? navalMissionLogo : (navalMissionLogo as any)?.src || navalMissionLogo}
                   alt="Brasão"
-                  className="w-14 h-14 object-contain"
+                  className="w-8 h-8 object-contain"
                 />
               </div>
               <div>
-                <span className="text-[10px] font-black tracking-widest text-blue-300 uppercase block leading-none">
+                <span className="text-[9px] font-black tracking-widest text-blue-300 uppercase block leading-none">
                   SISTEMA ESCOLAR E ACADÊMICO • FICHA INDIVIDUAL DO ALUNO
                 </span>
-                <h2 className="text-base font-extrabold uppercase tracking-wide text-white mt-1.5">
+                <h2 className="text-sm font-extrabold uppercase tracking-wide text-white mt-1">
                   {currentAluno?.nome ? `FICHA OFICIAL: ${currentAluno.nome}` : 'FICHA DE CADASTRO DO ALUNO'}
                 </h2>
               </div>
@@ -1466,24 +1466,23 @@ export default function StudentDetailEditModal({
           className="hidden print:block student-ficha-printable-doc official-document-sheet text-slate-900 bg-white p-2 font-sans text-xs w-full"
         >
           {/* Cabeçalho Institucional */}
-          <div className="border-b-2 border-slate-900 pb-3 mb-4 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="w-24 h-24 shrink-0 flex items-center justify-center">
+          <div className="border-b-2 border-slate-900 pb-2 mb-3 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-14 h-14 shrink-0 flex items-center justify-center">
                 <img
                   src={typeof navalMissionLogo === 'string' ? navalMissionLogo : (navalMissionLogo as any)?.src || navalMissionLogo}
                   alt="Brasão"
-                  className="w-24 h-24 object-contain shrink-0"
-                  style={{ width: '96px', height: '96px' }}
+                  className="w-14 h-14 object-contain shrink-0"
                 />
               </div>
               <div>
-                <h1 className="text-[10px] font-black uppercase tracking-widest text-slate-600 leading-tight">
+                <h1 className="text-[9px] font-black uppercase tracking-widest text-slate-600 leading-tight">
                   SISTEMA DE GESTÃO ESCOLAR E ACADÊMICA
                 </h1>
-                <h2 className="text-sm font-black uppercase tracking-wider text-slate-900 leading-tight mt-0.5">
+                <h2 className="text-xs font-black uppercase tracking-wider text-slate-900 leading-tight">
                   ESCOLA DE FORMAÇÃO E APERFEIÇOAMENTO MILITAR
                 </h2>
-                <p className="text-xs font-extrabold text-blue-900 uppercase tracking-widest mt-1">
+                <p className="text-[11px] font-extrabold text-blue-900 uppercase tracking-widest mt-0.5">
                   FICHA INDIVIDUAL DO ALUNO
                 </p>
               </div>
