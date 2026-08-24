@@ -23,7 +23,13 @@ import {
   CalendarDays as CalendarIcon,
   Calendar,
   ShieldAlert,
-  Printer
+  Printer,
+  X,
+  FileText,
+  Layers,
+  Settings2,
+  FileSpreadsheet,
+  Check
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
@@ -54,25 +60,74 @@ import {
 } from 'date-fns';
 import { ptBR, enUS } from 'date-fns/locale';
 
-// Helper to fetch Brazil holidays (Simplified for this version)
-const BRAZIL_HOLIDAYS = [
-  { date: "2026-01-01", name: "Confraternização Universal" },
-  { date: "2026-02-17", name: "Carnaval" },
-  { date: "2026-04-03", name: "Sexta-feira Santa" },
-  { date: "2026-04-21", name: "Tiradentes" },
-  { date: "2026-05-01", name: "Dia do Trabalho" },
-  { date: "2026-06-04", name: "Corpus Christi" },
-  { date: "2026-09-07", name: "Independência do Brasil" },
-  { date: "2026-10-12", name: "Nossa Senhora Aparecida" },
-  { date: "2026-11-02", name: "Finados" },
-  { date: "2026-11-15", name: "Proclamação da República" },
-  { date: "2026-12-25", name: "Natal" },
+// Official São Tomé and Príncipe national holidays
+export const STP_HOLIDAYS = [
+  { m: 0, d: 1, name: 'Ano Novo', meaning: 'Celebração universal do início do ano novo civil.' },
+  { m: 1, d: 3, name: 'Dia dos Mártires', meaning: 'Homenagem aos mártires do Massacre de Batepá (1953), símbolo histórico de resistência nacional contra a opressão colonial.' },
+  { m: 4, d: 1, name: 'Dia do Trabalhador', meaning: 'Celebração internacional e nacional das conquistas e direitos da classe trabalhadora.' },
+  { m: 5, d: 1, name: 'Dia da Criança', meaning: 'Dia Internacional da Criança, voltado à proteção e promoção dos direitos fundamentais da infância são-tomense.' },
+  { m: 6, d: 12, name: 'Dia da Independência', meaning: 'Celebração da Proclamação da Independência Nacional de São Tomé e Príncipe em 1975.' },
+  { m: 8, d: 6, name: 'Dia das Forças Armadas', meaning: 'Comemoração oficial e homenagem solene às Forças Armadas de São Tomé e Príncipe (FASTP).' },
+  { m: 8, d: 30, name: 'Reforma Agrária / Nacionalizações', meaning: 'Comemoração histórica da nacionalização das roças e soberania sobre as terras nacionais em 1975.' },
+  { m: 11, d: 21, name: 'Dia de São Tomé', meaning: 'Comemoração do descobrimento da Ilha de São Tomé pelos navegadores portugueses em 1470.' },
+  { m: 11, d: 25, name: 'Natal', meaning: 'Celebração cristã e feriado universal da família e da paz.' }
 ];
 
 const isHoliday = (date: Date) => {
-  const dStr = format(date, "yyyy-MM-dd");
-  return BRAZIL_HOLIDAYS.find((h) => h.date === dStr);
+  const m = date.getMonth();
+  const d = date.getDate();
+  const h = STP_HOLIDAYS.find((item) => item.m === m && item.d === d);
+  if (h) return { name: h.name, meaning: h.meaning };
+  return null;
 };
+
+// Helper to compute weeks of a given month
+function getWeeksOfMonth(month: number, year: number) {
+  const weeks: { weekNumber: number; label: string; start: Date; end: Date; days: { dayNum: number; month: number; year: number }[] }[] = [];
+  const firstDayOfMonth = new Date(year, month, 1);
+  const lastDayOfMonth = new Date(year, month + 1, 0);
+
+  let current = new Date(firstDayOfMonth);
+  let dayOfWeek = current.getDay();
+  let diff = current.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+  let weekStart = new Date(current.setDate(diff));
+
+  let weekCount = 1;
+  while (weekStart <= lastDayOfMonth || (weekStart.getMonth() === month && weekStart <= lastDayOfMonth)) {
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+
+    const days: { dayNum: number; month: number; year: number }[] = [];
+    for (let d = 0; d < 7; d++) {
+      const dayDate = new Date(weekStart);
+      dayDate.setDate(weekStart.getDate() + d);
+      days.push({
+        dayNum: dayDate.getDate(),
+        month: dayDate.getMonth(),
+        year: dayDate.getFullYear()
+      });
+    }
+
+    const startLabel = `${String(weekStart.getDate()).padStart(2, '0')}/${String(weekStart.getMonth() + 1).padStart(2, '0')}`;
+    const endLabel = `${String(weekEnd.getDate()).padStart(2, '0')}/${String(weekEnd.getMonth() + 1).padStart(2, '0')}`;
+    
+    weeks.push({
+      weekNumber: weekCount,
+      label: `Semana ${weekCount} (${startLabel} a ${endLabel})`,
+      start: new Date(weekStart),
+      end: new Date(weekEnd),
+      days
+    });
+
+    weekCount++;
+    weekStart.setDate(weekStart.getDate() + 7);
+    if (weekStart > lastDayOfMonth && weekStart.getMonth() !== month) {
+      break;
+    }
+  }
+
+  return weeks;
+}
 
 export default function FrequenciaPage() {
   const { t, language } = useI18n();
@@ -97,10 +152,227 @@ export default function FrequenciaPage() {
   const [activeCell, setActiveCell] = useState<{ studentId: string; dayStr: string } | null>(null);
   const [activeBulkDay, setActiveBulkDay] = useState<{ dayStr: string; day: Date } | null>(null);
 
+  // Print attendance sheet states
+  const [isPrintAttendanceOpen, setIsPrintAttendanceOpen] = useState(false);
+  const [printSheetType, setPrintSheetType] = useState<'semanal' | 'mensal'>('mensal');
+  const [activeWeekIndex, setActiveWeekIndex] = useState(0);
+  const [printProfessorName, setPrintProfessorName] = useState('');
+  const [printPeriod, setPrintPeriod] = useState('');
+  const [printAlunos, setPrintAlunos] = useState<any[]>([]);
+  const [printFrequencia, setPrintFrequencia] = useState<any[]>([]);
+  const [loadingFrequencia, setLoadingFrequencia] = useState(false);
+  const [loadingPrintAlunos, setLoadingPrintAlunos] = useState(false);
+
   const activeTurma = useMemo(() => turmas.find(t => t.id === selectedTurma), [turmas, selectedTurma]);
   const activeCurso = useMemo(() => cursos.find(c => c.id === (selectedCurso || activeTurma?.curso_id)), [cursos, selectedCurso, activeTurma]);
   const effectiveStartDate = useMemo(() => activeTurma?.data_inicio || activeCurso?.data_inicio || null, [activeTurma, activeCurso]);
   const effectiveEndDate = useMemo(() => activeTurma?.data_postergacao || activeTurma?.data_fim || activeCurso?.data_fim || null, [activeTurma, activeCurso]);
+
+  // Compute active month and weeks for print
+  const printMonth = useMemo(() => {
+    if (!printPeriod) return new Date().getMonth();
+    const parts = printPeriod.split('/');
+    if (parts.length === 2) {
+      return parseInt(parts[0], 10) - 1;
+    }
+    return new Date().getMonth();
+  }, [printPeriod]);
+
+  const printYear = useMemo(() => {
+    if (!printPeriod) return new Date().getFullYear();
+    const parts = printPeriod.split('/');
+    if (parts.length === 2) {
+      return parseInt(parts[1], 10);
+    }
+    return new Date().getFullYear();
+  }, [printPeriod]);
+
+  const activeWeeksList = useMemo(() => {
+    return getWeeksOfMonth(printMonth, printYear);
+  }, [printMonth, printYear]);
+
+  // Days to render for print modal
+  const daysToRender = useMemo(() => {
+    if (printSheetType === 'semanal') {
+      const selectedWeek = activeWeeksList[activeWeekIndex];
+      return selectedWeek ? selectedWeek.days : [];
+    } else {
+      const lastDay = new Date(printYear, printMonth + 1, 0).getDate();
+      const days = [];
+      for (let d = 1; d <= lastDay; d++) {
+        days.push({ dayNum: d, month: printMonth, year: printYear });
+      }
+      return days;
+    }
+  }, [printSheetType, activeWeekIndex, activeWeeksList, printMonth, printYear]);
+
+  const getWeekdayName = (dayOfWeek: number) => {
+    const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+    return days[dayOfWeek] || '';
+  };
+
+  const getDayStatus = (dayNum: number, monthNum: number, yearNum: number, studentId?: string) => {
+    const dateObj = new Date(yearNum, monthNum, dayNum);
+    const dayOfWeek = dateObj.getDay();
+    const isWeekendDay = dayOfWeek === 0 || dayOfWeek === 6;
+    const formattedDate = `${yearNum}-${String(monthNum + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+
+    let isValid = true;
+    if (effectiveStartDate && formattedDate < effectiveStartDate) {
+      isValid = false;
+    }
+    if (effectiveEndDate && formattedDate > effectiveEndDate) {
+      isValid = false;
+    }
+
+    if (!isValid) {
+      return {
+        label: '—',
+        bgClass: 'bg-neutral-200 text-neutral-400',
+        isValid: false
+      };
+    }
+
+    // Check STP national holidays
+    const isHol = STP_HOLIDAYS.find(h => h.m === monthNum && h.d === dayNum);
+    if (isHol) {
+      return {
+        label: 'FE',
+        bgClass: 'bg-red-100 text-red-800 font-extrabold',
+        isValid: true,
+        holidayName: isHol.name,
+        holidayMeaning: isHol.meaning
+      };
+    }
+
+    if (isWeekendDay) {
+      return {
+        label: dayOfWeek === 0 ? 'D' : 'S',
+        bgClass: 'bg-neutral-100 text-neutral-500 font-semibold',
+        isValid: true
+      };
+    }
+
+    if (studentId && printFrequencia.length > 0) {
+      const record = printFrequencia.find(f => {
+        if (!f.data) return false;
+        const recordDate = typeof f.data === 'string' ? f.data.substring(0, 10) : format(new Date(f.data), 'yyyy-MM-dd');
+        return f.aluno_id === studentId && recordDate === formattedDate;
+      });
+
+      if (record) {
+        const obs = (record.observacao || '').trim().toUpperCase();
+        if (obs === 'F' || obs === 'FJ' || obs === 'A' || obs === 'D' || obs === 'P') {
+          return {
+            label: obs,
+            bgClass: obs === 'P' ? 'text-emerald-700 bg-emerald-50/60 font-black' :
+                     obs === 'F' ? 'text-rose-700 bg-rose-50/60 font-black' :
+                     obs === 'FJ' ? 'text-amber-700 bg-amber-50/60 font-black' :
+                     obs === 'A' ? 'text-orange-700 bg-orange-50/60 font-black' :
+                     obs === 'D' ? 'text-sky-700 bg-sky-50/60 font-black' : '',
+            isValid: true
+          };
+        }
+        if (record.presente === true) {
+          return { label: 'P', bgClass: 'text-emerald-700 bg-emerald-50/60 font-black', isValid: true };
+        }
+        if (record.presente === false) {
+          return { label: 'F', bgClass: 'text-rose-700 bg-rose-50/60 font-black', isValid: true };
+        }
+      }
+    }
+
+    return {
+      label: '',
+      bgClass: '',
+      isValid: true
+    };
+  };
+
+  const getHolidaysForDays = (days: { dayNum: number; month: number; year: number }[]) => {
+    const list: { day: number; month: number; name: string; meaning: string }[] = [];
+    const seen = new Set<string>();
+
+    days.forEach(d => {
+      const key = `${d.month}-${d.dayNum}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        const hol = STP_HOLIDAYS.find(h => h.m === d.month && h.d === d.dayNum);
+        if (hol) {
+          list.push({
+            day: d.dayNum,
+            month: d.month,
+            name: hol.name,
+            meaning: hol.meaning
+          });
+        }
+      }
+    });
+
+    return list;
+  };
+
+  const fetchFrequenciesForPrint = async (turmaId: string, month: number, year: number) => {
+    try {
+      setLoadingFrequencia(true);
+      const queryStart = format(new Date(year, month - 1, 20), 'yyyy-MM-dd');
+      const queryEnd = format(new Date(year, month + 1, 10), 'yyyy-MM-dd');
+
+      const { data, error } = await supabase
+        .from('frequencia')
+        .select('*')
+        .eq('turma_id', turmaId)
+        .gte('data', queryStart)
+        .lte('data', queryEnd);
+
+      if (error) throw error;
+      setPrintFrequencia(data || []);
+    } catch (err: any) {
+      console.error('Error fetching frequencies for print:', err);
+    } finally {
+      setLoadingFrequencia(false);
+    }
+  };
+
+  const handleOpenPrintAttendanceModal = async () => {
+    if (!selectedTurma) {
+      toast.error(language === 'pt' ? 'Por favor, selecione uma turma primeiro.' : 'Please select a class first.');
+      return;
+    }
+
+    const currentPeriodStr = `${String(currentMapDate.getMonth() + 1).padStart(2, '0')}/${currentMapDate.getFullYear()}`;
+    setPrintPeriod(currentPeriodStr);
+    setPrintSheetType(mapGranularity === 'week' ? 'semanal' : 'mensal');
+    setActiveWeekIndex(0);
+
+    // Look for instructor profile name or active turma instrutor
+    if (activeTurma?.instrutor?.nome) {
+      setPrintProfessorName(activeTurma.instrutor.nome);
+    } else if (profile?.nome) {
+      setPrintProfessorName(profile.nome);
+    }
+
+    // Set students and fetch frequency
+    setLoadingPrintAlunos(true);
+    try {
+      const { data: alunoData, error: alunoError } = await supabase
+        .from('alunos')
+        .select('id, nome, matricula, foto_url, genero, posto_graduacao, nome_guerra')
+        .eq('turma_id', selectedTurma)
+        .is('deleted_at', null)
+        .order('nome');
+
+      if (alunoError) throw alunoError;
+      setPrintAlunos(alunoData || []);
+    } catch (err: any) {
+      console.error('Error fetching students for print:', err);
+    } finally {
+      setLoadingPrintAlunos(false);
+    }
+
+    await fetchFrequenciesForPrint(selectedTurma, currentMapDate.getMonth(), currentMapDate.getFullYear());
+    setIsPrintAttendanceOpen(true);
+  };
 
   useEffect(() => {
     if (effectiveStartDate) {
@@ -185,7 +457,7 @@ export default function FrequenciaPage() {
       // Fetch students in the class
       const { data: alunoData, error: alunoError } = await supabase
         .from('alunos')
-        .select('id, nome, matricula, foto_url, genero')
+        .select('id, nome, matricula, foto_url, genero, posto_graduacao, nome_guerra')
         .eq('turma_id', selectedTurma)
         .is('deleted_at', null)
         .order('nome');
@@ -624,7 +896,7 @@ export default function FrequenciaPage() {
               <div className="flex items-center gap-3 flex-wrap">
                 <button
                   type="button"
-                  onClick={() => window.print()}
+                  onClick={handleOpenPrintAttendanceModal}
                   className="flex items-center gap-2 px-5 py-2.5 bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-xs font-black shadow-lg shadow-blue-900/10 transition-all cursor-pointer select-none active:scale-95 shrink-0"
                 >
                   <Printer size={16} />
@@ -952,9 +1224,12 @@ export default function FrequenciaPage() {
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse border border-slate-200">
                   <thead>
-                    <tr className="bg-slate-50 border-b border-slate-100">
-                      <th className="sticky left-0 z-20 bg-slate-50 p-4 min-w-[240px] text-[11px] font-black text-slate-500 uppercase tracking-wider text-left border border-slate-200">
-                        ALUNO
+                    <tr className="bg-slate-50 border-b border-slate-200">
+                      <th className="sticky left-0 z-20 bg-slate-100 p-2.5 w-[36px] min-w-[36px] text-center text-[10px] font-black text-slate-600 border border-slate-200">
+                        #
+                      </th>
+                      <th className="sticky left-[36px] z-20 bg-slate-50 p-3 min-w-[220px] text-[10.5px] font-black text-slate-700 uppercase tracking-wider text-left border border-slate-200">
+                        {language === 'pt' ? 'POSTO / GRADUAÇÃO / NOME DE GUERRA' : 'RANK / WAR NAME / STUDENT'}
                       </th>
                       {mapGranularity === 'year' ? (
                         getFilteredMonths(eachMonthOfInterval({
@@ -982,12 +1257,12 @@ export default function FrequenciaPage() {
                             <th 
                               key={`th-d-${dayStr}`} 
                               className={cn(
-                                "p-2 min-w-[50px] text-center transition-colors border border-slate-200 relative",
+                                "p-2 min-w-[44px] text-center transition-colors border border-slate-200 relative",
                                 isStartDay ? "bg-blue-50/70 border-b-2 border-b-blue-500 font-bold" : "",
                                 holiday ? "bg-rose-100/80 text-rose-800 border-rose-300 font-black" : 
                                 isWk ? "bg-slate-100/80 text-slate-500 font-semibold" : "bg-slate-50 text-slate-600"
                               )}
-                              title={holiday ? (language === 'pt' ? 'Feriado: ' : 'Holiday: ') + holiday.name : undefined}
+                              title={holiday ? (language === 'pt' ? 'Feriado Nacional (STP): ' : 'National Holiday (STP): ') + holiday.name + ' - ' + holiday.meaning : undefined}
                             >
                               <div className={cn(
                                 "text-[8px] font-bold opacity-75 uppercase mb-0.5",
@@ -1006,7 +1281,7 @@ export default function FrequenciaPage() {
                                 )}
                                 {holiday && (
                                   <span className="mt-0.5 block mx-auto text-[6px] leading-none font-extrabold bg-rose-200 text-rose-800 px-0.5 py-0.2 rounded uppercase tracking-wider font-mono scale-90 whitespace-nowrap">
-                                    Feriado
+                                    FE
                                   </span>
                                 )}
                                 {!isReadOnly && selectedTurma && students.length > 0 && (
@@ -1031,6 +1306,30 @@ export default function FrequenciaPage() {
                           );
                         })
                       )}
+
+                      {/* Summary Columns on Header */}
+                      {mapGranularity !== 'year' && (
+                        <>
+                          <th className="p-2 min-w-[36px] text-center text-[10px] font-black text-emerald-800 bg-emerald-50/70 border border-slate-200" title={language === 'pt' ? 'Total de Presenças' : 'Total Presents'}>
+                            P
+                          </th>
+                          <th className="p-2 min-w-[36px] text-center text-[10px] font-black text-rose-800 bg-rose-50/70 border border-slate-200" title={language === 'pt' ? 'Total de Faltas' : 'Total Absences'}>
+                            F
+                          </th>
+                          <th className="p-2 min-w-[36px] text-center text-[10px] font-black text-amber-800 bg-amber-50/70 border border-slate-200" title={language === 'pt' ? 'Faltas Justificadas' : 'Excused Absences'}>
+                            FJ
+                          </th>
+                          {mapGranularity === 'month' ? (
+                            <th className="p-2 min-w-[46px] text-center text-[10px] font-black text-blue-900 bg-blue-50/70 border border-slate-200" title={language === 'pt' ? 'Percentual de Frequência' : 'Attendance Percentage'}>
+                              %
+                            </th>
+                          ) : (
+                            <th className="p-2 min-w-[100px] text-center text-[10px] font-black text-slate-700 bg-slate-50 border border-slate-200">
+                              {language === 'pt' ? 'Rubrica / Visto' : 'Signature'}
+                            </th>
+                          )}
+                        </>
+                      )}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -1038,12 +1337,12 @@ export default function FrequenciaPage() {
                       <tr>
                         <td 
                           colSpan={
-                            1 + (mapGranularity === 'year' 
+                            2 + (mapGranularity === 'year' 
                               ? getFilteredMonths(eachMonthOfInterval({ start: startOfYear(currentMapDate), end: endOfYear(currentMapDate) })).length
                               : getFilteredDays(eachDayOfInterval({
                                   start: mapGranularity === 'week' ? startOfWeek(currentMapDate, { weekStartsOn: 1 }) : startOfMonth(currentMapDate),
                                   end: mapGranularity === 'week' ? endOfWeek(currentMapDate, { weekStartsOn: 1 }) : endOfMonth(currentMapDate)
-                                })).length
+                                })).length + 4
                             )
                           } 
                           className="py-20 text-center text-slate-400 font-bold bg-white text-base"
@@ -1055,126 +1354,229 @@ export default function FrequenciaPage() {
                         </td>
                       </tr>
                     ) : (
-                      students.map((student, idx) => (
-                      <tr key={`student-${student.id || idx}`} className="hover:bg-slate-50/50 transition-colors group">
-                        <td className="sticky left-0 z-10 bg-white p-4 font-bold text-slate-700 border border-slate-200 group-hover:bg-slate-50 transition-colors">
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-[9px] font-bold text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-all shrink-0 print:hidden">
-                              {student.nome.substring(0, 2).toUpperCase()}
-                            </div>
-                            <span className="truncate max-w-[180px] print:max-w-none print:whitespace-normal print:text-[10px]">{student.nome}</span>
-                          </div>
-                        </td>
-                        {getFilteredDays(eachDayOfInterval({
+                      students.map((student, idx) => {
+                        const filteredDays = getFilteredDays(eachDayOfInterval({
                           start: mapGranularity === 'week' ? startOfWeek(currentMapDate, { weekStartsOn: 1 }) : startOfMonth(currentMapDate),
                           end: mapGranularity === 'week' ? endOfWeek(currentMapDate, { weekStartsOn: 1 }) : endOfMonth(currentMapDate)
-                        })).map(day => {
+                        }));
+
+                        let studentP = 0;
+                        let studentF = 0;
+                        let studentFJ = 0;
+                        let studentA = 0;
+                        let studentD = 0;
+
+                        filteredDays.forEach(day => {
                           const dayStr = format(day, 'yyyy-MM-dd');
                           const rec = mapData.find(r => {
                             if (!r.data) return false;
                             const dbDateStr = typeof r.data === 'string' ? r.data.substring(0, 10) : format(new Date(r.data), 'yyyy-MM-dd');
                             return r.aluno_id === student.id && dbDateStr === dayStr;
                           });
-                          
-                          const isWk = isWeekend(day);
-                          const holiday = isHoliday(day);
-                          const isStartDay = effectiveStartDate && dayStr === effectiveStartDate;
-                          const status = rec ? (rec.observacao || (rec.presente ? 'P' : 'F')) : null;
-                          
-                          return (
-                            <td 
-                              key={`td-${student.id || idx}-${dayStr}`} 
-                              className={cn(
-                                "p-1 border border-slate-200 cursor-pointer transition-all hover:bg-blue-50/50 relative text-center min-w-[42px] h-12 print:h-8",
-                                holiday ? "bg-rose-50/30" : isWk ? "bg-slate-100/30" : "bg-white",
-                                isStartDay && "bg-blue-50/20",
-                                isReadOnly && "cursor-not-allowed opacity-80"
-                              )}
-                              title={
-                                isReadOnly 
-                                  ? (language === 'pt' ? "Apenas visualização" : "View only") 
-                                  : holiday 
-                                    ? (language === 'pt' ? 'Feriado: ' : 'Holiday: ') + holiday.name
-                                    : (language === 'pt' ? "Clique para gerenciar presença" : "Click to manage attendance")
-                              }
-                              onClick={() => {
-                                if (isReadOnly) return;
-                                if ((effectiveStartDate && dayStr < effectiveStartDate) || (effectiveEndDate && dayStr > effectiveEndDate)) {
-                                  toast.error(language === 'pt' ? 'Data fora do período letivo do curso/turma.' : 'Date outside the course/class period.');
-                                  return;
-                                }
-                                if (activeCell?.studentId === student.id && activeCell?.dayStr === dayStr) {
-                                  setActiveCell(null);
-                                } else {
-                                  setActiveCell({ studentId: student.id, dayStr });
-                                }
-                              }}
-                            >
-                              <div className="w-full h-full flex items-center justify-center relative">
-                                {status ? (
-                                  <div className={cn(
-                                    "w-7 h-7 rounded-lg flex items-center justify-center font-extrabold text-[11px] shadow-sm transition-transform print-badge",
-                                    status === 'P' && "bg-emerald-500 text-white border border-emerald-600 shadow-sm",
-                                    status === 'F' && "bg-rose-500 text-white border border-rose-600 shadow-sm",
-                                    status === 'FJ' && "bg-amber-500 text-white border border-amber-600 shadow-sm",
-                                    status === 'A' && "bg-orange-500 text-white border border-orange-600 shadow-sm",
-                                    status === 'D' && "bg-sky-500 text-white border border-sky-600 shadow-sm"
-                                  )}>
-                                    {status}
-                                  </div>
-                                ) : (
-                                  holiday ? (
-                                    <span className="text-[10px] font-black text-rose-400 select-none">H</span>
-                                  ) : isWk ? (
-                                    <span className="text-[10px] font-black text-slate-300 select-none">
-                                      {day.getDay() === 0 ? 'D' : 'S'}
-                                    </span>
-                                  ) : (
-                                    <div className="w-1.5 h-1.5 rounded-full bg-slate-200 group-hover:bg-slate-300 transition-colors print:hidden" />
-                                  )
-                                )}
+                          const st = rec ? (rec.observacao || (rec.presente ? 'P' : 'F')) : null;
+                          if (st === 'P') studentP++;
+                          else if (st === 'F') studentF++;
+                          else if (st === 'FJ') studentFJ++;
+                          else if (st === 'A') studentA++;
+                          else if (st === 'D') studentD++;
+                        });
+
+                        const totalCounted = studentP + studentF + studentFJ;
+                        const pctFreq = totalCounted > 0 ? Math.round((studentP / totalCounted) * 100) : null;
+
+                        const displayName = (student.posto_graduacao || student.nome_guerra)
+                          ? `${student.posto_graduacao || ''} ${student.nome_guerra || student.nome}`.trim()
+                          : student.nome;
+
+                        return (
+                          <tr key={`student-${student.id || idx}`} className="hover:bg-slate-50/50 transition-colors group">
+                            {/* Sequential Index */}
+                            <td className="sticky left-0 z-10 bg-slate-50 p-2 text-center font-mono font-bold text-xs text-slate-500 border border-slate-200">
+                              {idx + 1}
+                            </td>
+
+                            {/* Student Rank + War Name */}
+                            <td className="sticky left-[36px] z-10 bg-white p-3 font-bold text-slate-800 border border-slate-200 group-hover:bg-slate-50 transition-colors">
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-[9px] font-bold text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-all shrink-0 print:hidden">
+                                  {displayName.substring(0, 2).toUpperCase()}
+                                </div>
+                                <div className="flex flex-col min-w-0">
+                                  <span className="truncate max-w-[200px] text-xs font-black text-slate-800">{displayName}</span>
+                                  {student.matricula && (
+                                    <span className="text-[9px] font-mono text-slate-400">Nº {student.matricula}</span>
+                                  )}
+                                </div>
                               </div>
                             </td>
-                          );
-                        })}
-                      </tr>
-                    ))
-                  )}
+
+                            {/* Daily attendance cells */}
+                            {filteredDays.map(day => {
+                              const dayStr = format(day, 'yyyy-MM-dd');
+                              const rec = mapData.find(r => {
+                                if (!r.data) return false;
+                                const dbDateStr = typeof r.data === 'string' ? r.data.substring(0, 10) : format(new Date(r.data), 'yyyy-MM-dd');
+                                return r.aluno_id === student.id && dbDateStr === dayStr;
+                              });
+                              
+                              const isWk = isWeekend(day);
+                              const holiday = isHoliday(day);
+                              const isStartDay = effectiveStartDate && dayStr === effectiveStartDate;
+                              const status = rec ? (rec.observacao || (rec.presente ? 'P' : 'F')) : null;
+                              
+                              return (
+                                <td 
+                                  key={`td-${student.id || idx}-${dayStr}`} 
+                                  className={cn(
+                                    "p-1 border border-slate-200 cursor-pointer transition-all hover:bg-blue-50/50 relative text-center min-w-[44px] h-11",
+                                    holiday ? "bg-rose-50/40" : isWk ? "bg-slate-100/40" : "bg-white",
+                                    isStartDay && "bg-blue-50/20",
+                                    isReadOnly && "cursor-not-allowed opacity-80"
+                                  )}
+                                  title={
+                                    isReadOnly 
+                                      ? (language === 'pt' ? "Apenas visualização" : "View only") 
+                                      : holiday 
+                                        ? (language === 'pt' ? 'Feriado Nacional (STP): ' : 'National Holiday (STP): ') + holiday.name
+                                        : (language === 'pt' ? "Clique para gerenciar presença" : "Click to manage attendance")
+                                  }
+                                  onClick={() => {
+                                    if (isReadOnly) return;
+                                    if ((effectiveStartDate && dayStr < effectiveStartDate) || (effectiveEndDate && dayStr > effectiveEndDate)) {
+                                      toast.error(language === 'pt' ? 'Data fora do período letivo do curso/turma.' : 'Date outside the course/class period.');
+                                      return;
+                                    }
+                                    if (activeCell?.studentId === student.id && activeCell?.dayStr === dayStr) {
+                                      setActiveCell(null);
+                                    } else {
+                                      setActiveCell({ studentId: student.id, dayStr });
+                                    }
+                                  }}
+                                >
+                                  <div className="w-full h-full flex items-center justify-center relative">
+                                    {status ? (
+                                      <div className={cn(
+                                        "w-6 h-6 rounded-md flex items-center justify-center font-black text-[11px] shadow-xs transition-transform",
+                                        status === 'P' && "bg-emerald-500 text-white shadow-xs",
+                                        status === 'F' && "bg-rose-500 text-white shadow-xs",
+                                        status === 'FJ' && "bg-amber-500 text-white shadow-xs",
+                                        status === 'A' && "bg-orange-500 text-white shadow-xs",
+                                        status === 'D' && "bg-sky-500 text-white shadow-xs"
+                                      )}>
+                                        {status}
+                                      </div>
+                                    ) : (
+                                      holiday ? (
+                                        <span className="text-[10px] font-black text-rose-600 bg-rose-100 px-1 py-0.5 rounded select-none">FE</span>
+                                      ) : isWk ? (
+                                        <span className="text-[10px] font-black text-slate-400 select-none">
+                                          {day.getDay() === 0 ? 'D' : 'S'}
+                                        </span>
+                                      ) : (
+                                        <div className="w-1.5 h-1.5 rounded-full bg-slate-200 group-hover:bg-slate-400 transition-colors" />
+                                      )
+                                    )}
+                                  </div>
+                                </td>
+                              );
+                            })}
+
+                            {/* Summary Totals */}
+                            {mapGranularity !== 'year' && (
+                              <>
+                                <td className="border border-slate-200 p-1 text-center font-bold font-mono text-xs text-emerald-800 bg-emerald-50/30">
+                                  {studentP > 0 ? studentP : '—'}
+                                </td>
+                                <td className="border border-slate-200 p-1 text-center font-bold font-mono text-xs text-rose-800 bg-rose-50/30">
+                                  {studentF > 0 ? studentF : '—'}
+                                </td>
+                                <td className="border border-slate-200 p-1 text-center font-bold font-mono text-xs text-amber-800 bg-amber-50/30">
+                                  {studentFJ > 0 ? studentFJ : '—'}
+                                </td>
+                                {mapGranularity === 'month' ? (
+                                  <td className="border border-slate-200 p-1 text-center font-black font-mono text-xs text-blue-900 bg-blue-50/40">
+                                    {pctFreq !== null ? `${pctFreq}%` : '—'}
+                                  </td>
+                                ) : (
+                                  <td className="border border-slate-200 p-1 text-center text-xs text-slate-300">
+                                  </td>
+                                )}
+                              </>
+                            )}
+                          </tr>
+                        );
+                      })
+                    )}
                   </tbody>
                 </table>
               </div>
 
-              {/* Official Legend and Signature Footer for Print & Screen */}
-              <div className="mt-6 pt-4 border-t border-slate-200 print-avoid-break">
-                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+              {/* Official Legend, STP Holidays & Signature Footer */}
+              <div className="mt-6 pt-4 border-t border-slate-200">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
                   {/* Legenda */}
-                  <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap text-[10px] font-bold text-slate-600">
-                    <span className="font-extrabold text-slate-800 uppercase tracking-wider">{language === 'pt' ? 'Legenda:' : 'Legend:'}</span>
-                    <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 px-1.5 py-0.5 rounded font-mono text-[9.5px]">
-                      <strong className="bg-emerald-500 text-white px-1 rounded text-[8.5px]">P</strong> {language === 'pt' ? 'Presente' : 'Present'}
-                    </span>
-                    <span className="inline-flex items-center gap-1 bg-rose-50 text-rose-800 border border-rose-200 px-1.5 py-0.5 rounded font-mono text-[9.5px]">
-                      <strong className="bg-rose-500 text-white px-1 rounded text-[8.5px]">F</strong> {language === 'pt' ? 'Falta' : 'Absent'}
-                    </span>
-                    <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-800 border border-amber-200 px-1.5 py-0.5 rounded font-mono text-[9.5px]">
-                      <strong className="bg-amber-500 text-white px-1 rounded text-[8.5px]">FJ</strong> {language === 'pt' ? 'Justificada' : 'Excused'}
-                    </span>
-                    <span className="inline-flex items-center gap-1 bg-orange-50 text-orange-800 border border-orange-200 px-1.5 py-0.5 rounded font-mono text-[9.5px]">
-                      <strong className="bg-orange-500 text-white px-1 rounded text-[8.5px]">A</strong> {language === 'pt' ? 'Atraso' : 'Delay'}
-                    </span>
-                    <span className="inline-flex items-center gap-1 bg-sky-50 text-sky-800 border border-sky-200 px-1.5 py-0.5 rounded font-mono text-[9.5px]">
-                      <strong className="bg-sky-500 text-white px-1 rounded text-[8.5px]">D</strong> {language === 'pt' ? 'Dispensa' : 'Exempt'}
-                    </span>
-                    <span className="inline-flex items-center gap-1 bg-rose-50 text-rose-700 border border-rose-200 px-1.5 py-0.5 rounded font-mono text-[9.5px]">
-                      <strong className="bg-rose-200 text-rose-800 px-1 rounded text-[8.5px]">H</strong> {language === 'pt' ? 'Feriado' : 'Holiday'}
-                    </span>
+                  <div>
+                    <div className="text-[10px] font-black uppercase tracking-wider mb-1.5 text-slate-800">
+                      {language === 'pt' ? 'LEGENDA:' : 'LEGEND:'}
+                    </div>
+                    <div className="flex select-none flex-wrap gap-2 text-[9px] font-bold border border-slate-200 p-2.5 rounded-xl bg-slate-50">
+                      <span className="text-emerald-700 font-extrabold bg-emerald-100/70 px-1.5 py-0.5 rounded"><strong>P</strong> = {language === 'pt' ? 'Presente' : 'Present'}</span>
+                      <span className="text-rose-700 font-extrabold bg-rose-100/70 px-1.5 py-0.5 rounded"><strong>F</strong> = {language === 'pt' ? 'Falta' : 'Absent'}</span>
+                      <span className="text-amber-700 font-extrabold bg-amber-100/70 px-1.5 py-0.5 rounded"><strong>FJ</strong> = {language === 'pt' ? 'Justificada' : 'Excused'}</span>
+                      <span className="text-orange-700 font-extrabold bg-orange-100/70 px-1.5 py-0.5 rounded"><strong>A</strong> = {language === 'pt' ? 'Atraso' : 'Delay'}</span>
+                      <span className="text-sky-700 font-extrabold bg-sky-100/70 px-1.5 py-0.5 rounded"><strong>D</strong> = {language === 'pt' ? 'Dispensado' : 'Exempt'}</span>
+                      <span className="text-red-700 font-extrabold bg-red-100/70 px-1.5 py-0.5 rounded border border-red-200"><strong>FE</strong> = {language === 'pt' ? 'Feriado Nacional (STP)' : 'Holiday (STP)'}</span>
+                      <span className="text-slate-600 font-bold bg-slate-200/70 px-1.5 py-0.5 rounded"><strong>S/D</strong> = Sáb/Dom</span>
+                    </div>
                   </div>
 
-                  {/* Totais rápidos */}
-                  <div className="text-[10px] font-mono text-slate-500">
-                    {language === 'pt' ? 'Emissão: ' : 'Issued: '}
-                    <strong>{format(new Date(), 'dd/MM/yyyy HH:mm')}</strong>
+                  {/* Feriados Descritos (Motivo) - São Tomé e Príncipe */}
+                  <div>
+                    <div className="text-[10px] font-black uppercase tracking-wider mb-1.5 flex justify-between items-center text-slate-800">
+                      <span className="font-extrabold">{language === 'pt' ? 'FERIADOS DESCRITOS (MOTIVO):' : 'HOLIDAYS DESCRIBED (REASON):'}</span>
+                      <span className="text-[8px] text-red-600 font-bold tracking-wider uppercase bg-red-50 px-2 py-0.5 rounded border border-red-100">SÃO TOMÉ E PRÍNCIPE</span>
+                    </div>
+                    <div className="flex flex-col gap-1 text-[8.5px] font-medium border border-dashed border-red-300 p-2.5 rounded-xl bg-red-50/40 min-h-[48px] justify-center">
+                      {(() => {
+                        const activeDaysList = getFilteredDays(eachDayOfInterval({
+                          start: mapGranularity === 'week' ? startOfWeek(currentMapDate, { weekStartsOn: 1 }) : startOfMonth(currentMapDate),
+                          end: mapGranularity === 'week' ? endOfWeek(currentMapDate, { weekStartsOn: 1 }) : endOfMonth(currentMapDate)
+                        }));
+
+                        const activeHolidays = activeDaysList.map(d => {
+                          const hol = isHoliday(d);
+                          return hol ? { day: d.getDate(), month: d.getMonth(), name: hol.name, meaning: hol.meaning } : null;
+                        }).filter(Boolean) as { day: number; month: number; name: string; meaning: string }[];
+
+                        return activeHolidays.length > 0 ? (
+                          activeHolidays.map((holiday, hIdx) => (
+                            <div key={hIdx} className="text-red-800 flex items-start gap-1.5 leading-tight">
+                              <span className="bg-red-600 text-white font-mono text-[7px] px-1 py-0.5 rounded shrink-0 font-black">
+                                FE {holiday.day}/{String(holiday.month + 1).padStart(2, '0')}
+                              </span>
+                              <span className="font-bold shrink-0">{holiday.name}:</span>
+                              <span className="font-normal text-slate-700 italic line-clamp-1">{holiday.meaning}</span>
+                            </div>
+                          ))
+                        ) : (
+                          <span className="text-slate-400 italic font-mono uppercase tracking-wider text-[8px] text-center block w-full">
+                            {mapGranularity === 'week'
+                              ? (language === 'pt' ? 'Nenhum feriado nacional de STP nesta semana.' : 'No STP national holidays this week.')
+                              : (language === 'pt' ? 'Nenhum feriado nacional de STP neste mês.' : 'No STP national holidays this month.')
+                            }
+                          </span>
+                        );
+                      })()}
+                    </div>
                   </div>
+                </div>
+
+                {/* Observation Warning Block */}
+                <div className="mt-3.5 border border-red-200 bg-red-50/60 p-2 rounded-xl text-center font-bold text-[8.5px] text-red-800 tracking-wide leading-relaxed">
+                  {language === 'pt'
+                    ? 'OBS.: ESTA FOLHA DE PRESENÇA DEVERÁ SER ENTREGUE DIARIAMENTE AO OFICIAL DE SERVIÇO / COORDENAÇÃO DO CURSO AO TÉRMINO DE CADA JORNADA DE INSTRUÇÃO.'
+                    : 'NOTE: THIS ATTENDANCE SHEET MUST BE HANDED IN DAILY TO THE DUTY OFFICER / COURSE COORDINATION AT THE END OF EACH TRAINING DAY.'
+                  }
                 </div>
 
                 {/* Assinaturas Oficiais */}
@@ -1447,6 +1849,453 @@ export default function FrequenciaPage() {
               </div>
             )}
           </AnimatePresence>
+        </AnimatePresence>
+
+        {/* Printable Attendance Sheet Modal */}
+        <AnimatePresence>
+          {isPrintAttendanceOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[9999] flex flex-col p-2 sm:p-6 overflow-hidden"
+            >
+              {/* Modal Control Toolbar */}
+              <div className="bg-slate-950/90 border border-slate-800 p-4 rounded-2xl mb-4 flex flex-col md:flex-row items-center justify-between gap-4 shrink-0 shadow-2xl print:hidden">
+                <div className="flex items-center gap-3 w-full md:w-auto">
+                  <button
+                    onClick={() => setIsPrintAttendanceOpen(false)}
+                    className="p-2 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl transition cursor-pointer"
+                  >
+                    <X size={20} />
+                  </button>
+                  <div>
+                    <h2 className="text-lg font-black text-white flex items-center gap-2">
+                      <Printer className="text-blue-500" size={20} />
+                      {language === 'pt' ? 'Folha de Frequência Oficial' : 'Official Attendance Sheet'}
+                    </h2>
+                    <p className="text-xs text-slate-400">
+                      {activeTurma?.nome || (language === 'pt' ? 'Turma Selecionada' : 'Selected Class')} • {activeCurso?.nome || ''}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 w-full md:w-auto justify-end flex-wrap">
+                  {/* Select Weekly vs Monthly */}
+                  <div className="flex bg-slate-900 border border-slate-700 p-1 rounded-xl">
+                    <button
+                      onClick={() => {
+                        setPrintSheetType('mensal');
+                      }}
+                      className={cn(
+                        "px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer",
+                        printSheetType === 'mensal' ? "bg-blue-600 text-white shadow-md" : "text-slate-400 hover:text-white"
+                      )}
+                    >
+                      {language === 'pt' ? 'MENSAL' : 'MONTHLY'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setPrintSheetType('semanal');
+                      }}
+                      className={cn(
+                        "px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer",
+                        printSheetType === 'semanal' ? "bg-blue-600 text-white shadow-md" : "text-slate-400 hover:text-white"
+                      )}
+                    >
+                      {language === 'pt' ? 'SEMANAL' : 'WEEKLY'}
+                    </button>
+                  </div>
+
+                  {/* If Weekly: Week selector pills */}
+                  {printSheetType === 'semanal' && activeWeeksList.length > 0 && (
+                    <div className="flex items-center gap-1 bg-slate-900 border border-slate-700 p-1 rounded-xl overflow-x-auto max-w-full">
+                      {activeWeeksList.map((week, wIdx) => (
+                        <button
+                          key={wIdx}
+                          onClick={() => setActiveWeekIndex(wIdx)}
+                          className={cn(
+                            "px-2.5 py-1 rounded-lg text-[11px] font-mono font-bold transition cursor-pointer whitespace-nowrap",
+                            activeWeekIndex === wIdx ? "bg-emerald-600 text-white font-extrabold shadow-xs" : "text-slate-400 hover:text-slate-200"
+                          )}
+                        >
+                          Sem {wIdx + 1} ({week.label})
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Print Action Button */}
+                  <button
+                    onClick={() => {
+                      setTimeout(() => {
+                        window.print();
+                      }, 100);
+                    }}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-black shadow-lg shadow-blue-600/30 transition-all cursor-pointer active:scale-95 shrink-0"
+                  >
+                    <Printer size={16} />
+                    {language === 'pt' ? 'IMPRIMIR FOLHA (A4)' : 'PRINT SHEET (A4)'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Printable Canvas Container (Sheet A4 Landscape Optimized) */}
+              <div className="flex-1 overflow-auto bg-slate-900/50 p-2 sm:p-6 rounded-2xl flex justify-center items-start">
+                <div 
+                  id="print-attendance-sheet"
+                  className="bg-white text-black p-4 sm:p-7 shadow-2xl rounded-sm w-full max-w-[297mm] min-h-[210mm] flex flex-col justify-between"
+                  style={{
+                    fontFamily: "'Liberation Sans', Arial, Helvetica, sans-serif"
+                  }}
+                >
+                  {/* Strict CSS Isolation for Print */}
+                  <style dangerouslySetInnerHTML={{ __html: `
+                    @media print {
+                      @page {
+                        size: A4 landscape !important;
+                        margin: 5mm 6mm !important;
+                      }
+                      html, body {
+                        background: white !important;
+                        color: black !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        height: 100% !important;
+                        width: 100% !important;
+                      }
+                      body * {
+                        visibility: hidden !important;
+                      }
+                      #print-attendance-sheet, #print-attendance-sheet * {
+                        visibility: visible !important;
+                      }
+                      #print-attendance-sheet {
+                        position: absolute !important;
+                        left: 0 !important;
+                        top: 0 !important;
+                        width: 100% !important;
+                        max-width: 100% !important;
+                        min-height: auto !important;
+                        margin: 0 !important;
+                        padding: 2mm 3mm !important;
+                        box-shadow: none !important;
+                        border: none !important;
+                        background: white !important;
+                        color: black !important;
+                        page-break-after: avoid !important;
+                        page-break-inside: avoid !important;
+                      }
+                      .print-avoid-break {
+                        page-break-inside: avoid !important;
+                        break-inside: avoid !important;
+                      }
+                      .print-attendance-table {
+                        width: 100% !important;
+                        border-collapse: collapse !important;
+                      }
+                      .print-attendance-table th, 
+                      .print-attendance-table td {
+                        border: 0.5pt solid black !important;
+                        color: black !important;
+                        -webkit-print-color-adjust: exact !important;
+                        print-color-adjust: exact !important;
+                      }
+                      .print-attendance-table th {
+                        font-size: ${printSheetType === 'semanal' ? '8.5px' : '7.5px'} !important;
+                        padding: 1.5px 0.5px !important;
+                      }
+                      .print-attendance-table td {
+                        font-size: ${printSheetType === 'semanal' ? '8.5px' : '7px'} !important;
+                      }
+                    }
+                  `}} />
+
+                  {/* Print Header - Matching Exact Official Layout */}
+                  <div className="mb-3 text-black">
+                    <div className="grid grid-cols-4 gap-4 font-bold uppercase text-[9.5px] text-black">
+                      <div className="flex flex-col">
+                        <span className="text-black font-extrabold text-[10px] tracking-wider uppercase">
+                          {language === 'pt' ? 'PROFESSOR(A):' : 'INSTRUCTOR:'}
+                        </span>
+                        <div className="border-b border-black min-h-[26px] flex items-end pb-0.5 text-xs font-black px-1 text-black uppercase truncate">
+                          {printProfessorName || activeTurma?.instrutor?.nome || profile?.nome || '—'}
+                        </div>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-black font-extrabold text-[10px] tracking-wider uppercase">
+                          {language === 'pt' ? 'TURMA:' : 'CLASS:'}
+                        </span>
+                        <div className="border-b border-black min-h-[26px] flex items-end pb-0.5 text-xs font-black px-1 text-black uppercase truncate">
+                          {activeTurma?.nome || '—'}
+                        </div>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-black font-extrabold text-[10px] tracking-wider uppercase">
+                          {language === 'pt' ? 'DOCUMENTO:' : 'DOCUMENT:'}
+                        </span>
+                        <div className="border-b border-black min-h-[26px] flex items-end pb-0.5 text-xs font-black px-1 text-black font-mono uppercase truncate">
+                          {activeTurma?.documento_criacao || activeCurso?.documento_criacao || 'ORDEM INTERNA'}
+                        </div>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-black font-extrabold text-[10px] tracking-wider uppercase">
+                          {printSheetType === 'semanal' 
+                            ? (language === 'pt' ? 'SEMANA / PERÍODO:' : 'WEEK / PERIOD:') 
+                            : (language === 'pt' ? 'MÊS/ANO:' : 'MONTH/YEAR:')
+                          }
+                        </span>
+                        <div className="border-b border-black min-h-[26px] flex items-end pb-0.5 text-xs font-mono font-black px-1 text-center justify-center text-black uppercase truncate">
+                          {printSheetType === 'semanal'
+                            ? (activeWeeksList[activeWeekIndex]?.label || printPeriod) 
+                            : printPeriod
+                          }
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Table container wrapping the exact styled attendance grid */}
+                  <div className="overflow-visible mt-2">
+                    <table className="print-attendance-table w-full border-collapse border border-black table-fixed">
+                      <thead>
+                        <tr className="bg-neutral-100 text-[8px] font-bold uppercase text-center h-6">
+                          <th className="w-[28px] border border-black p-0.5 text-center font-black text-black">#</th>
+                          <th 
+                            className={cn(
+                              "border border-black p-1 text-left pl-2 font-black text-black",
+                              printSheetType === 'semanal' ? "w-[240px] text-[9px]" : "w-[175px] text-[8.5px]"
+                            )}
+                          >
+                            {language === 'pt' ? 'Nome do Aluno' : 'Student Name'}
+                          </th>
+                          {daysToRender.map((day) => {
+                            const status = getDayStatus(day.dayNum, day.month, day.year);
+                            const dateObj = new Date(day.year, day.month, day.dayNum);
+                            const dayOfWeek = dateObj.getDay();
+                            return (
+                              <th 
+                                key={`${day.year}-${day.month}-${day.dayNum}`} 
+                                className={cn(
+                                  "border border-black p-0.5 text-center font-mono font-black text-black",
+                                  printSheetType === 'semanal' ? "w-[42px] text-[8px]" : "w-[20px] text-[7.5px]",
+                                  !status.isValid ? "bg-neutral-200 text-neutral-600" :
+                                  status.label === 'FE' ? "bg-red-100 text-red-800" :
+                                  (status.label === 'S' || status.label === 'D') ? "bg-neutral-100 text-neutral-800" : ""
+                                )}
+                              >
+                                <div className="flex flex-col items-center justify-center leading-tight">
+                                  <span className={cn(printSheetType === 'semanal' ? "text-[8.5px]" : "text-[7.5px]", "font-black")}>{day.dayNum}</span>
+                                  {printSheetType === 'semanal' ? (
+                                    <span className="text-[7px] uppercase text-neutral-600 font-black">{getWeekdayName(dayOfWeek)}</span>
+                                  ) : (
+                                    status.isValid && (status.label === 'FE' || status.label === 'S' || status.label === 'D') && (
+                                      <span className="text-[5.5px] font-black text-red-600">{status.label}</span>
+                                    )
+                                  )}
+                                </div>
+                              </th>
+                            );
+                          })}
+
+                          {/* Summary Columns for Weekly and Monthly */}
+                          <th className={cn("border border-black p-0.5 text-center font-black text-emerald-800 bg-emerald-50/50", printSheetType === 'semanal' ? "w-[36px] text-[8px]" : "w-[22px] text-[7px]")}>
+                            P
+                          </th>
+                          <th className={cn("border border-black p-0.5 text-center font-black text-rose-800 bg-rose-50/50", printSheetType === 'semanal' ? "w-[36px] text-[8px]" : "w-[22px] text-[7px]")}>
+                            F
+                          </th>
+                          <th className={cn("border border-black p-0.5 text-center font-black text-amber-800 bg-amber-50/50", printSheetType === 'semanal' ? "w-[36px] text-[8px]" : "w-[22px] text-[7px]")}>
+                            FJ
+                          </th>
+                          {printSheetType === 'semanal' ? (
+                            <th className="border border-black p-0.5 text-center font-black text-black w-[110px] text-[8px]">
+                              {language === 'pt' ? 'Rubrica / Visto' : 'Signature'}
+                            </th>
+                          ) : (
+                            <th className="border border-black p-0.5 text-center font-black text-blue-900 bg-blue-50/50 w-[28px] text-[7px]">
+                              %
+                            </th>
+                          )}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {printAlunos.length > 0 ? (
+                          printAlunos.map((student, index) => {
+                            // Compute stats for current student
+                            let studentP = 0;
+                            let studentF = 0;
+                            let studentFJ = 0;
+                            let studentA = 0;
+                            let studentD = 0;
+
+                            daysToRender.forEach((day) => {
+                              const st = getDayStatus(day.dayNum, day.month, day.year, student.id);
+                              if (st.label === 'P') studentP++;
+                              else if (st.label === 'F') studentF++;
+                              else if (st.label === 'FJ') studentFJ++;
+                              else if (st.label === 'A') studentA++;
+                              else if (st.label === 'D') studentD++;
+                            });
+
+                            const totalRecorded = studentP + studentF + studentFJ;
+                            const pctFreq = totalRecorded > 0 ? Math.round((studentP / totalRecorded) * 100) : null;
+
+                            return (
+                              <tr key={student.id || index} className={cn("text-[8px] font-bold uppercase", printSheetType === 'semanal' ? "h-[5.5mm]" : "h-[4.2mm]")}>
+                                <td className="border border-black text-center font-mono font-bold text-[8px] text-black px-0.5">
+                                  {index + 1}
+                                </td>
+                                <td 
+                                  className={cn(
+                                    "border border-black px-1.5 text-[8.5px] font-sans font-bold text-black",
+                                    printSheetType === 'semanal' ? "w-[240px]" : "w-[175px]"
+                                  )}
+                                >
+                                  <div className="flex flex-col justify-center py-0.5 leading-tight text-black">
+                                    <span className="text-[8.5px] font-bold text-black truncate">
+                                      {student.posto_graduacao || student.nome_guerra ? `${student.posto_graduacao || ''} ${student.nome_guerra || student.nome}`.trim() : student.nome}
+                                    </span>
+                                  </div>
+                                </td>
+                                {daysToRender.map((day) => {
+                                  const status = getDayStatus(day.dayNum, day.month, day.year, student.id);
+                                  return (
+                                    <td 
+                                      key={`${day.year}-${day.month}-${day.dayNum}`} 
+                                      className={cn(
+                                        "border border-black p-0 text-center font-black font-mono select-none text-black",
+                                        printSheetType === 'semanal' ? "text-[8.5px]" : "text-[7px]",
+                                        status.bgClass
+                                      )}
+                                    >
+                                      {status.label}
+                                    </td>
+                                  );
+                                })}
+
+                                {/* Summary Totals */}
+                                <td className="border border-black p-0 text-center font-bold font-mono text-emerald-800 bg-emerald-50/20 text-[8px]">
+                                  {studentP > 0 ? studentP : '—'}
+                                </td>
+                                <td className="border border-black p-0 text-center font-bold font-mono text-rose-800 bg-rose-50/20 text-[8px]">
+                                  {studentF > 0 ? studentF : '—'}
+                                </td>
+                                <td className="border border-black p-0 text-center font-bold font-mono text-amber-800 bg-amber-50/20 text-[8px]">
+                                  {studentFJ > 0 ? studentFJ : '—'}
+                                </td>
+                                {printSheetType === 'semanal' ? (
+                                  <td className="border border-black p-0 text-center text-[7px] text-neutral-300">
+                                  </td>
+                                ) : (
+                                  <td className="border border-black p-0 text-center font-bold font-mono text-blue-900 bg-blue-50/20 text-[7px]">
+                                    {pctFreq !== null ? `${pctFreq}%` : '—'}
+                                  </td>
+                                )}
+                              </tr>
+                            );
+                          })
+                        ) : (
+                          <tr className="h-[4.2mm] text-[8px] font-bold uppercase">
+                            <td className="border border-black text-center font-mono font-semibold text-[8px] text-black">
+                              1
+                            </td>
+                            <td className="border border-black px-2 text-[9px] italic text-neutral-500">
+                              {language === 'pt' ? 'Nenhum aluno inscrito nesta turma' : 'No students registered in this class'}
+                            </td>
+                            {daysToRender.map((day) => (
+                              <td key={`${day.year}-${day.month}-${day.dayNum}`} className="border border-black p-0 bg-neutral-100"></td>
+                            ))}
+                            <td className="border border-black"></td>
+                            <td className="border border-black"></td>
+                            <td className="border border-black"></td>
+                            <td className="border border-black"></td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Legenda & Signature Section flowing naturally directly below the sheet in the blank space */}
+                  <div className="print-avoid-break break-inside-avoid">
+                    <div className="mt-4 print:mt-1.5 grid grid-cols-2 gap-6 print:gap-3 items-start">
+                      <div>
+                        <div className="text-[9.5px] font-black uppercase tracking-wider mb-1 print:mb-0.5 text-black">
+                          {language === 'pt' ? 'LEGENDA:' : 'LEGEND:'}
+                        </div>
+                        <div className="flex select-none flex-wrap gap-x-2.5 gap-y-1 text-[7.5px] font-black border border-black p-1.5 print:p-1 rounded-lg bg-neutral-50 shadow-sm">
+                          <span className="text-emerald-700 font-black"><strong>P</strong> = {language === 'pt' ? 'Presente' : 'Present'}</span>
+                          <span className="text-rose-700 font-black"><strong>F</strong> = {language === 'pt' ? 'Falta' : 'Absent'}</span>
+                          <span className="text-amber-700 font-black"><strong>FJ</strong> = {language === 'pt' ? 'Justificada' : 'Excused'}</span>
+                          <span className="text-neutral-900 font-black"><strong>A</strong> = {language === 'pt' ? 'Atraso' : 'Delay'}</span>
+                          <span className="text-sky-700 font-black"><strong>D</strong> = {language === 'pt' ? 'Dispensado' : 'Exempt'}</span>
+                          <span className="text-red-700 border-l border-black pl-1.5 font-black"><strong>FE</strong> = {language === 'pt' ? 'Feriado' : 'Holiday'}</span>
+                          <span className="text-neutral-700 border-l border-black pl-1.5 font-black"><strong>S/D</strong> = Sáb/Dom</span>
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[9.5px] font-black uppercase tracking-wider mb-1 print:mb-0.5 flex justify-between items-center text-black">
+                          <span className="font-extrabold">{language === 'pt' ? 'FERIADOS DESCRITOS (MOTIVO):' : 'HOLIDAYS DESCRIBED (REASON):'}</span>
+                          <span className="text-[7.5px] text-neutral-500 font-bold tracking-widest uppercase">SÃO TOMÉ E PRÍNCIPE</span>
+                        </div>
+                        <div className="flex flex-col gap-1 text-[7.5px] font-black border border-dashed border-red-500 p-1.5 print:p-1 rounded-lg bg-red-50/40 min-h-[38px] print:min-h-0 justify-center">
+                          {(() => {
+                            const activeHolidays = getHolidaysForDays(daysToRender);
+
+                            return activeHolidays.length > 0 ? (
+                              activeHolidays.map((holiday, hIdx) => (
+                                <div key={hIdx} className="text-red-700 flex items-start gap-1 justify-start leading-tight">
+                                  <span className="bg-red-600 text-white font-mono text-[6.5px] px-1 rounded shrink-0 font-extrabold">
+                                    FE {holiday.day}/{String(holiday.month + 1).padStart(2, '0')}
+                                  </span>
+                                  <span className="font-bold shrink-0">{holiday.name}:</span>
+                                  <span className="font-medium text-neutral-700 normal-case italic line-clamp-1">{holiday.meaning}</span>
+                                </div>
+                              ))
+                            ) : (
+                              <span className="text-neutral-500 italic font-mono uppercase tracking-widest text-[7px] text-center block w-full">
+                                {printSheetType === 'semanal'
+                                  ? (language === 'pt' ? 'NENHUM FERIADO NACIONAL NESTA SEMANA.' : 'NO NATIONAL HOLIDAYS THIS WEEK.')
+                                  : (language === 'pt' ? 'NENHUM FERIADO NACIONAL NESTE MÊS.' : 'NO NATIONAL HOLIDAYS THIS MONTH.')
+                                }
+                              </span>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Observation Warning Block */}
+                    <div className="mt-3 print:mt-1 border border-red-500 bg-red-50/50 p-2 print:p-1 rounded-lg text-center font-extrabold text-[8px] print:text-[7.5px] text-red-800 tracking-wide leading-relaxed">
+                      {language === 'pt' 
+                        ? 'OBS.: Esta folha de presença deverá ser entregue diariamente ao Coordenador de Cursos para lançamento no controle do aluno.' 
+                        : 'OBS.: This attendance sheet must be submitted daily to the Course Coordinator for entry into the student record.'
+                      }
+                    </div>
+
+                    {/* Signatures Row */}
+                    <div className="mt-5 print:mt-3 grid grid-cols-2 gap-12 text-center text-[9px] uppercase font-bold text-black print-avoid-break">
+                      <div className="flex flex-col items-center">
+                        <div className="w-full max-w-[260px] border-b border-black mb-1 h-5"></div>
+                        <span className="text-black font-extrabold">{printProfessorName || (language === 'pt' ? 'Assinatura do Instrutor' : 'Instructor Signature')}</span>
+                        <span className="text-[7px] text-slate-700 tracking-wider">{language === 'pt' ? 'Instrutor / Professor Responsável' : 'Responsible Instructor'}</span>
+                      </div>
+                      <div className="flex flex-col items-center">
+                        <div className="w-full max-w-[260px] border-b border-black mb-1 h-5"></div>
+                        <span className="text-black font-extrabold">{language === 'pt' ? 'Coordenação de Cursos' : 'Course Coordination'}</span>
+                        <span className="text-[7px] text-slate-700 tracking-wider">{language === 'pt' ? 'Visto da Coordenação Pedagógica' : 'Pedagogical Coordination'}</span>
+                      </div>
+                    </div>
+
+                    {/* Micro-printed controlled copy warning centered */}
+                    <div className="mt-4 print:mt-2 text-center text-[6.5px] font-bold tracking-[0.34em] text-neutral-600 uppercase w-full">
+                      {language === 'pt' ? 'Documento de uso oficial - Cópia controlada' : 'Official Document - Controlled Copy'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
         </AnimatePresence>
       </div>
   );

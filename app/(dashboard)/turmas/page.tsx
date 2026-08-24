@@ -182,8 +182,14 @@ function TurmasContent() {
           const month = parseInt(parts[0], 10);
           const year = parseInt(parts[1], 10);
           
-          const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
-          const endDate = `${year}-${String(month).padStart(2, '0')}-${new Date(year, month, 0).getDate()}`;
+          // Expand buffer range to include days from adjacent months in weekly sheets
+          const firstDate = new Date(year, month - 1, 1);
+          firstDate.setDate(firstDate.getDate() - 10);
+          const lastDate = new Date(year, month, 0);
+          lastDate.setDate(lastDate.getDate() + 10);
+
+          const startDate = `${firstDate.getFullYear()}-${String(firstDate.getMonth() + 1).padStart(2, '0')}-${String(firstDate.getDate()).padStart(2, '0')}`;
+          const endDate = `${lastDate.getFullYear()}-${String(lastDate.getMonth() + 1).padStart(2, '0')}-${String(lastDate.getDate()).padStart(2, '0')}`;
           
           const { data, error } = await supabase
             .from('frequencia')
@@ -408,7 +414,11 @@ function TurmasContent() {
     // If studentId is specified, check if there's an attendance record in printFrequencia
     if (studentId) {
       const dayStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
-      const record = printFrequencia.find(r => r.aluno_id === studentId && r.data === dayStr);
+      const record = printFrequencia.find(r => {
+        if (!r || !r.data) return false;
+        const dbDate = typeof r.data === 'string' ? r.data.substring(0, 10) : '';
+        return r.aluno_id === studentId && dbDate === dayStr;
+      });
       if (record) {
         const statusVal = record.observacao || (record.presente ? 'P' : 'F');
         let bgClass = '';
