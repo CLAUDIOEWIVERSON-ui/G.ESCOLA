@@ -2617,20 +2617,29 @@ function TurmasContent() {
                   #print-attendance-sheet {
                     color-adjust: exact;
                     -webkit-print-color-adjust: exact;
+                    print-color-adjust: exact;
                   }
-                  .print-attendance-table td, .print-attendance-table th {
-                    border: 1px solid #111111 !important;
-                  }
+                  
                   @media print {
+                    @page {
+                      size: ${printSheetType === 'semanal' ? 'A4 portrait' : 'A4 landscape'} !important;
+                      margin: 8mm 8mm 8mm 8mm !important;
+                    }
+
+                    /* Reset page context and force standard white/black print output */
                     html, body {
                       margin: 0 !important;
                       padding: 0 !important;
                       background: #ffffff !important;
+                      background-color: #ffffff !important;
                       color: #000000 !important;
                       width: 100% !important;
                       height: auto !important;
-                      min-height: auto !important;
+                      min-height: 0 !important;
+                      max-height: none !important;
                       overflow: visible !important;
+                      -webkit-print-color-adjust: exact !important;
+                      print-color-adjust: exact !important;
                     }
 
                     /* Hide headers, footers, mobile bottom-navs, back buttons, filters, etc. completely from DOM layout flow */
@@ -2641,10 +2650,11 @@ function TurmasContent() {
                       margin: 0 !important;
                       padding: 0 !important;
                       overflow: hidden !important;
+                      visibility: hidden !important;
                     }
                     
-                    /* Collapse only major layout wrappers to prevent overflow, preserving nested elements */
-                    html, body, main, .min-h-screen, #__next, .flex-1, [data-framer-portal-container] {
+                    /* Unset layout wrappers so printer renders natively */
+                    html, body, main, .min-h-screen, #__next, .flex-1, [data-framer-portal-container], div[class*="fixed"], div[class*="overflow-"] {
                       position: static !important;
                       width: 100% !important;
                       height: auto !important;
@@ -2656,122 +2666,182 @@ function TurmasContent() {
                       border: none !important;
                       transform: none !important;
                       overflow: visible !important;
-                      background: transparent !important;
+                      background: #ffffff !important;
                       animation: none !important;
                       transition: none !important;
                       opacity: 1 !important;
                     }
 
-                    /* Only print the sheet */
-                    body * {
-                      visibility: hidden !important;
-                    }
-                    body:not(.printing-student-ficha) #print-attendance-sheet,
-                    body:not(.printing-student-ficha) #print-attendance-sheet * {
-                      visibility: visible !important;
-                    }
                     body.printing-student-ficha #print-attendance-sheet {
                       display: none !important;
                       visibility: hidden !important;
-                      height: 0 !important;
-                      overflow: hidden !important;
                     }
-                    
-                    /* Collapse all elements except the printable area and its descendants */
-                    body:not(.printing-student-ficha) *:not(#print-attendance-sheet):not(#print-attendance-sheet *) {
-                      height: 0 !important;
+
+                    #print-attendance-sheet {
+                      visibility: visible !important;
+                      position: relative !important;
+                      width: 100% !important;
+                      max-width: 100% !important;
+                      height: auto !important;
                       min-height: 0 !important;
-                      max-height: 0 !important;
+                      max-height: none !important;
                       margin: 0 !important;
                       padding: 0 !important;
-                      border: none !important;
+                      background: #ffffff !important;
+                      color: #000000 !important;
                       box-shadow: none !important;
+                      border: none !important;
+                      display: block !important;
+                      page-break-inside: auto !important;
+                      break-inside: auto !important;
+                      box-sizing: border-box !important;
+                    }
+
+                    #print-attendance-sheet * {
+                      color: #000000 !important;
+                      visibility: visible !important;
+                      box-sizing: border-box !important;
+                    }
+
+                    #print-attendance-sheet h1,
+                    #print-attendance-sheet h2,
+                    #print-attendance-sheet h3,
+                    #print-attendance-sheet p,
+                    #print-attendance-sheet span,
+                    #print-attendance-sheet div {
+                      color: #000000 !important;
                       overflow: visible !important;
                     }
 
-                    body:not(.printing-student-ficha) #print-attendance-sheet {
-                      visibility: visible !important;
-                      position: relative !important;
-                      width: ${printSheetType === 'semanal' ? '190mm' : '277mm'} !important;
-                      max-width: ${printSheetType === 'semanal' ? '190mm' : '277mm'} !important;
-                      height: auto !important;
-                      min-height: auto !important;
-                      margin: 0 auto !important;
-                      padding: 0 0 5mm 0 !important;
-                      background: white !important;
-                      box-shadow: none !important;
-                      border: none !important;
-                      page-break-inside: auto !important;
-                      box-sizing: border-box !important;
-                    }
-                    .print-attendance-table {
-                      page-break-inside: auto !important;
+                    #print-attendance-sheet .print-attendance-table {
                       width: 100% !important;
+                      table-layout: auto !important;
+                      border-collapse: collapse !important;
+                      border: 1.5px solid #000000 !important;
+                      page-break-inside: auto !important;
+                      break-inside: auto !important;
                     }
-                    .print-attendance-table tr {
+
+                    #print-attendance-sheet .print-attendance-table tr {
                       page-break-inside: avoid !important;
+                      break-inside: avoid !important;
                       page-break-after: auto !important;
+                      break-after: auto !important;
                     }
-                    .print-attendance-table thead {
+
+                    #print-attendance-sheet .print-attendance-table thead {
                       display: table-header-group !important;
+                      page-break-inside: avoid !important;
+                      break-inside: avoid !important;
                     }
-                    @page {
-                      size: ${printSheetType === 'semanal' ? 'A4 portrait' : 'A4 landscape'} !important;
-                      margin: 10mm 10mm 10mm 10mm !important;
+
+                    #print-attendance-sheet .print-attendance-table tbody {
+                      display: table-row-group !important;
+                    }
+
+                    #print-attendance-sheet .print-attendance-table th,
+                    #print-attendance-sheet .print-attendance-table td {
+                      border: 1px solid #000000 !important;
+                      color: #000000 !important;
+                      overflow: visible !important;
+                      white-space: normal !important;
+                      text-overflow: unset !important;
+                      padding: ${printSheetType === 'semanal' ? '4px 6px' : '2px 2px'} !important;
+                      font-size: ${printSheetType === 'semanal' ? '9.5px' : '8px'} !important;
+                      background-color: #ffffff !important;
+                      -webkit-print-color-adjust: exact !important;
+                      print-color-adjust: exact !important;
+                    }
+
+                    #print-attendance-sheet .print-attendance-table th {
+                      background-color: #f1f5f9 !important;
+                      font-weight: 850 !important;
+                      font-size: ${printSheetType === 'semanal' ? '8.5px' : '7.5px'} !important;
+                    }
+
+                    #print-attendance-sheet .status-badge-p {
+                      background-color: #10b981 !important;
+                      color: #ffffff !important;
+                      -webkit-print-color-adjust: exact !important;
+                      print-color-adjust: exact !important;
+                    }
+                    #print-attendance-sheet .status-badge-f {
+                      background-color: #ef4444 !important;
+                      color: #ffffff !important;
+                      -webkit-print-color-adjust: exact !important;
+                      print-color-adjust: exact !important;
+                    }
+                    #print-attendance-sheet .status-badge-fj {
+                      background-color: #f59e0b !important;
+                      color: #ffffff !important;
+                      -webkit-print-color-adjust: exact !important;
+                      print-color-adjust: exact !important;
+                    }
+                    #print-attendance-sheet .status-badge-a {
+                      background-color: #f97316 !important;
+                      color: #ffffff !important;
+                      -webkit-print-color-adjust: exact !important;
+                      print-color-adjust: exact !important;
+                    }
+                    #print-attendance-sheet .status-badge-d {
+                      background-color: #0ea5e9 !important;
+                      color: #ffffff !important;
+                      -webkit-print-color-adjust: exact !important;
+                      print-color-adjust: exact !important;
                     }
                   }
                 `}} />
 
                 {/* Print Header */}
-                <div className="mb-4">
+                <div className="mb-4 text-black">
                   <div className="flex items-center gap-6 border-b-2 border-black pb-4 mb-4">
-                    <div className="w-28 h-28 shrink-0 flex items-center justify-center overflow-hidden bg-white">
+                    <div className="w-24 h-24 shrink-0 flex items-center justify-center overflow-hidden bg-white">
                       <img
                         src={typeof navalMissionLogo === 'string' ? navalMissionLogo : (navalMissionLogo as any)?.src || navalMissionLogo}
                         alt="Logo Missão de Assessoria Naval"
-                        className="w-28 h-28 object-contain"
-                        style={{ width: '112px', height: '112px' }}
+                        className="w-24 h-24 object-contain"
+                        style={{ width: '96px', height: '96px' }}
                       />
                     </div>
-                    <div className="flex-1 text-left">
-                      <h1 className="text-xl font-extrabold uppercase tracking-tight">
+                    <div className="flex-1 text-left text-black">
+                      <h1 className="text-lg md:text-xl font-extrabold uppercase tracking-tight text-black">
                         {printSheetType === 'semanal' 
                           ? (language === 'pt' ? 'FOLHA DE FREQUÊNCIA SEMANAL' : 'WEEKLY ATTENDANCE SHEET')
                           : (language === 'pt' ? 'FOLHA DE FREQUÊNCIA MENSAL' : 'MONTHLY ATTENDANCE SHEET')
                         }
                       </h1>
-                      <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest mt-1 font-mono">
+                      <p className="text-[10px] font-bold text-slate-800 uppercase tracking-widest mt-1 font-mono">
                         {language === 'pt' ? 'MISSÃO DE ASSESSORIA NAVAL DO BRASIL EM SÃO TOMÉ E PRÍNCIPE' : 'BRAZILIAN NAVAL ADVISORY MISSION IN SÃO TOMÉ AND PRÍNCIPE'}
                       </p>
                     </div>
                   </div>
-                  <div className="grid grid-cols-4 gap-4 font-semibold uppercase text-[10px]">
+                  <div className="grid grid-cols-4 gap-4 font-bold uppercase text-[10px] text-black">
                     <div className="flex flex-col">
-                      <span>{language === 'pt' ? 'Professor(a):' : 'Instructor:'}</span>
-                      <div className="border-b border-black h-8 flex items-end pb-1 text-xs font-bold px-1 whitespace-nowrap overflow-hidden">
-                        {printProfessorName}
+                      <span className="text-slate-800 font-extrabold">{language === 'pt' ? 'Professor(a):' : 'Instructor:'}</span>
+                      <div className="border-b border-black min-h-[26px] flex items-end pb-0.5 text-xs font-black px-1 text-black">
+                        {printProfessorName || '—'}
                       </div>
                     </div>
                     <div className="flex flex-col">
-                      <span>{language === 'pt' ? 'Turma:' : 'Class/Group:'}</span>
-                      <div className="border-b border-black h-8 flex items-end pb-1 text-xs font-bold px-1 whitespace-nowrap overflow-hidden">
-                        {printClassName}
+                      <span className="text-slate-800 font-extrabold">{language === 'pt' ? 'Turma:' : 'Class/Group:'}</span>
+                      <div className="border-b border-black min-h-[26px] flex items-end pb-0.5 text-xs font-black px-1 text-black">
+                        {printClassName || '—'}
                       </div>
                     </div>
                     <div className="flex flex-col">
-                      <span>{language === 'pt' ? 'Documento:' : 'Document:'}</span>
-                      <div className="border-b border-black h-8 flex items-end pb-1 text-xs font-bold px-1 whitespace-nowrap overflow-hidden font-mono">
+                      <span className="text-slate-800 font-extrabold">{language === 'pt' ? 'Documento:' : 'Document:'}</span>
+                      <div className="border-b border-black min-h-[26px] flex items-end pb-0.5 text-xs font-black px-1 text-black font-mono">
                         {viewingTurma?.documento_criacao || viewingTurma?.curso?.documento_criacao || '—'}
                       </div>
                     </div>
                     <div className="flex flex-col">
-                      <span>
+                      <span className="text-slate-800 font-extrabold">
                         {printSheetType === 'semanal' 
                           ? (language === 'pt' ? 'Semana / Período:' : 'Week / Period:') 
                           : (language === 'pt' ? 'Mês/Ano:' : 'Month/Year:')
                         }
                       </span>
-                      <div className="border-b border-black h-8 flex items-end pb-1 text-xs font-mono font-bold px-1 text-center justify-center font-bold">
+                      <div className="border-b border-black min-h-[26px] flex items-end pb-0.5 text-xs font-mono font-black px-1 text-center justify-center text-black">
                         {printSheetType === 'semanal'
                           ? (activeWeeksList[activeWeekIndex]?.label || printPeriod) 
                           : printPeriod
@@ -2783,14 +2853,14 @@ function TurmasContent() {
 
                 {/* Table container wrapping the exact styled attendance grid */}
                 <div className="overflow-visible mt-3">
-                  <table className="print-attendance-table w-full border-collapse border border-black table-fixed">
+                  <table className="print-attendance-table w-full border-collapse border border-black">
                     <thead>
                       <tr className="bg-neutral-100 text-[8px] font-bold uppercase text-center h-5">
-                        <th className="w-[32px] border border-black p-0.5 text-center">#</th>
+                        <th className="w-[30px] border border-black p-1 text-center font-black text-black">#</th>
                         <th 
                           className={cn(
-                            "border border-black p-0.5 text-left pl-2 text-[9px] overflow-hidden truncate whitespace-nowrap",
-                            printSheetType === 'semanal' ? "w-[350px]" : "w-[210px]"
+                            "border border-black p-1 text-left pl-2 text-[9px] font-black text-black",
+                            printSheetType === 'semanal' ? "w-[300px]" : "w-[200px]"
                           )}
                         >
                           {language === 'pt' ? 'Nome do Aluno' : 'Student Name'}
@@ -2803,20 +2873,20 @@ function TurmasContent() {
                             <th 
                               key={`${day.year}-${day.month}-${day.dayNum}`} 
                               className={cn(
-                                "border border-black p-0 text-center font-mono font-bold text-[8px]",
-                                printSheetType === 'semanal' ? "w-[40px]" : "w-[18px]",
-                                !status.isValid ? "bg-neutral-200 text-neutral-400" :
+                                "border border-black p-0.5 text-center font-mono font-black text-[8px] text-black",
+                                printSheetType === 'semanal' ? "w-[38px]" : "w-[18px]",
+                                !status.isValid ? "bg-neutral-200 text-neutral-600" :
                                 status.label === 'FE' ? "bg-red-100 text-red-800" :
-                                (status.label === 'S' || status.label === 'D') ? "bg-neutral-200 text-neutral-700" : ""
+                                (status.label === 'S' || status.label === 'D') ? "bg-neutral-100 text-neutral-800" : ""
                               )}
                             >
                               <div className="flex flex-col items-center justify-center leading-tight">
-                                <span className={cn(printSheetType === 'semanal' ? "text-[9px]" : "text-[8px]")}>{day.dayNum}</span>
+                                <span className={cn(printSheetType === 'semanal' ? "text-[9px]" : "text-[8px]", "font-black")}>{day.dayNum}</span>
                                 {printSheetType === 'semanal' ? (
-                                  <span className="text-[6.5px] uppercase text-neutral-500 font-extrabold">{getWeekdayName(dayOfWeek)}</span>
+                                  <span className="text-[6.5px] uppercase text-neutral-600 font-black">{getWeekdayName(dayOfWeek)}</span>
                                 ) : (
                                   status.isValid && (status.label === 'FE' || status.label === 'S' || status.label === 'D') && (
-                                    <span className="text-[5.5px] opacity-75 font-black text-red-600">{status.label}</span>
+                                    <span className="text-[5.5px] font-black text-red-600">{status.label}</span>
                                   )
                                 )}
                               </div>
@@ -2828,22 +2898,20 @@ function TurmasContent() {
                     <tbody>
                       {alunosInTurma.length > 0 ? (
                         alunosInTurma.map((student, index) => (
-                          <tr key={student.id || index} className={cn("text-[8px] font-bold uppercase", printSheetType === 'semanal' ? "h-[5.5mm]" : "h-[3.9mm]")}>
-                            <td className="border border-black text-center font-mono font-semibold text-[8px]">
+                          <tr key={student.id || index} className={cn("text-[8px] font-bold uppercase", printSheetType === 'semanal' ? "h-[5.5mm]" : "h-[4.2mm]")}>
+                            <td className="border border-black text-center font-mono font-bold text-[8px] text-black px-1">
                               {index + 1}
                             </td>
                             <td 
                               className={cn(
-                                "border border-black px-2 text-[9px] font-sans",
-                                isCiabaOrCiaga ? "" : "truncate whitespace-nowrap",
-                                printSheetType === 'semanal' ? "max-w-[350px]" : "max-w-[210px]"
+                                "border border-black px-2 text-[9px] font-sans font-bold text-black",
+                                printSheetType === 'semanal' ? "max-w-[300px]" : "max-w-[200px]"
                               )}
                             >
-                              <div className="flex flex-col justify-center py-0.5 leading-tight">
-                                <span className={cn(isCiabaOrCiaga ? "text-[8px] truncate block" : "")}>
+                              <div className="flex flex-col justify-center py-0.5 leading-tight text-black">
+                                <span className="text-[8.5px] font-bold text-black break-words">
                                   {student.posto_graduacao || student.nome_guerra ? `${student.posto_graduacao || ''} ${student.nome_guerra || student.nome}`.trim() : student.nome}
                                 </span>
-
                               </div>
                             </td>
                             {daysToRender.map((day) => {
@@ -2852,8 +2920,8 @@ function TurmasContent() {
                                 <td 
                                   key={`${day.year}-${day.month}-${day.dayNum}`} 
                                   className={cn(
-                                    "border border-black p-0 text-center font-bold font-mono select-none",
-                                    printSheetType === 'semanal' ? "text-[9px]" : "text-[7px]",
+                                    "border border-black p-0 text-center font-black font-mono select-none text-black",
+                                    printSheetType === 'semanal' ? "text-[9px]" : "text-[7.5px]",
                                     status.bgClass
                                   )}
                                 >
@@ -2864,11 +2932,11 @@ function TurmasContent() {
                           </tr>
                         ))
                       ) : (
-                        <tr className="h-[3.9mm] text-[8px] font-bold uppercase">
-                          <td className="border border-black text-center font-mono font-semibold text-[8px]">
+                        <tr className="h-[4.2mm] text-[8px] font-bold uppercase">
+                          <td className="border border-black text-center font-mono font-semibold text-[8px] text-black">
                             1
                           </td>
-                          <td className="border border-black px-2 text-[9px] italic text-neutral-400">
+                          <td className="border border-black px-2 text-[9px] italic text-neutral-500">
                             {language === 'pt' ? 'Nenhum aluno inscrito nesta turma' : 'No students registered in this class'}
                           </td>
                           {daysToRender.map((day) => (
@@ -2937,8 +3005,22 @@ function TurmasContent() {
                     }
                   </div>
 
-                  {/* Micro-printed controlled copy warning centered (naturally flowing to prevent any overlapping) */}
-                  <div className="mt-8 print:mt-4 text-center text-[7px] font-bold tracking-[0.34em] text-neutral-400 uppercase w-full">
+                  {/* Signatures Row */}
+                  <div className="mt-6 print:mt-4 grid grid-cols-2 gap-12 text-center text-[9px] uppercase font-bold text-black print-avoid-break">
+                    <div className="flex flex-col items-center">
+                      <div className="w-full max-w-[280px] border-b border-black mb-1.5 h-6"></div>
+                      <span className="text-black font-extrabold">{printProfessorName || (language === 'pt' ? 'Assinatura do Instrutor' : 'Instructor Signature')}</span>
+                      <span className="text-[7.5px] text-slate-700 tracking-wider">{language === 'pt' ? 'Instrutor / Professor Responsável' : 'Responsible Instructor'}</span>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <div className="w-full max-w-[280px] border-b border-black mb-1.5 h-6"></div>
+                      <span className="text-black font-extrabold">{language === 'pt' ? 'Coordenação de Cursos' : 'Course Coordination'}</span>
+                      <span className="text-[7.5px] text-slate-700 tracking-wider">{language === 'pt' ? 'Visto da Coordenação Pedagógica' : 'Pedagogical Coordination'}</span>
+                    </div>
+                  </div>
+
+                  {/* Micro-printed controlled copy warning centered */}
+                  <div className="mt-5 print:mt-3 text-center text-[7px] font-bold tracking-[0.34em] text-neutral-600 uppercase w-full">
                     {language === 'pt' ? 'Documento de uso oficial - Cópia controlada' : 'Official Document - Controlled Copy'}
                   </div>
                 </div>
