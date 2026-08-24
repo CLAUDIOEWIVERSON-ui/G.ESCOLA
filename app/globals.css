@@ -426,31 +426,37 @@ html:not(.dark) .bg-white .text-slate-700 {
   }
 
   /* Specific handling when printing attendance sheet */
-  body.printing-attendance-sheet {
+  body.printing-attendance-sheet,
+  body.printing-attendance-sheet html {
     margin: 0 !important;
     padding: 0 !important;
     background: #ffffff !important;
     color: #000000 !important;
     width: 100% !important;
     height: auto !important;
+    overflow: visible !important;
   }
 
-  body.printing-attendance-sheet > *:not([data-attendance-modal-root="true"]):not(#print-attendance-sheet) {
-    display: none !important;
-    visibility: hidden !important;
-    height: 0 !important;
-    max-height: 0 !important;
-    overflow: hidden !important;
+  body.printing-attendance-sheet * {
+    visibility: hidden;
+  }
+
+  body.printing-attendance-sheet #print-attendance-sheet,
+  body.printing-attendance-sheet #print-attendance-sheet * {
+    visibility: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   body.printing-attendance-sheet #print-attendance-sheet {
     display: flex !important;
     flex-direction: column !important;
-    visibility: visible !important;
-    position: static !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
     width: 100% !important;
     max-width: 297mm !important;
-    min-height: 0 !important;
+    min-height: auto !important;
     margin: 0 auto !important;
     padding: 2mm 3mm !important;
     box-shadow: none !important;
@@ -459,12 +465,6 @@ html:not(.dark) .bg-white .text-slate-700 {
     color: #000000 !important;
     page-break-inside: auto !important;
     break-inside: auto !important;
-  }
-
-  body.printing-attendance-sheet #print-attendance-sheet * {
-    visibility: visible !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
   }
 
   /* Force light color-scheme and complete layout unconstrained flow */
@@ -781,18 +781,22 @@ html:not(.dark) .bg-white .text-slate-700 {
     padding: 0 !important;
   }
 
-  body.printing-student-ficha > *:not(.student-ficha-printable-doc) {
-    display: none !important;
-    visibility: hidden !important;
-    height: 0 !important;
-    max-height: 0 !important;
-    overflow: hidden !important;
+  body.printing-student-ficha * {
+    visibility: hidden;
+  }
+
+  body.printing-student-ficha .student-ficha-printable-doc,
+  body.printing-student-ficha .student-ficha-printable-doc * {
+    visibility: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   body.printing-student-ficha .student-ficha-printable-doc {
     display: block !important;
-    visibility: visible !important;
-    position: static !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
     margin: 0 !important;
@@ -801,12 +805,6 @@ html:not(.dark) .bg-white .text-slate-700 {
     color: #000000 !important;
     box-shadow: none !important;
     border: none !important;
-  }
-
-  body.printing-student-ficha .student-ficha-printable-doc * {
-    visibility: visible !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
   }
 
   body.printing-student-ficha .student-ficha-printable-doc .section-blue-bar,

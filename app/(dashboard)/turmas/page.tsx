@@ -2633,10 +2633,14 @@ function TurmasContent() {
                 <button
                   onClick={() => {
                     document.body.classList.add('printing-attendance-sheet');
-                    window.print();
-                    setTimeout(() => {
-                      document.body.classList.remove('printing-attendance-sheet');
-                    }, 1000);
+                    requestAnimationFrame(() => {
+                      setTimeout(() => {
+                        window.print();
+                        setTimeout(() => {
+                          document.body.classList.remove('printing-attendance-sheet');
+                        }, 1500);
+                      }, 50);
+                    });
                   }}
                   className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-emerald-950 transition-all active:translate-y-px cursor-pointer"
                 >
@@ -2650,6 +2654,7 @@ function TurmasContent() {
             <div className="flex-1 flex justify-center items-start p-6 bg-slate-900 overflow-auto custom-scrollbar">
               <div 
                 id="print-attendance-sheet"
+                data-print-landscape="true"
                 data-document-sheet="true"
                 className="official-document-sheet bg-white text-black p-[8mm] shadow-2xl relative rounded border border-slate-700 w-[297mm] min-h-[210mm] h-auto shrink-0 font-sans"
               >
@@ -2664,7 +2669,7 @@ function TurmasContent() {
                   @media print {
                     @page {
                       size: A4 landscape !important;
-                      margin: 6mm 6mm 6mm 6mm !important;
+                      margin: 4mm 5mm 4mm 5mm !important;
                     }
 
                     /* Reset page context and force standard white/black print output */
@@ -2683,51 +2688,28 @@ function TurmasContent() {
                       print-color-adjust: exact !important;
                     }
 
-                    /* Hide headers, footers, mobile bottom-navs, back buttons, filters, etc. completely from DOM layout flow */
-                    header, nav, aside, footer, button, .print\:hidden, [role="dialog"], [role="group"], .no-print {
-                      display: none !important;
-                      width: 0 !important;
-                      height: 0 !important;
-                      margin: 0 !important;
-                      padding: 0 !important;
-                      overflow: hidden !important;
-                      visibility: hidden !important;
-                    }
-                    
-                    /* Unset layout wrappers so printer renders natively */
-                    html, body, main, .min-h-screen, #__next, .flex-1, [data-framer-portal-container], div[class*="fixed"], div[class*="overflow-"] {
-                      position: static !important;
-                      width: 100% !important;
-                      height: auto !important;
-                      min-height: 0 !important;
-                      max-height: none !important;
-                      margin: 0 !important;
-                      padding: 0 !important;
-                      box-shadow: none !important;
-                      border: none !important;
-                      transform: none !important;
-                      overflow: visible !important;
-                      background: #ffffff !important;
-                      animation: none !important;
-                      transition: none !important;
-                      opacity: 1 !important;
+                    body * {
+                      visibility: hidden;
                     }
 
-                    body.printing-student-ficha #print-attendance-sheet {
-                      display: none !important;
-                      visibility: hidden !important;
+                    #print-attendance-sheet,
+                    #print-attendance-sheet * {
+                      visibility: visible !important;
+                      -webkit-print-color-adjust: exact !important;
+                      print-color-adjust: exact !important;
                     }
 
                     #print-attendance-sheet {
-                      visibility: visible !important;
-                      position: static !important;
+                      position: absolute !important;
+                      left: 0 !important;
+                      top: 0 !important;
                       width: 100% !important;
-                      max-width: 100% !important;
+                      max-width: 297mm !important;
                       height: auto !important;
                       min-height: 0 !important;
                       max-height: none !important;
                       margin: 0 auto !important;
-                      padding: 0 !important;
+                      padding: 2mm 3mm !important;
                       background: #ffffff !important;
                       color: #000000 !important;
                       box-shadow: none !important;
