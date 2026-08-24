@@ -411,6 +411,62 @@ html:not(.dark) .bg-white .text-slate-700 {
     margin: 8mm 10mm 8mm 10mm;
   }
 
+  @page landscape-sheet {
+    size: A4 landscape !important;
+    margin: 4mm 5mm 4mm 5mm !important;
+  }
+
+  /* Force landscape on attendance sheets */
+  body.printing-attendance-sheet,
+  body.printing-landscape,
+  #print-attendance-sheet,
+  [data-print-landscape="true"],
+  .official-document-sheet[data-landscape="true"] {
+    page: landscape-sheet !important;
+  }
+
+  /* Specific handling when printing attendance sheet */
+  body.printing-attendance-sheet {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  body.printing-attendance-sheet > *:not([data-attendance-modal-root="true"]):not(#print-attendance-sheet) {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    max-height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  body.printing-attendance-sheet #print-attendance-sheet {
+    display: flex !important;
+    flex-direction: column !important;
+    visibility: visible !important;
+    position: static !important;
+    width: 100% !important;
+    max-width: 297mm !important;
+    min-height: 0 !important;
+    margin: 0 auto !important;
+    padding: 2mm 3mm !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+  }
+
+  body.printing-attendance-sheet #print-attendance-sheet * {
+    visibility: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
   /* Force light color-scheme and complete layout unconstrained flow */
   html,
   html.dark,

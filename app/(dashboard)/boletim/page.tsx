@@ -23,7 +23,12 @@ import {
   BookOpen,
   Calendar,
   User,
-  Percent
+  Percent,
+  PenTool,
+  RotateCcw,
+  Save,
+  Trash2,
+  CheckCheck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
@@ -191,6 +196,10 @@ function BoletimContent() {
   
   const [boletimData, setBoletimData] = useState<any[]>([]);
   const [classStats, setClassStats] = useState({ avg: 0, total: 0 });
+  const [savingStudentId, setSavingStudentId] = useState<string | null>(null);
+  const [deletingStudentId, setDeletingStudentId] = useState<string | null>(null);
+  const [isSavingAll, setIsSavingAll] = useState(false);
+  const [studentToDeleteGrades, setStudentToDeleteGrades] = useState<any | null>(null);
   const settings = configuracoes || { media_aprovacao: 7, media_recuperacao: 5, frequencia_minima: 75, nota_maxima: 10 };
 
   const [selectedStudentForReport, setSelectedStudentForReport] = useState<string | null>(null);
@@ -282,6 +291,73 @@ function BoletimContent() {
   const [viewingClassBulletinPDF, setViewingClassBulletinPDF] = useState(false);
   const [classScale, setClassScale] = useState(0.55);
   const [downloadingClassPDF, setDownloadingClassPDF] = useState(false);
+
+  // Custom Signature states (Full Name, Military Rank/Posto-Graduação, and Role/Function)
+  const [signatureName, setSignatureName] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('boletim_signature_name') || '';
+    }
+    return '';
+  });
+
+  const [signatureRank, setSignatureRank] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('boletim_signature_rank') || '';
+    }
+    return '';
+  });
+
+  const [signatureRole, setSignatureRole] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('boletim_signature_role') || '';
+    }
+    return '';
+  });
+
+  // Ensure persistent state is synchronized from localStorage on client mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedName = localStorage.getItem('boletim_signature_name');
+      const savedRank = localStorage.getItem('boletim_signature_rank');
+      const savedRole = localStorage.getItem('boletim_signature_role');
+      if (savedName !== null) setSignatureName(savedName);
+      if (savedRank !== null) setSignatureRank(savedRank);
+      if (savedRole !== null) setSignatureRole(savedRole);
+    }
+  }, []);
+
+  const handleSignatureNameChange = (val: string) => {
+    setSignatureName(val);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('boletim_signature_name', val);
+    }
+  };
+
+  const handleSignatureRankChange = (val: string) => {
+    setSignatureRank(val);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('boletim_signature_rank', val);
+    }
+  };
+
+  const handleSignatureRoleChange = (val: string) => {
+    setSignatureRole(val);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('boletim_signature_role', val);
+    }
+  };
+
+  const handleResetSignature = () => {
+    setSignatureName('');
+    setSignatureRank('');
+    setSignatureRole('');
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('boletim_signature_name');
+      localStorage.removeItem('boletim_signature_rank');
+      localStorage.removeItem('boletim_signature_role');
+    }
+    toast.success(language === 'pt' ? 'Assinatura limpa.' : 'Signature cleared.');
+  };
 
   // Dynamic auto-fit calculation based on viewport height or width
   useEffect(() => {
@@ -1273,7 +1349,7 @@ function BoletimContent() {
         }
         if (validScores.length > 0) {
           const avg = validScores.reduce((a, b) => a + b, 0) / validScores.length;
-          computedFinal = Math.round(avg * 10) / 10;
+          computedFinal = Math.round(avg * 10000) / 10000;
         } else {
           computedFinal = null;
         }
@@ -1299,7 +1375,7 @@ function BoletimContent() {
           .map(Number);
         
         const avg = finalGrades.length > 0
-          ? Number((finalGrades.reduce((a, b) => a + b, 0) / finalGrades.length).toFixed(1))
+          ? Number((finalGrades.reduce((a, b) => a + b, 0) / finalGrades.length).toFixed(4))
           : 0;
 
         setClassStats({
@@ -1356,6 +1432,241 @@ function BoletimContent() {
       if (selectedTurma) handleSearch(selectedTurma);
     }
   };
+
+  // Save all grades for an individual student row
+  const handleSaveStudent = async (row: any) => {
+    if (!row || !row.aluno_id) return;
+    setSavingStudentId(row.aluno_id);
+    try {
+      const moduleGrades: any = {};
+      const validScores: number[] = [];
+      for (let m = 1; m <= courseModules; m++) {
+        const val = (row as any)[`nota${m}`];
+        if (val !== null && val !== undefined && val !== '' && !isNaN(Number(val))) {
+          moduleGrades[`nota${m}`] = Number(val);
+          validScores.push(Number(val));
+        } else {
+          moduleGrades[`nota${m}`] = null;
+        }
+      }
+
+      let finalGrade = row.nota_final;
+      if (finalGrade === null || finalGrade === undefined || finalGrade === '') {
+        if (validScores.length > 0) {
+          const avg = validScores.reduce((a, b) => a + b, 0) / validScores.length;
+          finalGrade = Math.round(avg * 100) / 100;
+        } else {
+          finalGrade = null;
+        }
+      } else {
+        finalGrade = Number(finalGrade);
+      }
+
+      const payload = {
+        aluno_id: row.aluno_id,
+        turma_id: row.turma_id || selectedTurma,
+        disciplina_id: row.disciplina_id || undefined,
+        curso_id: selectedCurso || row.aluno?.curso_id || undefined,
+        ano_letivo: row.ano_letivo || parseInt(selectedAno) || new Date().getFullYear(),
+        nota_final: finalGrade,
+        ...moduleGrades
+      };
+
+      const res = await fetchWithAuth('/api/v1/notas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || 'Erro ao salvar notas do aluno.');
+      }
+
+      const result = await res.json();
+      if (result?.data) {
+        setBoletimData(prev => prev.map(r => {
+          if (r.aluno_id === row.aluno_id) {
+            return {
+              ...r,
+              id: result.data.id || r.id,
+              disciplina_id: result.data.disciplina_id || r.disciplina_id,
+              nota_final: finalGrade,
+              ...moduleGrades
+            };
+          }
+          return r;
+        }));
+      }
+
+      const studentName = row.aluno?.nome_guerra || row.aluno?.nome || 'Aluno';
+      toast.success(
+        language === 'pt'
+          ? `Notas de ${studentName} salvas com sucesso!`
+          : `Grades for ${studentName} saved successfully!`
+      );
+    } catch (err: any) {
+      console.error('Error saving student grades:', err);
+      toast.error(
+        language === 'pt'
+          ? `Erro ao salvar notas do aluno: ${err.message}`
+          : `Error saving student grades: ${err.message}`
+      );
+    } finally {
+      setSavingStudentId(null);
+    }
+  };
+
+  // Clear/delete all grades for an individual student row
+  const handleClearStudentGrades = async (row: any) => {
+    if (!row || !row.aluno_id) return;
+    setDeletingStudentId(row.aluno_id);
+    try {
+      const res = await fetchWithAuth(
+        `/api/v1/notas?alunoId=${row.aluno_id}&turmaId=${row.turma_id || selectedTurma}`,
+        { method: 'DELETE' }
+      );
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || 'Erro ao apagar notas do aluno.');
+      }
+
+      // Reset local row grades
+      setBoletimData(prev => {
+        const updated = prev.map(r => {
+          if (r.aluno_id === row.aluno_id) {
+            const cleared: any = {
+              ...r,
+              nota_final: null
+            };
+            for (let m = 1; m <= 20; m++) {
+              cleared[`nota${m}`] = null;
+            }
+            return cleared;
+          }
+          return r;
+        });
+
+        // Recalculate stats
+        const finalGrades = updated
+          .map(r => r.nota_final)
+          .filter(n => n !== null && n !== undefined && !isNaN(Number(n)))
+          .map(Number);
+        const avg = finalGrades.length > 0
+          ? Number((finalGrades.reduce((a, b) => a + b, 0) / finalGrades.length).toFixed(2))
+          : 0;
+        setClassStats({ avg, total: updated.length });
+
+        return updated;
+      });
+
+      const studentName = row.aluno?.nome_guerra || row.aluno?.nome || 'Aluno';
+      toast.success(
+        language === 'pt'
+          ? `Notas de ${studentName} foram apagadas com sucesso!`
+          : `Grades for ${studentName} cleared successfully!`
+      );
+      setStudentToDeleteGrades(null);
+    } catch (err: any) {
+      console.error('Error clearing student grades:', err);
+      toast.error(
+        language === 'pt'
+          ? `Erro ao apagar notas: ${err.message}`
+          : `Error clearing grades: ${err.message}`
+      );
+    } finally {
+      setDeletingStudentId(null);
+    }
+  };
+
+  // Save all grades for all students in the class in batch
+  const handleSaveAllGrades = async () => {
+    if (boletimData.length === 0) {
+      toast.info(language === 'pt' ? 'Nenhum aluno carregado para salvar.' : 'No students loaded to save.');
+      return;
+    }
+
+    setIsSavingAll(true);
+    try {
+      const batchPayload = boletimData.map(row => {
+        const moduleGrades: any = {};
+        const validScores: number[] = [];
+        for (let m = 1; m <= courseModules; m++) {
+          const val = (row as any)[`nota${m}`];
+          if (val !== null && val !== undefined && val !== '' && !isNaN(Number(val))) {
+            moduleGrades[`nota${m}`] = Number(val);
+            validScores.push(Number(val));
+          } else {
+            moduleGrades[`nota${m}`] = null;
+          }
+        }
+
+        let finalGrade = row.nota_final;
+        if (finalGrade === null || finalGrade === undefined || finalGrade === '') {
+          if (validScores.length > 0) {
+            const avg = validScores.reduce((a, b) => a + b, 0) / validScores.length;
+            finalGrade = Math.round(avg * 100) / 100;
+          } else {
+            finalGrade = null;
+          }
+        } else {
+          finalGrade = Number(finalGrade);
+        }
+
+        return {
+          aluno_id: row.aluno_id,
+          turma_id: row.turma_id || selectedTurma,
+          disciplina_id: row.disciplina_id || undefined,
+          curso_id: selectedCurso || row.aluno?.curso_id || undefined,
+          ano_letivo: row.ano_letivo || parseInt(selectedAno) || new Date().getFullYear(),
+          nota_final: finalGrade,
+          ...moduleGrades
+        };
+      });
+
+      const res = await fetchWithAuth('/api/v1/notas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ batch: batchPayload })
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || 'Erro ao salvar todas as notas.');
+      }
+
+      toast.success(
+        language === 'pt'
+          ? `Todas as notas da turma (${boletimData.length} alunos) foram salvas com sucesso!`
+          : `All class grades (${boletimData.length} students) saved successfully!`
+      );
+    } catch (err: any) {
+      console.error('Error saving all grades:', err);
+      toast.error(
+        language === 'pt'
+          ? `Erro ao salvar todas as notas: ${err.message}`
+          : `Error saving all grades: ${err.message}`
+      );
+    } finally {
+      setIsSavingAll(false);
+    }
+  };
+
+  // Global keyboard shortcut: Ctrl+S or Cmd+S to save all grades
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        if (boletimData.length > 0 && !isSavingAll) {
+          handleSaveAllGrades();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [boletimData, isSavingAll, courseModules, selectedTurma, selectedCurso, selectedAno, language]);
 
   const disciplinasLength = disciplinas?.length || 0;
 
@@ -1804,7 +2115,7 @@ function BoletimContent() {
                           .map(e => e.finalGradeValue)
                           .filter((g): g is number => g !== null && g !== undefined && !isNaN(g));
                         const finalGradeValue = validGrades.length > 0 ? Math.max(...validGrades) : null;
-                        const finalGradeFormatted = finalGradeValue !== null ? finalGradeValue.toFixed(1) : '-';
+                        const finalGradeFormatted = finalGradeValue !== null ? finalGradeValue.toFixed(4) : '-';
 
                         const validFreqs = evaluated
                           .map(e => e.freqValue)
@@ -2080,7 +2391,7 @@ function BoletimContent() {
                               "inline-flex items-center justify-center text-center min-w-[64px] font-black font-mono text-base px-2.5 py-1 rounded-md border leading-none shadow-2xs",
                               averageGrade !== null && averageGrade >= settings.media_aprovacao ? "text-blue-700 bg-blue-50 border-blue-600" : "text-rose-700 bg-rose-50 border-rose-600"
                             )}>
-                              {averageGrade !== null ? averageGrade.toFixed(2) : '-'}
+                              {averageGrade !== null ? averageGrade.toFixed(4) : '-'}
                             </span>
                           </div>
 
@@ -2220,26 +2531,119 @@ function BoletimContent() {
             {t.common.search}
           </button>
         </div>
+
+        {/* Signature Configuration Bar */}
+        <div className="mt-5 pt-4 border-t border-slate-100">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+            <div className="flex items-center gap-2">
+              <div className="p-1 rounded bg-blue-50 text-blue-600 border border-blue-100">
+                <PenTool size={13} />
+              </div>
+              <span className="text-[11px] font-black text-slate-700 uppercase tracking-wider">
+                {language === 'pt' ? 'Assinatura dos Boletins e Históricos Oficiais' : 'Official Bulletin & Transcript Signature'}
+              </span>
+              <span className="text-[10px] text-slate-400 font-medium hidden md:inline">
+                {language === 'pt' ? '— Nome completo, Posto/Graduação e Função impressos no documento' : '— Full name, Rank & Role printed on document'}
+              </span>
+            </div>
+            {(signatureName || signatureRank || signatureRole) && (
+              <button
+                type="button"
+                onClick={handleResetSignature}
+                className="flex items-center gap-1 text-[10px] font-bold text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
+                title={language === 'pt' ? 'Limpar campos da assinatura' : 'Clear signature fields'}
+              >
+                <RotateCcw size={11} />
+                <span>{language === 'pt' ? 'Limpar' : 'Clear'}</span>
+              </button>
+            )}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 px-0.5">
+                {language === 'pt' ? '1. Nome Completo:' : '1. Signatory Full Name:'}
+              </label>
+              <input
+                type="text"
+                value={signatureName}
+                onChange={(e) => handleSignatureNameChange(e.target.value)}
+                placeholder={language === 'pt' ? 'Ex: NOME COMPLETO DO OFICIAL' : 'Ex: FULL NAME OF OFFICIAL'}
+                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 px-0.5">
+                {language === 'pt' ? '2. Posto / Graduação:' : '2. Rank / Title:'}
+              </label>
+              <input
+                type="text"
+                value={signatureRank}
+                onChange={(e) => handleSignatureRankChange(e.target.value)}
+                placeholder={language === 'pt' ? 'Ex: CC (FN) / Capitão de Corveta (FN)' : 'Ex: Commander (FN) / CDR'}
+                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 px-0.5">
+                {language === 'pt' ? '3. Função / Cargo:' : '3. Function / Role:'}
+              </label>
+              <input
+                type="text"
+                value={signatureRole}
+                onChange={(e) => handleSignatureRoleChange(e.target.value)}
+                placeholder={language === 'pt' ? 'Ex: Chefe da Missão de Assessoria Naval do Brasil em São Tomé e Príncipe' : 'Ex: Head of Naval Advisory Mission'}
+                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition"
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="max-w-4xl mx-auto w-full print:hidden">
         {/* Grades Table */}
         <div>
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden min-h-[400px]">
-             <div className="p-4 border-b border-slate-100 bg-slate-50/30 flex items-center justify-between">
-               <span className="text-xs font-bold text-slate-500 uppercase tracking-widest px-2">{t.common.finalResult}</span>
-               <div className="flex gap-2 print:hidden items-center">
+             <div className="p-4 border-b border-slate-100 bg-slate-50/30 flex items-center justify-between flex-wrap gap-3">
+               <div className="flex items-center gap-3">
+                 <span className="text-xs font-bold text-slate-500 uppercase tracking-widest px-2">{t.common.finalResult}</span>
                  {boletimData.length > 0 && (
-                   <button
-                     onClick={() => setViewingClassBulletinPDF(true)}
-                        className="flex items-center gap-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 px-3 py-1.5 rounded-lg text-[10.5px] font-black uppercase tracking-wider transition-all border border-blue-200 cursor-pointer"
-                        title={language === 'pt' ? 'Gerar PDF do Boletim da Turma' : 'Generate Class Bulletin PDF'}
-                      >
-                        <FileText size={13} className="text-blue-600" />
-                        <span>{language === 'pt' ? 'Boletim da Turma' : 'Class Report'}</span>
-                      </button>
-                    )}
-                 </div>
+                   <span className="text-[11px] font-medium text-slate-400 hidden sm:inline-flex items-center gap-1.5 bg-slate-100/80 px-2.5 py-1 rounded-md border border-slate-200/60">
+                     <kbd className="px-1.5 py-0.5 text-[9px] font-mono font-bold bg-white text-slate-700 rounded border border-slate-300 shadow-2xs">Enter</kbd>
+                     <span>{language === 'pt' ? 'salva aluno' : 'saves student'}</span>
+                     <span className="text-slate-300">|</span>
+                     <kbd className="px-1.5 py-0.5 text-[9px] font-mono font-bold bg-white text-slate-700 rounded border border-slate-300 shadow-2xs">Ctrl + S</kbd>
+                     <span>{language === 'pt' ? 'salva todos' : 'saves all'}</span>
+                   </span>
+                 )}
+               </div>
+               <div className="flex gap-2 print:hidden items-center flex-wrap">
+                 {boletimData.length > 0 && (
+                   <>
+                     <button
+                       onClick={handleSaveAllGrades}
+                       disabled={isSavingAll}
+                       className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-50 px-3.5 py-1.5 rounded-lg text-[10.5px] font-black uppercase tracking-wider transition-all shadow-sm cursor-pointer"
+                       title={language === 'pt' ? 'Salvar todas as notas da turma (Atalho: Ctrl+S)' : 'Save all grades (Shortcut: Ctrl+S)'}
+                     >
+                       {isSavingAll ? (
+                         <Loader2 size={13} className="animate-spin" />
+                       ) : (
+                         <Save size={13} />
+                       )}
+                       <span>{language === 'pt' ? `Salvar Todas (${boletimData.length})` : `Save All (${boletimData.length})`}</span>
+                     </button>
+
+                     <button
+                       onClick={() => setViewingClassBulletinPDF(true)}
+                       className="flex items-center gap-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 px-3 py-1.5 rounded-lg text-[10.5px] font-black uppercase tracking-wider transition-all border border-blue-200 cursor-pointer"
+                       title={language === 'pt' ? 'Gerar PDF do Boletim da Turma' : 'Generate Class Bulletin PDF'}
+                     >
+                       <FileText size={13} className="text-blue-600" />
+                       <span>{language === 'pt' ? 'Boletim da Turma' : 'Class Report'}</span>
+                     </button>
+                   </>
+                 )}
+               </div>
              </div>
 
              <div className="overflow-x-auto">
@@ -2298,7 +2702,7 @@ function BoletimContent() {
                                    type="number"
                                    min="0"
                                     max={settings?.nota_maxima || 20}
-                                   step="0.1"
+                                   step="0.01"
                                    value={notaValue !== null && notaValue !== undefined ? Number(notaValue) : ''}
                                    onChange={(e) => {
                                      // Just optimistic local state update for typing
@@ -2307,7 +2711,12 @@ function BoletimContent() {
                                        r.id === row.id ? { ...r, [`nota${i + 1}`]: val === '' ? null : Number(val) } : r
                                      ));
                                    }}
-                                   onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                                   onKeyDown={(e) => {
+                                     if (e.key === "Enter") {
+                                       (e.target as HTMLInputElement).blur();
+                                       handleSaveStudent(row);
+                                     }
+                                   }}
                                     onBlur={(e) => handleQuickGradeUpdate(row, i + 1, e.target.value)}
                                    className={cn(
                                      "w-16 md:w-20 mx-auto px-2 py-1.5 text-center font-mono font-bold text-sm rounded-lg border transition-all shadow-2xs outline-none focus:ring-2 focus:bg-white no-spin grade-input",
@@ -2320,7 +2729,7 @@ function BoletimContent() {
                                        : "text-slate-700 bg-slate-50/80 border-slate-200 hover:border-slate-300 hover:bg-white focus:border-blue-500 focus:ring-blue-500/20"
                                    )}
                                    placeholder="-"
-                                   title={language === 'pt' ? 'Clique para alterar a nota' : 'Click to change grade'}
+                                   title={language === 'pt' ? 'Nota do módulo (Pressione Enter para salvar)' : 'Module grade (Press Enter to save)'}
                                  />
                                </td>
                              );
@@ -2330,7 +2739,7 @@ function BoletimContent() {
                                type="number"
                                min="0"
                                     max={settings?.nota_maxima || 20}
-                               step="0.1"
+                               step="0.01"
                                value={row.nota_final !== null && row.nota_final !== undefined ? Number(row.nota_final) : ''}
                                onChange={(e) => {
                                  const val = e.target.value;
@@ -2338,7 +2747,12 @@ function BoletimContent() {
                                    r.id === row.id ? { ...r, nota_final: val === '' ? null : Number(val) } : r
                                  ));
                                }}
-                               onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                               onKeyDown={(e) => {
+                                 if (e.key === "Enter") {
+                                   (e.target as HTMLInputElement).blur();
+                                   handleSaveStudent(row);
+                                 }
+                               }}
                                 onBlur={(e) => handleQuickGradeUpdate(row, "final", e.target.value)}
                                className={cn(
                                  "w-20 md:w-24 mx-auto px-2 py-1.5 text-center font-mono font-black text-sm rounded-lg border-2 transition-all shadow-xs outline-none focus:ring-2 focus:bg-white no-spin grade-input",
@@ -2351,7 +2765,7 @@ function BoletimContent() {
                                    : "text-slate-400 bg-slate-50 border-slate-200 hover:border-slate-300 focus:border-blue-500 focus:ring-blue-500/20"
                                )}
                                placeholder="-"
-                               title={language === 'pt' ? 'Média final (clique para alterar)' : 'Final average (click to edit)'}
+                               title={language === 'pt' ? 'Média final (Pressione Enter para salvar)' : 'Final average (Press Enter to save)'}
                              />
                            </td>
                             <td className="px-6 py-4 text-center">
@@ -2360,8 +2774,48 @@ function BoletimContent() {
                                 <span>{status.label}</span>
                               </span>
                             </td>
-                            <td className="px-6 py-4 text-right print:hidden">
-                               <button onClick={() => setSelectedStudentForReport(row.aluno?.id)} className="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-600 text-white hover:text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer border border-blue-600 hover:border-blue-600 shadow-sm"><FileText size={12} /><span>{language === 'pt' ? 'Histórico' : 'Transcript'}</span></button>
+                            <td className="px-4 lg:px-6 py-4 text-right print:hidden">
+                               <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                                 {/* Botão Salvar Aluno */}
+                                 <button 
+                                   onClick={() => handleSaveStudent(row)} 
+                                   disabled={savingStudentId === row.aluno_id}
+                                   className="inline-flex items-center gap-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 hover:text-emerald-800 disabled:opacity-50 px-2.5 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer border border-emerald-200 shadow-2xs"
+                                   title={language === 'pt' ? 'Salvar notas deste aluno (Atalho: Enter)' : 'Save grades for this student (Shortcut: Enter)'}
+                                 >
+                                   {savingStudentId === row.aluno_id ? (
+                                     <Loader2 size={11} className="animate-spin" />
+                                   ) : (
+                                     <Save size={11} />
+                                   )}
+                                   <span>{language === 'pt' ? 'Salvar' : 'Save'}</span>
+                                 </button>
+
+                                 {/* Botão Apagar Notas */}
+                                 <button 
+                                   onClick={() => setStudentToDeleteGrades(row)} 
+                                   disabled={deletingStudentId === row.aluno_id}
+                                   className="inline-flex items-center gap-1 bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-700 disabled:opacity-50 px-2 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer border border-rose-200 shadow-2xs"
+                                   title={language === 'pt' ? 'Apagar todas as notas deste aluno' : 'Clear all grades for this student'}
+                                 >
+                                   {deletingStudentId === row.aluno_id ? (
+                                     <Loader2 size={11} className="animate-spin" />
+                                   ) : (
+                                     <Trash2 size={11} />
+                                   )}
+                                   <span>{language === 'pt' ? 'Apagar' : 'Clear'}</span>
+                                 </button>
+
+                                 {/* Botão Histórico Escolar */}
+                                 <button 
+                                   onClick={() => setSelectedStudentForReport(row.aluno?.id)} 
+                                   className="inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer border border-blue-600 shadow-2xs"
+                                   title={language === 'pt' ? 'Visualizar Histórico Escolar Individual' : 'View Student Transcript'}
+                                 >
+                                   <FileText size={11} />
+                                   <span>{language === 'pt' ? 'Histórico' : 'Transcript'}</span>
+                                 </button>
+                               </div>
                             </td>
                          </tr>
                        );
@@ -2369,6 +2823,90 @@ function BoletimContent() {
                    )}
                  </tbody>
                </table>
+             </div>
+          </div>
+        </div>
+
+        {/* Modal de Confirmação para Apagar Notas do Aluno */}
+        <AnimatePresence>
+          {studentToDeleteGrades && (
+            <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs z-[120] flex items-center justify-center p-4">
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+                className="bg-white text-slate-800 border border-slate-200 p-6 rounded-2xl shadow-2xl max-w-sm w-full relative"
+              >
+                <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 rounded-xl bg-rose-50 text-rose-600 border border-rose-100">
+                      <Trash2 size={18} />
+                    </div>
+                    <div>
+                      <h3 className="text-xs font-black uppercase tracking-widest text-slate-800">
+                        {language === 'pt' ? 'Apagar Notas' : 'Clear Grades'}
+                      </h3>
+                      <p className="text-[10px] font-bold text-slate-400">
+                        {language === 'pt' ? 'Confirmação de exclusão' : 'Deletion confirmation'}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setStudentToDeleteGrades(null)}
+                    className="p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition cursor-pointer"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="bg-slate-50/70 p-3.5 rounded-xl border border-slate-200/80">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">
+                      {language === 'pt' ? 'Aluno Selecionado' : 'Selected Student'}
+                    </p>
+                    <p className="text-sm font-extrabold text-slate-900">
+                      {studentToDeleteGrades.aluno?.nome_guerra || studentToDeleteGrades.aluno?.nome}
+                    </p>
+                    <p className="text-[10px] font-mono font-semibold text-slate-500 mt-0.5">
+                      Matrícula: #{studentToDeleteGrades.aluno?.matricula}
+                    </p>
+                  </div>
+
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    {language === 'pt' 
+                      ? 'Tem certeza de que deseja apagar todas as notas deste aluno nesta turma? Esta ação removerá as notas de todos os módulos e a média final.' 
+                      : 'Are you sure you want to clear all grades for this student in this class? This will reset all module grades and final average.'}
+                  </p>
+                </div>
+
+                <div className="mt-5 pt-3 border-t border-slate-100 flex gap-2 justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setStudentToDeleteGrades(null)}
+                    disabled={deletingStudentId === studentToDeleteGrades.aluno_id}
+                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs uppercase tracking-wider rounded-xl transition cursor-pointer"
+                  >
+                    {language === 'pt' ? 'Cancelar' : 'Cancel'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleClearStudentGrades(studentToDeleteGrades)}
+                    disabled={deletingStudentId === studentToDeleteGrades.aluno_id}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition cursor-pointer shadow-sm disabled:opacity-50"
+                  >
+                    {deletingStudentId === studentToDeleteGrades.aluno_id ? (
+                      <Loader2 size={13} className="animate-spin" />
+                    ) : (
+                      <Trash2 size={13} />
+                    )}
+                    <span>{language === 'pt' ? 'Sim, Apagar' : 'Yes, Clear'}</span>
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
 
                 {/* Modal of Individual Student Report */}
 
@@ -2478,6 +3016,52 @@ function BoletimContent() {
                           >
                             <X size={16} />
                           </button>
+                        </div>
+                      </div>
+
+                      {/* Modal Signature Quick-Edit Bar */}
+                      <div className="px-6 py-2.5 bg-slate-900/90 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs no-print">
+                        <div className="flex items-center gap-1.5 text-slate-300 font-bold shrink-0">
+                          <PenTool size={13} className="text-blue-400 shrink-0" />
+                          <span className="text-[11px] uppercase tracking-wider font-extrabold text-slate-300">
+                            {language === 'pt' ? 'Assinatura:' : 'Signature:'}
+                          </span>
+                        </div>
+                        <div className="flex flex-1 items-center gap-2 min-w-[280px] max-w-4xl">
+                          <input
+                            type="text"
+                            value={signatureName}
+                            onChange={(e) => handleSignatureNameChange(e.target.value)}
+                            placeholder={language === 'pt' ? '1. Nome Completo...' : '1. Signatory Full Name...'}
+                            className="flex-1 px-2.5 py-1 bg-slate-800 border border-slate-700 rounded-lg text-[11px] font-semibold text-slate-100 placeholder:text-slate-500 focus:border-blue-500 outline-none transition"
+                            title={language === 'pt' ? 'Alterar Nome Completo' : 'Change Full Name'}
+                          />
+                          <input
+                            type="text"
+                            value={signatureRank}
+                            onChange={(e) => handleSignatureRankChange(e.target.value)}
+                            placeholder={language === 'pt' ? '2. Posto / Graduação...' : '2. Rank / Title...'}
+                            className="flex-1 px-2.5 py-1 bg-slate-800 border border-slate-700 rounded-lg text-[11px] font-semibold text-slate-100 placeholder:text-slate-500 focus:border-blue-500 outline-none transition"
+                            title={language === 'pt' ? 'Alterar Posto ou Graduação' : 'Change Rank / Title'}
+                          />
+                          <input
+                            type="text"
+                            value={signatureRole}
+                            onChange={(e) => handleSignatureRoleChange(e.target.value)}
+                            placeholder={language === 'pt' ? '3. Função / Cargo...' : '3. Role / Title...'}
+                            className="flex-1 px-2.5 py-1 bg-slate-800 border border-slate-700 rounded-lg text-[11px] font-semibold text-slate-100 placeholder:text-slate-500 focus:border-blue-500 outline-none transition"
+                            title={language === 'pt' ? 'Alterar Função / Cargo' : 'Change Role / Title'}
+                          />
+                          {(signatureName || signatureRank || signatureRole) && (
+                            <button
+                              type="button"
+                              onClick={handleResetSignature}
+                              className="p-1 text-slate-400 hover:text-rose-400 transition cursor-pointer"
+                              title={language === 'pt' ? 'Limpar assinatura' : 'Clear signature'}
+                            >
+                              <RotateCcw size={13} />
+                            </button>
+                          )}
                         </div>
                       </div>
 
@@ -2768,14 +3352,14 @@ function BoletimContent() {
                                   </div>
 
                                   {/* Premium Official Header Layout */}
-                                  <div className="flex items-center justify-between pb-4 border-b border-slate-950">
-                                    <div className="flex items-center gap-4">
-                                      <div className="relative w-20 h-20 shrink-0 flex items-center justify-center bg-white">
+                                  <div className="flex items-center justify-between pb-5 border-b border-slate-950 mb-4">
+                                    <div className="flex items-center gap-5">
+                                      <div className="relative w-36 h-36 shrink-0 flex items-center justify-center bg-white">
                                         <Image
                                           src={navalMissionLogo}
                                           alt="Logo Missão de Assessoria Naval"
-                                          width={80}
-                                          height={71}
+                                          width={144}
+                                          height={128}
                                           className="w-auto h-auto max-w-full max-h-full object-contain"
                                           style={{ objectFit: 'contain', width: 'auto', height: 'auto', maxHeight: '100%', maxWidth: '100%' }}
                                           referrerPolicy="no-referrer"
@@ -2783,10 +3367,10 @@ function BoletimContent() {
                                         />
                                       </div>
                                       <div className="text-left flex flex-col justify-center">
-                                        <h1 className="text-sm font-black tracking-widest text-slate-900 uppercase leading-none">
+                                        <h1 className="text-base font-black tracking-widest text-slate-900 uppercase leading-snug">
                                           {reportT[language as "pt" | "en"].headerTitle}
                                         </h1>
-                                        <p className="text-[9px] font-black tracking-widest text-slate-500 uppercase mt-1 leading-none">
+                                        <p className="text-xs font-black tracking-widest text-slate-500 uppercase mt-1 leading-none">
                                           {reportT[language as "pt" | "en"].headerSubtitle}
                                         </p>
                                       </div>
@@ -2882,7 +3466,7 @@ function BoletimContent() {
                                             .map(e => e.finalGradeValue)
                                             .filter((g): g is number => g !== null && g !== undefined && !isNaN(g));
                                           const finalGradeValue = validGrades.length > 0 ? Math.max(...validGrades) : null;
-                                          const finalGradeFormatted = finalGradeValue !== null ? finalGradeValue.toFixed(1) : '-';
+                                          const finalGradeFormatted = finalGradeValue !== null ? finalGradeValue.toFixed(4) : '-';
 
                                           const validFreqs = evaluated
                                             .map(e => e.freqValue)
@@ -3135,7 +3719,7 @@ function BoletimContent() {
                                             <div className="flex items-center justify-between">
                                               <span className="text-[8px] font-bold text-slate-500 uppercase tracking-wide leading-none">{reportT[language as "pt" | "en"].overallAverage}:</span>
                                               <span className="inline-flex items-center justify-center text-center min-w-[56px] text-[11px] font-black font-mono px-2 py-0.5 rounded-md bg-blue-50 border border-blue-600 text-blue-700 leading-none shadow-2xs">
-                                                {averageGrade !== null ? averageGrade.toFixed(2) : '-'}
+                                                {averageGrade !== null ? averageGrade.toFixed(4) : '-'}
                                               </span>
                                             </div>
 
@@ -3181,18 +3765,32 @@ function BoletimContent() {
                                     </span>
                                   </div>
 
-                                  {/* Single Signature Panel */}
-                                  <div className="flex flex-col items-center justify-center pt-5 mt-3 border-t border-dashed border-slate-300">
-                                    <div className="flex flex-col items-center text-center max-w-lg w-full">
-                                      <div className="w-72 border-b-2 border-slate-700 h-8 mb-2"></div>
-                                      <div className="flex flex-col items-center px-4 py-1.5 border-2 border-slate-700 rounded bg-slate-50 min-w-[260px] shadow-2xs">
-                                        <span className="text-[9px] font-black text-slate-900 uppercase tracking-wider leading-tight text-center font-mono">
-                                          {reportT[language as "pt" | "en"].signatureCommander}
-                                        </span>
-                                      </div>
-                                      <span className="text-[7px] font-bold text-slate-400 uppercase mt-1.5 leading-none tracking-widest">
-                                        {language === 'pt' ? 'Assinatura' : 'Signature'}
-                                      </span>
+                                  {/* Military Signature Panel */}
+                                  <div className="flex flex-col items-center justify-center pt-8 mt-4">
+                                    <div className="flex flex-col items-center text-center max-w-xl w-full">
+                                      {/* Linha de Assinatura */}
+                                      <div className="w-80 border-b border-slate-900 h-8 mb-2"></div>
+                                      
+                                      {/* Linha 1: Nome Completo */}
+                                      {signatureName.trim() ? (
+                                        <div className="text-xs font-bold text-slate-900 uppercase tracking-wider leading-tight text-center">
+                                          {signatureName.trim()}
+                                        </div>
+                                      ) : null}
+
+                                      {/* Linha 2: Posto / Graduação */}
+                                      {signatureRank.trim() ? (
+                                        <div className="text-[11px] font-semibold text-slate-800 uppercase tracking-wide leading-tight text-center mt-0.5">
+                                          {signatureRank.trim()}
+                                        </div>
+                                      ) : null}
+
+                                      {/* Linha 3: Função */}
+                                      {signatureRole.trim() ? (
+                                        <div className="text-[10.5px] font-medium text-slate-800 uppercase tracking-wide leading-tight text-center mt-0.5 max-w-lg">
+                                          {signatureRole.trim()}
+                                        </div>
+                                      ) : null}
                                     </div>
                                   </div>
                                 </div>
@@ -3276,6 +3874,52 @@ function BoletimContent() {
                           >
                             <X size={16} />
                           </button>
+                        </div>
+                      </div>
+
+                      {/* Modal Signature Quick-Edit Bar */}
+                      <div className="px-6 py-2.5 bg-slate-900/90 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs no-print">
+                        <div className="flex items-center gap-1.5 text-slate-300 font-bold shrink-0">
+                          <PenTool size={13} className="text-blue-400 shrink-0" />
+                          <span className="text-[11px] uppercase tracking-wider font-extrabold text-slate-300">
+                            {language === 'pt' ? 'Assinatura do Boletim:' : 'Bulletin Signature:'}
+                          </span>
+                        </div>
+                        <div className="flex flex-1 items-center gap-2 min-w-[280px] max-w-4xl">
+                          <input
+                            type="text"
+                            value={signatureName}
+                            onChange={(e) => handleSignatureNameChange(e.target.value)}
+                            placeholder={language === 'pt' ? '1. Nome Completo...' : '1. Signatory Full Name...'}
+                            className="flex-1 px-2.5 py-1 bg-slate-800 border border-slate-700 rounded-lg text-[11px] font-semibold text-slate-100 placeholder:text-slate-500 focus:border-blue-500 outline-none transition"
+                            title={language === 'pt' ? 'Alterar Nome Completo' : 'Change Full Name'}
+                          />
+                          <input
+                            type="text"
+                            value={signatureRank}
+                            onChange={(e) => handleSignatureRankChange(e.target.value)}
+                            placeholder={language === 'pt' ? '2. Posto / Graduação...' : '2. Rank / Title...'}
+                            className="flex-1 px-2.5 py-1 bg-slate-800 border border-slate-700 rounded-lg text-[11px] font-semibold text-slate-100 placeholder:text-slate-500 focus:border-blue-500 outline-none transition"
+                            title={language === 'pt' ? 'Alterar Posto ou Graduação' : 'Change Rank / Title'}
+                          />
+                          <input
+                            type="text"
+                            value={signatureRole}
+                            onChange={(e) => handleSignatureRoleChange(e.target.value)}
+                            placeholder={language === 'pt' ? '3. Função / Cargo...' : '3. Role / Title...'}
+                            className="flex-1 px-2.5 py-1 bg-slate-800 border border-slate-700 rounded-lg text-[11px] font-semibold text-slate-100 placeholder:text-slate-500 focus:border-blue-500 outline-none transition"
+                            title={language === 'pt' ? 'Alterar Função / Cargo' : 'Change Role / Title'}
+                          />
+                          {(signatureName || signatureRank || signatureRole) && (
+                            <button
+                              type="button"
+                              onClick={handleResetSignature}
+                              className="p-1 text-slate-400 hover:text-rose-400 transition cursor-pointer"
+                              title={language === 'pt' ? 'Limpar assinatura' : 'Clear signature'}
+                            >
+                              <RotateCcw size={13} />
+                            </button>
+                          )}
                         </div>
                       </div>
 
@@ -3363,14 +4007,14 @@ function BoletimContent() {
                                  ` }} />
 
                                  {/* Header */}
-                                 <div className="flex items-center justify-between pb-4 border-b border-slate-950">
-                                   <div className="flex items-center gap-4">
-                                     <div className="relative w-20 h-20 shrink-0 flex items-center justify-center bg-white">
+                                 <div className="flex items-center justify-between pb-5 border-b border-slate-950 mb-4">
+                                   <div className="flex items-center gap-5">
+                                     <div className="relative w-36 h-36 shrink-0 flex items-center justify-center bg-white">
                                        <Image
                                          src={navalMissionLogo}
                                          alt="Logo Missão de Assessoria Naval"
-                                         width={80}
-                                         height={71}
+                                         width={144}
+                                         height={128}
                                          className="w-auto h-auto max-w-full max-h-full object-contain"
                                          style={{ objectFit: 'contain', width: 'auto', height: 'auto', maxHeight: '100%', maxWidth: '100%' }}
                                          referrerPolicy="no-referrer"
@@ -3378,10 +4022,10 @@ function BoletimContent() {
                                        />
                                      </div>
                                      <div className="text-left flex flex-col justify-center">
-                                       <h1 className="text-sm font-black tracking-widest text-slate-900 uppercase leading-none">
+                                       <h1 className="text-base font-black tracking-widest text-slate-900 uppercase leading-snug">
                                          {reportT[language as "pt" | "en"].headerTitle}
                                        </h1>
-                                       <p className="text-[9px] font-black tracking-widest text-slate-500 uppercase mt-1 leading-none">
+                                       <p className="text-xs font-black tracking-widest text-slate-500 uppercase mt-1 leading-none">
                                          {reportT[language as "pt" | "en"].headerSubtitle}
                                        </p>
                                      </div>
@@ -3465,12 +4109,12 @@ function BoletimContent() {
                                                    const notaValue = (row as any)[`nota${i + 1}`];
                                                    return (
                                                      <td key={i} className="px-1 py-1.5 text-center border-r border-slate-200 font-mono">
-                                                       {notaValue !== null && notaValue !== undefined ? Number(notaValue).toFixed(1) : '-'}
+                                                       {notaValue !== null && notaValue !== undefined ? Number(notaValue).toFixed(4) : '-'}
                                                      </td>
                                                    );
                                                  })}
                                                  <td className="px-3.5 py-1.5 text-center border-r border-slate-200 font-black font-mono">
-                                                   {row.nota_final !== null && row.nota_final !== undefined ? Number(row.nota_final).toFixed(1) : '-'}
+                                                   {row.nota_final !== null && row.nota_final !== undefined ? Number(row.nota_final).toFixed(4) : '-'}
                                                  </td>
                                                  <td className="px-3.5 py-1.5 text-right font-bold">
                                                    <span className={cn("px-1.5 py-0.5 rounded text-[7px] font-black uppercase inline-block border", status.className)}>
@@ -3491,7 +4135,7 @@ function BoletimContent() {
                                    <div className="flex items-center justify-between text-[10px] font-bold text-slate-600">
                                      <span>{language === 'pt' ? 'MÉDIA GERAL DA TURMA:' : 'CLASS OVERALL AVERAGE:'}</span>
                                      <span className="inline-flex items-center justify-center text-center min-w-[50px] font-mono font-black text-blue-700 bg-blue-50 border border-blue-600 px-2 py-0.5 rounded">
-                                       {classStats.avg ? classStats.avg.toFixed(2) : '-'}
+                                       {classStats.avg ? Number(classStats.avg).toFixed(4) : '-'}
                                      </span>
                                    </div>
                                    <div className="flex items-center justify-between text-[10px] font-bold text-slate-600">
@@ -3502,18 +4146,25 @@ function BoletimContent() {
                                    </div>
                                  </div>
 
-                                 {/* Single Signature Panel */}
-                                 <div className="flex flex-col items-center justify-center pt-5 mt-3 border-t border-dashed border-slate-300">
+                                 {/* Class Batch Signature Panel */}
+                                 <div className="flex flex-col items-center justify-center pt-6 mt-4 border-t border-dashed border-slate-300">
                                    <div className="flex flex-col items-center text-center max-w-lg w-full">
-                                     <div className="w-72 border-b-2 border-slate-700 h-8 mb-2"></div>
-                                     <div className="flex flex-col items-center px-4 py-1.5 border-2 border-slate-700 rounded bg-slate-50 min-w-[260px] shadow-2xs">
-                                       <span className="text-[9px] font-black text-slate-900 uppercase tracking-wider leading-tight text-center font-mono">
-                                         {reportT[language as "pt" | "en"].signatureCommander}
+                                     <div className="w-80 border-b-2 border-slate-800 h-8 mb-2"></div>
+                                     {signatureName.trim() ? (
+                                       <span className="text-xs font-black text-slate-900 uppercase tracking-wider leading-tight text-center font-mono">
+                                         {signatureName.trim()}
                                        </span>
-                                     </div>
-                                     <span className="text-[7px] font-bold text-slate-400 uppercase mt-1.5 leading-none tracking-widest">
-                                       {language === 'pt' ? 'Assinatura' : 'Signature'}
-                                     </span>
+                                     ) : null}
+                                     {signatureRank.trim() ? (
+                                       <span className="text-[11px] font-bold text-slate-800 uppercase tracking-wider leading-tight text-center mt-0.5 font-mono">
+                                         {signatureRank.trim()}
+                                       </span>
+                                     ) : null}
+                                     {signatureRole.trim() ? (
+                                       <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wide leading-tight text-center mt-0.5 font-mono max-w-md">
+                                         {signatureRole.trim()}
+                                       </span>
+                                     ) : null}
                                    </div>
                                  </div>
                               </div>
@@ -3551,13 +4202,10 @@ function BoletimContent() {
                     </div>
                   </div>
                 )}
-             </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+              </div>
+            </div>
+          );
+        }
 
 export default function BoletimPage() {
   return (

@@ -857,23 +857,23 @@ function AvaliacaoAlunoForm() {
 
           {/* Show weekly schedule even after submitting for QR Code, as requested! */}
           <div className="pt-6 border-t border-slate-100 text-left">
-            <div className="flex items-center gap-4 mb-6 pb-4 border-b border-slate-100">
-              <div className="relative w-16 h-16 shrink-0 flex items-center justify-center overflow-hidden bg-white">
+            <div className="flex items-center gap-5 mb-6 pb-4 border-b border-slate-200">
+              <div className="relative w-28 h-28 shrink-0 flex items-center justify-center overflow-hidden bg-white">
                 <Image
                   src={navalMissionLogo}
                   alt="Logo Missão de Assessoria Naval"
                   fill
                   className="object-contain"
                   referrerPolicy="no-referrer"
-                  sizes="64px"
+                  sizes="112px"
                   priority
                 />
               </div>
               <div className="text-left flex flex-col justify-center">
-                <h1 className="text-xs font-black tracking-widest text-slate-900 uppercase leading-none">
+                <h1 className="text-xs sm:text-sm font-black tracking-widest text-slate-900 uppercase leading-none">
                   MISSÃO DE ASSESSORIA NAVAL DO BRASIL EM SÃO TOMÉ E PRÍNCIPE
                 </h1>
-                <p className="text-[9px] font-black tracking-widest text-slate-500 uppercase mt-1 leading-none">
+                <p className="text-[10px] font-black tracking-widest text-slate-500 uppercase mt-1.5 leading-none">
                   Detalhe Semanal de Aulas
                 </p>
               </div>
@@ -1009,21 +1009,21 @@ function AvaliacaoAlunoForm() {
 
         {/* The Actual printed sheet */}
         <div className="space-y-6">
-          <div className="flex items-center justify-center gap-4 border-b-2 border-slate-900 pb-4">
+          <div className="flex items-center justify-center gap-6 border-b-2 border-slate-900 pb-5 mb-5">
             <img
               src={typeof navalMissionLogo === 'string' ? navalMissionLogo : (navalMissionLogo as any)?.src || navalMissionLogo}
               alt="Logo Missão de Assessoria Naval"
-              className="w-16 h-16 object-contain shrink-0"
-              style={{ width: '64px', height: '64px' }}
+              className="w-28 h-28 object-contain shrink-0"
+              style={{ width: '112px', height: '112px' }}
             />
             <div className="text-center">
-              <h1 className="text-sm md:text-base font-black uppercase tracking-widest font-sans text-slate-900">
+              <h1 className="text-sm md:text-base font-black uppercase tracking-widest font-sans text-slate-900 leading-tight">
                 MISSÃO DE ASSESSORIA NAVAL DO BRASIL EM SÃO TOMÉ E PRÍNCIPE
               </h1>
-              <h2 className="text-xs md:text-sm font-bold uppercase tracking-wide mt-1 font-sans text-slate-700">
+              <h2 className="text-xs md:text-sm font-bold uppercase tracking-wide mt-1.5 font-sans text-slate-700">
                 Ficha de Avaliação de Conclusão de Curso (Pós-Curso)
               </h2>
-              <p className="text-[10px] italic mt-0.5 text-slate-500 font-sans">Preenchimento Manual e Confidencial</p>
+              <p className="text-[10px] italic mt-1 text-slate-500 font-sans">Preenchimento Manual e Confidencial</p>
             </div>
           </div>
 
@@ -1448,23 +1448,23 @@ function AvaliacaoAlunoForm() {
                 
                 {showWeeklySchedule && (
                   <div className="p-4 bg-white space-y-4">
-                    <div className="flex items-center gap-4 mb-4 pb-4 border-b border-slate-100">
-                      <div className="relative w-16 h-16 shrink-0 flex items-center justify-center overflow-hidden bg-white">
+                    <div className="flex items-center gap-5 mb-4 pb-4 border-b border-slate-200">
+                      <div className="relative w-28 h-28 shrink-0 flex items-center justify-center overflow-hidden bg-white">
                         <Image
                           src={navalMissionLogo}
                           alt="Logo Missão de Assessoria Naval"
                           fill
                           className="object-contain"
                           referrerPolicy="no-referrer"
-                          sizes="64px"
+                          sizes="112px"
                           priority
                         />
                       </div>
                       <div className="text-left flex flex-col justify-center">
-                        <h1 className="text-xs font-black tracking-widest text-slate-900 uppercase leading-none">
+                        <h1 className="text-xs sm:text-sm font-black tracking-widest text-slate-900 uppercase leading-none">
                           MISSÃO DE ASSESSORIA NAVAL DO BRASIL EM SÃO TOMÉ E PRÍNCIPE
                         </h1>
-                        <p className="text-[9px] font-black tracking-widest text-slate-500 uppercase mt-1 leading-none">
+                        <p className="text-[10px] font-black tracking-widest text-slate-500 uppercase mt-1.5 leading-none">
                           Detalhe Semanal de Aulas
                         </p>
                       </div>

@@ -1449,27 +1449,29 @@ export default function DashboardPage() {
                 }
               }
             `}} />
-            <div className="flex flex-col items-center mb-6 border-b-2 border-black pb-4 relative">
-              <div className="absolute left-0 top-0">
+            <div className="flex items-center gap-6 mb-6 border-b-2 border-black pb-4">
+              <div className="w-28 h-28 shrink-0 flex items-center justify-center">
                 <img
                   src={typeof navalMissionLogo === 'string' ? navalMissionLogo : (navalMissionLogo as any)?.src || navalMissionLogo}
                   alt="Logo Missão de Assessoria Naval"
-                  className="w-15 h-15 object-contain"
-                  style={{ width: '60px', height: '60px' }}
+                  className="w-28 h-28 object-contain"
+                  style={{ width: '112px', height: '112px' }}
                 />
               </div>
-              <h1 className="text-base font-extrabold uppercase tracking-tight text-center mt-1">
-                {language === 'pt' ? 'MISSÃO DE ASSESSORIA NAVAL DO BRASIL' : 'NAVAL ADVISORY MISSION OF BRAZIL'}
-              </h1>
-              <h2 className="text-sm font-bold uppercase tracking-wide text-center mt-0.5">
-                {language === 'pt' ? 'RELAÇÃO DE ALUNOS NO EXTERIOR' : 'STUDENTS ABROAD ROSTER'}
-              </h2>
-              {selectedDocumentoFilter !== 'all' && (
-                <div className="text-[10px] font-semibold text-slate-700 mt-1 flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5">
-                  <span><strong>DOCUMENTO:</strong> {selectedDocumentoFilter.toUpperCase()}</span>
-                  <span><strong>TOTAL:</strong> {totalFilteredAlunosExterior} ALUNO(S)</span>
-                </div>
-              )}
+              <div className="flex-1 text-left">
+                <h1 className="text-base sm:text-lg font-extrabold uppercase tracking-tight text-slate-900">
+                  {language === 'pt' ? 'MISSÃO DE ASSESSORIA NAVAL DO BRASIL EM SÃO TOMÉ E PRÍNCIPE' : 'NAVAL ADVISORY MISSION OF BRAZIL IN SÃO TOMÉ AND PRÍNCIPE'}
+                </h1>
+                <h2 className="text-sm font-bold uppercase tracking-wide text-slate-800 mt-1">
+                  {language === 'pt' ? 'RELAÇÃO DE ALUNOS NO EXTERIOR' : 'STUDENTS ABROAD ROSTER'}
+                </h2>
+                {selectedDocumentoFilter !== 'all' && (
+                  <div className="text-[10px] font-semibold text-slate-700 mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                    <span><strong>DOCUMENTO:</strong> {selectedDocumentoFilter.toUpperCase()}</span>
+                    <span><strong>TOTAL:</strong> {totalFilteredAlunosExterior} ALUNO(S)</span>
+                  </div>
+                )}
+              </div>
             </div>
             
             {groupedAlunosExteriorByDoc.length === 0 ? (
