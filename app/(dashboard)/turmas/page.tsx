@@ -107,8 +107,11 @@ function TurmasContent() {
   
   const isCiabaOrCiaga = viewingTurma?.nome ? (viewingTurma.nome.toUpperCase().includes('CIABA') || viewingTurma.nome.toUpperCase().includes('CIAGA') || viewingTurma.internacional) : false;
   
-  // States for Folha de Frequência (Mensal & Semanal)
+  // Dedicated States for Folha de Frequência (Mensal & Semanal)
   const [isPrintAttendanceOpen, setIsPrintAttendanceOpen] = useState(false);
+  const [printTurma, setPrintTurma] = useState<any>(null);
+  const [printAlunos, setPrintAlunos] = useState<any[]>([]);
+  const [loadingPrintAlunos, setLoadingPrintAlunos] = useState(false);
   const [printProfessorName, setPrintProfessorName] = useState('');
   const [printPeriod, setPrintPeriod] = useState('');
   const [printClassName, setPrintClassName] = useState('');
@@ -124,8 +127,49 @@ function TurmasContent() {
   const [loadingRosterAlunos, setLoadingRosterAlunos] = useState(false);
   const [rosterProfessorName, setRosterProfessorName] = useState('');
 
+  const loadTurmaForAttendancePrint = async (turma: any, type?: 'mensal' | 'semanal') => {
+    if (!turma) return;
+    setPrintTurma(turma);
+    setPrintProfessorName(turma.instrutor || '');
+    setPrintClassName(turma.nome || '');
+    if (type) {
+      setPrintSheetType(type);
+    }
+    setSelectedWeekIndex(null);
+
+    let defaultMonthYear = '';
+    if (turma.data_inicio) {
+      const parts = turma.data_inicio.split('-');
+      if (parts.length >= 2) {
+        defaultMonthYear = `${parts[1]}/${parts[0]}`;
+      }
+    }
+    if (!defaultMonthYear) {
+      defaultMonthYear = `${String(new Date().getMonth() + 1).padStart(2, '0')}/${new Date().getFullYear()}`;
+    }
+    setPrintPeriod(defaultMonthYear);
+    setIsPrintAttendanceOpen(true);
+    setLoadingPrintAlunos(true);
+
+    try {
+      const { data, error } = await supabase
+        .from('alunos')
+        .select('*')
+        .eq('turma_id', turma.id)
+        .is('deleted_at', null)
+        .order('nome');
+      if (error) throw error;
+      setPrintAlunos(data || []);
+    } catch (err: any) {
+      console.error('Error fetching students for print:', err.message);
+      setPrintAlunos([]);
+    } finally {
+      setLoadingPrintAlunos(false);
+    }
+  };
+
   useEffect(() => {
-    if (!isPrintAttendanceOpen || !viewingTurma?.id || !printPeriod) {
+    if (!isPrintAttendanceOpen || !printTurma?.id || !printPeriod) {
       setPrintFrequencia([]);
       return;
     }
@@ -144,7 +188,7 @@ function TurmasContent() {
           const { data, error } = await supabase
             .from('frequencia')
             .select('*')
-            .eq('turma_id', viewingTurma.id)
+            .eq('turma_id', printTurma.id)
             .gte('data', startDate)
             .lte('data', endDate);
             
@@ -159,66 +203,14 @@ function TurmasContent() {
     };
     
     fetchFrequenciesForPrint();
-  }, [isPrintAttendanceOpen, viewingTurma?.id, printPeriod]);
+  }, [isPrintAttendanceOpen, printTurma?.id, printPeriod]);
 
   const handleOpenPrintAttendance = (turma: any) => {
-    setPrintProfessorName(turma.instrutor || '');
-    setPrintClassName(turma.nome || '');
-    
-    let defaultMonthYear = '';
-    if (turma.data_inicio) {
-      const parts = turma.data_inicio.split('-');
-      if (parts.length >= 2) {
-        defaultMonthYear = `${parts[1]}/${parts[0]}`;
-      }
-    }
-    if (!defaultMonthYear) {
-      defaultMonthYear = `${String(new Date().getMonth() + 1).padStart(2, '0')}/${new Date().getFullYear()}`;
-    }
-    
-    setPrintPeriod(defaultMonthYear);
-    setSelectedWeekIndex(null);
-    setIsPrintAttendanceOpen(true);
+    loadTurmaForAttendancePrint(turma);
   };
 
-  const handleDirectPrintAttendance = async (turma: any, type: 'mensal' | 'semanal' = 'mensal') => {
-    setViewingTurma(turma);
-    setPrintSheetType(type);
-    setSelectedWeekIndex(null);
-    setLoadingAlunos(true);
-    try {
-      const { data, error } = await supabase
-        .from('alunos')
-        .select('*')
-        .eq('turma_id', { targetId: turma.id }.targetId)
-        .is('deleted_at', null)
-        .order('nome');
-        
-      if (error) throw error;
-      setAlunosInTurma(data || []);
-      
-      // Auto open print modal
-      setPrintProfessorName(turma.instrutor || '');
-      setPrintClassName(turma.nome || '');
-      
-      let defaultMonthYear = '';
-      if (turma.data_inicio) {
-        const parts = turma.data_inicio.split('-');
-        if (parts.length >= 2) {
-          defaultMonthYear = `${parts[1]}/${parts[0]}`;
-        }
-      }
-      if (!defaultMonthYear) {
-        defaultMonthYear = `${String(new Date().getMonth() + 1).padStart(2, '0')}/${new Date().getFullYear()}`;
-      }
-      
-      setPrintPeriod(defaultMonthYear);
-      setIsPrintAttendanceOpen(true);
-    } catch (err: any) {
-      console.error('Error fetching students for print:', err.message);
-    } finally {
-      setLoadingAlunos(false);
-    }
+  const handleDirectPrintAttendance = (turma: any, type: 'mensal' | 'semanal' = 'mensal') => {
+    loadTurmaForAttendancePrint(turma, type);
   };
 
   const getStudentPhoto = (student: any) => {
@@ -2501,28 +2493,60 @@ function TurmasContent() {
               <div className="flex items-center gap-3 w-full lg:w-auto">
                 <button
                   onClick={() => setIsPrintAttendanceOpen(false)}
-                  className="p-2 hover:bg-white/10 text-slate-400 hover:text-white rounded-xl transition-all"
+                  className="p-2 hover:bg-white/10 text-slate-400 hover:text-white rounded-xl transition-all cursor-pointer"
                   title="Fechar"
                 >
                   <X size={20} />
                 </button>
                 <div>
-                  <h2 className="text-base font-black uppercase tracking-wider text-white">
-                    {printSheetType === 'semanal' 
-                      ? (language === 'pt' ? 'Folha de Frequência Semanal (Paisagem)' : 'Weekly Attendance Sheet (Landscape)')
-                      : (language === 'pt' ? 'Folha de Frequência Mensal (Paisagem)' : 'Monthly Attendance Sheet (Landscape)')
-                    }
+                  <h2 className="text-base font-black uppercase tracking-wider text-white flex items-center gap-2">
+                    <span>
+                      {printSheetType === 'semanal' 
+                        ? (language === 'pt' ? 'Folha de Frequência Semanal' : 'Weekly Attendance Sheet')
+                        : (language === 'pt' ? 'Folha de Frequência Mensal' : 'Monthly Attendance Sheet')
+                      }
+                    </span>
+                    <span className="px-2 py-0.5 rounded text-[10px] bg-blue-600/30 text-blue-400 border border-blue-500/30 font-mono">
+                      {language === 'pt' ? 'Paisagem A4' : 'A4 Landscape'}
+                    </span>
                   </h2>
                   <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
-                    {alunosInTurma.length} {language === 'pt' ? 'alunos listados' : 'students listed'}
+                    {loadingPrintAlunos 
+                      ? (language === 'pt' ? 'Carregando alunos...' : 'Loading students...')
+                      : `${printAlunos.length} ${language === 'pt' ? 'alunos listados nesta turma' : 'students in this class'}`
+                    }
                   </p>
                 </div>
               </div>
 
               {/* Editable Fields in Controls Bar */}
               <div className="flex flex-wrap items-center gap-3 bg-white/[0.03] p-2 rounded-2xl border border-white/5 w-full lg:w-auto">
+                {/* Turma Selection */}
                 <div className="flex flex-col">
-                  <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest pl-1 mb-1">Tipo</span>
+                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest pl-1 mb-1">
+                    {language === 'pt' ? 'Turma Selecionada' : 'Selected Class'}
+                  </span>
+                  <select
+                    value={printTurma?.id || ''}
+                    onChange={(e) => {
+                      const selectedId = e.target.value;
+                      const found = turmas.find((t: any) => t.id === selectedId);
+                      if (found) {
+                        loadTurmaForAttendancePrint(found, printSheetType);
+                      }
+                    }}
+                    className="px-2.5 py-1.5 bg-slate-900 border border-white/20 rounded-lg text-xs font-bold text-white focus:outline-none focus:border-blue-500 min-w-[200px] cursor-pointer h-[34px]"
+                  >
+                    {turmas.filter((t: any) => !t.internacional && !t.arquivada).map((t: any) => (
+                      <option key={t.id} value={t.id}>
+                        {t.nome} {t.curso?.nome ? `(${t.curso.nome})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex flex-col">
+                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest pl-1 mb-1">Tipo</span>
                   <select
                     value={printSheetType}
                     onChange={(e) => {
@@ -2531,18 +2555,18 @@ function TurmasContent() {
                     }}
                     className="px-2.5 py-1.5 bg-slate-900 border border-white/10 rounded-lg text-xs font-bold text-white focus:outline-none focus:border-blue-500 cursor-pointer h-[34px]"
                   >
-                    <option value="semanal">{language === 'pt' ? 'Semanal (Paisagem)' : 'Weekly (Landscape)'}</option>
                     <option value="mensal">{language === 'pt' ? 'Mensal (Paisagem)' : 'Monthly (Landscape)'}</option>
+                    <option value="semanal">{language === 'pt' ? 'Semanal (Paisagem)' : 'Weekly (Landscape)'}</option>
                   </select>
                 </div>
 
                 {printSheetType === 'semanal' && (
                   <div className="flex flex-col">
-                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest pl-1 mb-1">Semana Selecionada</span>
+                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest pl-1 mb-1">Semana</span>
                     <select
                       value={activeWeekIndex}
                       onChange={(e) => setSelectedWeekIndex(parseInt(e.target.value, 10))}
-                      className="px-2.5 py-1.5 bg-slate-900 border border-white/10 rounded-lg text-xs font-bold text-white focus:outline-none focus:border-blue-500 min-w-[200px] cursor-pointer h-[34px]"
+                      className="px-2.5 py-1.5 bg-slate-900 border border-white/10 rounded-lg text-xs font-bold text-white focus:outline-none focus:border-blue-500 min-w-[180px] cursor-pointer h-[34px]"
                     >
                       {activeWeeksList.map((w) => (
                         <option key={w.index} value={w.index}>
@@ -2554,7 +2578,7 @@ function TurmasContent() {
                 )}
 
                 <div className="flex flex-col flex-1 sm:flex-initial">
-                  <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest pl-1 mb-1">Professor(a)</span>
+                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest pl-1 mb-1">Professor(a)</span>
                   <input
                     type="text"
                     value={printProfessorName}
@@ -2564,7 +2588,7 @@ function TurmasContent() {
                   />
                 </div>
                 <div className="flex flex-col flex-1 sm:flex-initial">
-                  <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest pl-1 mb-1">Turma</span>
+                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest pl-1 mb-1">Nome Turma</span>
                   <input
                     type="text"
                     value={printClassName}
@@ -2574,7 +2598,7 @@ function TurmasContent() {
                   />
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest pl-1 mb-1">Mês/Ano</span>
+                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest pl-1 mb-1">Mês/Ano</span>
                   <input
                     type="text"
                     value={printPeriod}
@@ -2592,7 +2616,7 @@ function TurmasContent() {
               <div className="flex items-center gap-2 w-full md:w-auto justify-end">
                 <button
                   onClick={() => setIsPrintAttendanceOpen(false)}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold text-xs uppercase tracking-widest transition"
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold text-xs uppercase tracking-widest transition cursor-pointer"
                 >
                   {t.common.cancel}
                 </button>
@@ -2604,7 +2628,7 @@ function TurmasContent() {
                       document.body.classList.remove('printing-attendance-sheet');
                     }, 1000);
                   }}
-                  className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-emerald-950 transition-all active:translate-y-px"
+                  className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-emerald-950 transition-all active:translate-y-px cursor-pointer"
                 >
                   <Printer size={16} />
                   {language === 'pt' ? 'Imprimir Frequência' : 'Print Sheet'}
@@ -2765,90 +2789,44 @@ function TurmasContent() {
                       font-weight: 850 !important;
                       font-size: ${printSheetType === 'semanal' ? '8.5px' : '7px'} !important;
                     }
-
-                    #print-attendance-sheet .status-badge-p {
-                      background-color: #10b981 !important;
-                      color: #ffffff !important;
-                      -webkit-print-color-adjust: exact !important;
-                      print-color-adjust: exact !important;
-                    }
-                    #print-attendance-sheet .status-badge-f {
-                      background-color: #ef4444 !important;
-                      color: #ffffff !important;
-                      -webkit-print-color-adjust: exact !important;
-                      print-color-adjust: exact !important;
-                    }
-                    #print-attendance-sheet .status-badge-fj {
-                      background-color: #f59e0b !important;
-                      color: #ffffff !important;
-                      -webkit-print-color-adjust: exact !important;
-                      print-color-adjust: exact !important;
-                    }
-                    #print-attendance-sheet .status-badge-a {
-                      background-color: #f97316 !important;
-                      color: #ffffff !important;
-                      -webkit-print-color-adjust: exact !important;
-                      print-color-adjust: exact !important;
-                    }
-                    #print-attendance-sheet .status-badge-d {
-                      background-color: #0ea5e9 !important;
-                      color: #ffffff !important;
-                      -webkit-print-color-adjust: exact !important;
-                      print-color-adjust: exact !important;
-                    }
                   }
                 `}} />
 
-                {/* Print Header */}
+                {/* Print Header - Exactly Matching the Screenshot Layout */}
                 <div className="mb-3 text-black">
-                  <div className="flex items-center gap-5 border-b-2 border-black pb-3 mb-3">
-                    <div className="w-20 h-20 shrink-0 flex items-center justify-center overflow-hidden bg-white">
-                      <img
-                        src={typeof navalMissionLogo === 'string' ? navalMissionLogo : (navalMissionLogo as any)?.src || navalMissionLogo}
-                        alt="Logo Missão de Assessoria Naval"
-                        className="w-20 h-20 object-contain"
-                        style={{ width: '80px', height: '80px' }}
-                      />
-                    </div>
-                    <div className="flex-1 text-left text-black">
-                      <h1 className="text-base md:text-lg font-extrabold uppercase tracking-tight text-black">
-                        {printSheetType === 'semanal' 
-                          ? (language === 'pt' ? 'FOLHA DE FREQUÊNCIA SEMANAL' : 'WEEKLY ATTENDANCE SHEET')
-                          : (language === 'pt' ? 'FOLHA DE FREQUÊNCIA MENSAL' : 'MONTHLY ATTENDANCE SHEET')
-                        }
-                      </h1>
-                      <p className="text-[9.5px] font-bold text-slate-800 uppercase tracking-widest mt-0.5 font-mono">
-                        {language === 'pt' ? 'MISSÃO DE ASSESSORIA NAVAL DO BRASIL EM SÃO TOMÉ E PRÍNCIPE' : 'BRAZILIAN NAVAL ADVISORY MISSION IN SÃO TOMÉ AND PRÍNCIPE'}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-4 gap-3 font-bold uppercase text-[9.5px] text-black">
+                  <div className="grid grid-cols-4 gap-4 font-bold uppercase text-[9.5px] text-black">
                     <div className="flex flex-col">
-                      <span className="text-slate-800 font-extrabold">{language === 'pt' ? 'Professor(a):' : 'Instructor:'}</span>
-                      <div className="border-b border-black min-h-[24px] flex items-end pb-0.5 text-xs font-black px-1 text-black truncate">
+                      <span className="text-black font-extrabold text-[10px] tracking-wider uppercase">
+                        {language === 'pt' ? 'PROFESSOR(A):' : 'INSTRUCTOR:'}
+                      </span>
+                      <div className="border-b border-black min-h-[26px] flex items-end pb-0.5 text-xs font-black px-1 text-black uppercase truncate">
                         {printProfessorName || '—'}
                       </div>
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-slate-800 font-extrabold">{language === 'pt' ? 'Turma:' : 'Class/Group:'}</span>
-                      <div className="border-b border-black min-h-[24px] flex items-end pb-0.5 text-xs font-black px-1 text-black truncate">
-                        {printClassName || '—'}
+                      <span className="text-black font-extrabold text-[10px] tracking-wider uppercase">
+                        {language === 'pt' ? 'TURMA:' : 'CLASS:'}
+                      </span>
+                      <div className="border-b border-black min-h-[26px] flex items-end pb-0.5 text-xs font-black px-1 text-black uppercase truncate">
+                        {printClassName || printTurma?.nome || '—'}
                       </div>
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-slate-800 font-extrabold">{language === 'pt' ? 'Documento:' : 'Document:'}</span>
-                      <div className="border-b border-black min-h-[24px] flex items-end pb-0.5 text-xs font-black px-1 text-black font-mono truncate">
-                        {viewingTurma?.documento_criacao || viewingTurma?.curso?.documento_criacao || '—'}
+                      <span className="text-black font-extrabold text-[10px] tracking-wider uppercase">
+                        {language === 'pt' ? 'DOCUMENTO:' : 'DOCUMENT:'}
+                      </span>
+                      <div className="border-b border-black min-h-[26px] flex items-end pb-0.5 text-xs font-black px-1 text-black font-mono uppercase truncate">
+                        {printTurma?.documento_criacao || printTurma?.curso?.documento_criacao || viewingTurma?.documento_criacao || viewingTurma?.curso?.documento_criacao || 'ORDEM INTERNA'}
                       </div>
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-slate-800 font-extrabold">
+                      <span className="text-black font-extrabold text-[10px] tracking-wider uppercase">
                         {printSheetType === 'semanal' 
-                          ? (language === 'pt' ? 'Semana / Período:' : 'Week / Period:') 
-                          : (language === 'pt' ? 'Mês/Ano:' : 'Month/Year:')
+                          ? (language === 'pt' ? 'SEMANA / PERÍODO:' : 'WEEK / PERIOD:') 
+                          : (language === 'pt' ? 'MÊS/ANO:' : 'MONTH/YEAR:')
                         }
                       </span>
-                      <div className="border-b border-black min-h-[24px] flex items-end pb-0.5 text-xs font-mono font-black px-1 text-center justify-center text-black truncate">
+                      <div className="border-b border-black min-h-[26px] flex items-end pb-0.5 text-xs font-mono font-black px-1 text-center justify-center text-black uppercase truncate">
                         {printSheetType === 'semanal'
                           ? (activeWeeksList[activeWeekIndex]?.label || printPeriod) 
                           : printPeriod
@@ -2923,8 +2901,8 @@ function TurmasContent() {
                       </tr>
                     </thead>
                     <tbody>
-                      {alunosInTurma.length > 0 ? (
-                        alunosInTurma.map((student, index) => {
+                      {printAlunos.length > 0 ? (
+                        printAlunos.map((student, index) => {
                           // Compute stats for current student
                           let studentP = 0;
                           let studentF = 0;
@@ -3023,25 +3001,25 @@ function TurmasContent() {
                 <div className="print-avoid-break break-inside-avoid">
                   <div className="mt-4 print:mt-1.5 grid grid-cols-2 gap-6 print:gap-3 items-start">
                     <div>
-                      <div className="text-[9.5px] font-black uppercase tracking-wider mb-1 print:mb-0.5">
-                        {language === 'pt' ? 'Legenda:' : 'Legend:'}
+                      <div className="text-[9.5px] font-black uppercase tracking-wider mb-1 print:mb-0.5 text-black">
+                        {language === 'pt' ? 'LEGENDA:' : 'LEGEND:'}
                       </div>
                       <div className="flex select-none flex-wrap gap-x-2.5 gap-y-1 text-[7.5px] font-black border border-black p-1.5 print:p-1 rounded-lg bg-neutral-50 shadow-sm">
-                        <span className="text-emerald-700"><strong>P</strong> = {language === 'pt' ? 'Presente' : 'Present'}</span>
-                        <span className="text-rose-700"><strong>F</strong> = {language === 'pt' ? 'Falta' : 'Absent'}</span>
-                        <span className="text-amber-700"><strong>FJ</strong> = {language === 'pt' ? 'Justificada' : 'Excused'}</span>
-                        <span className="text-orange-700"><strong>A</strong> = {language === 'pt' ? 'Atraso' : 'Delay'}</span>
-                        <span className="text-sky-700"><strong>D</strong> = {language === 'pt' ? 'Dispensado' : 'Exempt'}</span>
-                        <span className="text-red-700 border-l border-black pl-1.5"><strong>FE</strong> = {language === 'pt' ? 'Feriado' : 'Holiday'}</span>
-                        <span className="text-neutral-600 border-l border-black pl-1.5"><strong>S/D</strong> = Sáb/Dom</span>
+                        <span className="text-emerald-700 font-black"><strong>P</strong> = {language === 'pt' ? 'Presente' : 'Present'}</span>
+                        <span className="text-rose-700 font-black"><strong>F</strong> = {language === 'pt' ? 'Falta' : 'Absent'}</span>
+                        <span className="text-amber-700 font-black"><strong>FJ</strong> = {language === 'pt' ? 'Justificada' : 'Excused'}</span>
+                        <span className="text-neutral-900 font-black"><strong>A</strong> = {language === 'pt' ? 'Atraso' : 'Delay'}</span>
+                        <span className="text-sky-700 font-black"><strong>D</strong> = {language === 'pt' ? 'Dispensado' : 'Exempt'}</span>
+                        <span className="text-red-700 border-l border-black pl-1.5 font-black"><strong>FE</strong> = {language === 'pt' ? 'Feriado' : 'Holiday'}</span>
+                        <span className="text-neutral-700 border-l border-black pl-1.5 font-black"><strong>S/D</strong> = Sáb/Dom</span>
                       </div>
                     </div>
                     <div>
-                      <div className="text-[9.5px] font-black uppercase tracking-wider mb-1 print:mb-0.5 flex justify-between items-center">
-                        <span>{language === 'pt' ? 'Feriados Descritos (Motivo):' : 'Holidays Described (Reason):'}</span>
-                        <span className="text-[7px] text-neutral-400 font-bold tracking-widest uppercase">São Tomé e Príncipe</span>
+                      <div className="text-[9.5px] font-black uppercase tracking-wider mb-1 print:mb-0.5 flex justify-between items-center text-black">
+                        <span className="font-extrabold">{language === 'pt' ? 'FERIADOS DESCRITOS (MOTIVO):' : 'HOLIDAYS DESCRIBED (REASON):'}</span>
+                        <span className="text-[7.5px] text-neutral-500 font-bold tracking-widest uppercase">SÃO TOMÉ E PRÍNCIPE</span>
                       </div>
-                      <div className="flex flex-col gap-1 text-[7.5px] font-black border border-dashed border-red-500 p-1.5 print:p-1 rounded-lg bg-red-50/50 min-h-[40px] print:min-h-0 justify-center">
+                      <div className="flex flex-col gap-1 text-[7.5px] font-black border border-dashed border-red-500 p-1.5 print:p-1 rounded-lg bg-red-50/40 min-h-[38px] print:min-h-0 justify-center">
                         {(() => {
                           const activeHolidays = getHolidaysForDays(daysToRender);
 
@@ -3058,8 +3036,8 @@ function TurmasContent() {
                           ) : (
                             <span className="text-neutral-500 italic font-mono uppercase tracking-widest text-[7px] text-center block w-full">
                               {printSheetType === 'semanal'
-                                ? (language === 'pt' ? 'Nenhum feriado national nesta semana.' : 'No national holidays this week.')
-                                : (language === 'pt' ? 'Nenhum feriado nacional neste mês.' : 'No national holidays this month.')
+                                ? (language === 'pt' ? 'NENHUM FERIADO NACIONAL NESTA SEMANA.' : 'NO NATIONAL HOLIDAYS THIS WEEK.')
+                                : (language === 'pt' ? 'NENHUM FERIADO NACIONAL NESTE MÊS.' : 'NO NATIONAL HOLIDAYS THIS MONTH.')
                               }
                             </span>
                           );
