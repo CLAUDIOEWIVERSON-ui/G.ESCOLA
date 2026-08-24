@@ -2493,6 +2493,7 @@ function TurmasContent() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            data-attendance-modal-root="true"
             className="fixed inset-0 z-[80] bg-slate-900/90 overflow-y-auto custom-scrollbar flex flex-col"
           >
             {/* Top Workspace Bar */}
@@ -2508,8 +2509,8 @@ function TurmasContent() {
                 <div>
                   <h2 className="text-base font-black uppercase tracking-wider text-white">
                     {printSheetType === 'semanal' 
-                      ? (language === 'pt' ? 'Folha de Frequência Semanal' : 'Weekly Attendance Sheet')
-                      : (language === 'pt' ? 'Folha de Frequência Mensal' : 'Monthly Attendance Sheet')
+                      ? (language === 'pt' ? 'Folha de Frequência Semanal (Paisagem)' : 'Weekly Attendance Sheet (Landscape)')
+                      : (language === 'pt' ? 'Folha de Frequência Mensal (Paisagem)' : 'Monthly Attendance Sheet (Landscape)')
                     }
                   </h2>
                   <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
@@ -2530,8 +2531,8 @@ function TurmasContent() {
                     }}
                     className="px-2.5 py-1.5 bg-slate-900 border border-white/10 rounded-lg text-xs font-bold text-white focus:outline-none focus:border-blue-500 cursor-pointer h-[34px]"
                   >
-                    <option value="mensal">{language === 'pt' ? 'Mensal' : 'Monthly'}</option>
-                    <option value="semanal">{language === 'pt' ? 'Semanal' : 'Weekly'}</option>
+                    <option value="semanal">{language === 'pt' ? 'Semanal (Paisagem)' : 'Weekly (Landscape)'}</option>
+                    <option value="mensal">{language === 'pt' ? 'Mensal (Paisagem)' : 'Monthly (Landscape)'}</option>
                   </select>
                 </div>
 
@@ -2596,7 +2597,13 @@ function TurmasContent() {
                   {t.common.cancel}
                 </button>
                 <button
-                  onClick={() => window.print()}
+                  onClick={() => {
+                    document.body.classList.add('printing-attendance-sheet');
+                    window.print();
+                    setTimeout(() => {
+                      document.body.classList.remove('printing-attendance-sheet');
+                    }, 1000);
+                  }}
                   className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-emerald-950 transition-all active:translate-y-px"
                 >
                   <Printer size={16} />
@@ -2610,7 +2617,7 @@ function TurmasContent() {
               <div 
                 id="print-attendance-sheet"
                 data-document-sheet="true"
-                className="official-document-sheet bg-white text-black p-[10mm] shadow-2xl relative rounded border border-slate-700 w-[297mm] min-h-[210mm] h-auto shrink-0 font-sans"
+                className="official-document-sheet bg-white text-black p-[8mm] shadow-2xl relative rounded border border-slate-700 w-[297mm] min-h-[210mm] h-auto shrink-0 font-sans"
               >
                 {/* Print Styles */}
                 <style dangerouslySetInnerHTML={{ __html: `
@@ -2622,8 +2629,8 @@ function TurmasContent() {
                   
                   @media print {
                     @page {
-                      size: ${printSheetType === 'semanal' ? 'A4 portrait' : 'A4 landscape'} !important;
-                      margin: 8mm 8mm 8mm 8mm !important;
+                      size: A4 landscape !important;
+                      margin: 6mm 6mm 6mm 6mm !important;
                     }
 
                     /* Reset page context and force standard white/black print output */
@@ -2679,13 +2686,13 @@ function TurmasContent() {
 
                     #print-attendance-sheet {
                       visibility: visible !important;
-                      position: relative !important;
+                      position: static !important;
                       width: 100% !important;
                       max-width: 100% !important;
                       height: auto !important;
                       min-height: 0 !important;
                       max-height: none !important;
-                      margin: 0 !important;
+                      margin: 0 auto !important;
                       padding: 0 !important;
                       background: #ffffff !important;
                       color: #000000 !important;
@@ -2715,7 +2722,7 @@ function TurmasContent() {
 
                     #print-attendance-sheet .print-attendance-table {
                       width: 100% !important;
-                      table-layout: auto !important;
+                      table-layout: fixed !important;
                       border-collapse: collapse !important;
                       border: 1.5px solid #000000 !important;
                       page-break-inside: auto !important;
@@ -2746,8 +2753,8 @@ function TurmasContent() {
                       overflow: visible !important;
                       white-space: normal !important;
                       text-overflow: unset !important;
-                      padding: ${printSheetType === 'semanal' ? '4px 6px' : '2px 2px'} !important;
-                      font-size: ${printSheetType === 'semanal' ? '9.5px' : '8px'} !important;
+                      padding: ${printSheetType === 'semanal' ? '4px 3px' : '2px 1.5px'} !important;
+                      font-size: ${printSheetType === 'semanal' ? '9px' : '7.5px'} !important;
                       background-color: #ffffff !important;
                       -webkit-print-color-adjust: exact !important;
                       print-color-adjust: exact !important;
@@ -2756,7 +2763,7 @@ function TurmasContent() {
                     #print-attendance-sheet .print-attendance-table th {
                       background-color: #f1f5f9 !important;
                       font-weight: 850 !important;
-                      font-size: ${printSheetType === 'semanal' ? '8.5px' : '7.5px'} !important;
+                      font-size: ${printSheetType === 'semanal' ? '8.5px' : '7px'} !important;
                     }
 
                     #print-attendance-sheet .status-badge-p {
@@ -2793,44 +2800,44 @@ function TurmasContent() {
                 `}} />
 
                 {/* Print Header */}
-                <div className="mb-4 text-black">
-                  <div className="flex items-center gap-6 border-b-2 border-black pb-4 mb-4">
-                    <div className="w-24 h-24 shrink-0 flex items-center justify-center overflow-hidden bg-white">
+                <div className="mb-3 text-black">
+                  <div className="flex items-center gap-5 border-b-2 border-black pb-3 mb-3">
+                    <div className="w-20 h-20 shrink-0 flex items-center justify-center overflow-hidden bg-white">
                       <img
                         src={typeof navalMissionLogo === 'string' ? navalMissionLogo : (navalMissionLogo as any)?.src || navalMissionLogo}
                         alt="Logo Missão de Assessoria Naval"
-                        className="w-24 h-24 object-contain"
-                        style={{ width: '96px', height: '96px' }}
+                        className="w-20 h-20 object-contain"
+                        style={{ width: '80px', height: '80px' }}
                       />
                     </div>
                     <div className="flex-1 text-left text-black">
-                      <h1 className="text-lg md:text-xl font-extrabold uppercase tracking-tight text-black">
+                      <h1 className="text-base md:text-lg font-extrabold uppercase tracking-tight text-black">
                         {printSheetType === 'semanal' 
                           ? (language === 'pt' ? 'FOLHA DE FREQUÊNCIA SEMANAL' : 'WEEKLY ATTENDANCE SHEET')
                           : (language === 'pt' ? 'FOLHA DE FREQUÊNCIA MENSAL' : 'MONTHLY ATTENDANCE SHEET')
                         }
                       </h1>
-                      <p className="text-[10px] font-bold text-slate-800 uppercase tracking-widest mt-1 font-mono">
+                      <p className="text-[9.5px] font-bold text-slate-800 uppercase tracking-widest mt-0.5 font-mono">
                         {language === 'pt' ? 'MISSÃO DE ASSESSORIA NAVAL DO BRASIL EM SÃO TOMÉ E PRÍNCIPE' : 'BRAZILIAN NAVAL ADVISORY MISSION IN SÃO TOMÉ AND PRÍNCIPE'}
                       </p>
                     </div>
                   </div>
-                  <div className="grid grid-cols-4 gap-4 font-bold uppercase text-[10px] text-black">
+                  <div className="grid grid-cols-4 gap-3 font-bold uppercase text-[9.5px] text-black">
                     <div className="flex flex-col">
                       <span className="text-slate-800 font-extrabold">{language === 'pt' ? 'Professor(a):' : 'Instructor:'}</span>
-                      <div className="border-b border-black min-h-[26px] flex items-end pb-0.5 text-xs font-black px-1 text-black">
+                      <div className="border-b border-black min-h-[24px] flex items-end pb-0.5 text-xs font-black px-1 text-black truncate">
                         {printProfessorName || '—'}
                       </div>
                     </div>
                     <div className="flex flex-col">
                       <span className="text-slate-800 font-extrabold">{language === 'pt' ? 'Turma:' : 'Class/Group:'}</span>
-                      <div className="border-b border-black min-h-[26px] flex items-end pb-0.5 text-xs font-black px-1 text-black">
+                      <div className="border-b border-black min-h-[24px] flex items-end pb-0.5 text-xs font-black px-1 text-black truncate">
                         {printClassName || '—'}
                       </div>
                     </div>
                     <div className="flex flex-col">
                       <span className="text-slate-800 font-extrabold">{language === 'pt' ? 'Documento:' : 'Document:'}</span>
-                      <div className="border-b border-black min-h-[26px] flex items-end pb-0.5 text-xs font-black px-1 text-black font-mono">
+                      <div className="border-b border-black min-h-[24px] flex items-end pb-0.5 text-xs font-black px-1 text-black font-mono truncate">
                         {viewingTurma?.documento_criacao || viewingTurma?.curso?.documento_criacao || '—'}
                       </div>
                     </div>
@@ -2841,7 +2848,7 @@ function TurmasContent() {
                           : (language === 'pt' ? 'Mês/Ano:' : 'Month/Year:')
                         }
                       </span>
-                      <div className="border-b border-black min-h-[26px] flex items-end pb-0.5 text-xs font-mono font-black px-1 text-center justify-center text-black">
+                      <div className="border-b border-black min-h-[24px] flex items-end pb-0.5 text-xs font-mono font-black px-1 text-center justify-center text-black truncate">
                         {printSheetType === 'semanal'
                           ? (activeWeeksList[activeWeekIndex]?.label || printPeriod) 
                           : printPeriod
@@ -2852,15 +2859,15 @@ function TurmasContent() {
                 </div>
 
                 {/* Table container wrapping the exact styled attendance grid */}
-                <div className="overflow-visible mt-3">
-                  <table className="print-attendance-table w-full border-collapse border border-black">
+                <div className="overflow-visible mt-2">
+                  <table className="print-attendance-table w-full border-collapse border border-black table-fixed">
                     <thead>
-                      <tr className="bg-neutral-100 text-[8px] font-bold uppercase text-center h-5">
-                        <th className="w-[30px] border border-black p-1 text-center font-black text-black">#</th>
+                      <tr className="bg-neutral-100 text-[8px] font-bold uppercase text-center h-6">
+                        <th className="w-[28px] border border-black p-0.5 text-center font-black text-black">#</th>
                         <th 
                           className={cn(
-                            "border border-black p-1 text-left pl-2 text-[9px] font-black text-black",
-                            printSheetType === 'semanal' ? "w-[300px]" : "w-[200px]"
+                            "border border-black p-1 text-left pl-2 font-black text-black",
+                            printSheetType === 'semanal' ? "w-[240px] text-[9px]" : "w-[175px] text-[8.5px]"
                           )}
                         >
                           {language === 'pt' ? 'Nome do Aluno' : 'Student Name'}
@@ -2873,17 +2880,17 @@ function TurmasContent() {
                             <th 
                               key={`${day.year}-${day.month}-${day.dayNum}`} 
                               className={cn(
-                                "border border-black p-0.5 text-center font-mono font-black text-[8px] text-black",
-                                printSheetType === 'semanal' ? "w-[38px]" : "w-[18px]",
+                                "border border-black p-0.5 text-center font-mono font-black text-black",
+                                printSheetType === 'semanal' ? "w-[42px] text-[8px]" : "w-[20px] text-[7.5px]",
                                 !status.isValid ? "bg-neutral-200 text-neutral-600" :
                                 status.label === 'FE' ? "bg-red-100 text-red-800" :
                                 (status.label === 'S' || status.label === 'D') ? "bg-neutral-100 text-neutral-800" : ""
                               )}
                             >
                               <div className="flex flex-col items-center justify-center leading-tight">
-                                <span className={cn(printSheetType === 'semanal' ? "text-[9px]" : "text-[8px]", "font-black")}>{day.dayNum}</span>
+                                <span className={cn(printSheetType === 'semanal' ? "text-[8.5px]" : "text-[7.5px]", "font-black")}>{day.dayNum}</span>
                                 {printSheetType === 'semanal' ? (
-                                  <span className="text-[6.5px] uppercase text-neutral-600 font-black">{getWeekdayName(dayOfWeek)}</span>
+                                  <span className="text-[7px] uppercase text-neutral-600 font-black">{getWeekdayName(dayOfWeek)}</span>
                                 ) : (
                                   status.isValid && (status.label === 'FE' || status.label === 'S' || status.label === 'D') && (
                                     <span className="text-[5.5px] font-black text-red-600">{status.label}</span>
@@ -2893,44 +2900,104 @@ function TurmasContent() {
                             </th>
                           );
                         })}
+
+                        {/* Summary Columns for Weekly and Monthly */}
+                        <th className={cn("border border-black p-0.5 text-center font-black text-emerald-800 bg-emerald-50/50", printSheetType === 'semanal' ? "w-[36px] text-[8px]" : "w-[22px] text-[7px]")}>
+                          P
+                        </th>
+                        <th className={cn("border border-black p-0.5 text-center font-black text-rose-800 bg-rose-50/50", printSheetType === 'semanal' ? "w-[36px] text-[8px]" : "w-[22px] text-[7px]")}>
+                          F
+                        </th>
+                        <th className={cn("border border-black p-0.5 text-center font-black text-amber-800 bg-amber-50/50", printSheetType === 'semanal' ? "w-[36px] text-[8px]" : "w-[22px] text-[7px]")}>
+                          FJ
+                        </th>
+                        {printSheetType === 'semanal' ? (
+                          <th className="border border-black p-0.5 text-center font-black text-black w-[110px] text-[8px]">
+                            {language === 'pt' ? 'Rubrica / Visto' : 'Signature'}
+                          </th>
+                        ) : (
+                          <th className="border border-black p-0.5 text-center font-black text-blue-900 bg-blue-50/50 w-[28px] text-[7px]">
+                            %
+                          </th>
+                        )}
                       </tr>
                     </thead>
                     <tbody>
                       {alunosInTurma.length > 0 ? (
-                        alunosInTurma.map((student, index) => (
-                          <tr key={student.id || index} className={cn("text-[8px] font-bold uppercase", printSheetType === 'semanal' ? "h-[5.5mm]" : "h-[4.2mm]")}>
-                            <td className="border border-black text-center font-mono font-bold text-[8px] text-black px-1">
-                              {index + 1}
-                            </td>
-                            <td 
-                              className={cn(
-                                "border border-black px-2 text-[9px] font-sans font-bold text-black",
-                                printSheetType === 'semanal' ? "max-w-[300px]" : "max-w-[200px]"
-                              )}
-                            >
-                              <div className="flex flex-col justify-center py-0.5 leading-tight text-black">
-                                <span className="text-[8.5px] font-bold text-black break-words">
-                                  {student.posto_graduacao || student.nome_guerra ? `${student.posto_graduacao || ''} ${student.nome_guerra || student.nome}`.trim() : student.nome}
-                                </span>
-                              </div>
-                            </td>
-                            {daysToRender.map((day) => {
-                              const status = getDayStatus(day.dayNum, day.month, day.year, student.id);
-                              return (
-                                <td 
-                                  key={`${day.year}-${day.month}-${day.dayNum}`} 
-                                  className={cn(
-                                    "border border-black p-0 text-center font-black font-mono select-none text-black",
-                                    printSheetType === 'semanal' ? "text-[9px]" : "text-[7.5px]",
-                                    status.bgClass
-                                  )}
-                                >
-                                  {status.label}
+                        alunosInTurma.map((student, index) => {
+                          // Compute stats for current student
+                          let studentP = 0;
+                          let studentF = 0;
+                          let studentFJ = 0;
+                          let studentA = 0;
+                          let studentD = 0;
+
+                          daysToRender.forEach((day) => {
+                            const st = getDayStatus(day.dayNum, day.month, day.year, student.id);
+                            if (st.label === 'P') studentP++;
+                            else if (st.label === 'F') studentF++;
+                            else if (st.label === 'FJ') studentFJ++;
+                            else if (st.label === 'A') studentA++;
+                            else if (st.label === 'D') studentD++;
+                          });
+
+                          const totalRecorded = studentP + studentF + studentFJ;
+                          const pctFreq = totalRecorded > 0 ? Math.round((studentP / totalRecorded) * 100) : null;
+
+                          return (
+                            <tr key={student.id || index} className={cn("text-[8px] font-bold uppercase", printSheetType === 'semanal' ? "h-[5.5mm]" : "h-[4.2mm]")}>
+                              <td className="border border-black text-center font-mono font-bold text-[8px] text-black px-0.5">
+                                {index + 1}
+                              </td>
+                              <td 
+                                className={cn(
+                                  "border border-black px-1.5 text-[8.5px] font-sans font-bold text-black",
+                                  printSheetType === 'semanal' ? "w-[240px]" : "w-[175px]"
+                                )}
+                              >
+                                <div className="flex flex-col justify-center py-0.5 leading-tight text-black">
+                                  <span className="text-[8.5px] font-bold text-black truncate">
+                                    {student.posto_graduacao || student.nome_guerra ? `${student.posto_graduacao || ''} ${student.nome_guerra || student.nome}`.trim() : student.nome}
+                                  </span>
+                                </div>
+                              </td>
+                              {daysToRender.map((day) => {
+                                const status = getDayStatus(day.dayNum, day.month, day.year, student.id);
+                                return (
+                                  <td 
+                                    key={`${day.year}-${day.month}-${day.dayNum}`} 
+                                    className={cn(
+                                      "border border-black p-0 text-center font-black font-mono select-none text-black",
+                                      printSheetType === 'semanal' ? "text-[8.5px]" : "text-[7px]",
+                                      status.bgClass
+                                    )}
+                                  >
+                                    {status.label}
+                                  </td>
+                                );
+                              })}
+
+                              {/* Summary Totals */}
+                              <td className="border border-black p-0 text-center font-bold font-mono text-emerald-800 bg-emerald-50/20 text-[8px]">
+                                {studentP > 0 ? studentP : '—'}
+                              </td>
+                              <td className="border border-black p-0 text-center font-bold font-mono text-rose-800 bg-rose-50/20 text-[8px]">
+                                {studentF > 0 ? studentF : '—'}
+                              </td>
+                              <td className="border border-black p-0 text-center font-bold font-mono text-amber-800 bg-amber-50/20 text-[8px]">
+                                {studentFJ > 0 ? studentFJ : '—'}
+                              </td>
+                              {printSheetType === 'semanal' ? (
+                                <td className="border border-black p-0 text-center text-[7px] text-neutral-300">
                                 </td>
-                              );
-                            })}
-                          </tr>
-                        ))
+                              ) : (
+                                <td className="border border-black p-0 text-center font-bold font-mono text-blue-900 bg-blue-50/20 text-[7px]">
+                                  {pctFreq !== null ? `${pctFreq}%` : '—'}
+                                </td>
+                              )}
+                            </tr>
+                          );
+                        })
                       ) : (
                         <tr className="h-[4.2mm] text-[8px] font-bold uppercase">
                           <td className="border border-black text-center font-mono font-semibold text-[8px] text-black">
@@ -2942,6 +3009,10 @@ function TurmasContent() {
                           {daysToRender.map((day) => (
                             <td key={`${day.year}-${day.month}-${day.dayNum}`} className="border border-black p-0 bg-neutral-100"></td>
                           ))}
+                          <td className="border border-black"></td>
+                          <td className="border border-black"></td>
+                          <td className="border border-black"></td>
+                          <td className="border border-black"></td>
                         </tr>
                       )}
                     </tbody>
@@ -2950,27 +3021,27 @@ function TurmasContent() {
 
                 {/* Legenda & Signature Section flowing naturally directly below the sheet in the blank space */}
                 <div className="print-avoid-break break-inside-avoid">
-                  <div className="mt-5 print:mt-1.5 grid grid-cols-2 gap-8 print:gap-4 items-start">
+                  <div className="mt-4 print:mt-1.5 grid grid-cols-2 gap-6 print:gap-3 items-start">
                     <div>
-                      <div className="text-[10px] font-black uppercase tracking-wider mb-1.5 print:mb-0.5">
+                      <div className="text-[9.5px] font-black uppercase tracking-wider mb-1 print:mb-0.5">
                         {language === 'pt' ? 'Legenda:' : 'Legend:'}
                       </div>
-                      <div className="flex select-none flex-wrap gap-x-3 gap-y-1 text-[8px] font-black border border-black p-2 print:p-1 rounded-lg bg-neutral-50 shadow-sm">
+                      <div className="flex select-none flex-wrap gap-x-2.5 gap-y-1 text-[7.5px] font-black border border-black p-1.5 print:p-1 rounded-lg bg-neutral-50 shadow-sm">
                         <span className="text-emerald-700"><strong>P</strong> = {language === 'pt' ? 'Presente' : 'Present'}</span>
                         <span className="text-rose-700"><strong>F</strong> = {language === 'pt' ? 'Falta' : 'Absent'}</span>
                         <span className="text-amber-700"><strong>FJ</strong> = {language === 'pt' ? 'Justificada' : 'Excused'}</span>
                         <span className="text-orange-700"><strong>A</strong> = {language === 'pt' ? 'Atraso' : 'Delay'}</span>
                         <span className="text-sky-700"><strong>D</strong> = {language === 'pt' ? 'Dispensado' : 'Exempt'}</span>
-                        <span className="text-red-700 border-l border-black pl-2"><strong>FE</strong> = {language === 'pt' ? 'Feriado' : 'Holiday'}</span>
-                        <span className="text-neutral-600 border-l border-black pl-2"><strong>S/D</strong> = Sáb/Dom</span>
+                        <span className="text-red-700 border-l border-black pl-1.5"><strong>FE</strong> = {language === 'pt' ? 'Feriado' : 'Holiday'}</span>
+                        <span className="text-neutral-600 border-l border-black pl-1.5"><strong>S/D</strong> = Sáb/Dom</span>
                       </div>
                     </div>
                     <div>
-                      <div className="text-[10px] font-black uppercase tracking-wider mb-1.5 print:mb-0.5 flex justify-between items-center">
+                      <div className="text-[9.5px] font-black uppercase tracking-wider mb-1 print:mb-0.5 flex justify-between items-center">
                         <span>{language === 'pt' ? 'Feriados Descritos (Motivo):' : 'Holidays Described (Reason):'}</span>
                         <span className="text-[7px] text-neutral-400 font-bold tracking-widest uppercase">São Tomé e Príncipe</span>
                       </div>
-                      <div className="flex flex-col gap-1 text-[7.5px] font-black border border-dashed border-red-500 p-2 print:p-1 rounded-lg bg-red-50/50 min-h-[46px] print:min-h-0 justify-center">
+                      <div className="flex flex-col gap-1 text-[7.5px] font-black border border-dashed border-red-500 p-1.5 print:p-1 rounded-lg bg-red-50/50 min-h-[40px] print:min-h-0 justify-center">
                         {(() => {
                           const activeHolidays = getHolidaysForDays(daysToRender);
 
@@ -2981,13 +3052,13 @@ function TurmasContent() {
                                   FE {holiday.day}/{String(holiday.month + 1).padStart(2, '0')}
                                 </span>
                                 <span className="font-bold shrink-0">{holiday.name}:</span>
-                                <span className="font-medium text-neutral-700 normal-case italic line-clamp-2">{holiday.meaning}</span>
+                                <span className="font-medium text-neutral-700 normal-case italic line-clamp-1">{holiday.meaning}</span>
                               </div>
                             ))
                           ) : (
                             <span className="text-neutral-500 italic font-mono uppercase tracking-widest text-[7px] text-center block w-full">
                               {printSheetType === 'semanal'
-                                ? (language === 'pt' ? 'Nenhum feriado nacional nesta semana.' : 'No national holidays this week.')
+                                ? (language === 'pt' ? 'Nenhum feriado national nesta semana.' : 'No national holidays this week.')
                                 : (language === 'pt' ? 'Nenhum feriado nacional neste mês.' : 'No national holidays this month.')
                               }
                             </span>
@@ -2998,7 +3069,7 @@ function TurmasContent() {
                   </div>
 
                   {/* Observation Warning Block */}
-                  <div className="mt-4 print:mt-1 border border-red-500 bg-red-50/50 p-2.5 print:p-1 rounded-lg text-center font-extrabold text-[8.5px] print:text-[7.5px] text-red-800 tracking-wide leading-relaxed">
+                  <div className="mt-3 print:mt-1 border border-red-500 bg-red-50/50 p-2 print:p-1 rounded-lg text-center font-extrabold text-[8px] print:text-[7.5px] text-red-800 tracking-wide leading-relaxed">
                     {language === 'pt' 
                       ? 'OBS.: Esta folha de presença deverá ser entregue diariamente ao Coordenador de Cursos para lançamento no controle do aluno.' 
                       : 'OBS.: This attendance sheet must be submitted daily to the Course Coordinator for entry into the student record.'
@@ -3006,21 +3077,21 @@ function TurmasContent() {
                   </div>
 
                   {/* Signatures Row */}
-                  <div className="mt-6 print:mt-4 grid grid-cols-2 gap-12 text-center text-[9px] uppercase font-bold text-black print-avoid-break">
+                  <div className="mt-5 print:mt-3 grid grid-cols-2 gap-12 text-center text-[9px] uppercase font-bold text-black print-avoid-break">
                     <div className="flex flex-col items-center">
-                      <div className="w-full max-w-[280px] border-b border-black mb-1.5 h-6"></div>
+                      <div className="w-full max-w-[260px] border-b border-black mb-1 h-5"></div>
                       <span className="text-black font-extrabold">{printProfessorName || (language === 'pt' ? 'Assinatura do Instrutor' : 'Instructor Signature')}</span>
-                      <span className="text-[7.5px] text-slate-700 tracking-wider">{language === 'pt' ? 'Instrutor / Professor Responsável' : 'Responsible Instructor'}</span>
+                      <span className="text-[7px] text-slate-700 tracking-wider">{language === 'pt' ? 'Instrutor / Professor Responsável' : 'Responsible Instructor'}</span>
                     </div>
                     <div className="flex flex-col items-center">
-                      <div className="w-full max-w-[280px] border-b border-black mb-1.5 h-6"></div>
+                      <div className="w-full max-w-[260px] border-b border-black mb-1 h-5"></div>
                       <span className="text-black font-extrabold">{language === 'pt' ? 'Coordenação de Cursos' : 'Course Coordination'}</span>
-                      <span className="text-[7.5px] text-slate-700 tracking-wider">{language === 'pt' ? 'Visto da Coordenação Pedagógica' : 'Pedagogical Coordination'}</span>
+                      <span className="text-[7px] text-slate-700 tracking-wider">{language === 'pt' ? 'Visto da Coordenação Pedagógica' : 'Pedagogical Coordination'}</span>
                     </div>
                   </div>
 
                   {/* Micro-printed controlled copy warning centered */}
-                  <div className="mt-5 print:mt-3 text-center text-[7px] font-bold tracking-[0.34em] text-neutral-600 uppercase w-full">
+                  <div className="mt-4 print:mt-2 text-center text-[6.5px] font-bold tracking-[0.34em] text-neutral-600 uppercase w-full">
                     {language === 'pt' ? 'Documento de uso oficial - Cópia controlada' : 'Official Document - Controlled Copy'}
                   </div>
                 </div>

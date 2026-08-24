@@ -805,8 +805,8 @@ export default function FrequenciaPage() {
 
                 @media print {
                   @page {
-                    size: ${mapGranularity === 'week' ? 'A4 portrait' : 'A4 landscape'};
-                    margin: 8mm 8mm 8mm 8mm;
+                    size: A4 landscape !important;
+                    margin: 6mm 6mm 6mm 6mm !important;
                   }
 
                   /* Reset page context and force standard white/black print output */
