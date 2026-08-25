@@ -29,7 +29,8 @@ import {
   Layers,
   Settings2,
   FileSpreadsheet,
-  Check
+  Check,
+  Download
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
@@ -39,6 +40,7 @@ import militaryMaleAvatar from '@/src/assets/images/avatar_military_male_1779964
 import militaryFemaleAvatar from '@/src/assets/images/avatar_military_female_1779964903107.png';
 import navalMissionLogo from '@/src/assets/images/regenerated_image_1782409801823.png';
 import { cn, getCleanTurmaName } from '@/lib/utils';
+import { downloadElementAsPDF, printElementIsolated } from '@/lib/printDocumentUtils';
 import { toast } from 'sonner';
 import { 
   format, 
@@ -166,6 +168,7 @@ export default function FrequenciaPage() {
   const [printFrequencia, setPrintFrequencia] = useState<any[]>([]);
   const [loadingFrequencia, setLoadingFrequencia] = useState(false);
   const [loadingPrintAlunos, setLoadingPrintAlunos] = useState(false);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
   const activeTurma = useMemo(() => turmas.find(t => t.id === selectedTurma), [turmas, selectedTurma]);
   const activeCurso = useMemo(() => cursos.find(c => c.id === (selectedCurso || activeTurma?.curso_id)), [cursos, selectedCurso, activeTurma]);
@@ -2038,17 +2041,34 @@ export default function FrequenciaPage() {
                     />
                   </div>
 
-                  {/* Print Action Button */}
-                  <div className="flex items-end pt-2 xl:pt-0">
+                  {/* Action Buttons */}
+                  <div className="flex flex-wrap items-center gap-2 pt-2 xl:pt-0">
+                    <button
+                      onClick={async () => {
+                        setIsGeneratingPDF(true);
+                        const cleanTurma = (activePrintTurma?.nome || 'turma').replace(/[^a-zA-Z0-9_-]/g, '_');
+                        const cleanPeriod = (printPeriod || 'periodo').replace(/\//g, '-');
+                        const filename = `folha_frequencia_${printSheetType}_${cleanTurma}_${cleanPeriod}.pdf`;
+                        await downloadElementAsPDF('print-attendance-sheet', {
+                          orientation: 'landscape',
+                          filename,
+                          scale: 2
+                        });
+                        setIsGeneratingPDF(false);
+                      }}
+                      disabled={isGeneratingPDF}
+                      className="flex items-center gap-2 px-3.5 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-lg shadow-blue-600/30 transition-all cursor-pointer active:scale-95 shrink-0 h-[34px]"
+                      title="Baixar folha em arquivo PDF"
+                    >
+                      {isGeneratingPDF ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+                      <span>{language === 'pt' ? 'BAIXAR EM PDF' : 'DOWNLOAD PDF'}</span>
+                    </button>
                     <button
                       onClick={() => {
-                        document.body.classList.add('printing-attendance-sheet');
-                        setTimeout(() => {
-                          window.print();
-                          setTimeout(() => {
-                            document.body.classList.remove('printing-attendance-sheet');
-                          }, 1500);
-                        }, 100);
+                        printElementIsolated(
+                          'print-attendance-sheet',
+                          `Folha de Frequência ${printSheetType === 'semanal' ? 'Semanal' : 'Mensal'} - ${activePrintTurma?.nome || ''}`
+                        );
                       }}
                       className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black shadow-lg shadow-emerald-600/30 transition-all cursor-pointer active:scale-95 shrink-0 h-[34px]"
                     >
@@ -2065,7 +2085,7 @@ export default function FrequenciaPage() {
                   id="print-attendance-sheet"
                   data-print-landscape="true"
                   data-document-sheet="true"
-                  className="bg-white text-black p-4 sm:p-6 shadow-2xl rounded-sm w-full max-w-[297mm] min-h-[210mm] flex flex-col justify-between"
+                  className="bg-white text-black p-3 sm:p-5 shadow-2xl rounded-sm w-full max-w-[297mm] h-auto flex flex-col justify-between box-border"
                   style={{
                     fontFamily: "'Liberation Sans', Arial, Helvetica, sans-serif"
                   }}

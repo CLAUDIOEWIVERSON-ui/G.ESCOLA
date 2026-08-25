@@ -6,9 +6,10 @@ import { supabase } from '@/lib/supabase/client';
 import { useTurmas, useCursos, useDisciplinas } from '@/hooks/useCachedData';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
-import { Plus, Search, Layers as LayersIcon, Library, Calendar, Clock, MapPin, Pencil, Trash2, Loader2, CheckCircle2, RefreshCcw, Users, Mail, Phone, Building, Camera, MessageCircle, XCircle, FileText, X, GraduationCap, School, ChevronLeft, ChevronRight, Printer, Monitor, Globe, Anchor, Swords } from 'lucide-react';
+import { Plus, Search, Layers as LayersIcon, Library, Calendar, Clock, MapPin, Pencil, Trash2, Loader2, CheckCircle2, RefreshCcw, Users, Mail, Phone, Building, Camera, MessageCircle, XCircle, FileText, X, GraduationCap, School, ChevronLeft, ChevronRight, Printer, Monitor, Globe, Anchor, Swords, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn, getCleanTurmaName } from '@/lib/utils';
+import { downloadElementAsPDF, printElementIsolated } from '@/lib/printDocumentUtils';
 import Modal from '@/components/Modal';
 import StudentDetailEditModal from '@/components/StudentDetailEditModal';
 import { getCardStyleForItem, getCardColorSettings, CardColorSettings } from '@/lib/cardColors';
@@ -119,6 +120,8 @@ function TurmasContent() {
   const [selectedWeekIndex, setSelectedWeekIndex] = useState<number | null>(null);
   const [printFrequencia, setPrintFrequencia] = useState<any[]>([]);
   const [loadingFrequencia, setLoadingFrequencia] = useState(false);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [isGeneratingRosterPDF, setIsGeneratingRosterPDF] = useState(false);
 
   // Student Roster Print state
   const [isPrintRosterOpen, setIsPrintRosterOpen] = useState(false);
@@ -2623,7 +2626,7 @@ function TurmasContent() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center gap-2 w-full md:w-auto justify-end">
+              <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
                 <button
                   onClick={() => setIsPrintAttendanceOpen(false)}
                   className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold text-xs uppercase tracking-widest transition cursor-pointer"
@@ -2631,32 +2634,47 @@ function TurmasContent() {
                   {t.common.cancel}
                 </button>
                 <button
-                  onClick={() => {
-                    document.body.classList.add('printing-attendance-sheet');
-                    requestAnimationFrame(() => {
-                      setTimeout(() => {
-                        window.print();
-                        setTimeout(() => {
-                          document.body.classList.remove('printing-attendance-sheet');
-                        }, 1500);
-                      }, 50);
+                  onClick={async () => {
+                    setIsGeneratingPDF(true);
+                    const cleanName = (printClassName || printTurma?.nome || 'turma').replace(/[^a-zA-Z0-9_-]/g, '_');
+                    const cleanPeriod = (printPeriod || 'periodo').replace(/\//g, '-');
+                    const filename = `folha_frequencia_${printSheetType}_${cleanName}_${cleanPeriod}.pdf`;
+                    await downloadElementAsPDF('print-attendance-sheet', {
+                      orientation: 'landscape',
+                      filename,
+                      scale: 2
                     });
+                    setIsGeneratingPDF(false);
+                  }}
+                  disabled={isGeneratingPDF}
+                  className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl font-bold text-xs uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-blue-950 transition-all active:translate-y-px cursor-pointer"
+                  title="Baixar folha em arquivo PDF"
+                >
+                  {isGeneratingPDF ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+                  <span>{language === 'pt' ? 'Baixar em PDF' : 'Download PDF'}</span>
+                </button>
+                <button
+                  onClick={() => {
+                    printElementIsolated(
+                      'print-attendance-sheet',
+                      `Folha de Frequência ${printSheetType === 'semanal' ? 'Semanal' : 'Mensal'} - ${printClassName || printTurma?.nome || ''}`
+                    );
                   }}
                   className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-emerald-950 transition-all active:translate-y-px cursor-pointer"
                 >
                   <Printer size={16} />
-                  {language === 'pt' ? 'Imprimir Frequência' : 'Print Sheet'}
+                  <span>{language === 'pt' ? 'Imprimir Frequência' : 'Print Sheet'}</span>
                 </button>
               </div>
             </div>
 
             {/* Printable canvas container centerer with Zoom styling */}
-            <div className="flex-1 flex justify-center items-start p-6 bg-slate-900 overflow-auto custom-scrollbar">
+            <div className="flex-1 flex justify-center items-start p-4 sm:p-6 bg-slate-900 overflow-auto custom-scrollbar">
               <div 
                 id="print-attendance-sheet"
                 data-print-landscape="true"
                 data-document-sheet="true"
-                className="official-document-sheet bg-white text-black p-[8mm] shadow-2xl relative rounded border border-slate-700 w-[297mm] min-h-[210mm] h-auto shrink-0 font-sans"
+                className="official-document-sheet bg-white text-black p-[4mm] sm:p-[6mm] shadow-2xl relative rounded border border-slate-700 w-[297mm] max-w-[297mm] h-auto shrink-0 font-sans box-border"
               >
                 {/* Print Styles */}
                 <style dangerouslySetInnerHTML={{ __html: `
@@ -3155,7 +3173,7 @@ function TurmasContent() {
                   />
                 </div>
 
-                <div className="flex items-center gap-2 mt-auto">
+                <div className="flex flex-wrap items-center gap-2 mt-auto">
                   <button
                     onClick={() => setIsPrintRosterOpen(false)}
                     className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold text-xs uppercase tracking-widest transition cursor-pointer"
@@ -3163,11 +3181,30 @@ function TurmasContent() {
                     {t.common.cancel}
                   </button>
                   <button
-                    onClick={() => window.print()}
+                    onClick={async () => {
+                      setIsGeneratingRosterPDF(true);
+                      const cleanTurma = (rosterTurma?.nome || 'turma').replace(/[^a-zA-Z0-9_-]/g, '_');
+                      await downloadElementAsPDF('print-students-roster-sheet', {
+                        orientation: 'portrait',
+                        filename: `relacao_alunos_fotos_${cleanTurma}.pdf`,
+                        scale: 2
+                      });
+                      setIsGeneratingRosterPDF(false);
+                    }}
+                    disabled={isGeneratingRosterPDF}
+                    className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl font-bold text-xs uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-blue-950 transition-all active:translate-y-px cursor-pointer"
+                  >
+                    {isGeneratingRosterPDF ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+                    <span>{language === 'pt' ? 'Baixar em PDF' : 'Download PDF'}</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      printElementIsolated('print-students-roster-sheet', `Relação Nominal de Alunos - ${rosterTurma?.nome || ''}`);
+                    }}
                     className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-indigo-950 transition-all active:translate-y-px cursor-pointer"
                   >
                     <Printer size={16} />
-                    {language === 'pt' ? 'Imprimir Relação' : 'Print Roster'}
+                    <span>{language === 'pt' ? 'Imprimir Relação' : 'Print Roster'}</span>
                   </button>
                 </div>
               </div>
