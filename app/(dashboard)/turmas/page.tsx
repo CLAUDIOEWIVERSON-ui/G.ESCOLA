@@ -2688,21 +2688,42 @@ function TurmasContent() {
                       print-color-adjust: exact !important;
                     }
 
-                    body * {
-                      visibility: hidden;
+                    body.printing-attendance-sheet > *:not([data-attendance-modal-root="true"]) {
+                      display: none !important;
+                      visibility: hidden !important;
+                      height: 0 !important;
+                      max-height: 0 !important;
+                      overflow: hidden !important;
                     }
 
-                    #print-attendance-sheet,
-                    #print-attendance-sheet * {
-                      visibility: visible !important;
-                      -webkit-print-color-adjust: exact !important;
-                      print-color-adjust: exact !important;
+                    [data-attendance-modal-root="true"] {
+                      position: static !important;
+                      inset: auto !important;
+                      width: 100% !important;
+                      height: auto !important;
+                      min-height: 0 !important;
+                      max-height: none !important;
+                      background: #ffffff !important;
+                      display: block !important;
+                      overflow: visible !important;
+                      padding: 0 !important;
+                      margin: 0 !important;
+                      box-shadow: none !important;
+                    }
+
+                    .no-print,
+                    [data-attendance-modal-root="true"] > .no-print,
+                    header, nav, aside, button, input, select {
+                      display: none !important;
+                      visibility: hidden !important;
+                      height: 0 !important;
+                      margin: 0 !important;
+                      padding: 0 !important;
+                      border: none !important;
                     }
 
                     #print-attendance-sheet {
-                      position: absolute !important;
-                      left: 0 !important;
-                      top: 0 !important;
+                      position: static !important;
                       width: 100% !important;
                       max-width: 297mm !important;
                       height: auto !important;
@@ -2711,19 +2732,25 @@ function TurmasContent() {
                       margin: 0 auto !important;
                       padding: 2mm 3mm !important;
                       background: #ffffff !important;
+                      background-color: #ffffff !important;
                       color: #000000 !important;
                       box-shadow: none !important;
                       border: none !important;
                       display: block !important;
-                      page-break-inside: auto !important;
-                      break-inside: auto !important;
+                      page-break-inside: avoid !important;
+                      break-inside: avoid !important;
+                      page-break-after: avoid !important;
+                      break-after: avoid !important;
                       box-sizing: border-box !important;
                     }
 
+                    #print-attendance-sheet,
                     #print-attendance-sheet * {
                       color: #000000 !important;
                       visibility: visible !important;
                       box-sizing: border-box !important;
+                      -webkit-print-color-adjust: exact !important;
+                      print-color-adjust: exact !important;
                     }
 
                     #print-attendance-sheet h1,
@@ -2731,7 +2758,9 @@ function TurmasContent() {
                     #print-attendance-sheet h3,
                     #print-attendance-sheet p,
                     #print-attendance-sheet span,
-                    #print-attendance-sheet div {
+                    #print-attendance-sheet div,
+                    #print-attendance-sheet th,
+                    #print-attendance-sheet td {
                       color: #000000 !important;
                       overflow: visible !important;
                     }
@@ -2741,15 +2770,13 @@ function TurmasContent() {
                       table-layout: fixed !important;
                       border-collapse: collapse !important;
                       border: 1.5px solid #000000 !important;
-                      page-break-inside: auto !important;
-                      break-inside: auto !important;
+                      page-break-inside: avoid !important;
+                      break-inside: avoid !important;
                     }
 
                     #print-attendance-sheet .print-attendance-table tr {
                       page-break-inside: avoid !important;
                       break-inside: avoid !important;
-                      page-break-after: auto !important;
-                      break-after: auto !important;
                     }
 
                     #print-attendance-sheet .print-attendance-table thead {
@@ -2769,8 +2796,8 @@ function TurmasContent() {
                       overflow: visible !important;
                       white-space: normal !important;
                       text-overflow: unset !important;
-                      padding: ${printSheetType === 'semanal' ? '4px 3px' : '2px 1.5px'} !important;
-                      font-size: ${printSheetType === 'semanal' ? '9px' : '7.5px'} !important;
+                      padding: ${printSheetType === 'semanal' ? '3px 2px' : '1.5px 1px'} !important;
+                      font-size: ${printSheetType === 'semanal' ? '8.5px' : '7.5px'} !important;
                       background-color: #ffffff !important;
                       -webkit-print-color-adjust: exact !important;
                       print-color-adjust: exact !important;
@@ -2778,8 +2805,30 @@ function TurmasContent() {
 
                     #print-attendance-sheet .print-attendance-table th {
                       background-color: #f1f5f9 !important;
-                      font-weight: 850 !important;
+                      font-weight: 900 !important;
                       font-size: ${printSheetType === 'semanal' ? '8.5px' : '7px'} !important;
+                      color: #000000 !important;
+                    }
+
+                    #print-attendance-sheet .text-emerald-700,
+                    #print-attendance-sheet .text-emerald-800 {
+                      color: #047857 !important;
+                    }
+                    #print-attendance-sheet .text-rose-700,
+                    #print-attendance-sheet .text-rose-800 {
+                      color: #be123c !important;
+                    }
+                    #print-attendance-sheet .text-amber-700,
+                    #print-attendance-sheet .text-amber-800 {
+                      color: #b45309 !important;
+                    }
+                    #print-attendance-sheet .text-blue-900 {
+                      color: #1e3a8a !important;
+                    }
+                    #print-attendance-sheet .text-red-600,
+                    #print-attendance-sheet .text-red-700,
+                    #print-attendance-sheet .text-red-800 {
+                      color: #b91c1c !important;
                     }
                   }
                 `}} />
