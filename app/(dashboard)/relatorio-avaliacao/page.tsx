@@ -1076,16 +1076,16 @@ function RelatorioAvaliacaoAdminContent() {
       </div>
 
       {/* FILTER BOX */}
-      <div className="bg-slate-900 print:bg-white text-white print:text-slate-900 border border-slate-850 rounded-xl shadow-sm p-6 print:hidden">
+      <div className="bg-slate-900 print:bg-white text-white print:text-slate-900 border border-slate-800 rounded-xl shadow-sm p-6 print:hidden">
         <div className="flex items-center gap-2 mb-4 border-b border-slate-800 pb-2.5">
-          <SlidersHorizontal className="h-4 w-4 text-slate-400" />
-          <h2 className="text-xs font-black uppercase tracking-wider font-mono">Filtros de Pesquisa e Segmentação</h2>
+          <SlidersHorizontal className="h-4 w-4 text-white" />
+          <h2 className="text-xs font-black uppercase tracking-wider font-mono text-white">Filtros de Pesquisa e Segmentação</h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Turma Selection */}
           <div>
-            <label className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1.5 font-mono">Turma</label>
+            <label className="block text-xs text-white font-bold uppercase tracking-wider mb-1.5 font-mono">Turma</label>
             <select
               value={selectedTurma}
               onChange={(e) => {
@@ -1105,41 +1105,41 @@ function RelatorioAvaliacaoAdminContent() {
                 // Reset student filter on class change
                 setSelectedStudent('ALL');
               }}
-              className="w-full bg-slate-950 print:bg-white border border-slate-800 text-xs rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-sky-500 text-slate-300"
+              className="w-full bg-slate-950 print:bg-white border border-slate-700 text-xs rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-sky-400 text-white font-medium cursor-pointer"
             >
-              <option value="ALL">Todas as Turmas</option>
+              <option value="ALL" className="bg-slate-900 text-white">Todas as Turmas</option>
               {turmas.map(t => (
-                <option key={t.id} value={t.id}>{t.nome}</option>
+                <option key={t.id} value={t.id} className="bg-slate-900 text-white">{t.nome}</option>
               ))}
             </select>
           </div>
 
           {/* Instrutor Selection */}
           <div>
-            <label className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1.5 font-mono">Instrutor</label>
+            <label className="block text-xs text-white font-bold uppercase tracking-wider mb-1.5 font-mono">Instrutor</label>
             <select
               value={selectedInstructor}
               onChange={(e) => setSelectedInstructor(e.target.value)}
-              className="w-full bg-slate-950 print:bg-white border border-slate-800 text-xs rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-sky-500 text-slate-300"
+              className="w-full bg-slate-950 print:bg-white border border-slate-700 text-xs rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-sky-400 text-white font-medium cursor-pointer"
             >
-              <option value="ALL">Todos os Instrutores</option>
+              <option value="ALL" className="bg-slate-900 text-white">Todos os Instrutores</option>
               {instructorsList.map(inst => (
-                <option key={inst} value={inst}>{inst}</option>
+                <option key={inst} value={inst} className="bg-slate-900 text-white">{inst}</option>
               ))}
             </select>
           </div>
         </div>
 
         {/* Filters Clear Row */}
-        <div className="flex justify-between items-center mt-4 border-t border-slate-800 pt-3 text-[11px]">
-          <span className="text-slate-400 font-mono">
-            Registros encontrados para o filtro selecionado: <strong className="text-white">{filteredSubmissions.length} avaliações</strong>
+        <div className="flex justify-between items-center mt-4 border-t border-slate-800 pt-3 text-xs">
+          <span className="text-slate-200 font-mono">
+            Registros encontrados para o filtro selecionado: <strong className="text-white font-bold">{filteredSubmissions.length} avaliações</strong>
           </span>
           <button
             onClick={clearAllFilters}
-            className="flex items-center gap-1.5 text-rose-400 hover:text-rose-300 transition font-bold"
+            className="flex items-center gap-1.5 text-rose-300 hover:text-white transition font-bold cursor-pointer"
           >
-            <FilterX className="h-3.5 w-3.5" />
+            <FilterX className="h-4 w-4" />
             Limpar Filtros
           </button>
         </div>
