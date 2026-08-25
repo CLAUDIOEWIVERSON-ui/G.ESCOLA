@@ -2647,23 +2647,11 @@ function TurmasContent() {
                     setIsGeneratingPDF(false);
                   }}
                   disabled={isGeneratingPDF}
-                  className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl font-bold text-xs uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-blue-950 transition-all active:translate-y-px cursor-pointer"
+                  className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl font-bold text-xs uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-blue-950 transition-all active:translate-y-px cursor-pointer"
                   title="Baixar folha em arquivo PDF"
                 >
                   {isGeneratingPDF ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
                   <span>{language === 'pt' ? 'Baixar em PDF' : 'Download PDF'}</span>
-                </button>
-                <button
-                  onClick={() => {
-                    printElementIsolated(
-                      'print-attendance-sheet',
-                      `Folha de Frequência ${printSheetType === 'semanal' ? 'Semanal' : 'Mensal'} - ${printClassName || printTurma?.nome || ''}`
-                    );
-                  }}
-                  className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-emerald-950 transition-all active:translate-y-px cursor-pointer"
-                >
-                  <Printer size={16} />
-                  <span>{language === 'pt' ? 'Imprimir Frequência' : 'Print Sheet'}</span>
                 </button>
               </div>
             </div>

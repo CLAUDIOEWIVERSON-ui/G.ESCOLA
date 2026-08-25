@@ -2057,23 +2057,11 @@ export default function FrequenciaPage() {
                         setIsGeneratingPDF(false);
                       }}
                       disabled={isGeneratingPDF}
-                      className="flex items-center gap-2 px-3.5 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-lg shadow-blue-600/30 transition-all cursor-pointer active:scale-95 shrink-0 h-[34px]"
+                      className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-lg shadow-blue-600/30 transition-all cursor-pointer active:scale-95 shrink-0 h-[34px]"
                       title="Baixar folha em arquivo PDF"
                     >
                       {isGeneratingPDF ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
                       <span>{language === 'pt' ? 'BAIXAR EM PDF' : 'DOWNLOAD PDF'}</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        printElementIsolated(
-                          'print-attendance-sheet',
-                          `Folha de Frequência ${printSheetType === 'semanal' ? 'Semanal' : 'Mensal'} - ${activePrintTurma?.nome || ''}`
-                        );
-                      }}
-                      className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black shadow-lg shadow-emerald-600/30 transition-all cursor-pointer active:scale-95 shrink-0 h-[34px]"
-                    >
-                      <Printer size={16} />
-                      <span>{language === 'pt' ? 'IMPRIMIR FOLHA (A4)' : 'PRINT SHEET (A4)'}</span>
                     </button>
                   </div>
                 </div>
