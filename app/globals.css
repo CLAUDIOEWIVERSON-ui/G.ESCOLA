@@ -445,9 +445,8 @@ a[class*="bg-indigo-"]:not([class*="bg-indigo-50"]):not([class*="bg-indigo-100"]
     page: landscape-sheet !important;
   }
 
-  /* Specific handling when printing attendance sheet: Eliminate extra blank pages and ghost DOM elements */
-  body.printing-attendance-sheet,
-  body.printing-attendance-sheet html {
+  /* Specific handling when printing attendance sheet: Isolate the sheet cleanly onto A4 landscape */
+  body.printing-attendance-sheet {
     margin: 0 !important;
     padding: 0 !important;
     background: #ffffff !important;
@@ -459,56 +458,29 @@ a[class*="bg-indigo-"]:not([class*="bg-indigo-50"]):not([class*="bg-indigo-100"]
     overflow: visible !important;
   }
 
-  body.printing-attendance-sheet > *:not([data-attendance-modal-root="true"]) {
-    display: none !important;
+  body.printing-attendance-sheet * {
     visibility: hidden !important;
-    height: 0 !important;
-    max-height: 0 !important;
-    overflow: hidden !important;
   }
 
-  body.printing-attendance-sheet [data-attendance-modal-root="true"] {
-    position: static !important;
-    inset: auto !important;
-    width: 100% !important;
-    height: auto !important;
-    min-height: 0 !important;
-    max-height: none !important;
-    background: #ffffff !important;
-    background-color: #ffffff !important;
-    display: block !important;
-    overflow: visible !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    box-shadow: none !important;
-  }
-
-  body.printing-attendance-sheet .no-print,
-  body.printing-attendance-sheet [data-attendance-modal-root="true"] > .no-print,
-  body.printing-attendance-sheet header,
-  body.printing-attendance-sheet nav,
-  body.printing-attendance-sheet aside,
-  body.printing-attendance-sheet button,
-  body.printing-attendance-sheet input,
-  body.printing-attendance-sheet select {
-    display: none !important;
-    visibility: hidden !important;
-    height: 0 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    border: none !important;
+  body.printing-attendance-sheet #print-attendance-sheet,
+  body.printing-attendance-sheet #print-attendance-sheet * {
+    visibility: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   body.printing-attendance-sheet #print-attendance-sheet {
     display: block !important;
-    position: static !important;
+    position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
     width: 100% !important;
-    max-width: 297mm !important;
+    max-width: 100% !important;
     height: auto !important;
     min-height: 0 !important;
     max-height: none !important;
-    margin: 0 auto !important;
-    padding: 2mm 3mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
     box-shadow: none !important;
     border: none !important;
     background: #ffffff !important;
@@ -518,15 +490,45 @@ a[class*="bg-indigo-"]:not([class*="bg-indigo-50"]):not([class*="bg-indigo-100"]
     break-inside: avoid !important;
     page-break-after: avoid !important;
     break-after: avoid !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
+    z-index: 999999 !important;
+    box-sizing: border-box !important;
   }
 
   body.printing-attendance-sheet #print-attendance-sheet * {
     color: #000000 !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
-    visibility: visible !important;
+  }
+
+  body.printing-attendance-sheet #print-attendance-sheet th {
+    background-color: #f1f5f9 !important;
+    color: #000000 !important;
+    font-weight: 900 !important;
+  }
+
+  body.printing-attendance-sheet #print-attendance-sheet td {
+    color: #000000 !important;
+  }
+
+  body.printing-attendance-sheet #print-attendance-sheet .text-emerald-700,
+  body.printing-attendance-sheet #print-attendance-sheet .text-emerald-800 {
+    color: #047857 !important;
+  }
+  body.printing-attendance-sheet #print-attendance-sheet .text-rose-700,
+  body.printing-attendance-sheet #print-attendance-sheet .text-rose-800 {
+    color: #be123c !important;
+  }
+  body.printing-attendance-sheet #print-attendance-sheet .text-amber-700,
+  body.printing-attendance-sheet #print-attendance-sheet .text-amber-800 {
+    color: #b45309 !important;
+  }
+  body.printing-attendance-sheet #print-attendance-sheet .text-blue-900 {
+    color: #1e3a8a !important;
+  }
+  body.printing-attendance-sheet #print-attendance-sheet .text-red-600,
+  body.printing-attendance-sheet #print-attendance-sheet .text-red-700,
+  body.printing-attendance-sheet #print-attendance-sheet .text-red-800 {
+    color: #b91c1c !important;
   }
 
   /* Force light color-scheme and complete layout unconstrained flow */

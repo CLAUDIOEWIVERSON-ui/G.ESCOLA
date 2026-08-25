@@ -2091,29 +2091,17 @@ export default function FrequenciaPage() {
                         -webkit-print-color-adjust: exact !important;
                         print-color-adjust: exact !important;
                       }
-                      body.printing-attendance-sheet > *:not([data-attendance-modal-root="true"]) {
-                        display: none !important;
+                      body.printing-attendance-sheet * {
                         visibility: hidden !important;
-                        height: 0 !important;
-                        max-height: 0 !important;
-                        overflow: hidden !important;
                       }
-                      [data-attendance-modal-root="true"] {
-                        position: static !important;
-                        inset: auto !important;
-                        width: 100% !important;
-                        height: auto !important;
-                        min-height: 0 !important;
-                        max-height: none !important;
-                        background: #ffffff !important;
-                        display: block !important;
-                        overflow: visible !important;
-                        padding: 0 !important;
-                        margin: 0 !important;
-                        box-shadow: none !important;
+                      body.printing-attendance-sheet #print-attendance-sheet,
+                      body.printing-attendance-sheet #print-attendance-sheet * {
+                        visibility: visible !important;
+                        color: #000000 !important;
+                        -webkit-print-color-adjust: exact !important;
+                        print-color-adjust: exact !important;
                       }
                       .no-print,
-                      [data-attendance-modal-root="true"] > .no-print,
                       header, nav, aside, button, input, select {
                         display: none !important;
                         visibility: hidden !important;
@@ -2123,14 +2111,17 @@ export default function FrequenciaPage() {
                         border: none !important;
                       }
                       #print-attendance-sheet {
-                        position: static !important;
+                        display: block !important;
+                        position: fixed !important;
+                        left: 0 !important;
+                        top: 0 !important;
                         width: 100% !important;
-                        max-width: 297mm !important;
+                        max-width: 100% !important;
                         height: auto !important;
                         min-height: 0 !important;
                         max-height: none !important;
-                        margin: 0 auto !important;
-                        padding: 2mm 3mm !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
                         box-shadow: none !important;
                         border: none !important;
                         background: #ffffff !important;
@@ -2140,7 +2131,7 @@ export default function FrequenciaPage() {
                         break-inside: avoid !important;
                         page-break-after: avoid !important;
                         break-after: avoid !important;
-                        display: block !important;
+                        z-index: 999999 !important;
                         box-sizing: border-box !important;
                       }
                       #print-attendance-sheet,
