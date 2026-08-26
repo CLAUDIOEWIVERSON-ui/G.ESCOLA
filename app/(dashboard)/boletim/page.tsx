@@ -40,6 +40,13 @@ import { useUser } from '@/lib/auth/UserContext';
 import { fetchWithAuth } from '@/lib/api';
 import navalMissionLogo from '@/src/assets/images/regenerated_image_1782409801823.png';
 
+const formatGradePT = (val: number | string | null | undefined, fallback = '-'): string => {
+  if (val === null || val === undefined || val === '') return fallback;
+  const num = typeof val === 'number' ? val : Number(val);
+  if (isNaN(num)) return fallback;
+  return num.toFixed(2).replace('.', ',');
+};
+
 const reportT = {
   pt: {
     headerTitle: "MISSÃO DE ASSESSORIA NAVAL DO BRASIL EM SÃO TOMÉ E PRÍNCIPE",
@@ -1349,7 +1356,7 @@ function BoletimContent() {
         }
         if (validScores.length > 0) {
           const avg = validScores.reduce((a, b) => a + b, 0) / validScores.length;
-          computedFinal = Math.round(avg * 100) / 100;
+          computedFinal = Math.round(avg * 10000) / 10000;
         } else {
           computedFinal = null;
         }
@@ -2115,7 +2122,7 @@ function BoletimContent() {
                           .map(e => e.finalGradeValue)
                           .filter((g): g is number => g !== null && g !== undefined && !isNaN(g));
                         const finalGradeValue = validGrades.length > 0 ? Math.max(...validGrades) : null;
-                        const finalGradeFormatted = finalGradeValue !== null ? finalGradeValue.toFixed(2) : '-';
+                        const finalGradeFormatted = finalGradeValue !== null ? formatGradePT(finalGradeValue) : '-';
 
                         const validFreqs = evaluated
                           .map(e => e.freqValue)
@@ -2391,7 +2398,7 @@ function BoletimContent() {
                               "inline-flex items-center justify-center text-center min-w-[64px] font-black font-mono text-base px-2.5 py-1 rounded-md border leading-none shadow-2xs",
                               averageGrade !== null && averageGrade >= settings.media_aprovacao ? "text-blue-700 bg-blue-50 border-blue-600" : "text-rose-700 bg-rose-50 border-rose-600"
                             )}>
-                              {averageGrade !== null ? averageGrade.toFixed(2) : '-'}
+                              {averageGrade !== null ? formatGradePT(averageGrade) : '-'}
                             </span>
                           </div>
 
@@ -2413,8 +2420,8 @@ function BoletimContent() {
                     <Award className="text-slate-400 shrink-0 mt-0.5" size={14} />
                     <p className="leading-normal">
                       {language === 'pt' 
-                        ? `Média de aprovação configurada em ${settings.media_aprovacao.toFixed(1)} e frequência mínima em ${settings.frequencia_minima}%.`
-                        : `Program passing grade configured at ${settings.media_aprovacao.toFixed(1)} and minimum attendance at ${settings.frequencia_minima}%.`}
+                        ? `Média de aprovação configurada em ${formatGradePT(settings.media_aprovacao)} e frequência mínima em ${settings.frequencia_minima}%.`
+                        : `Program passing grade configured at ${formatGradePT(settings.media_aprovacao)} and minimum attendance at ${settings.frequencia_minima}%.`}
                     </p>
                   </div>
                 </div>
@@ -3466,7 +3473,7 @@ function BoletimContent() {
                                             .map(e => e.finalGradeValue)
                                             .filter((g): g is number => g !== null && g !== undefined && !isNaN(g));
                                           const finalGradeValue = validGrades.length > 0 ? Math.max(...validGrades) : null;
-                                          const finalGradeFormatted = finalGradeValue !== null ? finalGradeValue.toFixed(2) : '-';
+                                          const finalGradeFormatted = finalGradeValue !== null ? formatGradePT(finalGradeValue) : '-';
 
                                           const validFreqs = evaluated
                                             .map(e => e.freqValue)
@@ -3719,7 +3726,7 @@ function BoletimContent() {
                                             <div className="flex items-center justify-between">
                                               <span className="text-[8px] font-bold text-slate-500 uppercase tracking-wide leading-none">{reportT[language as "pt" | "en"].overallAverage}:</span>
                                               <span className="inline-flex items-center justify-center text-center min-w-[56px] text-[11px] font-black font-mono px-2 py-0.5 rounded-md bg-blue-50 border border-blue-600 text-blue-700 leading-none shadow-2xs">
-                                                {averageGrade !== null ? averageGrade.toFixed(2) : '-'}
+                                                {averageGrade !== null ? formatGradePT(averageGrade) : '-'}
                                               </span>
                                             </div>
 
@@ -4109,12 +4116,12 @@ function BoletimContent() {
                                                    const notaValue = (row as any)[`nota${i + 1}`];
                                                    return (
                                                      <td key={i} className="px-1 py-1.5 text-center border-r border-slate-200 font-mono">
-                                                       {notaValue !== null && notaValue !== undefined ? Number(notaValue).toFixed(2) : '-'}
+                                                       {notaValue !== null && notaValue !== undefined ? formatGradePT(notaValue) : '-'}
                                                      </td>
                                                    );
                                                  })}
                                                  <td className="px-3.5 py-1.5 text-center border-r border-slate-200 font-black font-mono">
-                                                   {row.nota_final !== null && row.nota_final !== undefined ? Number(row.nota_final).toFixed(2) : '-'}
+                                                   {row.nota_final !== null && row.nota_final !== undefined ? formatGradePT(row.nota_final) : '-'}
                                                  </td>
                                                  <td className="px-3.5 py-1.5 text-right font-bold">
                                                    <span className={cn("px-1.5 py-0.5 rounded text-[7px] font-black uppercase inline-block border", status.className)}>
@@ -4135,7 +4142,7 @@ function BoletimContent() {
                                    <div className="flex items-center justify-between text-[10px] font-bold text-slate-600">
                                      <span>{language === 'pt' ? 'MÉDIA GERAL DA TURMA:' : 'CLASS OVERALL AVERAGE:'}</span>
                                      <span className="inline-flex items-center justify-center text-center min-w-[50px] font-mono font-black text-blue-700 bg-blue-50 border border-blue-600 px-2 py-0.5 rounded">
-                                       {classStats.avg ? Number(classStats.avg).toFixed(2) : '-'}
+                                       {classStats.avg ? formatGradePT(classStats.avg) : '-'}
                                      </span>
                                    </div>
                                    <div className="flex items-center justify-between text-[10px] font-bold text-slate-600">
