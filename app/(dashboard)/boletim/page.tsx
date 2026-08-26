@@ -42,10 +42,103 @@ import navalMissionLogo from '@/src/assets/images/regenerated_image_178240980182
 
 const formatGradePT = (val: number | string | null | undefined, fallback = '-'): string => {
   if (val === null || val === undefined || val === '') return fallback;
-  const num = typeof val === 'number' ? val : Number(val);
+  const num = typeof val === 'number' ? val : Number(String(val).replace(',', '.'));
   if (isNaN(num)) return fallback;
-  return num.toFixed(2).replace('.', ',');
+  return (Math.round(num * 100) / 100).toFixed(2).replace('.', ',');
 };
+
+interface GradeCellInputProps {
+  value: number | string | null | undefined;
+  onCommit: (val: number | null) => void;
+  onEnter?: () => void;
+  isFinal?: boolean;
+  settings: any;
+  placeholder?: string;
+  title?: string;
+  maxGrade?: number;
+}
+
+function GradeCellInput({
+  value,
+  onCommit,
+  onEnter,
+  isFinal = false,
+  settings,
+  placeholder = "-",
+  title,
+  maxGrade = 20
+}: GradeCellInputProps) {
+  const [isFocused, setIsFocused] = useState(false);
+  const [typedText, setTypedText] = useState('');
+
+  const numVal = value !== null && value !== undefined && value !== '' && !isNaN(Number(String(value).replace(',', '.')))
+    ? Number(String(value).replace(',', '.'))
+    : null;
+
+  const displayFormatted = numVal !== null ? formatGradePT(numVal, '') : '';
+
+  const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    setIsFocused(true);
+    setTypedText(displayFormatted);
+    e.target.select();
+  };
+
+  const handleBlur = () => {
+    setIsFocused(false);
+    const trimmed = typedText.trim().replace(',', '.');
+    if (trimmed === '' || trimmed === '-') {
+      onCommit(null);
+      return;
+    }
+    const parsed = Number(trimmed);
+    if (isNaN(parsed)) {
+      setTypedText(displayFormatted);
+      return;
+    }
+    const clamped = Math.max(0, Math.min(maxGrade, parsed));
+    const rounded = Math.round(clamped * 100) / 100;
+    onCommit(rounded);
+  };
+
+  return (
+    <input
+      type="text"
+      inputMode="decimal"
+      value={isFocused ? typedText : displayFormatted}
+      onFocus={handleFocus}
+      onChange={(e) => setTypedText(e.target.value)}
+      onBlur={handleBlur}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          (e.target as HTMLInputElement).blur();
+          if (onEnter) onEnter();
+        }
+      }}
+      className={cn(
+        isFinal
+          ? "w-20 md:w-24 mx-auto px-2 py-1.5 text-center font-mono font-black text-sm rounded-lg border-2 transition-all shadow-xs outline-none focus:ring-2 focus:bg-white grade-input cursor-pointer"
+          : "w-16 md:w-20 mx-auto px-2 py-1.5 text-center font-mono font-bold text-sm rounded-lg border transition-all shadow-2xs outline-none focus:ring-2 focus:bg-white grade-input cursor-pointer",
+        isFinal
+          ? (numVal !== null
+              ? (numVal >= (settings?.media_aprovacao ?? 10)
+                  ? "text-blue-800 bg-blue-100/80 border-blue-400 hover:border-blue-500 focus:border-blue-600 focus:ring-blue-500/25"
+                  : numVal >= (settings?.media_recuperacao ?? 7)
+                  ? "text-amber-800 bg-amber-100/80 border-amber-400 hover:border-amber-500 focus:border-amber-600 focus:ring-amber-500/25"
+                  : "text-red-800 bg-red-100/80 border-red-400 hover:border-red-500 focus:border-red-600 focus:ring-red-500/25")
+              : "text-slate-400 bg-slate-50 border-slate-200 hover:border-slate-300 focus:border-blue-500 focus:ring-blue-500/20")
+          : (numVal !== null && numVal !== 0
+              ? (numVal >= (settings?.media_aprovacao ?? 10)
+                  ? "text-blue-700 bg-blue-50/70 border-blue-200 hover:border-blue-400 focus:border-blue-600 focus:ring-blue-500/20"
+                  : numVal >= (settings?.media_recuperacao ?? 7)
+                  ? "text-amber-700 bg-amber-50/70 border-amber-200 hover:border-amber-400 focus:border-amber-600 focus:ring-amber-500/20"
+                  : "text-red-600 bg-red-50/70 border-red-200 hover:border-red-400 focus:border-red-600 focus:ring-red-500/20")
+              : "text-slate-700 bg-slate-50/80 border-slate-200 hover:border-slate-300 hover:bg-white focus:border-blue-500 focus:ring-blue-500/20")
+      )}
+      placeholder={placeholder}
+      title={title}
+    />
+  );
+}
 
 const reportT = {
   pt: {
@@ -1270,7 +1363,7 @@ function BoletimContent() {
 
         const validFinalGrades = Object.values(computedModuleGrades).filter((g): g is number => g !== null && g !== undefined && !isNaN(g));
         const computedFinal = validFinalGrades.length > 0
-          ? validFinalGrades.reduce((sum, val) => sum + val, 0) / validFinalGrades.length
+          ? Math.round((validFinalGrades.reduce((sum, val) => sum + val, 0) / validFinalGrades.length) * 100) / 100
           : null;
 
         let bestFreq = computedModuleFreqs.length > 0
@@ -1337,15 +1430,17 @@ function BoletimContent() {
     }
   };
 
-  const handleQuickGradeUpdate = async (row: any, moduleIndex: number | 'final', value: string) => {
+  const handleQuickGradeUpdate = async (row: any, moduleIndex: number | 'final', value: string | number | null) => {
     try {
-      const numValue = value === '' ? null : Number(value);
+      const numValue = value === '' || value === null || value === undefined 
+        ? null 
+        : (typeof value === 'number' ? value : Number(String(value).replace(',', '.')));
       const fieldName = moduleIndex === 'final' ? 'nota_final' : `nota${moduleIndex}`;
       
       // Calculate updated row and new final average locally
       let computedFinal = row.nota_final;
       if (moduleIndex === 'final') {
-        computedFinal = numValue;
+        computedFinal = numValue !== null ? Math.round(numValue * 100) / 100 : null;
       } else {
         const validScores: number[] = [];
         for (let m = 1; m <= courseModules; m++) {
@@ -1356,7 +1451,7 @@ function BoletimContent() {
         }
         if (validScores.length > 0) {
           const avg = validScores.reduce((a, b) => a + b, 0) / validScores.length;
-          computedFinal = Math.round(avg * 10000) / 10000;
+          computedFinal = Math.round(avg * 100) / 100;
         } else {
           computedFinal = null;
         }
@@ -2702,79 +2797,33 @@ function BoletimContent() {
                              )}
                            </td>
                            {Array.from({ length: courseModules }).map((_, i) => {
-                             const notaValue = (row as any)[`nota${i + 1}`];
-                             return (
-                               <td key={i} className="px-2 py-3 text-center">
-                                 <input
-                                   type="number"
-                                   min="0"
-                                    max={settings?.nota_maxima || 20}
-                                   step="0.01"
-                                   value={notaValue !== null && notaValue !== undefined ? Number(notaValue) : ''}
-                                   onChange={(e) => {
-                                     // Just optimistic local state update for typing
-                                     const val = e.target.value;
-                                     setBoletimData(prev => prev.map(r => 
-                                       r.id === row.id ? { ...r, [`nota${i + 1}`]: val === '' ? null : Number(val) } : r
-                                     ));
-                                   }}
-                                   onKeyDown={(e) => {
-                                     if (e.key === "Enter") {
-                                       (e.target as HTMLInputElement).blur();
-                                       handleSaveStudent(row);
-                                     }
-                                   }}
-                                    onBlur={(e) => handleQuickGradeUpdate(row, i + 1, e.target.value)}
-                                   className={cn(
-                                     "w-16 md:w-20 mx-auto px-2 py-1.5 text-center font-mono font-bold text-sm rounded-lg border transition-all shadow-2xs outline-none focus:ring-2 focus:bg-white no-spin grade-input",
-                                     notaValue !== null && notaValue !== undefined && Number(notaValue) !== 0
-                                       ? (Number(notaValue) >= settings.media_aprovacao
-                                           ? "text-blue-700 bg-blue-50/70 border-blue-200 hover:border-blue-400 focus:border-blue-600 focus:ring-blue-500/20"
-                                           : Number(notaValue) >= settings.media_recuperacao
-                                           ? "text-amber-700 bg-amber-50/70 border-amber-200 hover:border-amber-400 focus:border-amber-600 focus:ring-amber-500/20"
-                                           : "text-red-600 bg-red-50/70 border-red-200 hover:border-red-400 focus:border-red-600 focus:ring-red-500/20")
-                                       : "text-slate-700 bg-slate-50/80 border-slate-200 hover:border-slate-300 hover:bg-white focus:border-blue-500 focus:ring-blue-500/20"
-                                   )}
-                                   placeholder="-"
-                                   title={language === 'pt' ? 'Nota do módulo (Pressione Enter para salvar)' : 'Module grade (Press Enter to save)'}
-                                 />
-                               </td>
-                             );
-                           })}
-                           <td className="px-2 py-3 text-center">
-                             <input
-                               type="number"
-                               min="0"
-                                    max={settings?.nota_maxima || 20}
-                               step="0.01"
-                               value={row.nota_final !== null && row.nota_final !== undefined ? Number(row.nota_final) : ''}
-                               onChange={(e) => {
-                                 const val = e.target.value;
-                                 setBoletimData(prev => prev.map(r => 
-                                   r.id === row.id ? { ...r, nota_final: val === '' ? null : Number(val) } : r
-                                 ));
-                               }}
-                               onKeyDown={(e) => {
-                                 if (e.key === "Enter") {
-                                   (e.target as HTMLInputElement).blur();
-                                   handleSaveStudent(row);
-                                 }
-                               }}
-                                onBlur={(e) => handleQuickGradeUpdate(row, "final", e.target.value)}
-                               className={cn(
-                                 "w-20 md:w-24 mx-auto px-2 py-1.5 text-center font-mono font-black text-sm rounded-lg border-2 transition-all shadow-xs outline-none focus:ring-2 focus:bg-white no-spin grade-input",
-                                 row.nota_final !== null && row.nota_final !== undefined
-                                   ? (Number(row.nota_final) >= settings.media_aprovacao
-                                       ? "text-blue-800 bg-blue-100/80 border-blue-400 hover:border-blue-500 focus:border-blue-600 focus:ring-blue-500/25"
-                                       : Number(row.nota_final) >= settings.media_recuperacao
-                                       ? "text-amber-800 bg-amber-100/80 border-amber-400 hover:border-amber-500 focus:border-amber-600 focus:ring-amber-500/25"
-                                       : "text-red-800 bg-red-100/80 border-red-400 hover:border-red-500 focus:border-red-600 focus:ring-red-500/25")
-                                   : "text-slate-400 bg-slate-50 border-slate-200 hover:border-slate-300 focus:border-blue-500 focus:ring-blue-500/20"
-                               )}
-                               placeholder="-"
-                               title={language === 'pt' ? 'Média final (Pressione Enter para salvar)' : 'Final average (Press Enter to save)'}
-                             />
-                           </td>
+                              const notaValue = (row as any)[`nota${i + 1}`];
+                              return (
+                                <td key={i} className="px-2 py-3 text-center">
+                                  <GradeCellInput
+                                    value={notaValue}
+                                    settings={settings}
+                                    maxGrade={settings?.nota_maxima || 20}
+                                    placeholder="-"
+                                    title={language === 'pt' ? 'Nota do módulo (Pressione Enter para salvar)' : 'Module grade (Press Enter to save)'}
+                                    onCommit={(newVal) => handleQuickGradeUpdate(row, i + 1, newVal)}
+                                    onEnter={() => handleSaveStudent(row)}
+                                  />
+                                </td>
+                              );
+                            })}
+                            <td className="px-2 py-3 text-center">
+                              <GradeCellInput
+                                isFinal
+                                value={row.nota_final}
+                                settings={settings}
+                                maxGrade={settings?.nota_maxima || 20}
+                                placeholder="-"
+                                title={language === 'pt' ? 'Média final (Pressione Enter para salvar)' : 'Final average (Press Enter to save)'}
+                                onCommit={(newVal) => handleQuickGradeUpdate(row, "final", newVal)}
+                                onEnter={() => handleSaveStudent(row)}
+                              />
+                            </td>
                             <td className="px-6 py-4 text-center">
                               <span className={cn("px-2.5 py-1 rounded-lg text-[10px] font-black uppercase inline-flex items-center gap-1 border", status.className)}>
                                 <StatusIcon size={11} className="shrink-0" />
