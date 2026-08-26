@@ -1603,28 +1603,6 @@ export default function FrequenciaPage() {
                     : 'NOTE: THIS ATTENDANCE SHEET MUST BE HANDED IN DAILY TO THE DUTY OFFICER / COURSE COORDINATION AT THE END OF EACH TRAINING DAY.'
                   }
                 </div>
-
-                {/* Assinaturas Oficiais */}
-                <div className="grid grid-cols-2 gap-8 md:gap-16 pt-8 mt-5 border-t border-dashed border-slate-200 text-center">
-                  <div className="flex flex-col items-center">
-                    <div className="w-52 md:w-64 border-b border-slate-800 mb-1.5" />
-                    <span className="text-[10px] font-black text-slate-800 uppercase tracking-wider">
-                      {language === 'pt' ? 'Assinatura do Instrutor / Responsável' : 'Instructor Signature'}
-                    </span>
-                    <span className="text-[9px] text-slate-500 font-medium">
-                      {language === 'pt' ? 'Encarregado da Disciplina / Turma' : 'Course Instructor'}
-                    </span>
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <div className="w-52 md:w-64 border-b border-slate-800 mb-1.5" />
-                    <span className="text-[10px] font-black text-slate-800 uppercase tracking-wider">
-                      {language === 'pt' ? 'Visto da Coordenação do Curso' : 'Course Coordination Visa'}
-                    </span>
-                    <span className="text-[9px] text-slate-500 font-medium">
-                      {language === 'pt' ? 'Missão de Assessoria Naval' : 'Naval Advisory Mission'}
-                    </span>
-                  </div>
-                </div>
               </div>
             </div>
           </motion.div>
