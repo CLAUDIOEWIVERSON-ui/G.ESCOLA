@@ -819,7 +819,9 @@ a[class*="bg-indigo-"]:not([class*="bg-indigo-50"]):not([class*="bg-indigo-100"]
   #print-exterior-sheet table,
   #print-exterior-sheet th,
   #print-exterior-sheet td {
-    border-color: #475569 !important;
+    border-color: #334155 !important;
+    border-width: 1px !important;
+    border-style: solid !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }

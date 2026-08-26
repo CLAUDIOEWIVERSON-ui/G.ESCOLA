@@ -2075,12 +2075,21 @@ function BoletimContent() {
                     width: 100% !important;
                   }
 
+                  table.report-table,
+                  #student-report-print-area table {
+                    border-collapse: collapse !important;
+                    border: 1.5px solid #1e293b !important;
+                    width: 100% !important;
+                  }
                   table.report-table th, 
                   #student-report-print-area table th, 
                   #student-report-print-area .report-table th, 
                   #student-report-print-area th {
                     padding: 4px 8px !important;
                     font-size: 8px !important;
+                    border: 1px solid #334155 !important;
+                    -webkit-print-color-adjust: exact !important;
+                    print-color-adjust: exact !important;
                   }
                   table.report-table td, 
                   #student-report-print-area table td, 
@@ -2088,6 +2097,12 @@ function BoletimContent() {
                   #student-report-print-area td {
                     padding: 3px 8px !important;
                     font-size: 9px !important;
+                    border: 1px solid #475569 !important;
+                    -webkit-print-color-adjust: exact !important;
+                    print-color-adjust: exact !important;
+                  }
+                  #student-report-print-area table thead tr {
+                    border-bottom: 2px solid #0f172a !important;
                   }
 
                   .print-only-layout {
@@ -2258,13 +2273,13 @@ function BoletimContent() {
                       });
 
                       return (
-                        <table className="w-full text-left report-table border border-slate-200 bg-white table-auto">
+                        <table className="w-full text-left report-table border border-slate-400 bg-white table-auto">
                           <thead>
-                            <tr className="bg-slate-100 print-bg-gray text-[10px] font-extrabold text-slate-600 uppercase tracking-wider border-b border-slate-200">
-                              <th className="px-4 py-3 border-r border-slate-200 w-[15%]">{language === 'pt' ? 'Módulo' : 'Module'}</th>
-                              <th className="px-4 py-3 border-r border-slate-200 w-[45%]">{language === 'pt' ? 'Disciplina' : 'Discipline'}</th>
-                              <th className="px-3 py-3 text-center border-r border-slate-200 w-[10%]">{language === 'pt' ? 'C.H.' : 'Hours'}</th>
-                              <th className="px-3 py-3 text-center border-r border-slate-200 font-mono w-[15%]">{reportT[language as "pt" | "en"].finalGrade}</th>
+                            <tr className="bg-slate-100 print-bg-gray text-[10px] font-extrabold text-slate-700 uppercase tracking-wider border-b-2 border-slate-400">
+                              <th className="px-4 py-3 border-r border-slate-400 w-[15%]">{language === 'pt' ? 'Módulo' : 'Module'}</th>
+                              <th className="px-4 py-3 border-r border-slate-400 w-[45%]">{language === 'pt' ? 'Disciplina' : 'Discipline'}</th>
+                              <th className="px-3 py-3 text-center border-r border-slate-400 w-[10%]">{language === 'pt' ? 'C.H.' : 'Hours'}</th>
+                              <th className="px-3 py-3 text-center border-r border-slate-400 font-mono w-[15%]">{reportT[language as "pt" | "en"].finalGrade}</th>
                               <th className="px-4 py-3 text-right w-[15%]">{reportT[language as "pt" | "en"].situation}</th>
                             </tr>
                           </thead>
@@ -2278,16 +2293,16 @@ function BoletimContent() {
                             ) : (
                               reportRows.map((row: any, rIdx: number) => {
                                 return (
-                                  <tr key={`row-mod-${row.moduleNum}-${rIdx}`} className="border-b border-slate-200 hover:bg-slate-50/50 transition-colors bg-white">
-                                    <td className="px-4 py-3 font-extrabold text-slate-900 border-r border-slate-200 text-left bg-white align-middle whitespace-nowrap">
+                                  <tr key={`row-mod-${row.moduleNum}-${rIdx}`} className="border-b border-slate-400 hover:bg-slate-50/50 transition-colors bg-white">
+                                    <td className="px-4 py-3 font-extrabold text-slate-900 border-r border-slate-400 text-left bg-white align-middle whitespace-nowrap">
                                       {row.modulo}
                                     </td>
-                                    <td className="p-0 border-r border-slate-200 bg-white align-top">
+                                    <td className="p-0 border-r border-slate-400 bg-white align-top">
                                       <div className="flex flex-col w-full h-full">
                                         {row.disciplines.map((disc: any, dIdx: number) => (
                                           <div key={`disc-name-${disc.id || dIdx}`} className={cn(
                                             "flex items-center gap-2 px-4 py-3 text-xs leading-tight break-words font-extrabold text-slate-800 flex-1",
-                                            dIdx > 0 && "border-t border-slate-100/80"
+                                            dIdx > 0 && "border-t border-slate-300"
                                           )}>
                                             <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
                                             <span>{disc.nome}</span>
@@ -2295,19 +2310,19 @@ function BoletimContent() {
                                         ))}
                                       </div>
                                     </td>
-                                    <td className="p-0 border-r border-slate-200 bg-white align-top">
+                                    <td className="p-0 border-r border-slate-400 bg-white align-top">
                                       <div className="flex flex-col w-full h-full">
                                         {row.disciplines.map((disc: any, dIdx: number) => (
                                           <div key={`disc-ch-${disc.id || dIdx}`} className={cn(
                                             "flex items-center justify-center px-3 py-3 font-mono text-xs text-slate-500 flex-1",
-                                            dIdx > 0 && "border-t border-slate-100/80"
+                                            dIdx > 0 && "border-t border-slate-300"
                                           )}>
                                             {disc.carga_horaria ? `${disc.carga_horaria}h` : '-'}
                                           </div>
                                         ))}
                                       </div>
                                     </td>
-                                    <td className="px-3 py-3 text-center font-black font-mono text-sm border-r border-slate-200 text-slate-900 bg-white align-middle animate-fade-in">
+                                    <td className="px-3 py-3 text-center font-black font-mono text-sm border-r border-slate-400 text-slate-900 bg-white align-middle animate-fade-in">
                                       {row.nota}
                                     </td>
                                     <td className={cn("px-4 py-3 text-right font-black bg-white align-middle break-words whitespace-normal leading-tight", row.statusClass)}>
@@ -3315,17 +3330,52 @@ function BoletimContent() {
                                       #student-report-print-area .pb-4 {
                                         padding-bottom: 4px !important;
                                       }
+                                      #student-report-print-area table {
+                                        border-collapse: collapse !important;
+                                        border: 1.5px solid #0f172a !important;
+                                        width: 100% !important;
+                                      }
                                       #student-report-print-area table th, 
                                       #student-report-print-area .report-table th, 
                                       #student-report-print-area th {
                                         padding: 4px 8px !important;
                                         font-size: 8px !important;
+                                        border: 1px solid #334155 !important;
+                                        background-color: #0f172a !important;
+                                        color: #ffffff !important;
+                                        -webkit-print-color-adjust: exact !important;
+                                        print-color-adjust: exact !important;
                                       }
                                       #student-report-print-area table td, 
                                       #student-report-print-area .report-table td, 
                                       #student-report-print-area td {
                                         padding: 3px 8px !important;
                                         font-size: 9px !important;
+                                        border: 1px solid #475569 !important;
+                                        -webkit-print-color-adjust: exact !important;
+                                        print-color-adjust: exact !important;
+                                      }
+                                      #student-report-print-area table thead tr {
+                                        border-bottom: 2px solid #0f172a !important;
+                                        background-color: #0f172a !important;
+                                        color: #ffffff !important;
+                                        -webkit-print-color-adjust: exact !important;
+                                        print-color-adjust: exact !important;
+                                      }
+                                      #student-report-print-area table tbody tr {
+                                        border-bottom: 1px solid #475569 !important;
+                                      }
+                                      #student-report-print-area .border-t {
+                                        border-top-color: #64748b !important;
+                                      }
+                                      #student-report-print-area .border-r {
+                                        border-right-color: #64748b !important;
+                                      }
+                                      #student-report-print-area .border-b {
+                                        border-bottom-color: #64748b !important;
+                                      }
+                                      #student-report-print-area .border {
+                                        border-color: #64748b !important;
                                       }
                                       #student-report-print-area .text-xs {
                                         font-size: 9px !important;
@@ -3490,7 +3540,7 @@ function BoletimContent() {
                                       </h3>
                                     </div>
                                     
-                                    <div className="border border-slate-200 rounded-xl overflow-hidden shadow-xs">
+                                    <div className="border-2 border-slate-700 rounded-xl overflow-hidden shadow-xs">
                                       {(() => {
                                         const sortedDisciplines = [...(reportData?.disciplines || [])].sort((a: any, b: any) => {
                                           const mDiff = (a.modulo_index || 1) - (b.modulo_index || 1);
@@ -3564,13 +3614,13 @@ function BoletimContent() {
                                         });
 
                                         return (
-                                          <table className="w-full text-left border-collapse bg-white table-auto">
+                                          <table className="w-full text-left border-collapse bg-white table-auto border border-slate-700">
                                             <thead>
-                                              <tr className="bg-slate-900 text-[8px] font-black !text-white text-white uppercase tracking-widest border-b border-slate-850">
-                                                <th className="px-3.5 py-2 border-r border-slate-800 w-[15%] !text-white text-white">{language === 'pt' ? 'Módulo' : 'Module'}</th>
-                                                <th className="px-3.5 py-2 border-r border-slate-800 w-[45%] !text-white text-white">{language === 'pt' ? 'Disciplina' : 'Discipline'}</th>
-                                                <th className="px-3.5 py-2 border-r border-slate-800 w-[10%] text-center !text-white text-white">{language === 'pt' ? 'C.H.' : 'Hours'}</th>
-                                                <th className="px-3.5 py-2 text-center border-r border-slate-800 font-mono w-[15%] !text-white text-white">{reportT[language as "pt" | "en"].finalGrade}</th>
+                                              <tr className="bg-slate-900 text-[8px] font-black !text-white text-white uppercase tracking-widest border-b-2 border-slate-900">
+                                                <th className="px-3.5 py-2 border-r border-slate-700 w-[15%] !text-white text-white">{language === 'pt' ? 'Módulo' : 'Module'}</th>
+                                                <th className="px-3.5 py-2 border-r border-slate-700 w-[45%] !text-white text-white">{language === 'pt' ? 'Disciplina' : 'Discipline'}</th>
+                                                <th className="px-3.5 py-2 border-r border-slate-700 w-[10%] text-center !text-white text-white">{language === 'pt' ? 'C.H.' : 'Hours'}</th>
+                                                <th className="px-3.5 py-2 text-center border-r border-slate-700 font-mono w-[15%] !text-white text-white">{reportT[language as "pt" | "en"].finalGrade}</th>
                                                 <th className="px-3.5 py-2 text-right w-[15%] !text-white text-white">{reportT[language as "pt" | "en"].situation}</th>
                                               </tr>
                                             </thead>
@@ -3584,16 +3634,16 @@ function BoletimContent() {
                                               ) : (
                                                 rows.map((row: any, rIdx: number) => {
                                                   return (
-                                                    <tr key={`print-row-mod-${row.moduleNum}-${rIdx}`} className="border-b border-slate-200 bg-white">
-                                                      <td className="px-3.5 py-2 font-black text-slate-900 border-r border-slate-250 bg-slate-50/70 align-middle whitespace-nowrap text-center">
+                                                    <tr key={`print-row-mod-${row.moduleNum}-${rIdx}`} className="border-b border-slate-400 bg-white">
+                                                      <td className="px-3.5 py-2 font-black text-slate-900 border-r border-slate-400 bg-slate-50/70 align-middle whitespace-nowrap text-center">
                                                         {row.modulo}
                                                       </td>
-                                                      <td className="p-0 border-r border-slate-200 bg-white align-top">
+                                                      <td className="p-0 border-r border-slate-400 bg-white align-top">
                                                         <div className="flex flex-col w-full h-full">
                                                           {row.disciplines.map((disc: any, dIdx: number) => (
                                                             <div key={`print-disc-${disc.id || dIdx}`} className={cn(
                                                               "flex items-center gap-1.5 px-3.5 py-2 text-[10px] leading-tight break-words font-bold text-slate-800 flex-1",
-                                                              dIdx > 0 && "border-t border-slate-100/80"
+                                                              dIdx > 0 && "border-t border-slate-300"
                                                             )}>
                                                               <span className="w-1 h-1 rounded-full bg-slate-400 shrink-0" />
                                                               <span>{disc.nome}</span>
@@ -3601,19 +3651,19 @@ function BoletimContent() {
                                                           ))}
                                                         </div>
                                                       </td>
-                                                      <td className="p-0 text-center border-r border-slate-200 bg-white align-top">
+                                                      <td className="p-0 text-center border-r border-slate-400 bg-white align-top">
                                                         <div className="flex flex-col w-full h-full">
                                                           {row.disciplines.map((disc: any, dIdx: number) => (
                                                             <div key={`print-ch-${disc.id || dIdx}`} className={cn(
                                                               "flex items-center justify-center px-3.5 py-2 text-[9px] font-mono text-slate-500 flex-1",
-                                                              dIdx > 0 && "border-t border-slate-100/80"
+                                                              dIdx > 0 && "border-t border-slate-300"
                                                             )}>
                                                               {disc.carga_horaria ? `${disc.carga_horaria}h` : '-'}
                                                             </div>
                                                           ))}
                                                         </div>
                                                       </td>
-                                                      <td className="px-3.5 py-2 text-center font-black font-mono text-xs border-r border-slate-200 text-slate-900 bg-white align-middle">
+                                                      <td className="px-3.5 py-2 text-center font-black font-mono text-xs border-r border-slate-400 text-slate-900 bg-white align-middle">
                                                         {row.nota}
                                                       </td>
                                                       <td className={cn("px-3.5 py-2 text-right bg-white align-middle break-words whitespace-normal leading-tight font-black", row.statusClass)}>
@@ -4059,6 +4109,51 @@ function BoletimContent() {
                                       background: #ffffff !important;
                                       box-sizing: border-box !important;
                                     }
+                                    #class-bulletin-print-area table {
+                                      border-collapse: collapse !important;
+                                      border: 1.5px solid #0f172a !important;
+                                      width: 100% !important;
+                                    }
+                                    #class-bulletin-print-area table th,
+                                    #class-bulletin-print-area th {
+                                      padding: 4px 8px !important;
+                                      font-size: 8px !important;
+                                      border: 1px solid #334155 !important;
+                                      color: #ffffff !important;
+                                      background-color: #0f172a !important;
+                                      -webkit-print-color-adjust: exact !important;
+                                      print-color-adjust: exact !important;
+                                    }
+                                    #class-bulletin-print-area table td,
+                                    #class-bulletin-print-area td {
+                                      padding: 3px 6px !important;
+                                      font-size: 9px !important;
+                                      border: 1px solid #475569 !important;
+                                      -webkit-print-color-adjust: exact !important;
+                                      print-color-adjust: exact !important;
+                                    }
+                                    #class-bulletin-print-area table thead tr {
+                                      border-bottom: 2px solid #0f172a !important;
+                                      background-color: #0f172a !important;
+                                      color: #ffffff !important;
+                                      -webkit-print-color-adjust: exact !important;
+                                      print-color-adjust: exact !important;
+                                    }
+                                    #class-bulletin-print-area table tbody tr {
+                                      border-bottom: 1px solid #475569 !important;
+                                    }
+                                    #class-bulletin-print-area .border-t {
+                                      border-top-color: #64748b !important;
+                                    }
+                                    #class-bulletin-print-area .border-r {
+                                      border-right-color: #64748b !important;
+                                    }
+                                    #class-bulletin-print-area .border-b {
+                                      border-bottom-color: #64748b !important;
+                                    }
+                                    #class-bulletin-print-area .border {
+                                      border-color: #64748b !important;
+                                    }
                                   }
                                  ` }} />
 
@@ -4129,16 +4224,16 @@ function BoletimContent() {
                                      </h3>
                                    </div>
 
-                                   <div className="border border-slate-200 rounded-xl overflow-hidden shadow-xs">
-                                     <table className="w-full text-left border-collapse bg-white table-auto">
+                                   <div className="border-2 border-slate-700 rounded-xl overflow-hidden shadow-xs">
+                                     <table className="w-full text-left border-collapse bg-white table-auto border border-slate-700">
                                        <thead>
-                                         <tr className="bg-slate-900 text-[8px] font-black !text-white text-white uppercase tracking-widest border-b border-slate-850">
-                                           <th className="px-3.5 py-2 border-r border-slate-800 w-[5%] text-center !text-white text-white">#</th>
-                                           <th className="px-3.5 py-2 border-r border-slate-800 w-[45%] !text-white text-white">{language === 'pt' ? 'Aluno' : 'Student'}</th>
+                                         <tr className="bg-slate-900 text-[8px] font-black !text-white text-white uppercase tracking-widest border-b-2 border-slate-900">
+                                           <th className="px-3.5 py-2 border-r border-slate-700 w-[5%] text-center !text-white text-white">#</th>
+                                           <th className="px-3.5 py-2 border-r border-slate-700 w-[45%] !text-white text-white">{language === 'pt' ? 'Aluno' : 'Student'}</th>
                                            {Array.from({ length: courseModules }).map((_, i) => (
-                                             <th key={i} className="px-1 py-2 text-center border-r border-slate-800 w-[8%] !text-white text-white">MOD {i + 1}</th>
+                                             <th key={i} className="px-1 py-2 text-center border-r border-slate-700 w-[8%] !text-white text-white">MOD {i + 1}</th>
                                            ))}
-                                           <th className="px-3.5 py-2 text-center border-r border-slate-800 w-[12%] !text-white text-white">{language === 'pt' ? 'Média' : 'Avg'}</th>
+                                           <th className="px-3.5 py-2 text-center border-r border-slate-700 w-[12%] !text-white text-white">{language === 'pt' ? 'Média' : 'Avg'}</th>
                                            <th className="px-3.5 py-2 text-right w-[14%] !text-white text-white">{language === 'pt' ? 'Situação' : 'Status'}</th>
                                          </tr>
                                        </thead>
@@ -4153,23 +4248,23 @@ function BoletimContent() {
                                            boletimData.map((row: any, idx: number) => {
                                              const status = getStatus(row.nota_final, row.frequencia);
                                              return (
-                                               <tr key={`summary-row-${row.id || ''}-${idx}`} className="border-b border-slate-200 bg-white hover:bg-slate-50">
-                                                 <td className="px-3.5 py-1.5 text-center font-bold border-r border-slate-200 text-slate-400 font-mono">
+                                               <tr key={`summary-row-${row.id || ''}-${idx}`} className="border-b border-slate-400 bg-white hover:bg-slate-50">
+                                                 <td className="px-3.5 py-1.5 text-center font-bold border-r border-slate-400 text-slate-400 font-mono">
                                                    {idx + 1}
                                                  </td>
-                                                 <td className="px-3.5 py-1.5 font-bold text-slate-800 border-r border-slate-200">
+                                                 <td className="px-3.5 py-1.5 font-bold text-slate-800 border-r border-slate-400">
                                                    <div className="font-extrabold">{row.aluno?.nome}</div>
                                                    <div className="text-[8px] font-mono text-slate-400">#{row.aluno?.matricula}</div>
                                                  </td>
                                                  {Array.from({ length: courseModules }).map((_, i) => {
                                                    const notaValue = (row as any)[`nota${i + 1}`];
                                                    return (
-                                                     <td key={i} className="px-1 py-1.5 text-center border-r border-slate-200 font-mono">
+                                                     <td key={i} className="px-1 py-1.5 text-center border-r border-slate-400 font-mono">
                                                        {notaValue !== null && notaValue !== undefined ? formatGradePT(notaValue) : '-'}
                                                      </td>
                                                    );
                                                  })}
-                                                 <td className="px-3.5 py-1.5 text-center border-r border-slate-200 font-black font-mono">
+                                                 <td className="px-3.5 py-1.5 text-center border-r border-slate-400 font-black font-mono">
                                                    {row.nota_final !== null && row.nota_final !== undefined ? formatGradePT(row.nota_final) : '-'}
                                                  </td>
                                                  <td className="px-3.5 py-1.5 text-right font-bold">
