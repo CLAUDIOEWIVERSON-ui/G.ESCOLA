@@ -337,7 +337,7 @@ export async function POST(request: Request) {
       }
       if (validScores.length > 0) {
         const avg = validScores.reduce((a, b) => a + b, 0) / validScores.length;
-        gradeUpdates.nota_final = Math.round(avg * 10000) / 10000;
+        gradeUpdates.nota_final = Math.round(avg * 100) / 100;
       }
     }
 
