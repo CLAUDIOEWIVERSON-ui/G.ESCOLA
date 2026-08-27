@@ -2240,26 +2240,27 @@ function BoletimContent() {
                         const freqValue = validFreqs.length > 0 ? Math.min(...validFreqs) : null;
 
                         let statusLabel = '';
-                        let statusClass = 'text-slate-400';
+                        let statusClass = 'text-slate-400 font-bold';
                         if (finalGradeValue === null) {
                           if (isClassExpired) {
                             statusLabel = language === 'pt' ? 'NÃO CONCLUIU' : 'NOT COMPLETED';
-                            statusClass = 'text-rose-600 font-extrabold';
+                            statusClass = 'text-rose-700 font-black';
                           } else {
                             statusLabel = reportT[language as "pt" | "en"].pending;
+                            statusClass = 'text-slate-500 font-bold';
                           }
                         } else if (finalGradeValue >= settings.media_aprovacao && (freqValue === null || freqValue >= settings.frequencia_minima)) {
                           statusLabel = reportT[language as "pt" | "en"].approved;
-                          statusClass = 'text-emerald-600 font-extrabold';
+                          statusClass = 'text-emerald-700 font-black';
                         } else if (freqValue !== null && freqValue < settings.frequencia_minima) {
                           statusLabel = language === 'pt' ? 'FALTA FREQ.' : 'LOW FREQ.';
-                          statusClass = 'text-orange-600 font-extrabold';
+                          statusClass = 'text-orange-700 font-black';
                         } else if (finalGradeValue >= settings.media_recuperacao) {
                           statusLabel = reportT[language as "pt" | "en"].retake;
-                          statusClass = 'text-yellow-600 font-extrabold';
+                          statusClass = 'text-amber-700 font-black';
                         } else {
                           statusLabel = reportT[language as "pt" | "en"].reproved;
-                          statusClass = 'text-rose-600 font-extrabold';
+                          statusClass = 'text-rose-700 font-black';
                         }
 
                         return {
@@ -2292,55 +2293,47 @@ function BoletimContent() {
                               </tr>
                             ) : (
                               reportRows.map((row: any, rIdx: number) => {
-                                if (!row.disciplines || row.disciplines.length === 0) {
-                                  return (
-                                    <tr key={`row-mod-${row.moduleNum}-${rIdx}`} className="bg-white">
-                                      <td className="border border-black p-2 font-medium align-middle text-center bg-slate-50/50">{row.modulo}</td>
-                                      <td className="border border-black p-2 text-slate-500 italic">-</td>
-                                      <td className="border border-black p-2 text-center font-mono text-slate-500">-</td>
-                                      <td className="border border-black p-2 text-center font-mono font-bold">{row.nota}</td>
-                                      <td className={cn("border border-black p-2 text-center font-bold", row.statusClass)}>{row.situacao}</td>
-                                    </tr>
-                                  );
-                                }
-
-                                return row.disciplines.map((disc: any, dIdx: number) => (
-                                  <tr key={`row-mod-${row.moduleNum}-disc-${disc.id || dIdx}`} className="bg-white">
-                                    {dIdx === 0 && (
-                                      <td
-                                        rowSpan={row.disciplines.length}
-                                        className="border border-black p-2 font-medium align-middle text-center bg-slate-50/60"
-                                      >
-                                        {row.modulo}
-                                      </td>
-                                    )}
-                                    <td className="border border-black p-2 text-left text-slate-900 font-semibold">
-                                      {disc.nome}
+                                const discs = row.disciplines && row.disciplines.length > 0 ? row.disciplines : [{ nome: '-', carga_horaria: null }];
+                                return (
+                                  <tr key={`row-mod-${row.moduleNum}-${rIdx}`} className="bg-white border-b border-black">
+                                    <td className="border border-black p-2 font-bold align-middle text-center bg-slate-50/50 text-slate-900 w-[16%]">
+                                      {row.modulo}
                                     </td>
-                                    <td className="border border-black p-2 text-center font-mono text-slate-600">
-                                      {disc.carga_horaria ? `${disc.carga_horaria}h` : '-'}
+                                    <td className="p-0 border border-black align-middle w-[44%]">
+                                      <div className="flex flex-col w-full h-full divide-y divide-black">
+                                        {discs.map((disc: any, dIdx: number) => (
+                                          <div
+                                            key={`disc-${disc.id || dIdx}`}
+                                            className="px-2.5 py-2 text-left text-slate-900 font-semibold flex items-center flex-1 min-h-[28px]"
+                                          >
+                                            {disc.nome}
+                                          </div>
+                                        ))}
+                                      </div>
                                     </td>
-                                    {dIdx === 0 && (
-                                      <>
-                                        <td
-                                          rowSpan={row.disciplines.length}
-                                          className="border border-black p-2 text-center align-middle font-mono font-black text-slate-900 text-sm"
-                                        >
-                                          {row.nota}
-                                        </td>
-                                        <td
-                                          rowSpan={row.disciplines.length}
-                                          className={cn(
-                                            "border border-black p-2 text-center align-middle font-black",
-                                            row.statusClass
-                                          )}
-                                        >
-                                          {row.situacao}
-                                        </td>
-                                      </>
-                                    )}
+                                    <td className="p-0 border border-black align-middle w-[10%] text-center">
+                                      <div className="flex flex-col w-full h-full divide-y divide-black">
+                                        {discs.map((disc: any, dIdx: number) => (
+                                          <div
+                                            key={`ch-${disc.id || dIdx}`}
+                                            className="px-2 py-2 text-center font-mono text-slate-700 flex items-center justify-center flex-1 min-h-[28px]"
+                                          >
+                                            {disc.carga_horaria ? `${disc.carga_horaria}h` : '-'}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </td>
+                                    <td className="border border-black p-2 text-center align-middle font-mono font-black text-slate-900 text-sm w-[15%]">
+                                      {row.nota}
+                                    </td>
+                                    <td className={cn(
+                                      "border border-black p-2 text-center align-middle font-black text-xs w-[15%]",
+                                      row.statusClass
+                                    )}>
+                                      {row.situacao}
+                                    </td>
                                   </tr>
-                                ));
+                                );
                               })
                             )}
                           </tbody>
@@ -3354,14 +3347,13 @@ function BoletimContent() {
                                         border: 1px solid #000000 !important;
                                         background-color: #f1f5f9 !important;
                                         color: #000000 !important;
+                                        font-weight: bold !important;
                                         -webkit-print-color-adjust: exact !important;
                                         print-color-adjust: exact !important;
                                       }
                                       #student-report-print-area table td, 
                                       #student-report-print-area .report-table td, 
                                       #student-report-print-area td {
-                                        padding: 3px 6px !important;
-                                        font-size: 9px !important;
                                         border: 1px solid #000000 !important;
                                         -webkit-print-color-adjust: exact !important;
                                         print-color-adjust: exact !important;
@@ -3375,6 +3367,9 @@ function BoletimContent() {
                                       }
                                       #student-report-print-area table tbody tr {
                                         border-bottom: 1px solid #000000 !important;
+                                      }
+                                      #student-report-print-area table .divide-black > * + * {
+                                        border-top: 1px solid #000000 !important;
                                       }
                                       #student-report-print-area .border-t {
                                         border-top-color: #64748b !important;
@@ -3591,27 +3586,27 @@ function BoletimContent() {
                                           const freqValue = validFreqs.length > 0 ? Math.min(...validFreqs) : null;
 
                                           let statusLabel = '';
-                                          let statusClass = '';
+                                          let statusClass = 'text-slate-400 font-bold';
                                           if (finalGradeValue === null) {
                                             if (isClassExpired) {
                                               statusLabel = language === 'pt' ? 'NÃO CONCLUIU' : 'NOT COMPLETED';
-                                              statusClass = 'text-rose-700 bg-rose-50 border border-rose-100 font-extrabold';
+                                              statusClass = 'text-rose-700 font-black';
                                             } else {
                                               statusLabel = reportT[language as "pt" | "en"].pending;
-                                              statusClass = 'text-slate-500 bg-slate-50 border border-slate-100';
+                                              statusClass = 'text-slate-500 font-bold';
                                             }
                                           } else if (finalGradeValue >= settings.media_aprovacao && (freqValue === null || freqValue >= settings.frequencia_minima)) {
                                             statusLabel = reportT[language as "pt" | "en"].approved;
-                                            statusClass = 'text-emerald-700 bg-emerald-50 border border-emerald-100';
+                                            statusClass = 'text-emerald-700 font-black';
                                           } else if (freqValue !== null && freqValue < settings.frequencia_minima) {
                                             statusLabel = language === 'pt' ? 'FALTA FREQ.' : 'LOW FREQ.';
-                                            statusClass = 'text-orange-700 bg-orange-50 border border-orange-100';
+                                            statusClass = 'text-orange-700 font-black';
                                           } else if (finalGradeValue >= settings.media_recuperacao) {
                                             statusLabel = reportT[language as "pt" | "en"].retake;
-                                            statusClass = 'text-amber-700 bg-amber-50 border border-amber-100';
+                                            statusClass = 'text-amber-700 font-black';
                                           } else {
                                             statusLabel = reportT[language as "pt" | "en"].reproved;
-                                            statusClass = 'text-rose-700 bg-rose-50 border border-rose-100';
+                                            statusClass = 'text-rose-700 font-black';
                                           }
 
                                           return {
@@ -3644,55 +3639,47 @@ function BoletimContent() {
                                                 </tr>
                                               ) : (
                                                 rows.map((row: any, rIdx: number) => {
-                                                  if (!row.disciplines || row.disciplines.length === 0) {
-                                                    return (
-                                                      <tr key={`print-row-mod-${row.moduleNum}-${rIdx}`} className="bg-white">
-                                                        <td className="border border-black p-1.5 font-medium align-middle text-center bg-slate-50/50">{row.modulo}</td>
-                                                        <td className="border border-black p-1.5 text-slate-500 italic">-</td>
-                                                        <td className="border border-black p-1.5 text-center font-mono text-slate-500">-</td>
-                                                        <td className="border border-black p-1.5 text-center font-mono font-bold text-slate-900">{row.nota}</td>
-                                                        <td className={cn("border border-black p-1.5 text-center font-bold", row.statusClass)}>{row.situacao}</td>
-                                                      </tr>
-                                                    );
-                                                  }
-
-                                                  return row.disciplines.map((disc: any, dIdx: number) => (
-                                                    <tr key={`print-row-mod-${row.moduleNum}-disc-${disc.id || dIdx}`} className="bg-white">
-                                                      {dIdx === 0 && (
-                                                        <td
-                                                          rowSpan={row.disciplines.length}
-                                                          className="border border-black p-1.5 font-medium align-middle text-center bg-slate-50/60"
-                                                        >
-                                                          {row.modulo}
-                                                        </td>
-                                                      )}
-                                                      <td className="border border-black p-1.5 text-left text-slate-900 font-semibold">
-                                                        {disc.nome}
+                                                  const discs = row.disciplines && row.disciplines.length > 0 ? row.disciplines : [{ nome: '-', carga_horaria: null }];
+                                                  return (
+                                                    <tr key={`print-row-mod-${row.moduleNum}-${rIdx}`} className="bg-white border-b border-black">
+                                                      <td className="border border-black p-1.5 font-bold align-middle text-center bg-slate-50/50 text-slate-900 w-[16%]">
+                                                        {row.modulo}
                                                       </td>
-                                                      <td className="border border-black p-1.5 text-center font-mono text-slate-600">
-                                                        {disc.carga_horaria ? `${disc.carga_horaria}h` : '-'}
+                                                      <td className="p-0 border border-black align-middle w-[44%]">
+                                                        <div className="flex flex-col w-full h-full divide-y divide-black">
+                                                          {discs.map((disc: any, dIdx: number) => (
+                                                            <div
+                                                              key={`print-disc-${disc.id || dIdx}`}
+                                                              className="px-2 py-1 text-left text-slate-900 font-semibold flex items-center flex-1 min-h-[22px]"
+                                                            >
+                                                              {disc.nome}
+                                                            </div>
+                                                          ))}
+                                                        </div>
                                                       </td>
-                                                      {dIdx === 0 && (
-                                                        <>
-                                                          <td
-                                                            rowSpan={row.disciplines.length}
-                                                            className="border border-black p-1.5 text-center align-middle font-mono font-black text-slate-900 text-xs"
-                                                          >
-                                                            {row.nota}
-                                                          </td>
-                                                          <td
-                                                            rowSpan={row.disciplines.length}
-                                                            className={cn(
-                                                              "border border-black p-1.5 text-center align-middle font-black",
-                                                              row.statusClass
-                                                            )}
-                                                          >
-                                                            {row.situacao}
-                                                          </td>
-                                                        </>
-                                                      )}
+                                                      <td className="p-0 border border-black align-middle w-[10%] text-center">
+                                                        <div className="flex flex-col w-full h-full divide-y divide-black">
+                                                          {discs.map((disc: any, dIdx: number) => (
+                                                            <div
+                                                              key={`print-ch-${disc.id || dIdx}`}
+                                                              className="px-1.5 py-1 text-center font-mono text-slate-700 flex items-center justify-center flex-1 min-h-[22px]"
+                                                            >
+                                                              {disc.carga_horaria ? `${disc.carga_horaria}h` : '-'}
+                                                            </div>
+                                                          ))}
+                                                        </div>
+                                                      </td>
+                                                      <td className="border border-black p-1.5 text-center align-middle font-mono font-black text-slate-900 text-xs w-[15%]">
+                                                        {row.nota}
+                                                      </td>
+                                                      <td className={cn(
+                                                        "border border-black p-1.5 text-center align-middle font-black text-[10px] w-[15%]",
+                                                        row.statusClass
+                                                      )}>
+                                                        {row.situacao}
+                                                      </td>
                                                     </tr>
-                                                  ));
+                                                  );
                                                 })
                                               )}
                                             </tbody>
