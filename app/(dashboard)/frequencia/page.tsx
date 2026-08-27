@@ -980,17 +980,6 @@ export default function FrequenciaPage() {
                       style={{ width: '96px', height: '96px' }}
                     />
                   </div>
-                  {formattedTurmaPeriod && (
-                    <div className="hidden sm:flex items-center gap-2">
-                      <div className="flex items-center gap-2 px-4 py-2.5 bg-blue-50 text-blue-700 rounded-2xl text-xs font-black border border-blue-100 shadow-xs">
-                        <Calendar className="w-4 h-4 text-blue-600 shrink-0" />
-                        <span>
-                          {language === 'pt' ? 'Período: ' : 'Period: '}
-                          <strong className="font-mono text-blue-900">{formattedTurmaPeriod}</strong>
-                        </span>
-                      </div>
-                    </div>
-                  )}
                   <div>
                     <h3 className="text-[10px] font-black text-blue-700 uppercase tracking-widest font-mono">
                       {language === 'pt' ? 'Sistema de Gestão de Frequência' : 'Attendance Management System'}
