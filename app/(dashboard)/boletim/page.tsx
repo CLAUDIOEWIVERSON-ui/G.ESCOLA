@@ -3882,27 +3882,27 @@ function BoletimContent() {
 
                                   {/* Military Signature Panel */}
                                   <div className="flex flex-col items-end justify-end pt-3 mt-4 mb-2">
-                                    <div className="flex flex-col items-center text-center w-72 sm:w-80">
+                                    <div className="flex flex-col items-center text-center min-w-[320px] max-w-[480px]">
                                       {/* Linha de Assinatura */}
-                                      <div className="w-full border-b border-slate-900 h-7 mb-1.5"></div>
+                                      <div className="w-full min-w-[300px] border-b border-slate-900 h-7 mb-1.5"></div>
                                       
                                       {/* Linha 1: Nome Completo */}
                                       {signatureName.trim() ? (
-                                        <div className="text-xs font-bold text-slate-900 uppercase tracking-wider leading-tight text-center w-full">
+                                        <div className="text-xs font-bold text-slate-900 uppercase tracking-wider leading-tight text-center w-full whitespace-nowrap">
                                           {signatureName.trim()}
                                         </div>
                                       ) : null}
 
                                       {/* Linha 2: Posto / Graduação */}
                                       {signatureRank.trim() ? (
-                                        <div className="text-[11px] font-semibold text-slate-800 uppercase tracking-wide leading-tight text-center mt-0.5 w-full">
+                                        <div className="text-[11px] font-semibold text-slate-800 uppercase tracking-wide leading-tight text-center mt-0.5 w-full whitespace-nowrap">
                                           {signatureRank.trim()}
                                         </div>
                                       ) : null}
 
                                       {/* Linha 3: Função */}
                                       {signatureRole.trim() ? (
-                                        <div className="text-[10.5px] font-bold text-slate-800 uppercase tracking-wide leading-tight text-center mt-0.5 w-full">
+                                        <div className="text-[10.5px] font-bold text-slate-800 uppercase tracking-wide leading-tight text-center mt-0.5 w-full whitespace-nowrap">
                                           {signatureRole.trim()}
                                         </div>
                                       ) : null}
@@ -4308,20 +4308,20 @@ function BoletimContent() {
 
                                  {/* Class Batch Signature Panel */}
                                  <div className="flex flex-col items-end justify-end pt-3 mt-4 mb-2 border-t border-dashed border-slate-300">
-                                   <div className="flex flex-col items-center text-center w-72 sm:w-80">
-                                     <div className="w-full border-b-2 border-slate-800 h-7 mb-1.5"></div>
+                                   <div className="flex flex-col items-center text-center min-w-[320px] max-w-[480px]">
+                                     <div className="w-full min-w-[300px] border-b-2 border-slate-800 h-7 mb-1.5"></div>
                                      {signatureName.trim() ? (
-                                       <span className="text-xs font-black text-slate-900 uppercase tracking-wider leading-tight text-center font-mono w-full">
+                                       <span className="text-xs font-black text-slate-900 uppercase tracking-wider leading-tight text-center font-mono w-full whitespace-nowrap">
                                          {signatureName.trim()}
                                        </span>
                                      ) : null}
                                      {signatureRank.trim() ? (
-                                       <span className="text-[11px] font-bold text-slate-800 uppercase tracking-wider leading-tight text-center mt-0.5 font-mono w-full">
+                                       <span className="text-[11px] font-bold text-slate-800 uppercase tracking-wider leading-tight text-center mt-0.5 font-mono w-full whitespace-nowrap">
                                          {signatureRank.trim()}
                                        </span>
                                      ) : null}
                                      {signatureRole.trim() ? (
-                                       <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wide leading-tight text-center mt-0.5 font-mono w-full">
+                                       <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wide leading-tight text-center mt-0.5 font-mono w-full whitespace-nowrap">
                                          {signatureRole.trim()}
                                        </span>
                                      ) : null}
