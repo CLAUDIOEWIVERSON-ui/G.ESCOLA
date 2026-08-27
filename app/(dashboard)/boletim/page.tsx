@@ -3902,7 +3902,7 @@ function BoletimContent() {
 
                                       {/* Linha 3: Função */}
                                       {signatureRole.trim() ? (
-                                        <div className="text-[10.5px] font-medium text-slate-800 uppercase tracking-wide leading-tight text-center mt-0.5 w-full">
+                                        <div className="text-[10.5px] font-bold text-slate-800 uppercase tracking-wide leading-tight text-center mt-0.5 w-full">
                                           {signatureRole.trim()}
                                         </div>
                                       ) : null}
