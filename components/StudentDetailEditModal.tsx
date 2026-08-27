@@ -155,7 +155,7 @@ export default function StudentDetailEditModal({
             .select('*, turma:turmas(id, nome, codigo, curso_id, internacional, localizacao, data_inicio, data_fim, curso:cursos(id, nome, categoria))')
             .eq('id', aluno.id)
             .maybeSingle()
-            .then(({ data: freshAluno, error }) => {
+            .then(({ data: freshAluno, error }: { data: any; error: any }) => {
               if (!error && freshAluno) {
                 const freshCursoId = freshAluno.curso_id || freshAluno.curso?.id || freshAluno.turma?.curso_id || freshAluno.turma?.curso?.id || studentCursoId;
                 const freshTurmaId = freshAluno.turma_id || freshAluno.turma?.id || effectiveTurmaId;

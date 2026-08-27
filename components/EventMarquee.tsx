@@ -168,8 +168,8 @@ export function EventMarquee({ thought }: EventMarqueeProps = {}) {
     let parsedIsExclusive = evt.is_exclusive === true;
     let parsedExibirInstrutor = evt.exibir_instrutor !== false;
     let parsedExibirAluno = evt.exibir_aluno !== false;
-    let parsedDataFim = evt.data_fim ? evt.data_fim.split('T')[0] : null;
-    let parsedTipoData = (evt.tipo_data as 'fixa' | 'periodo') || (parsedDataFim ? 'periodo' : 'fixa');
+    let parsedDataFim = (evt as any).data_fim ? (evt as any).data_fim.split('T')[0] : null;
+    let parsedTipoData = ((evt as any).tipo_data as 'fixa' | 'periodo') || (parsedDataFim ? 'periodo' : 'fixa');
 
     // Try parsing tags
     const creatorMatch = desc.match(/\[creator:([^\]]+)\]/);

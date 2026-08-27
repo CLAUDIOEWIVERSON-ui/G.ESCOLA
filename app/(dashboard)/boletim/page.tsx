@@ -2273,63 +2273,74 @@ function BoletimContent() {
                       });
 
                       return (
-                        <table className="w-full text-left report-table border border-slate-400 bg-white table-auto">
+                        <table className="w-full border-collapse border border-black text-xs bg-white table-auto">
                           <thead>
-                            <tr className="bg-slate-100 print-bg-gray text-[10px] font-extrabold text-slate-700 uppercase tracking-wider border-b-2 border-slate-400">
-                              <th className="px-4 py-3 border-r border-slate-400 w-[15%]">{language === 'pt' ? 'Módulo' : 'Module'}</th>
-                              <th className="px-4 py-3 border-r border-slate-400 w-[45%]">{language === 'pt' ? 'Disciplina' : 'Discipline'}</th>
-                              <th className="px-3 py-3 text-center border-r border-slate-400 w-[10%]">{language === 'pt' ? 'C.H.' : 'Hours'}</th>
-                              <th className="px-3 py-3 text-center border-r border-slate-400 font-mono w-[15%]">{reportT[language as "pt" | "en"].finalGrade}</th>
-                              <th className="px-4 py-3 text-right w-[15%]">{reportT[language as "pt" | "en"].situation}</th>
+                            <tr className="bg-slate-100 font-bold border-b border-black text-[10px] uppercase tracking-wider text-slate-800">
+                              <th className="border border-black p-2 text-center font-bold w-[16%]">{language === 'pt' ? 'MÓDULO' : 'MODULE'}</th>
+                              <th className="border border-black p-2 text-left font-bold w-[44%]">{language === 'pt' ? 'DISCIPLINA' : 'DISCIPLINE'}</th>
+                              <th className="border border-black p-2 text-center font-bold w-[10%]">{language === 'pt' ? 'C.H.' : 'HOURS'}</th>
+                              <th className="border border-black p-2 text-center font-bold w-[15%]">{reportT[language as "pt" | "en"].finalGrade}</th>
+                              <th className="border border-black p-2 text-center font-bold w-[15%]">{reportT[language as "pt" | "en"].situation}</th>
                             </tr>
                           </thead>
                           <tbody className="text-xs text-left">
                             {reportRows.length === 0 ? (
                               <tr>
-                                <td colSpan={5} className="text-center py-6 text-slate-400 font-bold bg-white">
+                                <td colSpan={5} className="border border-black text-center py-6 text-slate-400 font-bold bg-white">
                                   {language === 'pt' ? 'Nenhuma disciplina cadastrada.' : 'No disciplines registered.'}
                                 </td>
                               </tr>
                             ) : (
                               reportRows.map((row: any, rIdx: number) => {
-                                return (
-                                  <tr key={`row-mod-${row.moduleNum}-${rIdx}`} className="border-b border-slate-400 hover:bg-slate-50/50 transition-colors bg-white">
-                                    <td className="px-4 py-3 font-extrabold text-slate-900 border-r border-slate-400 text-left bg-white align-middle whitespace-nowrap">
-                                      {row.modulo}
+                                if (!row.disciplines || row.disciplines.length === 0) {
+                                  return (
+                                    <tr key={`row-mod-${row.moduleNum}-${rIdx}`} className="bg-white">
+                                      <td className="border border-black p-2 font-medium align-middle text-center bg-slate-50/50">{row.modulo}</td>
+                                      <td className="border border-black p-2 text-slate-500 italic">-</td>
+                                      <td className="border border-black p-2 text-center font-mono text-slate-500">-</td>
+                                      <td className="border border-black p-2 text-center font-mono font-bold">{row.nota}</td>
+                                      <td className={cn("border border-black p-2 text-center font-bold", row.statusClass)}>{row.situacao}</td>
+                                    </tr>
+                                  );
+                                }
+
+                                return row.disciplines.map((disc: any, dIdx: number) => (
+                                  <tr key={`row-mod-${row.moduleNum}-disc-${disc.id || dIdx}`} className="bg-white">
+                                    {dIdx === 0 && (
+                                      <td
+                                        rowSpan={row.disciplines.length}
+                                        className="border border-black p-2 font-medium align-middle text-center bg-slate-50/60"
+                                      >
+                                        {row.modulo}
+                                      </td>
+                                    )}
+                                    <td className="border border-black p-2 text-left text-slate-900 font-semibold">
+                                      {disc.nome}
                                     </td>
-                                    <td className="p-0 border-r border-slate-400 bg-white align-top">
-                                      <div className="flex flex-col w-full h-full">
-                                        {row.disciplines.map((disc: any, dIdx: number) => (
-                                          <div key={`disc-name-${disc.id || dIdx}`} className={cn(
-                                            "flex items-center gap-2 px-4 py-3 text-xs leading-tight break-words font-extrabold text-slate-800 flex-1",
-                                            dIdx > 0 && "border-t border-slate-300"
-                                          )}>
-                                            <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
-                                            <span>{disc.nome}</span>
-                                          </div>
-                                        ))}
-                                      </div>
+                                    <td className="border border-black p-2 text-center font-mono text-slate-600">
+                                      {disc.carga_horaria ? `${disc.carga_horaria}h` : '-'}
                                     </td>
-                                    <td className="p-0 border-r border-slate-400 bg-white align-top">
-                                      <div className="flex flex-col w-full h-full">
-                                        {row.disciplines.map((disc: any, dIdx: number) => (
-                                          <div key={`disc-ch-${disc.id || dIdx}`} className={cn(
-                                            "flex items-center justify-center px-3 py-3 font-mono text-xs text-slate-500 flex-1",
-                                            dIdx > 0 && "border-t border-slate-300"
-                                          )}>
-                                            {disc.carga_horaria ? `${disc.carga_horaria}h` : '-'}
-                                          </div>
-                                        ))}
-                                      </div>
-                                    </td>
-                                    <td className="px-3 py-3 text-center font-black font-mono text-sm border-r border-slate-400 text-slate-900 bg-white align-middle animate-fade-in">
-                                      {row.nota}
-                                    </td>
-                                    <td className={cn("px-4 py-3 text-right font-black bg-white align-middle break-words whitespace-normal leading-tight", row.statusClass)}>
-                                      {row.situacao}
-                                    </td>
+                                    {dIdx === 0 && (
+                                      <>
+                                        <td
+                                          rowSpan={row.disciplines.length}
+                                          className="border border-black p-2 text-center align-middle font-mono font-black text-slate-900 text-sm"
+                                        >
+                                          {row.nota}
+                                        </td>
+                                        <td
+                                          rowSpan={row.disciplines.length}
+                                          className={cn(
+                                            "border border-black p-2 text-center align-middle font-black",
+                                            row.statusClass
+                                          )}
+                                        >
+                                          {row.situacao}
+                                        </td>
+                                      </>
+                                    )}
                                   </tr>
-                                );
+                                ));
                               })
                             )}
                           </tbody>
@@ -3332,38 +3343,38 @@ function BoletimContent() {
                                       }
                                       #student-report-print-area table {
                                         border-collapse: collapse !important;
-                                        border: 1.5px solid #0f172a !important;
+                                        border: 1px solid #000000 !important;
                                         width: 100% !important;
                                       }
                                       #student-report-print-area table th, 
                                       #student-report-print-area .report-table th, 
                                       #student-report-print-area th {
-                                        padding: 4px 8px !important;
+                                        padding: 4px 6px !important;
                                         font-size: 8px !important;
-                                        border: 1px solid #334155 !important;
-                                        background-color: #0f172a !important;
-                                        color: #ffffff !important;
+                                        border: 1px solid #000000 !important;
+                                        background-color: #f1f5f9 !important;
+                                        color: #000000 !important;
                                         -webkit-print-color-adjust: exact !important;
                                         print-color-adjust: exact !important;
                                       }
                                       #student-report-print-area table td, 
                                       #student-report-print-area .report-table td, 
                                       #student-report-print-area td {
-                                        padding: 3px 8px !important;
+                                        padding: 3px 6px !important;
                                         font-size: 9px !important;
-                                        border: 1px solid #475569 !important;
+                                        border: 1px solid #000000 !important;
                                         -webkit-print-color-adjust: exact !important;
                                         print-color-adjust: exact !important;
                                       }
                                       #student-report-print-area table thead tr {
-                                        border-bottom: 2px solid #0f172a !important;
-                                        background-color: #0f172a !important;
-                                        color: #ffffff !important;
+                                        border-bottom: 1px solid #000000 !important;
+                                        background-color: #f1f5f9 !important;
+                                        color: #000000 !important;
                                         -webkit-print-color-adjust: exact !important;
                                         print-color-adjust: exact !important;
                                       }
                                       #student-report-print-area table tbody tr {
-                                        border-bottom: 1px solid #475569 !important;
+                                        border-bottom: 1px solid #000000 !important;
                                       }
                                       #student-report-print-area .border-t {
                                         border-top-color: #64748b !important;
@@ -3614,63 +3625,74 @@ function BoletimContent() {
                                         });
 
                                         return (
-                                          <table className="w-full text-left border-collapse bg-white table-auto border border-slate-700">
+                                          <table className="w-full border-collapse border border-black text-xs bg-white table-auto">
                                             <thead>
-                                              <tr className="bg-slate-900 text-[8px] font-black !text-white text-white uppercase tracking-widest border-b-2 border-slate-900">
-                                                <th className="px-3.5 py-2 border-r border-slate-700 w-[15%] !text-white text-white">{language === 'pt' ? 'Módulo' : 'Module'}</th>
-                                                <th className="px-3.5 py-2 border-r border-slate-700 w-[45%] !text-white text-white">{language === 'pt' ? 'Disciplina' : 'Discipline'}</th>
-                                                <th className="px-3.5 py-2 border-r border-slate-700 w-[10%] text-center !text-white text-white">{language === 'pt' ? 'C.H.' : 'Hours'}</th>
-                                                <th className="px-3.5 py-2 text-center border-r border-slate-700 font-mono w-[15%] !text-white text-white">{reportT[language as "pt" | "en"].finalGrade}</th>
-                                                <th className="px-3.5 py-2 text-right w-[15%] !text-white text-white">{reportT[language as "pt" | "en"].situation}</th>
+                                              <tr className="bg-slate-100 font-bold border-b border-black text-[8px] uppercase tracking-widest text-slate-900">
+                                                <th className="border border-black p-1.5 text-center font-bold w-[16%]">{language === 'pt' ? 'MÓDULO' : 'MODULE'}</th>
+                                                <th className="border border-black p-1.5 text-left font-bold w-[44%]">{language === 'pt' ? 'DISCIPLINA' : 'DISCIPLINE'}</th>
+                                                <th className="border border-black p-1.5 text-center font-bold w-[10%]">{language === 'pt' ? 'C.H.' : 'HOURS'}</th>
+                                                <th className="border border-black p-1.5 text-center font-bold w-[15%]">{reportT[language as "pt" | "en"].finalGrade}</th>
+                                                <th className="border border-black p-1.5 text-center font-bold w-[15%]">{reportT[language as "pt" | "en"].situation}</th>
                                               </tr>
                                             </thead>
                                             <tbody className="text-[10px]">
                                               {rows.length === 0 ? (
                                                 <tr>
-                                                  <td colSpan={5} className="text-center py-4 text-slate-400 font-bold bg-white">
+                                                  <td colSpan={5} className="border border-black text-center py-4 text-slate-400 font-bold bg-white">
                                                     {language === 'pt' ? 'Nenhuma disciplina lançada.' : 'No modules submitted.'}
                                                   </td>
                                                 </tr>
                                               ) : (
                                                 rows.map((row: any, rIdx: number) => {
-                                                  return (
-                                                    <tr key={`print-row-mod-${row.moduleNum}-${rIdx}`} className="border-b border-slate-400 bg-white">
-                                                      <td className="px-3.5 py-2 font-black text-slate-900 border-r border-slate-400 bg-slate-50/70 align-middle whitespace-nowrap text-center">
-                                                        {row.modulo}
+                                                  if (!row.disciplines || row.disciplines.length === 0) {
+                                                    return (
+                                                      <tr key={`print-row-mod-${row.moduleNum}-${rIdx}`} className="bg-white">
+                                                        <td className="border border-black p-1.5 font-medium align-middle text-center bg-slate-50/50">{row.modulo}</td>
+                                                        <td className="border border-black p-1.5 text-slate-500 italic">-</td>
+                                                        <td className="border border-black p-1.5 text-center font-mono text-slate-500">-</td>
+                                                        <td className="border border-black p-1.5 text-center font-mono font-bold text-slate-900">{row.nota}</td>
+                                                        <td className={cn("border border-black p-1.5 text-center font-bold", row.statusClass)}>{row.situacao}</td>
+                                                      </tr>
+                                                    );
+                                                  }
+
+                                                  return row.disciplines.map((disc: any, dIdx: number) => (
+                                                    <tr key={`print-row-mod-${row.moduleNum}-disc-${disc.id || dIdx}`} className="bg-white">
+                                                      {dIdx === 0 && (
+                                                        <td
+                                                          rowSpan={row.disciplines.length}
+                                                          className="border border-black p-1.5 font-medium align-middle text-center bg-slate-50/60"
+                                                        >
+                                                          {row.modulo}
+                                                        </td>
+                                                      )}
+                                                      <td className="border border-black p-1.5 text-left text-slate-900 font-semibold">
+                                                        {disc.nome}
                                                       </td>
-                                                      <td className="p-0 border-r border-slate-400 bg-white align-top">
-                                                        <div className="flex flex-col w-full h-full">
-                                                          {row.disciplines.map((disc: any, dIdx: number) => (
-                                                            <div key={`print-disc-${disc.id || dIdx}`} className={cn(
-                                                              "flex items-center gap-1.5 px-3.5 py-2 text-[10px] leading-tight break-words font-bold text-slate-800 flex-1",
-                                                              dIdx > 0 && "border-t border-slate-300"
-                                                            )}>
-                                                              <span className="w-1 h-1 rounded-full bg-slate-400 shrink-0" />
-                                                              <span>{disc.nome}</span>
-                                                            </div>
-                                                          ))}
-                                                        </div>
+                                                      <td className="border border-black p-1.5 text-center font-mono text-slate-600">
+                                                        {disc.carga_horaria ? `${disc.carga_horaria}h` : '-'}
                                                       </td>
-                                                      <td className="p-0 text-center border-r border-slate-400 bg-white align-top">
-                                                        <div className="flex flex-col w-full h-full">
-                                                          {row.disciplines.map((disc: any, dIdx: number) => (
-                                                            <div key={`print-ch-${disc.id || dIdx}`} className={cn(
-                                                              "flex items-center justify-center px-3.5 py-2 text-[9px] font-mono text-slate-500 flex-1",
-                                                              dIdx > 0 && "border-t border-slate-300"
-                                                            )}>
-                                                              {disc.carga_horaria ? `${disc.carga_horaria}h` : '-'}
-                                                            </div>
-                                                          ))}
-                                                        </div>
-                                                      </td>
-                                                      <td className="px-3.5 py-2 text-center font-black font-mono text-xs border-r border-slate-400 text-slate-900 bg-white align-middle">
-                                                        {row.nota}
-                                                      </td>
-                                                      <td className={cn("px-3.5 py-2 text-right bg-white align-middle break-words whitespace-normal leading-tight font-black", row.statusClass)}>
-                                                        {row.situacao}
-                                                      </td>
+                                                      {dIdx === 0 && (
+                                                        <>
+                                                          <td
+                                                            rowSpan={row.disciplines.length}
+                                                            className="border border-black p-1.5 text-center align-middle font-mono font-black text-slate-900 text-xs"
+                                                          >
+                                                            {row.nota}
+                                                          </td>
+                                                          <td
+                                                            rowSpan={row.disciplines.length}
+                                                            className={cn(
+                                                              "border border-black p-1.5 text-center align-middle font-black",
+                                                              row.statusClass
+                                                            )}
+                                                          >
+                                                            {row.situacao}
+                                                          </td>
+                                                        </>
+                                                      )}
                                                     </tr>
-                                                  );
+                                                  ));
                                                 })
                                               )}
                                             </tbody>
