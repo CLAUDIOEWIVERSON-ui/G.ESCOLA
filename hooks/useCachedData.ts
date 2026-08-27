@@ -247,7 +247,7 @@ export function useDashboardStats() {
           .select('id, nome, categoria, documento_criacao')
           .is('deleted_at', null),
         supabase.from('turmas')
-          .select('id, nome, ano, data_inicio, data_fim, status, internacional, localizacao, periodo, capacidade_max, instrutor, grupo_responsavel, curso_id, documento_criacao, curso:cursos(id, nome, categoria, grupo_responsavel, documento_criacao)')
+          .select('id, nome, categoria, ano, data_inicio, data_fim, status, internacional, localizacao, periodo, capacidade_max, instrutor, grupo_responsavel, curso_id, documento_criacao, curso:cursos(id, nome, categoria, grupo_responsavel, documento_criacao)')
           .is('deleted_at', null),
         supabase.from('alunos')
           .select('id, turma_id')
@@ -313,16 +313,27 @@ export function useDashboardStats() {
         courseMap.set(c.id, c);
       });
 
-      // Map turma id to course object with status
-      const turmaCoursesMap = new Map<string, { id: string; nome: string; categoria: string | null; status: string | null }>();
-      filteredTurmas.forEach((t: any) => {
-        if (t.curso_id) {
-          const c = courseMap.get(t.curso_id);
-          if (c) {
-            turmaCoursesMap.set(t.id, { ...c, status: t.status });
-          }
+      // Helper function to resolve category accurately
+      const resolveTurmaCategory = (turma: any, course: any): 'expedito' | 'carreira' | 'especial' | 'ead' => {
+        const catRaw = (turma?.categoria || course?.categoria || '').toString().toLowerCase().trim();
+        const nomeTurma = (turma?.nome || '').toLowerCase();
+        const nomeCurso = (course?.nome || '').toLowerCase();
+
+        if (catRaw === 'carreira' || catRaw === 'carreiras' || catRaw.includes('carreir')) {
+          return 'carreira';
         }
-      });
+        if (catRaw === 'especial' || catRaw === 'especiais' || catRaw.includes('especi')) {
+          return 'especial';
+        }
+        if (catRaw === 'ead' || catRaw.includes('distancia') || catRaw.includes('distância') || nomeTurma.includes('ead') || nomeCurso.includes('ead')) {
+          return 'ead';
+        }
+        // Default category for naval training courses is expedito
+        return 'expedito';
+      };
+
+      // Map turma id to course & category with status
+      const turmaMetaMap = new Map<string, { categoria: 'expedito' | 'carreira' | 'especial' | 'ead'; isAtiva: boolean; isPreInscrito: boolean }>();
 
       // Count and compile turmas by category of their course - Active only, non-concluded
       const expeditoTurmasList: any[] = [];
@@ -331,38 +342,31 @@ export function useDashboardStats() {
       const eadTurmasList: any[] = [];
       const preInscritasTurmasList: any[] = [];
 
-      // Map to count students per turma
-      const turmaAlunosCount = new Map<string, number>();
-      activeAlunos.forEach((al: any) => {
-        if (al.turma_id) {
-          turmaAlunosCount.set(al.turma_id, (turmaAlunosCount.get(al.turma_id) || 0) + 1);
-        }
-      });
-
       filteredTurmas.forEach((t: any) => {
-        const alunosCount = turmaAlunosCount.get(t.id) || 0;
-        const isPreInscrito = t.status === 'pré-inscrito(a)(s)';
-        
-        // Only skip turmas with 0 students if they are NOT pre-registered.
-        // Pre-registered turmas should be counted even if they don't have students yet,
-        // or if the user explicitly wants their card open.
-        if (alunosCount === 0 && !isPreInscrito) return;
-
-        const isAtiva = t.status === 'ativa' || !t.status;
-        const course = t.curso_id ? courseMap.get(t.curso_id) : (t.curso || null);
+        const course = (t.curso_id ? courseMap.get(t.curso_id) : null) || (Array.isArray(t.curso) ? t.curso[0] : t.curso);
         const tWithCourse = { ...t, curso: course || t.curso };
         
-        // Normalize category from turma or course
-        const rawCat = (t.categoria || course?.categoria || '').toString().toLowerCase().trim();
+        const statusLower = (t.status || 'ativa').toString().toLowerCase().trim();
+        const isPreInscrito = statusLower === 'pré-inscrito(a)(s)' || statusLower === 'pre-inscrito' || statusLower === 'pre_inscrito' || (statusLower === 'ativa' && t.ativa === false);
+        const isConcluida = statusLower === 'concluida' || statusLower === 'concluída' || statusLower === 'concluido' || statusLower === 'concluído' || statusLower === 'arquivada' || statusLower === 'cancelada';
+        const isAtiva = !isConcluida && !isPreInscrito;
+
+        const category = resolveTurmaCategory(t, course);
+
+        turmaMetaMap.set(t.id, {
+          categoria: category,
+          isAtiva,
+          isPreInscrito
+        });
 
         if (isAtiva) {
-          if (rawCat === 'expedito') {
+          if (category === 'expedito') {
             expeditoTurmasList.push(tWithCourse);
-          } else if (rawCat === 'carreira') {
+          } else if (category === 'carreira') {
             carreiraTurmasList.push(tWithCourse);
-          } else if (rawCat === 'especial') {
+          } else if (category === 'especial') {
             especialTurmasList.push(tWithCourse);
-          } else if (rawCat === 'ead' || rawCat.includes('distancia') || rawCat.includes('distância')) {
+          } else if (category === 'ead') {
             eadTurmasList.push(tWithCourse);
           }
         } else if (isPreInscrito) {
@@ -379,23 +383,19 @@ export function useDashboardStats() {
 
       activeAlunos.forEach((al: any) => {
         if (al.turma_id) {
-          const course = turmaCoursesMap.get(al.turma_id);
-          if (course) {
-            const isAtiva = course.status === 'ativa' || !course.status;
-            const isPreInscrito = course.status === 'pré-inscrito(a)(s)';
-            const rawCat = (course.categoria || '').toString().toLowerCase().trim();
-            
-            if (isAtiva) {
-              if (rawCat === 'expedito') {
+          const meta = turmaMetaMap.get(al.turma_id);
+          if (meta) {
+            if (meta.isAtiva) {
+              if (meta.categoria === 'expedito') {
                 expeditoAlunosCount++;
-              } else if (rawCat === 'carreira') {
+              } else if (meta.categoria === 'carreira') {
                 carreiraAlunosCount++;
-              } else if (rawCat === 'especial') {
+              } else if (meta.categoria === 'especial') {
                 especialAlunosCount++;
-              } else if (rawCat === 'ead' || rawCat.includes('distancia') || rawCat.includes('distância')) {
+              } else if (meta.categoria === 'ead') {
                 eadAlunosCount++;
               }
-            } else if (isPreInscrito) {
+            } else if (meta.isPreInscrito) {
               preInscritosAlunosCount++;
             }
           }

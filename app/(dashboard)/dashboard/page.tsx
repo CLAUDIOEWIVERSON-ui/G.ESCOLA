@@ -134,11 +134,11 @@ export default function DashboardPage() {
         'expedito': stats.turmasExpedito,
         'carreira': stats.turmasCarreira,
         'especial': stats.turmasEspeciais,
-        'ead': stats.turmasEad,
+        'ead': stats.turmasEad || 0,
         'pre_inscritos': stats.turmasPreInscritas
       };
 
-      if (!hasUserSelectedCard && cardDataMap[selectedCard] === 0) {
+      if (!hasUserSelectedCard && (cardDataMap[selectedCard] === 0 || cardDataMap[selectedCard] === undefined)) {
         const firstAvailable = Object.entries(cardDataMap).find(([_, value]) => value > 0);
         if (firstAvailable) {
           setSelectedCard(firstAvailable[0]);
