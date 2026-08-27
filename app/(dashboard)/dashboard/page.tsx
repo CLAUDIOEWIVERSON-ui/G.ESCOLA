@@ -44,7 +44,8 @@ import {
   Calendar,
   FolderTree,
   LayoutGrid,
-  SortAsc
+  SortAsc,
+  Monitor
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ExchangeRateTicker from '@/components/ExchangeRateTicker';
@@ -71,12 +72,14 @@ export default function DashboardPage() {
       turmasExpedito: 0,
       turmasCarreira: 0,
       turmasEspeciais: 0,
+      turmasEad: 0,
       turmasPreInscritas: 0,
     }, 
     alunosExterior = [],
     turmasExpeditoList = [],
     turmasCarreiraList = [],
     turmasEspeciaisList = [],
+    turmasEadList = [],
     turmasPreInscritasList = [],
   } = dashboardData || {};
 
@@ -95,7 +98,7 @@ export default function DashboardPage() {
       if (highlightParam) {
         setHighlightedTurmaId(highlightParam);
       }
-      if (cardParam && ['exterior', 'expedito', 'carreira', 'especial', 'pre_inscritos'].includes(cardParam)) {
+      if (cardParam && ['exterior', 'expedito', 'carreira', 'especial', 'ead', 'pre_inscritos'].includes(cardParam)) {
         setSelectedCard(cardParam);
         setHasUserSelectedCard(true);
       }
@@ -114,12 +117,15 @@ export default function DashboardPage() {
       } else if (turmasEspeciaisList?.some((t: any) => t.id === highlightedTurmaId)) {
         setSelectedCard('especial');
         setHasUserSelectedCard(true);
+      } else if (turmasEadList?.some((t: any) => t.id === highlightedTurmaId)) {
+        setSelectedCard('ead');
+        setHasUserSelectedCard(true);
       } else if (turmasPreInscritasList?.some((t: any) => t.id === highlightedTurmaId)) {
         setSelectedCard('pre_inscritos');
         setHasUserSelectedCard(true);
       }
     }
-  }, [highlightedTurmaId, dashboardData, turmasExpeditoList, turmasCarreiraList, turmasEspeciaisList, turmasPreInscritasList]);
+  }, [highlightedTurmaId, dashboardData, turmasExpeditoList, turmasCarreiraList, turmasEspeciaisList, turmasEadList, turmasPreInscritasList]);
 
   useEffect(() => {
     if (dashboardData && stats) {
@@ -128,6 +134,7 @@ export default function DashboardPage() {
         'expedito': stats.turmasExpedito,
         'carreira': stats.turmasCarreira,
         'especial': stats.turmasEspeciais,
+        'ead': stats.turmasEad,
         'pre_inscritos': stats.turmasPreInscritas
       };
 
@@ -428,6 +435,14 @@ export default function DashboardPage() {
       icon: Award, 
       color: 'bg-blue-600',
       shouldShow: stats.turmasEspeciais > 0
+    },
+    { 
+      id: 'ead',
+      name: t.dashboard.turmasEad || (isPt ? 'Turmas de Cursos EaD' : 'EaD Course Classes'), 
+      value: stats.turmasEad || 0, 
+      icon: Monitor, 
+      color: 'bg-cyan-600',
+      shouldShow: (stats.turmasEad || 0) > 0
     },
     { 
       id: 'pre_inscritos',
@@ -1307,6 +1322,24 @@ export default function DashboardPage() {
               title={t.dashboard.turmasEspeciais} 
               onDelete={handleDeleteTurma}
               selectedCard="especial"
+              highlightedTurmaId={highlightedTurmaId}
+            />
+          </motion.div>
+        )}
+
+        {selectedCard === 'ead' && (
+          <motion.div
+            key="ead"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            transition={{ duration: 0.2 }}
+          >
+            <TurmasListTable 
+              turmas={turmasEadList} 
+              title={t.dashboard.turmasEad || (isPt ? 'Turmas de Cursos EaD' : 'EaD Course Classes')} 
+              onDelete={handleDeleteTurma}
+              selectedCard="ead"
               highlightedTurmaId={highlightedTurmaId}
             />
           </motion.div>

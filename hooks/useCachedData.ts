@@ -328,6 +328,7 @@ export function useDashboardStats() {
       const expeditoTurmasList: any[] = [];
       const carreiraTurmasList: any[] = [];
       const especialTurmasList: any[] = [];
+      const eadTurmasList: any[] = [];
       const preInscritasTurmasList: any[] = [];
 
       // Map to count students per turma
@@ -348,25 +349,24 @@ export function useDashboardStats() {
         if (alunosCount === 0 && !isPreInscrito) return;
 
         const isAtiva = t.status === 'ativa' || !t.status;
+        const course = t.curso_id ? courseMap.get(t.curso_id) : (t.curso || null);
+        const tWithCourse = { ...t, curso: course || t.curso };
         
-        if (t.curso_id) {
-          const course = courseMap.get(t.curso_id);
-          if (course) {
-            const cat = course.categoria?.toLowerCase();
-            const tWithCourse = { ...t, curso: course };
-            
-            if (isAtiva) {
-              if (cat === 'expedito') {
-                expeditoTurmasList.push(tWithCourse);
-              } else if (cat === 'carreira') {
-                carreiraTurmasList.push(tWithCourse);
-              } else if (cat === 'especial') {
-                especialTurmasList.push(tWithCourse);
-              }
-            } else if (isPreInscrito) {
-              preInscritasTurmasList.push(tWithCourse);
-            }
+        // Normalize category from turma or course
+        const rawCat = (t.categoria || course?.categoria || '').toString().toLowerCase().trim();
+
+        if (isAtiva) {
+          if (rawCat === 'expedito') {
+            expeditoTurmasList.push(tWithCourse);
+          } else if (rawCat === 'carreira') {
+            carreiraTurmasList.push(tWithCourse);
+          } else if (rawCat === 'especial') {
+            especialTurmasList.push(tWithCourse);
+          } else if (rawCat === 'ead' || rawCat.includes('distancia') || rawCat.includes('distância')) {
+            eadTurmasList.push(tWithCourse);
           }
+        } else if (isPreInscrito) {
+          preInscritasTurmasList.push(tWithCourse);
         }
       });
 
@@ -374,6 +374,7 @@ export function useDashboardStats() {
       let expeditoAlunosCount = 0;
       let carreiraAlunosCount = 0;
       let especialAlunosCount = 0;
+      let eadAlunosCount = 0;
       let preInscritosAlunosCount = 0;
 
       activeAlunos.forEach((al: any) => {
@@ -382,15 +383,17 @@ export function useDashboardStats() {
           if (course) {
             const isAtiva = course.status === 'ativa' || !course.status;
             const isPreInscrito = course.status === 'pré-inscrito(a)(s)';
+            const rawCat = (course.categoria || '').toString().toLowerCase().trim();
             
             if (isAtiva) {
-              const cat = course.categoria?.toLowerCase();
-              if (cat === 'expedito') {
+              if (rawCat === 'expedito') {
                 expeditoAlunosCount++;
-              } else if (cat === 'carreira') {
+              } else if (rawCat === 'carreira') {
                 carreiraAlunosCount++;
-              } else if (cat === 'especial') {
+              } else if (rawCat === 'especial') {
                 especialAlunosCount++;
+              } else if (rawCat === 'ead' || rawCat.includes('distancia') || rawCat.includes('distância')) {
+                eadAlunosCount++;
               }
             } else if (isPreInscrito) {
               preInscritosAlunosCount++;
@@ -405,16 +408,19 @@ export function useDashboardStats() {
           turmasExpedito: expeditoTurmasList.length,
           turmasCarreira: carreiraTurmasList.length,
           turmasEspeciais: especialTurmasList.length,
+          turmasEad: eadTurmasList.length,
           turmasPreInscritas: preInscritasTurmasList.length,
           studentsExpedito: expeditoAlunosCount,
           studentsCarreira: carreiraAlunosCount,
           studentsEspeciais: especialAlunosCount,
+          studentsEad: eadAlunosCount,
           studentsPreInscritos: preInscritosAlunosCount,
         },
         alunosExterior: filteredAlunosExterior,
         turmasExpeditoList: expeditoTurmasList,
         turmasCarreiraList: carreiraTurmasList,
         turmasEspeciaisList: especialTurmasList,
+        turmasEadList: eadTurmasList,
         turmasPreInscritasList: preInscritasTurmasList,
       };
     },
@@ -426,16 +432,19 @@ export function useDashboardStats() {
           turmasExpedito: 0,
           turmasCarreira: 0,
           turmasEspeciais: 0,
+          turmasEad: 0,
           turmasPreInscritas: 0,
           studentsExpedito: 0,
           studentsCarreira: 0,
           studentsEspeciais: 0,
+          studentsEad: 0,
           studentsPreInscritos: 0,
         },
         alunosExterior: [],
         turmasExpeditoList: [],
         turmasCarreiraList: [],
         turmasEspeciaisList: [],
+        turmasEadList: [],
         turmasPreInscritasList: [],
       }
     }
