@@ -2,7 +2,7 @@
 
 -- 1. Enums
 CREATE TYPE periodo_enum AS ENUM ('manhã', 'tarde', 'noite');
-CREATE TYPE turma_status_enum AS ENUM ('ativa', 'concluída', 'cancelada');
+CREATE TYPE turma_status_enum AS ENUM ('ativa', 'concluída', 'cancelada', 'pré-inscrito');
 CREATE TYPE aluno_status_enum AS ENUM ('ativo', 'inativo', 'transferido');
 CREATE TYPE user_role_enum AS ENUM ('admin', 'instrutor', 'aluno');
 

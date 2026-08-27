@@ -29,7 +29,8 @@ import {
   Star,
   Info,
   Edit3,
-  Signature
+  Signature,
+  Copy
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
@@ -1216,8 +1217,9 @@ function RelatorioAvaliacaoAdminContent() {
                         toast.success("Link exclusivo da turma copiado para a área de transferência!");
                       }
                     }}
-                    className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-4 py-2 rounded-lg transition"
+                    className="flex items-center gap-1.5 bg-white hover:bg-slate-100 border border-slate-300 text-black text-xs font-bold px-4 py-2 rounded-lg shadow-xs transition active:scale-95"
                   >
+                    <Copy size={14} className="text-black" />
                     Copiar Link da Turma
                   </button>
                   <a
