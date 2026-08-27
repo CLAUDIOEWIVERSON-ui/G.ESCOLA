@@ -1105,52 +1105,52 @@ export default function HorarioPage() {
             {/* Elegant Schedule Container */}
             <div
               ref={printRef}
-              className="w-full max-w-[1200px] bg-white rounded-[3rem] shadow-2xl border border-slate-100 overflow-hidden flex flex-col font-sans mb-10 print-container"
+              className="w-full max-w-[1200px] bg-white rounded-2xl md:rounded-3xl shadow-xl border border-slate-100 overflow-hidden flex flex-col font-sans mb-8 print-container"
             >
               {/* Specialized Header */}
-              <div className="bg-white p-12 text-slate-800 relative overflow-hidden print-header print-header-top border-b border-slate-200">
-                <div className="flex items-center gap-6 mb-8">
-                  <div className="w-36 h-36 shrink-0 flex items-center justify-center overflow-hidden bg-white">
+              <div className="bg-white px-6 py-5 md:px-8 md:py-5 text-slate-800 relative overflow-hidden print-header print-header-top border-b border-slate-200">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-20 h-20 md:w-24 md:h-24 shrink-0 flex items-center justify-center overflow-hidden bg-white">
                     <img
                       src={typeof navalMissionLogo === 'string' ? navalMissionLogo : (navalMissionLogo as any)?.src || navalMissionLogo}
                       alt="Logo Missão de Assessoria Naval"
-                      className="w-36 h-36 object-contain shrink-0"
-                      style={{ width: '144px', height: '144px' }}
+                      className="w-20 h-20 md:w-24 md:h-24 object-contain shrink-0"
+                      style={{ width: '88px', height: '88px' }}
                     />
                   </div>
                   <div className="text-left flex flex-col justify-center">
-                    <h1 className="text-base md:text-lg font-black tracking-widest text-slate-900 uppercase leading-snug">
+                    <h1 className="text-sm md:text-base font-black tracking-wider text-slate-900 uppercase leading-tight">
                       MISSÃO DE ASSESSORIA NAVAL DO BRASIL EM SÃO TOMÉ E PRÍNCIPE
                     </h1>
-                    <p className="text-xs font-black tracking-widest text-slate-500 uppercase mt-1.5 leading-none">
+                    <p className="text-[11px] font-black tracking-widest text-slate-500 uppercase mt-0.5 leading-tight">
                       Detalhe Semanal de Aulas
                     </p>
                   </div>
                 </div>
 
-                <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-12 print-header-grid">
-                  <div className="col-span-2 space-y-3 print-header-title-container">
+                <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 print-header-grid">
+                  <div className="col-span-2 space-y-1 print-header-title-container">
                     <div className="flex items-center">
-                      <span className="text-xs font-black text-blue-600 uppercase tracking-widest">
+                      <span className="text-[11px] font-black text-blue-600 uppercase tracking-widest leading-none">
                         {selectedCurso?.nome}
                       </span>
                     </div>
-                    <h2 className="text-4xl md:text-5xl font-black tracking-tighter leading-none text-slate-900 animate-fade-in">
+                    <h2 className="text-2xl md:text-3xl font-black tracking-tight leading-tight text-slate-900 animate-fade-in">
                       {getCleanTurmaName(selectedTurma, selectedCurso?.nome, language === 'pt' ? 'Turma Única' : 'Single Class')}
                     </h2>
                   </div>
 
                   <div className="flex flex-col md:items-end justify-center">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1 leading-none">
                       {t.schedule.period.toUpperCase()}
                     </p>
 
                     {/* Beautiful, static/read-only period badge for both Screen and Print */}
-                    <div className="bg-slate-50 border border-slate-200 px-6 py-3 rounded-2xl flex flex-col md:items-end shadow-sm print-period-badge">
-                      <span className="text-xl md:text-2xl font-black text-slate-800 tracking-tight leading-none">
+                    <div className="bg-slate-50 border border-slate-200 px-4 py-2 rounded-xl flex flex-col md:items-end shadow-sm print-period-badge">
+                      <span className="text-base md:text-lg font-black text-slate-800 tracking-tight leading-tight">
                         {weekPeriodFormatted}
                       </span>
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1.5 leading-none">
+                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 leading-none">
                         {format(weekStart, "MMMM yyyy", { locale: ptBR })}
                       </span>
                     </div>
@@ -1159,13 +1159,13 @@ export default function HorarioPage() {
               </div>
 
               {/* Grid Table */}
-              <div className="p-6 bg-slate-50 flex-1 print-content">
-                <div className="bg-white rounded-[2rem] border border-slate-200 overflow-hidden shadow-sm">
+              <div className="p-3 md:p-5 bg-slate-50 flex-1 print-content">
+                <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
                   <table className="w-full border-collapse table-fixed">
                     <thead>
                       <tr className="bg-slate-50/50 border-b border-slate-200">
-                        <th className="w-32 px-4 py-6 border-r border-slate-200">
-                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                        <th className="w-28 md:w-32 px-3 py-3 md:py-3.5 border-r border-slate-200">
+                          <span className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">
                             {t.schedule.time}
                           </span>
                         </th>
@@ -1175,14 +1175,14 @@ export default function HorarioPage() {
                             <th
                               key={day.key}
                               className={cn(
-                                "px-4 py-6 border-r border-slate-200 last:border-r-0",
+                                "px-3 py-3 md:py-3.5 border-r border-slate-200 last:border-r-0",
                                 holiday ? "bg-neutral-100/50" : "",
                               )}
                             >
-                              <div className="flex flex-col gap-1">
+                              <div className="flex flex-col gap-0.5">
                                 <span
                                   className={cn(
-                                    "text-[10px] font-black uppercase tracking-widest",
+                                    "text-[9px] md:text-[10px] font-black uppercase tracking-wider leading-tight",
                                     holiday
                                       ? "text-neutral-500"
                                       : "text-neutral-900",
@@ -1190,7 +1190,7 @@ export default function HorarioPage() {
                                 >
                                   {day.label}
                                 </span>
-                                <span className="text-[11px] font-bold text-neutral-400">
+                                <span className="text-[10px] md:text-[11px] font-bold text-neutral-400 leading-tight">
                                   {format(day.date, "dd/MM")}
                                 </span>
                               </div>
@@ -1268,8 +1268,8 @@ export default function HorarioPage() {
                               printClass,
                             )}
                           >
-                            <td className="px-4 py-8 text-center border-r border-slate-200 bg-slate-50/20">
-                              <div className="text-xs font-black text-slate-800 leading-none">
+                            <td className="px-3 py-4 text-center border-r border-slate-200 bg-slate-50/20">
+                              <div className="text-xs font-black text-slate-800 leading-tight">
                                 {slot.time}
                               </div>
                             </td>
@@ -1353,11 +1353,11 @@ export default function HorarioPage() {
                               return (
                                 <td
                                   key={day.key}
-                                  className="px-3 py-3 border-r border-slate-100 last:border-r-0"
+                                  className="px-2 py-2 md:px-2.5 md:py-2.5 border-r border-slate-100 last:border-r-0"
                                 >
                                   <div
                                     className={cn(
-                                      "rounded-2xl p-4 h-full flex flex-col transition-all min-h-[140px]",
+                                      "rounded-xl p-3 h-full flex flex-col transition-all min-h-[105px]",
                                       isEditMode
                                         ? "bg-white border-2 border-dashed border-neutral-300"
                                         : cell.subjectId
@@ -1764,22 +1764,22 @@ export default function HorarioPage() {
                   </table>
                 </div>
                 {/* Footer */}
-                <div className="px-12 py-8 bg-white flex items-center justify-between print-header print-header-bottom border-t border-slate-200 print-avoid-break break-inside-avoid">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center">
-                      <Shield size={20} className="text-slate-700" />
+                <div className="px-6 py-4 md:px-8 md:py-4 bg-white flex items-center justify-between print-header print-header-bottom border-t border-slate-200 print-avoid-break break-inside-avoid">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-center">
+                      <Shield size={16} className="text-slate-700" />
                     </div>
                     <div>
-                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">
+                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-tight">
                         {t.schedule.footerVersion}
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-tight">
                       {t.schedule.footerDocGenerated}
                     </p>
-                    <p className="text-xs font-black text-slate-800">
+                    <p className="text-xs font-black text-slate-800 leading-tight mt-0.5">
                       {format(new Date(), "dd/MM/yyyy • HH:mm")}
                     </p>
                   </div>

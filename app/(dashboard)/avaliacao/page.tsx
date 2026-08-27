@@ -856,29 +856,29 @@ function AvaliacaoAlunoForm() {
           </div>
 
           {/* Show weekly schedule even after submitting for QR Code, as requested! */}
-          <div className="pt-6 border-t border-slate-100 text-left">
-            <div className="flex items-center gap-5 mb-6 pb-4 border-b border-slate-200">
-              <div className="relative w-28 h-28 shrink-0 flex items-center justify-center overflow-hidden bg-white">
+          <div className="pt-4 border-t border-slate-100 text-left">
+            <div className="flex items-center gap-3.5 mb-3 pb-2.5 border-b border-slate-200">
+              <div className="relative w-14 h-14 shrink-0 flex items-center justify-center overflow-hidden bg-white">
                 <Image
                   src={navalMissionLogo}
                   alt="Logo Missão de Assessoria Naval"
                   fill
                   className="object-contain"
                   referrerPolicy="no-referrer"
-                  sizes="112px"
+                  sizes="56px"
                   priority
                 />
               </div>
               <div className="text-left flex flex-col justify-center">
-                <h1 className="text-xs sm:text-sm font-black tracking-widest text-slate-900 uppercase leading-none">
+                <h1 className="text-xs sm:text-sm font-black tracking-wider text-slate-900 uppercase leading-tight">
                   MISSÃO DE ASSESSORIA NAVAL DO BRASIL EM SÃO TOMÉ E PRÍNCIPE
                 </h1>
-                <p className="text-[10px] font-black tracking-widest text-slate-500 uppercase mt-1.5 leading-none">
+                <p className="text-[10px] font-black tracking-widest text-slate-500 uppercase mt-0.5 leading-tight">
                   Detalhe Semanal de Aulas
                 </p>
               </div>
             </div>
-            <h3 className="text-xs font-bold text-slate-705 font-mono flex items-center gap-1.5 mb-4">
+            <h3 className="text-xs font-bold text-slate-705 font-mono flex items-center gap-1.5 mb-3">
               <Clock className="h-4 w-4 text-indigo-650" />
               DETALHE SEMANAL DE AULAS COMPLETO (SÁBADO/DOMINGO LIVRE)
             </h3>
@@ -1447,24 +1447,24 @@ function AvaliacaoAlunoForm() {
                 </button>
                 
                 {showWeeklySchedule && (
-                  <div className="p-4 bg-white space-y-4">
-                    <div className="flex items-center gap-5 mb-4 pb-4 border-b border-slate-200">
-                      <div className="relative w-28 h-28 shrink-0 flex items-center justify-center overflow-hidden bg-white">
+                  <div className="p-3.5 bg-white space-y-3">
+                    <div className="flex items-center gap-3.5 mb-3 pb-2.5 border-b border-slate-200">
+                      <div className="relative w-14 h-14 shrink-0 flex items-center justify-center overflow-hidden bg-white">
                         <Image
                           src={navalMissionLogo}
                           alt="Logo Missão de Assessoria Naval"
                           fill
                           className="object-contain"
                           referrerPolicy="no-referrer"
-                          sizes="112px"
+                          sizes="56px"
                           priority
                         />
                       </div>
                       <div className="text-left flex flex-col justify-center">
-                        <h1 className="text-xs sm:text-sm font-black tracking-widest text-slate-900 uppercase leading-none">
+                        <h1 className="text-xs sm:text-sm font-black tracking-wider text-slate-900 uppercase leading-tight">
                           MISSÃO DE ASSESSORIA NAVAL DO BRASIL EM SÃO TOMÉ E PRÍNCIPE
                         </h1>
-                        <p className="text-[10px] font-black tracking-widest text-slate-500 uppercase mt-1.5 leading-none">
+                        <p className="text-[10px] font-black tracking-widest text-slate-500 uppercase mt-0.5 leading-tight">
                           Detalhe Semanal de Aulas
                         </p>
                       </div>
