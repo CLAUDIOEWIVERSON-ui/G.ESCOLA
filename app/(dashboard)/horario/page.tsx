@@ -22,6 +22,8 @@ import {
   Clock,
   X,
   Layers,
+  PenTool,
+  RotateCcw,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { cn, getCleanTurmaName } from "@/lib/utils";
@@ -78,6 +80,72 @@ export default function HorarioPage() {
     "portrait" | "landscape"
   >("landscape");
   const printRef = useRef<HTMLDivElement>(null);
+
+  // Coordinator Signature state
+  const [signatureName, setSignatureName] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("horario_signature_name") || "";
+    }
+    return "";
+  });
+
+  const [signatureRank, setSignatureRank] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("horario_signature_rank") || "";
+    }
+    return "";
+  });
+
+  const [signatureRole, setSignatureRole] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      return (
+        localStorage.getItem("horario_signature_role") ||
+        (language === "pt" ? "Coordenador de Cursos" : "Course Coordinator")
+      );
+    }
+    return language === "pt" ? "Coordenador de Cursos" : "Course Coordinator";
+  });
+
+  const [showSignatureSettings, setShowSignatureSettings] = useState(false);
+
+  const handleSignatureNameChange = (val: string) => {
+    setSignatureName(val);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("horario_signature_name", val);
+    }
+  };
+
+  const handleSignatureRankChange = (val: string) => {
+    setSignatureRank(val);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("horario_signature_rank", val);
+    }
+  };
+
+  const handleSignatureRoleChange = (val: string) => {
+    setSignatureRole(val);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("horario_signature_role", val);
+    }
+  };
+
+  const handleResetSignature = () => {
+    setSignatureName("");
+    setSignatureRank("");
+    const defaultRole =
+      language === "pt" ? "Coordenador de Cursos" : "Course Coordinator";
+    setSignatureRole(defaultRole);
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("horario_signature_name");
+      localStorage.removeItem("horario_signature_rank");
+      localStorage.removeItem("horario_signature_role");
+    }
+    toast.success(
+      language === "pt"
+        ? "Assinatura do coordenador redefinida para o padrão."
+        : "Coordinator signature reset to default.",
+    );
+  };
 
   // Editable Schedule State
   const [scheduleData, setScheduleData] = useState<Record<string, any>>({});
@@ -522,7 +590,7 @@ export default function HorarioPage() {
             box-shadow: none !important;
           }
 
-          /* Hide absolutely everything that is not the print container or one of its descendants using fully standard non-has rules */
+          /* Hide absolutely everything that is not the print container or one of its descendants */
           body * {
             visibility: hidden !important;
           }
@@ -542,7 +610,7 @@ export default function HorarioPage() {
             overflow: visible !important;
           }
 
-          /* Reset html, body and ancestors of .print-container to be clean block structures with no padding/margin/flex/box-shadow/transforms */
+          /* Reset html, body and ancestors of .print-container to be clean block structures */
           html, body {
             background: white !important;
             width: 100% !important;
@@ -574,17 +642,18 @@ export default function HorarioPage() {
             overflow: visible !important;
           }
 
-          /* Ensure .print-container fits perfectly in normal flow without absolute shifts */
+          /* Ensure .print-container fits tightly against the top of page 1 */
           .print-container {
             position: relative !important;
             left: auto !important;
-            top: auto !important;
+            top: 0 !important;
             transform: none !important;
             width: 100% !important;
             max-width: 100% !important;
             min-width: 100% !important;
             margin: 0 !important;
-            padding: 0 !important;
+            margin-top: 0 !important;
+            padding: ${printOrientation === "landscape" ? "2mm 4mm 2mm 4mm" : "3mm 5mm 3mm 5mm"} !important;
             border: none !important;
             border-radius: 0 !important;
             box-shadow: none !important;
@@ -617,11 +686,18 @@ export default function HorarioPage() {
 
           /* Differentiate top header and bottom footer block elements */
           .print-header-top {
-            border-bottom: 2px solid #cbd5e1 !important;
+            border-bottom: 1.5px solid #94a3b8 !important;
           }
           .print-header-bottom {
-            border-top: 2px solid #cbd5e1 !important;
+            border-top: 1.5px solid #94a3b8 !important;
             border-bottom: none !important;
+          }
+
+          /* Signature block in print */
+          .print-signature-block {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            background: #ffffff !important;
           }
 
           /* Portrait or Landscape specific layout scaling */
@@ -629,87 +705,97 @@ export default function HorarioPage() {
             printOrientation === "landscape"
               ? `
             /* LANDSCAPE PRESENTATION */
-            .print-container {
-              padding: 6mm 8mm !important;
-              height: auto !important;
-              min-height: auto !important;
-              max-height: none !important;
-              justify-content: flex-start !important;
-            }
             .print-header-top {
-              padding: 8px 14px 10px 14px !important;
+              padding: 3px 6px !important;
               background-color: #ffffff !important;
               color: #000000 !important;
             }
-            .print-header-bottom {
-              padding: 8px 14px !important;
-              background-color: #ffffff !important;
-              color: #000000 !important;
+            .print-header-top .flex.items-center.gap-4 {
+              margin-bottom: 2px !important;
+              gap: 6px !important;
+            }
+            .print-header-top img {
+              width: 36px !important;
+              height: 36px !important;
+              max-width: 36px !important;
+              max-height: 36px !important;
+            }
+            .print-header-top h1 {
+              font-size: 9.5px !important;
+              line-height: 1.1 !important;
+            }
+            .print-header-top p {
+              font-size: 7px !important;
+              margin-top: 0.5px !important;
             }
             .print-header h2 {
-              font-size: 22px !important;
+              font-size: 15px !important;
               line-height: 1.1 !important;
             }
             .print-header-grid {
-              gap: 12px !important;
+              gap: 6px !important;
             }
             .print-header-title-container > * + * {
-              margin-top: 2px !important;
+              margin-top: 1px !important;
             }
             .print-period-badge {
-              padding: 4px 10px !important;
-              border-radius: 8px !important;
+              padding: 2px 6px !important;
+              border-radius: 4px !important;
               border-color: #cbd5e1 !important;
             }
             .print-period-badge span:first-child {
-              font-size: 13px !important;
+              font-size: 10.5px !important;
             }
             .print-period-badge span:last-child {
-              font-size: 7px !important;
-              margin-top: 1px !important;
+              font-size: 6.5px !important;
+              margin-top: 0.5px !important;
             }
             .print-content {
               padding: 0 !important;
               background: white !important;
-              margin-top: 4px !important;
-              margin-bottom: 4px !important;
+              margin-top: 2px !important;
+              margin-bottom: 2px !important;
             }
             .print-content th {
-              padding: 4px 2px !important;
+              padding: 2px 1px !important;
               background-color: #f8fafc !important;
-              border-bottom: 2px solid #cbd5e1 !important;
+              border-bottom: 1.5px solid #94a3b8 !important;
             }
             .print-content th span {
-              font-size: 8px !important;
+              font-size: 7.5px !important;
             }
             .print-content td {
-              padding: 1.5px !important;
+              padding: 1px !important;
               height: auto !important;
             }
             /* First/Time column scaling */
             .print-content td:first-child {
-              padding: 1.5px !important;
-              width: 60px !important;
+              padding: 1px !important;
+              width: 50px !important;
             }
             .print-content td:first-child div {
-              font-size: 9px !important;
+              font-size: 7.5px !important;
             }
             /* Grid schedule cards inside td elements */
+            .print-content .min-h-\\[105px\\],
             .print-content .min-h-\\[140px\\] {
-              min-height: 48px !important;
+              min-height: 36px !important;
               height: auto !important;
-              padding: 3px 5px !important;
-              border-radius: 4px !important;
+              padding: 2px 3px !important;
+              border-radius: 3px !important;
               background-color: #f8fafc !important;
               border: 1px solid #e2e8f0 !important;
               display: flex !important;
               flex-direction: column !important;
               overflow: visible !important;
             }
+            .print-content .min-h-\\[105px\\] span,
+            .print-content .min-h-\\[105px\\] p,
+            .print-content .min-h-\\[105px\\] div,
             .print-content .min-h-\\[140px\\] span,
             .print-content .min-h-\\[140px\\] p,
             .print-content .min-h-\\[140px\\] div {
-              font-size: 8px !important;
+              font-size: 7px !important;
               line-height: 1.05 !important;
               white-space: normal !important;
               word-break: break-word !important;
@@ -719,103 +805,137 @@ export default function HorarioPage() {
               -webkit-line-clamp: unset !important;
               line-clamp: unset !important;
             }
+            .print-content .min-h-\\[105px\\] svg,
             .print-content .min-h-\\[140px\\] svg {
-              width: 8px !important;
-              height: 8px !important;
+              width: 7px !important;
+              height: 7px !important;
             }
             /* Interval/Lunch slot compact presentation */
             .print-content tr[class*="bg-slate-50"] td {
-              padding: 2px !important;
+              padding: 1px !important;
             }
             .print-content tr[class*="bg-slate-50"] span {
-              font-size: 8px !important;
-              letter-spacing: 0.25em !important;
+              font-size: 6.5px !important;
+              letter-spacing: 0.2em !important;
+            }
+            .print-signature-block {
+              padding: 3px 6px 1px 6px !important;
+              margin-top: 2px !important;
+              border-top: 1px solid #cbd5e1 !important;
+            }
+            .print-signature-block .signature-line {
+              width: 170px !important;
+              height: 8px !important;
+              margin-bottom: 2px !important;
+              border-bottom: 1.5px solid #000000 !important;
+            }
+            .print-signature-block span, .print-signature-block p {
+              font-size: 7px !important;
+              line-height: 1.1 !important;
+            }
+            .print-header-bottom {
+              padding: 2px 6px !important;
+              background-color: #ffffff !important;
+              color: #000000 !important;
+            }
+            .print-header-bottom p, .print-header-bottom span {
+              font-size: 6.5px !important;
             }
           `
               : `
             /* PORTRAIT PRESENTATION */
-            .print-container {
-              padding: 8mm 10mm !important;
-              height: auto !important;
-              min-height: auto !important;
-              max-height: none !important;
-              justify-content: flex-start !important;
-            }
             .print-header-top {
-              padding: 10px 18px 12px 18px !important;
+              padding: 4px 8px !important;
               background-color: #ffffff !important;
               color: #000000 !important;
             }
-            .print-header-bottom {
-              padding: 10px 18px !important;
-              background-color: #ffffff !important;
-              color: #000000 !important;
+            .print-header-top .flex.items-center.gap-4 {
+              margin-bottom: 2px !important;
+              gap: 8px !important;
+            }
+            .print-header-top img {
+              width: 42px !important;
+              height: 42px !important;
+              max-width: 42px !important;
+              max-height: 42px !important;
+            }
+            .print-header-top h1 {
+              font-size: 11px !important;
+              line-height: 1.1 !important;
+            }
+            .print-header-top p {
+              font-size: 7.5px !important;
+              margin-top: 0.5px !important;
             }
             .print-header h2 {
-              font-size: 26px !important;
+              font-size: 17px !important;
               line-height: 1.1 !important;
             }
             .print-header-grid {
-              gap: 16px !important;
+              gap: 8px !important;
             }
             .print-header-title-container > * + * {
-              margin-top: 3px !important;
+              margin-top: 1.5px !important;
             }
             .print-period-badge {
-              padding: 6px 12px !important;
-              border-radius: 8px !important;
+              padding: 3px 8px !important;
+              border-radius: 6px !important;
               border-color: #cbd5e1 !important;
             }
             .print-period-badge span:first-child {
-              font-size: 15px !important;
+              font-size: 11.5px !important;
             }
             .print-period-badge span:last-child {
-              font-size: 8px !important;
-              margin-top: 1.5px !important;
+              font-size: 7px !important;
+              margin-top: 0.5px !important;
             }
             .print-content {
               padding: 0 !important;
               background: white !important;
-              margin-top: 6px !important;
-              margin-bottom: 6px !important;
+              margin-top: 3px !important;
+              margin-bottom: 3px !important;
             }
             .print-content th {
-              padding: 6px 3px !important;
+              padding: 3px 1.5px !important;
               background-color: #f8fafc !important;
-              border-bottom: 2px solid #cbd5e1 !important;
+              border-bottom: 1.5px solid #94a3b8 !important;
             }
             .print-content th span {
-              font-size: 10px !important;
+              font-size: 8px !important;
             }
             .print-content td {
-              padding: 2.5px !important;
+              padding: 1.5px !important;
               height: auto !important;
             }
             /* First/Time column scaling */
             .print-content td:first-child {
-              padding: 2.5px !important;
-              width: 75px !important;
+              padding: 1.5px !important;
+              width: 58px !important;
             }
             .print-content td:first-child div {
-              font-size: 10px !important;
+              font-size: 8px !important;
             }
             /* Grid schedule cards inside td elements */
+            .print-content .min-h-\\[105px\\],
             .print-content .min-h-\\[140px\\] {
-              min-height: 70px !important;
+              min-height: 48px !important;
               height: auto !important;
-              padding: 5px 6px !important;
-              border-radius: 4px !important;
+              padding: 2.5px 4px !important;
+              border-radius: 3px !important;
               background-color: #f8fafc !important;
               border: 1px solid #e2e8f0 !important;
               display: flex !important;
               flex-direction: column !important;
               overflow: visible !important;
             }
+            .print-content .min-h-\\[105px\\] span,
+            .print-content .min-h-\\[105px\\] p,
+            .print-content .min-h-\\[105px\\] div,
             .print-content .min-h-\\[140px\\] span,
             .print-content .min-h-\\[140px\\] p,
             .print-content .min-h-\\[140px\\] div {
-              font-size: 8.5px !important;
-              line-height: 1.15 !important;
+              font-size: 7.5px !important;
+              line-height: 1.1 !important;
               white-space: normal !important;
               word-break: break-word !important;
               overflow: visible !important;
@@ -824,17 +944,41 @@ export default function HorarioPage() {
               -webkit-line-clamp: unset !important;
               line-clamp: unset !important;
             }
+            .print-content .min-h-\\[105px\\] svg,
             .print-content .min-h-\\[140px\\] svg {
-              width: 9px !important;
-              height: 9px !important;
+              width: 7.5px !important;
+              height: 7.5px !important;
             }
             /* Interval/Lunch slot compact presentation */
             .print-content tr[class*="bg-slate-50"] td {
-              padding: 3px !important;
+              padding: 1.5px !important;
             }
             .print-content tr[class*="bg-slate-50"] span {
-              font-size: 8.5px !important;
-              letter-spacing: 0.3em !important;
+              font-size: 7px !important;
+              letter-spacing: 0.25em !important;
+            }
+            .print-signature-block {
+              padding: 4px 8px 2px 8px !important;
+              margin-top: 3px !important;
+              border-top: 1px solid #cbd5e1 !important;
+            }
+            .print-signature-block .signature-line {
+              width: 200px !important;
+              height: 12px !important;
+              margin-bottom: 2px !important;
+              border-bottom: 1.5px solid #000000 !important;
+            }
+            .print-signature-block span, .print-signature-block p {
+              font-size: 7.5px !important;
+              line-height: 1.15 !important;
+            }
+            .print-header-bottom {
+              padding: 3px 8px !important;
+              background-color: #ffffff !important;
+              color: #000000 !important;
+            }
+            .print-header-bottom p, .print-header-bottom span {
+              font-size: 7px !important;
             }
           `
           }
@@ -952,6 +1096,23 @@ export default function HorarioPage() {
               </div>
             )}
 
+            {selectedTurmaId && !isEditMode && (
+              <button
+                type="button"
+                onClick={() => setShowSignatureSettings(!showSignatureSettings)}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all border shadow-sm cursor-pointer",
+                  showSignatureSettings
+                    ? "bg-blue-50 text-blue-700 border-blue-200"
+                    : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50",
+                )}
+                title={language === "pt" ? "Configurar Assinatura do Coordenador" : "Configure Coordinator Signature"}
+              >
+                <PenTool size={16} className="text-blue-600" />
+                <span>{language === "pt" ? "Assinatura" : "Signature"}</span>
+              </button>
+            )}
+
             <button
               onClick={handlePrint}
               disabled={isEditMode || !selectedTurmaId}
@@ -963,6 +1124,79 @@ export default function HorarioPage() {
           </div>
         )}
       </div>
+
+      {/* Coordinator Signature Configuration Panel (Screen only) */}
+      {showSignatureSettings && profile?.role !== "aluno" && profile?.role !== "convidado" && (
+        <div className="bg-white p-5 rounded-[2rem] border border-blue-100 shadow-lg shadow-blue-500/5 print:hidden space-y-4 animate-fade-in">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+                <PenTool size={16} />
+              </div>
+              <div>
+                <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                  {language === "pt" ? "Assinatura do Coordenador (Impressão)" : "Coordinator Signature (Print)"}
+                </h4>
+                <p className="text-[10px] text-slate-400 font-medium">
+                  {language === "pt"
+                    ? "Configure o nome, posto e cargo para exibição no rodapé impresso do detalhe semanal"
+                    : "Configure name, rank, and role for display in the printed schedule footer"}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleResetSignature}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-all cursor-pointer"
+              title={language === "pt" ? "Redefinir para padrão" : "Reset to default"}
+            >
+              <RotateCcw size={12} />
+              <span>{language === "pt" ? "Redefinir" : "Reset"}</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">
+                {language === "pt" ? "Nome Completo do Coordenador" : "Coordinator Full Name"}
+              </label>
+              <input
+                type="text"
+                value={signatureName}
+                onChange={(e) => handleSignatureNameChange(e.target.value)}
+                placeholder={language === "pt" ? "Ex: NOME COMPLETO DO OFICIAL" : "Ex: FULL NAME"}
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 uppercase"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">
+                {language === "pt" ? "Posto / Graduação" : "Rank / Title"}
+              </label>
+              <input
+                type="text"
+                value={signatureRank}
+                onChange={(e) => handleSignatureRankChange(e.target.value)}
+                placeholder={language === "pt" ? "Ex: Capitão-de-Corveta (T)" : "Ex: Lieutenant Commander"}
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">
+                {language === "pt" ? "Função / Cargo" : "Role / Title"}
+              </label>
+              <input
+                type="text"
+                value={signatureRole}
+                onChange={(e) => handleSignatureRoleChange(e.target.value)}
+                placeholder={language === "pt" ? "Coordenador de Cursos" : "Course Coordinator"}
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Selectors */}
       <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 print:hidden">
@@ -1763,8 +1997,41 @@ export default function HorarioPage() {
                     </tbody>
                   </table>
                 </div>
+
+                {/* Coordinator Signature Panel (Screen & Print) */}
+                <div className="px-6 py-4 md:px-8 md:py-4 bg-white flex flex-col items-center justify-center border-t border-slate-200 print-signature-block print-avoid-break break-inside-avoid text-center">
+                  <div className="flex flex-col items-center text-center max-w-lg w-full">
+                    {/* Linha de Assinatura */}
+                    <div className="w-64 md:w-80 border-b-2 border-slate-800 h-6 mb-1.5 signature-line print:border-black"></div>
+
+                    {signatureName.trim() ? (
+                      <span className="text-xs md:text-sm font-black text-slate-900 uppercase tracking-wider leading-tight text-center">
+                        {signatureName.trim()}
+                      </span>
+                    ) : null}
+
+                    {signatureRank.trim() ? (
+                      <span className="text-[10px] md:text-xs font-bold text-slate-700 uppercase tracking-wider leading-tight text-center mt-0.5">
+                        {signatureRank.trim()}
+                      </span>
+                    ) : null}
+
+                    <span className="text-[10px] md:text-xs font-black text-slate-900 uppercase tracking-wider leading-tight text-center mt-0.5">
+                      {signatureRole.trim() ||
+                        (language === "pt"
+                          ? "Coordenador de Cursos"
+                          : "Course Coordinator")}
+                    </span>
+                    <span className="text-[8px] md:text-[9px] font-semibold text-slate-500 uppercase tracking-widest leading-tight text-center mt-0.5">
+                      {language === "pt"
+                        ? "Missão de Assessoria Naval do Brasil em São Tomé e Príncipe"
+                        : "Brazilian Naval Advisory Mission in São Tomé and Príncipe"}
+                    </span>
+                  </div>
+                </div>
+
                 {/* Footer */}
-                <div className="px-6 py-4 md:px-8 md:py-4 bg-white flex items-center justify-between print-header print-header-bottom border-t border-slate-200 print-avoid-break break-inside-avoid">
+                <div className="px-6 py-3 md:px-8 md:py-3 bg-white flex items-center justify-between print-header print-header-bottom border-t border-slate-200 print-avoid-break break-inside-avoid">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-center">
                       <Shield size={16} className="text-slate-700" />
