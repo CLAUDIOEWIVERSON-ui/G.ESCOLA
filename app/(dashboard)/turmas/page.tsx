@@ -1416,7 +1416,7 @@ function TurmasContent() {
                     )}>
                       {turma.status?.toLowerCase() === 'concluída' ? t.classes.completed : 
                        turma.status?.toLowerCase() === 'cancelada' ? t.classes.cancelled : 
-                       turma.status?.toLowerCase() === 'pré-inscrito' ? 'PRÉ-INSCRITO(A)(S)' : t.classes.active}
+                       turma.status?.toLowerCase() === 'pré-inscrito' ? 'PRÉ-INSCRITO(A)' : t.classes.active}
                     </span>
                     {turma.internacional && (
                       <span className={cn(
@@ -1950,7 +1950,7 @@ function TurmasContent() {
                 <option value="ativa">{t.classes.active}</option>
                 <option value="concluída">{t.classes.completed}</option>
                 <option value="cancelada">{t.classes.cancelled}</option>
-                <option value="pré-inscrito">Pré-inscrito(a)(s)</option>
+                <option value="pré-inscrito">{language === 'pt' ? 'Pré-inscrito(a)' : 'Pre-registered'}</option>
               </select>
             </div>
 
