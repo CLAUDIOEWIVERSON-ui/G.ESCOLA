@@ -1047,14 +1047,24 @@ function RelatorioAvaliacaoAdminContent() {
       </div>
 
       {/* Page Title & Utility buttons */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b pb-4 mt-2 print:hidden">
-        <div>
-          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider font-mono">COORDENAÇÃO E GESTÃO ACADÊMICA</span>
-          <h1 className="text-xl md:text-2xl font-black tracking-tight flex items-center gap-2">
-            <BarChart3 className="h-6 w-6 text-slate-800" />
-            Análise e Relatórios de Questionários
-          </h1>
-          <p className="text-xs text-slate-600 mt-1">Estatísticas, índices de qualidade acadêmica, rankings de instrutores e autoavaliação.</p>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-200 dark:border-slate-800 pb-4 mt-2 print:hidden">
+        <div className="flex items-center gap-4">
+          <div className="w-16 h-16 md:w-20 md:h-20 shrink-0 flex items-center justify-center overflow-hidden bg-white border border-slate-200 dark:border-slate-700 rounded-2xl p-1.5 shadow-sm">
+            <img
+              src={typeof navalMissionLogo === "string" ? navalMissionLogo : (navalMissionLogo as any)?.src || navalMissionLogo}
+              alt="Logo Missão de Assessoria Naval"
+              className="w-14 h-14 md:w-16 md:h-16 object-contain shrink-0"
+              style={{ width: "64px", height: "64px" }}
+            />
+          </div>
+          <div>
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider font-mono">COORDENAÇÃO E GESTÃO ACADÊMICA</span>
+            <h1 className="text-xl md:text-2xl font-black tracking-tight flex items-center gap-2 text-slate-900 dark:text-white">
+              <BarChart3 className="h-6 w-6 text-slate-800 dark:text-slate-200" />
+              Análise e Relatórios de Questionários
+            </h1>
+            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">Estatísticas, índices de qualidade acadêmica, rankings de instrutores e autoavaliação.</p>
+          </div>
         </div>
 
         <div className="flex flex-wrap gap-2 print:hidden items-center">
