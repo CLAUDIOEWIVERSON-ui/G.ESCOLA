@@ -3888,21 +3888,21 @@ function BoletimContent() {
                                       
                                       {/* Linha 1: Nome Completo */}
                                       {signatureName.trim() ? (
-                                        <div className="text-xs font-bold text-slate-900 uppercase tracking-wider leading-tight text-center w-full whitespace-nowrap">
+                                        <div className="text-xs font-bold text-slate-900 leading-tight text-center w-full whitespace-nowrap">
                                           {signatureName.trim()}
                                         </div>
                                       ) : null}
 
                                       {/* Linha 2: Posto / Graduação */}
                                       {signatureRank.trim() ? (
-                                        <div className="text-[11px] font-semibold text-slate-800 uppercase tracking-wide leading-tight text-center mt-0.5 w-full whitespace-nowrap">
+                                        <div className="text-xs font-bold text-slate-900 leading-tight text-center mt-0.5 w-full whitespace-nowrap">
                                           {signatureRank.trim()}
                                         </div>
                                       ) : null}
 
                                       {/* Linha 3: Função */}
                                       {signatureRole.trim() ? (
-                                        <div className="text-[10.5px] font-bold text-slate-800 uppercase tracking-wide leading-tight text-center mt-0.5 w-full whitespace-nowrap">
+                                        <div className="text-xs font-bold text-slate-900 leading-tight text-center mt-0.5 w-full whitespace-nowrap">
                                           {signatureRole.trim()}
                                         </div>
                                       ) : null}
@@ -4311,17 +4311,17 @@ function BoletimContent() {
                                    <div className="flex flex-col items-center text-center min-w-[320px] max-w-[480px]">
                                      <div className="w-full min-w-[300px] border-b-2 border-slate-800 h-7 mb-1.5"></div>
                                      {signatureName.trim() ? (
-                                       <span className="text-xs font-black text-slate-900 uppercase tracking-wider leading-tight text-center font-mono w-full whitespace-nowrap">
+                                       <span className="text-xs font-bold text-slate-900 leading-tight text-center w-full whitespace-nowrap">
                                          {signatureName.trim()}
                                        </span>
                                      ) : null}
                                      {signatureRank.trim() ? (
-                                       <span className="text-[11px] font-bold text-slate-800 uppercase tracking-wider leading-tight text-center mt-0.5 font-mono w-full whitespace-nowrap">
+                                       <span className="text-xs font-bold text-slate-900 leading-tight text-center mt-0.5 w-full whitespace-nowrap">
                                          {signatureRank.trim()}
                                        </span>
                                      ) : null}
                                      {signatureRole.trim() ? (
-                                       <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wide leading-tight text-center mt-0.5 font-mono w-full whitespace-nowrap">
+                                       <span className="text-xs font-bold text-slate-900 leading-tight text-center mt-0.5 w-full whitespace-nowrap">
                                          {signatureRole.trim()}
                                        </span>
                                      ) : null}
