@@ -1998,31 +1998,31 @@ export default function HorarioPage() {
                   </table>
                 </div>
 
-                {/* Coordinator Signature Panel (Screen & Print) */}
-                <div className="px-6 py-4 md:px-8 md:py-4 bg-white flex flex-col items-center justify-center border-t border-slate-200 print-signature-block print-avoid-break break-inside-avoid text-center">
-                  <div className="flex flex-col items-center text-center max-w-lg w-full">
+                {/* Coordinator Signature Panel (Screen & Print) - Aligned to the Right Margin like Boletim */}
+                <div className="px-6 py-3 md:px-8 md:py-3 bg-white flex flex-col items-end justify-end border-t border-slate-200 print-signature-block print-avoid-break break-inside-avoid">
+                  <div className="flex flex-col items-center text-center min-w-[260px] md:min-w-[320px] max-w-[480px]">
                     {/* Linha de Assinatura */}
-                    <div className="w-64 md:w-80 border-b-2 border-slate-800 h-6 mb-1.5 signature-line print:border-black"></div>
+                    <div className="w-full min-w-[240px] md:min-w-[280px] border-b-2 border-slate-800 h-5 mb-1 signature-line print:border-black"></div>
 
                     {signatureName.trim() ? (
-                      <span className="text-xs md:text-sm font-black text-slate-900 uppercase tracking-wider leading-tight text-center">
+                      <span className="text-xs md:text-sm font-bold text-slate-900 leading-tight text-center w-full whitespace-nowrap">
                         {signatureName.trim()}
                       </span>
                     ) : null}
 
                     {signatureRank.trim() ? (
-                      <span className="text-[10px] md:text-xs font-bold text-slate-700 uppercase tracking-wider leading-tight text-center mt-0.5">
+                      <span className="text-[10px] md:text-xs font-bold text-slate-900 leading-tight text-center mt-0.5 w-full whitespace-nowrap">
                         {signatureRank.trim()}
                       </span>
                     ) : null}
 
-                    <span className="text-[10px] md:text-xs font-black text-slate-900 uppercase tracking-wider leading-tight text-center mt-0.5">
+                    <span className="text-[10px] md:text-xs font-bold text-slate-900 leading-tight text-center mt-0.5 w-full whitespace-nowrap">
                       {signatureRole.trim() ||
                         (language === "pt"
                           ? "Coordenador de Cursos"
                           : "Course Coordinator")}
                     </span>
-                    <span className="text-[8px] md:text-[9px] font-semibold text-slate-500 uppercase tracking-widest leading-tight text-center mt-0.5">
+                    <span className="text-[8px] md:text-[9px] font-semibold text-slate-500 uppercase tracking-widest leading-tight text-center mt-0.5 w-full whitespace-nowrap">
                       {language === "pt"
                         ? "Missão de Assessoria Naval do Brasil em São Tomé e Príncipe"
                         : "Brazilian Naval Advisory Mission in São Tomé and Príncipe"}
