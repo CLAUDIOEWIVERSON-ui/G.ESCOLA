@@ -1863,11 +1863,21 @@ function BoletimContent() {
     return (
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 print:hidden">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{t.reportCard.title}</h1>
-            <p className="text-slate-500 text-sm">
-              {language === 'pt' ? 'Consulte as suas notas individuais e aproveitamento acadêmico' : 'Check your individual grades and academic performance.'}
-            </p>
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 md:w-20 md:h-20 shrink-0 flex items-center justify-center overflow-hidden bg-white border border-slate-200 dark:border-slate-700 rounded-2xl p-1.5 shadow-sm">
+              <img
+                src={typeof navalMissionLogo === "string" ? navalMissionLogo : (navalMissionLogo as any)?.src || navalMissionLogo}
+                alt="Logo Missão de Assessoria Naval"
+                className="w-14 h-14 md:w-16 md:h-16 object-contain shrink-0"
+                style={{ width: "64px", height: "64px" }}
+              />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{t.reportCard.title}</h1>
+              <p className="text-slate-500 text-sm">
+                {language === 'pt' ? 'Consulte as suas notas individuais e aproveitamento acadêmico' : 'Check your individual grades and academic performance.'}
+              </p>
+            </div>
           </div>
 
         </div>
@@ -2575,17 +2585,27 @@ function BoletimContent() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 print:hidden">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{t.reportCard.title}</h1>
-          <p className="text-slate-500 text-sm">
-            {t.reportCard.subtitle}
-            {selectedTurma && turmas.find((t: any) => t.id === selectedTurma)?.data_inicio && (
-              <span className="ml-2 px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-[10px] font-bold uppercase tracking-widest border border-blue-100">
-                {format(new Date(turmas.find((t: any) => t.id === selectedTurma).data_inicio), 'dd/MM/yyyy')} 
-                {turmas.find((t: any) => t.id === selectedTurma).data_fim ? ` - ${format(new Date(turmas.find((t: any) => t.id === selectedTurma).data_fim), 'dd/MM/yyyy')}` : ''}
-              </span>
-            )}
-          </p>
+        <div className="flex items-center gap-4">
+          <div className="w-16 h-16 md:w-20 md:h-20 shrink-0 flex items-center justify-center overflow-hidden bg-white border border-slate-200 dark:border-slate-700 rounded-2xl p-1.5 shadow-sm">
+            <img
+              src={typeof navalMissionLogo === "string" ? navalMissionLogo : (navalMissionLogo as any)?.src || navalMissionLogo}
+              alt="Logo Missão de Assessoria Naval"
+              className="w-14 h-14 md:w-16 md:h-16 object-contain shrink-0"
+              style={{ width: "64px", height: "64px" }}
+            />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{t.reportCard.title}</h1>
+            <p className="text-slate-500 text-sm">
+              {t.reportCard.subtitle}
+              {selectedTurma && turmas.find((t: any) => t.id === selectedTurma)?.data_inicio && (
+                <span className="ml-2 px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-[10px] font-bold uppercase tracking-widest border border-blue-100">
+                  {format(new Date(turmas.find((t: any) => t.id === selectedTurma).data_inicio), 'dd/MM/yyyy')} 
+                  {turmas.find((t: any) => t.id === selectedTurma).data_fim ? ` - ${format(new Date(turmas.find((t: any) => t.id === selectedTurma).data_fim), 'dd/MM/yyyy')}` : ''}
+                </span>
+              )}
+            </p>
+          </div>
         </div>
 
       </div>
