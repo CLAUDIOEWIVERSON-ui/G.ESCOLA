@@ -408,6 +408,8 @@ export default function DashboardPage() {
       id: 'exterior',
       name: t.dashboard.studentsAbroad, 
       value: stats.alunosExterior, 
+      studentsCount: stats.alunosExterior,
+      unit: language === 'pt' ? 'alunos' : 'students',
       icon: GraduationCap, 
       color: 'bg-purple-600',
       shouldShow: stats.alunosExterior > 0
@@ -416,6 +418,8 @@ export default function DashboardPage() {
       id: 'expedito',
       name: t.dashboard.turmasExpedito, 
       value: stats.turmasExpedito, 
+      studentsCount: stats.studentsExpedito,
+      unit: language === 'pt' ? 'turmas' : 'classes',
       icon: BookOpen, 
       color: 'bg-amber-500',
       shouldShow: stats.turmasExpedito > 0
@@ -424,6 +428,8 @@ export default function DashboardPage() {
       id: 'carreira',
       name: t.dashboard.turmasCarreira, 
       value: stats.turmasCarreira, 
+      studentsCount: stats.studentsCarreira,
+      unit: language === 'pt' ? 'turmas' : 'classes',
       icon: BookMarked, 
       color: 'bg-emerald-600',
       shouldShow: stats.turmasCarreira > 0
@@ -432,6 +438,8 @@ export default function DashboardPage() {
       id: 'especial',
       name: t.dashboard.turmasEspeciais, 
       value: stats.turmasEspeciais, 
+      studentsCount: stats.studentsEspeciais,
+      unit: language === 'pt' ? 'turmas' : 'classes',
       icon: Award, 
       color: 'bg-blue-600',
       shouldShow: stats.turmasEspeciais > 0
@@ -440,6 +448,8 @@ export default function DashboardPage() {
       id: 'ead',
       name: t.dashboard.turmasEad || (isPt ? 'Turmas de Cursos EaD' : 'EaD Course Classes'), 
       value: stats.turmasEad || 0, 
+      studentsCount: stats.studentsEad || 0,
+      unit: language === 'pt' ? 'turmas' : 'classes',
       icon: Monitor, 
       color: 'bg-cyan-600',
       shouldShow: (stats.turmasEad || 0) > 0
@@ -448,6 +458,8 @@ export default function DashboardPage() {
       id: 'pre_inscritos',
       name: isPt ? 'Turmas Pré-Inscritas' : 'Pre-registered Classes', 
       value: stats.turmasPreInscritas || 0, 
+      studentsCount: stats.studentsPreInscritos || 0,
+      unit: language === 'pt' ? 'turmas' : 'classes',
       icon: Users, 
       color: 'bg-red-600',
       shouldShow: (stats.turmasPreInscritas || 0) > 0
@@ -991,8 +1003,17 @@ export default function DashboardPage() {
                   )}
                 </div>
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">{card.name}</p>
-                <div className="flex items-end justify-between">
+                <div className="flex items-baseline gap-2 mb-2">
                   <span className="text-3xl font-black text-slate-800 tracking-tight">{card.value}</span>
+                  <span className="text-xs font-bold text-slate-400 uppercase">{card.unit}</span>
+                  {card.id !== 'exterior' && card.studentsCount !== undefined && (
+                    <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md ml-auto border border-indigo-100/60 flex items-center gap-1">
+                      <Users size={11} className="text-indigo-500" />
+                      {card.studentsCount} {language === 'pt' ? 'alunos' : 'students'}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center justify-end">
                   <span className={`text-[10px] font-bold flex items-center gap-1.5 group px-2 py-0.5 rounded transition-colors ${
                     isSelected ? 'text-indigo-700 bg-indigo-50 border border-indigo-100 font-extrabold' : 'text-slate-500 hover:text-indigo-600 bg-slate-50'
                   }`}>
@@ -1268,6 +1289,50 @@ export default function DashboardPage() {
                 ))}
               </div>
             )}
+
+            {/* RODAPÉ COM CONTAGEM DE ALUNOS NO EXTERIOR DE ACORDO COM O FILTRO SELECIONADO */}
+            <div className="p-4 sm:p-5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border-t border-slate-800 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shrink-0 shadow-inner print:hidden">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-400 shrink-0 shadow-xs">
+                  <GraduationCap size={22} />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs sm:text-sm font-black tracking-tight text-white uppercase">
+                      {language === 'pt' ? 'Total de Alunos no Exterior' : 'Total Students Abroad'}
+                    </span>
+                    {selectedDocumentoFilter !== 'all' ? (
+                      <span className="text-[10px] bg-indigo-500/30 text-indigo-200 border border-indigo-400/40 px-2 py-0.5 rounded-full font-bold">
+                        {language === 'pt' ? 'Filtro Ativo' : 'Filtered'}
+                      </span>
+                    ) : (
+                      <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-2 py-0.5 rounded-full font-bold">
+                        {language === 'pt' ? 'Todos os Documentos' : 'All Documents'}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-300 font-medium mt-0.5">
+                    {selectedDocumentoFilter !== 'all' 
+                      ? (language === 'pt' ? `Documento Selecionado: ${selectedDocumentoFilter}` : `Selected Document: ${selectedDocumentoFilter}`)
+                      : (language === 'pt' ? `Distribuídos em ${availableDocumentosExterior.length} portarias/documentos oficiais` : `Distributed across ${availableDocumentosExterior.length} official documents`)}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4 self-end sm:self-center bg-white/10 px-4 py-2 rounded-xl border border-white/10 backdrop-blur-xs">
+                <div className="text-right">
+                  <div className="text-[10px] text-indigo-200 font-black uppercase tracking-wider">
+                    {language === 'pt' ? 'Quantidade de Alunos' : 'Student Count'}
+                  </div>
+                  <div className="text-xl sm:text-2xl font-black text-white leading-none">
+                    {totalFilteredAlunosExterior}
+                    <span className="text-xs font-bold text-indigo-200 ml-1.5">
+                      {totalFilteredAlunosExterior === 1 ? (language === 'pt' ? 'aluno' : 'student') : (language === 'pt' ? 'alunos' : 'students')}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
             
           </motion.div>
         )}
@@ -1619,8 +1684,13 @@ export default function DashboardPage() {
                 </div>
               ))
             )}
-            <div className="text-[9px] text-right font-semibold">
-              {language === 'pt' ? 'Gerado em' : 'Generated on'} {new Date().toLocaleDateString(language === 'pt' ? 'pt-BR' : 'en-US')}
+            <div className="flex items-center justify-between text-[10px] font-bold border-t border-black pt-2 mt-1">
+              <div>
+                {language === 'pt' ? 'Total de Alunos Listados:' : 'Total Students Listed:'} <span className="font-black">{totalFilteredAlunosExterior}</span> {totalFilteredAlunosExterior === 1 ? (language === 'pt' ? 'aluno' : 'student') : (language === 'pt' ? 'alunos' : 'students')}
+              </div>
+              <div className="text-[9px] text-right font-semibold">
+                {language === 'pt' ? 'Gerado em' : 'Generated on'} {new Date().toLocaleDateString(language === 'pt' ? 'pt-BR' : 'en-US')}
+              </div>
             </div>
           </div>
         </>
@@ -1660,6 +1730,7 @@ function TurmasListTable({
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [activeHighlight, setActiveHighlight] = useState<string | null>(highlightedTurmaId || null);
+  const [searchTerm, setSearchTerm] = useState<string>('');
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -1672,17 +1743,51 @@ function TurmasListTable({
     }
   }, []);
 
+  // Filter turmas based on search term
+  const filteredTurmas = useMemo(() => {
+    if (!searchTerm.trim()) return turmas;
+    const term = searchTerm.toLowerCase().trim();
+    return turmas.filter((t) => {
+      const nomeTurma = (t.nome || '').toLowerCase();
+      const nomeCurso = (t.curso?.nome || '').toLowerCase();
+      const categoria = (t.curso?.categoria || t.categoria || '').toLowerCase();
+      const instrutor = (t.instrutor || '').toLowerCase();
+      const localizacao = (t.localizacao || '').toLowerCase();
+      const ano = (t.ano || '').toString().toLowerCase();
+      const grupo = (t.grupo_responsavel || t.curso?.grupo_responsavel || '').toLowerCase();
+      return (
+        nomeTurma.includes(term) ||
+        nomeCurso.includes(term) ||
+        categoria.includes(term) ||
+        instrutor.includes(term) ||
+        localizacao.includes(term) ||
+        ano.includes(term) ||
+        grupo.includes(term)
+      );
+    });
+  }, [turmas, searchTerm]);
+
+  // Total student count across all filtered turmas
+  const totalFilteredAlunos = useMemo(() => {
+    return filteredTurmas.reduce((acc, t) => {
+      const count = Number(t.alunos_count ?? t.total_alunos ?? 0);
+      return acc + (isNaN(count) ? 0 : count);
+    }, 0);
+  }, [filteredTurmas]);
+
+  const totalFilteredTurmas = filteredTurmas.length;
+
   // Ensure pagination is automatically on the page that contains the highlighted class
   useEffect(() => {
-    if (highlightedTurmaId && turmas.length > 0) {
+    if (highlightedTurmaId && filteredTurmas.length > 0) {
       setActiveHighlight(highlightedTurmaId);
-      const targetIndex = turmas.findIndex(t => t.id === highlightedTurmaId);
+      const targetIndex = filteredTurmas.findIndex(t => t.id === highlightedTurmaId);
       if (targetIndex !== -1) {
         const targetPage = Math.floor(targetIndex / itemsPerPage) + 1;
         setCurrentPage(targetPage);
       }
     }
-  }, [highlightedTurmaId, turmas, itemsPerPage]);
+  }, [highlightedTurmaId, filteredTurmas, itemsPerPage]);
 
   // Smoothly scroll and focus on the chosen class row when loaded
   useEffect(() => {
@@ -1707,23 +1812,53 @@ function TurmasListTable({
     }
   }, [activeHighlight, currentPage]);
 
-  const totalItems = turmas.length;
+  const totalItems = filteredTurmas.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
-  const paginatedTurmas = turmas.slice(startIndex, endIndex);
+  const paginatedTurmas = filteredTurmas.slice(startIndex, endIndex);
 
   return (
     <div className="bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col overflow-hidden">
-      <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-        <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
-          <BookOpen size={16} className="text-slate-400" />
-          {title}
-        </h3>
-        <span className="text-xs text-slate-550 font-bold bg-slate-100 px-3 py-1 rounded-full border border-slate-200/50">
-          {turmas.length} {isPt ? 'Ativas' : 'Active'}
-        </span>
+      <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2 flex-wrap">
+          <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
+            <BookOpen size={16} className="text-slate-400" />
+            {title}
+          </h3>
+          <span className="text-xs text-slate-600 font-bold bg-slate-100 px-3 py-1 rounded-full border border-slate-200/50">
+            {totalFilteredTurmas} {totalFilteredTurmas === 1 ? (isPt ? 'Turma' : 'Class') : (isPt ? 'Turmas' : 'Classes')}
+          </span>
+          <span className="text-xs text-indigo-700 font-bold bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100 flex items-center gap-1.5 shadow-2xs">
+            <Users size={13} className="text-indigo-600" />
+            {totalFilteredAlunos} {totalFilteredAlunos === 1 ? (isPt ? 'Aluno' : 'Student') : (isPt ? 'Alunos' : 'Students')}
+          </span>
+        </div>
+
+        {/* Campo de Busca Rápida na Tabela */}
+        <div className="w-full sm:w-72 relative">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1);
+            }}
+            placeholder={isPt ? "Buscar por nome, curso, instrutor..." : "Search class, course, instructor..."}
+            className="w-full pl-9 pr-8 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition shadow-2xs"
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 rounded-full"
+            >
+              <X size={12} />
+            </button>
+          )}
+        </div>
       </div>
+
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
@@ -1731,22 +1866,27 @@ function TurmasListTable({
               <th className="px-6 py-4">{isPt ? 'Identificador da Turma' : 'Class Identifier'}</th>
               <th className="px-6 py-4">{isPt ? 'Curso Recomendado / Categoria' : 'Course Name / Category'}</th>
               <th className="px-6 py-4">{isPt ? 'Localização / Período' : 'Location / Period'}</th>
-              <th className="px-6 py-4 text-center">{isPt ? 'Capacidade' : 'Capacity'}</th>
+              <th className="px-6 py-4 text-center">{isPt ? 'Alunos / Capacidade' : 'Students / Capacity'}</th>
               <th className="px-6 py-4">{isPt ? 'Instrutor Responsável' : 'Responsible Instructor'}</th>
               {isAdmin && onDelete && <th className="px-6 py-4 text-right">{isPt ? 'Ações' : 'Actions'}</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50 text-sm">
-            {turmas.length === 0 ? (
+            {filteredTurmas.length === 0 ? (
               <tr>
                 <td colSpan={isAdmin && onDelete ? 6 : 5} className="px-6 py-10 text-center text-slate-400 italic font-medium">
-                  {isPt ? 'Nenhuma turma ativa encontrada para esta categoria.' : 'No active classes found for this category.'}
+                  {searchTerm 
+                    ? (isPt ? 'Nenhuma turma encontrada para a busca informada.' : 'No classes found for the search query.')
+                    : (isPt ? 'Nenhuma turma ativa encontrada para esta categoria.' : 'No active classes found for this category.')}
                 </td>
               </tr>
             ) : (
               paginatedTurmas.map((turma) => {
                 const isPreInscrito = turma.status?.toLowerCase() === 'pré-inscrito';
                 const isHighlighted = turma.id === activeHighlight;
+                const alunoCount = Number(turma.alunos_count ?? turma.total_alunos ?? 0);
+                const capacidadeMax = Number(turma.capacidade_max || 40);
+
                 return (
                 <tr 
                   id={`turma-row-${turma.id}`}
@@ -1793,9 +1933,16 @@ function TurmasListTable({
                     )}
                   </td>
                   <td className="px-6 py-4 text-center">
-                    <span className="inline-block px-2.5 py-1 text-xs font-bold text-slate-700 bg-slate-100 rounded-lg">
-                      {turma.capacidade_max || 40} {isPt ? 'vagas' : 'seats'}
-                    </span>
+                    <div className="flex flex-col items-center justify-center gap-1">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg shadow-2xs">
+                        <Users size={12} className="text-indigo-600" />
+                        <span>{alunoCount}</span>
+                        <span className="font-medium text-indigo-500">{alunoCount === 1 ? (isPt ? 'aluno' : 'student') : (isPt ? 'alunos' : 'students')}</span>
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-semibold">
+                        {capacidadeMax} {isPt ? 'vagas' : 'seats'}
+                      </span>
+                    </div>
                   </td>
                   <td className="px-6 py-4">
                     <div className={cn("font-medium", isPreInscrito ? "text-red-600" : "text-slate-650")}>{turma.instrutor || '-'}</div>
@@ -1895,6 +2042,60 @@ function TurmasListTable({
           </div>
         </div>
       )}
+
+      {/* RODAPÉ COM CONTAGEM TOTAL DE ALUNOS E TURMAS DE ACORDO COM O FILTRO SELECIONADO */}
+      <div className="p-4 sm:p-5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border-t border-slate-800 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shrink-0 shadow-inner">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-400 shrink-0 shadow-xs">
+            <Users size={22} />
+          </div>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs sm:text-sm font-black tracking-tight text-white uppercase">
+                {isPt ? 'Contagem Total de Alunos no Filtro' : 'Total Students in Filter'}
+              </span>
+              <span className="text-[10px] bg-indigo-500/30 text-indigo-200 border border-indigo-400/40 px-2.5 py-0.5 rounded-full font-bold">
+                {title}
+              </span>
+              {searchTerm && (
+                <span className="text-[10px] bg-amber-500/30 text-amber-200 border border-amber-400/40 px-2 py-0.5 rounded-full font-bold">
+                  {isPt ? `Busca: "${searchTerm}"` : `Search: "${searchTerm}"`}
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-slate-300 font-medium mt-0.5">
+              {isPt 
+                ? `Total de alunos matriculados nas ${totalFilteredTurmas} turmas selecionadas` 
+                : `Total enrolled students across the ${totalFilteredTurmas} selected classes`}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4 sm:gap-6 self-end sm:self-center bg-white/10 px-4 sm:px-5 py-2.5 rounded-xl border border-white/10 backdrop-blur-xs">
+          <div className="text-right">
+            <div className="text-[10px] text-indigo-200 font-black uppercase tracking-wider">
+              {isPt ? 'Turmas' : 'Classes'}
+            </div>
+            <div className="text-lg sm:text-xl font-black text-white leading-none">
+              {totalFilteredTurmas}
+            </div>
+          </div>
+
+          <div className="h-8 w-px bg-white/20" />
+
+          <div className="text-right">
+            <div className="text-[10px] text-indigo-200 font-black uppercase tracking-wider">
+              {isPt ? 'Total de Alunos' : 'Total Students'}
+            </div>
+            <div className="text-xl sm:text-2xl font-black text-white leading-none flex items-center gap-1.5 justify-end">
+              <span>{totalFilteredAlunos}</span>
+              <span className="text-xs font-bold text-indigo-200">
+                {totalFilteredAlunos === 1 ? (isPt ? 'aluno' : 'student') : (isPt ? 'alunos' : 'students')}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

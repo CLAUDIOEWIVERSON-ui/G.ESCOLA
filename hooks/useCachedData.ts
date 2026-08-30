@@ -335,6 +335,14 @@ export function useDashboardStats() {
       // Map turma id to course & category with status
       const turmaMetaMap = new Map<string, { categoria: 'expedito' | 'carreira' | 'especial' | 'ead'; isAtiva: boolean; isPreInscrito: boolean }>();
 
+      // Map turma id to number of active students
+      const alunoCountByTurmaMap = new Map<string, number>();
+      activeAlunos.forEach((al: any) => {
+        if (al.turma_id) {
+          alunoCountByTurmaMap.set(al.turma_id, (alunoCountByTurmaMap.get(al.turma_id) || 0) + 1);
+        }
+      });
+
       // Count and compile turmas by category of their course - Active only, non-concluded
       const expeditoTurmasList: any[] = [];
       const carreiraTurmasList: any[] = [];
@@ -344,7 +352,13 @@ export function useDashboardStats() {
 
       filteredTurmas.forEach((t: any) => {
         const course = (t.curso_id ? courseMap.get(t.curso_id) : null) || (Array.isArray(t.curso) ? t.curso[0] : t.curso);
-        const tWithCourse = { ...t, curso: course || t.curso };
+        const alunoCount = alunoCountByTurmaMap.get(t.id) || 0;
+        const tWithCourse = { 
+          ...t, 
+          curso: course || t.curso,
+          alunos_count: alunoCount,
+          total_alunos: alunoCount
+        };
         
         const statusLower = (t.status || 'ativa').toString().toLowerCase().trim();
         const isPreInscrito = statusLower === 'pré-inscrito(a)(s)' || statusLower === 'pre-inscrito' || statusLower === 'pre_inscrito' || (statusLower === 'ativa' && t.ativa === false);
