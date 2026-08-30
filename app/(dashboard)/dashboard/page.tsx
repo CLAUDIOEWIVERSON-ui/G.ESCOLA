@@ -1290,28 +1290,28 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {/* RODAPÉ COM CONTAGEM DE ALUNOS NO EXTERIOR DE ACORDO COM O FILTRO SELECIONADO */}
-            <div className="p-4 sm:p-5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border-t border-slate-800 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shrink-0 shadow-inner print:hidden">
+            {/* RODAPÉ COM CONTAGEM DE ALUNOS NO EXTERIOR COM FUNDO AZUL E LETRAS BRANCAS */}
+            <div className="p-4 sm:p-5 bg-blue-700 border-t border-blue-800 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shrink-0 shadow-inner print:hidden">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-400 shrink-0 shadow-xs">
-                  <GraduationCap size={22} />
+                <div className="w-10 h-10 rounded-xl bg-white/20 border border-white/30 flex items-center justify-center text-white shrink-0 shadow-xs">
+                  <GraduationCap size={22} className="text-white" />
                 </div>
                 <div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-xs sm:text-sm font-black tracking-tight text-white uppercase">
                       {language === 'pt' ? 'Total de Alunos no Exterior' : 'Total Students Abroad'}
                     </span>
                     {selectedDocumentoFilter !== 'all' ? (
-                      <span className="text-[10px] bg-indigo-500/30 text-indigo-200 border border-indigo-400/40 px-2 py-0.5 rounded-full font-bold">
+                      <span className="text-[10px] bg-white/20 text-white border border-white/30 px-2 py-0.5 rounded-full font-bold">
                         {language === 'pt' ? 'Filtro Ativo' : 'Filtered'}
                       </span>
                     ) : (
-                      <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-2 py-0.5 rounded-full font-bold">
+                      <span className="text-[10px] bg-white/20 text-white border border-white/30 px-2 py-0.5 rounded-full font-bold">
                         {language === 'pt' ? 'Todos os Documentos' : 'All Documents'}
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-slate-300 font-medium mt-0.5">
+                  <p className="text-xs text-blue-100 font-medium mt-0.5">
                     {selectedDocumentoFilter !== 'all' 
                       ? (language === 'pt' ? `Documento Selecionado: ${selectedDocumentoFilter}` : `Selected Document: ${selectedDocumentoFilter}`)
                       : (language === 'pt' ? `Distribuídos em ${availableDocumentosExterior.length} portarias/documentos oficiais` : `Distributed across ${availableDocumentosExterior.length} official documents`)}
@@ -1319,14 +1319,14 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-4 self-end sm:self-center bg-white/10 px-4 py-2 rounded-xl border border-white/10 backdrop-blur-xs">
+              <div className="flex items-center gap-4 self-end sm:self-center bg-white/20 px-5 py-2.5 rounded-xl border border-white/30 backdrop-blur-xs">
                 <div className="text-right">
-                  <div className="text-[10px] text-indigo-200 font-black uppercase tracking-wider">
+                  <div className="text-[10px] text-blue-100 font-black uppercase tracking-wider">
                     {language === 'pt' ? 'Quantidade de Alunos' : 'Student Count'}
                   </div>
-                  <div className="text-xl sm:text-2xl font-black text-white leading-none">
-                    {totalFilteredAlunosExterior}
-                    <span className="text-xs font-bold text-indigo-200 ml-1.5">
+                  <div className="text-xl sm:text-2xl font-black text-white leading-none mt-0.5 flex items-center justify-end gap-1.5">
+                    <span>{totalFilteredAlunosExterior}</span>
+                    <span className="text-xs font-bold text-blue-100">
                       {totalFilteredAlunosExterior === 1 ? (language === 'pt' ? 'aluno' : 'student') : (language === 'pt' ? 'alunos' : 'students')}
                     </span>
                   </div>
@@ -1684,13 +1684,8 @@ export default function DashboardPage() {
                 </div>
               ))
             )}
-            <div className="flex items-center justify-between text-[10px] font-bold border-t border-black pt-2 mt-1">
-              <div>
-                {language === 'pt' ? 'Total de Alunos Listados:' : 'Total Students Listed:'} <span className="font-black">{totalFilteredAlunosExterior}</span> {totalFilteredAlunosExterior === 1 ? (language === 'pt' ? 'aluno' : 'student') : (language === 'pt' ? 'alunos' : 'students')}
-              </div>
-              <div className="text-[9px] text-right font-semibold">
-                {language === 'pt' ? 'Gerado em' : 'Generated on'} {new Date().toLocaleDateString(language === 'pt' ? 'pt-BR' : 'en-US')}
-              </div>
+            <div className="text-[9px] text-right font-semibold">
+              {language === 'pt' ? 'Gerado em' : 'Generated on'} {new Date().toLocaleDateString(language === 'pt' ? 'pt-BR' : 'en-US')}
             </div>
           </div>
         </>
@@ -2043,27 +2038,27 @@ function TurmasListTable({
         </div>
       )}
 
-      {/* RODAPÉ COM CONTAGEM TOTAL DE ALUNOS E TURMAS DE ACORDO COM O FILTRO SELECIONADO */}
-      <div className="p-4 sm:p-5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border-t border-slate-800 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shrink-0 shadow-inner">
+      {/* RODAPÉ COM CONTAGEM TOTAL DE ALUNOS E TURMAS COM FUNDO AZUL E LETRAS BRANCAS */}
+      <div className="p-4 sm:p-5 bg-blue-700 border-t border-blue-800 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shrink-0 shadow-inner">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-400 shrink-0 shadow-xs">
-            <Users size={22} />
+          <div className="w-10 h-10 rounded-xl bg-white/20 border border-white/30 flex items-center justify-center text-white shrink-0 shadow-xs">
+            <Users size={22} className="text-white" />
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs sm:text-sm font-black tracking-tight text-white uppercase">
-                {isPt ? 'Contagem Total de Alunos no Filtro' : 'Total Students in Filter'}
+                {isPt ? 'Total no Filtro' : 'Total in Filter'}
               </span>
-              <span className="text-[10px] bg-indigo-500/30 text-indigo-200 border border-indigo-400/40 px-2.5 py-0.5 rounded-full font-bold">
+              <span className="text-[10px] bg-white/20 text-white border border-white/30 px-2.5 py-0.5 rounded-full font-bold">
                 {title}
               </span>
               {searchTerm && (
-                <span className="text-[10px] bg-amber-500/30 text-amber-200 border border-amber-400/40 px-2 py-0.5 rounded-full font-bold">
+                <span className="text-[10px] bg-white/20 text-white border border-white/30 px-2 py-0.5 rounded-full font-bold">
                   {isPt ? `Busca: "${searchTerm}"` : `Search: "${searchTerm}"`}
                 </span>
               )}
             </div>
-            <p className="text-xs text-slate-300 font-medium mt-0.5">
+            <p className="text-xs text-blue-100 font-medium mt-0.5">
               {isPt 
                 ? `Total de alunos matriculados nas ${totalFilteredTurmas} turmas selecionadas` 
                 : `Total enrolled students across the ${totalFilteredTurmas} selected classes`}
@@ -2071,25 +2066,25 @@ function TurmasListTable({
           </div>
         </div>
 
-        <div className="flex items-center gap-4 sm:gap-6 self-end sm:self-center bg-white/10 px-4 sm:px-5 py-2.5 rounded-xl border border-white/10 backdrop-blur-xs">
+        <div className="flex items-center gap-4 sm:gap-6 self-end sm:self-center bg-white/20 px-4 sm:px-5 py-2.5 rounded-xl border border-white/30 backdrop-blur-xs">
           <div className="text-right">
-            <div className="text-[10px] text-indigo-200 font-black uppercase tracking-wider">
+            <div className="text-[10px] text-blue-100 font-black uppercase tracking-wider">
               {isPt ? 'Turmas' : 'Classes'}
             </div>
-            <div className="text-lg sm:text-xl font-black text-white leading-none">
+            <div className="text-lg sm:text-xl font-black text-white leading-none mt-0.5">
               {totalFilteredTurmas}
             </div>
           </div>
 
-          <div className="h-8 w-px bg-white/20" />
+          <div className="h-8 w-px bg-white/30" />
 
           <div className="text-right">
-            <div className="text-[10px] text-indigo-200 font-black uppercase tracking-wider">
+            <div className="text-[10px] text-blue-100 font-black uppercase tracking-wider">
               {isPt ? 'Total de Alunos' : 'Total Students'}
             </div>
-            <div className="text-xl sm:text-2xl font-black text-white leading-none flex items-center gap-1.5 justify-end">
+            <div className="text-xl sm:text-2xl font-black text-white leading-none flex items-center gap-1.5 justify-end mt-0.5">
               <span>{totalFilteredAlunos}</span>
-              <span className="text-xs font-bold text-indigo-200">
+              <span className="text-xs font-bold text-blue-100">
                 {totalFilteredAlunos === 1 ? (isPt ? 'aluno' : 'student') : (isPt ? 'alunos' : 'students')}
               </span>
             </div>
