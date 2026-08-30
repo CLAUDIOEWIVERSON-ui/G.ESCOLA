@@ -819,6 +819,10 @@ export default function HorarioPage() {
               letter-spacing: 0.2em !important;
             }
             .print-signature-block {
+              display: flex !important;
+              flex-direction: column !important;
+              align-items: flex-end !important;
+              justify-content: flex-end !important;
               padding: 3px 6px 1px 6px !important;
               margin-top: 2px !important;
               border-top: 1px solid #cbd5e1 !important;
@@ -958,6 +962,10 @@ export default function HorarioPage() {
               letter-spacing: 0.25em !important;
             }
             .print-signature-block {
+              display: flex !important;
+              flex-direction: column !important;
+              align-items: flex-end !important;
+              justify-content: flex-end !important;
               padding: 4px 8px 2px 8px !important;
               margin-top: 3px !important;
               border-top: 1px solid #cbd5e1 !important;
@@ -1998,8 +2006,8 @@ export default function HorarioPage() {
                   </table>
                 </div>
 
-                {/* Coordinator Signature Panel (Screen & Print) - Aligned to the Right Margin like Boletim */}
-                <div className="px-6 py-3 md:px-8 md:py-3 bg-white flex flex-col items-end justify-end border-t border-slate-200 print-signature-block print-avoid-break break-inside-avoid">
+                {/* Coordinator Signature Panel (Print Only) - Aligned to the Right Margin */}
+                <div className="hidden print:flex px-6 py-3 md:px-8 md:py-3 bg-white flex-col items-end justify-end border-t border-slate-200 print-signature-block print-avoid-break break-inside-avoid">
                   <div className="flex flex-col items-center text-center min-w-[260px] md:min-w-[320px] max-w-[480px]">
                     {/* Linha de Assinatura */}
                     <div className="w-full min-w-[240px] md:min-w-[280px] border-b-2 border-slate-800 h-5 mb-1 signature-line print:border-black"></div>
@@ -2021,11 +2029,6 @@ export default function HorarioPage() {
                         (language === "pt"
                           ? "Coordenador de Cursos"
                           : "Course Coordinator")}
-                    </span>
-                    <span className="text-[8px] md:text-[9px] font-semibold text-slate-500 uppercase tracking-widest leading-tight text-center mt-0.5 w-full whitespace-nowrap">
-                      {language === "pt"
-                        ? "Missão de Assessoria Naval do Brasil em São Tomé e Príncipe"
-                        : "Brazilian Naval Advisory Mission in São Tomé and Príncipe"}
                     </span>
                   </div>
                 </div>
