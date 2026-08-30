@@ -247,7 +247,7 @@ export function useDashboardStats() {
           .select('id, nome, categoria, documento_criacao')
           .is('deleted_at', null),
         supabase.from('turmas')
-          .select('id, nome, categoria, ano, data_inicio, data_fim, status, internacional, localizacao, periodo, capacidade_max, instrutor, grupo_responsavel, curso_id, documento_criacao, curso:cursos(id, nome, categoria, grupo_responsavel, documento_criacao)')
+          .select('id, nome, categoria, ano, data_inicio, data_fim, status, internacional, localizacao, periodo, capacidade_max, instrutor, grupo_responsavel, curso_id, documento_criacao, arquivada, curso:cursos(id, nome, categoria, grupo_responsavel, documento_criacao)')
           .is('deleted_at', null),
         supabase.from('alunos')
           .select('id, turma_id')
@@ -333,7 +333,7 @@ export function useDashboardStats() {
       };
 
       // Map turma id to course & category with status
-      const turmaMetaMap = new Map<string, { categoria: 'expedito' | 'carreira' | 'especial' | 'ead'; isAtiva: boolean; isPreInscrito: boolean }>();
+      const turmaMetaMap = new Map<string, { categoria: 'expedito' | 'carreira' | 'especial' | 'ead'; isAtiva: boolean; isPreInscrito: boolean; isArquivada: boolean }>();
 
       // Map turma id to number of active students
       const alunoCountByTurmaMap = new Map<string, number>();
@@ -343,12 +343,13 @@ export function useDashboardStats() {
         }
       });
 
-      // Count and compile turmas by category of their course - Active only, non-concluded
+      // Count and compile turmas by category of their course - Active only, non-concluded and non-archived
       const expeditoTurmasList: any[] = [];
       const carreiraTurmasList: any[] = [];
       const especialTurmasList: any[] = [];
       const eadTurmasList: any[] = [];
       const preInscritasTurmasList: any[] = [];
+      const arquivadasTurmasList: any[] = [];
 
       filteredTurmas.forEach((t: any) => {
         const course = (t.curso_id ? courseMap.get(t.curso_id) : null) || (Array.isArray(t.curso) ? t.curso[0] : t.curso);
@@ -361,19 +362,23 @@ export function useDashboardStats() {
         };
         
         const statusLower = (t.status || 'ativa').toString().toLowerCase().trim();
-        const isPreInscrito = statusLower === 'pré-inscrito(a)(s)' || statusLower === 'pre-inscrito' || statusLower === 'pre_inscrito' || (statusLower === 'ativa' && t.ativa === false);
-        const isConcluida = statusLower === 'concluida' || statusLower === 'concluída' || statusLower === 'concluido' || statusLower === 'concluído' || statusLower === 'arquivada' || statusLower === 'cancelada';
-        const isAtiva = !isConcluida && !isPreInscrito;
+        const isArquivada = Boolean(t.arquivada) === true || statusLower === 'arquivada' || statusLower === 'arquivado';
+        const isConcluida = !isArquivada && (statusLower === 'concluida' || statusLower === 'concluída' || statusLower === 'concluido' || statusLower === 'concluído' || statusLower === 'cancelada');
+        const isPreInscrito = !isArquivada && !isConcluida && (statusLower === 'pré-inscrito(a)(s)' || statusLower === 'pre-inscrito' || statusLower === 'pre_inscrito' || (statusLower === 'ativa' && t.ativa === false));
+        const isAtiva = !isArquivada && !isConcluida && !isPreInscrito;
 
         const category = resolveTurmaCategory(t, course);
 
         turmaMetaMap.set(t.id, {
           categoria: category,
           isAtiva,
-          isPreInscrito
+          isPreInscrito,
+          isArquivada
         });
 
-        if (isAtiva) {
+        if (isArquivada) {
+          arquivadasTurmasList.push(tWithCourse);
+        } else if (isAtiva) {
           if (category === 'expedito') {
             expeditoTurmasList.push(tWithCourse);
           } else if (category === 'carreira') {
@@ -388,18 +393,21 @@ export function useDashboardStats() {
         }
       });
 
-      // Count students by course category (only for active, responsible turmas)
+      // Count students by course category (only for active, non-archived responsible turmas)
       let expeditoAlunosCount = 0;
       let carreiraAlunosCount = 0;
       let especialAlunosCount = 0;
       let eadAlunosCount = 0;
       let preInscritosAlunosCount = 0;
+      let arquivadasAlunosCount = 0;
 
       activeAlunos.forEach((al: any) => {
         if (al.turma_id) {
           const meta = turmaMetaMap.get(al.turma_id);
           if (meta) {
-            if (meta.isAtiva) {
+            if (meta.isArquivada) {
+              arquivadasAlunosCount++;
+            } else if (meta.isAtiva) {
               if (meta.categoria === 'expedito') {
                 expeditoAlunosCount++;
               } else if (meta.categoria === 'carreira') {
@@ -424,11 +432,13 @@ export function useDashboardStats() {
           turmasEspeciais: especialTurmasList.length,
           turmasEad: eadTurmasList.length,
           turmasPreInscritas: preInscritasTurmasList.length,
+          turmasArquivadas: arquivadasTurmasList.length,
           studentsExpedito: expeditoAlunosCount,
           studentsCarreira: carreiraAlunosCount,
           studentsEspeciais: especialAlunosCount,
           studentsEad: eadAlunosCount,
           studentsPreInscritos: preInscritosAlunosCount,
+          studentsArquivadas: arquivadasAlunosCount,
         },
         alunosExterior: filteredAlunosExterior,
         turmasExpeditoList: expeditoTurmasList,
@@ -436,6 +446,7 @@ export function useDashboardStats() {
         turmasEspeciaisList: especialTurmasList,
         turmasEadList: eadTurmasList,
         turmasPreInscritasList: preInscritasTurmasList,
+        turmasArquivadasList: arquivadasTurmasList,
       };
     },
     {
@@ -448,11 +459,13 @@ export function useDashboardStats() {
           turmasEspeciais: 0,
           turmasEad: 0,
           turmasPreInscritas: 0,
+          turmasArquivadas: 0,
           studentsExpedito: 0,
           studentsCarreira: 0,
           studentsEspeciais: 0,
           studentsEad: 0,
           studentsPreInscritos: 0,
+          studentsArquivadas: 0,
         },
         alunosExterior: [],
         turmasExpeditoList: [],
@@ -460,6 +473,7 @@ export function useDashboardStats() {
         turmasEspeciaisList: [],
         turmasEadList: [],
         turmasPreInscritasList: [],
+        turmasArquivadasList: [],
       }
     }
   );
