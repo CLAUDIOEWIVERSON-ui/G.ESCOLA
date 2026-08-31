@@ -77,6 +77,121 @@ function HeaderSearchBar() {
   );
 }
 
+// Cores exclusivas e personalizadas para cada atalho na régua inferior mobile
+const MOBILE_NAV_COLORS: Record<string, {
+  text: string;
+  activeText: string;
+  bg: string;
+  activeBg: string;
+  border: string;
+  indicator: string;
+}> = {
+  '/dashboard': {
+    text: 'text-blue-600 dark:text-blue-400',
+    activeText: 'text-blue-700 dark:text-blue-300',
+    bg: 'bg-blue-50 text-blue-600 border border-blue-200/80 dark:bg-blue-950/60 dark:text-blue-400 dark:border-blue-800/50',
+    activeBg: 'bg-blue-600 text-white shadow-xs shadow-blue-500/30 border border-blue-700',
+    border: 'border-blue-200 dark:border-blue-800',
+    indicator: 'bg-blue-600',
+  },
+  '/cursos': {
+    text: 'text-amber-600 dark:text-amber-400',
+    activeText: 'text-amber-700 dark:text-amber-300',
+    bg: 'bg-amber-50 text-amber-600 border border-amber-200/80 dark:bg-amber-950/60 dark:text-amber-400 dark:border-amber-800/50',
+    activeBg: 'bg-amber-500 text-white shadow-xs shadow-amber-500/30 border border-amber-600',
+    border: 'border-amber-200 dark:border-amber-800',
+    indicator: 'bg-amber-500',
+  },
+  '/turmas': {
+    text: 'text-emerald-600 dark:text-emerald-400',
+    activeText: 'text-emerald-700 dark:text-emerald-300',
+    bg: 'bg-emerald-50 text-emerald-600 border border-emerald-200/80 dark:bg-emerald-950/60 dark:text-emerald-400 dark:border-emerald-800/50',
+    activeBg: 'bg-emerald-600 text-white shadow-xs shadow-emerald-500/30 border border-emerald-700',
+    border: 'border-emerald-200 dark:border-emerald-800',
+    indicator: 'bg-emerald-600',
+  },
+  '/frequencia': {
+    text: 'text-purple-600 dark:text-purple-400',
+    activeText: 'text-purple-700 dark:text-purple-300',
+    bg: 'bg-purple-50 text-purple-600 border border-purple-200/80 dark:bg-purple-950/60 dark:text-purple-400 dark:border-purple-800/50',
+    activeBg: 'bg-purple-600 text-white shadow-xs shadow-purple-500/30 border border-purple-700',
+    border: 'border-purple-200 dark:border-purple-800',
+    indicator: 'bg-purple-600',
+  },
+  '/horario': {
+    text: 'text-cyan-600 dark:text-cyan-400',
+    activeText: 'text-cyan-700 dark:text-cyan-300',
+    bg: 'bg-cyan-50 text-cyan-600 border border-cyan-200/80 dark:bg-cyan-950/60 dark:text-cyan-400 dark:border-cyan-800/50',
+    activeBg: 'bg-cyan-600 text-white shadow-xs shadow-cyan-500/30 border border-cyan-700',
+    border: 'border-cyan-200 dark:border-cyan-800',
+    indicator: 'bg-cyan-600',
+  },
+  '/calendario': {
+    text: 'text-rose-600 dark:text-rose-400',
+    activeText: 'text-rose-700 dark:text-rose-300',
+    bg: 'bg-rose-50 text-rose-600 border border-rose-200/80 dark:bg-rose-950/60 dark:text-rose-400 dark:border-rose-800/50',
+    activeBg: 'bg-rose-600 text-white shadow-xs shadow-rose-500/30 border border-rose-700',
+    border: 'border-rose-200 dark:border-rose-800',
+    indicator: 'bg-rose-600',
+  },
+  '/boletim': {
+    text: 'text-sky-600 dark:text-sky-400',
+    activeText: 'text-sky-700 dark:text-sky-300',
+    bg: 'bg-sky-50 text-sky-600 border border-sky-200/80 dark:bg-sky-950/60 dark:text-sky-400 dark:border-sky-800/50',
+    activeBg: 'bg-sky-600 text-white shadow-xs shadow-sky-500/30 border border-sky-700',
+    border: 'border-sky-200 dark:border-sky-800',
+    indicator: 'bg-sky-600',
+  },
+  '/configuracoes': {
+    text: 'text-indigo-600 dark:text-indigo-400',
+    activeText: 'text-indigo-700 dark:text-indigo-300',
+    bg: 'bg-indigo-50 text-indigo-600 border border-indigo-200/80 dark:bg-indigo-950/60 dark:text-indigo-400 dark:border-indigo-800/50',
+    activeBg: 'bg-indigo-600 text-white shadow-xs shadow-indigo-500/30 border border-indigo-700',
+    border: 'border-indigo-200 dark:border-indigo-800',
+    indicator: 'bg-indigo-600',
+  },
+  '/usuarios': {
+    text: 'text-fuchsia-600 dark:text-fuchsia-400',
+    activeText: 'text-fuchsia-700 dark:text-fuchsia-300',
+    bg: 'bg-fuchsia-50 text-fuchsia-600 border border-fuchsia-200/80 dark:bg-fuchsia-950/60 dark:text-fuchsia-400 dark:border-fuchsia-800/50',
+    activeBg: 'bg-fuchsia-600 text-white shadow-xs shadow-fuchsia-500/30 border border-fuchsia-700',
+    border: 'border-fuchsia-200 dark:border-fuchsia-800',
+    indicator: 'bg-fuchsia-600',
+  },
+  '/relatorio-avaliacao': {
+    text: 'text-violet-600 dark:text-violet-400',
+    activeText: 'text-violet-700 dark:text-violet-300',
+    bg: 'bg-violet-50 text-violet-600 border border-violet-200/80 dark:bg-violet-950/60 dark:text-violet-400 dark:border-violet-800/50',
+    activeBg: 'bg-violet-600 text-white shadow-xs shadow-violet-500/30 border border-violet-700',
+    border: 'border-violet-200 dark:border-violet-800',
+    indicator: 'bg-violet-600',
+  },
+  '/links': {
+    text: 'text-teal-600 dark:text-teal-400',
+    activeText: 'text-teal-700 dark:text-teal-300',
+    bg: 'bg-teal-50 text-teal-600 border border-teal-200/80 dark:bg-teal-950/60 dark:text-teal-400 dark:border-teal-800/50',
+    activeBg: 'bg-teal-600 text-white shadow-xs shadow-teal-500/30 border border-teal-700',
+    border: 'border-teal-200 dark:border-teal-800',
+    indicator: 'bg-teal-600',
+  },
+  '/avaliacao': {
+    text: 'text-emerald-600 dark:text-emerald-400',
+    activeText: 'text-emerald-700 dark:text-emerald-300',
+    bg: 'bg-emerald-50 text-emerald-600 border border-emerald-200/80 dark:bg-emerald-950/60 dark:text-emerald-400 dark:border-emerald-800/50',
+    activeBg: 'bg-emerald-600 text-white shadow-xs shadow-emerald-500/30 border border-emerald-700',
+    border: 'border-emerald-200 dark:border-emerald-800',
+    indicator: 'bg-emerald-600',
+  },
+};
+
+const MENU_BUTTON_COLOR = {
+  text: 'text-slate-600 dark:text-slate-400',
+  activeText: 'text-slate-900 dark:text-white',
+  bg: 'bg-slate-100 text-slate-700 border border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700',
+  activeBg: 'bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900 shadow-xs border border-slate-900 dark:border-white',
+  indicator: 'bg-slate-800 dark:bg-slate-200',
+};
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -630,7 +745,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </div>
 
       {/* Bottom Nav for Mobile */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-1 py-2 flex items-center justify-around z-50 h-16 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] print:hidden overflow-x-auto custom-scrollbar">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-1 py-1.5 flex items-center justify-around z-50 h-16 shadow-[0_-4px_16px_rgba(0,0,0,0.06)] print:hidden overflow-x-auto custom-scrollbar">
         {navItems.filter(item => {
           if (isNifStudent) {
             return ['/boletim', '/horario'].includes(item.path);
@@ -640,23 +755,38 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           const isActive = pathname === item.path;
           const isSettings = item.path === '/configuracoes';
           const needsPasswordChange = isSettings && profile && !profile.has_changed_password;
+          const colorConfig = MOBILE_NAV_COLORS[item.path] || {
+            text: 'text-blue-600 dark:text-blue-400',
+            activeText: 'text-blue-700 dark:text-blue-300',
+            bg: 'bg-blue-50 text-blue-600 border border-blue-200/80 dark:bg-blue-950/60 dark:text-blue-400',
+            activeBg: 'bg-blue-600 text-white',
+            indicator: 'bg-blue-600',
+            border: 'border-blue-200',
+          };
           
           return (
             <Link 
               key={`mobile-nav-${item.path}-${idx}`} 
               href={item.path}
               className={cn(
-                "flex flex-col items-center gap-1 p-0.5 transition-all min-w-0 flex-1 max-w-[56px] shrink-0 relative",
-                isActive ? "text-blue-600 scale-110" : "text-slate-400 hover:text-slate-600"
+                "flex flex-col items-center gap-0.5 p-0.5 transition-all min-w-0 flex-1 max-w-[56px] shrink-0 relative group",
+                isActive ? "scale-105" : "hover:opacity-100"
               )}
             >
-              <item.icon size={19} className={cn(
-                isActive ? "text-blue-600" : "text-slate-400",
-                needsPasswordChange && "text-amber-500 animate-pulse"
-              )} />
+              <div className={cn(
+                "w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200 shrink-0",
+                isActive ? colorConfig.activeBg : colorConfig.bg,
+                needsPasswordChange && "ring-2 ring-amber-500 animate-pulse"
+              )}>
+                <item.icon size={17} className={cn(
+                  isActive ? "text-white" : "",
+                  needsPasswordChange && "text-amber-500"
+                )} />
+              </div>
               <span className={cn(
-                "text-[8px] font-black uppercase tracking-widest text-center truncate w-full",
-                isActive ? "text-blue-600" : needsPasswordChange ? "text-amber-500 font-bold" : "text-slate-400"
+                "text-[8px] uppercase tracking-wider text-center truncate w-full transition-colors",
+                isActive ? `${colorConfig.activeText} font-black` : `${colorConfig.text} font-bold`,
+                needsPasswordChange && "text-amber-500 font-bold"
               )}>
                 {item.path === '/calendario' 
                   ? (language === 'pt' ? 'AGENDA' : 'CALENDAR') 
@@ -667,11 +797,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               {isActive && (
                 <motion.div 
                   layoutId="bottom-nav-indicator"
-                  className="absolute -bottom-2 w-8 h-1 bg-blue-600 rounded-t-full"
+                  className={cn("absolute -bottom-1.5 w-6 h-1 rounded-t-full", colorConfig.indicator)}
                 />
               )}
               {needsPasswordChange && (
-                <span className="absolute top-1 right-3.5 flex h-2 w-2 rounded-full bg-amber-500 animate-ping" />
+                <span className="absolute top-0.5 right-2 flex h-2 w-2 rounded-full bg-amber-500 animate-ping" />
               )}
             </Link>
           );
@@ -679,21 +809,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <button
           onClick={() => setSidebarOpen(prev => !prev)}
           className={cn(
-            "flex flex-col items-center gap-1 p-0.5 transition-all min-w-0 flex-1 max-w-[56px] shrink-0 relative",
-            sidebarOpen ? "text-blue-600 scale-110" : "text-slate-400 hover:text-slate-600"
+            "flex flex-col items-center gap-0.5 p-0.5 transition-all min-w-0 flex-1 max-w-[56px] shrink-0 relative group",
+            sidebarOpen ? "scale-105" : "hover:opacity-100"
           )}
         >
-          {sidebarOpen ? <X size={19} className="text-blue-600" /> : <Menu size={19} />}
+          <div className={cn(
+            "w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200 shrink-0",
+            sidebarOpen ? MENU_BUTTON_COLOR.activeBg : MENU_BUTTON_COLOR.bg
+          )}>
+            {sidebarOpen ? <X size={17} /> : <Menu size={17} />}
+          </div>
           <span className={cn(
-            "text-[8px] font-black uppercase tracking-widest truncate w-full text-center",
-            sidebarOpen ? "text-blue-600" : "text-slate-400"
+            "text-[8px] uppercase tracking-wider truncate w-full text-center transition-colors",
+            sidebarOpen ? `${MENU_BUTTON_COLOR.activeText} font-black` : `${MENU_BUTTON_COLOR.text} font-bold`
           )}>
             {t.common.menu || 'Menu'}
           </span>
           {sidebarOpen && (
             <motion.div 
               layoutId="bottom-nav-indicator"
-              className="absolute -bottom-2 w-8 h-1 bg-blue-600 rounded-t-full"
+              className={cn("absolute -bottom-1.5 w-6 h-1 rounded-t-full", MENU_BUTTON_COLOR.indicator)}
             />
           )}
         </button>
