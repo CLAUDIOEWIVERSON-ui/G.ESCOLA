@@ -1767,6 +1767,11 @@ function TurmasListTable({
   const [activeHighlight, setActiveHighlight] = useState<string | null>(highlightedTurmaId || null);
   const [searchTerm, setSearchTerm] = useState<string>('');
 
+  // Multi-selection states for courses and turmas
+  const [selectedCourses, setSelectedCourses] = useState<string[]>([]);
+  const [selectedTurmas, setSelectedTurmas] = useState<string[]>([]);
+  const [isFilterPanelOpen, setIsFilterPanelOpen] = useState<boolean>(false);
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('items_per_page_dashboard_turmas');
@@ -1778,29 +1783,110 @@ function TurmasListTable({
     }
   }, []);
 
-  // Filter turmas based on search term
-  const filteredTurmas = useMemo(() => {
-    if (!searchTerm.trim()) return turmas;
-    const term = searchTerm.toLowerCase().trim();
-    return turmas.filter((t) => {
-      const nomeTurma = (t.nome || '').toLowerCase();
-      const nomeCurso = (t.curso?.nome || '').toLowerCase();
-      const categoria = (t.curso?.categoria || t.categoria || '').toLowerCase();
-      const instrutor = (t.instrutor || '').toLowerCase();
-      const localizacao = (t.localizacao || '').toLowerCase();
-      const ano = (t.ano || '').toString().toLowerCase();
-      const grupo = (t.grupo_responsavel || t.curso?.grupo_responsavel || '').toLowerCase();
-      return (
-        nomeTurma.includes(term) ||
-        nomeCurso.includes(term) ||
-        categoria.includes(term) ||
-        instrutor.includes(term) ||
-        localizacao.includes(term) ||
-        ano.includes(term) ||
-        grupo.includes(term)
-      );
+  // Distinct courses available in this category
+  const availableCourses = useMemo(() => {
+    const map = new Map<string, { nome: string; count: number }>();
+    turmas.forEach((t) => {
+      const cursoNome = (t.curso?.nome || t.curso_nome || '').trim();
+      if (cursoNome) {
+        const current = map.get(cursoNome) || { nome: cursoNome, count: 0 };
+        current.count += 1;
+        map.set(cursoNome, current);
+      }
     });
-  }, [turmas, searchTerm]);
+    return Array.from(map.values()).sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+  }, [turmas]);
+
+  // Distinct turmas available (or filtered by selected courses if any)
+  const availableTurmasOptions = useMemo(() => {
+    const list = selectedCourses.length > 0
+      ? turmas.filter((t) => {
+          const cNome = (t.curso?.nome || t.curso_nome || '').trim();
+          return selectedCourses.includes(cNome);
+        })
+      : turmas;
+
+    const map = new Map<string, { id: string; nome: string; cursoNome: string }>();
+    list.forEach((t) => {
+      if (t.id && t.nome) {
+        map.set(t.id, {
+          id: t.id,
+          nome: t.nome,
+          cursoNome: (t.curso?.nome || t.curso_nome || '').trim()
+        });
+      }
+    });
+    return Array.from(map.values()).sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+  }, [turmas, selectedCourses]);
+
+  // Handlers for toggling multi-selection
+  const toggleCourseFilter = (courseName: string) => {
+    setSelectedCourses((prev) => {
+      const next = prev.includes(courseName) ? prev.filter((c) => c !== courseName) : [...prev, courseName];
+      return next;
+    });
+    setCurrentPage(1);
+  };
+
+  const toggleTurmaFilter = (turmaId: string) => {
+    setSelectedTurmas((prev) => {
+      const next = prev.includes(turmaId) ? prev.filter((id) => id !== turmaId) : [...prev, turmaId];
+      return next;
+    });
+    setCurrentPage(1);
+  };
+
+  const clearAllMultiFilters = () => {
+    setSelectedCourses([]);
+    setSelectedTurmas([]);
+    setSearchTerm('');
+    setCurrentPage(1);
+  };
+
+  const hasActiveMultiFilters = selectedCourses.length > 0 || selectedTurmas.length > 0;
+
+  // Filter turmas based on search term and combined multi-selection of Courses AND Turmas
+  const filteredTurmas = useMemo(() => {
+    let result = turmas;
+
+    // Filter by selected courses (OR among selected courses)
+    if (selectedCourses.length > 0) {
+      result = result.filter((t) => {
+        const cNome = (t.curso?.nome || t.curso_nome || '').trim();
+        return selectedCourses.includes(cNome);
+      });
+    }
+
+    // Filter by selected turmas (OR among selected turmas)
+    if (selectedTurmas.length > 0) {
+      result = result.filter((t) => selectedTurmas.includes(t.id));
+    }
+
+    // Filter by search term
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase().trim();
+      result = result.filter((t) => {
+        const nomeTurma = (t.nome || '').toLowerCase();
+        const nomeCurso = (t.curso?.nome || '').toLowerCase();
+        const categoria = (t.curso?.categoria || t.categoria || '').toLowerCase();
+        const instrutor = (t.instrutor || '').toLowerCase();
+        const localizacao = (t.localizacao || '').toLowerCase();
+        const ano = (t.ano || '').toString().toLowerCase();
+        const grupo = (t.grupo_responsavel || t.curso?.grupo_responsavel || '').toLowerCase();
+        return (
+          nomeTurma.includes(term) ||
+          nomeCurso.includes(term) ||
+          categoria.includes(term) ||
+          instrutor.includes(term) ||
+          localizacao.includes(term) ||
+          ano.includes(term) ||
+          grupo.includes(term)
+        );
+      });
+    }
+
+    return result;
+  }, [turmas, selectedCourses, selectedTurmas, searchTerm]);
 
   // Total student count across all filtered turmas
   const totalFilteredAlunos = useMemo(() => {
@@ -1855,6 +1941,7 @@ function TurmasListTable({
 
   return (
     <div className="bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col overflow-hidden">
+      {/* Header com Título, Contadores e Busca */}
       <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2 flex-wrap">
           <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
@@ -1874,29 +1961,299 @@ function TurmasListTable({
           </span>
         </div>
 
-        {/* Campo de Busca Rápida na Tabela */}
-        <div className="w-full sm:w-72 relative">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setCurrentPage(1);
-            }}
-            placeholder={isPt ? "Buscar por nome, curso, instrutor..." : "Search class, course, instructor..."}
-            className="w-full pl-9 pr-8 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition shadow-2xs"
-          />
-          {searchTerm && (
-            <button
-              onClick={() => setSearchTerm('')}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 rounded-full"
-            >
-              <X size={12} />
-            </button>
-          )}
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          {/* Botão de Expansão dos Filtros Combinados de Cursos e Turmas */}
+          <button
+            type="button"
+            onClick={() => setIsFilterPanelOpen((prev) => !prev)}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-2xs border shrink-0 cursor-pointer",
+              hasActiveMultiFilters
+                ? "bg-indigo-600 text-white border-indigo-700 shadow-indigo-200"
+                : isFilterPanelOpen
+                ? "bg-slate-200 text-slate-800 border-slate-300"
+                : "bg-white hover:bg-slate-100 text-slate-700 border-slate-200"
+            )}
+          >
+            <Filter size={13} />
+            <span>{isPt ? 'Filtro Combinado' : 'Combined Filters'}</span>
+            {hasActiveMultiFilters && (
+              <span className="w-5 h-5 rounded-full bg-white text-indigo-700 text-[10px] font-black flex items-center justify-center ml-0.5">
+                {selectedCourses.length + selectedTurmas.length}
+              </span>
+            )}
+            <ChevronDown
+              size={13}
+              className={cn("transition-transform duration-200", isFilterPanelOpen ? "rotate-180" : "")}
+            />
+          </button>
+
+          {/* Campo de Busca Rápida na Tabela */}
+          <div className="w-full sm:w-64 relative">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
+              placeholder={isPt ? "Buscar nome, curso, instrutor..." : "Search class, course, instructor..."}
+              className="w-full pl-9 pr-8 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition shadow-2xs"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 rounded-full"
+              >
+                <X size={12} />
+              </button>
+            )}
+          </div>
         </div>
       </div>
+
+      {/* PAINEL DE FILTROS COMBINADOS: MULTI-CURSOS & MULTI-TURMAS */}
+      <AnimatePresence>
+        {isFilterPanelOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="border-b border-slate-200 bg-slate-50/90 p-4 space-y-4 overflow-hidden"
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-200/70">
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 rounded-md bg-indigo-100 text-indigo-700 text-xs font-bold">
+                  <FolderTree size={14} />
+                </span>
+                <span className="text-xs font-extrabold text-slate-800 uppercase tracking-wide">
+                  {isPt ? 'Combinar Seleção Múltipla (Cursos e Turmas simultaneamente)' : 'Combine Multiple Selection (Courses & Classes)'}
+                </span>
+              </div>
+              {hasActiveMultiFilters && (
+                <button
+                  type="button"
+                  onClick={clearAllMultiFilters}
+                  className="flex items-center gap-1 text-[11px] font-bold text-red-600 hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded-md transition cursor-pointer self-start sm:self-auto"
+                >
+                  <RotateCcw size={11} />
+                  <span>{isPt ? 'Limpar Todos os Filtros' : 'Clear All Filters'}</span>
+                </button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* SEÇÃO DE CURSOS (MÚLTIPLA ESCOLHA) */}
+              <div className="bg-white rounded-xl border border-slate-200 p-3.5 shadow-2xs space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
+                    <BookMarked size={14} className="text-indigo-600" />
+                    <span>{isPt ? 'Cursos' : 'Courses'}</span>
+                    <span className="text-[10px] text-slate-400 font-mono">({availableCourses.length})</span>
+                  </div>
+                  {selectedCourses.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCourses([])}
+                      className="text-[10px] font-bold text-slate-500 hover:text-slate-800 transition cursor-pointer"
+                    >
+                      {isPt ? 'Desmarcar todos' : 'Uncheck all'}
+                    </button>
+                  )}
+                </div>
+
+                {availableCourses.length === 0 ? (
+                  <p className="text-xs text-slate-400 italic">{isPt ? 'Nenhum curso disponível.' : 'No courses available.'}</p>
+                ) : (
+                  <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto pr-1 custom-scrollbar">
+                    {availableCourses.map((c) => {
+                      const isSelected = selectedCourses.includes(c.nome);
+                      return (
+                        <button
+                          key={`filter-curso-${c.nome}`}
+                          type="button"
+                          onClick={() => toggleCourseFilter(c.nome)}
+                          className={cn(
+                            "px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer border text-left",
+                            isSelected
+                              ? "bg-indigo-600 text-white border-indigo-700 shadow-xs"
+                              : "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200"
+                          )}
+                        >
+                          <span className={cn(
+                            "w-3.5 h-3.5 rounded flex items-center justify-center text-[10px] border transition-colors shrink-0",
+                            isSelected ? "bg-white text-indigo-600 border-white" : "border-slate-300 bg-white"
+                          )}>
+                            {isSelected && <Check size={10} strokeWidth={3} />}
+                          </span>
+                          <span className="truncate max-w-[200px]">{c.nome}</span>
+                          <span className={cn("text-[10px] font-bold px-1 rounded", isSelected ? "bg-indigo-700 text-indigo-100" : "bg-slate-200 text-slate-600")}>
+                            {c.count}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* SEÇÃO DE TURMAS (MÚLTIPLA ESCOLHA) */}
+              <div className="bg-white rounded-xl border border-slate-200 p-3.5 shadow-2xs space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
+                    <LayoutGrid size={14} className="text-indigo-600" />
+                    <span>{isPt ? 'Turmas' : 'Classes'}</span>
+                    <span className="text-[10px] text-slate-400 font-mono">({availableTurmasOptions.length})</span>
+                  </div>
+                  {selectedTurmas.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedTurmas([])}
+                      className="text-[10px] font-bold text-slate-500 hover:text-slate-800 transition cursor-pointer"
+                    >
+                      {isPt ? 'Desmarcar todas' : 'Uncheck all'}
+                    </button>
+                  )}
+                </div>
+
+                {availableTurmasOptions.length === 0 ? (
+                  <p className="text-xs text-slate-400 italic">
+                    {selectedCourses.length > 0 
+                      ? (isPt ? 'Nenhuma turma para os cursos selecionados.' : 'No classes for the selected courses.')
+                      : (isPt ? 'Nenhuma turma disponível.' : 'No classes available.')}
+                  </p>
+                ) : (
+                  <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto pr-1 custom-scrollbar">
+                    {availableTurmasOptions.map((t) => {
+                      const isSelected = selectedTurmas.includes(t.id);
+                      return (
+                        <button
+                          key={`filter-turma-${t.id}`}
+                          type="button"
+                          onClick={() => toggleTurmaFilter(t.id)}
+                          className={cn(
+                            "px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer border text-left",
+                            isSelected
+                              ? "bg-indigo-600 text-white border-indigo-700 shadow-xs"
+                              : "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200"
+                          )}
+                        >
+                          <span className={cn(
+                            "w-3.5 h-3.5 rounded flex items-center justify-center text-[10px] border transition-colors shrink-0",
+                            isSelected ? "bg-white text-indigo-600 border-white" : "border-slate-300 bg-white"
+                          )}>
+                            {isSelected && <Check size={10} strokeWidth={3} />}
+                          </span>
+                          <span className="truncate max-w-[220px]">{t.nome}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* BARRA DE RESUMO DAS SELEÇÕES ATIVAS */}
+            {hasActiveMultiFilters && (
+              <div className="flex flex-wrap items-center gap-2 pt-2 text-xs">
+                <span className="text-slate-500 font-bold text-[11px] uppercase tracking-wider">
+                  {isPt ? 'Filtros ativos:' : 'Active filters:'}
+                </span>
+                {selectedCourses.map((c) => (
+                  <span
+                    key={`pill-active-c-${c}`}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-800 border border-indigo-200 font-semibold text-[11px]"
+                  >
+                    <BookMarked size={11} className="text-indigo-600" />
+                    <span className="truncate max-w-[150px]">{c}</span>
+                    <button
+                      type="button"
+                      onClick={() => toggleCourseFilter(c)}
+                      className="hover:text-indigo-950 p-0.5 rounded-full"
+                    >
+                      <X size={11} />
+                    </button>
+                  </span>
+                ))}
+                {selectedTurmas.map((tid) => {
+                  const tObj = availableTurmasOptions.find((o) => o.id === tid) || turmas.find((o) => o.id === tid);
+                  return (
+                    <span
+                      key={`pill-active-t-${tid}`}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 border border-blue-200 font-semibold text-[11px]"
+                    >
+                      <LayoutGrid size={11} className="text-blue-600" />
+                      <span className="truncate max-w-[150px]">{tObj?.nome || tid}</span>
+                      <button
+                        type="button"
+                        onClick={() => toggleTurmaFilter(tid)}
+                        className="hover:text-blue-950 p-0.5 rounded-full"
+                      >
+                        <X size={11} />
+                      </button>
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* CHIPS RÁPIDOS DE FILTRAGEM (QUANDO O PAINEL ESTÁ FECHADO MAS HÁ SELEÇÃO) */}
+      {!isFilterPanelOpen && hasActiveMultiFilters && (
+        <div className="px-4 py-2 bg-indigo-50/50 border-b border-indigo-100 flex items-center justify-between gap-2 text-xs">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-indigo-800 font-bold text-[11px] flex items-center gap-1">
+              <Filter size={11} />
+              {isPt ? 'Filtrando por:' : 'Filtered by:'}
+            </span>
+            {selectedCourses.map((c) => (
+              <span
+                key={`chip-c-${c}`}
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white border border-indigo-200 text-indigo-800 font-semibold text-[11px] shadow-2xs"
+              >
+                <span>Curso: {c}</span>
+                <button
+                  type="button"
+                  onClick={() => toggleCourseFilter(c)}
+                  className="hover:text-red-600"
+                >
+                  <X size={10} />
+                </button>
+              </span>
+            ))}
+            {selectedTurmas.map((tid) => {
+              const tObj = availableTurmasOptions.find((o) => o.id === tid) || turmas.find((o) => o.id === tid);
+              return (
+                <span
+                  key={`chip-t-${tid}`}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white border border-blue-200 text-blue-800 font-semibold text-[11px] shadow-2xs"
+                >
+                  <span>Turma: {tObj?.nome || tid}</span>
+                  <button
+                    type="button"
+                    onClick={() => toggleTurmaFilter(tid)}
+                    className="hover:text-red-600"
+                  >
+                    <X size={10} />
+                  </button>
+                </span>
+              );
+            })}
+          </div>
+
+          <button
+            type="button"
+            onClick={clearAllMultiFilters}
+            className="text-[11px] font-bold text-red-600 hover:text-red-700 transition cursor-pointer shrink-0"
+          >
+            {isPt ? 'Limpar' : 'Clear'}
+          </button>
+        </div>
+      )}
 
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
@@ -1914,8 +2271,8 @@ function TurmasListTable({
             {filteredTurmas.length === 0 ? (
               <tr>
                 <td colSpan={isAdmin && onDelete ? 6 : 5} className="px-6 py-10 text-center text-slate-400 italic font-medium">
-                  {searchTerm 
-                    ? (isPt ? 'Nenhuma turma encontrada para a busca informada.' : 'No classes found for the search query.')
+                  {searchTerm || hasActiveMultiFilters
+                    ? (isPt ? 'Nenhuma turma encontrada para a combinação de filtros selecionada.' : 'No classes found for the selected filter combination.')
                     : (isPt ? 'Nenhuma turma ativa encontrada para esta categoria.' : 'No active classes found for this category.')}
                 </td>
               </tr>
