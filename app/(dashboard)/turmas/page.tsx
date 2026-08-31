@@ -3463,16 +3463,10 @@ function TurmasContent() {
 
                 {/* Signatures & Footer */}
                 <div className="print-avoid-break break-inside-avoid">
-                  <div className="mt-8 pt-6 border-t border-black grid grid-cols-2 gap-12 text-center text-xs uppercase font-bold text-black print:mt-6">
-                    <div>
-                      <div className="border-b border-black h-10 mb-1 w-3/4 mx-auto"></div>
-                      <p>{rosterProfessorName || rosterTurma?.instrutor || 'Instrutor Responsável'}</p>
-                      <p className="text-[9px] text-neutral-500 font-normal">Instrutor / Encarregado</p>
-                    </div>
-                    <div>
-                      <div className="border-b border-black h-10 mb-1 w-3/4 mx-auto"></div>
-                      <p>Chefe da Missão de Assessoria Naval</p>
-                      <p className="text-[9px] text-neutral-500 font-normal">Coordenação / Supervisão</p>
+                  <div className="mt-8 pt-6 border-t border-black flex justify-center text-center text-xs uppercase font-bold text-black print:mt-6">
+                    <div className="w-80 max-w-full">
+                      <div className="border-b border-black h-10 mb-1 w-full mx-auto"></div>
+                      <p>{language === 'pt' ? 'Coordenador de Cursos' : 'Course Coordinator'}</p>
                     </div>
                   </div>
 
