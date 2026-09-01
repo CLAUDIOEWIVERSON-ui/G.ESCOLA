@@ -250,7 +250,7 @@ export function useDashboardStats() {
           .select('id, nome, categoria, ano, data_inicio, data_fim, status, internacional, localizacao, periodo, capacidade_max, instrutor, grupo_responsavel, curso_id, documento_criacao, arquivada, curso:cursos(id, nome, categoria, grupo_responsavel, documento_criacao)')
           .is('deleted_at', null),
         supabase.from('alunos')
-          .select('id, turma_id')
+          .select('id, nome, nome_guerra, posto_graduacao, om, nip, genero, tipo_aluno, foto_url, turma_id, data_inicio_curso, data_fim_curso, documento_criacao')
           .is('deleted_at', null)
       ]);
 
@@ -268,6 +268,17 @@ export function useDashboardStats() {
       });
       const activeAlunos = alunosRes.data || [];
       const alunosExteriorData = alunosExteriorRes.data || [];
+
+      // Map turma id to students array
+      const alunosByTurmaMap = new Map<string, any[]>();
+      activeAlunos.forEach((al: any) => {
+        if (al.turma_id) {
+          if (!alunosByTurmaMap.has(al.turma_id)) {
+            alunosByTurmaMap.set(al.turma_id, []);
+          }
+          alunosByTurmaMap.get(al.turma_id)!.push(al);
+        }
+      });
 
       // Filter active turmas if user is instructor
       let filteredTurmas = activeTurmas;
@@ -354,11 +365,13 @@ export function useDashboardStats() {
       filteredTurmas.forEach((t: any) => {
         const course = (t.curso_id ? courseMap.get(t.curso_id) : null) || (Array.isArray(t.curso) ? t.curso[0] : t.curso);
         const alunoCount = alunoCountByTurmaMap.get(t.id) || 0;
+        const turmaAlunos = alunosByTurmaMap.get(t.id) || [];
         const tWithCourse = { 
           ...t, 
           curso: course || t.curso,
           alunos_count: alunoCount,
-          total_alunos: alunoCount
+          total_alunos: alunoCount,
+          alunos: turmaAlunos
         };
         
         const statusLower = (t.status || 'ativa').toString().toLowerCase().trim();

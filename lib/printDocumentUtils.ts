@@ -124,7 +124,12 @@ export async function downloadElementAsPDF(
  * Prints a DOM element cleanly using an isolated, dedicated hidden iframe.
  * This guarantees zero background interference, zero duplicate pages, and correct A4 Landscape sizing.
  */
-export function printElementIsolated(elementId: string, customTitle = 'Documento'): void {
+export function printElementIsolated(
+  elementId: string, 
+  customTitle = 'Documento',
+  options: { orientation?: 'landscape' | 'portrait' } = {}
+): void {
+  const { orientation = 'portrait' } = options;
   const targetElem = document.getElementById(elementId);
   if (!targetElem) {
     toast.error('Elemento para impressão não encontrado.');
@@ -152,13 +157,7 @@ export function printElementIsolated(elementId: string, customTitle = 'Documento
   const doc = iframe.contentWindow?.document || iframe.contentDocument;
   if (!doc) {
     // Fallback to standard window.print
-    document.body.classList.add('printing-attendance-sheet');
-    setTimeout(() => {
-      window.print();
-      setTimeout(() => {
-        document.body.classList.remove('printing-attendance-sheet');
-      }, 1000);
-    }, 50);
+    window.print();
     return;
   }
 
@@ -174,8 +173,8 @@ export function printElementIsolated(elementId: string, customTitle = 'Documento
       <title>${customTitle}</title>
       <style>
         @page {
-          size: A4 landscape;
-          margin: 3mm 4mm 3mm 4mm;
+          size: A4 ${orientation};
+          margin: 6mm 8mm 6mm 8mm;
         }
         *, *::before, *::after {
           box-sizing: border-box;
@@ -192,68 +191,38 @@ export function printElementIsolated(elementId: string, customTitle = 'Documento
           width: 100% !important;
           height: auto !important;
         }
-        #print-attendance-sheet {
+        #${elementId} {
           display: block !important;
+          visibility: visible !important;
           position: static !important;
           width: 100% !important;
-          max-width: 297mm !important;
+          max-width: 100% !important;
           margin: 0 auto !important;
-          padding: 2mm 3mm !important;
+          padding: 0 !important;
           background: #ffffff !important;
           background-color: #ffffff !important;
           color: #000000 !important;
           box-shadow: none !important;
           border: none !important;
-          page-break-inside: avoid !important;
-          break-inside: avoid !important;
         }
-        #print-attendance-sheet * {
-          color: #000000 !important;
+        #${elementId} * {
           visibility: visible !important;
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
         }
-        #print-attendance-sheet .print-attendance-table {
+        table {
           width: 100% !important;
           border-collapse: collapse !important;
-          table-layout: fixed !important;
-          border: 1.5px solid #000000 !important;
+          page-break-inside: auto !important;
+        }
+        tr, .page-break-avoid {
           page-break-inside: avoid !important;
           break-inside: avoid !important;
         }
-        #print-attendance-sheet .print-attendance-table th,
-        #print-attendance-sheet .print-attendance-table td {
-          border: 1px solid #000000 !important;
-          color: #000000 !important;
-          overflow: visible !important;
-          white-space: normal !important;
-          background-color: #ffffff !important;
+        thead {
+          display: table-header-group !important;
         }
-        #print-attendance-sheet .print-attendance-table th {
-          background-color: #f1f5f9 !important;
-          font-weight: 900 !important;
-        }
-        #print-attendance-sheet .text-emerald-700,
-        #print-attendance-sheet .text-emerald-800 {
-          color: #047857 !important;
-        }
-        #print-attendance-sheet .text-rose-700,
-        #print-attendance-sheet .text-rose-800 {
-          color: #be123c !important;
-        }
-        #print-attendance-sheet .text-amber-700,
-        #print-attendance-sheet .text-amber-800 {
-          color: #b45309 !important;
-        }
-        #print-attendance-sheet .text-blue-900 {
-          color: #1e3a8a !important;
-        }
-        #print-attendance-sheet .text-red-600,
-        #print-attendance-sheet .text-red-700,
-        #print-attendance-sheet .text-red-800 {
-          color: #b91c1c !important;
-        }
-        .no-print {
+        .no-print, .print\\:hidden {
           display: none !important;
         }
       </style>
@@ -274,5 +243,5 @@ export function printElementIsolated(elementId: string, customTitle = 'Documento
       console.warn('Iframe print failed, falling back to window.print', e);
       window.print();
     }
-  }, 300);
+  }, 350);
 }
