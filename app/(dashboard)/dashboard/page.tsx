@@ -284,22 +284,22 @@ export default function DashboardPage() {
   const [expandedPhoto, setExpandedPhoto] = useState<{url: string, name: string} | null>(null);
   const detailsRef = useRef<HTMLDivElement>(null);
 
+  const isCategoryVisible = useCallback((catId: string) => {
+    if (!selectedCategories.includes(catId)) return false;
+    if (viewMode === 'tabs' && selectedCategories.length > 1) {
+      return selectedCard === catId;
+    }
+    return true;
+  }, [selectedCategories, viewMode, selectedCard]);
+
   const handleToggleCategory = (catId: string) => {
     setSelectedCategories((prev) => {
-      let next: string[];
-      if (prev.includes(catId)) {
-        if (prev.length === 1) {
-          next = prev; // Keep at least one active
-        } else {
-          next = prev.filter((id) => id !== catId);
+      const isSelected = prev.includes(catId);
+      const next = isSelected ? prev.filter((id) => id !== catId) : [...prev, catId];
+      if (next.length > 0) {
+        if (!next.includes(selectedCard)) {
+          setSelectedCard(next[0]);
         }
-      } else {
-        next = [...prev, catId];
-      }
-      if (next.length === 1) {
-        setSelectedCard(next[0]);
-      } else if (!next.includes(selectedCard)) {
-        setSelectedCard(next[0]);
       }
       return next;
     });
@@ -307,29 +307,30 @@ export default function DashboardPage() {
   };
 
   const handleSetCategories = (cats: string[]) => {
-    if (!cats || cats.length === 0) return;
     setSelectedCategories(cats);
-    if (!cats.includes(selectedCard)) {
+    if (cats.length > 0 && !cats.includes(selectedCard)) {
       setSelectedCard(cats[0]);
     }
     setHasUserSelectedCard(true);
   };
 
   const handleSelectAllCategories = () => {
-    handleSetCategories(['exterior', 'carreira', 'especial', 'expedito', 'ead', 'pre_inscritos', 'arquivadas']);
+    const all = ['exterior', 'carreira', 'especial', 'expedito', 'ead', 'pre_inscritos', 'arquivadas'];
+    setSelectedCategories(all);
+    if (!all.includes(selectedCard)) {
+      setSelectedCard(all[0]);
+    }
+    setHasUserSelectedCard(true);
   };
 
   const handleClearCategories = () => {
-    setSelectedCategories(['exterior']);
-    setSelectedCard('exterior');
+    setSelectedCategories([]);
     setHasUserSelectedCard(true);
   };
 
   const handleCardClick = (cardId: string) => {
     setSelectedCard(cardId);
-    if (!selectedCategories.includes(cardId)) {
-      setSelectedCategories([cardId]);
-    }
+    setSelectedCategories([cardId]);
     setHasUserSelectedCard(true);
     setCurrentPage(1);
     setTimeout(() => {
@@ -1163,14 +1164,12 @@ export default function DashboardPage() {
               const isChecked = selectedCategories.includes(cat.id);
               const IconComponent = cat.icon;
               return (
-                <label
+                <button
+                  type="button"
                   key={`dash-check-${cat.id}`}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleToggleCategory(cat.id);
-                  }}
+                  onClick={() => handleToggleCategory(cat.id)}
                   className={cn(
-                    "flex items-center gap-2 p-2 rounded-xl border text-xs font-bold transition cursor-pointer select-none",
+                    "flex items-center gap-2 p-2 rounded-xl border text-xs font-bold transition cursor-pointer select-none text-left",
                     isChecked
                       ? "bg-indigo-600/90 text-white border-indigo-400 shadow-sm ring-1 ring-indigo-400/40"
                       : "bg-white/10 text-slate-300 border-white/10 hover:bg-white/15 hover:text-white"
@@ -1186,7 +1185,7 @@ export default function DashboardPage() {
                   </div>
                   <IconComponent size={14} className={isChecked ? "text-white shrink-0" : "text-slate-400 shrink-0"} />
                   <span className="truncate">{isPt ? cat.label : cat.labelEn}</span>
-                </label>
+                </button>
               );
             })}
           </div>
@@ -1388,7 +1387,31 @@ export default function DashboardPage() {
 
       {/* RENDERIZAÇÃO DOS DETALHES DAS CATEGORIAS (CONSOLIDADA OU ABA INDIVIDUAL) */}
       <div className="space-y-6">
-        {((selectedCategories.length > 1 && viewMode === 'consolidated' && selectedCategories.includes('exterior')) || (selectedCategories.length <= 1 || viewMode === 'tabs' ? selectedCard === 'exterior' : false)) && (
+        {selectedCategories.length === 0 && (
+          <div className="bg-white border-2 border-dashed border-slate-200 rounded-2xl p-8 text-center my-6">
+            <div className="w-12 h-12 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto mb-3">
+              <Filter size={24} />
+            </div>
+            <h3 className="text-base font-bold text-slate-800 mb-1">
+              {isPt ? 'Nenhuma categoria selecionada' : 'No category selected'}
+            </h3>
+            <p className="text-xs text-slate-500 max-w-md mx-auto mb-4">
+              {isPt 
+                ? 'Marque uma ou mais caixas de seleção acima ou clique em um dos cartões para visualizar as turmas e alunos correspondentes.'
+                : 'Check one or more boxes above or click on one of the cards to view corresponding classes and students.'}
+            </p>
+            <button
+              type="button"
+              onClick={handleSelectAllCategories}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition shadow-sm cursor-pointer"
+            >
+              <CheckSquare size={14} />
+              <span>{isPt ? 'Marcar Todas as Categorias' : 'Select All Categories'}</span>
+            </button>
+          </div>
+        )}
+
+        {isCategoryVisible('exterior') && (
           <motion.div
             key="exterior"
             initial={{ opacity: 0, y: 15 }}
@@ -1695,7 +1718,7 @@ export default function DashboardPage() {
         )}
 
 
-        {((selectedCategories.length > 1 && viewMode === 'consolidated' && selectedCategories.includes('expedito')) || (selectedCategories.length <= 1 || viewMode === 'tabs' ? selectedCard === 'expedito' : false)) && (
+        {isCategoryVisible('expedito') && (
           <motion.div
             key="expedito"
             initial={{ opacity: 0, y: 15 }}
@@ -1713,7 +1736,7 @@ export default function DashboardPage() {
           </motion.div>
         )}
 
-        {((selectedCategories.length > 1 && viewMode === 'consolidated' && selectedCategories.includes('carreira')) || (selectedCategories.length <= 1 || viewMode === 'tabs' ? selectedCard === 'carreira' : false)) && (
+        {isCategoryVisible('carreira') && (
           <motion.div
             key="carreira"
             initial={{ opacity: 0, y: 15 }}
@@ -1731,7 +1754,7 @@ export default function DashboardPage() {
           </motion.div>
         )}
 
-        {((selectedCategories.length > 1 && viewMode === 'consolidated' && selectedCategories.includes('especial')) || (selectedCategories.length <= 1 || viewMode === 'tabs' ? selectedCard === 'especial' : false)) && (
+        {isCategoryVisible('especial') && (
           <motion.div
             key="especial"
             initial={{ opacity: 0, y: 15 }}
@@ -1749,7 +1772,7 @@ export default function DashboardPage() {
           </motion.div>
         )}
 
-        {((selectedCategories.length > 1 && viewMode === 'consolidated' && selectedCategories.includes('ead')) || (selectedCategories.length <= 1 || viewMode === 'tabs' ? selectedCard === 'ead' : false)) && (
+        {isCategoryVisible('ead') && (
           <motion.div
             key="ead"
             initial={{ opacity: 0, y: 15 }}
@@ -1767,7 +1790,7 @@ export default function DashboardPage() {
           </motion.div>
         )}
 
-        {((selectedCategories.length > 1 && viewMode === 'consolidated' && selectedCategories.includes('pre_inscritos')) || (selectedCategories.length <= 1 || viewMode === 'tabs' ? selectedCard === 'pre_inscritos' : false)) && (
+        {isCategoryVisible('pre_inscritos') && (
           <motion.div
             key="pre_inscritos"
             initial={{ opacity: 0, y: 15 }}
@@ -1785,7 +1808,7 @@ export default function DashboardPage() {
           </motion.div>
         )}
 
-        {((selectedCategories.length > 1 && viewMode === 'consolidated' && selectedCategories.includes('arquivadas')) || (selectedCategories.length <= 1 || viewMode === 'tabs' ? selectedCard === 'arquivadas' : false)) && (
+        {isCategoryVisible('arquivadas') && (
           <motion.div
             key="arquivadas"
             initial={{ opacity: 0, y: 15 }}
