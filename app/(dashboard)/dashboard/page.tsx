@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback, Fragment } from 'react';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
@@ -51,11 +51,7 @@ import {
   SlidersHorizontal,
   Layers,
   CheckSquare,
-  Square,
-  UserCheck,
-  Eye,
-  ChevronsUpDown,
-  ExternalLink
+  Square
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ExchangeRateTicker from '@/components/ExchangeRateTicker';
@@ -1725,7 +1721,6 @@ export default function DashboardPage() {
         {isCategoryVisible('expedito') && (
           <motion.div
             key="expedito"
-            id="dash-cat-expedito"
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -15 }}
@@ -1737,9 +1732,8 @@ export default function DashboardPage() {
               onDelete={handleDeleteTurma}
               selectedCard="expedito"
               highlightedTurmaId={highlightedTurmaId}
-              onSelectAluno={(aluno) => setSelectedAlunoForEdit(aluno)}
-              onOpenPhoto={(photo) => setExpandedPhoto(photo)}
-              onOpenPrint={() => setIsCombinedPrintModalOpen(true)}
+              onSelectStudent={setSelectedAlunoForEdit}
+              onExpandPhoto={setExpandedPhoto}
             />
           </motion.div>
         )}
@@ -1747,7 +1741,6 @@ export default function DashboardPage() {
         {isCategoryVisible('carreira') && (
           <motion.div
             key="carreira"
-            id="dash-cat-carreira"
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -15 }}
@@ -1759,9 +1752,8 @@ export default function DashboardPage() {
               onDelete={handleDeleteTurma}
               selectedCard="carreira"
               highlightedTurmaId={highlightedTurmaId}
-              onSelectAluno={(aluno) => setSelectedAlunoForEdit(aluno)}
-              onOpenPhoto={(photo) => setExpandedPhoto(photo)}
-              onOpenPrint={() => setIsCombinedPrintModalOpen(true)}
+              onSelectStudent={setSelectedAlunoForEdit}
+              onExpandPhoto={setExpandedPhoto}
             />
           </motion.div>
         )}
@@ -1769,7 +1761,6 @@ export default function DashboardPage() {
         {isCategoryVisible('especial') && (
           <motion.div
             key="especial"
-            id="dash-cat-especial"
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -15 }}
@@ -1781,9 +1772,8 @@ export default function DashboardPage() {
               onDelete={handleDeleteTurma}
               selectedCard="especial"
               highlightedTurmaId={highlightedTurmaId}
-              onSelectAluno={(aluno) => setSelectedAlunoForEdit(aluno)}
-              onOpenPhoto={(photo) => setExpandedPhoto(photo)}
-              onOpenPrint={() => setIsCombinedPrintModalOpen(true)}
+              onSelectStudent={setSelectedAlunoForEdit}
+              onExpandPhoto={setExpandedPhoto}
             />
           </motion.div>
         )}
@@ -1791,7 +1781,6 @@ export default function DashboardPage() {
         {isCategoryVisible('ead') && (
           <motion.div
             key="ead"
-            id="dash-cat-ead"
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -15 }}
@@ -1803,9 +1792,8 @@ export default function DashboardPage() {
               onDelete={handleDeleteTurma}
               selectedCard="ead"
               highlightedTurmaId={highlightedTurmaId}
-              onSelectAluno={(aluno) => setSelectedAlunoForEdit(aluno)}
-              onOpenPhoto={(photo) => setExpandedPhoto(photo)}
-              onOpenPrint={() => setIsCombinedPrintModalOpen(true)}
+              onSelectStudent={setSelectedAlunoForEdit}
+              onExpandPhoto={setExpandedPhoto}
             />
           </motion.div>
         )}
@@ -1813,7 +1801,6 @@ export default function DashboardPage() {
         {isCategoryVisible('pre_inscritos') && (
           <motion.div
             key="pre_inscritos"
-            id="dash-cat-pre_inscritos"
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -15 }}
@@ -1825,9 +1812,8 @@ export default function DashboardPage() {
               onDelete={handleDeleteTurma}
               selectedCard="pre_inscritos"
               highlightedTurmaId={highlightedTurmaId}
-              onSelectAluno={(aluno) => setSelectedAlunoForEdit(aluno)}
-              onOpenPhoto={(photo) => setExpandedPhoto(photo)}
-              onOpenPrint={() => setIsCombinedPrintModalOpen(true)}
+              onSelectStudent={setSelectedAlunoForEdit}
+              onExpandPhoto={setExpandedPhoto}
             />
           </motion.div>
         )}
@@ -1835,7 +1821,6 @@ export default function DashboardPage() {
         {isCategoryVisible('arquivadas') && (
           <motion.div
             key="arquivadas"
-            id="dash-cat-arquivadas"
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -15 }}
@@ -1847,151 +1832,10 @@ export default function DashboardPage() {
               onDelete={handleDeleteTurma}
               selectedCard="arquivadas"
               highlightedTurmaId={highlightedTurmaId}
-              onSelectAluno={(aluno) => setSelectedAlunoForEdit(aluno)}
-              onOpenPhoto={(photo) => setExpandedPhoto(photo)}
-              onOpenPrint={() => setIsCombinedPrintModalOpen(true)}
+              onSelectStudent={setSelectedAlunoForEdit}
+              onExpandPhoto={setExpandedPhoto}
             />
           </motion.div>
-        )}
-
-        {/* QUADRO SÍNTESE CONSOLIDADO NA TELA (ASSIM COMO NA IMPRESSÃO) */}
-        {selectedCategories.length > 1 && (
-          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4 print:hidden">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-lg bg-indigo-50 text-indigo-700 font-bold border border-indigo-100">
-                  <Layers size={18} />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide flex items-center gap-2">
-                    <span>{isPt ? 'Quadro Síntese Consolidado dos Filtros Selecionados' : 'Consolidated Summary of Selected Filters'}</span>
-                    <span className="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-bold">
-                      {selectedCategories.length} {isPt ? 'categorias' : 'categories'}
-                    </span>
-                  </h3>
-                  <p className="text-xs text-slate-500 font-medium">
-                    {isPt ? 'Totalização geral por categoria de cursos, turmas e alunos matriculados' : 'Overall total by course category, classes and enrolled students'}
-                  </p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setIsCombinedPrintModalOpen(true)}
-                className="flex items-center gap-2 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition shadow-xs cursor-pointer self-start sm:self-auto"
-              >
-                <Printer size={14} />
-                <span>{isPt ? 'Imprimir Relatório Consolidado' : 'Print Consolidated Report'}</span>
-              </button>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-slate-50 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200">
-                    <th className="px-4 py-3">{isPt ? 'Categoria de Curso / Atividade' : 'Course Category / Activity'}</th>
-                    <th className="px-4 py-3 text-center w-36">{isPt ? 'Total de Turmas / Portarias' : 'Total Classes / Documents'}</th>
-                    <th className="px-4 py-3 text-center w-36">{isPt ? 'Total de Alunos' : 'Total Students'}</th>
-                    <th className="px-4 py-3 text-right w-32">{isPt ? 'Ação' : 'Action'}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 text-xs">
-                  {selectedCategories.map((catId) => {
-                    const catDef = CATEGORY_DEFINITIONS.find(c => c.id === catId);
-                    if (!catDef) return null;
-                    const Icon = catDef.icon;
-                    let turmasCount = 0;
-                    let alunosCount = 0;
-                    switch (catId) {
-                      case 'exterior':
-                        turmasCount = availableDocumentosExterior.length;
-                        alunosCount = alunosExterior.length;
-                        break;
-                      case 'carreira':
-                        turmasCount = turmasCarreiraList.length;
-                        alunosCount = turmasCarreiraList.reduce((acc: number, t: any) => acc + (t.alunos?.length || t.alunos_count || t.total_alunos || 0), 0);
-                        break;
-                      case 'especial':
-                        turmasCount = turmasEspeciaisList.length;
-                        alunosCount = turmasEspeciaisList.reduce((acc: number, t: any) => acc + (t.alunos?.length || t.alunos_count || t.total_alunos || 0), 0);
-                        break;
-                      case 'expedito':
-                        turmasCount = turmasExpeditoList.length;
-                        alunosCount = turmasExpeditoList.reduce((acc: number, t: any) => acc + (t.alunos?.length || t.alunos_count || t.total_alunos || 0), 0);
-                        break;
-                      case 'ead':
-                        turmasCount = turmasEadList.length;
-                        alunosCount = turmasEadList.reduce((acc: number, t: any) => acc + (t.alunos?.length || t.alunos_count || t.total_alunos || 0), 0);
-                        break;
-                      case 'pre_inscritos':
-                        turmasCount = turmasPreInscritasList.length;
-                        alunosCount = turmasPreInscritasList.reduce((acc: number, t: any) => acc + (t.alunos?.length || t.alunos_count || t.total_alunos || 0), 0);
-                        break;
-                      case 'arquivadas':
-                        turmasCount = turmasArquivadasList.length;
-                        alunosCount = turmasArquivadasList.reduce((acc: number, t: any) => acc + (t.alunos?.length || t.alunos_count || t.total_alunos || 0), 0);
-                        break;
-                    }
-                    return (
-                      <tr key={`summary-screen-${catId}`} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="px-4 py-3 font-bold text-slate-800 flex items-center gap-2.5">
-                          <span className="p-1.5 rounded-md bg-slate-100 text-slate-600">
-                            <Icon size={15} />
-                          </span>
-                          <span>{isPt ? catDef.label : catDef.labelEn}</span>
-                        </td>
-                        <td className="px-4 py-3 text-center font-semibold text-slate-700">
-                          {turmasCount} {turmasCount === 1 ? (isPt ? 'registro' : 'record') : (isPt ? 'registros' : 'records')}
-                        </td>
-                        <td className="px-4 py-3 text-center font-bold text-indigo-700">
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-xs font-black">
-                            <Users size={12} className="text-indigo-600" />
-                            {alunosCount}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedCard(catId);
-                              if (viewMode === 'consolidated') {
-                                const el = document.getElementById(`dash-cat-${catId}`);
-                                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                              }
-                            }}
-                            className="text-xs font-bold text-indigo-600 hover:text-indigo-800 transition cursor-pointer"
-                          >
-                            {isPt ? 'Ver Detalhes' : 'View Details'} →
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                  <tr className="bg-indigo-50/70 font-black text-slate-900 border-t-2 border-indigo-200 text-xs sm:text-sm">
-                    <td className="px-4 py-3 uppercase tracking-wide flex items-center gap-2">
-                      <Sparkles size={16} className="text-indigo-600" />
-                      <span>{isPt ? 'Total Geral Consolidado' : 'Consolidated Grand Total'}</span>
-                    </td>
-                    <td className="px-4 py-3 text-center font-bold text-slate-800">
-                      {combinedTotals.totalTurmas} {isPt ? 'turmas/portarias' : 'classes/docs'}
-                    </td>
-                    <td className="px-4 py-3 text-center text-indigo-900 text-sm sm:text-base font-black">
-                      {combinedTotals.totalAlunos} {combinedTotals.totalAlunos === 1 ? (isPt ? 'aluno' : 'student') : (isPt ? 'alunos' : 'students')}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <button
-                        type="button"
-                        onClick={() => setIsCombinedPrintModalOpen(true)}
-                        className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700 transition shadow-2xs cursor-pointer"
-                      >
-                        {isPt ? 'Imprimir' : 'Print'}
-                      </button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
         )}
       </div>
 
@@ -2290,18 +2134,16 @@ function TurmasListTable({
   onDelete, 
   selectedCard,
   highlightedTurmaId,
-  onSelectAluno,
-  onOpenPhoto,
-  onOpenPrint
+  onSelectStudent,
+  onExpandPhoto
 }: { 
   turmas: any[], 
   title: string, 
   onDelete?: (id: string) => void, 
   selectedCard?: string,
   highlightedTurmaId?: string | null,
-  onSelectAluno?: (aluno: any) => void,
-  onOpenPhoto?: (photo: { url: string; name: string }) => void,
-  onOpenPrint?: () => void
+  onSelectStudent?: (student: any) => void,
+  onExpandPhoto?: (photo: { url: string; name: string }) => void
 }) {
   const { t, language } = useI18n();
   const { isAdmin } = useUser();
@@ -2313,14 +2155,25 @@ function TurmasListTable({
   const [activeHighlight, setActiveHighlight] = useState<string | null>(highlightedTurmaId || null);
   const [searchTerm, setSearchTerm] = useState<string>('');
 
-  // Nominal student roster view toggles (defaults to visible to match print view directly on screen)
-  const [showStudentsNominal, setShowStudentsNominal] = useState<boolean>(true);
-  const [expandedTurmasMap, setExpandedTurmasMap] = useState<Record<string, boolean>>({});
-
   // Multi-selection states for courses and turmas
   const [selectedCourses, setSelectedCourses] = useState<string[]>([]);
   const [selectedTurmas, setSelectedTurmas] = useState<string[]>([]);
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState<boolean>(false);
+  const [expandedTurmaIds, setExpandedTurmaIds] = useState<Set<string>>(new Set());
+
+  // Helper to extract course name safely from any turma object structure
+  const getCursoNome = (t: any): string => {
+    if (!t) return '';
+    const cObj = Array.isArray(t.curso) ? t.curso[0] : (t.curso && typeof t.curso === 'object' ? t.curso : null);
+    const directName = cObj?.nome || t.curso_nome || t.nome_curso || t.cursoNome || (typeof t.curso === 'string' ? t.curso : '');
+    if (typeof directName === 'string' && directName.trim()) {
+      return directName.trim();
+    }
+    if (t.nome && typeof t.nome === 'string') {
+      return t.nome.trim();
+    }
+    return '';
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -2335,12 +2188,13 @@ function TurmasListTable({
 
   // Distinct courses available in this category
   const availableCourses = useMemo(() => {
-    const map = new Map<string, { nome: string; count: number }>();
+    const map = new Map<string, { nome: string; count: number; totalAlunos: number }>();
     turmas.forEach((t) => {
-      const cursoNome = (t.curso?.nome || t.curso_nome || '').trim();
+      const cursoNome = getCursoNome(t);
       if (cursoNome) {
-        const current = map.get(cursoNome) || { nome: cursoNome, count: 0 };
+        const current = map.get(cursoNome) || { nome: cursoNome, count: 0, totalAlunos: 0 };
         current.count += 1;
+        current.totalAlunos += Number(t.alunos?.length ?? t.alunos_count ?? t.total_alunos ?? 0);
         map.set(cursoNome, current);
       }
     });
@@ -2351,18 +2205,22 @@ function TurmasListTable({
   const availableTurmasOptions = useMemo(() => {
     const list = selectedCourses.length > 0
       ? turmas.filter((t) => {
-          const cNome = (t.curso?.nome || t.curso_nome || '').trim();
+          const cNome = getCursoNome(t);
           return selectedCourses.includes(cNome);
         })
       : turmas;
 
-    const map = new Map<string, { id: string; nome: string; cursoNome: string }>();
+    const map = new Map<string, { id: string; nome: string; cleanNome: string; cursoNome: string; alunosCount: number }>();
     list.forEach((t) => {
-      if (t.id && t.nome) {
+      if (t.id) {
+        const cNome = getCursoNome(t);
+        const cleanName = getCleanTurmaName(t, cNome, t.nome || 'Turma');
         map.set(t.id, {
           id: t.id,
-          nome: t.nome,
-          cursoNome: (t.curso?.nome || t.curso_nome || '').trim()
+          nome: t.nome || cleanName,
+          cleanNome: cleanName,
+          cursoNome: cNome,
+          alunosCount: Number(t.alunos?.length ?? t.alunos_count ?? t.total_alunos ?? 0)
         });
       }
     });
@@ -2393,7 +2251,28 @@ function TurmasListTable({
     setCurrentPage(1);
   };
 
-  const hasActiveMultiFilters = selectedCourses.length > 0 || selectedTurmas.length > 0;
+  const toggleTurmaExpansion = (turmaId: string) => {
+    setExpandedTurmaIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(turmaId)) {
+        next.delete(turmaId);
+      } else {
+        next.add(turmaId);
+      }
+      return next;
+    });
+  };
+
+  const toggleAllExpansions = () => {
+    if (expandedTurmaIds.size > 0) {
+      setExpandedTurmaIds(new Set());
+    } else {
+      const allIds = new Set<string>(filteredTurmas.map((t) => t.id).filter(Boolean));
+      setExpandedTurmaIds(allIds);
+    }
+  };
+
+  const hasActiveMultiFilters = selectedCourses.length > 0 || selectedTurmas.length > 0 || searchTerm.trim().length > 0;
 
   // Filter turmas based on search term and combined multi-selection of Courses AND Turmas
   const filteredTurmas = useMemo(() => {
@@ -2402,7 +2281,7 @@ function TurmasListTable({
     // Filter by selected courses (OR among selected courses)
     if (selectedCourses.length > 0) {
       result = result.filter((t) => {
-        const cNome = (t.curso?.nome || t.curso_nome || '').trim();
+        const cNome = getCursoNome(t);
         return selectedCourses.includes(cNome);
       });
     }
@@ -2416,21 +2295,19 @@ function TurmasListTable({
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase().trim();
       result = result.filter((t) => {
+        const cNome = getCursoNome(t);
         const nomeTurma = (t.nome || '').toLowerCase();
-        const nomeCurso = (t.curso?.nome || '').toLowerCase();
+        const nomeCurso = (cNome || '').toLowerCase();
         const categoria = (t.curso?.categoria || t.categoria || '').toLowerCase();
         const instrutor = (t.instrutor || '').toLowerCase();
         const localizacao = (t.localizacao || '').toLowerCase();
+        const doc = (t.documento_criacao || t.curso?.documento_criacao || '').toLowerCase();
         const ano = (t.ano || '').toString().toLowerCase();
         const grupo = (t.grupo_responsavel || t.curso?.grupo_responsavel || '').toLowerCase();
-        
-        // Also search in students inside this turma
-        const hasMatchingAluno = t.alunos && Array.isArray(t.alunos) && t.alunos.some((al: any) => {
-          const alNome = (al.nome || '').toLowerCase();
-          const alGuerra = (al.nome_guerra || '').toLowerCase();
-          const alNip = (al.nip || '').toLowerCase();
-          const alOm = (al.om || '').toLowerCase();
-          return alNome.includes(term) || alGuerra.includes(term) || alNip.includes(term) || alOm.includes(term);
+        const studentsMatch = Array.isArray(t.alunos) && t.alunos.some((al: any) => {
+          const sName = (al.nome || al.nome_guerra || '').toLowerCase();
+          const sOm = (al.om || '').toLowerCase();
+          return sName.includes(term) || sOm.includes(term);
         });
 
         return (
@@ -2439,9 +2316,10 @@ function TurmasListTable({
           categoria.includes(term) ||
           instrutor.includes(term) ||
           localizacao.includes(term) ||
+          doc.includes(term) ||
           ano.includes(term) ||
           grupo.includes(term) ||
-          hasMatchingAluno
+          studentsMatch
         );
       });
     }
@@ -2458,44 +2336,6 @@ function TurmasListTable({
   }, [filteredTurmas]);
 
   const totalFilteredTurmas = filteredTurmas.length;
-
-  // Toggle single turma expansion for students
-  const toggleTurmaExpand = (turmaId: string) => {
-    setExpandedTurmasMap((prev) => ({
-      ...prev,
-      [turmaId]: prev[turmaId] === undefined ? false : !prev[turmaId]
-    }));
-  };
-
-  // Expand or collapse all turmas on current page
-  const toggleAllTurmasExpand = (expand: boolean) => {
-    const newMap: Record<string, boolean> = {};
-    filteredTurmas.forEach((t) => {
-      newMap[t.id] = expand;
-    });
-    setExpandedTurmasMap(newMap);
-    if (expand) setShowStudentsNominal(true);
-  };
-
-  // Check if a specific turma is expanded
-  const isTurmaExpanded = (turmaId: string) => {
-    if (expandedTurmasMap[turmaId] !== undefined) {
-      return expandedTurmasMap[turmaId];
-    }
-    return showStudentsNominal;
-  };
-
-  // Helper for student avatars
-  const getAlunoAvatar = (aluno: any) => {
-    if (aluno?.foto_url) return aluno.foto_url;
-    const genero = (aluno?.genero || '').toLowerCase();
-    const tipo = (aluno?.tipo_aluno || '').toLowerCase();
-    const isMilitary = tipo === 'militar' || tipo.includes('militar') || !tipo;
-    if (isMilitary) {
-      return genero === 'f' || genero === 'feminino' ? militaryFemaleAvatar : militaryMaleAvatar;
-    }
-    return genero === 'f' || genero === 'feminino' ? femaleAvatar : maleAvatar;
-  };
 
   // Ensure pagination is automatically on the page that contains the highlighted class
   useEffect(() => {
@@ -2540,8 +2380,8 @@ function TurmasListTable({
 
   return (
     <div className="bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col overflow-hidden">
-      {/* Header com Título, Contadores, Alternância de Alunos e Ações */}
-      <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3">
+      {/* Header com Título, Contadores e Busca */}
+      <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2 flex-wrap">
           <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
             {selectedCard === 'arquivadas' ? (
@@ -2560,57 +2400,21 @@ function TurmasListTable({
           </span>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap w-full lg:w-auto">
-          {/* Botão para Exibir / Ocultar Relação Nominal de Alunos */}
+        <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap sm:flex-nowrap">
+          {/* Botão para Expandir/Recolher todos os Alunos das Turmas */}
           <button
             type="button"
-            onClick={() => {
-              const next = !showStudentsNominal;
-              setShowStudentsNominal(next);
-              toggleAllTurmasExpand(next);
-            }}
-            className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-2xs border shrink-0 cursor-pointer",
-              showStudentsNominal
-                ? "bg-indigo-600 text-white border-indigo-700 shadow-indigo-200"
-                : "bg-white hover:bg-slate-100 text-slate-700 border-slate-200"
-            )}
-            title={showStudentsNominal ? (isPt ? "Ocultar Relação de Alunos" : "Hide Students List") : (isPt ? "Exibir Relação de Alunos na Tela" : "Show Students List on Screen")}
+            onClick={toggleAllExpansions}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-2xs border bg-white hover:bg-slate-100 text-slate-700 border-slate-200 cursor-pointer shrink-0"
+            title={expandedTurmaIds.size > 0 ? (isPt ? 'Recolher relação nominal' : 'Collapse nominal rosters') : (isPt ? 'Expandir todos os alunos na tela' : 'Expand all students on screen')}
           >
-            <Users size={13} />
+            <Users size={13} className="text-indigo-600" />
             <span>
-              {showStudentsNominal
-                ? (isPt ? 'Relação Nominal Ativa' : 'Nominal Roster Active')
-                : (isPt ? 'Exibir Relação Nominal' : 'Show Nominal Roster')}
+              {expandedTurmaIds.size > 0 
+                ? (isPt ? 'Recolher Alunos' : 'Collapse Rosters') 
+                : (isPt ? 'Listar Alunos na Tela' : 'List Students on Screen')}
             </span>
           </button>
-
-          {/* Botão de Expandir / Recolher Todos */}
-          <button
-            type="button"
-            onClick={() => {
-              const anyCollapsed = paginatedTurmas.some(t => !isTurmaExpanded(t.id));
-              toggleAllTurmasExpand(anyCollapsed);
-            }}
-            className="flex items-center gap-1 px-2.5 py-1.5 bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-lg text-xs font-semibold transition cursor-pointer shadow-2xs"
-            title={isPt ? "Expandir ou recolher todas as turmas" : "Expand or collapse all classes"}
-          >
-            <ChevronsUpDown size={13} />
-            <span>{isPt ? 'Expandir/Recolher' : 'Expand/Collapse'}</span>
-          </button>
-
-          {/* Botão de Impressão Rápida da Categoria */}
-          {onOpenPrint && (
-            <button
-              type="button"
-              onClick={onOpenPrint}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition shadow-2xs border border-blue-700 shrink-0 cursor-pointer"
-              title={isPt ? "Imprimir relatório desta categoria" : "Print report for this category"}
-            >
-              <Printer size={13} />
-              <span>{isPt ? 'Imprimir' : 'Print'}</span>
-            </button>
-          )}
 
           {/* Botão de Expansão dos Filtros Combinados de Cursos e Turmas */}
           <button
@@ -2639,7 +2443,7 @@ function TurmasListTable({
           </button>
 
           {/* Campo de Busca Rápida na Tabela */}
-          <div className="w-full sm:w-60 relative">
+          <div className="w-full sm:w-56 relative">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
@@ -2648,7 +2452,7 @@ function TurmasListTable({
                 setSearchTerm(e.target.value);
                 setCurrentPage(1);
               }}
-              placeholder={isPt ? "Buscar turma, aluno, OM, NIP..." : "Search class, student, OM, NIP..."}
+              placeholder={isPt ? "Buscar aluno, curso, OM..." : "Search student, class, OM..."}
               className="w-full pl-9 pr-8 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition shadow-2xs"
             />
             {searchTerm && (
@@ -2679,7 +2483,7 @@ function TurmasListTable({
                   <FolderTree size={14} />
                 </span>
                 <span className="text-xs font-extrabold text-slate-800 uppercase tracking-wide">
-                  {isPt ? 'Combinar Seleção Múltipla (Cursos e Turmas simultaneamente)' : 'Combine Multiple Selection (Courses & Classes)'}
+                  {isPt ? 'Caixa de Seleção Combinada (Cursos e Turmas simultaneamente)' : 'Combined Selection (Courses & Classes simultaneously)'}
                 </span>
               </div>
               {hasActiveMultiFilters && (
@@ -2700,7 +2504,7 @@ function TurmasListTable({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
                     <BookMarked size={14} className="text-indigo-600" />
-                    <span>{isPt ? 'Cursos' : 'Courses'}</span>
+                    <span>{isPt ? 'Cursos Disponíveis' : 'Available Courses'}</span>
                     <span className="text-[10px] text-slate-400 font-mono">({availableCourses.length})</span>
                   </div>
                   {selectedCourses.length > 0 && (
@@ -2715,7 +2519,7 @@ function TurmasListTable({
                 </div>
 
                 {availableCourses.length === 0 ? (
-                  <p className="text-xs text-slate-400 italic">{isPt ? 'Nenhum curso disponível.' : 'No courses available.'}</p>
+                  <p className="text-xs text-slate-400 italic py-1">{isPt ? 'Nenhum curso disponível nesta categoria.' : 'No courses available in this category.'}</p>
                 ) : (
                   <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto pr-1 custom-scrollbar">
                     {availableCourses.map((c) => {
@@ -2754,7 +2558,7 @@ function TurmasListTable({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
                     <LayoutGrid size={14} className="text-indigo-600" />
-                    <span>{isPt ? 'Turmas' : 'Classes'}</span>
+                    <span>{isPt ? 'Turmas Correspondentes' : 'Matching Classes'}</span>
                     <span className="text-[10px] text-slate-400 font-mono">({availableTurmasOptions.length})</span>
                   </div>
                   {selectedTurmas.length > 0 && (
@@ -2769,10 +2573,10 @@ function TurmasListTable({
                 </div>
 
                 {availableTurmasOptions.length === 0 ? (
-                  <p className="text-xs text-slate-400 italic">
+                  <p className="text-xs text-slate-400 italic py-1">
                     {selectedCourses.length > 0 
-                      ? (isPt ? 'Nenhuma turma para os cursos selecionados.' : 'No classes for the selected courses.')
-                      : (isPt ? 'Nenhuma turma disponível.' : 'No classes available.')}
+                      ? (isPt ? 'Nenhuma turma encontrada para os cursos selecionados.' : 'No classes found for the selected courses.')
+                      : (isPt ? 'Nenhuma turma disponível nesta categoria.' : 'No classes available in this category.')}
                   </p>
                 ) : (
                   <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto pr-1 custom-scrollbar">
@@ -2796,7 +2600,10 @@ function TurmasListTable({
                           )}>
                             {isSelected && <Check size={10} strokeWidth={3} />}
                           </span>
-                          <span className="truncate max-w-[220px]">{t.nome}</span>
+                          <span className="truncate max-w-[220px]">{t.cleanNome}</span>
+                          <span className={cn("text-[10px] font-bold px-1 rounded", isSelected ? "bg-indigo-700 text-indigo-100" : "bg-slate-200 text-slate-600")}>
+                            {t.alunosCount}
+                          </span>
                         </button>
                       );
                     })}
@@ -2835,7 +2642,7 @@ function TurmasListTable({
                       className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 border border-blue-200 font-semibold text-[11px]"
                     >
                       <LayoutGrid size={11} className="text-blue-600" />
-                      <span className="truncate max-w-[150px]">{tObj?.nome || tid}</span>
+                      <span className="truncate max-w-[150px]">{tObj?.cleanNome || tObj?.nome || tid}</span>
                       <button
                         type="button"
                         onClick={() => toggleTurmaFilter(tid)}
@@ -2882,7 +2689,7 @@ function TurmasListTable({
                   key={`chip-t-${tid}`}
                   className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white border border-blue-200 text-blue-800 font-semibold text-[11px] shadow-2xs"
                 >
-                  <span>Turma: {tObj?.nome || tid}</span>
+                  <span>Turma: {tObj?.cleanNome || tObj?.nome || tid}</span>
                   <button
                     type="button"
                     onClick={() => toggleTurmaFilter(tid)}
@@ -2900,29 +2707,28 @@ function TurmasListTable({
             onClick={clearAllMultiFilters}
             className="text-[11px] font-bold text-red-600 hover:text-red-700 transition cursor-pointer shrink-0"
           >
-            {isPt ? 'Limpar' : 'Clear'}
+            {isPt ? 'Limpar Filtros' : 'Clear Filters'}
           </button>
         </div>
       )}
 
-      {/* TABELA PRINCIPAL DE TURMAS COM DETALHAMENTO NOMINAL DE ALUNOS EMBUTIDO */}
+      {/* TABELA DE TURMAS E LISTA NOMINAL DE ALUNOS */}
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="text-[10px] font-bold text-slate-400 border-b border-slate-100 uppercase tracking-wider bg-slate-50/50">
-              <th className="px-4 py-3.5 w-12 text-center">#</th>
-              <th className="px-5 py-3.5">{isPt ? 'Identificador da Turma' : 'Class Identifier'}</th>
-              <th className="px-5 py-3.5">{isPt ? 'Curso Recomendado / Categoria' : 'Course Name / Category'}</th>
-              <th className="px-5 py-3.5">{isPt ? 'Localização / Período' : 'Location / Period'}</th>
-              <th className="px-5 py-3.5 text-center">{isPt ? 'Alunos / Capacidade' : 'Students / Capacity'}</th>
-              <th className="px-5 py-3.5">{isPt ? 'Instrutor / Status' : 'Instructor / Status'}</th>
-              <th className="px-5 py-3.5 text-right">{isPt ? 'Ações' : 'Actions'}</th>
+            <tr className="text-[10px] font-bold text-slate-400 border-b border-slate-100 uppercase tracking-wider bg-slate-50/40">
+              <th className="px-6 py-4">{isPt ? 'Identificador da Turma' : 'Class Identifier'}</th>
+              <th className="px-6 py-4">{isPt ? 'Curso / Categoria' : 'Course Name / Category'}</th>
+              <th className="px-6 py-4">{isPt ? 'Localização / Período' : 'Location / Period'}</th>
+              <th className="px-6 py-4 text-center">{isPt ? 'Alunos / Capacidade' : 'Students / Capacity'}</th>
+              <th className="px-6 py-4">{isPt ? 'Instrutor Responsável' : 'Responsible Instructor'}</th>
+              <th className="px-6 py-4 text-right">{isPt ? 'Ações' : 'Actions'}</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 text-sm">
+          <tbody className="divide-y divide-slate-50 text-sm">
             {filteredTurmas.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-6 py-10 text-center text-slate-400 italic font-medium">
+                <td colSpan={6} className="px-6 py-10 text-center text-slate-400 italic font-medium">
                   {searchTerm || hasActiveMultiFilters
                     ? (isPt ? 'Nenhuma turma encontrada para a combinação de filtros selecionada.' : 'No classes found for the selected filter combination.')
                     : (isPt ? 'Nenhuma turma ativa encontrada para esta categoria.' : 'No active classes found for this category.')}
@@ -2934,120 +2740,91 @@ function TurmasListTable({
                 const isArquivada = Boolean(turma.arquivada) === true || statusLower === 'arquivada' || statusLower === 'arquivado';
                 const isPreInscrito = !isArquivada && (statusLower === 'pré-inscrito(a)(s)' || statusLower === 'pre-inscrito' || statusLower === 'pre_inscrito' || (statusLower === 'ativa' && turma.ativa === false));
                 const isHighlighted = turma.id === activeHighlight;
-                const turmaAlunos: any[] = Array.isArray(turma.alunos) ? turma.alunos : [];
-                const alunoCount = Number(turmaAlunos.length > 0 ? turmaAlunos.length : (turma.alunos_count ?? turma.total_alunos ?? 0));
+                const cursoNome = getCursoNome(turma);
+                const cleanName = getCleanTurmaName(turma, cursoNome, turma.nome || 'Turma');
+                const alunoCount = Number(turma.alunos?.length ?? turma.alunos_count ?? turma.total_alunos ?? 0);
                 const capacidadeMax = Number(turma.capacidade_max || 40);
-                const expanded = isTurmaExpanded(turma.id);
+                const isExpanded = expandedTurmaIds.has(turma.id);
+                const turmaAlunos: any[] = Array.isArray(turma.alunos) ? turma.alunos : [];
 
                 return (
                   <React.Fragment key={turma.id}>
-                    {/* LINHA PRINCIPAL DA TURMA */}
                     <tr 
                       id={`turma-row-${turma.id}`}
                       tabIndex={0}
                       className={cn(
-                        "transition-all duration-200 outline-none group",
+                        "transition-all duration-300 outline-none",
                         isHighlighted
-                          ? "bg-amber-50/90 ring-2 ring-amber-500 ring-offset-2 shadow-md"
-                          : expanded 
-                          ? "bg-indigo-50/30 hover:bg-indigo-50/50" 
-                          : "hover:bg-slate-50"
+                          ? "bg-amber-50/90 ring-2 ring-amber-500 ring-offset-2 shadow-md scale-[1.003]"
+                          : isExpanded
+                          ? "bg-indigo-50/30"
+                          : "hover:bg-slate-50 focus:bg-slate-50 focus:ring-1 focus:ring-blue-400"
                       )}
                     >
-                      {/* Botão de Expandir / Recolher Alunos da Turma */}
-                      <td className="px-4 py-3.5 text-center">
-                        <button
-                          type="button"
-                          onClick={() => toggleTurmaExpand(turma.id)}
-                          className={cn(
-                            "p-1.5 rounded-lg border transition-colors cursor-pointer flex items-center justify-center mx-auto",
-                            expanded
-                              ? "bg-indigo-600 text-white border-indigo-700"
-                              : "bg-white text-slate-500 border-slate-200 hover:bg-slate-100"
-                          )}
-                          title={expanded ? (isPt ? "Recolher relação de alunos" : "Collapse students list") : (isPt ? "Expandir relação nominal de alunos" : "Expand students nominal list")}
-                        >
-                          <ChevronDown size={14} className={cn("transition-transform duration-200", expanded ? "rotate-180" : "")} />
-                        </button>
-                      </td>
-
-                      {/* Identificador da Turma */}
-                      <td className="px-5 py-3.5">
+                      <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           {isHighlighted && (
                             <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider bg-amber-500 text-white px-2 py-0.5 rounded-full shadow-xs animate-bounce">
                               👉 Turma Escolhida
                             </span>
                           )}
-                          <div className={cn("font-bold text-sm", isArquivada ? "text-slate-600" : isPreInscrito ? "text-red-600" : "text-slate-900")}>
-                            {turma.nome}
+                          <div className={cn("font-bold", isArquivada ? "text-slate-600" : isPreInscrito ? "text-red-600" : "text-slate-800")}>
+                            {cleanName}
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 text-[10px] font-mono uppercase text-slate-400 mt-0.5">
-                          <span>ANO: {turma.ano || '-'}</span>
-                          {turma.grupo_responsavel && <span>• GRUPO: {turma.grupo_responsavel}</span>}
-                          {(turma.documento_criacao || turma.curso?.documento_criacao) && (
-                            <span className="font-semibold text-slate-500">
-                              • DOC: {turma.documento_criacao || turma.curso?.documento_criacao}
-                            </span>
-                          )}
+                        <div className={cn("text-[10px] font-mono uppercase", isArquivada ? "text-slate-400" : isPreInscrito ? "text-red-500" : "text-slate-400")}>
+                          ANO: {turma.ano || '-'} {turma.grupo_responsavel ? `• GRUPO: ${turma.grupo_responsavel}` : ''}
                         </div>
-                      </td>
-
-                      {/* Curso e Categoria */}
-                      <td className="px-5 py-3.5">
-                        <div className={cn("font-semibold text-xs sm:text-sm", isArquivada ? "text-slate-600" : isPreInscrito ? "text-red-600" : "text-slate-750")}>
-                          {turma.curso?.nome || turma.curso_nome || '-'}
-                        </div>
-                        <div className="text-[10px] text-slate-400 uppercase font-black tracking-wider mt-0.5">
-                          {turma.curso?.categoria || turma.categoria || '-'}
-                        </div>
-                      </td>
-
-                      {/* Localização e Período */}
-                      <td className="px-5 py-3.5">
-                        <div className="text-slate-700 font-medium text-xs sm:text-sm">{turma.localizacao || '-'}</div>
-                        <div className="text-[10px] text-slate-400 uppercase font-bold">
-                          {turma.periodo || '-'}
-                        </div>
-                        {(turma.data_inicio || turma.data_fim) && (
-                          <div className="text-[10px] text-blue-600 font-mono font-bold mt-0.5">
-                            {turma.data_inicio ? turma.data_inicio.split('-').reverse().join('/') : '—'} a {turma.data_fim ? turma.data_fim.split('-').reverse().join('/') : '—'}
+                        {turma.documento_criacao && (
+                          <div className="text-[9px] text-slate-500 font-mono mt-0.5">
+                            Doc: {turma.documento_criacao}
                           </div>
                         )}
                       </td>
-
-                      {/* Alunos / Capacidade (com clique para expandir) */}
-                      <td className="px-5 py-3.5 text-center">
-                        <button
-                          type="button"
-                          onClick={() => toggleTurmaExpand(turma.id)}
-                          className="inline-flex flex-col items-center justify-center gap-1 group/badge cursor-pointer"
-                          title={isPt ? "Clique para ver a relação de alunos" : "Click to view students roster"}
-                        >
-                          <span className={cn(
-                            "inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-lg transition-all shadow-2xs border",
-                            expanded
-                              ? "bg-indigo-600 text-white border-indigo-700 shadow-indigo-200"
-                              : "text-indigo-700 bg-indigo-50 border-indigo-100 hover:bg-indigo-100"
-                          )}>
-                            <Users size={12} className={expanded ? "text-white" : "text-indigo-600"} />
+                      <td className="px-6 py-4">
+                        <div className={cn("font-semibold", isArquivada ? "text-slate-600" : isPreInscrito ? "text-red-600" : "text-slate-700")}>
+                          {cursoNome || '-'}
+                        </div>
+                        <div className="text-[10px] text-slate-400 uppercase font-black tracking-wider">
+                          {turma.curso?.categoria || turma.categoria || '-'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-slate-650 font-medium">{turma.localizacao || '-'}</div>
+                        <div className="text-[10px] text-slate-400 uppercase font-bold">
+                           {turma.periodo || '-'}
+                        </div>
+                        {(turma.data_inicio || turma.data_fim) && (
+                          <div className="text-[10px] text-blue-500 uppercase font-bold mt-0.5 tracking-wider">
+                            {turma.data_inicio ? turma.data_inicio.split('-').reverse().join('/') : '—'} - {turma.data_fim ? turma.data_fim.split('-').reverse().join('/') : '—'}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <div className="flex flex-col items-center justify-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => toggleTurmaExpansion(turma.id)}
+                            className={cn(
+                              "inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-lg transition cursor-pointer border shadow-2xs",
+                              isExpanded
+                                ? "bg-indigo-600 text-white border-indigo-700"
+                                : "text-indigo-700 bg-indigo-50 border-indigo-100 hover:bg-indigo-100"
+                            )}
+                            title={isExpanded ? (isPt ? "Recolher alunos" : "Collapse students") : (isPt ? "Ver relação nominal de alunos" : "View student roster")}
+                          >
+                            <Users size={12} className={isExpanded ? "text-white" : "text-indigo-600"} />
                             <span>{alunoCount}</span>
-                            <span className={expanded ? "text-indigo-100 font-medium" : "text-indigo-500 font-medium"}>
-                              {alunoCount === 1 ? (isPt ? 'aluno' : 'student') : (isPt ? 'alunos' : 'students')}
-                            </span>
-                          </span>
-                          <span className="text-[10px] text-slate-400 font-semibold group-hover/badge:text-slate-600">
+                            <span className="font-medium">{alunoCount === 1 ? (isPt ? 'aluno' : 'student') : (isPt ? 'alunos' : 'students')}</span>
+                            <ChevronDown size={11} className={cn("transition-transform duration-200", isExpanded ? "rotate-180" : "")} />
+                          </button>
+                          <span className="text-[10px] text-slate-400 font-semibold">
                             {capacidadeMax} {isPt ? 'vagas' : 'seats'}
                           </span>
-                        </button>
-                      </td>
-
-                      {/* Instrutor e Status */}
-                      <td className="px-5 py-3.5">
-                        <div className={cn("font-medium text-xs", isArquivada ? "text-slate-600" : isPreInscrito ? "text-red-600" : "text-slate-700")}>
-                          {turma.instrutor || '-'}
                         </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className={cn("font-medium", isArquivada ? "text-slate-600" : isPreInscrito ? "text-red-600" : "text-slate-650")}>{turma.instrutor || '-'}</div>
                         <div className={cn(
                           "text-[10px] font-bold uppercase flex items-center gap-1 mt-0.5", 
                           isArquivada ? "text-slate-500" : isPreInscrito ? "text-red-600" : "text-green-600"
@@ -3056,20 +2833,21 @@ function TurmasListTable({
                             "w-1.5 h-1.5 rounded-full", 
                             isArquivada ? "bg-slate-400" : isPreInscrito ? "bg-red-500 animate-pulse" : "bg-green-500 animate-pulse"
                           )} />
-                          {isArquivada ? (isPt ? 'Arquivada' : 'Archived') : isPreInscrito ? (isPt ? 'Pré-inscrita' : 'Pre-registered') : (turma.status || 'Ativa')}
+                          {isArquivada ? (isPt ? 'Turma Arquivada' : 'Archived Class') : isPreInscrito ? (isPt ? 'Pré-inscrita' : 'Pre-registered') : `Class ${turma.status || 'ativa'}`}
                         </div>
                       </td>
-
-                      {/* Ações da Turma */}
-                      <td className="px-5 py-3.5 text-right">
+                      <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
-                          <Link
-                            href={`/turmas?action=view-students&turmaId=${turma.id}&returnTo=dashboard&card=${selectedCard || 'expedito'}`}
-                            className="p-1.5 bg-slate-100 hover:bg-indigo-600 hover:text-white border border-slate-200 rounded-lg transition-colors text-slate-600 cursor-pointer inline-flex items-center justify-center font-bold"
-                            title={isPt ? "Gerenciar Turma e Matrículas" : "Manage Class & Enrollments"}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              router.push(`/turmas?action=view-students&turmaId=${turma.id}&returnTo=dashboard&card=${selectedCard || 'expedito'}`);
+                            }}
+                            className="px-2.5 py-1 bg-slate-100 hover:bg-indigo-600 hover:text-white text-slate-700 rounded-lg text-xs font-bold transition cursor-pointer border border-slate-200/60"
+                            title={isPt ? "Abrir Gestão da Turma" : "Manage Class"}
                           >
-                            <ExternalLink size={13} />
-                          </Link>
+                            {isPt ? 'Gerenciar' : 'Manage'}
+                          </button>
 
                           {isAdmin && onDelete && (
                             <button
@@ -3077,7 +2855,7 @@ function TurmasListTable({
                                 e.stopPropagation();
                                 onDelete(turma.id);
                               }}
-                              className="p-1.5 bg-slate-100 hover:bg-red-600 hover:text-white border border-slate-200 rounded-lg transition-colors text-slate-500 cursor-pointer inline-flex items-center justify-center font-bold"
+                              className="p-1.5 bg-slate-100 hover:bg-red-600 hover:text-white border border-slate-200/50 rounded-lg transition-colors text-slate-500 cursor-pointer inline-flex items-center justify-center font-bold"
                               title={isPt ? "Apagar Turma" : "Delete Class"}
                             >
                               <Trash2 size={13} />
@@ -3087,142 +2865,95 @@ function TurmasListTable({
                       </td>
                     </tr>
 
-                    {/* DETALHAMENTO NOMINAL DE ALUNOS MATRICULADOS NA TURMA (ASSIM COMO NA IMPRESSÃO) */}
-                    {expanded && (
-                      <tr key={`students-list-${turma.id}`} className="bg-slate-50/70 border-b-2 border-slate-200/80">
-                        <td colSpan={7} className="p-3 sm:p-4">
-                          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-2xs">
-                            {/* Cabeçalho da Relação Nominal da Turma */}
-                            <div className="px-4 py-2.5 bg-indigo-50/60 border-b border-indigo-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                    {/* RELAÇÃO NOMINAL DE ALUNOS EXPANDIDA NA TELA */}
+                    {isExpanded && (
+                      <tr className="bg-slate-50/80 border-b-2 border-indigo-200">
+                        <td colSpan={6} className="p-4 sm:p-5">
+                          <div className="bg-white rounded-xl border border-indigo-100 p-4 shadow-sm space-y-3">
+                            <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-100">
                               <div className="flex items-center gap-2">
-                                <span className="text-[11px] font-black uppercase text-indigo-900 tracking-wide flex items-center gap-1.5">
-                                  <Users size={14} className="text-indigo-600" />
-                                  <span>{isPt ? 'Relação Nominal de Alunos' : 'Nominal Student Roster'}</span>
+                                <Users size={15} className="text-indigo-600" />
+                                <span className="text-xs font-extrabold text-slate-800 uppercase tracking-wide">
+                                  {isPt ? `Relação Nominal de Alunos — ${cleanName}` : `Nominal Student Roster — ${cleanName}`}
                                 </span>
-                                <span className="text-[10px] font-bold bg-indigo-100 text-indigo-800 px-2.5 py-0.5 rounded-full border border-indigo-200/60">
-                                  {turmaAlunos.length} {turmaAlunos.length === 1 ? (isPt ? 'aluno matriculado' : 'enrolled student') : (isPt ? 'alunos matriculados' : 'enrolled students')}
+                                <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">
+                                  {turmaAlunos.length} {isPt ? 'matriculados' : 'enrolled'}
                                 </span>
                               </div>
 
-                              <Link
-                                href={`/turmas?action=view-students&turmaId=${turma.id}&returnTo=dashboard&card=${selectedCard || 'expedito'}`}
-                                className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 transition"
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  router.push(`/turmas?action=view-students&turmaId=${turma.id}&returnTo=dashboard&card=${selectedCard || 'expedito'}`);
+                                }}
+                                className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
                               >
-                                <span>{isPt ? 'Gerenciar Turma Completa' : 'Manage Full Class'}</span>
+                                <span>{isPt ? 'Editar / Adicionar Alunos nesta turma' : 'Edit / Add Students'}</span>
                                 <ArrowRight size={12} />
-                              </Link>
+                              </button>
                             </div>
 
-                            {/* Relação de Alunos */}
                             {turmaAlunos.length === 0 ? (
-                              <div className="py-6 px-4 text-center text-slate-400 italic text-xs">
+                              <p className="text-xs text-slate-400 italic py-2">
                                 {isPt ? 'Nenhum aluno matriculado nesta turma até o momento.' : 'No students enrolled in this class yet.'}
-                              </div>
+                              </p>
                             ) : (
-                              <div className="overflow-x-auto">
-                                <table className="w-full text-left border-collapse text-xs">
-                                  <thead>
-                                    <tr className="bg-slate-50 text-[10px] font-bold text-slate-500 uppercase border-b border-slate-200">
-                                      <th className="px-3 py-2 w-10 text-center">#</th>
-                                      <th className="px-3 py-2 w-14 text-center">{isPt ? 'Foto' : 'Photo'}</th>
-                                      <th className="px-4 py-2">{isPt ? 'Posto/Graduação - Nome Completo' : 'Rank - Full Name'}</th>
-                                      <th className="px-4 py-2">{isPt ? 'Nome de Guerra' : 'War Name'}</th>
-                                      <th className="px-4 py-2">{isPt ? 'OM / Organização' : 'Military Org.'}</th>
-                                      <th className="px-4 py-2 font-mono">{isPt ? 'NIP' : 'ID'}</th>
-                                      <th className="px-4 py-2 text-right w-24">{isPt ? 'Ações' : 'Actions'}</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody className="divide-y divide-slate-100">
-                                    {turmaAlunos.map((aluno: any, alIdx: number) => {
-                                      const avatarSrc = getAlunoAvatar(aluno);
+                              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5">
+                                {turmaAlunos.map((aluno: any, alIdx: number) => {
+                                  const photoSrc = aluno.foto_url ||
+                                    (aluno.tipo_aluno === 'civil'
+                                      ? (aluno.genero === 'feminino' ? femaleAvatar : maleAvatar)
+                                      : (aluno.genero === 'feminino' ? militaryFemaleAvatar : militaryMaleAvatar));
+                                  const photoUrl = typeof photoSrc === 'string' ? photoSrc : (photoSrc?.src || '');
+                                  const displayName = aluno.posto_graduacao || aluno.nome_guerra
+                                    ? `${aluno.posto_graduacao || ''} ${aluno.nome_guerra || aluno.nome}`.trim()
+                                    : aluno.nome;
 
-                                      return (
-                                        <tr 
-                                          key={`aluno-row-${aluno.id || alIdx}`}
-                                          className="hover:bg-slate-50 transition-colors cursor-pointer"
-                                          onClick={() => onSelectAluno?.(aluno)}
-                                        >
-                                          {/* Índice */}
-                                          <td className="px-3 py-2 text-center font-mono font-bold text-slate-400 text-[11px]">
-                                            {alIdx + 1}
-                                          </td>
+                                  return (
+                                    <div
+                                      key={`screen-aluno-${aluno.id || alIdx}`}
+                                      onClick={() => onSelectStudent && onSelectStudent(aluno)}
+                                      className="p-2 rounded-lg border border-slate-200 bg-slate-50/70 hover:bg-indigo-50/60 hover:border-indigo-300 transition flex items-center gap-2.5 cursor-pointer group shadow-2xs"
+                                    >
+                                      <div
+                                        onClick={(e) => {
+                                          if (onExpandPhoto && aluno.foto_url) {
+                                            e.stopPropagation();
+                                            onExpandPhoto({ url: aluno.foto_url, name: displayName });
+                                          }
+                                        }}
+                                        className="w-9 h-11 rounded-md overflow-hidden bg-slate-200 border border-slate-300 shrink-0 relative group/photo"
+                                        title={isPt ? "Clique para ampliar foto" : "Click to enlarge photo"}
+                                      >
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img src={photoUrl} alt={displayName} className="w-full h-full object-cover" />
+                                        {aluno.foto_url && (
+                                          <div className="absolute inset-0 bg-black/30 opacity-0 group-hover/photo:opacity-100 flex items-center justify-center transition">
+                                            <Maximize2 size={10} className="text-white" />
+                                          </div>
+                                        )}
+                                      </div>
 
-                                          {/* Foto 3x4 */}
-                                          <td className="px-3 py-2 text-center">
-                                            <div 
-                                              className="w-8 h-10 rounded overflow-hidden border border-slate-200 mx-auto shadow-2xs relative bg-slate-100 group/pic cursor-pointer shrink-0"
-                                              onClick={(e) => {
-                                                if (aluno.foto_url && onOpenPhoto) {
-                                                  e.stopPropagation();
-                                                  onOpenPhoto({ url: aluno.foto_url, name: aluno.nome });
-                                                }
-                                              }}
-                                              title={aluno.foto_url ? (isPt ? "Clique para ampliar foto" : "Click to enlarge photo") : undefined}
-                                            >
-                                              <Image 
-                                                src={avatarSrc} 
-                                                alt={aluno.nome || 'Aluno'} 
-                                                fill
-                                                className="object-cover" 
-                                                referrerPolicy="no-referrer" 
-                                                sizes="32px"
-                                              />
-                                              {aluno.foto_url && (
-                                                <div className="absolute inset-0 bg-black/0 group-hover/pic:bg-black/20 transition-colors flex items-center justify-center">
-                                                  <LayersIcon size={10} className="text-white opacity-0 group-hover/pic:opacity-100 transition-opacity" />
-                                                </div>
-                                              )}
-                                            </div>
-                                          </td>
-
-                                          {/* Posto e Nome Completo */}
-                                          <td className="px-4 py-2">
-                                            <div className="font-bold text-slate-900 text-xs">
-                                              {aluno.posto_graduacao ? `${aluno.posto_graduacao} ` : ''}{aluno.nome}
-                                            </div>
-                                            {aluno.email && (
-                                              <div className="text-[10px] text-slate-400 font-mono">
-                                                {aluno.email}
-                                              </div>
-                                            )}
-                                          </td>
-
-                                          {/* Nome de Guerra */}
-                                          <td className="px-4 py-2 font-bold text-slate-700 uppercase">
-                                            {aluno.nome_guerra || aluno.nome?.split(' ')?.[0] || '—'}
-                                          </td>
-
-                                          {/* OM */}
-                                          <td className="px-4 py-2">
-                                            <span className="font-mono font-semibold text-slate-600 uppercase text-[11px] bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
-                                              {aluno.om || '—'}
-                                            </span>
-                                          </td>
-
-                                          {/* NIP */}
-                                          <td className="px-4 py-2 font-mono text-slate-600 font-bold text-[11px]">
-                                            {aluno.nip || '—'}
-                                          </td>
-
-                                          {/* Ações */}
-                                          <td className="px-4 py-2 text-right">
-                                            <button
-                                              type="button"
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                onSelectAluno?.(aluno);
-                                              }}
-                                              className="px-2 py-1 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-700 font-bold rounded text-[11px] border border-slate-200 transition cursor-pointer"
-                                              title={isPt ? "Ver ou editar ficha do aluno" : "View or edit student card"}
-                                            >
-                                              {isPt ? 'Ficha' : 'Card'}
-                                            </button>
-                                          </td>
-                                        </tr>
-                                      );
-                                    })}
-                                  </tbody>
-                                </table>
+                                      <div className="min-w-0 flex-1">
+                                        <div className="flex items-center gap-1">
+                                          <span className="font-mono text-[10px] font-bold text-slate-400">{alIdx + 1}.</span>
+                                          <p className="text-xs font-bold text-slate-800 group-hover:text-indigo-900 truncate leading-tight">
+                                            {displayName}
+                                          </p>
+                                        </div>
+                                        <p className="text-[10px] text-slate-500 font-medium truncate mt-0.5">
+                                          {aluno.om ? `${aluno.om}` : (aluno.tipo_aluno ? `Tipo: ${aluno.tipo_aluno}` : 'Aluno')}
+                                        </p>
+                                        {(aluno.data_inicio_curso || aluno.data_fim_curso) && (
+                                          <p className="text-[9px] text-blue-600 font-medium truncate">
+                                            {aluno.data_inicio_curso ? aluno.data_inicio_curso.split('-').reverse().join('/') : ''}
+                                            {aluno.data_fim_curso ? ` a ${aluno.data_fim_curso.split('-').reverse().join('/')}` : ''}
+                                          </p>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
                               </div>
                             )}
                           </div>
@@ -3321,9 +3052,9 @@ function TurmasListTable({
               <span className="text-[10px] bg-slate-100 dark:bg-slate-100 text-slate-700 dark:text-slate-700 border border-slate-200 dark:border-slate-200 px-2.5 py-0.5 rounded-full font-bold">
                 {title}
               </span>
-              {searchTerm && (
-                <span className="text-[10px] bg-slate-100 dark:bg-slate-100 text-slate-700 dark:text-slate-700 border border-slate-200 dark:border-slate-200 px-2 py-0.5 rounded-full font-bold">
-                  {isPt ? `Busca: "${searchTerm}"` : `Search: "${searchTerm}"`}
+              {hasActiveMultiFilters && (
+                <span className="text-[10px] bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-0.5 rounded-full font-bold">
+                  {isPt ? 'Filtro Combinado Ativo' : 'Combined Filter Active'}
                 </span>
               )}
             </div>
