@@ -228,46 +228,76 @@ export function useDashboardStats() {
     ['supabase:dashboardStats', role, grupoResponsavel],
     async () => {
       const [
-        alunosExteriorRes,
         cursosRes,
         turmasRes,
         alunosRes
       ] = await Promise.all([
-        supabase.from('alunos')
-          .select(`
-            *,
-            turma:turmas!inner(
-              *,
-              curso:cursos(*)
-            )
-          `)
-          .eq('turma.internacional', true)
-          .is('deleted_at', null),
         supabase.from('cursos')
-          .select('id, nome, categoria, documento_criacao')
+          .select('*')
           .is('deleted_at', null),
         supabase.from('turmas')
-          .select('id, nome, categoria, ano, data_inicio, data_fim, status, internacional, localizacao, periodo, capacidade_max, instrutor, grupo_responsavel, curso_id, documento_criacao, arquivada, curso:cursos(id, nome, categoria, grupo_responsavel, documento_criacao)')
+          .select('*, curso:cursos(id, nome, categoria, grupo_responsavel, documento_criacao, qtd_modulos)')
           .is('deleted_at', null),
         supabase.from('alunos')
-          .select('id, nome, nome_guerra, posto_graduacao, om, nip, genero, tipo_aluno, foto_url, turma_id, data_inicio_curso, data_fim_curso, documento_criacao')
+          .select('*')
           .is('deleted_at', null)
       ]);
 
-      if (alunosExteriorRes.error) throw alunosExteriorRes.error;
-      if (cursosRes.error) throw cursosRes.error;
-      if (turmasRes.error) throw turmasRes.error;
-      if (alunosRes.error) throw alunosRes.error;
+      // Graceful fallback for turmas query in case nested join throws an error
+      let rawTurmas = turmasRes.data;
+      if (!rawTurmas && turmasRes.error) {
+        console.warn('Retrying turmas query without join:', turmasRes.error);
+        const fallbackTurmasRes = await supabase.from('turmas').select('*').is('deleted_at', null);
+        rawTurmas = fallbackTurmasRes.data || [];
+      }
 
       const activeCursos = cursosRes.data || [];
-      const activeTurmas = (turmasRes.data || []).map((t: any) => {
+      const activeTurmas = (rawTurmas || []).map((t: any) => {
         if (t.status === 'ativa' && t.ativa === false) {
           return { ...t, status: 'pré-inscrito(a)(s)' };
         }
         return t;
       });
       const activeAlunos = alunosRes.data || [];
-      const alunosExteriorData = alunosExteriorRes.data || [];
+
+      // Map course id to course object
+      const courseMap = new Map<string, any>();
+      activeCursos.forEach((c: any) => {
+        if (c?.id) courseMap.set(c.id, c);
+      });
+
+      // Map turma id to resolved turma object with course
+      const turmaByIdMap = new Map<string, any>();
+      activeTurmas.forEach((t: any) => {
+        const course = (t.curso_id ? courseMap.get(t.curso_id) : null) || (Array.isArray(t.curso) ? t.curso[0] : t.curso);
+        turmaByIdMap.set(t.id, {
+          ...t,
+          curso: course || t.curso,
+          curso_nome: course?.nome || t.curso_nome || t.nome || ''
+        });
+      });
+
+      // Safely extract exterior/international students from activeAlunos and activeTurmas
+      const alunosExteriorData: any[] = [];
+      activeAlunos.forEach((al: any) => {
+        const t = al.turma_id ? turmaByIdMap.get(al.turma_id) : null;
+        const c = t?.curso || (al.curso_id ? courseMap.get(al.curso_id) : null);
+        const isInternacional = Boolean(
+          t?.internacional === true || 
+          c?.internacional === true || 
+          al.internacional === true ||
+          (t?.localizacao && t.localizacao.toLowerCase().includes('exterior')) ||
+          (c?.categoria && c.categoria.toLowerCase().includes('exterior'))
+        );
+
+        if (isInternacional) {
+          alunosExteriorData.push({
+            ...al,
+            turma: t ? { ...t, curso: c || t.curso } : (c ? { internacional: true, curso: c } : null),
+            curso_nome: c?.nome || t?.curso_nome || al.curso_nome || ''
+          });
+        }
+      });
 
       // Map turma id to students array
       const alunosByTurmaMap = new Map<string, any[]>();
@@ -317,12 +347,6 @@ export function useDashboardStats() {
           return true;
         });
       }
-
-      // Map course id to course object
-      const courseMap = new Map<string, { id: string; nome: string; categoria: string | null }>();
-      activeCursos.forEach((c: any) => {
-        courseMap.set(c.id, c);
-      });
 
       // Helper function to resolve category accurately
       const resolveTurmaCategory = (turma: any, course: any): 'expedito' | 'carreira' | 'especial' | 'ead' => {

@@ -152,31 +152,12 @@ export default function DashboardPage() {
   }, [highlightedTurmaId, dashboardData, turmasExpeditoList, turmasCarreiraList, turmasEspeciaisList, turmasEadList, turmasPreInscritasList, turmasArquivadasList]);
 
   useEffect(() => {
-    if (dashboardData && stats) {
-      const cardDataMap: Record<string, number> = {
-        'exterior': stats.alunosExterior,
-        'expedito': stats.turmasExpedito,
-        'carreira': stats.turmasCarreira,
-        'especial': stats.turmasEspeciais,
-        'ead': stats.turmasEad || 0,
-        'pre_inscritos': stats.turmasPreInscritas,
-        'arquivadas': stats.turmasArquivadas || 0
-      };
-
-      if (!hasUserSelectedCard) {
-        const availableKeys = Object.entries(cardDataMap)
-          .filter(([_, value]) => (value || 0) > 0)
-          .map(([key]) => key);
-        
-        if (availableKeys.length > 0) {
-          setSelectedCategories(availableKeys);
-          if (!availableKeys.includes(selectedCard)) {
-            setSelectedCard(availableKeys[0]);
-          }
-        }
+    if (dashboardData && stats && !hasUserSelectedCard) {
+      if (selectedCategories.length === 0) {
+        setSelectedCategories(['exterior', 'expedito', 'carreira', 'especial', 'ead', 'pre_inscritos']);
       }
     }
-  }, [dashboardData, stats, selectedCard, hasUserSelectedCard]);
+  }, [dashboardData, stats, hasUserSelectedCard, selectedCategories.length]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
