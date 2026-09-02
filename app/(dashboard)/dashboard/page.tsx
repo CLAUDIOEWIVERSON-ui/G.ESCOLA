@@ -93,7 +93,7 @@ export default function DashboardPage() {
   } = dashboardData || {};
 
   const [selectedCard, setSelectedCard] = useState<string>('exterior');
-  const [selectedCategories, setSelectedCategories] = useState<string[]>(['exterior']);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(['exterior', 'expedito', 'carreira', 'especial', 'ead', 'pre_inscritos']);
   const [viewMode, setViewMode] = useState<'consolidated' | 'tabs'>('consolidated');
   const [isCombinedPrintModalOpen, setIsCombinedPrintModalOpen] = useState<boolean>(false);
   const [hasUserSelectedCard, setHasUserSelectedCard] = useState<boolean>(false);
@@ -163,10 +163,16 @@ export default function DashboardPage() {
         'arquivadas': stats.turmasArquivadas || 0
       };
 
-      if (!hasUserSelectedCard || (cardDataMap[selectedCard] === 0 || cardDataMap[selectedCard] === undefined)) {
-        const firstAvailable = Object.entries(cardDataMap).find(([_, value]) => (value || 0) > 0);
-        if (firstAvailable && selectedCard !== firstAvailable[0]) {
-          setSelectedCard(firstAvailable[0]);
+      if (!hasUserSelectedCard) {
+        const availableKeys = Object.entries(cardDataMap)
+          .filter(([_, value]) => (value || 0) > 0)
+          .map(([key]) => key);
+        
+        if (availableKeys.length > 0) {
+          setSelectedCategories(availableKeys);
+          if (!availableKeys.includes(selectedCard)) {
+            setSelectedCard(availableKeys[0]);
+          }
         }
       }
     }
@@ -2162,18 +2168,21 @@ function TurmasListTable({
   const [expandedTurmaIds, setExpandedTurmaIds] = useState<Set<string>>(new Set());
 
   // Helper to extract course name safely from any turma object structure
-  const getCursoNome = (t: any): string => {
+  const getCursoNome = useCallback((t: any): string => {
     if (!t) return '';
     const cObj = Array.isArray(t.curso) ? t.curso[0] : (t.curso && typeof t.curso === 'object' ? t.curso : null);
-    const directName = cObj?.nome || t.curso_nome || t.nome_curso || t.cursoNome || (typeof t.curso === 'string' ? t.curso : '');
+    const directName = cObj?.nome || t.curso_nome || t.nome_curso || t.cursoNome;
     if (typeof directName === 'string' && directName.trim()) {
       return directName.trim();
+    }
+    if (typeof t.curso === 'string' && t.curso.trim() && !t.curso.includes('-')) {
+      return t.curso.trim();
     }
     if (t.nome && typeof t.nome === 'string') {
       return t.nome.trim();
     }
     return '';
-  };
+  }, []);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -2192,21 +2201,22 @@ function TurmasListTable({
     turmas.forEach((t) => {
       const cursoNome = getCursoNome(t);
       if (cursoNome) {
-        const current = map.get(cursoNome) || { nome: cursoNome, count: 0, totalAlunos: 0 };
+        const existingKey = Array.from(map.keys()).find(k => k.toLowerCase() === cursoNome.toLowerCase()) || cursoNome;
+        const current = map.get(existingKey) || { nome: cursoNome, count: 0, totalAlunos: 0 };
         current.count += 1;
         current.totalAlunos += Number(t.alunos?.length ?? t.alunos_count ?? t.total_alunos ?? 0);
-        map.set(cursoNome, current);
+        map.set(existingKey, current);
       }
     });
     return Array.from(map.values()).sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
-  }, [turmas]);
+  }, [turmas, getCursoNome]);
 
   // Distinct turmas available (or filtered by selected courses if any)
   const availableTurmasOptions = useMemo(() => {
     const list = selectedCourses.length > 0
       ? turmas.filter((t) => {
           const cNome = getCursoNome(t);
-          return selectedCourses.includes(cNome);
+          return selectedCourses.some((sc) => sc.trim().toLowerCase() === cNome.trim().toLowerCase());
         })
       : turmas;
 
@@ -2215,8 +2225,8 @@ function TurmasListTable({
       if (t.id) {
         const cNome = getCursoNome(t);
         const cleanName = getCleanTurmaName(t, cNome, t.nome || 'Turma');
-        map.set(t.id, {
-          id: t.id,
+        map.set(String(t.id), {
+          id: String(t.id),
           nome: t.nome || cleanName,
           cleanNome: cleanName,
           cursoNome: cNome,
@@ -2225,12 +2235,27 @@ function TurmasListTable({
       }
     });
     return Array.from(map.values()).sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
-  }, [turmas, selectedCourses]);
+  }, [turmas, selectedCourses, getCursoNome]);
 
   // Handlers for toggling multi-selection
   const toggleCourseFilter = (courseName: string) => {
     setSelectedCourses((prev) => {
-      const next = prev.includes(courseName) ? prev.filter((c) => c !== courseName) : [...prev, courseName];
+      const isSelected = prev.some((c) => c.toLowerCase() === courseName.toLowerCase());
+      const next = isSelected 
+        ? prev.filter((c) => c.toLowerCase() !== courseName.toLowerCase()) 
+        : [...prev, courseName];
+      
+      // Auto clean selectedTurmas that don't belong to the updated selected courses
+      if (next.length > 0) {
+        setSelectedTurmas((prevTurmas) =>
+          prevTurmas.filter((tId) => {
+            const turmaObj = turmas.find((t) => String(t.id) === String(tId));
+            if (!turmaObj) return false;
+            const cNome = getCursoNome(turmaObj);
+            return next.some((sc) => sc.toLowerCase() === cNome.toLowerCase());
+          })
+        );
+      }
       return next;
     });
     setCurrentPage(1);
@@ -2238,7 +2263,10 @@ function TurmasListTable({
 
   const toggleTurmaFilter = (turmaId: string) => {
     setSelectedTurmas((prev) => {
-      const next = prev.includes(turmaId) ? prev.filter((id) => id !== turmaId) : [...prev, turmaId];
+      const targetId = String(turmaId);
+      const next = prev.some((id) => String(id) === targetId) 
+        ? prev.filter((id) => String(id) !== targetId) 
+        : [...prev, targetId];
       return next;
     });
     setCurrentPage(1);
@@ -2254,10 +2282,11 @@ function TurmasListTable({
   const toggleTurmaExpansion = (turmaId: string) => {
     setExpandedTurmaIds((prev) => {
       const next = new Set(prev);
-      if (next.has(turmaId)) {
-        next.delete(turmaId);
+      const idStr = String(turmaId);
+      if (next.has(idStr)) {
+        next.delete(idStr);
       } else {
-        next.add(turmaId);
+        next.add(idStr);
       }
       return next;
     });
@@ -2267,7 +2296,7 @@ function TurmasListTable({
     if (expandedTurmaIds.size > 0) {
       setExpandedTurmaIds(new Set());
     } else {
-      const allIds = new Set<string>(filteredTurmas.map((t) => t.id).filter(Boolean));
+      const allIds = new Set<string>(filteredTurmas.map((t) => String(t.id)).filter(Boolean));
       setExpandedTurmaIds(allIds);
     }
   };
@@ -2282,13 +2311,13 @@ function TurmasListTable({
     if (selectedCourses.length > 0) {
       result = result.filter((t) => {
         const cNome = getCursoNome(t);
-        return selectedCourses.includes(cNome);
+        return selectedCourses.some((sc) => sc.trim().toLowerCase() === cNome.trim().toLowerCase());
       });
     }
 
     // Filter by selected turmas (OR among selected turmas)
     if (selectedTurmas.length > 0) {
-      result = result.filter((t) => selectedTurmas.includes(t.id));
+      result = result.filter((t) => selectedTurmas.some((st) => String(st).trim() === String(t.id).trim()));
     }
 
     // Filter by search term
@@ -2325,7 +2354,7 @@ function TurmasListTable({
     }
 
     return result;
-  }, [turmas, selectedCourses, selectedTurmas, searchTerm]);
+  }, [turmas, selectedCourses, selectedTurmas, searchTerm, getCursoNome]);
 
   // Total student count across all filtered turmas
   const totalFilteredAlunos = useMemo(() => {
@@ -2341,7 +2370,7 @@ function TurmasListTable({
   useEffect(() => {
     if (highlightedTurmaId && filteredTurmas.length > 0) {
       setActiveHighlight(highlightedTurmaId);
-      const targetIndex = filteredTurmas.findIndex(t => t.id === highlightedTurmaId);
+      const targetIndex = filteredTurmas.findIndex(t => String(t.id) === String(highlightedTurmaId));
       if (targetIndex !== -1) {
         const targetPage = Math.floor(targetIndex / itemsPerPage) + 1;
         setCurrentPage(targetPage);
@@ -2373,8 +2402,9 @@ function TurmasListTable({
   }, [activeHighlight, currentPage]);
 
   const totalItems = filteredTurmas.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+  const safeCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
+  const startIndex = (safeCurrentPage - 1) * itemsPerPage;
   const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
   const paginatedTurmas = filteredTurmas.slice(startIndex, endIndex);
 

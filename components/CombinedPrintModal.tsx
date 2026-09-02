@@ -185,12 +185,12 @@ export default function CombinedPrintModal({
     const cNome = getCursoNomeFromTurma(t);
 
     // Course filter
-    if (selectedCourses.length > 0 && !selectedCourses.includes(cNome)) {
+    if (selectedCourses.length > 0 && !selectedCourses.some((sc) => sc.trim().toLowerCase() === cNome.trim().toLowerCase())) {
       return false;
     }
 
     // Turma filter
-    if (selectedTurmas.length > 0 && !selectedTurmas.includes(t.id)) {
+    if (selectedTurmas.length > 0 && !selectedTurmas.some((st) => String(st).trim() === String(t.id).trim())) {
       return false;
     }
 
