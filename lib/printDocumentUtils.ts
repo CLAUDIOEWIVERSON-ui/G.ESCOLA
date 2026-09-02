@@ -81,27 +81,33 @@ export async function downloadElementAsPDF(
     const pdfWidth = orientation === 'landscape' ? 297 : 210;
     const pdfHeight = orientation === 'landscape' ? 210 : 297;
 
-    const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+    // Add safe margins (in mm) so content never touches the outer edge of the paper or PDF
+    const marginX = orientation === 'landscape' ? 14 : 12;
+    const marginY = orientation === 'landscape' ? 12 : 12;
+    const contentWidth = pdfWidth - (marginX * 2);
+    const contentHeight = pdfHeight - (marginY * 2);
 
-    if (imgHeight <= pdfHeight) {
-      // Fits on one single page
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, imgHeight, undefined, 'FAST');
+    const imgHeight = (canvas.width > 0) ? (canvas.height * contentWidth) / canvas.width : contentHeight;
+
+    if (imgHeight <= contentHeight) {
+      // Fits on one single page with margins
+      pdf.addImage(imgData, 'PNG', marginX, marginY, contentWidth, imgHeight, undefined, 'FAST');
     } else {
-      // Scale slightly to fit exactly on 1 single page if it's within 15% margin
-      if (imgHeight <= pdfHeight * 1.15) {
-        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
+      // Scale slightly to fit exactly on 1 single page if it's within 12% margin
+      if (imgHeight <= contentHeight * 1.12) {
+        pdf.addImage(imgData, 'PNG', marginX, marginY, contentWidth, contentHeight, undefined, 'FAST');
       } else {
-        // Multi-page handling if exceptionally tall
+        // Multi-page handling with margins
         let heightLeft = imgHeight;
-        let position = 0;
-        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight, undefined, 'FAST');
-        heightLeft -= pdfHeight;
+        let position = marginY;
+        pdf.addImage(imgData, 'PNG', marginX, position, contentWidth, imgHeight, undefined, 'FAST');
+        heightLeft -= contentHeight;
 
         while (heightLeft > 0) {
-          position = position - pdfHeight;
+          position = position - contentHeight;
           pdf.addPage();
-          pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight, undefined, 'FAST');
-          heightLeft -= pdfHeight;
+          pdf.addImage(imgData, 'PNG', marginX, position, contentWidth, imgHeight, undefined, 'FAST');
+          heightLeft -= contentHeight;
         }
       }
     }
@@ -174,7 +180,7 @@ export function printElementIsolated(
       <style>
         @page {
           size: A4 ${orientation};
-          margin: 6mm 8mm 6mm 8mm;
+          margin: ${orientation === 'landscape' ? '10mm 14mm 10mm 14mm' : '12mm 14mm 12mm 14mm'};
         }
         *, *::before, *::after {
           box-sizing: border-box;

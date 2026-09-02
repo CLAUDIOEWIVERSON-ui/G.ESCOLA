@@ -2675,7 +2675,7 @@ function TurmasContent() {
                   @media print {
                     @page {
                       size: A4 landscape !important;
-                      margin: 4mm 5mm 4mm 5mm !important;
+                      margin: 10mm 12mm 10mm 12mm !important;
                     }
 
                     /* Reset page context and force standard white/black print output */
