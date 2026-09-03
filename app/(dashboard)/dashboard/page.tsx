@@ -2749,7 +2749,7 @@ function TurmasListTable({
               paginatedTurmas.map((turma) => {
                 const statusLower = (turma.status || 'ativa').toString().toLowerCase().trim();
                 const isArquivada = Boolean(turma.arquivada) === true || statusLower === 'arquivada' || statusLower === 'arquivado';
-                const isPreInscrito = !isArquivada && (statusLower === 'pré-inscrito(a)(s)' || statusLower === 'pre-inscrito' || statusLower === 'pre_inscrito' || (statusLower === 'ativa' && turma.ativa === false));
+                const isPreInscrito = !isArquivada && (statusLower.includes('pré-inscrit') || statusLower.includes('pre-inscrit'));
                 const isHighlighted = turma.id === activeHighlight;
                 const cursoNome = getCursoNome(turma);
                 const cleanName = getCleanTurmaName(turma, cursoNome, turma.nome || 'Turma');
@@ -2844,7 +2844,7 @@ function TurmasListTable({
                             "w-1.5 h-1.5 rounded-full", 
                             isArquivada ? "bg-slate-400" : isPreInscrito ? "bg-red-500 animate-pulse" : "bg-green-500 animate-pulse"
                           )} />
-                          {isArquivada ? (isPt ? 'Turma Arquivada' : 'Archived Class') : isPreInscrito ? (isPt ? 'Pré-inscrita' : 'Pre-registered') : `Class ${turma.status || 'ativa'}`}
+                          {isArquivada ? (isPt ? 'Turma Arquivada' : 'Archived Class') : isPreInscrito ? (isPt ? 'Pré-inscrita' : 'Pre-registered') : (isPt ? 'Turma Ativa' : 'Active Class')}
                         </div>
                       </td>
                       <td className="px-6 py-4 text-right">

@@ -1105,7 +1105,7 @@ function TurmasContent() {
       }
 
       const rawStatus = String(currentTurma.status || 'ativa').toLowerCase().trim();
-      let dbStatus: 'ativa' | 'concluída' | 'cancelada' = 'ativa';
+      let dbStatus: 'ativa' | 'concluída' | 'cancelada' | 'pré-inscrito' = 'ativa';
       let dbAtiva = true;
 
       if (rawStatus === 'concluída' || rawStatus === 'concluido' || rawStatus === 'concluida') {
@@ -1114,8 +1114,8 @@ function TurmasContent() {
       } else if (rawStatus === 'cancelada' || rawStatus === 'cancelado') {
         dbStatus = 'cancelada';
         dbAtiva = false;
-      } else if (rawStatus.includes('pré-inscrito') || rawStatus.includes('pre-inscrito') || rawStatus.includes('pré-inscrita')) {
-        dbStatus = 'ativa';
+      } else if (rawStatus.includes('pré-inscrit') || rawStatus.includes('pre-inscrit')) {
+        dbStatus = 'pré-inscrito';
         dbAtiva = false;
       } else {
         dbStatus = 'ativa';

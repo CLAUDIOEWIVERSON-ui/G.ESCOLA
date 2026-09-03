@@ -39,6 +39,7 @@ import { toast } from 'sonner';
 import { useUser } from '@/lib/auth/UserContext';
 import { fetchWithAuth } from '@/lib/api';
 import navalMissionLogo from '@/src/assets/images/regenerated_image_1782409801823.png';
+import { getHtml2Canvas } from '@/lib/printDocumentUtils';
 
 const formatGradePT = (val: number | string | null | undefined, fallback = '-'): string => {
   if (val === null || val === undefined || val === '') return fallback;
@@ -635,7 +636,7 @@ function BoletimContent() {
       // Let the DOM update to full-scale resolution and expanded dimensions
       await new Promise((resolve) => setTimeout(resolve, 300));
 
-      const html2canvas = (await import('html2canvas-pro')).default;
+      const html2canvas = await getHtml2Canvas();
       const { jsPDF } = await import('jspdf');
 
       const canvas = await html2canvas(element, {
@@ -779,7 +780,7 @@ function BoletimContent() {
     const toastId = toast.loading(language === 'pt' ? 'Processando imagem para área de transferência...' : 'Processing image for clipboard...');
     
     try {
-      const html2canvas = (await import('html2canvas-pro')).default;
+      const html2canvas = await getHtml2Canvas();
       const element = document.getElementById('student-report-print-area');
       if (!element) throw new Error('Report element not found');
 
@@ -906,7 +907,7 @@ function BoletimContent() {
 
     try {
       // Lazy load html2canvas and jspdf
-      const html2canvas = (await import('html2canvas-pro')).default;
+      const html2canvas = await getHtml2Canvas();
       const { jsPDF } = await import('jspdf');
 
       const printArea = document.getElementById('class-bulletin-print-area');

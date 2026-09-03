@@ -32,21 +32,14 @@ export function useCursos() {
       if (dbError) throw dbError;
       if (!dbData) return [];
 
-      const mappedData = dbData.map((t: any) => {
-        if (t.status === 'ativa' && t.ativa === false) {
-          return { ...t, status: 'pré-inscrito(a)(s)' };
-        }
-        return t;
-      });
-
-      let filteredData = mappedData;
+      let filteredData = dbData;
       if (role === 'instrutor' && grupoResponsavel) {
         if (grupoResponsavel === 'MAN') {
-          filteredData = mappedData.filter((c: any) => c.grupo_responsavel === 'MAN');
+          filteredData = dbData.filter((c: any) => c.grupo_responsavel === 'MAN');
         } else if (grupoResponsavel === 'GAT') {
-          filteredData = mappedData.filter((c: any) => c.grupo_responsavel === 'GAT');
+          filteredData = dbData.filter((c: any) => c.grupo_responsavel === 'GAT');
         } else if (grupoResponsavel === 'AMBOS') {
-          filteredData = mappedData.filter((c: any) => c.grupo_responsavel === 'MAN' || c.grupo_responsavel === 'GAT');
+          filteredData = dbData.filter((c: any) => c.grupo_responsavel === 'MAN' || c.grupo_responsavel === 'GAT');
         }
       }
 
@@ -97,14 +90,7 @@ export function useTurmas() {
       if (dbError) throw dbError;
       if (!dbData) return [];
 
-      const mappedData = dbData.map((t: any) => {
-        if (t.status === 'ativa' && t.ativa === false) {
-          return { ...t, status: 'pré-inscrito(a)(s)' };
-        }
-        return t;
-      });
-
-      let filteredData = mappedData;
+      let filteredData = dbData;
       if (role === 'instrutor' && grupoResponsavel) {
         filteredData = mappedData.filter((t: any) => {
           const courseGroup = t.curso?.grupo_responsavel || t.grupo_responsavel;
@@ -252,12 +238,7 @@ export function useDashboardStats() {
       }
 
       const activeCursos = cursosRes.data || [];
-      const activeTurmas = (rawTurmas || []).map((t: any) => {
-        if (t.status === 'ativa' && t.ativa === false) {
-          return { ...t, status: 'pré-inscrito(a)(s)' };
-        }
-        return t;
-      });
+      const activeTurmas = rawTurmas || [];
       const activeAlunos = alunosRes.data || [];
 
       // Map course id to course object
@@ -401,7 +382,7 @@ export function useDashboardStats() {
         const statusLower = (t.status || 'ativa').toString().toLowerCase().trim();
         const isArquivada = Boolean(t.arquivada) === true || statusLower === 'arquivada' || statusLower === 'arquivado';
         const isConcluida = !isArquivada && (statusLower === 'concluida' || statusLower === 'concluída' || statusLower === 'concluido' || statusLower === 'concluído' || statusLower === 'cancelada');
-        const isPreInscrito = !isArquivada && !isConcluida && (statusLower === 'pré-inscrito(a)(s)' || statusLower === 'pre-inscrito' || statusLower === 'pre_inscrito' || (statusLower === 'ativa' && t.ativa === false));
+        const isPreInscrito = !isArquivada && !isConcluida && (statusLower.includes('pré-inscrit') || statusLower.includes('pre-inscrit'));
         const isAtiva = !isArquivada && !isConcluida && !isPreInscrito;
 
         const category = resolveTurmaCategory(t, course);

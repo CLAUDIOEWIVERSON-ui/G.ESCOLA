@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { X, Printer, Download, Eye, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import navalMissionLogo from '@/src/assets/images/regenerated_image_1782409801823.png';
+import { getHtml2Canvas } from '@/lib/printDocumentUtils';
 
 interface BlankQuestionnaireModalProps {
   isOpen: boolean;
@@ -25,7 +26,7 @@ export default function BlankQuestionnaireModal({ isOpen, onClose }: BlankQuesti
       setGenerating(true);
       toast.loading('Rendendo alta fidelidade do questionário PDF...');
 
-      const html2canvas = (await import('html2canvas-pro')).default;
+      const html2canvas = await getHtml2Canvas();
       const { jsPDF } = await import('jspdf');
 
       const page1Element = document.getElementById('print-page-1');
