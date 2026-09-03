@@ -726,11 +726,35 @@ a[class*="bg-indigo-"]:not([class*="bg-indigo-50"]):not([class*="bg-indigo-100"]
   .student-card,
   .observation-box,
   .qr-card,
-  .print-section,
-  .official-seal {
+  .official-seal,
+  .print-signature,
+  .print-section-header {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
     break-before: auto !important;
+  }
+
+  .print-section-header,
+  .print-avoid-break-after {
+    break-after: avoid !important;
+    page-break-after: avoid !important;
+  }
+
+  .print-section {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+    margin-bottom: 24px !important;
+  }
+
+  tbody.print-turma-unit {
+    display: table-row-group !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .print-student-item {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 
   .print-page-break,

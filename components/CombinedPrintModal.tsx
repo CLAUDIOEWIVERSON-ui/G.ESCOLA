@@ -774,7 +774,7 @@ export default function CombinedPrintModal({
               {/* PRINT DOCUMENT COMPONENT */}
               <div id="print-combined-dashboard-sheet" className="w-full text-black font-sans bg-white">
                 {/* OFFICIAL HEADER */}
-                <div className="flex items-center gap-6 mb-6 border-b-2 border-black pb-4">
+                <div className="flex items-center gap-6 mb-6 border-b-2 border-black pb-4 print-section-header print-avoid-break">
                   <div className="w-24 h-24 shrink-0 flex items-center justify-center">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
@@ -814,8 +814,8 @@ export default function CombinedPrintModal({
 
                 {/* SEÇÃO 1: ALUNOS NO EXTERIOR */}
                 {selectedCategories.includes('exterior') && (
-                  <div className="mb-8 page-break-avoid">
-                    <div className="bg-purple-100 border border-black px-3 py-1.5 font-bold text-xs uppercase flex items-center justify-between text-black mb-2">
+                  <div className="mb-6 print-section">
+                    <div className="bg-purple-100 border border-black px-3 py-1.5 font-bold text-xs uppercase flex items-center justify-between text-black mb-2 print-section-header print-avoid-break">
                       <span className="flex items-center gap-2">
                         <GraduationCap size={14} />
                         <span>1. ALUNOS NO EXTERIOR ({totalFilteredAlunosExterior} ALUNOS)</span>
@@ -829,8 +829,8 @@ export default function CombinedPrintModal({
                       </div>
                     ) : (
                       groupedAlunosExterior.map((group, gIdx) => (
-                        <div key={`ext-grp-${gIdx}`} className="mb-4">
-                          <div className="bg-gray-100 border border-black px-2 py-1 font-bold text-[10px] uppercase flex items-center justify-between text-black">
+                        <div key={`ext-grp-${gIdx}`} className="mb-4 print-group-block">
+                          <div className="bg-gray-100 border border-black px-2 py-1 font-bold text-[10px] uppercase flex items-center justify-between text-black print-avoid-break print-avoid-break-after">
                             <span>DOCUMENTO / PORTARIA: {group.documento}</span>
                             <span>{group.alunos.length} {group.alunos.length === 1 ? 'ALUNO' : 'ALUNOS'}</span>
                           </div>
@@ -858,7 +858,7 @@ export default function CombinedPrintModal({
                                 const photoUrlString = typeof photoSrc === 'string' ? photoSrc : (photoSrc?.src || '');
 
                                 return (
-                                  <tr key={`al-ext-${aluno.id || aIdx}`} className="border-b border-black">
+                                  <tr key={`al-ext-${aluno.id || aIdx}`} className="border-b border-black print-avoid-break">
                                     <td className="p-1 border-r border-black text-center font-mono font-bold align-middle">{aIdx + 1}</td>
                                     {includePhotos && (
                                       <td className="p-1 border-r border-black text-center align-middle">
@@ -913,8 +913,8 @@ export default function CombinedPrintModal({
                   const totalCategoryAlunos = sec.list.reduce((acc: number, t: any) => acc + (t.alunos?.length || t.alunos_count || t.total_alunos || 0), 0);
 
                   return (
-                    <div key={`section-cat-${sec.id}`} className="mb-8 page-break-avoid">
-                      <div className={cn("border border-black px-3 py-1.5 font-bold text-xs uppercase flex items-center justify-between text-black mb-2", sec.color)}>
+                    <div key={`section-cat-${sec.id}`} className="mb-6 print-section">
+                      <div className={cn("border border-black px-3 py-1.5 font-bold text-xs uppercase flex items-center justify-between text-black mb-2 print-section-header print-avoid-break", sec.color)}>
                         <span>{sec.title} ({sec.list.length} TURMAS • {totalCategoryAlunos} ALUNOS)</span>
                         <span>EM ANDAMENTO / CONCLUÍDAS</span>
                       </div>
@@ -938,78 +938,76 @@ export default function CombinedPrintModal({
                               <th className="p-1.5 font-bold uppercase text-center w-[75px]">{isPt ? 'Status' : 'Status'}</th>
                             </tr>
                           </thead>
-                          <tbody className="text-[10px]">
-                            {sec.list.map((t: any, tIdx: number) => {
-                              const cursoNome = getCursoNomeFromTurma(t);
-                              const cleanName = getCleanTurmaName(t, cursoNome, t.nome);
-                              const alunosCount = t.alunos?.length || t.alunos_count || t.total_alunos || 0;
-                              return (
-                                <React.Fragment key={`row-t-${t.id || tIdx}`}>
-                                  <tr className="border-b border-black">
-                                    <td className="p-1.5 border-r border-black text-center font-mono font-bold align-middle">{tIdx + 1}</td>
-                                    <td className="p-1.5 border-r border-black font-bold uppercase align-middle">{cleanName}</td>
-                                    <td className="p-1.5 border-r border-black font-bold uppercase align-middle">{cursoNome || '-'}</td>
-                                    <td className="p-1.5 border-r border-black uppercase align-middle">{t.instrutor || '-'}</td>
-                                    <td className="p-1.5 border-r border-black font-mono font-bold text-center align-middle">{t.documento_criacao || t.curso?.documento_criacao || '-'}</td>
-                                    <td className="p-1.5 border-r border-black uppercase align-middle">{t.localizacao || '-'}</td>
-                                    <td className="p-1.5 border-r border-black text-center align-middle">
-                                      {t.data_inicio ? t.data_inicio.split('-').reverse().join('/') : '-'}
-                                      {t.data_fim && (
-                                        <>
-                                          <span className="mx-1 font-bold">a</span>
-                                          {t.data_fim.split('-').reverse().join('/')}
-                                        </>
-                                      )}
-                                    </td>
-                                    <td className="p-1.5 border-r border-black text-center font-bold align-middle">{alunosCount}</td>
-                                    <td className="p-1.5 text-center font-bold uppercase align-middle">{t.status || 'Ativa'}</td>
-                                  </tr>
+                          {sec.list.map((t: any, tIdx: number) => {
+                            const cursoNome = getCursoNomeFromTurma(t);
+                            const cleanName = getCleanTurmaName(t, cursoNome, t.nome);
+                            const alunosCount = t.alunos?.length || t.alunos_count || t.total_alunos || 0;
+                            return (
+                              <tbody key={`unit-t-${t.id || tIdx}`} className="text-[10px] print-turma-unit">
+                                <tr className="border-b border-black print-turma-row">
+                                  <td className="p-1.5 border-r border-black text-center font-mono font-bold align-middle">{tIdx + 1}</td>
+                                  <td className="p-1.5 border-r border-black font-bold uppercase align-middle">{cleanName}</td>
+                                  <td className="p-1.5 border-r border-black font-bold uppercase align-middle">{cursoNome || '-'}</td>
+                                  <td className="p-1.5 border-r border-black uppercase align-middle">{t.instrutor || '-'}</td>
+                                  <td className="p-1.5 border-r border-black font-mono font-bold text-center align-middle">{t.documento_criacao || t.curso?.documento_criacao || '-'}</td>
+                                  <td className="p-1.5 border-r border-black uppercase align-middle">{t.localizacao || '-'}</td>
+                                  <td className="p-1.5 border-r border-black text-center align-middle">
+                                    {t.data_inicio ? t.data_inicio.split('-').reverse().join('/') : '-'}
+                                    {t.data_fim && (
+                                      <>
+                                        <span className="mx-1 font-bold">a</span>
+                                        {t.data_fim.split('-').reverse().join('/')}
+                                      </>
+                                    )}
+                                  </td>
+                                  <td className="p-1.5 border-r border-black text-center font-bold align-middle">{alunosCount}</td>
+                                  <td className="p-1.5 text-center font-bold uppercase align-middle">{t.status || 'Ativa'}</td>
+                                </tr>
 
-                                  {/* DETALHAMENTO NOMINAL DE ALUNOS DA TURMA SE HABILITADO */}
-                                  {includeTurmaStudents && t.alunos && t.alunos.length > 0 && (
-                                    <tr className="border-b-2 border-black bg-slate-50/50">
-                                      <td colSpan={9} className="p-2 border-r border-black">
-                                        <div className="pl-4 pr-2 py-1 space-y-1">
-                                          <div className="text-[9px] font-extrabold uppercase tracking-wide text-slate-800 flex items-center gap-1.5">
-                                            <span>↳ RELAÇÃO NOMINAL DE ALUNOS ({t.alunos.length} ALUNOS MATRICULADOS):</span>
-                                          </div>
-                                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-1.5 text-[9px] pt-1">
-                                            {t.alunos.map((al: any, alIdx: number) => {
-                                              const alPhotoSrc = al.foto_url ||
-                                                (al.tipo_aluno === 'civil'
-                                                  ? (al.genero === 'feminino' ? femaleAvatar : maleAvatar)
-                                                  : (al.genero === 'feminino' ? militaryFemaleAvatar : militaryMaleAvatar));
-                                              const alPhotoUrl = typeof alPhotoSrc === 'string' ? alPhotoSrc : (alPhotoSrc?.src || '');
-
-                                              return (
-                                                <div key={`sub-al-${al.id || alIdx}`} className="flex items-center gap-2 border-b border-slate-200/50 pb-0.5">
-                                                  {includePhotos && (
-                                                    <div className="w-5 h-6 rounded-xs overflow-hidden border border-black/50 bg-slate-100 shrink-0">
-                                                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                      <img src={alPhotoUrl} alt={al.nome} className="w-full h-full object-cover" />
-                                                    </div>
-                                                  )}
-                                                  <div className="min-w-0 flex-1">
-                                                    <div className="flex items-center gap-1">
-                                                      <span className="font-mono font-bold text-slate-600">{alIdx + 1}.</span>
-                                                      <span className="font-bold uppercase text-black truncate">
-                                                        {al.posto_graduacao || al.nome_guerra ? `${al.posto_graduacao || ''} ${al.nome_guerra || al.nome}`.trim() : al.nome}
-                                                      </span>
-                                                    </div>
-                                                    {al.om && <span className="text-slate-600 text-[8px] uppercase block truncate">{al.om}</span>}
-                                                  </div>
-                                                </div>
-                                              );
-                                            })}
-                                          </div>
+                                {/* DETALHAMENTO NOMINAL DE ALUNOS DA TURMA SE HABILITADO */}
+                                {includeTurmaStudents && t.alunos && t.alunos.length > 0 && (
+                                  <tr className="border-b-2 border-black bg-slate-50/50 print-roster-row">
+                                    <td colSpan={9} className="p-2 border-r border-black">
+                                      <div className="pl-4 pr-2 py-1 space-y-1">
+                                        <div className="text-[9px] font-extrabold uppercase tracking-wide text-slate-800 flex items-center gap-1.5">
+                                          <span>↳ RELAÇÃO NOMINAL DE ALUNOS ({t.alunos.length} ALUNOS MATRICULADOS):</span>
                                         </div>
-                                      </td>
-                                    </tr>
-                                  )}
-                                </React.Fragment>
-                              );
-                            })}
-                          </tbody>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-1.5 text-[9px] pt-1">
+                                          {t.alunos.map((al: any, alIdx: number) => {
+                                            const alPhotoSrc = al.foto_url ||
+                                              (alunoTipoCivil
+                                                ? (al.genero === 'feminino' ? femaleAvatar : maleAvatar)
+                                                : (al.genero === 'feminino' ? militaryFemaleAvatar : militaryMaleAvatar));
+                                            const alPhotoUrl = typeof alPhotoSrc === 'string' ? alPhotoSrc : (alPhotoSrc?.src || '');
+
+                                            return (
+                                              <div key={`sub-al-${al.id || alIdx}`} className="flex items-center gap-2 border-b border-slate-200/50 pb-0.5 print-student-item">
+                                                {includePhotos && (
+                                                  <div className="w-5 h-6 rounded-xs overflow-hidden border border-black/50 bg-slate-100 shrink-0">
+                                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                    <img src={alPhotoUrl} alt={al.nome} className="w-full h-full object-cover" />
+                                                  </div>
+                                                )}
+                                                <div className="min-w-0 flex-1">
+                                                  <div className="flex items-center gap-1">
+                                                    <span className="font-mono font-bold text-slate-600">{alIdx + 1}.</span>
+                                                    <span className="font-bold uppercase text-black truncate">
+                                                      {al.posto_graduacao || al.nome_guerra ? `${al.posto_graduacao || ''} ${al.nome_guerra || al.nome}`.trim() : al.nome}
+                                                    </span>
+                                                  </div>
+                                                  {al.om && <span className="text-slate-600 text-[8px] uppercase block truncate">{al.om}</span>}
+                                                </div>
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )}
+                              </tbody>
+                            );
+                          })}
                         </table>
                       )}
                     </div>
@@ -1018,8 +1016,8 @@ export default function CombinedPrintModal({
 
                 {/* TABELA SÍNTESE CONSOLIDADA */}
                 {summaryStats.categoryBreakdown.length > 0 && (
-                  <div className="mt-8 mb-6 page-break-avoid">
-                    <div className="bg-gray-200 border border-black px-3 py-1 font-bold text-xs uppercase flex items-center justify-between text-black">
+                  <div className="mt-8 mb-6 print-avoid-break print-summary-box">
+                    <div className="bg-gray-200 border border-black px-3 py-1 font-bold text-xs uppercase flex items-center justify-between text-black print-avoid-break-after">
                       <span>QUADRO SÍNTESE CONSOLIDADO (TOTALIZAÇÃO GERAL)</span>
                       <span>{summaryStats.categoryBreakdown.length} CATEGORIAS</span>
                     </div>
@@ -1033,13 +1031,13 @@ export default function CombinedPrintModal({
                       </thead>
                       <tbody className="text-[11px]">
                         {summaryStats.categoryBreakdown.map((item) => (
-                          <tr key={`summary-row-${item.id}`} className="border-b border-black">
+                          <tr key={`summary-row-${item.id}`} className="border-b border-black print-avoid-break">
                             <td className="p-2 border-r border-black font-bold uppercase">{item.name}</td>
                             <td className="p-2 border-r border-black text-center font-bold">{item.turmasCount > 0 ? item.turmasCount : '—'}</td>
                             <td className="p-2 text-center font-black">{item.alunosCount}</td>
                           </tr>
                         ))}
-                        <tr className="bg-gray-200 font-extrabold border-t-2 border-black text-[12px]">
+                        <tr className="bg-gray-200 font-extrabold border-t-2 border-black text-[12px] print-avoid-break">
                           <td className="p-2 border-r border-black uppercase">TOTAL GERAL CONSOLIDADO</td>
                           <td className="p-2 border-r border-black text-center">{summaryStats.totalTurmas > 0 ? summaryStats.totalTurmas : '—'}</td>
                           <td className="p-2 text-center">{summaryStats.totalAlunos}</td>
@@ -1050,7 +1048,7 @@ export default function CombinedPrintModal({
                 )}
 
                 {/* OFFICIAL SIGNATURE FOOTER */}
-                <div className="mt-12 pt-6 text-center page-break-avoid">
+                <div className="mt-10 pt-6 text-center print-avoid-break print-signature">
                   <div className="w-72 mx-auto border-t-2 border-black pt-2">
                     <p className="font-extrabold uppercase text-xs text-black">
                       {isPt ? 'Coordenador de Cursos' : 'Course Coordinator'}

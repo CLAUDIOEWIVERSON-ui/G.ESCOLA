@@ -92,22 +92,91 @@ export async function downloadElementAsPDF(
     if (imgHeight <= contentHeight) {
       // Fits on one single page with margins
       pdf.addImage(imgData, 'PNG', marginX, marginY, contentWidth, imgHeight, undefined, 'FAST');
+    } else if (imgHeight <= contentHeight * 1.08) {
+      // Scale slightly to fit exactly on 1 single page if it's within 8% margin
+      pdf.addImage(imgData, 'PNG', marginX, marginY, contentWidth, contentHeight, undefined, 'FAST');
     } else {
-      // Scale slightly to fit exactly on 1 single page if it's within 12% margin
-      if (imgHeight <= contentHeight * 1.12) {
-        pdf.addImage(imgData, 'PNG', marginX, marginY, contentWidth, contentHeight, undefined, 'FAST');
-      } else {
-        // Multi-page handling with margins
-        let heightLeft = imgHeight;
-        let position = marginY;
-        pdf.addImage(imgData, 'PNG', marginX, position, contentWidth, imgHeight, undefined, 'FAST');
-        heightLeft -= contentHeight;
+      // Multi-page smart slicing: Avoid cutting through rows, cards or section headers
+      const scaleY = canvas.height / (targetElem.offsetHeight || 1);
+      const pxPerMm = canvas.width / contentWidth;
+      const maxPageHeightPx = contentHeight * pxPerMm;
 
-        while (heightLeft > 0) {
-          position = position - contentHeight;
+      // Find all element boundaries that should not be sliced
+      const containerRect = targetElem.getBoundingClientRect();
+      const breakCandidates = targetElem.querySelectorAll(
+        '.print-turma-unit, tr, .print-section-header, .print-avoid-break, .print-group-block, .print-summary-box, .print-signature, .print-student-item'
+      );
+
+      const elementsY: { top: number; bottom: number }[] = [];
+      breakCandidates.forEach((el) => {
+        const rect = el.getBoundingClientRect();
+        const top = (rect.top - containerRect.top) * scaleY;
+        const bottom = (rect.bottom - containerRect.top) * scaleY;
+        if (bottom > top && bottom <= canvas.height + 5) {
+          elementsY.push({ top, bottom });
+        }
+      });
+
+      // Sort elements by top position
+      elementsY.sort((a, b) => a.top - b.top);
+
+      // Calculate smart page slices
+      const pageSlices: { startY: number; endY: number }[] = [];
+      let currentStartY = 0;
+
+      while (currentStartY < canvas.height - 2) {
+        const idealEndY = currentStartY + maxPageHeightPx;
+
+        if (idealEndY >= canvas.height) {
+          pageSlices.push({ startY: currentStartY, endY: canvas.height });
+          break;
+        }
+
+        // Find if an element is intersected by idealEndY
+        let bestCutY = idealEndY;
+        for (const el of elementsY) {
+          if (el.top < idealEndY && el.bottom > idealEndY) {
+            // Found element being cut in half!
+            // Adjust cut point to before this element, as long as page is at least 45% full
+            if (el.top > currentStartY + maxPageHeightPx * 0.45) {
+              bestCutY = Math.floor(el.top);
+            }
+            break;
+          }
+        }
+
+        // Safety fallback if bestCutY didn't advance
+        if (bestCutY <= currentStartY) {
+          bestCutY = idealEndY;
+        }
+
+        pageSlices.push({ startY: currentStartY, endY: bestCutY });
+        currentStartY = bestCutY;
+      }
+
+      // Render each sliced sub-canvas to its own PDF page
+      for (let i = 0; i < pageSlices.length; i++) {
+        const { startY, endY } = pageSlices[i];
+        const sliceHeightPx = endY - startY;
+        if (sliceHeightPx <= 0) continue;
+
+        if (i > 0) {
           pdf.addPage();
-          pdf.addImage(imgData, 'PNG', marginX, position, contentWidth, imgHeight, undefined, 'FAST');
-          heightLeft -= contentHeight;
+        }
+
+        const sliceCanvas = document.createElement('canvas');
+        sliceCanvas.width = canvas.width;
+        sliceCanvas.height = sliceHeightPx;
+        const ctx = sliceCanvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(
+            canvas,
+            0, startY, canvas.width, sliceHeightPx,
+            0, 0, canvas.width, sliceHeightPx
+          );
+          const sliceImgData = sliceCanvas.toDataURL('image/png', 1.0);
+          const slicePdfHeight = (sliceHeightPx * contentWidth) / canvas.width;
+          pdf.addImage(sliceImgData, 'PNG', marginX, marginY, contentWidth, slicePdfHeight, undefined, 'FAST');
         }
       }
     }
@@ -128,7 +197,7 @@ export async function downloadElementAsPDF(
 
 /**
  * Prints a DOM element cleanly using an isolated, dedicated hidden iframe.
- * This guarantees zero background interference, zero duplicate pages, and correct A4 Landscape sizing.
+ * This guarantees zero background interference, zero duplicate pages, and correct A4 sizing with smart page breaks.
  */
 export function printElementIsolated(
   elementId: string, 
@@ -167,6 +236,11 @@ export function printElementIsolated(
     return;
   }
 
+  // Extract all existing style sheets from main document head to guarantee identical styling
+  const styleTags = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
+    .map(tag => tag.outerHTML)
+    .join('\n');
+
   // Extract element HTML
   const contentHtml = targetElem.outerHTML;
 
@@ -177,6 +251,7 @@ export function printElementIsolated(
     <head>
       <meta charset="utf-8">
       <title>${customTitle}</title>
+      ${styleTags}
       <style>
         @page {
           size: A4 ${orientation};
@@ -216,17 +291,67 @@ export function printElementIsolated(
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
         }
+        
+        /* Core page break and table pagination rules */
         table {
           width: 100% !important;
           border-collapse: collapse !important;
           page-break-inside: auto !important;
-        }
-        tr, .page-break-avoid {
-          page-break-inside: avoid !important;
-          break-inside: avoid !important;
+          break-inside: auto !important;
         }
         thead {
           display: table-header-group !important;
+          break-inside: avoid !important;
+          page-break-inside: avoid !important;
+          break-after: avoid !important;
+          page-break-after: avoid !important;
+        }
+        tfoot {
+          display: table-footer-group !important;
+        }
+        tbody {
+          page-break-inside: auto !important;
+          break-inside: auto !important;
+        }
+        tbody.print-turma-unit {
+          display: table-row-group !important;
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+        }
+        tr {
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+          page-break-after: auto !important;
+          break-after: auto !important;
+        }
+        td, th {
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+        }
+
+        /* Section containers break naturally across pages, but headers never get orphaned */
+        .print-section {
+          break-inside: auto !important;
+          page-break-inside: auto !important;
+          margin-bottom: 24px !important;
+        }
+        .print-section-header {
+          break-inside: avoid !important;
+          page-break-inside: avoid !important;
+          break-after: avoid !important;
+          page-break-after: avoid !important;
+        }
+        .print-avoid-break, .page-break-avoid {
+          break-inside: avoid !important;
+          page-break-inside: avoid !important;
+        }
+        .print-avoid-break-after {
+          break-after: avoid !important;
+          page-break-after: avoid !important;
+        }
+        .print-student-item {
+          break-inside: avoid !important;
+          page-break-inside: avoid !important;
         }
         .no-print, .print\\:hidden {
           display: none !important;
@@ -241,7 +366,7 @@ export function printElementIsolated(
   `);
   doc.close();
 
-  setTimeout(() => {
+  const triggerPrint = () => {
     try {
       iframe.contentWindow?.focus();
       iframe.contentWindow?.print();
@@ -249,5 +374,29 @@ export function printElementIsolated(
       console.warn('Iframe print failed, falling back to window.print', e);
       window.print();
     }
-  }, 350);
+  };
+
+  // Wait for all images inside the iframe to load before printing
+  const images = Array.from(doc.images || []);
+  if (images.length > 0) {
+    let loadedCount = 0;
+    const checkAllLoaded = () => {
+      loadedCount++;
+      if (loadedCount >= images.length) {
+        setTimeout(triggerPrint, 150);
+      }
+    };
+    images.forEach(img => {
+      if (img.complete) {
+        checkAllLoaded();
+      } else {
+        img.onload = checkAllLoaded;
+        img.onerror = checkAllLoaded;
+      }
+    });
+    // Fallback timer in case an image takes too long
+    setTimeout(triggerPrint, 1000);
+  } else {
+    setTimeout(triggerPrint, 250);
+  }
 }
