@@ -3330,6 +3330,7 @@ function TurmasContent() {
                         alt="Logo Missão de Assessoria Naval"
                         className="w-28 h-28 object-contain"
                         style={{ width: '112px', height: '112px' }}
+                        crossOrigin="anonymous"
                       />
                     </div>
                     <div className="flex-1 text-left">
@@ -3427,6 +3428,7 @@ function TurmasContent() {
                                     src={typeof photoSrc === 'string' ? photoSrc : (photoSrc?.src || fallbackPhoto)}
                                     alt={student.nome}
                                     className="w-full h-full object-cover"
+                                    crossOrigin="anonymous"
                                     onError={(e) => {
                                       e.currentTarget.src = typeof fallbackPhoto === 'string' ? fallbackPhoto : fallbackPhoto?.src;
                                     }}

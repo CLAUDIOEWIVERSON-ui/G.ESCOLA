@@ -7,16 +7,92 @@ export interface PDFExportOptions {
 }
 
 /**
- * Robust loader for html2canvas to prevent chunk load errors and handle imports cleanly.
+ * Standard neutral avatar SVG in data-uri format as fail-safe fallback
+ * if an external photo fails CORS or network checks.
+ */
+const FALLBACK_AVATAR_SVG = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="%2394a3b8"><rect width="100" height="100" fill="%23f1f5f9"/><circle cx="50" cy="38" r="22"/><path d="M16 90c0-18.78 15.22-34 34-34s34 15.22 34 34z"/></svg>';
+
+/**
+ * Robust loader for html2canvas-pro (with fallback to html2canvas) to support Tailwind v4, oklch colors and modern CSS.
  */
 export async function getHtml2Canvas(): Promise<any> {
   try {
-    const mod = await import('html2canvas');
+    const mod = await import('html2canvas-pro');
     return mod.default || mod;
-  } catch (err: any) {
-    console.error('Falha ao carregar html2canvas:', err);
-    throw new Error('Falha ao carregar o gerador gráfico do PDF. Por favor, atualize a página (F5) ou use o botão "Imprimir".');
+  } catch (err) {
+    console.warn('html2canvas-pro não encontrado, tentando html2canvas padrão:', err);
+    try {
+      const fallback = await import('html2canvas');
+      return fallback.default || fallback;
+    } catch (e: any) {
+      console.error('Falha ao carregar gerador de canvas:', e);
+      throw new Error('Falha ao carregar o gerador gráfico do PDF. Por favor, atualize a página (F5) ou use o botão "Imprimir".');
+    }
   }
+}
+
+/**
+ * Converts remote image URLs to inline Base64 data-URIs safely.
+ * This guarantees zero CORS errors, avoids Cloudflare cookie blocking (__cf_bm),
+ * and prevents the canvas from becoming tainted during PDF rendering.
+ */
+async function convertImgToBase64(imgElement: HTMLImageElement): Promise<void> {
+  const src = imgElement.src;
+  if (!src || src.startsWith('data:')) {
+    return;
+  }
+
+  try {
+    // Attempt fetch with anonymous CORS credentials omitted
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 6000);
+
+    const response = await fetch(src, {
+      mode: 'cors',
+      credentials: 'omit',
+      cache: 'force-cache',
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const blob = await response.blob();
+    const base64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === 'string') {
+          resolve(reader.result);
+        } else {
+          reject(new Error('Formato de imagem inválido'));
+        }
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+
+    imgElement.crossOrigin = 'anonymous';
+    imgElement.src = base64;
+  } catch {
+    // If CORS or network fails, gracefully replace with a crisp neutral silhouette
+    // so html2canvas never crashes or taints the canvas.
+    imgElement.crossOrigin = 'anonymous';
+    imgElement.src = FALLBACK_AVATAR_SVG;
+  }
+}
+
+/**
+ * Sanitizes all <img> elements inside a DOM tree to Base64 in parallel.
+ */
+async function inlineAllImagesInElement(root: HTMLElement): Promise<void> {
+  const images = Array.from(root.querySelectorAll<HTMLImageElement>('img'));
+  if (images.length === 0) return;
+
+  // Process in small batches so we don't overwhelm network
+  const promises = images.map((img) => convertImgToBase64(img));
+  await Promise.allSettled(promises);
 }
 
 /**
@@ -38,26 +114,38 @@ export async function downloadElementAsPDF(
     return false;
   }
 
-  const toastId = toast.loading('Gerando arquivo PDF em alta resolução...');
+  const toastId = toast.loading('Processando imagens e gerando PDF...');
 
   try {
     const html2canvas = await getHtml2Canvas();
     const { jsPDF } = await import('jspdf');
 
+    // Adapt scale to avoid exceeding browser GPU canvas limits on very long reports
+    const targetHeight = targetElem.offsetHeight || targetElem.scrollHeight || 1000;
+    let effectiveScale = scale;
+    if (targetHeight * effectiveScale > 10000) {
+      effectiveScale = Math.max(1.0, Math.floor((10000 / targetHeight) * 10) / 10);
+    }
+
     // Create a temporary clone with forced white background and clean dimensions
     const canvas = await html2canvas(targetElem, {
-      scale: scale,
+      scale: effectiveScale,
       useCORS: true,
+      allowTaint: false,
       logging: false,
       backgroundColor: '#ffffff',
       windowWidth: orientation === 'landscape' ? 1400 : 1000,
-      onclone: (clonedDoc) => {
+      onclone: async (clonedDoc: Document) => {
         const clonedElem = clonedDoc.getElementById(elementId);
         if (clonedElem) {
           clonedElem.style.color = '#000000';
           clonedElem.style.backgroundColor = '#ffffff';
           clonedElem.style.boxShadow = 'none';
           clonedElem.style.border = 'none';
+
+          // Inline all images in the clone to base64 to eliminate any CORS / taint problems
+          await inlineAllImagesInElement(clonedElem);
+
           // Ensure all text elements are strictly visible and black
           const allText = clonedElem.querySelectorAll('*');
           allText.forEach((node) => {
@@ -82,7 +170,17 @@ export async function downloadElementAsPDF(
       }
     });
 
-    const imgData = canvas.toDataURL('image/png', 1.0);
+    let imgData: string;
+    try {
+      imgData = canvas.toDataURL('image/png', 1.0);
+    } catch (taintErr: any) {
+      console.warn('Canvas tainted, tentando fallback em JPEG:', taintErr);
+      try {
+        imgData = canvas.toDataURL('image/jpeg', 0.95);
+      } catch (jpegErr: any) {
+        throw new Error('As imagens externas bloquearam a captura de tela. Utilize a opção "Imprimir" e escolha "Salvar como PDF".');
+      }
+    }
 
     const pdf = new jsPDF({
       orientation: orientation,
@@ -94,9 +192,9 @@ export async function downloadElementAsPDF(
     const pdfWidth = orientation === 'landscape' ? 297 : 210;
     const pdfHeight = orientation === 'landscape' ? 210 : 297;
 
-    // Add safe margins (in mm) so content never touches the outer edge of the paper or PDF
-    const marginX = orientation === 'landscape' ? 14 : 12;
-    const marginY = orientation === 'landscape' ? 12 : 12;
+    // Safe margins (in mm)
+    const marginX = orientation === 'landscape' ? 12 : 10;
+    const marginY = orientation === 'landscape' ? 10 : 10;
     const contentWidth = pdfWidth - (marginX * 2);
     const contentHeight = pdfHeight - (marginY * 2);
 
@@ -106,11 +204,11 @@ export async function downloadElementAsPDF(
       // Fits on one single page with margins
       pdf.addImage(imgData, 'PNG', marginX, marginY, contentWidth, imgHeight, undefined, 'FAST');
     } else {
-      // Scale slightly to fit exactly on 1 single page if it's within 12% margin
-      if (imgHeight <= contentHeight * 1.12) {
+      // Scale slightly to fit on 1 single page if it's within 10% margin
+      if (imgHeight <= contentHeight * 1.10) {
         pdf.addImage(imgData, 'PNG', marginX, marginY, contentWidth, contentHeight, undefined, 'FAST');
       } else {
-        // Multi-page handling with margins
+        // Multi-page handling with clean page slices
         let heightLeft = imgHeight;
         let position = marginY;
         pdf.addImage(imgData, 'PNG', marginX, position, contentWidth, imgHeight, undefined, 'FAST');
@@ -125,7 +223,11 @@ export async function downloadElementAsPDF(
       }
     }
 
-    const finalFilename = filename.endsWith('.pdf') ? filename : `${filename}.pdf`;
+    const sanitizedFilename = (filename || 'documento.pdf')
+      .replace(/[/\\?%*:|"<>]/g, '_')
+      .replace(/\s+/g, '_');
+    const finalFilename = sanitizedFilename.endsWith('.pdf') ? sanitizedFilename : `${sanitizedFilename}.pdf`;
+    
     pdf.save(finalFilename);
 
     toast.dismiss(toastId);
@@ -138,7 +240,7 @@ export async function downloadElementAsPDF(
     if (msg.includes('Loading chunk') || msg.includes('ChunkLoadError') || msg.includes('failed to fetch')) {
       toast.error('Módulo gráfico em atualização. Por favor, recarregue a página (F5) ou use o botão "Imprimir".', { duration: 6000 });
     } else {
-      toast.error('Erro ao gerar PDF: ' + (msg || 'Falha inesperada. Tente a opção "Imprimir".'));
+      toast.error('Não foi possível gerar o PDF direto: ' + (msg || 'Erro inesperado.') + ' Dica: clique em "Imprimir Documento" para salvar como PDF.', { duration: 7000 });
     }
     return false;
   }

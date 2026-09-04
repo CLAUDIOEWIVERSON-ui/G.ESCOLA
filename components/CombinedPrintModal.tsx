@@ -420,14 +420,22 @@ export default function CombinedPrintModal({
   };
 
   const handleExportPDF = async () => {
-    setIsExportingPDF(true);
-    const filename = `relacao_consolidada_${selectedCategories.join('_')}_${new Date().toISOString().split('T')[0]}.pdf`;
-    await downloadElementAsPDF('print-combined-dashboard-sheet', {
-      orientation,
-      filename,
-      scale: 2
-    });
-    setIsExportingPDF(false);
+    if (selectedCategories.length === 0) {
+      toast.error(isPt ? 'Selecione ao menos uma categoria para gerar o PDF.' : 'Select at least one category to generate PDF.');
+      return;
+    }
+    try {
+      setIsExportingPDF(true);
+      const catPart = selectedCategories.slice(0, 3).join('_') + (selectedCategories.length > 3 ? '_e_mais' : '');
+      const filename = `relacao_turmas_${catPart}_${new Date().toISOString().split('T')[0]}.pdf`;
+      await downloadElementAsPDF('print-combined-dashboard-sheet', {
+        orientation,
+        filename,
+        scale: 2
+      });
+    } finally {
+      setIsExportingPDF(false);
+    }
   };
 
   return (
@@ -782,6 +790,7 @@ export default function CombinedPrintModal({
                       alt="Logo Missão de Assessoria Naval"
                       className="w-24 h-24 object-contain"
                       style={{ width: '96px', height: '96px' }}
+                      crossOrigin="anonymous"
                     />
                   </div>
                   <div className="flex-1 text-left">
@@ -864,7 +873,7 @@ export default function CombinedPrintModal({
                                       <td className="p-1 border-r border-black text-center align-middle">
                                         <div className="w-[36px] h-[48px] mx-auto border border-black rounded-xs overflow-hidden bg-slate-100 flex items-center justify-center">
                                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                                          <img src={photoUrlString} alt={aluno.nome} className="w-full h-full object-cover" />
+                                          <img src={photoUrlString} alt={aluno.nome} className="w-full h-full object-cover" crossOrigin="anonymous" />
                                         </div>
                                       </td>
                                     )}
@@ -985,7 +994,7 @@ export default function CombinedPrintModal({
                                                 {includePhotos && (
                                                   <div className="w-5 h-6 rounded-xs overflow-hidden border border-black/50 bg-slate-100 shrink-0">
                                                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                    <img src={alPhotoUrl} alt={al.nome} className="w-full h-full object-cover" />
+                                                    <img src={alPhotoUrl} alt={al.nome} className="w-full h-full object-cover" crossOrigin="anonymous" />
                                                   </div>
                                                 )}
                                                 <div className="min-w-0 flex-1">
