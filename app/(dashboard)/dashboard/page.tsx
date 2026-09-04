@@ -92,8 +92,8 @@ export default function DashboardPage() {
     turmasArquivadasList = [],
   } = dashboardData || {};
 
-  const [selectedCard, setSelectedCard] = useState<string>('exterior');
-  const [selectedCategories, setSelectedCategories] = useState<string[]>(['exterior', 'expedito', 'carreira', 'especial', 'ead', 'pre_inscritos', 'arquivadas']);
+  const [selectedCard, setSelectedCard] = useState<string>('');
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<'consolidated' | 'tabs'>('consolidated');
   const [isCombinedPrintModalOpen, setIsCombinedPrintModalOpen] = useState<boolean>(false);
   const [hasUserSelectedCard, setHasUserSelectedCard] = useState<boolean>(false);
@@ -150,14 +150,6 @@ export default function DashboardPage() {
       }
     }
   }, [highlightedTurmaId, dashboardData, turmasExpeditoList, turmasCarreiraList, turmasEspeciaisList, turmasEadList, turmasPreInscritasList, turmasArquivadasList]);
-
-  useEffect(() => {
-    if (dashboardData && stats && !hasUserSelectedCard) {
-      if (selectedCategories.length === 0) {
-        setSelectedCategories(['exterior', 'expedito', 'carreira', 'especial', 'ead', 'pre_inscritos']);
-      }
-    }
-  }, [dashboardData, stats, hasUserSelectedCard, selectedCategories.length]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
