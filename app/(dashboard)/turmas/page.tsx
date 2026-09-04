@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase/client';
 import { useTurmas, useCursos, useDisciplinas } from '@/hooks/useCachedData';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
-import { Plus, Search, Layers as LayersIcon, Library, Calendar, Clock, MapPin, Pencil, Trash2, Loader2, CheckCircle2, RefreshCcw, Users, Mail, Phone, Building, Camera, MessageCircle, XCircle, FileText, X, GraduationCap, School, ChevronLeft, ChevronRight, Printer, Monitor, Globe, Anchor, Swords, Download } from 'lucide-react';
+import { Plus, Search, Layers as LayersIcon, Library, Calendar, Clock, MapPin, Pencil, Trash2, Loader2, CheckCircle2, RefreshCcw, Users, Mail, Phone, Building, Camera, MessageCircle, XCircle, FileText, X, GraduationCap, School, ChevronLeft, ChevronRight, Printer, Monitor, Globe, Anchor, Swords, Download, Archive } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn, getCleanTurmaName } from '@/lib/utils';
 import { downloadElementAsPDF, printElementIsolated } from '@/lib/printDocumentUtils';
@@ -1307,21 +1307,30 @@ function TurmasContent() {
               ))}
             </div>
             <div className="h-10 w-[1px] bg-slate-200 mx-1 hidden xl:block" />
-            <div className="grid grid-cols-6 xl:grid-cols-[repeat(auto-fit,minmax(80px,1fr))] gap-1 bg-white p-1 rounded-xl shadow-sm border border-slate-200 w-full xl:w-auto min-w-[620px]">
-              {(['all', 'expedito', 'especial', 'carreira', 'ead', 'exterior', ...(isAdmin ? ['arquivadas'] : [])] as const).map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setActiveCategory(cat)}
-                  className={cn(
-                    "px-1 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer text-center flex items-center justify-center",
-                    activeCategory === cat 
-                      ? "bg-blue-600 text-white shadow-lg shadow-blue-200"
-                      : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
-                  )}
-                >
-                  {cat === 'arquivadas' ? (language === 'pt' ? 'Arquivadas' : 'Archived') : t.classes[`category${cat.charAt(0).toUpperCase() + cat.slice(1)}` as keyof typeof t.classes]}
-                </button>
-              ))}
+            <div className="w-full xl:w-auto overflow-x-auto pb-1 max-w-full">
+              <div className="flex items-center gap-1 bg-white p-1 rounded-xl shadow-sm border border-slate-200 w-max xl:w-auto">
+                {(['all', 'expedito', 'especial', 'carreira', 'ead', 'exterior', 'arquivadas'] as const).map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setActiveCategory(cat)}
+                    className={cn(
+                      "px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-lg text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer text-center flex items-center justify-center gap-1.5 shrink-0",
+                      activeCategory === cat 
+                        ? "bg-blue-600 text-white shadow-md shadow-blue-200"
+                        : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
+                    )}
+                  >
+                    {cat === 'arquivadas' ? (
+                      <>
+                        <Archive size={12} className="shrink-0" />
+                        <span>{language === 'pt' ? 'Arquivadas' : 'Archived'}</span>
+                      </>
+                    ) : (
+                      t.classes[`category${cat.charAt(0).toUpperCase() + cat.slice(1)}` as keyof typeof t.classes]
+                    )}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
           <div className="flex items-center justify-end gap-3 w-full">
@@ -1408,13 +1417,19 @@ function TurmasContent() {
                   
                   <div className="flex flex-col items-end gap-2">
                     <span className={cn(
-                      "text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border",
+                      "text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border flex items-center gap-1 shadow-2xs",
+                      turma.arquivada ? "bg-slate-100 text-slate-700 border-slate-300 font-black" :
                       turma.status?.toLowerCase() === 'concluída' ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
                       turma.status?.toLowerCase() === 'cancelada' ? "bg-red-50 text-red-600 border-red-100" :
                       turma.status?.toLowerCase() === 'pré-inscrito' ? "bg-red-50 text-red-600 border-red-100" :
                       "bg-blue-50 text-blue-600 border-blue-100"
                     )}>
-                      {turma.status?.toLowerCase() === 'concluída' ? t.classes.completed : 
+                      {turma.arquivada ? (
+                        <>
+                          <Archive size={10} className="shrink-0" />
+                          <span>{language === 'pt' ? 'ARQUIVADA' : 'ARCHIVED'}</span>
+                        </>
+                      ) : turma.status?.toLowerCase() === 'concluída' ? t.classes.completed : 
                        turma.status?.toLowerCase() === 'cancelada' ? t.classes.cancelled : 
                        turma.status?.toLowerCase() === 'pré-inscrito' ? 'PRÉ-INSCRITO(A)' : t.classes.active}
                     </span>

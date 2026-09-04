@@ -93,7 +93,7 @@ export default function DashboardPage() {
   } = dashboardData || {};
 
   const [selectedCard, setSelectedCard] = useState<string>('exterior');
-  const [selectedCategories, setSelectedCategories] = useState<string[]>(['exterior', 'expedito', 'carreira', 'especial', 'ead', 'pre_inscritos']);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(['exterior', 'expedito', 'carreira', 'especial', 'ead', 'pre_inscritos', 'arquivadas']);
   const [viewMode, setViewMode] = useState<'consolidated' | 'tabs'>('consolidated');
   const [isCombinedPrintModalOpen, setIsCombinedPrintModalOpen] = useState<boolean>(false);
   const [hasUserSelectedCard, setHasUserSelectedCard] = useState<boolean>(false);
@@ -569,7 +569,7 @@ export default function DashboardPage() {
       unit: language === 'pt' ? 'turmas' : 'classes',
       icon: Archive, 
       color: 'bg-slate-600',
-      shouldShow: (stats.turmasArquivadas || 0) > 0
+      shouldShow: (stats.turmasArquivadas || 0) > 0 || (turmasArquivadasList?.length || 0) > 0
     }
   ];
 
