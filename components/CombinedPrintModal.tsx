@@ -839,12 +839,18 @@ export default function CombinedPrintModal({
                     ) : (
                       groupedAlunosExterior.map((group, gIdx) => (
                         <div key={`ext-grp-${gIdx}`} className="mb-4 print-group-block">
-                          <div className="bg-gray-100 border border-black px-2 py-1 font-bold text-[10px] uppercase flex items-center justify-between text-black print-avoid-break print-avoid-break-after">
-                            <span>DOCUMENTO / PORTARIA: {group.documento}</span>
-                            <span>{group.alunos.length} {group.alunos.length === 1 ? 'ALUNO' : 'ALUNOS'}</span>
-                          </div>
-                          <table className="w-full text-left border-collapse border-x border-b border-black text-black">
+                          <table className="w-full text-left border-collapse border border-black text-black">
                             <thead>
+                              <tr className="border-b border-black bg-gray-100 text-[10px] font-bold uppercase text-black print-avoid-break print-avoid-break-after">
+                                <th colSpan={includePhotos ? 6 : 5} className="p-1.5 border-b border-black text-black bg-gray-100">
+                                  <div className="flex items-center justify-between">
+                                    <span className="font-extrabold tracking-wide">DOCUMENTO / PORTARIA: {group.documento}</span>
+                                    <span className="font-bold bg-white px-2 py-0.5 border border-black rounded-xs text-[9px]">
+                                      {group.alunos.length} {group.alunos.length === 1 ? (isPt ? 'ALUNO' : 'STUDENT') : (isPt ? 'ALUNOS' : 'STUDENTS')}
+                                    </span>
+                                  </div>
+                                </th>
+                              </tr>
                               <tr className="border-b border-black bg-gray-50 text-[10px]">
                                 <th className="p-1.5 border-r border-black font-bold uppercase w-[30px] text-center">#</th>
                                 {includePhotos && (
@@ -923,7 +929,7 @@ export default function CombinedPrintModal({
 
                   return (
                     <div key={`section-cat-${sec.id}`} className="mb-6 print-section">
-                      <div className={cn("border border-black px-3 py-1.5 font-bold text-xs uppercase flex items-center justify-between text-black mb-2 print-section-header print-avoid-break", sec.color)}>
+                      <div className={cn("border border-black px-3 py-1.5 font-bold text-xs uppercase flex items-center justify-between text-black mb-2 print-section-header print-avoid-break print-avoid-break-after", sec.color)}>
                         <span>{sec.title} ({sec.list.length} TURMAS • {totalCategoryAlunos} ALUNOS)</span>
                         <span>EM ANDAMENTO / CONCLUÍDAS</span>
                       </div>

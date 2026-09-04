@@ -1966,13 +1966,19 @@ export default function DashboardPage() {
               </div>
             ) : (
               groupedAlunosExteriorByDoc.map((group, gIdx) => (
-                <div key={`print-group-${group.documento}-${gIdx}`} className="mb-6">
-                  <div className="bg-gray-200 border border-black px-3 py-1.5 font-bold text-xs uppercase flex items-center justify-between">
-                    <span>DOCUMENTO / PORTARIA: {group.documento}</span>
-                    <span>{group.alunos.length} {group.alunos.length === 1 ? 'ALUNO' : 'ALUNOS'}</span>
-                  </div>
-                  <table className="w-full text-left border-collapse border-x border-b border-black mb-2 text-black">
+                <div key={`print-group-${group.documento}-${gIdx}`} className="mb-6 print-group-block">
+                  <table className="w-full text-left border-collapse border border-black mb-2 text-black">
                     <thead>
+                      <tr className="border-b border-black bg-gray-200 text-xs font-bold uppercase print-avoid-break print-avoid-break-after">
+                        <th colSpan={6} className="p-2 border-b border-black bg-gray-200 text-black">
+                          <div className="flex items-center justify-between">
+                            <span className="font-extrabold tracking-wide">DOCUMENTO / PORTARIA: {group.documento}</span>
+                            <span className="bg-white px-2 py-0.5 border border-black rounded-xs text-[10px]">
+                              {group.alunos.length} {group.alunos.length === 1 ? 'ALUNO' : 'ALUNOS'}
+                            </span>
+                          </div>
+                        </th>
+                      </tr>
                       <tr className="border-b border-black bg-gray-100 text-[11px]">
                         <th className="p-2 border-r border-black font-bold uppercase w-[35px] text-center">#</th>
                         <th className="p-2 border-r border-black font-bold uppercase w-[60px] text-center">{language === 'pt' ? 'Foto' : 'Photo'}</th>

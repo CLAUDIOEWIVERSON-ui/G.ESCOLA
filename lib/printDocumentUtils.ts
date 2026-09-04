@@ -200,26 +200,175 @@ export async function downloadElementAsPDF(
 
     const imgHeight = (canvas.width > 0) ? (canvas.height * contentWidth) / canvas.width : contentHeight;
 
-    if (imgHeight <= contentHeight) {
-      // Fits on one single page with margins
-      pdf.addImage(imgData, 'PNG', marginX, marginY, contentWidth, imgHeight, undefined, 'FAST');
+    if (imgHeight <= contentHeight * 1.05) {
+      // Fits on a single page with margins (with up to 5% safe scaling tolerance)
+      const renderHeight = Math.min(imgHeight, contentHeight);
+      pdf.addImage(imgData, 'PNG', marginX, marginY, contentWidth, renderHeight, undefined, 'FAST');
+      
+      // Page footer
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(8);
+      pdf.setTextColor(100, 116, 139);
+      pdf.text(
+        `Missão de Assessoria Naval do Brasil • Emissão: ${new Date().toLocaleDateString('pt-BR')}`,
+        marginX,
+        pdfHeight - 4
+      );
+      pdf.text('Página 1 de 1', pdfWidth - marginX, pdfHeight - 4, { align: 'right' });
     } else {
-      // Scale slightly to fit on 1 single page if it's within 10% margin
-      if (imgHeight <= contentHeight * 1.10) {
-        pdf.addImage(imgData, 'PNG', marginX, marginY, contentWidth, contentHeight, undefined, 'FAST');
-      } else {
-        // Multi-page handling with clean page slices
-        let heightLeft = imgHeight;
-        let position = marginY;
-        pdf.addImage(imgData, 'PNG', marginX, position, contentWidth, imgHeight, undefined, 'FAST');
-        heightLeft -= contentHeight;
+      // Multi-page document: Use smart row-aligned canvas slicing
+      // 1. Extract all DOM break boundaries (rows, headers, avoid-break blocks)
+      const containerRect = targetElem.getBoundingClientRect();
+      const scaleY = canvas.height / (containerRect.height || targetElem.offsetHeight || 1);
 
-        while (heightLeft > 0) {
-          position = position - contentHeight;
-          pdf.addPage();
-          pdf.addImage(imgData, 'PNG', marginX, position, contentWidth, imgHeight, undefined, 'FAST');
-          heightLeft -= contentHeight;
+      const rowBreaks: number[] = [];
+      const headerBlocks: { top: number; bottom: number }[] = [];
+      const avoidBreakBlocks: { top: number; bottom: number }[] = [];
+
+      // Extract table rows
+      const rows = Array.from(targetElem.querySelectorAll<HTMLTableRowElement>('tr'));
+      for (const tr of rows) {
+        const r = tr.getBoundingClientRect();
+        const bottomPx = (r.bottom - containerRect.top) * scaleY;
+        if (bottomPx > 0) {
+          rowBreaks.push(bottomPx);
         }
+      }
+      rowBreaks.sort((a, b) => a - b);
+
+      // Extract headers (section headers, avoid-break-after, thead)
+      const headers = Array.from(targetElem.querySelectorAll<HTMLElement>(
+        '.print-section-header, .print-avoid-break-after, thead'
+      ));
+      for (const h of headers) {
+        const r = h.getBoundingClientRect();
+        headerBlocks.push({
+          top: (r.top - containerRect.top) * scaleY,
+          bottom: (r.bottom - containerRect.top) * scaleY
+        });
+      }
+
+      // Extract avoid-break blocks (summaries, signatures, turma units)
+      const avoids = Array.from(targetElem.querySelectorAll<HTMLElement>(
+        '.print-avoid-break, .break-inside-avoid, .print-summary-box, .print-signature, .print-turma-unit'
+      ));
+      for (const b of avoids) {
+        const r = b.getBoundingClientRect();
+        avoidBreakBlocks.push({
+          top: (r.top - containerRect.top) * scaleY,
+          bottom: (r.bottom - containerRect.top) * scaleY
+        });
+      }
+
+      // 2. Compute intelligent cut points so rows and headers are never cut or orphaned
+      const maxPageCanvasHeight = (contentHeight / contentWidth) * canvas.width;
+      const cuts: number[] = [0];
+      let currentTop = 0;
+
+      while (currentTop < canvas.height) {
+        // If the remaining content fits on the current page
+        if (canvas.height - currentTop <= maxPageCanvasHeight * 1.05) {
+          cuts.push(canvas.height);
+          break;
+        }
+
+        const idealBottom = currentTop + maxPageCanvasHeight;
+        let chosenCut = idealBottom;
+
+        // A. Check if an avoid-break block crosses the page boundary
+        let blockCut: number | null = null;
+        for (const b of avoidBreakBlocks) {
+          if (b.top > currentTop && b.top < idealBottom && b.bottom > idealBottom) {
+            if (b.top - currentTop >= maxPageCanvasHeight * 0.3) {
+              blockCut = b.top;
+              break;
+            }
+          }
+        }
+
+        // B. Find best row boundary <= idealBottom
+        const eligibleRows = rowBreaks.filter(
+          (y) => y > currentTop + maxPageCanvasHeight * 0.35 && y <= idealBottom
+        );
+
+        if (blockCut && eligibleRows.length === 0) {
+          chosenCut = blockCut;
+        } else if (eligibleRows.length > 0) {
+          const lastRowBottom = eligibleRows[eligibleRows.length - 1];
+          chosenCut = blockCut ? Math.min(blockCut, lastRowBottom) : lastRowBottom;
+        } else {
+          chosenCut = blockCut || idealBottom;
+        }
+
+        // C. Prevent orphaned headers at the bottom of the page
+        // "não imprimir somente o cabeçalho em uma pagina e na outra o conteúdo da tabela"
+        for (const h of headerBlocks) {
+          if (h.top > currentTop && h.top < chosenCut) {
+            const contentAfterHeader = chosenCut - h.bottom;
+            if (contentAfterHeader < 110) {
+              if (h.top - currentTop >= maxPageCanvasHeight * 0.25) {
+                chosenCut = h.top;
+                break;
+              }
+            }
+          }
+        }
+
+        // Safeguard against infinite loop
+        if (chosenCut <= currentTop + 80) {
+          chosenCut = idealBottom;
+        }
+
+        cuts.push(chosenCut);
+        currentTop = chosenCut;
+      }
+
+      // 3. Slice master canvas cleanly per page
+      const totalPages = cuts.length - 1;
+
+      for (let p = 0; p < totalPages; p++) {
+        const startY = cuts[p];
+        const endY = cuts[p + 1];
+        const sliceHeight = endY - startY;
+
+        const pageCanvas = document.createElement('canvas');
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = sliceHeight;
+        const pCtx = pageCanvas.getContext('2d');
+        if (pCtx) {
+          pCtx.fillStyle = '#ffffff';
+          pCtx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+          pCtx.drawImage(
+            canvas,
+            0, startY, canvas.width, sliceHeight,
+            0, 0, canvas.width, sliceHeight
+          );
+        }
+
+        const pageImgData = pageCanvas.toDataURL('image/png', 1.0);
+        const sliceHeightMm = (sliceHeight / canvas.width) * contentWidth;
+
+        if (p > 0) {
+          pdf.addPage();
+        }
+
+        pdf.addImage(pageImgData, 'PNG', marginX, marginY, contentWidth, sliceHeightMm, undefined, 'FAST');
+
+        // Page footer with page count and date
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(8);
+        pdf.setTextColor(100, 116, 139);
+        pdf.text(
+          `Missão de Assessoria Naval do Brasil • Emissão: ${new Date().toLocaleDateString('pt-BR')}`,
+          marginX,
+          pdfHeight - 4
+        );
+        pdf.text(
+          `Página ${p + 1} de ${totalPages}`,
+          pdfWidth - marginX,
+          pdfHeight - 4,
+          { align: 'right' }
+        );
       }
     }
 
@@ -340,13 +489,49 @@ export function printElementIsolated(
           width: 100% !important;
           border-collapse: collapse !important;
           page-break-inside: auto !important;
-        }
-        tr, .page-break-avoid {
-          page-break-inside: avoid !important;
-          break-inside: avoid !important;
+          break-inside: auto !important;
         }
         thead {
           display: table-header-group !important;
+          break-inside: avoid !important;
+          page-break-inside: avoid !important;
+          break-after: avoid !important;
+          page-break-after: avoid !important;
+        }
+        tfoot {
+          display: table-footer-group !important;
+          break-inside: avoid !important;
+        }
+        tr {
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+        }
+        th, td {
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+        }
+        tbody {
+          page-break-inside: auto !important;
+          break-inside: auto !important;
+        }
+        .print-avoid-break,
+        .break-inside-avoid,
+        .print-summary-box,
+        .print-signature,
+        .print-turma-unit {
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+        }
+        .print-section-header,
+        .print-avoid-break-after {
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+          break-after: avoid !important;
+          page-break-after: avoid !important;
+        }
+        .print-group-block {
+          break-inside: auto !important;
+          page-break-inside: auto !important;
         }
         .no-print, .print\\:hidden {
           display: none !important;
