@@ -47,16 +47,11 @@ import {
   SortAsc,
   Monitor,
   Archive,
-  Download,
-  SlidersHorizontal,
-  Layers,
-  CheckSquare,
-  Square
+  Download
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ExchangeRateTicker from '@/components/ExchangeRateTicker';
 import StudentDetailEditModal from '@/components/StudentDetailEditModal';
-import CombinedPrintModal, { CATEGORY_DEFINITIONS } from '@/components/CombinedPrintModal';
 import Image from 'next/image';
 import navalMissionLogo from '@/src/assets/images/regenerated_image_1782409801823.png';
 import { toast } from 'sonner';
@@ -93,9 +88,6 @@ export default function DashboardPage() {
   } = dashboardData || {};
 
   const [selectedCard, setSelectedCard] = useState<string>('');
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [viewMode, setViewMode] = useState<'consolidated' | 'tabs'>('consolidated');
-  const [isCombinedPrintModalOpen, setIsCombinedPrintModalOpen] = useState<boolean>(false);
   const [hasUserSelectedCard, setHasUserSelectedCard] = useState<boolean>(false);
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -106,21 +98,12 @@ export default function DashboardPage() {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const cardParam = params.get('card');
-      const catsParam = params.get('categories');
       const highlightParam = params.get('highlightTurma');
       if (highlightParam) {
         setHighlightedTurmaId(highlightParam);
       }
-      if (catsParam) {
-        const parsed = catsParam.split(',').filter(c => ['exterior', 'expedito', 'carreira', 'especial', 'ead', 'pre_inscritos', 'arquivadas'].includes(c));
-        if (parsed.length > 0) {
-          setSelectedCategories(parsed);
-          setSelectedCard(parsed[0]);
-          setHasUserSelectedCard(true);
-        }
-      } else if (cardParam && ['exterior', 'expedito', 'carreira', 'especial', 'ead', 'pre_inscritos', 'arquivadas'].includes(cardParam)) {
+      if (cardParam && ['exterior', 'expedito', 'carreira', 'especial', 'ead', 'pre_inscritos', 'arquivadas'].includes(cardParam)) {
         setSelectedCard(cardParam);
-        setSelectedCategories([cardParam]);
         setHasUserSelectedCard(true);
       }
     }
@@ -220,96 +203,32 @@ export default function DashboardPage() {
     return groupedAlunosExteriorByDoc.reduce((acc, g) => acc + g.alunos.length, 0);
   }, [groupedAlunosExteriorByDoc]);
 
-  const combinedTotals = useMemo(() => {
-    let totalAlunos = 0;
-    let totalTurmas = 0;
-
-    selectedCategories.forEach((catId) => {
-      switch (catId) {
-        case 'exterior':
-          totalAlunos += (alunosExterior || []).length;
-          totalTurmas += (availableDocumentosExterior || []).length;
-          break;
-        case 'carreira':
-          totalTurmas += (turmasCarreiraList || []).length;
-          totalAlunos += (turmasCarreiraList || []).reduce((acc: number, t: any) => acc + (t.alunos?.length || t.total_alunos || 0), 0);
-          break;
-        case 'especial':
-          totalTurmas += (turmasEspeciaisList || []).length;
-          totalAlunos += (turmasEspeciaisList || []).reduce((acc: number, t: any) => acc + (t.alunos?.length || t.total_alunos || 0), 0);
-          break;
-        case 'expedito':
-          totalTurmas += (turmasExpeditoList || []).length;
-          totalAlunos += (turmasExpeditoList || []).reduce((acc: number, t: any) => acc + (t.alunos?.length || t.total_alunos || 0), 0);
-          break;
-        case 'ead':
-          totalTurmas += (turmasEadList || []).length;
-          totalAlunos += (turmasEadList || []).reduce((acc: number, t: any) => acc + (t.alunos?.length || t.total_alunos || 0), 0);
-          break;
-        case 'pre_inscritos':
-          totalTurmas += (turmasPreInscritasList || []).length;
-          totalAlunos += (turmasPreInscritasList || []).reduce((acc: number, t: any) => acc + (t.alunos?.length || t.total_alunos || 0), 0);
-          break;
-        case 'arquivadas':
-          totalTurmas += (turmasArquivadasList || []).length;
-          totalAlunos += (turmasArquivadasList || []).reduce((acc: number, t: any) => acc + (t.alunos?.length || t.total_alunos || 0), 0);
-          break;
-      }
-    });
-
-    return { totalAlunos, totalTurmas };
-  }, [selectedCategories, alunosExterior, availableDocumentosExterior, turmasCarreiraList, turmasEspeciaisList, turmasExpeditoList, turmasEadList, turmasPreInscritasList, turmasArquivadasList]);
-
   const [expandedPhoto, setExpandedPhoto] = useState<{url: string, name: string} | null>(null);
   const detailsRef = useRef<HTMLDivElement>(null);
 
-  const isCategoryVisible = useCallback((catId: string) => {
-    if (!selectedCategories.includes(catId)) return false;
-    if (viewMode === 'tabs' && selectedCategories.length > 1) {
-      return selectedCard === catId;
-    }
-    return true;
-  }, [selectedCategories, viewMode, selectedCard]);
-
-  const handleToggleCategory = (catId: string) => {
-    setSelectedCategories((prev) => {
-      const isSelected = prev.includes(catId);
-      const next = isSelected ? prev.filter((id) => id !== catId) : [...prev, catId];
-      if (next.length > 0) {
-        if (!next.includes(selectedCard)) {
-          setSelectedCard(next[0]);
-        }
+  // Auto-select category if none selected
+  useEffect(() => {
+    if (!hasUserSelectedCard && !selectedCard && stats) {
+      if ((stats.alunosExterior || 0) > 0) {
+        setSelectedCard('exterior');
+      } else if ((stats.turmasCarreira || 0) > 0) {
+        setSelectedCard('carreira');
+      } else if ((stats.turmasExpedito || 0) > 0) {
+        setSelectedCard('expedito');
+      } else if ((stats.turmasEspeciais || 0) > 0) {
+        setSelectedCard('especial');
+      } else {
+        setSelectedCard('carreira');
       }
-      return next;
-    });
-    setHasUserSelectedCard(true);
-  };
-
-  const handleSetCategories = (cats: string[]) => {
-    setSelectedCategories(cats);
-    if (cats.length > 0 && !cats.includes(selectedCard)) {
-      setSelectedCard(cats[0]);
     }
-    setHasUserSelectedCard(true);
-  };
+  }, [hasUserSelectedCard, selectedCard, stats]);
 
-  const handleSelectAllCategories = () => {
-    const all = ['exterior', 'carreira', 'especial', 'expedito', 'ead', 'pre_inscritos', 'arquivadas'];
-    setSelectedCategories(all);
-    if (!all.includes(selectedCard)) {
-      setSelectedCard(all[0]);
-    }
-    setHasUserSelectedCard(true);
-  };
-
-  const handleClearCategories = () => {
-    setSelectedCategories([]);
-    setHasUserSelectedCard(true);
-  };
+  const isCategoryVisible = useCallback((catId: string) => {
+    return selectedCard === catId;
+  }, [selectedCard]);
 
   const handleCardClick = (cardId: string) => {
     setSelectedCard(cardId);
-    setSelectedCategories([cardId]);
     setHasUserSelectedCard(true);
     setCurrentPage(1);
     setTimeout(() => {
@@ -1061,121 +980,10 @@ export default function DashboardPage() {
         )}
       </AnimatePresence>
 
-      {/* PAINEL DE CONTROLE DE FILTROS COMBINADOS & IMPRESSÃO */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-4 sm:p-5 text-white shadow-lg border border-indigo-900/40 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-        
-        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 relative z-10">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 bg-indigo-500/20 text-indigo-300 rounded-lg border border-indigo-500/30">
-                <SlidersHorizontal size={16} />
-              </div>
-              <h2 className="text-sm sm:text-base font-bold text-white tracking-wide">
-                {isPt ? 'Filtro Combinado de Cursos e Turmas' : 'Combined Course & Class Filter'}
-              </h2>
-              <span className="bg-indigo-500/30 text-indigo-200 text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border border-indigo-400/30">
-                {selectedCategories.length} {selectedCategories.length === 1 ? (isPt ? 'categoria' : 'category') : (isPt ? 'categorias' : 'categories')}
-              </span>
-            </div>
-            <p className="text-xs text-slate-300">
-              {isPt 
-                ? 'Combine múltiplos cartões para filtrar, visualizar juntos e imprimir relatórios consolidados em PDF.'
-                : 'Combine multiple cards to filter, view together and print consolidated PDF reports.'}
-            </p>
-          </div>
-
-          {/* Quick Action Buttons */}
-          <div className="flex items-center gap-2 flex-wrap w-full lg:w-auto">
-            <button
-              type="button"
-              onClick={() => setIsCombinedPrintModalOpen(true)}
-              className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs rounded-xl shadow-md shadow-indigo-950/50 hover:shadow-indigo-500/20 active:scale-95 transition cursor-pointer border border-indigo-400/30"
-              title={isPt ? 'Abrir modal de impressão dos filtros combinados' : 'Open combined print modal'}
-            >
-              <Printer size={15} className="text-blue-200" />
-              <span>{isPt ? 'Imprimir Filtros Combinados' : 'Print Combined Filters'}</span>
-            </button>
-
-            {selectedCategories.length > 1 && (
-              <button
-                type="button"
-                onClick={handleClearCategories}
-                className="flex items-center justify-center gap-1.5 px-3 py-2.5 bg-white/10 hover:bg-white/20 text-slate-200 text-xs font-semibold rounded-xl border border-white/10 transition cursor-pointer"
-                title={isPt ? 'Restaurar filtro individual' : 'Reset single filter'}
-              >
-                <RotateCcw size={13} />
-                <span className="hidden sm:inline">{isPt ? 'Limpar Combinação' : 'Clear Combination'}</span>
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Multi-Checkbox Selection Bar */}
-        <div className="mt-4 pt-3.5 border-t border-white/15">
-          <div className="flex items-center justify-between gap-2 flex-wrap mb-2.5">
-            <div className="flex items-center gap-2">
-              <CheckSquare size={14} className="text-indigo-400" />
-              <span className="text-xs font-bold text-indigo-200 uppercase tracking-wider">
-                {isPt ? 'Marque as caixas de seleção que deseja filtrar/imprimir:' : 'Check the boxes you wish to filter/print:'}
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5 text-[11px]">
-              <button
-                type="button"
-                onClick={handleSelectAllCategories}
-                className="px-2.5 py-1 rounded-lg bg-indigo-500/25 hover:bg-indigo-500/40 text-indigo-200 hover:text-white border border-indigo-400/30 transition cursor-pointer font-bold"
-              >
-                {isPt ? 'Marcar Todos' : 'Select All'}
-              </button>
-              <button
-                type="button"
-                onClick={handleClearCategories}
-                className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white border border-white/15 transition cursor-pointer font-medium"
-              >
-                {isPt ? 'Desmarcar Todos' : 'Clear All'}
-              </button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2">
-            {CATEGORY_DEFINITIONS.map((cat) => {
-              const isChecked = selectedCategories.includes(cat.id);
-              const IconComponent = cat.icon;
-              return (
-                <button
-                  type="button"
-                  key={`dash-check-${cat.id}`}
-                  onClick={() => handleToggleCategory(cat.id)}
-                  className={cn(
-                    "flex items-center gap-2 p-2 rounded-xl border text-xs font-bold transition cursor-pointer select-none text-left",
-                    isChecked
-                      ? "bg-indigo-600/90 text-white border-indigo-400 shadow-sm ring-1 ring-indigo-400/40"
-                      : "bg-white/10 text-slate-300 border-white/10 hover:bg-white/15 hover:text-white"
-                  )}
-                >
-                  <div className={cn(
-                    "w-4 h-4 rounded flex items-center justify-center transition shrink-0 border",
-                    isChecked 
-                      ? "bg-white text-indigo-700 border-white" 
-                      : "border-slate-400/50 bg-black/20"
-                  )}>
-                    {isChecked ? <CheckSquare size={12} className="text-indigo-700 fill-indigo-700" /> : null}
-                  </div>
-                  <IconComponent size={14} className={isChecked ? "text-white shrink-0" : "text-slate-400 shrink-0"} />
-                  <span className="truncate">{isPt ? cat.label : cat.labelEn}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
       {statCards.filter((c: any) => c.shouldShow).length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {statCards.filter((c: any) => c.shouldShow).map((card: any, i: number) => {
             const isSelected = selectedCard === card.id;
-            const isInCombined = selectedCategories.includes(card.id);
             return (
               <motion.div
                 key={card.name}
@@ -1186,8 +994,6 @@ export default function DashboardPage() {
                 className={`p-6 rounded-xl border transition-all cursor-pointer relative overflow-hidden active:scale-[0.96] hover:shadow-md hover:-translate-y-0.5 duration-200 ${
                   isSelected 
                     ? 'bg-indigo-50/10 border-indigo-600 shadow-md ring-2 ring-indigo-600/10' 
-                    : isInCombined
-                    ? 'bg-indigo-50/5 border-indigo-300 shadow-sm'
                     : 'bg-white border-slate-200 hover:border-indigo-400 hover:bg-slate-50/30 shadow-sm'
                 }`}
               >
@@ -1200,24 +1006,12 @@ export default function DashboardPage() {
                   <div className={`p-2 rounded-lg ${card.color} text-white shadow-sm`}>
                     <card.icon size={20} />
                   </div>
-
-                  {/* Multi-selection toggle checkbox */}
-                  <div 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleToggleCategory(card.id);
-                    }}
-                    className={cn(
-                      "flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border transition cursor-pointer select-none",
-                      isInCombined 
-                        ? "bg-indigo-600 text-white border-indigo-600 shadow-2xs" 
-                        : "bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200 hover:text-slate-800"
-                    )}
-                    title={isInCombined ? (isPt ? 'Desmarcar da combinação' : 'Remove from combination') : (isPt ? 'Marcar para combinar' : 'Combine category')}
-                  >
-                    {isInCombined ? <CheckSquare size={12} className="text-white" /> : <Square size={12} />}
-                    <span>{isInCombined ? (isPt ? 'Combinado' : 'Combined') : (isPt ? 'Combinar' : 'Combine')}</span>
-                  </div>
+                  {isSelected && (
+                    <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <Check size={10} strokeWidth={3} />
+                      {isPt ? 'Ativo' : 'Active'}
+                    </span>
+                  )}
                 </div>
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">{card.name}</p>
                 <div className="flex items-baseline gap-2 mb-2">
@@ -1231,8 +1025,8 @@ export default function DashboardPage() {
                   )}
                 </div>
                 <div className="flex items-center justify-between pt-1 border-t border-slate-100">
-                  <span className="text-[10px] text-slate-400">
-                    {isInCombined ? (isPt ? '✓ Incluso no filtro' : '✓ In combined filter') : ''}
+                  <span className="text-[10px] text-slate-400 font-medium">
+                    {isSelected ? (isPt ? 'Visualizando turmas' : 'Viewing classes') : (isPt ? 'Clique para filtrar' : 'Click to filter')}
                   </span>
                   <span className={`text-[10px] font-bold flex items-center gap-1.5 group px-2 py-0.5 rounded transition-colors ${
                     isSelected ? 'text-indigo-700 bg-indigo-50 border border-indigo-100 font-extrabold' : 'text-slate-500 hover:text-indigo-600 bg-slate-50'
@@ -1250,145 +1044,8 @@ export default function DashboardPage() {
 
       <div ref={detailsRef} className="scroll-mt-24" />
 
-      {/* BARRA DE DETALHES DE FILTROS COMBINADOS */}
-      {selectedCategories.length > 1 && (
-        <div className="bg-white border border-indigo-200 rounded-xl p-4 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-bold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100 flex items-center gap-1.5">
-                <Layers size={13} />
-                {isPt ? 'Filtro Combinado Ativo' : 'Active Combined Filter'}
-              </span>
-              <span className="text-xs font-black text-slate-800">
-                {combinedTotals.totalAlunos} {combinedTotals.totalAlunos === 1 ? (isPt ? 'Aluno' : 'Student') : (isPt ? 'Alunos' : 'Students')}
-              </span>
-              <span className="text-slate-300">•</span>
-              <span className="text-xs font-semibold text-slate-600">
-                {combinedTotals.totalTurmas} {isPt ? 'Turmas/Portarias' : 'Classes/Documents'}
-              </span>
-            </div>
-            
-            {/* Active category chips */}
-            <div className="flex items-center gap-1.5 flex-wrap pt-1">
-              {CATEGORY_DEFINITIONS.filter(c => selectedCategories.includes(c.id)).map(c => {
-                const IconComponent = c.icon;
-                return (
-                  <span 
-                    key={c.id}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-slate-100 text-slate-700 rounded-full text-[11px] font-bold border border-slate-200"
-                  >
-                    <IconComponent size={12} className="text-indigo-600 shrink-0" />
-                    <span>{isPt ? c.label : c.labelEn}</span>
-                    {selectedCategories.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => handleToggleCategory(c.id)}
-                        className="hover:text-red-600 p-0.5 rounded-full cursor-pointer ml-0.5"
-                        title={isPt ? 'Remover' : 'Remove'}
-                      >
-                        <X size={10} />
-                      </button>
-                    )}
-                  </span>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 self-stretch md:self-auto justify-end flex-wrap">
-            {/* View Mode Switcher */}
-            <div className="bg-slate-100 p-0.5 rounded-lg flex items-center border border-slate-200 text-xs">
-              <button
-                type="button"
-                onClick={() => setViewMode('consolidated')}
-                className={cn(
-                  "px-3 py-1.5 rounded-md font-bold transition flex items-center gap-1.5 cursor-pointer text-xs",
-                  viewMode === 'consolidated'
-                    ? "bg-white text-indigo-700 shadow-xs"
-                    : "text-slate-600 hover:text-slate-900"
-                )}
-              >
-                <LayoutGrid size={13} />
-                <span>{isPt ? 'Visão Consolidada' : 'Consolidated View'}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode('tabs')}
-                className={cn(
-                  "px-3 py-1.5 rounded-md font-bold transition flex items-center gap-1.5 cursor-pointer text-xs",
-                  viewMode === 'tabs'
-                    ? "bg-white text-indigo-700 shadow-xs"
-                    : "text-slate-600 hover:text-slate-900"
-                )}
-              >
-                <LayersIcon size={13} />
-                <span>{isPt ? 'Abas' : 'Tabs'}</span>
-              </button>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setIsCombinedPrintModalOpen(true)}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition shadow-sm cursor-pointer"
-            >
-              <Printer size={14} />
-              <span>{isPt ? 'Imprimir Combinação' : 'Print Combination'}</span>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Navegação por abas caso viewMode === 'tabs' e selectedCategories.length > 1 */}
-      {selectedCategories.length > 1 && viewMode === 'tabs' && (
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none border-b border-slate-200">
-          {CATEGORY_DEFINITIONS.filter(c => selectedCategories.includes(c.id)).map((cat) => {
-            const isTabActive = selectedCard === cat.id;
-            const IconComponent = cat.icon;
-            return (
-              <button
-                key={`tab-${cat.id}`}
-                type="button"
-                onClick={() => setSelectedCard(cat.id)}
-                className={cn(
-                  "px-4 py-2 text-xs font-bold rounded-t-xl border-t border-x transition flex items-center gap-2 cursor-pointer",
-                  isTabActive
-                    ? "bg-white text-indigo-600 border-slate-200 border-b-white -mb-px shadow-2xs"
-                    : "bg-slate-50 text-slate-500 border-transparent hover:bg-slate-100 hover:text-slate-800"
-                )}
-              >
-                <IconComponent size={14} className={isTabActive ? "text-indigo-600" : "text-slate-500"} />
-                <span>{isPt ? cat.label : cat.labelEn}</span>
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      {/* RENDERIZAÇÃO DOS DETALHES DAS CATEGORIAS (CONSOLIDADA OU ABA INDIVIDUAL) */}
+      {/* RENDERIZAÇÃO DOS DETALHES DAS CATEGORIAS */}
       <div className="space-y-6">
-        {selectedCategories.length === 0 && (
-          <div className="bg-white border-2 border-dashed border-slate-200 rounded-2xl p-8 text-center my-6">
-            <div className="w-12 h-12 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto mb-3">
-              <Filter size={24} />
-            </div>
-            <h3 className="text-base font-bold text-slate-800 mb-1">
-              {isPt ? 'Nenhuma categoria selecionada' : 'No category selected'}
-            </h3>
-            <p className="text-xs text-slate-500 max-w-md mx-auto mb-4">
-              {isPt 
-                ? 'Marque uma ou mais caixas de seleção acima ou clique em um dos cartões para visualizar as turmas e alunos correspondentes.'
-                : 'Check one or more boxes above or click on one of the cards to view corresponding classes and students.'}
-            </p>
-            <button
-              type="button"
-              onClick={handleSelectAllCategories}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition shadow-sm cursor-pointer"
-            >
-              <CheckSquare size={14} />
-              <span>{isPt ? 'Marcar Todas as Categorias' : 'Select All Categories'}</span>
-            </button>
-          </div>
-        )}
 
         {isCategoryVisible('exterior') && (
           <motion.div
@@ -2099,16 +1756,6 @@ export default function DashboardPage() {
           setSelectedAlunoForEdit(null);
         }}
       />
-
-      <CombinedPrintModal
-        isOpen={isCombinedPrintModalOpen}
-        onClose={() => setIsCombinedPrintModalOpen(false)}
-        selectedCategories={selectedCategories}
-        onToggleCategory={handleToggleCategory}
-        onSetCategories={handleSetCategories}
-        dashboardData={dashboardData}
-        isPt={isPt}
-      />
     </div>
   );
 }
@@ -2425,7 +2072,18 @@ function TurmasListTable({
             </span>
           </button>
 
-          {/* Botão de Expansão dos Filtros Combinados de Cursos e Turmas */}
+          {/* Botão de Imprimir */}
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-xs font-bold transition shadow-2xs border border-blue-200 cursor-pointer shrink-0"
+            title={isPt ? 'Imprimir relação atual' : 'Print current roster'}
+          >
+            <Printer size={13} />
+            <span>{isPt ? 'Imprimir' : 'Print'}</span>
+          </button>
+
+          {/* Botão de Expansão dos Filtros de Cursos e Turmas */}
           <button
             type="button"
             onClick={() => setIsFilterPanelOpen((prev) => !prev)}
@@ -2439,7 +2097,7 @@ function TurmasListTable({
             )}
           >
             <Filter size={13} />
-            <span>{isPt ? 'Filtro Combinado' : 'Combined Filters'}</span>
+            <span>{isPt ? 'Filtrar Cursos' : 'Filter Courses'}</span>
             {hasActiveMultiFilters && (
               <span className="w-5 h-5 rounded-full bg-white text-indigo-700 text-[10px] font-black flex items-center justify-center ml-0.5">
                 {selectedCourses.length + selectedTurmas.length}
@@ -2476,7 +2134,7 @@ function TurmasListTable({
         </div>
       </div>
 
-      {/* PAINEL DE FILTROS COMBINADOS: MULTI-CURSOS & MULTI-TURMAS */}
+      {/* PAINEL DE FILTROS: CURSOS & TURMAS */}
       <AnimatePresence>
         {isFilterPanelOpen && (
           <motion.div
@@ -2492,7 +2150,7 @@ function TurmasListTable({
                   <FolderTree size={14} />
                 </span>
                 <span className="text-xs font-extrabold text-slate-800 uppercase tracking-wide">
-                  {isPt ? 'Caixa de Seleção Combinada (Cursos e Turmas simultaneamente)' : 'Combined Selection (Courses & Classes simultaneously)'}
+                  {isPt ? 'Filtrar por Curso ou Turma' : 'Filter by Course or Class'}
                 </span>
               </div>
               {hasActiveMultiFilters && (
