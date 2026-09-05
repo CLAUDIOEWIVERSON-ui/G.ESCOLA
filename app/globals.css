@@ -386,6 +386,38 @@ a[class*="bg-indigo-"]:not([class*="bg-indigo-50"]):not([class*="bg-indigo-100"]
   color: #000000 !important;
 }
 
+/* Regras específicas para o Banner Institucional Oficial da Ficha do Aluno (Fundo Azul -> Letras Brancas e Logo Branco; Fundo Branco -> Letras Pretas) */
+#student-modal-header-banner.banner-bg-blue,
+#student-modal-header-banner.banner-bg-blue h1,
+#student-modal-header-banner.banner-bg-blue h2,
+#student-modal-header-banner.banner-bg-blue h3 {
+  color: #FFFFFF !important;
+}
+
+#student-modal-header-banner.banner-bg-blue span:not(.btn-text-black),
+#student-modal-header-banner.banner-bg-blue div:not(.btn-container):not(.btn-print-sheet) {
+  color: #FFFFFF !important;
+}
+
+#student-modal-header-banner.banner-bg-white,
+#student-modal-header-banner.banner-bg-white span,
+#student-modal-header-banner.banner-bg-white h1,
+#student-modal-header-banner.banner-bg-white h2,
+#student-modal-header-banner.banner-bg-white h3,
+#student-modal-header-banner.banner-bg-white div {
+  color: #000000 !important;
+}
+
+/* O botão de Imprimir Ficha A4 possui letras pretas */
+#student-modal-header-banner div:nth-of-type(2) > button:nth-of-type(2),
+#student-modal-header-banner div:nth-of-type(2) > button:nth-of-type(2) span,
+#student-modal-header-banner div:nth-of-type(2) > button:nth-of-type(2) svg,
+#student-modal-header-banner .btn-print-sheet,
+#student-modal-header-banner .btn-print-sheet span,
+#student-modal-header-banner .btn-text-black {
+  color: #000000 !important;
+}
+
 /* Specific text colors inside white sheets */
 #print-attendance-sheet .text-emerald-700,
 #print-attendance-sheet .text-emerald-800 {

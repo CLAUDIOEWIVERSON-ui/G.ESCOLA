@@ -82,10 +82,29 @@ export default function StudentDetailEditModal({
   const [manualTurmaMode, setManualTurmaMode] = useState<boolean>(false);
   const [manualCursoMode, setManualCursoMode] = useState<boolean>(false);
   const [mounted, setMounted] = useState(false);
+  const [bannerBgMode, setBannerBgMode] = useState<'blue' | 'white'>('blue');
 
   useEffect(() => {
     setMounted(true);
+    try {
+      const saved = localStorage.getItem('student_ficha_banner_bg');
+      if (saved === 'blue' || saved === 'white') {
+        setBannerBgMode(saved);
+      }
+    } catch {
+      // ignore storage access errors
+    }
   }, []);
+
+  const handleToggleBannerBg = () => {
+    const nextMode = bannerBgMode === 'blue' ? 'white' : 'blue';
+    setBannerBgMode(nextMode);
+    try {
+      localStorage.setItem('student_ficha_banner_bg', nextMode);
+    } catch {
+      // ignore storage access errors
+    }
+  };
 
   const loadAllTurmasAndCursos = async () => {
     try {
@@ -597,36 +616,113 @@ export default function StudentDetailEditModal({
         className="max-w-lg lg:max-w-6xl xl:max-w-[1150px] lg:w-[94vw] lg:h-[94vh] lg:max-h-[960px] transition-all duration-200"
       >
         <form onSubmit={handleSaveStudent} noValidate className="space-y-5 max-h-[82vh] lg:max-h-none overflow-y-auto px-1 print:hidden">
-          {/* BANNER INSTITUCIONAL OFICIAL (Exibido em modo PC para espelhar a Ficha Individual de Impressão) */}
-          <div className="hidden lg:flex items-center justify-between p-4 bg-slate-900 text-white rounded-xl shadow-sm border border-slate-800">
+          {/* BANNER INSTITUCIONAL OFICIAL (Exibido com suporte a Fundo Azul e Fundo Branco) */}
+          <div 
+            id="student-modal-header-banner"
+            style={{
+              backgroundColor: bannerBgMode === 'blue' ? '#002776' : '#FFFFFF',
+              color: bannerBgMode === 'blue' ? '#FFFFFF' : '#000000',
+              WebkitPrintColorAdjust: 'exact',
+              printColorAdjust: 'exact'
+            }}
+            className={cn(
+              "flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-xl gap-4 transition-all duration-200 shadow-sm border",
+              bannerBgMode === 'blue' 
+                ? "bg-[#002776] text-white border-blue-900 banner-bg-blue" 
+                : "bg-white text-black border-2 border-slate-300 banner-bg-white"
+            )}
+          >
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 shrink-0 bg-white/10 rounded-xl p-1.5 flex items-center justify-center">
+              <div 
+                className={cn(
+                  "w-16 h-16 shrink-0 rounded-xl p-1.5 flex items-center justify-center transition-colors shadow-inner",
+                  bannerBgMode === 'blue'
+                    ? "bg-white/15 border border-white/25"
+                    : "bg-slate-100 border border-slate-300"
+                )}
+              >
                 <img
                   src={typeof navalMissionLogo === 'string' ? navalMissionLogo : (navalMissionLogo as any)?.src || navalMissionLogo}
                   alt="Brasão"
-                  className="w-14 h-14 object-contain"
+                  className={cn(
+                    "w-14 h-14 object-contain transition-all duration-200",
+                    bannerBgMode === 'blue' ? "brightness-0 invert" : ""
+                  )}
+                  style={{
+                    filter: bannerBgMode === 'blue' ? 'brightness(0) invert(1)' : 'none'
+                  }}
                 />
               </div>
               <div>
-                <span className="text-[10px] font-black tracking-widest text-blue-300 uppercase block leading-none">
+                <span 
+                  className={cn(
+                    "text-[10px] font-black tracking-widest uppercase block leading-none transition-colors",
+                    bannerBgMode === 'blue' ? "text-white !text-white" : "text-black !text-black"
+                  )}
+                >
                   SISTEMA ESCOLAR E ACADÊMICO • FICHA INDIVIDUAL DO ALUNO
                 </span>
-                <h2 className="text-base font-extrabold uppercase tracking-wide text-white mt-1.5">
+                <h2 
+                  className={cn(
+                    "text-base font-extrabold uppercase tracking-wide mt-1.5 transition-colors",
+                    bannerBgMode === 'blue' ? "text-white !text-white" : "text-black !text-black"
+                  )}
+                >
                   {currentAluno?.nome ? `FICHA OFICIAL: ${currentAluno.nome}` : 'FICHA DE CADASTRO DO ALUNO'}
                 </h2>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="text-right font-mono text-xs text-slate-300 bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700">
-                MATRÍCULA: <span className="font-extrabold text-blue-400">{currentAluno?.matricula || 'N/A'}</span>
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 self-end sm:self-center">
+              {/* Alternador dinâmico de Fundo Azul / Fundo Branco */}
+              <button
+                type="button"
+                onClick={handleToggleBannerBg}
+                className={cn(
+                  "px-2.5 py-1.5 text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 shadow-2xs border cursor-pointer",
+                  bannerBgMode === 'blue'
+                    ? "bg-white/15 hover:bg-white/25 text-white border-white/30"
+                    : "bg-slate-100 hover:bg-slate-200 text-black border-slate-300"
+                )}
+                title={bannerBgMode === 'blue' ? 'Mudar para Fundo Branco com Letras Pretas' : 'Mudar para Fundo Azul com Letras e Logo Brancos'}
+              >
+                <span 
+                  className={cn(
+                    "w-2.5 h-2.5 rounded-full border shrink-0",
+                    bannerBgMode === 'blue' 
+                      ? "bg-white border-slate-200" 
+                      : "bg-[#002776] border-blue-900"
+                  )} 
+                />
+                <span className={bannerBgMode === 'blue' ? 'text-white' : 'text-black'}>
+                  {bannerBgMode === 'blue' 
+                    ? (language === 'pt' ? 'Fundo Branco' : 'White Bg') 
+                    : (language === 'pt' ? 'Fundo Azul' : 'Blue Bg')}
+                </span>
+              </button>
+
+              <div 
+                className={cn(
+                  "text-right font-mono text-xs px-3 py-1.5 rounded-lg border transition-colors",
+                  bannerBgMode === 'blue'
+                    ? "text-white bg-blue-950/70 border-blue-400/40"
+                    : "text-black bg-slate-100 border-slate-300"
+                )}
+              >
+                MATRÍCULA: <span className={cn("font-extrabold", bannerBgMode === 'blue' ? "text-white !text-white" : "text-black !text-black")}>{currentAluno?.matricula || 'N/A'}</span>
               </div>
               <button
                 type="button"
                 onClick={handlePrint}
-                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 shadow-sm"
+                className="btn-print-sheet px-3 py-1.5 text-xs font-black rounded-lg transition-colors flex items-center gap-1.5 shadow-sm border border-slate-300 bg-white hover:bg-slate-100 text-black cursor-pointer"
+                style={{ color: '#000000' }}
               >
-                <Printer size={14} />
-                <span>{language === 'pt' ? 'Imprimir Ficha A4' : 'Print A4 Sheet'}</span>
+                <Printer size={14} className="text-black shrink-0" style={{ color: '#000000' }} />
+                <span 
+                  className="text-black !text-black btn-text-black font-black"
+                  style={{ color: '#000000' }}
+                >
+                  {language === 'pt' ? 'Imprimir Ficha A4' : 'Print A4 Sheet'}
+                </span>
               </button>
             </div>
           </div>
