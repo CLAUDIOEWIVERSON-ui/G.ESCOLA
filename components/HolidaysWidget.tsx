@@ -125,41 +125,37 @@ export default function HolidaysWidget() {
   return (
     <div id="holidays-daily-widget" className="bg-white border border-slate-200/90 rounded-2xl shadow-xs overflow-hidden transition-all duration-200">
       {/* Top Banner / Today's Status */}
-      <div className="p-4 sm:p-5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white relative overflow-hidden">
-        {/* Subtle decorative glow */}
-        <div className="absolute top-0 right-1/4 w-72 h-32 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 right-4 w-48 h-24 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
-
+      <div className="p-4 sm:p-5 bg-white border-b border-slate-200/90 text-slate-800 relative">
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 relative z-10">
           {/* Title & Today's Date */}
           <div className="flex items-start sm:items-center gap-3">
-            <div className="p-2.5 bg-white/10 text-white rounded-xl border border-white/15 backdrop-blur-xs shrink-0 shadow-xs">
-              <CalendarDays className="w-5 h-5 text-indigo-300" />
+            <div className="p-2.5 bg-slate-100 text-slate-700 rounded-xl border border-slate-200 shrink-0 shadow-2xs">
+              <CalendarDays className="w-5 h-5 text-indigo-600" />
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[10px] font-black tracking-widest uppercase text-indigo-300">
+                <span className="text-[10px] font-black tracking-widest uppercase text-indigo-600">
                   {isPt ? 'Calendário Oficial de Feriados' : 'Official Public Holidays'}
                 </span>
-                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                <span className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
                   {isPt ? 'Atualizado Diariamente' : 'Daily Live Sync'}
                 </span>
               </div>
-              <h3 className="text-base sm:text-lg font-black tracking-tight text-white capitalize flex items-center gap-2 mt-0.5">
+              <h3 className="text-base sm:text-lg font-black tracking-tight text-slate-900 capitalize flex items-center gap-2 mt-0.5">
                 {mounted ? formatDateHuman(currentDate) : 'Carregando data...'}
               </h3>
             </div>
           </div>
 
           {/* Action: Expand/Collapse Details */}
-          <div className="flex items-center gap-2 w-full lg:w-auto justify-between lg:justify-end border-t lg:border-t-0 pt-3 lg:pt-0 border-white/10">
-            <div className="flex items-center gap-2 text-xs font-semibold text-slate-300">
-              <span className="flex items-center gap-1 bg-white/10 px-2.5 py-1 rounded-lg border border-white/10">
+          <div className="flex items-center gap-2 w-full lg:w-auto justify-between lg:justify-end border-t lg:border-t-0 pt-3 lg:pt-0 border-slate-100">
+            <div className="flex items-center gap-2 text-xs font-semibold text-slate-600">
+              <span className="flex items-center gap-1 bg-slate-100 text-slate-700 px-2.5 py-1 rounded-lg border border-slate-200">
                 🇸🇹 STP
               </span>
-              <span className="text-white/40">•</span>
-              <span className="flex items-center gap-1 bg-white/10 px-2.5 py-1 rounded-lg border border-white/10">
+              <span className="text-slate-300">•</span>
+              <span className="flex items-center gap-1 bg-slate-100 text-slate-700 px-2.5 py-1 rounded-lg border border-slate-200">
                 🇧🇷 Brasil
               </span>
             </div>
@@ -167,7 +163,7 @@ export default function HolidaysWidget() {
             <button
               type="button"
               onClick={() => setIsExpanded(!isExpanded)}
-              className="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 active:scale-95 text-white text-xs font-bold px-3 py-1.5 rounded-xl border border-white/20 transition-all cursor-pointer shadow-xs"
+              className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-xs font-bold px-3 py-1.5 rounded-xl border border-slate-200 transition-all cursor-pointer shadow-2xs"
             >
               <span>{isExpanded ? (isPt ? 'Recolher Feriados' : 'Collapse') : (isPt ? 'Ver Todos os Feriados' : 'View All Holidays')}</span>
               {isExpanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
@@ -180,7 +176,7 @@ export default function HolidaysWidget() {
           <motion.div
             initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mt-4 p-3.5 bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-amber-500/20 border border-amber-400/40 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-amber-200"
+            className="mt-4 p-3.5 bg-amber-50 border border-amber-300 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-amber-900"
           >
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-amber-500 text-slate-950 flex items-center justify-center shrink-0 shadow-md font-bold">
@@ -192,18 +188,18 @@ export default function HolidaysWidget() {
                     🎉 {isPt ? 'HOJE É FERIADO!' : 'TODAY IS A HOLIDAY!'}
                   </span>
                   {todayHolidays.map(th => (
-                    <span key={th.id} className="text-xs font-bold text-white flex items-center gap-1">
+                    <span key={th.id} className="text-xs font-bold text-slate-900 flex items-center gap-1">
                       <span>{th.countryFlag}</span>
                       <span>{th.name} ({th.countryName})</span>
                     </span>
                   ))}
                 </div>
-                <p className="text-xs text-amber-100/90 font-medium mt-1">
+                <p className="text-xs text-amber-800/90 font-medium mt-1">
                   {todayHolidays.map(th => th.meaning).join(' • ')}
                 </p>
               </div>
             </div>
-            <span className="text-[11px] font-bold text-amber-300 bg-amber-500/20 px-3 py-1 rounded-lg border border-amber-400/30 whitespace-nowrap">
+            <span className="text-[11px] font-bold text-amber-800 bg-amber-100 px-3 py-1 rounded-lg border border-amber-300 whitespace-nowrap">
               {isPt ? 'Dia Comemorativo Oficial' : 'Official Holiday'}
             </span>
           </motion.div>
