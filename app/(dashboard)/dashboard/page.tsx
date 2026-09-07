@@ -641,7 +641,7 @@ export default function DashboardPage() {
                 {categorySelectorOpen && (
                   <>
                     <div className="fixed inset-0 z-40" onClick={() => setCategorySelectorOpen(false)} />
-                    <div className="absolute right-0 bottom-full mb-1.5 z-50 w-56 bg-white border border-slate-200 rounded-xl shadow-xl py-1 flex flex-col text-[10px] text-slate-700 font-sans max-h-60 overflow-y-auto">
+                    <div className="absolute right-0 top-full mt-1.5 z-50 w-56 bg-white border border-slate-200 rounded-xl shadow-xl py-1 flex flex-col text-[10px] text-slate-700 font-sans max-h-60 overflow-y-auto">
                       <div className="px-3 py-1.5 text-[9px] font-black uppercase text-slate-400 tracking-wider border-b border-slate-100 mb-1 sticky top-0 bg-white">
                         Escolher Categoria IA
                       </div>
