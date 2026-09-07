@@ -1595,9 +1595,10 @@ export default function FrequenciaPage() {
               </div>
             </div>
           </motion.div>
+        </AnimatePresence>
 
-          {/* Centered screen pop-up window with horizontal options */}
-          <AnimatePresence>
+        {/* Centered screen pop-up window with horizontal options */}
+        <AnimatePresence>
             {activeCell && activeStudent && (
               <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                 {/* Backdrop with soft blur */}
@@ -1841,7 +1842,6 @@ export default function FrequenciaPage() {
               </div>
             )}
           </AnimatePresence>
-        </AnimatePresence>
 
         {/* Printable Attendance Sheet Modal */}
         <AnimatePresence>
@@ -1911,8 +1911,8 @@ export default function FrequenciaPage() {
                       }}
                       className="px-2.5 py-1 bg-slate-900 border border-white/20 rounded-lg text-xs font-bold text-white focus:outline-none focus:border-blue-500 min-w-[180px] max-w-[240px] cursor-pointer h-[32px]"
                     >
-                      {turmas.map((t: any) => (
-                        <option key={t.id} value={t.id}>
+                      {turmas.map((t: any, tIdx: number) => (
+                        <option key={t.id || `print-turma-${tIdx}`} value={t.id}>
                           {t.nome} {t.curso?.nome ? `(${t.curso.nome})` : ''}
                         </option>
                       ))}
@@ -2318,7 +2318,7 @@ export default function FrequenciaPage() {
                             const pctFreq = totalRecorded > 0 ? Math.round((studentP / totalRecorded) * 100) : null;
 
                             return (
-                              <tr key={student.id || index} className={cn("text-[8px] font-bold uppercase", printSheetType === 'semanal' ? "h-[5.5mm]" : "h-[4.2mm]")}>
+                              <tr key={`print-student-${student.id || index}`} className={cn("text-[8px] font-bold uppercase", printSheetType === 'semanal' ? "h-[5.5mm]" : "h-[4.2mm]")}>
                                 <td className="border border-black text-center font-mono font-bold text-[8px] text-black px-0.5">
                                   {index + 1}
                                 </td>
@@ -2338,7 +2338,7 @@ export default function FrequenciaPage() {
                                   const status = getDayStatus(day.dayNum, day.month, day.year, student.id);
                                   return (
                                     <td 
-                                      key={`${day.year}-${day.month}-${day.dayNum}`} 
+                                      key={`print-cell-${student.id || index}-${day.year}-${day.month}-${day.dayNum}`} 
                                       className={cn(
                                         "border border-black p-0 text-center font-black font-mono select-none text-black",
                                         printSheetType === 'semanal' ? "text-[8.5px]" : "text-[7px]",
