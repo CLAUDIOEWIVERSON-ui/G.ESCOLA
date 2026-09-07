@@ -51,6 +51,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ExchangeRateTicker from '@/components/ExchangeRateTicker';
+import HolidaysWidget from '@/components/HolidaysWidget';
 import StudentDetailEditModal from '@/components/StudentDetailEditModal';
 import Image from 'next/image';
 import navalMissionLogo from '@/src/assets/images/regenerated_image_1782409801823.png';
@@ -487,6 +488,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <ExchangeRateTicker />
+      <HolidaysWidget />
       {profile && !profile.has_changed_password && (
         <motion.div
           initial={{ opacity: 0, y: -15, scale: 0.98 }}
