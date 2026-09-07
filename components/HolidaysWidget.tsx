@@ -310,18 +310,18 @@ export default function HolidaysWidget() {
             {/* Filters Toolbar */}
             <div className="p-4 bg-slate-50 border-b border-slate-200/80 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
               {/* Country Tabs */}
-              <div className="flex items-center gap-1.5 bg-white p-1 rounded-xl border border-slate-200/80 shrink-0">
+              <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200 shrink-0">
                 <button
                   type="button"
                   onClick={() => setSelectedCountry('ALL')}
                   className={cn(
                     "px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
                     selectedCountry === 'ALL' 
-                      ? "bg-slate-900 text-white shadow-xs" 
-                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                      ? "bg-white text-slate-900 border border-slate-200 shadow-xs font-extrabold" 
+                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
                   )}
                 >
-                  <Globe2 size={13} />
+                  <Globe2 size={13} className={selectedCountry === 'ALL' ? "text-indigo-600" : "text-slate-500"} />
                   <span>{isPt ? 'Ambos (STP & Brasil)' : 'Both (STP & Brazil)'}</span>
                 </button>
 
@@ -331,8 +331,8 @@ export default function HolidaysWidget() {
                   className={cn(
                     "px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
                     selectedCountry === 'STP' 
-                      ? "bg-emerald-600 text-white shadow-xs" 
-                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                      ? "bg-white text-emerald-800 border border-emerald-300 shadow-xs font-extrabold" 
+                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
                   )}
                 >
                   <span>🇸🇹</span>
@@ -345,8 +345,8 @@ export default function HolidaysWidget() {
                   className={cn(
                     "px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5",
                     selectedCountry === 'BR' 
-                      ? "bg-blue-600 text-white shadow-xs" 
-                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                      ? "bg-white text-blue-800 border border-blue-300 shadow-xs font-extrabold" 
+                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60"
                   )}
                 >
                   <span>🇧🇷</span>
