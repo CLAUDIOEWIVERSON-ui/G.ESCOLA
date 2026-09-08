@@ -70,6 +70,11 @@ function LoginContent() {
               
               if (signInError) throw signInError;
 
+              if (typeof window !== 'undefined') {
+                sessionStorage.removeItem('agenda_popup_already_shown');
+                sessionStorage.setItem('agenda_popup_just_logged_in', 'true');
+              }
+
               await refreshProfile();
               router.push('/boletim');
             } catch (err: any) {
@@ -260,6 +265,11 @@ function LoginContent() {
       
       if (signInError) throw signInError;
 
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('agenda_popup_already_shown');
+        sessionStorage.setItem('agenda_popup_just_logged_in', 'true');
+      }
+
       await refreshProfile();
       router.push('/boletim');
     } catch (err: any) {
@@ -303,6 +313,11 @@ function LoginContent() {
         
         if (signInError) throw signInError;
 
+        if (typeof window !== 'undefined') {
+          sessionStorage.removeItem('agenda_popup_already_shown');
+          sessionStorage.setItem('agenda_popup_just_logged_in', 'true');
+        }
+
         // Force reload context profile information in a blocking await
         await refreshProfile();
 
@@ -314,6 +329,11 @@ function LoginContent() {
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+
+        if (typeof window !== 'undefined') {
+          sessionStorage.removeItem('agenda_popup_already_shown');
+          sessionStorage.setItem('agenda_popup_just_logged_in', 'true');
+        }
 
         // Force reload context profile information in a blocking await
         await refreshProfile();

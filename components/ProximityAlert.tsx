@@ -44,14 +44,40 @@ const playBellSound = () => {
 
 export function ProximityAlert() {
   const { t } = useI18n();
-  const { isAluno, profile, isAdmin } = useUser();
+  const { isAluno, profile, isAdmin, loading: authLoading } = useUser();
   const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
   const [isVisible, setIsVisible] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(12);
   const [isHovered, setIsHovered] = useState(false);
 
+  const handleDismiss = () => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('agenda_popup_already_shown', 'true');
+      sessionStorage.removeItem('agenda_popup_just_logged_in');
+    }
+    setIsVisible(false);
+  };
+
   useEffect(() => {
+    // Só prosseguir quando o perfil estiver carregado e autenticado
+    if (authLoading || !profile) return;
+
+    // Verificar se já foi exibido nesta sessão ou se o usuário acabou de realizar o login
+    if (typeof window !== 'undefined') {
+      const alreadyShown = sessionStorage.getItem('agenda_popup_already_shown') === 'true';
+      if (alreadyShown) return;
+
+      const justLoggedIn = sessionStorage.getItem('agenda_popup_just_logged_in') === 'true';
+      if (!justLoggedIn) return;
+    }
+
     const checkEvents = async () => {
+      // Registrar imediatamente como já exibido para não duplicar em re-renders ou navegação
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('agenda_popup_already_shown', 'true');
+        sessionStorage.removeItem('agenda_popup_just_logged_in');
+      }
+
       try {
         const today = new Date();
         today.setHours(0,0,0,0);
@@ -233,7 +259,7 @@ export function ProximityAlert() {
 
     checkEvents();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAluno]);
+  }, [authLoading, profile?.id]);
 
   useEffect(() => {
     if (!isVisible || upcomingEvents.length === 0) return;
@@ -242,7 +268,7 @@ export function ProximityAlert() {
       if (!isHovered) {
         setSecondsLeft((prev) => {
           if (prev <= 1) {
-            setIsVisible(false);
+            handleDismiss();
             return 0;
           }
           return prev - 1;
@@ -274,7 +300,7 @@ export function ProximityAlert() {
               <span className="text-xs font-black uppercase tracking-widest">{t.calendar.proximityAlert || 'Alerta de Proximidade'}</span>
             </div>
             <button 
-              onClick={() => setIsVisible(false)}
+              onClick={handleDismiss}
               className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
               title="Fechar"
             >
@@ -294,6 +320,7 @@ export function ProximityAlert() {
                 <Link 
                   key={`${event.id}-${idx}`}
                   href="/calendario" 
+                  onClick={handleDismiss}
                   className="block text-left transition-transform hover:scale-[1.01] focus:outline-none"
                 >
                   <div className="flex items-start gap-3 p-3 bg-slate-50 hover:bg-amber-50 rounded-xl border border-slate-100 hover:border-amber-200 transition-all">
@@ -325,7 +352,7 @@ export function ProximityAlert() {
           {/* Action Close Button */}
           <button 
             type="button"
-            onClick={() => setIsVisible(false)}
+            onClick={handleDismiss}
             className="w-full mt-4 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs tracking-wider uppercase transition-all duration-200 active:scale-95 shadow-md flex items-center justify-center gap-2 cursor-pointer"
           >
             <X size={14} />

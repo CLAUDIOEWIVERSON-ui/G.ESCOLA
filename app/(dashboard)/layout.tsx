@@ -315,6 +315,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [authLoading, profile, isNifStudent, pathname, router]);
 
   const handleLogout = async () => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('agenda_popup_already_shown');
+      sessionStorage.removeItem('agenda_popup_just_logged_in');
+    }
     try {
       await supabase.auth.signOut();
     } catch (e) {
