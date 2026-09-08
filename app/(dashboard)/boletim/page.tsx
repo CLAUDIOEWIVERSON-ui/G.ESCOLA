@@ -9,7 +9,6 @@ import {
   FileText, 
   Search, 
   Filter,
-  Printer,
   Download,
   CheckCircle2,
   XCircle,

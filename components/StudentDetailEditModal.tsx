@@ -20,7 +20,8 @@ import {
   Check,
   Percent,
   Clock,
-  Printer,
+  Download,
+  Loader2,
   GraduationCap,
   MapPin,
   School,
@@ -31,6 +32,7 @@ import { mutate } from 'swr';
 import { toast } from 'sonner';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { cn } from '@/lib/utils';
+import { downloadElementAsPDF } from '@/lib/printDocumentUtils';
 import maleAvatar from '@/src/assets/images/avatar_male_1778977230783.png';
 import femaleAvatar from '@/src/assets/images/avatar_female_1778977246051.png';
 import militaryMaleAvatar from '@/src/assets/images/avatar_military_male_1779964887322.png';
@@ -573,16 +575,33 @@ export default function StudentDetailEditModal({
     return currentAluno?.genero === 'feminino' ? militaryFemaleAvatar : militaryMaleAvatar;
   };
 
-  const handlePrint = () => {
-    document.body.classList.add('printing-student-ficha');
-    requestAnimationFrame(() => {
-      setTimeout(() => {
-        window.print();
-        setTimeout(() => {
-          document.body.classList.remove('printing-student-ficha');
-        }, 1500);
-      }, 50);
-    });
+  const [isDownloadingPDF, setIsDownloadingPDF] = useState(false);
+
+  const handleDownloadPDF = async () => {
+    try {
+      setIsDownloadingPDF(true);
+      toast.loading(language === 'pt' ? 'Gerando PDF da ficha cadastral...' : 'Generating registration form PDF...');
+      const element = document.getElementById('student-ficha-printable');
+      if (element) {
+        element.classList.remove('hidden');
+      }
+      await downloadElementAsPDF('student-ficha-printable', {
+        orientation: 'portrait',
+        filename: `ficha_cadastral_${(currentAluno?.nome || 'aluno').replace(/\s+/g, '_')}.pdf`,
+        scale: 2,
+      });
+      if (element) {
+        element.classList.add('hidden');
+      }
+      toast.dismiss();
+      toast.success(language === 'pt' ? 'Ficha cadastral baixada em PDF!' : 'Registration form downloaded as PDF!');
+    } catch (err: any) {
+      toast.dismiss();
+      console.error('Erro ao gerar PDF da ficha:', err);
+      toast.error(language === 'pt' ? 'Erro ao gerar PDF da ficha.' : 'Error generating registration PDF.');
+    } finally {
+      setIsDownloadingPDF(false);
+    }
   };
 
   const pieData = attendanceStats.total > 0 ? [
@@ -712,16 +731,24 @@ export default function StudentDetailEditModal({
               </div>
               <button
                 type="button"
-                onClick={handlePrint}
-                className="btn-print-sheet px-3 py-1.5 text-xs font-black rounded-lg transition-colors flex items-center gap-1.5 shadow-sm border border-slate-300 bg-white hover:bg-slate-100 text-black cursor-pointer"
+                onClick={handleDownloadPDF}
+                disabled={isDownloadingPDF}
+                className="btn-print-sheet px-3 py-1.5 text-xs font-black rounded-lg transition-colors flex items-center gap-1.5 shadow-sm border border-slate-300 bg-white hover:bg-slate-100 text-black cursor-pointer disabled:opacity-50"
                 style={{ color: '#000000' }}
+                title={language === 'pt' ? 'Baixar Ficha Cadastral em PDF' : 'Download Registration Form as PDF'}
               >
-                <Printer size={14} className="text-black shrink-0" style={{ color: '#000000' }} />
+                {isDownloadingPDF ? (
+                  <Loader2 size={14} className="text-black shrink-0 animate-spin" style={{ color: '#000000' }} />
+                ) : (
+                  <Download size={14} className="text-black shrink-0" style={{ color: '#000000' }} />
+                )}
                 <span 
                   className="text-black !text-black btn-text-black font-black"
                   style={{ color: '#000000' }}
                 >
-                  {language === 'pt' ? 'Imprimir Ficha A4' : 'Print A4 Sheet'}
+                  {isDownloadingPDF 
+                    ? (language === 'pt' ? 'Gerando...' : 'Generating...') 
+                    : (language === 'pt' ? 'Baixar Ficha (PDF)' : 'Download Sheet (PDF)')}
                 </span>
               </button>
             </div>
@@ -1526,11 +1553,15 @@ export default function StudentDetailEditModal({
         <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 sticky bottom-0 bg-white pb-1">
           <button
             type="button"
-            onClick={handlePrint}
-            className="px-4 py-2 bg-slate-800 text-white rounded-xl text-sm font-bold hover:bg-slate-900 transition-colors flex items-center gap-2 print:hidden mr-auto"
+            onClick={handleDownloadPDF}
+            disabled={isDownloadingPDF}
+            className="px-4 py-2 bg-slate-800 text-white rounded-xl text-sm font-bold hover:bg-slate-900 transition-colors flex items-center gap-2 print:hidden mr-auto disabled:opacity-50"
+            title={language === 'pt' ? 'Baixar Ficha Cadastral em PDF' : 'Download Registration Form as PDF'}
           >
-            <Printer size={16} />
-            {language === 'pt' ? 'Imprimir' : 'Print'}
+            {isDownloadingPDF ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+            {isDownloadingPDF 
+              ? (language === 'pt' ? 'Gerando PDF...' : 'Generating PDF...') 
+              : (language === 'pt' ? 'Baixar Ficha (PDF)' : 'Download Sheet (PDF)')}
           </button>
           <button
             type="button"
@@ -1558,6 +1589,7 @@ export default function StudentDetailEditModal({
       {/* ========================================================================= */}
       {mounted && isOpen && createPortal(
         <div 
+          id="student-ficha-printable"
           data-document-sheet="true"
           className="hidden print:block student-ficha-printable-doc official-document-sheet text-slate-900 bg-white p-2 font-sans text-xs w-full"
         >

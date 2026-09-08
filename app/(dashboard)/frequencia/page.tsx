@@ -23,7 +23,6 @@ import {
   CalendarDays as CalendarIcon,
   Calendar,
   ShieldAlert,
-  Printer,
   X,
   FileText,
   Layers,
@@ -923,9 +922,10 @@ export default function FrequenciaPage() {
                   type="button"
                   onClick={handleOpenPrintAttendanceModal}
                   className="flex items-center gap-2 px-5 py-2.5 bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-xs font-black shadow-lg shadow-blue-900/10 transition-all cursor-pointer select-none active:scale-95 shrink-0"
+                  title={language === 'pt' ? 'Gerar e baixar folha de frequência em PDF' : 'Generate and download attendance PDF sheet'}
                 >
-                  <Printer size={16} />
-                  {language === 'pt' ? 'IMPRIMIR' : 'PRINT'}
+                  <Download size={16} />
+                  {language === 'pt' ? 'BAIXAR EM PDF' : 'DOWNLOAD PDF'}
                 </button>
 
                 <div className="flex bg-slate-100 p-1 rounded-2xl border border-slate-200">
@@ -1865,7 +1865,7 @@ export default function FrequenciaPage() {
                   </button>
                   <div>
                     <h2 className="text-sm sm:text-base font-black text-white flex items-center gap-2 uppercase tracking-wide">
-                      <Printer className="text-blue-500" size={18} />
+                      <FileText className="text-blue-500" size={18} />
                       <span>
                         {printSheetType === 'semanal' 
                           ? (language === 'pt' ? 'Folha de Frequência Semanal' : 'Weekly Attendance Sheet')

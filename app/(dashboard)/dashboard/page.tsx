@@ -29,7 +29,6 @@ import {
   ChevronRight,
   MousePointerClick,
   Trash2,
-  Printer,
   Maximize2,
   Copy,
   Sprout,
@@ -56,6 +55,7 @@ import StudentDetailEditModal from '@/components/StudentDetailEditModal';
 import Image from 'next/image';
 import navalMissionLogo from '@/src/assets/images/regenerated_image_1782409801823.png';
 import { toast } from 'sonner';
+import { downloadElementAsPDF } from '@/lib/printDocumentUtils';
 import maleAvatar from '@/src/assets/images/avatar_male_1778977230783.png';
 import femaleAvatar from '@/src/assets/images/avatar_female_1778977246051.png';
 import militaryMaleAvatar from '@/src/assets/images/avatar_military_male_1779964887322.png';
@@ -94,6 +94,26 @@ export default function DashboardPage() {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [selectedAlunoForEdit, setSelectedAlunoForEdit] = useState<any | null>(null);
   const [highlightedTurmaId, setHighlightedTurmaId] = useState<string | null>(null);
+  const [isDownloadingExteriorPDF, setIsDownloadingExteriorPDF] = useState<boolean>(false);
+
+  const handleDownloadExteriorPDF = async () => {
+    try {
+      setIsDownloadingExteriorPDF(true);
+      toast.loading(language === 'pt' ? 'Gerando PDF da relação...' : 'Generating PDF...');
+      await downloadElementAsPDF('print-exterior-sheet', {
+        orientation: 'landscape',
+        filename: 'relacao_alunos_missao_exterior.pdf',
+        scale: 2,
+      });
+      toast.dismiss();
+      toast.success(language === 'pt' ? 'Relação baixada em PDF!' : 'Roster downloaded as PDF!');
+    } catch (err: any) {
+      toast.dismiss();
+      toast.error(language === 'pt' ? 'Erro ao gerar PDF.' : 'Error generating PDF.');
+    } finally {
+      setIsDownloadingExteriorPDF(false);
+    }
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -1077,11 +1097,13 @@ export default function DashboardPage() {
               </div>
               <button
                 type="button"
-                onClick={() => window.print()}
-                className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-xs font-bold transition-colors shadow-sm border border-blue-200 cursor-pointer"
+                onClick={handleDownloadExteriorPDF}
+                disabled={isDownloadingExteriorPDF}
+                className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-xs font-bold transition-colors shadow-sm border border-blue-200 cursor-pointer disabled:opacity-50"
+                title={language === 'pt' ? 'Baixar Relação em PDF' : 'Download Roster PDF'}
               >
-                <Printer size={14} />
-                {language === 'pt' ? 'Imprimir Relação' : 'Print Roster'}
+                {isDownloadingExteriorPDF ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+                {language === 'pt' ? 'Baixar Relação (PDF)' : 'Download Roster (PDF)'}
               </button>
             </div>
 
@@ -2072,17 +2094,6 @@ function TurmasListTable({
                 ? (isPt ? 'Recolher Alunos' : 'Collapse Rosters') 
                 : (isPt ? 'Listar Alunos na Tela' : 'List Students on Screen')}
             </span>
-          </button>
-
-          {/* Botão de Imprimir */}
-          <button
-            type="button"
-            onClick={() => window.print()}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-xs font-bold transition shadow-2xs border border-blue-200 cursor-pointer shrink-0"
-            title={isPt ? 'Imprimir relação atual' : 'Print current roster'}
-          >
-            <Printer size={13} />
-            <span>{isPt ? 'Imprimir' : 'Print'}</span>
           </button>
 
           {/* Botão de Expansão dos Filtros de Cursos e Turmas */}

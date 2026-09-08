@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { X, Printer, Download, Eye, FileText } from 'lucide-react';
+import { X, Download, Eye, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import navalMissionLogo from '@/src/assets/images/regenerated_image_1782409801823.png';
 import { getHtml2Canvas } from '@/lib/printDocumentUtils';
@@ -15,11 +15,6 @@ export default function BlankQuestionnaireModal({ isOpen, onClose }: BlankQuesti
   const [generating, setGenerating] = useState(false);
 
   if (!isOpen) return null;
-
-  const handlePrint = () => {
-    // We add a window.print() call. The CSS @media print is optimized to print only the printable document container
-    window.print();
-  };
 
   const handleDownloadPDF = async () => {
     try {
@@ -140,14 +135,6 @@ export default function BlankQuestionnaireModal({ isOpen, onClose }: BlankQuesti
           </div>
 
           <div className="flex items-center gap-2.5 w-full sm:w-auto">
-            <button
-              onClick={handlePrint}
-              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-slate-800 hover:bg-slate-900 text-white text-[11px] font-bold uppercase tracking-wider px-4 py-2.5 rounded-xl transition shadow-sm cursor-pointer"
-            >
-              <Printer className="h-4 w-4" />
-              Imprimir via Navegador
-            </button>
-
             <button
               onClick={handleDownloadPDF}
               disabled={generating}

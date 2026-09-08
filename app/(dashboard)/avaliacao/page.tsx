@@ -17,7 +17,8 @@ import {
   MapPin, 
   AlertCircle, 
   Calendar, 
-  Printer, 
+  Download,
+  Loader2, 
   Signature, 
   ArrowRight,
   ShieldCheck,
@@ -34,6 +35,7 @@ import {
 import { toast } from 'sonner';
 import Image from 'next/image';
 import navalMissionLogo from '@/src/assets/images/regenerated_image_1782409801823.png';
+import { downloadElementAsPDF } from '@/lib/printDocumentUtils';
 
 // Define the scale options
 const EVALUATION_SCALE = [
@@ -740,8 +742,25 @@ function AvaliacaoAlunoForm() {
     }
   };
 
-  const handlePrintReceipt = () => {
-    window.print();
+  const [isGeneratingBlankPDF, setIsGeneratingBlankPDF] = useState(false);
+
+  const handleDownloadBlankPDF = async () => {
+    try {
+      setIsGeneratingBlankPDF(true);
+      toast.loading('Gerando PDF do questionário em branco...');
+      await downloadElementAsPDF('blank-avaliacao-printable-sheet', {
+        orientation: 'portrait',
+        filename: 'questionario_avaliacao_em_branco.pdf',
+        scale: 2
+      });
+      toast.dismiss();
+      toast.success('Questionário em branco baixado em PDF!');
+    } catch (err: any) {
+      toast.dismiss();
+      toast.error('Erro ao gerar PDF: ' + (err.message || 'Erro inesperado'));
+    } finally {
+      setIsGeneratingBlankPDF(false);
+    }
   };
 
   if (userLoading || loading) {
@@ -982,21 +1001,20 @@ function AvaliacaoAlunoForm() {
   if (isPrintingBlank) {
     return (
       <div className="bg-white text-black p-4 md:p-8 font-sans leading-relaxed max-w-4xl mx-auto space-y-6 print:p-0 print:max-w-full">
-        {/* Print controls header (hidden in print option) */}
+        {/* PDF controls header (hidden in print option) */}
         <div className="p-4 bg-slate-100 border rounded-lg flex justify-between items-center mb-6 print:hidden">
           <div className="space-y-1">
-            <h3 className="text-sm font-bold text-slate-800 font-sans">Opção de Impressão (Ficha em Branco / Preenchimento Manual)</h3>
+            <h3 className="text-sm font-bold text-slate-800 font-sans">Questionário em Branco (Preenchimento Manual)</h3>
             <p className="text-xs text-slate-600 font-sans">Esta visualização está formatada para folhas A4 para preenchimento manual.</p>
           </div>
           <div className="flex gap-2">
             <button
-              onClick={() => {
-                window.print();
-              }}
-              className="bg-slate-900 text-white text-xs font-bold px-4 py-2 rounded-lg hover:bg-slate-800 flex items-center gap-1.5 cursor-pointer"
+              onClick={handleDownloadBlankPDF}
+              disabled={isGeneratingBlankPDF}
+              className="bg-indigo-600 text-white text-xs font-bold px-4 py-2 rounded-lg hover:bg-indigo-700 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
             >
-              <Printer className="h-4 w-4" />
-              Imprimir Agora
+              {isGeneratingBlankPDF ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+              {isGeneratingBlankPDF ? 'Gerando PDF...' : 'Baixar em PDF'}
             </button>
             <button
               onClick={() => setIsPrintingBlank(false)}
@@ -1008,7 +1026,7 @@ function AvaliacaoAlunoForm() {
         </div>
 
         {/* The Actual printed sheet */}
-        <div className="space-y-6">
+        <div id="blank-avaliacao-printable-sheet" className="space-y-6">
           <div className="flex items-center justify-center gap-6 border-b-2 border-slate-900 pb-5 mb-5">
             <img
               src={typeof navalMissionLogo === 'string' ? navalMissionLogo : (navalMissionLogo as any)?.src || navalMissionLogo}
@@ -1655,8 +1673,8 @@ function AvaliacaoAlunoForm() {
                 onClick={() => setIsPrintingBlank(true)}
                 className="flex items-center justify-center gap-2 bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 text-xs font-bold px-4 py-2.5 rounded-lg transition-colors cursor-pointer w-full sm:w-auto"
               >
-                <Printer className="h-4 w-4" />
-                Imprimir Questionário em Branco (Manual)
+                <Download className="h-4 w-4" />
+                Baixar Questionário em PDF (Manual)
               </button>
               
               <button 

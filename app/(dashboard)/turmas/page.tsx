@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase/client';
 import { useTurmas, useCursos, useDisciplinas } from '@/hooks/useCachedData';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
-import { Plus, Search, Layers as LayersIcon, Library, Calendar, Clock, MapPin, Pencil, Trash2, Loader2, CheckCircle2, RefreshCcw, Users, Mail, Phone, Building, Camera, MessageCircle, XCircle, FileText, X, GraduationCap, School, ChevronLeft, ChevronRight, Printer, Monitor, Globe, Anchor, Swords, Download, Archive } from 'lucide-react';
+import { Plus, Search, Layers as LayersIcon, Library, Calendar, Clock, MapPin, Pencil, Trash2, Loader2, CheckCircle2, RefreshCcw, Users, Mail, Phone, Building, Camera, MessageCircle, XCircle, FileText, X, GraduationCap, School, ChevronLeft, ChevronRight, Monitor, Globe, Anchor, Swords, Download, Archive } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn, getCleanTurmaName } from '@/lib/utils';
 import { downloadElementAsPDF } from '@/lib/printDocumentUtils';
@@ -1537,12 +1537,12 @@ function TurmasContent() {
                     handleOpenPrintRoster(turma);
                   }}
                   className="w-full flex items-center justify-between p-2.5 rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white group/print-roster transition-all cursor-pointer border border-indigo-100/80 shadow-2xs"
-                  title={language === 'pt' ? 'Imprimir Relação de Alunos com Foto' : 'Print Student Roster with Photos'}
+                  title={language === 'pt' ? 'Baixar Relação de Alunos em PDF (com Foto)' : 'Download Student Roster PDF (with Photos)'}
                 >
                   <div className="flex items-center gap-2 text-indigo-700 group-hover/print-roster:text-white transition-colors">
-                    <Printer size={14} className="shrink-0" />
+                    <FileText size={14} className="shrink-0" />
                     <span className="text-[8.5px] font-black uppercase tracking-wider">
-                      {language === 'pt' ? 'Relação de Alunos (com Foto)' : 'Student Roster (with Photos)'}
+                      {language === 'pt' ? 'Relação de Alunos (PDF)' : 'Student Roster (PDF)'}
                     </span>
                   </div>
                   <Camera size={13} className="text-indigo-400 group-hover/print-roster:text-white transition-colors shrink-0" />
@@ -1556,11 +1556,12 @@ function TurmasContent() {
                         handleDirectPrintAttendance(turma, 'mensal');
                       }}
                       className="flex items-center justify-between p-2.5 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white group/print transition-all cursor-pointer"
+                      title={language === 'pt' ? 'Baixar Folha Mensal em PDF' : 'Download Monthly Sheet PDF'}
                     >
                       <div className="flex items-center gap-1.5 text-emerald-700 group-hover/print:text-white transition-colors">
-                        <Printer size={13} />
+                        <FileText size={13} />
                         <span className="text-[8.5px] font-black uppercase tracking-wider">
-                          {language === 'pt' ? 'Folha Mensal' : 'Monthly Sheet'}
+                          {language === 'pt' ? 'Folha Mensal (PDF)' : 'Monthly Sheet (PDF)'}
                         </span>
                       </div>
                     </button>
@@ -1571,11 +1572,12 @@ function TurmasContent() {
                         handleDirectPrintAttendance(turma, 'semanal');
                       }}
                       className="flex items-center justify-between p-2.5 rounded-xl bg-teal-50 text-teal-700 hover:bg-teal-600 hover:text-white group/print-week transition-all cursor-pointer"
+                      title={language === 'pt' ? 'Baixar Folha Semanal em PDF' : 'Download Weekly Sheet PDF'}
                     >
                       <div className="flex items-center gap-1.5 text-teal-700 group-hover/print-week:text-white transition-colors">
                         <Calendar size={13} />
                         <span className="text-[8.5px] font-black uppercase tracking-wider">
-                          {language === 'pt' ? 'Folha Semanal' : 'Weekly Sheet'}
+                          {language === 'pt' ? 'Folha Semanal (PDF)' : 'Weekly Sheet (PDF)'}
                         </span>
                       </div>
                     </button>
@@ -2112,18 +2114,19 @@ function TurmasContent() {
             <button
               onClick={() => handleOpenPrintRoster(viewingTurma)}
               className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-100 px-3 py-1.5 rounded-lg hover:bg-indigo-100 hover:text-indigo-800 transition-all cursor-pointer shadow-sm shadow-indigo-100"
-              title={language === 'pt' ? 'Imprimir Relação com Foto' : 'Print Roster with Photos'}
+              title={language === 'pt' ? 'Baixar Relação com Foto (PDF)' : 'Download Roster with Photos (PDF)'}
             >
-              <Printer size={13} strokeWidth={2.5} />
-              {language === 'pt' ? 'Relação com Fotos' : 'Roster with Photos'}
+              <FileText size={13} strokeWidth={2.5} />
+              {language === 'pt' ? 'Relação com Fotos (PDF)' : 'Roster with Photos (PDF)'}
             </button>
             {!viewingTurma?.internacional && (
               <button
                 onClick={() => handleOpenPrintAttendance(viewingTurma)}
                 className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-100 px-3 py-1.5 rounded-lg hover:bg-emerald-100 hover:text-emerald-800 transition-all cursor-pointer shadow-sm shadow-emerald-100"
+                title={language === 'pt' ? 'Baixar Folha de Frequência (PDF)' : 'Download Attendance Sheet (PDF)'}
               >
-                <Printer size={13} strokeWidth={2.5} />
-                {language === 'pt' ? 'Folha de Frequência' : 'Attendance Sheet'}
+                <FileText size={13} strokeWidth={2.5} />
+                {language === 'pt' ? 'Folha de Frequência (PDF)' : 'Attendance Sheet (PDF)'}
               </button>
             )}
             {canEditViewingTurma && (
@@ -2217,9 +2220,10 @@ function TurmasContent() {
                     );
                   }}
                   className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-all cursor-pointer shadow-sm shadow-blue-50"
-                  title="Imprimir carteirinhas com código QR para todos os alunos desta turma"
+                  title="Gerar carteirinhas com código QR em PDF / documento para todos os alunos desta turma"
                 >
-                  🖨️ Carteirinhas QR (Lote)
+                  <FileText size={13} />
+                  <span>Carteirinhas QR (Lote)</span>
                 </button>
                 <button
                   onClick={() => setIsBulkModalOpen(true)}
@@ -3152,8 +3156,8 @@ function TurmasContent() {
                 </button>
                 <div>
                   <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                    <Printer size={16} className="text-indigo-400" />
-                    {language === 'pt' ? 'Imprimir Relação de Alunos (com Foto)' : 'Print Student Roster (with Photos)'}
+                    <FileText size={16} className="text-indigo-400" />
+                    {language === 'pt' ? 'Relação de Alunos em PDF (com Foto)' : 'Student Roster PDF (with Photos)'}
                   </h3>
                   <p className="text-xs text-slate-400">
                     {rosterTurma?.nome} • {rosterAlunos.length} {language === 'pt' ? 'alunos matriculados' : 'students registered'}

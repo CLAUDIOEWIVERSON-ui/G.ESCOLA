@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase/client";
 import { useI18n } from "@/lib/i18n/LanguageContext";
 import {
   Calendar,
-  Printer,
+  Download,
   Loader2,
   MapPin,
   Shield,
@@ -35,6 +35,7 @@ import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
 import { toast } from "sonner";
 import { useUser } from "@/lib/auth/UserContext";
+import { downloadElementAsPDF } from "@/lib/printDocumentUtils";
 
 // Helper to fetch Brazil holidays (Simplified for this version)
 const BRAZIL_HOLIDAYS = [
@@ -515,17 +516,31 @@ export default function HorarioPage() {
     fetchData();
   }, [profile]);
 
-  const handlePrint = () => {
+  const [isDownloadingPDF, setIsDownloadingPDF] = useState(false);
+
+  const handleDownloadPDF = async () => {
     if (!selectedTurmaId) return;
     try {
-      window.print();
+      setIsDownloadingPDF(true);
+      toast.loading(language === "pt" ? "Gerando PDF do quadro de horários..." : "Generating schedule PDF...");
+      const turmaClean = (selectedTurma?.nome || "turma").replace(/[^a-zA-Z0-9_-]/g, "_");
+      await downloadElementAsPDF("schedule-print-container", {
+        orientation: "landscape",
+        filename: `horario_semanal_${turmaClean}.pdf`,
+        scale: 2,
+      });
+      toast.dismiss();
+      toast.success(language === "pt" ? "PDF do horário baixado com sucesso!" : "Schedule PDF downloaded successfully!");
     } catch (err) {
-      console.error("Failed to open native print dialog:", err);
+      toast.dismiss();
+      console.error("Failed to generate schedule PDF:", err);
       toast.error(
         language === "pt"
-          ? "Não foi possível abrir a janela de impressão."
-          : "Could not open print window.",
+          ? "Não foi possível gerar o arquivo PDF do horário."
+          : "Could not generate schedule PDF.",
       );
+    } finally {
+      setIsDownloadingPDF(false);
     }
   };
 
@@ -1122,12 +1137,13 @@ export default function HorarioPage() {
             )}
 
             <button
-              onClick={handlePrint}
-              disabled={isEditMode || !selectedTurmaId}
-              className="flex items-center gap-2 bg-[#0f172a] text-white px-5 py-2.5 rounded-2xl text-sm font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 disabled:opacity-50 disabled:grayscale"
+              onClick={handleDownloadPDF}
+              disabled={isEditMode || !selectedTurmaId || isDownloadingPDF}
+              className="flex items-center gap-2 bg-[#0f172a] text-white px-5 py-2.5 rounded-2xl text-sm font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 disabled:opacity-50 disabled:grayscale cursor-pointer"
+              title={language === "pt" ? "Baixar quadro de horários em arquivo PDF" : "Download schedule grid as PDF"}
             >
-              <Printer size={18} />
-              {t.schedule.print}
+              {isDownloadingPDF ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
+              <span>{isDownloadingPDF ? (language === "pt" ? "Gerando PDF..." : "Generating...") : t.schedule.print}</span>
             </button>
           </div>
         )}
@@ -1346,6 +1362,7 @@ export default function HorarioPage() {
           >
             {/* Elegant Schedule Container */}
             <div
+              id="schedule-print-container"
               ref={printRef}
               className="w-full max-w-[1200px] bg-white rounded-2xl md:rounded-3xl shadow-xl border border-slate-100 overflow-hidden flex flex-col font-sans mb-8 print-container"
             >

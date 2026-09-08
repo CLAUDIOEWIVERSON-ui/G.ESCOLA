@@ -15,7 +15,7 @@ import {
   MapPin, 
   Calendar, 
   FileText, 
-  Printer, 
+  Loader2, 
   Target, 
   Search, 
   SlidersHorizontal, 
@@ -33,6 +33,7 @@ import {
   Copy
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { downloadElementAsPDF } from '@/lib/printDocumentUtils';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
 import { getCleanTurmaName } from '@/lib/utils';
 
@@ -872,8 +873,26 @@ function RelatorioAvaliacaoAdminContent() {
 
   const satisfactionPercentage = getAggregatedSatisfactionPct();
 
-  const handlePrint = () => {
-    window.print();
+  const [isDownloadingReport, setIsDownloadingReport] = useState(false);
+
+  const handleDownloadPDF = async () => {
+    try {
+      setIsDownloadingReport(true);
+      toast.loading('Gerando PDF do relatório gerencial...');
+      await downloadElementAsPDF('relatorio-avaliacao-printable-container', {
+        orientation: 'portrait',
+        filename: 'relatorio_gerencial_avaliacao.pdf',
+        scale: 2,
+      });
+      toast.dismiss();
+      toast.success('Relatório baixado em PDF com sucesso!');
+    } catch (err: any) {
+      toast.dismiss();
+      console.error('Erro ao gerar PDF do relatório:', err);
+      toast.error('Erro ao gerar PDF do relatório.');
+    } finally {
+      setIsDownloadingReport(false);
+    }
   };
 
   // Mock initial setup database query if table is missing
@@ -1068,20 +1087,14 @@ function RelatorioAvaliacaoAdminContent() {
         </div>
 
         <div className="flex flex-wrap gap-2 print:hidden items-center">
-          <select
-            value={printMode}
-            onChange={(e) => setPrintMode(e.target.value as 'color' | 'bw')}
-            className="bg-white border border-slate-200 text-slate-700 text-xs font-bold px-3 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900 cursor-pointer shadow-sm"
-          >
-            <option value="color">🎨 Imprimir Colorido</option>
-            <option value="bw">⚫ Preto e Branco</option>
-          </select>
           <button
-            onClick={handlePrint}
-            className="flex items-center gap-1.5 bg-white text-slate-700 hover:bg-slate-50 print:bg-white border border-slate-200 text-xs font-bold px-4 py-2.5 rounded-lg transition shadow-sm cursor-pointer"
+            onClick={handleDownloadPDF}
+            disabled={isDownloadingReport}
+            className="flex items-center gap-1.5 bg-indigo-600 text-white hover:bg-indigo-700 border border-indigo-700 text-xs font-bold px-4 py-2.5 rounded-lg transition shadow-sm cursor-pointer disabled:opacity-50"
+            title="Baixar relatório gerencial em arquivo PDF"
           >
-            <Printer className="h-3.5 w-3.5" />
-            Imprimir Relatório (A4)
+            {isDownloadingReport ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+            {isDownloadingReport ? 'Gerando PDF...' : 'Baixar Relatório em PDF'}
           </button>
         </div>
       </div>
@@ -1270,7 +1283,7 @@ function RelatorioAvaliacaoAdminContent() {
               </p>
             </div>
           ) : (
-            <div className="space-y-8">
+            <div id="relatorio-avaliacao-printable-container" className="space-y-8">
               
               {/* TAB 1: GERAL & ESTATÍSTICAS */}
               {activeTab === 'geral' && (
@@ -1963,9 +1976,10 @@ function RelatorioAvaliacaoAdminContent() {
                               );
                             }}
                             className="w-1/2 bg-cyan-400 hover:bg-cyan-300 text-cyan-950 font-black text-[9.5px] py-2 rounded-lg border-b-[4px] border-r-[2px] border-cyan-600 shadow-[0_0_15px_rgba(34,211,238,0.95)] hover:shadow-[0_0_20px_rgba(34,211,238,1.0)] select-none transition-all duration-150 active:translate-y-[2px] active:border-b-[2px] flex items-center justify-center gap-1 cursor-pointer font-mono tracking-widest uppercase"
-                            title="Imprimir Carteirinha com código de acesso QR do Aluno"
+                            title="Visualizar e Baixar Carteirinha com código de acesso QR do Aluno"
                           >
-                            🖨️ CARTEIRINHA QR
+                            <FileText className="h-3 w-3" />
+                            <span>CARTEIRINHA QR</span>
                           </button>
 
                           <button
@@ -2845,8 +2859,10 @@ function RelatorioAvaliacaoAdminContent() {
                               );
                             }}
                             className="bg-cyan-400 hover:bg-cyan-300 text-cyan-950 font-black text-xs px-5 py-3 rounded-lg border-b-[4px] border-r-[2px] border-cyan-600 shadow-[0_0_18px_rgba(34,211,238,0.95)] hover:shadow-[0_0_25px_rgba(34,211,238,1.0)] select-none transition-all duration-150 active:translate-y-[2px] active:border-b-[2px] flex items-center justify-center gap-2 cursor-pointer border border-cyan-500 font-sans uppercase tracking-widest"
+                            title="Visualizar e Baixar Carteirinha com código de acesso QR do Aluno"
                           >
-                            🖨️ CARTEIRINHA QR
+                            <FileText className="h-4 w-4" />
+                            <span>CARTEIRINHA QR</span>
                           </button>
                           
                           {(profile?.role === 'admin' || profile?.role === 'instrutor') && (
@@ -2909,7 +2925,8 @@ function RelatorioAvaliacaoAdminContent() {
                                 }}
                                 className="bg-cyan-400 hover:bg-cyan-300 text-cyan-950 text-xs px-4 py-2.5 rounded-lg font-black border-b-[4px] border-r-[2px] border-cyan-600 shadow-[0_0_18px_rgba(34,211,238,0.95)] hover:shadow-[0_0_25px_rgba(34,211,238,1.0)] select-none transition-all duration-150 active:translate-y-[2px] active:border-b-[2px] flex items-center gap-1.5 cursor-pointer font-sans uppercase tracking-widest border border-cyan-500"
                               >
-                                🖨️ CARTEIRINHA QR
+                                <FileText className="h-4 w-4" />
+                                <span>CARTEIRINHA QR</span>
                               </button>
 
                               {(profile?.role === 'admin' || profile?.role === 'instrutor') && (
