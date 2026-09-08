@@ -1,4 +1,5 @@
 import { toast } from 'sonner';
+import { openSaveDocumentModal } from './saveDocumentModalService';
 
 export interface PDFExportOptions {
   orientation?: 'landscape' | 'portrait';
@@ -96,8 +97,8 @@ async function inlineAllImagesInElement(root: HTMLElement): Promise<void> {
 }
 
 /**
- * Prompts the operating system's native "Salvar Como..." / "Save As..." dialog window
- * so the user can choose exactly where to save the PDF file, with graceful fallback.
+ * Prompts the user with the "Salvar Documento PDF" window to ask where and how to save,
+ * giving options for native file picker ("Salvar Como"), system dialog, or direct download.
  */
 export async function savePDFWithDialog(
   pdfOrBlob: any,
@@ -118,50 +119,11 @@ export async function savePDFWithDialog(
     blob = new Blob([pdfOrBlob], { type: 'application/pdf' });
   }
 
-  // 1. Try modern File System Access API (showSaveFilePicker)
-  // This opens the native operating system file explorer ("Salvar como") dialog!
-  if (typeof window !== 'undefined' && 'showSaveFilePicker' in window) {
-    try {
-      const handle = await (window as any).showSaveFilePicker({
-        suggestedName: finalFilename,
-        types: [
-          {
-            description: 'Documento PDF (*.pdf)',
-            accept: {
-              'application/pdf': ['.pdf'],
-            },
-          },
-        ],
-      });
-
-      const writable = await handle.createWritable();
-      await writable.write(blob);
-      await writable.close();
-      return true;
-    } catch (err: any) {
-      // If the user cancelled or closed the picker dialog, respect their choice
-      if (err?.name === 'AbortError') {
-        return false;
-      }
-      console.warn('showSaveFilePicker não disponível ou bloqueado pelo ambiente (ex: iframe sandbox), utilizando download padrão do navegador:', err);
-    }
-  }
-
-  // 2. Fallback for browsers or sandboxes where showSaveFilePicker is not permitted
-  if (pdfOrBlob && typeof pdfOrBlob.save === 'function') {
-    pdfOrBlob.save(finalFilename);
-  } else {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = finalFilename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }
-
-  return true;
+  // Opens the dedicated Save Document Modal dialog
+  return await openSaveDocumentModal({
+    blob,
+    suggestedFilename: finalFilename
+  });
 }
 
 /**
