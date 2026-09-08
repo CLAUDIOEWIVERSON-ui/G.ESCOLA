@@ -202,13 +202,16 @@ export async function downloadElementAsPDF(
     });
 
     let imgData: string;
+    let imgFormat: 'JPEG' | 'PNG' = 'JPEG';
     try {
-      imgData = canvas.toDataURL('image/png', 1.0);
+      imgData = canvas.toDataURL('image/jpeg', 0.95);
+      imgFormat = 'JPEG';
     } catch (taintErr: any) {
-      console.warn('Canvas tainted, tentando fallback em JPEG:', taintErr);
+      console.warn('JPEG export falhou, tentando fallback em PNG:', taintErr);
       try {
-        imgData = canvas.toDataURL('image/jpeg', 0.95);
-      } catch (jpegErr: any) {
+        imgData = canvas.toDataURL('image/png');
+        imgFormat = 'PNG';
+      } catch (pngErr: any) {
         throw new Error('As imagens externas bloquearam a captura de tela. Utilize a opção "Imprimir" e escolha "Salvar como PDF".');
       }
     }
@@ -234,7 +237,7 @@ export async function downloadElementAsPDF(
     if (imgHeight <= contentHeight * 1.05) {
       // Fits on a single page with margins (with up to 5% safe scaling tolerance)
       const renderHeight = Math.min(imgHeight, contentHeight);
-      pdf.addImage(imgData, 'PNG', marginX, marginY, contentWidth, renderHeight, undefined, 'FAST');
+      pdf.addImage(imgData, imgFormat, marginX, marginY, contentWidth, renderHeight, undefined, 'FAST');
       
       // Page footer
       pdf.setFont('helvetica', 'normal');
@@ -376,14 +379,14 @@ export async function downloadElementAsPDF(
           );
         }
 
-        const pageImgData = pageCanvas.toDataURL('image/png', 1.0);
+        const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.95);
         const sliceHeightMm = (sliceHeight / canvas.width) * contentWidth;
 
         if (p > 0) {
           pdf.addPage();
         }
 
-        pdf.addImage(pageImgData, 'PNG', marginX, marginY, contentWidth, sliceHeightMm, undefined, 'FAST');
+        pdf.addImage(pageImgData, 'JPEG', marginX, marginY, contentWidth, sliceHeightMm, undefined, 'FAST');
 
         // Page footer with page count and date
         pdf.setFont('helvetica', 'normal');

@@ -718,7 +718,7 @@ function BoletimContent() {
       // Restore preview scale back to configured level
       setScale(prevScale);
 
-      const imgData = canvas.toDataURL('image/png');
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
@@ -731,25 +731,25 @@ function BoletimContent() {
 
       if (imgHeight <= pageHeight) {
         // Fits perfectly on a single page without scaling or distortion
-        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+        pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
       } else if (imgHeight <= 315) {
         // Very close to pageHeight, scale down proportionally to fit precisely in a single page with zero distortion
         const scaleFactor = pageHeight / imgHeight;
         const adjustedWidth = imgWidth * scaleFactor;
         const xOffset = (imgWidth - adjustedWidth) / 2;
-        pdf.addImage(imgData, 'PNG', xOffset, 0, adjustedWidth, pageHeight);
+        pdf.addImage(imgData, 'JPEG', xOffset, 0, adjustedWidth, pageHeight);
       } else {
         // Multi-page layout: slice the canvas image across multiple A4 pages with exact proportional dimensions
         let heightLeft = imgHeight;
         let position = 0;
 
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
         heightLeft -= pageHeight;
 
         while (heightLeft >= 2) {
           position = heightLeft - imgHeight;
           pdf.addPage();
-          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+          pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
           heightLeft -= pageHeight;
         }
       }
@@ -990,7 +990,7 @@ function BoletimContent() {
       // Restore preview scale back to configured level
       setClassScale(prevScale);
 
-      const imgData = canvas.toDataURL('image/png');
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
@@ -1003,25 +1003,25 @@ function BoletimContent() {
 
       if (imgHeight <= pageHeight) {
         // Fits perfectly on a single page without scaling or distortion
-        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+        pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
       } else if (imgHeight <= 315) {
         // Very close to pageHeight, scale down proportionally to fit precisely in a single page with zero distortion
         const scaleFactor = pageHeight / imgHeight;
         const adjustedWidth = imgWidth * scaleFactor;
         const xOffset = (imgWidth - adjustedWidth) / 2;
-        pdf.addImage(imgData, 'PNG', xOffset, 0, adjustedWidth, pageHeight);
+        pdf.addImage(imgData, 'JPEG', xOffset, 0, adjustedWidth, pageHeight);
       } else {
         // Multi-page layout: slice the canvas image across multiple A4 pages with exact proportional dimensions
         let heightLeft = imgHeight;
         let position = 0;
 
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
         heightLeft -= pageHeight;
 
         while (heightLeft >= 2) {
           position = heightLeft - imgHeight;
           pdf.addPage();
-          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+          pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
           heightLeft -= pageHeight;
         }
       }

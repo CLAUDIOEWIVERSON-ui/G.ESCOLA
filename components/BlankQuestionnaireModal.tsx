@@ -45,11 +45,11 @@ export default function BlankQuestionnaireModal({ isOpen, onClose }: BlankQuesti
         logging: false,
         backgroundColor: '#ffffff'
       });
-      const imgData1 = canvas1.toDataURL('image/png');
+      const imgData1 = canvas1.toDataURL('image/jpeg', 0.95);
       const imgWidth = 210; // A4 standard width in mm
       const imgHeight = (canvas1.height * imgWidth) / canvas1.width;
       
-      pdf.addImage(imgData1, 'PNG', 0, 0, imgWidth, imgHeight, undefined, 'FAST');
+      pdf.addImage(imgData1, 'JPEG', 0, 0, imgWidth, imgHeight, undefined, 'FAST');
 
       // Add Page 2
       pdf.addPage();
@@ -59,10 +59,10 @@ export default function BlankQuestionnaireModal({ isOpen, onClose }: BlankQuesti
         logging: false,
         backgroundColor: '#ffffff'
       });
-      const imgData2 = canvas2.toDataURL('image/png');
+      const imgData2 = canvas2.toDataURL('image/jpeg', 0.95);
       const imgHeight2 = (canvas2.height * imgWidth) / canvas2.width;
       
-      pdf.addImage(imgData2, 'PNG', 0, 0, imgWidth, imgHeight2, undefined, 'FAST');
+      pdf.addImage(imgData2, 'JPEG', 0, 0, imgWidth, imgHeight2, undefined, 'FAST');
 
       const saved = await savePDFWithDialog(pdf, 'Questionario_Avaliacao_Pos_Curso_Assessoria_Naval.pdf');
       toast.dismiss();
