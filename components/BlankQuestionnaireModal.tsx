@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { X, Download, Eye, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import navalMissionLogo from '@/src/assets/images/regenerated_image_1782409801823.png';
-import { getHtml2Canvas } from '@/lib/printDocumentUtils';
+import { getHtml2Canvas, savePDFWithDialog } from '@/lib/printDocumentUtils';
 
 interface BlankQuestionnaireModalProps {
   isOpen: boolean;
@@ -64,9 +64,13 @@ export default function BlankQuestionnaireModal({ isOpen, onClose }: BlankQuesti
       
       pdf.addImage(imgData2, 'PNG', 0, 0, imgWidth, imgHeight2, undefined, 'FAST');
 
-      pdf.save('Questionario_Avaliacao_Pos_Curso_Assessoria_Naval.pdf');
+      const saved = await savePDFWithDialog(pdf, 'Questionario_Avaliacao_Pos_Curso_Assessoria_Naval.pdf');
       toast.dismiss();
-      toast.success('Questionário de Avaliação Pós-Curso baixado com sucesso!');
+      if (saved) {
+        toast.success('Questionário de Avaliação Pós-Curso salvo com sucesso!');
+      } else {
+        toast.info('Salvamento do questionário cancelado.');
+      }
     } catch (error: any) {
       console.error('PDF Generation Error:', error);
       toast.dismiss();

@@ -96,6 +96,75 @@ async function inlineAllImagesInElement(root: HTMLElement): Promise<void> {
 }
 
 /**
+ * Prompts the operating system's native "Salvar Como..." / "Save As..." dialog window
+ * so the user can choose exactly where to save the PDF file, with graceful fallback.
+ */
+export async function savePDFWithDialog(
+  pdfOrBlob: any,
+  suggestedFilename: string
+): Promise<boolean> {
+  const sanitizedFilename = (suggestedFilename || 'documento.pdf')
+    .replace(/[/\\?%*:|"<>]/g, '_')
+    .replace(/\s+/g, '_');
+  const finalFilename = sanitizedFilename.endsWith('.pdf') ? sanitizedFilename : `${sanitizedFilename}.pdf`;
+
+  // Extract Blob
+  let blob: Blob;
+  if (pdfOrBlob instanceof Blob) {
+    blob = pdfOrBlob;
+  } else if (pdfOrBlob && typeof pdfOrBlob.output === 'function') {
+    blob = pdfOrBlob.output('blob');
+  } else {
+    blob = new Blob([pdfOrBlob], { type: 'application/pdf' });
+  }
+
+  // 1. Try modern File System Access API (showSaveFilePicker)
+  // This opens the native operating system file explorer ("Salvar como") dialog!
+  if (typeof window !== 'undefined' && 'showSaveFilePicker' in window) {
+    try {
+      const handle = await (window as any).showSaveFilePicker({
+        suggestedName: finalFilename,
+        types: [
+          {
+            description: 'Documento PDF (*.pdf)',
+            accept: {
+              'application/pdf': ['.pdf'],
+            },
+          },
+        ],
+      });
+
+      const writable = await handle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+      return true;
+    } catch (err: any) {
+      // If the user cancelled or closed the picker dialog, respect their choice
+      if (err?.name === 'AbortError') {
+        return false;
+      }
+      console.warn('showSaveFilePicker não disponível ou bloqueado pelo ambiente (ex: iframe sandbox), utilizando download padrão do navegador:', err);
+    }
+  }
+
+  // 2. Fallback for browsers or sandboxes where showSaveFilePicker is not permitted
+  if (pdfOrBlob && typeof pdfOrBlob.save === 'function') {
+    pdfOrBlob.save(finalFilename);
+  } else {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = finalFilename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  return true;
+}
+
+/**
  * Downloads a DOM element as a crisp, single-page or multi-page A4 PDF.
  */
 export async function downloadElementAsPDF(
@@ -377,11 +446,16 @@ export async function downloadElementAsPDF(
       .replace(/\s+/g, '_');
     const finalFilename = sanitizedFilename.endsWith('.pdf') ? sanitizedFilename : `${sanitizedFilename}.pdf`;
     
-    pdf.save(finalFilename);
+    const saved = await savePDFWithDialog(pdf, finalFilename);
 
     toast.dismiss(toastId);
-    toast.success('PDF baixado com sucesso!');
-    return true;
+    if (saved) {
+      toast.success('PDF salvo com sucesso!');
+      return true;
+    } else {
+      toast.info('Salvamento do arquivo cancelado.');
+      return false;
+    }
   } catch (err: any) {
     console.error('Erro ao gerar PDF:', err);
     toast.dismiss(toastId);

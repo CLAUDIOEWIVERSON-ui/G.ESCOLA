@@ -10,6 +10,7 @@ import {
   Search, 
   Filter,
   Download,
+  Printer,
   CheckCircle2,
   XCircle,
   AlertCircle,
@@ -38,7 +39,7 @@ import { toast } from 'sonner';
 import { useUser } from '@/lib/auth/UserContext';
 import { fetchWithAuth } from '@/lib/api';
 import navalMissionLogo from '@/src/assets/images/regenerated_image_1782409801823.png';
-import { getHtml2Canvas } from '@/lib/printDocumentUtils';
+import { getHtml2Canvas, savePDFWithDialog } from '@/lib/printDocumentUtils';
 
 const formatGradePT = (val: number | string | null | undefined, fallback = '-'): string => {
   if (val === null || val === undefined || val === '') return fallback;
@@ -755,9 +756,13 @@ function BoletimContent() {
       
       const sanitizedName = reportData.student.nome.replace(/[^a-z0-9]/gi, '_').toLowerCase();
       const fileName = `boletim_individual_${sanitizedName}.pdf`;
-      pdf.save(fileName);
+      const saved = await savePDFWithDialog(pdf, fileName);
       
-      toast.success(language === 'pt' ? 'Histórico Escolar PDF baixado com sucesso!' : 'Academic Transcript PDF downloaded successfully!', { id: toastId });
+      if (saved) {
+        toast.success(language === 'pt' ? 'Histórico Escolar PDF salvo com sucesso!' : 'Academic Transcript PDF saved successfully!', { id: toastId });
+      } else {
+        toast.info(language === 'pt' ? 'Salvamento do arquivo cancelado.' : 'File save cancelled.', { id: toastId });
+      }
     } catch (error) {
       console.error("Error generating PDF:", error);
       toast.error(language === 'pt' ? 'Por favor, tente novamente.' : 'Please try again.', { id: toastId });
@@ -1024,9 +1029,13 @@ function BoletimContent() {
       const currentTurmaObj = turmas.find((t: any) => t.id === selectedTurma);
       const sanitizedTurmaName = currentTurmaObj?.nome ? currentTurmaObj.nome.replace(/[^a-z0-9]/gi, '_').toLowerCase() : 'turma';
       const fileName = `boletim_turma_${sanitizedTurmaName}.pdf`;
-      pdf.save(fileName);
+      const saved = await savePDFWithDialog(pdf, fileName);
       
-      toast.success(language === 'pt' ? 'Boletim da Turma extraído com sucesso!' : 'Class Bulletin PDF exported successfully!', { id: toastId });
+      if (saved) {
+        toast.success(language === 'pt' ? 'Boletim da Turma salvo com sucesso!' : 'Class Bulletin PDF saved successfully!', { id: toastId });
+      } else {
+        toast.info(language === 'pt' ? 'Salvamento do arquivo cancelado.' : 'File save cancelled.', { id: toastId });
+      }
     } catch (error) {
       console.error("Error generating class PDF:", error);
       toast.error(language === 'pt' ? 'Erro ao processar as folhas de notas da turma.' : 'Failed to compile class grades report pages.', { id: toastId });
