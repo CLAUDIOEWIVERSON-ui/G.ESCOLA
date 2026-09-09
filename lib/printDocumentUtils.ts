@@ -1,5 +1,4 @@
 import { toast } from 'sonner';
-import { openSaveDocumentModal } from './saveDocumentModalService';
 
 export interface PDFExportOptions {
   orientation?: 'landscape' | 'portrait';
@@ -97,8 +96,7 @@ async function inlineAllImagesInElement(root: HTMLElement): Promise<void> {
 }
 
 /**
- * Prompts the user with the "Salvar Documento PDF" window to ask where and how to save,
- * giving options for native file picker ("Salvar Como"), system dialog, or direct download.
+ * Directly downloads/saves the PDF without prompting with intermediate modal dialogs.
  */
 export async function savePDFWithDialog(
   pdfOrBlob: any,
@@ -109,21 +107,39 @@ export async function savePDFWithDialog(
     .replace(/\s+/g, '_');
   const finalFilename = sanitizedFilename.endsWith('.pdf') ? sanitizedFilename : `${sanitizedFilename}.pdf`;
 
-  // Extract Blob
-  let blob: Blob;
-  if (pdfOrBlob instanceof Blob) {
-    blob = pdfOrBlob;
-  } else if (pdfOrBlob && typeof pdfOrBlob.output === 'function') {
-    blob = pdfOrBlob.output('blob');
-  } else {
-    blob = new Blob([pdfOrBlob], { type: 'application/pdf' });
-  }
+  try {
+    if (pdfOrBlob && typeof pdfOrBlob.save === 'function') {
+      pdfOrBlob.save(finalFilename);
+      return true;
+    }
 
-  // Opens the dedicated Save Document Modal dialog
-  return await openSaveDocumentModal({
-    blob,
-    suggestedFilename: finalFilename
-  });
+    let blob: Blob;
+    if (pdfOrBlob instanceof Blob) {
+      blob = pdfOrBlob;
+    } else if (pdfOrBlob && typeof pdfOrBlob.output === 'function') {
+      blob = pdfOrBlob.output('blob');
+    } else {
+      blob = new Blob([pdfOrBlob], { type: 'application/pdf' });
+    }
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = finalFilename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      if (document.body.contains(a)) {
+        document.body.removeChild(a);
+      }
+      URL.revokeObjectURL(url);
+    }, 1000);
+    return true;
+  } catch (extractErr) {
+    console.error('Erro ao baixar documento PDF:', extractErr);
+    return false;
+  }
 }
 
 /**
@@ -156,6 +172,13 @@ export async function downloadElementAsPDF(
     let effectiveScale = scale;
     if (targetHeight * effectiveScale > 10000) {
       effectiveScale = Math.max(1.0, Math.floor((10000 / targetHeight) * 10) / 10);
+    }
+
+    // Inline all remote images to Base64 in targetElem before rendering canvas
+    try {
+      await inlineAllImagesInElement(targetElem);
+    } catch (inlineErr) {
+      console.warn('Pré-processamento de imagens:', inlineErr);
     }
 
     // Create a temporary clone with forced white background and clean dimensions
@@ -212,7 +235,11 @@ export async function downloadElementAsPDF(
         imgData = canvas.toDataURL('image/png');
         imgFormat = 'PNG';
       } catch (pngErr: any) {
-        throw new Error('As imagens externas bloquearam a captura de tela. Utilize a opção "Imprimir" e escolha "Salvar como PDF".');
+        console.warn('Exportação do canvas bloqueada, acionando impressão do sistema:', pngErr);
+        toast.dismiss(toastId);
+        toast.info('Abrindo diálogo do sistema para salvar o documento em PDF...', { duration: 5000 });
+        printElementIsolated(elementId, { title: filename });
+        return true;
       }
     }
 

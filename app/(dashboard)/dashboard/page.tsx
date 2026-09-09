@@ -46,7 +46,8 @@ import {
   SortAsc,
   Monitor,
   Archive,
-  Download
+  Download,
+  Printer
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ExchangeRateTicker from '@/components/ExchangeRateTicker';
@@ -55,7 +56,7 @@ import StudentDetailEditModal from '@/components/StudentDetailEditModal';
 import Image from 'next/image';
 import navalMissionLogo from '@/src/assets/images/regenerated_image_1782409801823.png';
 import { toast } from 'sonner';
-import { downloadElementAsPDF } from '@/lib/printDocumentUtils';
+import { downloadElementAsPDF, printElementIsolated } from '@/lib/printDocumentUtils';
 import maleAvatar from '@/src/assets/images/avatar_male_1778977230783.png';
 import femaleAvatar from '@/src/assets/images/avatar_female_1778977246051.png';
 import militaryMaleAvatar from '@/src/assets/images/avatar_military_male_1779964887322.png';
@@ -99,17 +100,14 @@ export default function DashboardPage() {
   const handleDownloadExteriorPDF = async () => {
     try {
       setIsDownloadingExteriorPDF(true);
-      toast.loading(language === 'pt' ? 'Gerando PDF da relação...' : 'Generating PDF...');
       await downloadElementAsPDF('print-exterior-sheet', {
         orientation: 'landscape',
         filename: 'relacao_alunos_missao_exterior.pdf',
         scale: 2,
       });
-      toast.dismiss();
-      toast.success(language === 'pt' ? 'Relação baixada em PDF!' : 'Roster downloaded as PDF!');
     } catch (err: any) {
-      toast.dismiss();
-      toast.error(language === 'pt' ? 'Erro ao gerar PDF.' : 'Error generating PDF.');
+      console.error('Erro ao gerar PDF da relação do exterior:', err);
+      toast.error(language === 'pt' ? 'Erro ao gerar PDF da relação.' : 'Error generating roster PDF.');
     } finally {
       setIsDownloadingExteriorPDF(false);
     }
@@ -1095,16 +1093,27 @@ export default function DashboardPage() {
                   {availableDocumentosExterior.length} {availableDocumentosExterior.length === 1 ? (language === 'pt' ? 'Portaria' : 'Document') : (language === 'pt' ? 'Portarias' : 'Documents')}
                 </span>
               </div>
-              <button
-                type="button"
-                onClick={handleDownloadExteriorPDF}
-                disabled={isDownloadingExteriorPDF}
-                className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-xs font-bold transition-colors shadow-sm border border-blue-200 cursor-pointer disabled:opacity-50"
-                title={language === 'pt' ? 'Baixar Relação em PDF' : 'Download Roster PDF'}
-              >
-                {isDownloadingExteriorPDF ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
-                {language === 'pt' ? 'Baixar Relação (PDF)' : 'Download Roster (PDF)'}
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => printElementIsolated('print-exterior-sheet', { title: 'relacao_alunos_missao_exterior', orientation: 'landscape' })}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-colors shadow-2xs border border-slate-300 cursor-pointer active:scale-95"
+                  title={language === 'pt' ? 'Imprimir Relação no Navegador' : 'Print Roster in Browser'}
+                >
+                  <Printer size={14} />
+                  <span>{language === 'pt' ? 'Imprimir' : 'Print'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDownloadExteriorPDF}
+                  disabled={isDownloadingExteriorPDF}
+                  className="flex items-center gap-2 px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-colors shadow-sm cursor-pointer disabled:opacity-50 active:scale-95"
+                  title={language === 'pt' ? 'Baixar Relação em PDF' : 'Download Roster PDF'}
+                >
+                  {isDownloadingExteriorPDF ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+                  <span>{language === 'pt' ? 'Baixar Relação (PDF)' : 'Download Roster (PDF)'}</span>
+                </button>
+              </div>
             </div>
 
             {/* BARRA DE FILTRO ÚNICO: AGRUPAR / FILTRAR POR DOCUMENTO */}
@@ -1544,15 +1553,15 @@ export default function DashboardPage() {
         )}
       </AnimatePresence>
   
-      {selectedCard === 'exterior' && (
+      {alunosExterior.length > 0 && (
         <>
           {/* PRINT LAYOUT FOR ALUNOS EXTERIOR */}
-          <div id="print-exterior-sheet" className="hidden print:block text-black font-sans w-full max-w-full bg-white p-2">
+          <div id="print-exterior-sheet" className="hidden print:block text-black font-sans w-full max-w-full bg-white p-4">
             <style dangerouslySetInnerHTML={{__html: `
               @media print {
                 @page {
-                  size: A4 portrait;
-                  margin: 10mm 12mm;
+                  size: A4 landscape;
+                  margin: 8mm 10mm;
                 }
                 html, body {
                   background: #ffffff !important;

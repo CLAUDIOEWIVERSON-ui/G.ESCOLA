@@ -522,17 +522,13 @@ export default function HorarioPage() {
     if (!selectedTurmaId) return;
     try {
       setIsDownloadingPDF(true);
-      toast.loading(language === "pt" ? "Gerando PDF do quadro de horários..." : "Generating schedule PDF...");
       const turmaClean = (selectedTurma?.nome || "turma").replace(/[^a-zA-Z0-9_-]/g, "_");
       await downloadElementAsPDF("schedule-print-container", {
         orientation: "landscape",
         filename: `horario_semanal_${turmaClean}.pdf`,
         scale: 2,
       });
-      toast.dismiss();
-      toast.success(language === "pt" ? "PDF do horário baixado com sucesso!" : "Schedule PDF downloaded successfully!");
     } catch (err) {
-      toast.dismiss();
       console.error("Failed to generate schedule PDF:", err);
       toast.error(
         language === "pt"

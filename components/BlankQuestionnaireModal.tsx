@@ -17,9 +17,10 @@ export default function BlankQuestionnaireModal({ isOpen, onClose }: BlankQuesti
   if (!isOpen) return null;
 
   const handleDownloadPDF = async () => {
+    let toastId: string | number | undefined;
     try {
       setGenerating(true);
-      toast.loading('Rendendo alta fidelidade do questionário PDF...');
+      toastId = toast.loading('Rendendo alta fidelidade do questionário PDF...');
 
       const html2canvas = await getHtml2Canvas();
       const { jsPDF } = await import('jspdf');
@@ -65,15 +66,13 @@ export default function BlankQuestionnaireModal({ isOpen, onClose }: BlankQuesti
       pdf.addImage(imgData2, 'JPEG', 0, 0, imgWidth, imgHeight2, undefined, 'FAST');
 
       const saved = await savePDFWithDialog(pdf, 'Questionario_Avaliacao_Pos_Curso_Assessoria_Naval.pdf');
-      toast.dismiss();
+      if (toastId) toast.dismiss(toastId);
       if (saved) {
         toast.success('Questionário de Avaliação Pós-Curso salvo com sucesso!');
-      } else {
-        toast.info('Salvamento do questionário cancelado.');
       }
     } catch (error: any) {
       console.error('PDF Generation Error:', error);
-      toast.dismiss();
+      if (toastId) toast.dismiss(toastId);
       toast.error('Erro ao gerar PDF: ' + (error.message || 'Erro inesperado. Tente a opção "Imprimir via Navegador".'));
     } finally {
       setGenerating(false);

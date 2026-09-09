@@ -45,7 +45,6 @@ import { EventMarquee } from '@/components/EventMarquee';
 import { HeaderClock } from '@/components/HeaderClock';
 import { FormGuidanceAssistant } from '@/components/FormGuidanceAssistant';
 import { SuggestionsModal } from '@/components/SuggestionsModal';
-import SaveDocumentModal from '@/components/SaveDocumentModal';
 
 // Isolated search bar component to avoid CSR bailout in layout.tsx
 function HeaderSearchBar() {
@@ -838,9 +837,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           )}
         </button>
       </nav>
-
-      {/* Global Document Save Dialog Modal */}
-      <SaveDocumentModal />
     </div>
   );
 }
