@@ -163,7 +163,37 @@ export async function downloadElementAsPDF(
 
   const toastId = toast.loading('Processando imagens e gerando PDF...');
 
+  const computedStyle = window.getComputedStyle(targetElem);
+  const isElementHidden = computedStyle.display === 'none' || targetElem.classList.contains('hidden');
+
+  const originalDisplay = targetElem.style.display;
+  const originalPosition = targetElem.style.position;
+  const originalLeft = targetElem.style.left;
+  const originalTop = targetElem.style.top;
+  const originalWidth = targetElem.style.width;
+  const originalZIndex = targetElem.style.zIndex;
+  const originalVisibility = targetElem.style.visibility;
+  const originalBg = targetElem.style.backgroundColor;
+  const hadHiddenClass = targetElem.classList.contains('hidden');
+
   try {
+    if (isElementHidden) {
+      if (hadHiddenClass) {
+        targetElem.classList.remove('hidden');
+      }
+      targetElem.style.setProperty('display', 'block', 'important');
+      targetElem.style.setProperty('position', 'fixed', 'important');
+      targetElem.style.setProperty('left', '-99999px', 'important');
+      targetElem.style.setProperty('top', '0px', 'important');
+      targetElem.style.setProperty('width', orientation === 'landscape' ? '1280px' : '960px', 'important');
+      targetElem.style.setProperty('z-index', '-99999', 'important');
+      targetElem.style.setProperty('visibility', 'visible', 'important');
+      targetElem.style.setProperty('background-color', '#ffffff', 'important');
+
+      // Wait a frame for browser reflow
+      await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 60)));
+    }
+
     const html2canvas = await getHtml2Canvas();
     const { jsPDF } = await import('jspdf');
 
@@ -192,10 +222,17 @@ export async function downloadElementAsPDF(
       onclone: async (clonedDoc: Document) => {
         const clonedElem = clonedDoc.getElementById(elementId);
         if (clonedElem) {
-          clonedElem.style.color = '#000000';
-          clonedElem.style.backgroundColor = '#ffffff';
-          clonedElem.style.boxShadow = 'none';
-          clonedElem.style.border = 'none';
+          clonedElem.classList.remove('hidden');
+          clonedElem.style.setProperty('display', 'block', 'important');
+          clonedElem.style.setProperty('position', 'static', 'important');
+          clonedElem.style.setProperty('left', '0', 'important');
+          clonedElem.style.setProperty('top', '0', 'important');
+          clonedElem.style.setProperty('width', orientation === 'landscape' ? '1280px' : '960px', 'important');
+          clonedElem.style.setProperty('visibility', 'visible', 'important');
+          clonedElem.style.setProperty('color', '#000000', 'important');
+          clonedElem.style.setProperty('background-color', '#ffffff', 'important');
+          clonedElem.style.setProperty('box-shadow', 'none', 'important');
+          clonedElem.style.setProperty('border', 'none', 'important');
 
           // Inline all images in the clone to base64 to eliminate any CORS / taint problems
           await inlineAllImagesInElement(clonedElem);
@@ -223,6 +260,13 @@ export async function downloadElementAsPDF(
         }
       }
     });
+
+    if (!canvas || canvas.width <= 0 || canvas.height < 50) {
+      console.warn('Canvas gerado com altura insuficiente. Usando impressão isolada como fallback.');
+      toast.dismiss(toastId);
+      printElementIsolated(elementId, { title: filename, orientation });
+      return true;
+    }
 
     let imgData: string;
     let imgFormat: 'JPEG' | 'PNG' = 'JPEG';
@@ -458,6 +502,20 @@ export async function downloadElementAsPDF(
       toast.error('Não foi possível gerar o PDF direto: ' + (msg || 'Erro inesperado.') + ' Dica: clique em "Imprimir Documento" para salvar como PDF.', { duration: 7000 });
     }
     return false;
+  } finally {
+    if (isElementHidden && targetElem) {
+      if (hadHiddenClass) {
+        targetElem.classList.add('hidden');
+      }
+      targetElem.style.display = originalDisplay;
+      targetElem.style.position = originalPosition;
+      targetElem.style.left = originalLeft;
+      targetElem.style.top = originalTop;
+      targetElem.style.width = originalWidth;
+      targetElem.style.zIndex = originalZIndex;
+      targetElem.style.visibility = originalVisibility;
+      targetElem.style.backgroundColor = originalBg;
+    }
   }
 }
 
@@ -467,10 +525,20 @@ export async function downloadElementAsPDF(
  */
 export function printElementIsolated(
   elementId: string, 
-  customTitle = 'Documento',
-  options: { orientation?: 'landscape' | 'portrait' } = {}
+  customTitleOrOptions: string | { title?: string; orientation?: 'landscape' | 'portrait' } = 'Documento',
+  maybeOptions: { orientation?: 'landscape' | 'portrait' } = {}
 ): void {
-  const { orientation = 'portrait' } = options;
+  let customTitle = 'Documento';
+  let orientation: 'landscape' | 'portrait' = 'portrait';
+
+  if (typeof customTitleOrOptions === 'string') {
+    customTitle = customTitleOrOptions;
+    orientation = maybeOptions.orientation || 'portrait';
+  } else if (customTitleOrOptions && typeof customTitleOrOptions === 'object') {
+    customTitle = customTitleOrOptions.title || 'Documento';
+    orientation = customTitleOrOptions.orientation || maybeOptions.orientation || 'portrait';
+  }
+
   const targetElem = document.getElementById(elementId);
   if (!targetElem) {
     toast.error('Elemento para impressão não encontrado.');

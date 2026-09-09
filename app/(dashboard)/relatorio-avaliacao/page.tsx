@@ -30,10 +30,11 @@ import {
   Info,
   Edit3,
   Signature,
-  Copy
+  Copy,
+  Printer
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { downloadElementAsPDF } from '@/lib/printDocumentUtils';
+import { downloadElementAsPDF, printElementIsolated } from '@/lib/printDocumentUtils';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
 import { getCleanTurmaName } from '@/lib/utils';
 
@@ -342,7 +343,7 @@ function RelatorioAvaliacaoAdminContent() {
       if (cursosData) setCursos(cursosData);
 
       // Fetch Turmas with registered instructor and group fields
-      const { data: turmasData } = await supabase.from('turmas').select('id, nome, curso_id, periodo, instrutor, internacional, grupo_responsavel').is('deleted_at', null);
+      const { data: turmasData } = await supabase.from('turmas').select('id, nome, curso_id, periodo, instrutor, internacional, grupo_responsavel, data_inicio, data_fim, carga_horaria, local, documento_criacao, status').is('deleted_at', null);
       
       // Filter out international/exterior classes from the evaluation module
       let nonInternationalTurmas = (turmasData || []).filter((t: any) => !t.internacional);
@@ -694,6 +695,38 @@ function RelatorioAvaliacaoAdminContent() {
     }).sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
   }, [allStudents, submissions, selectedTurma, qStr, turmas]);
 
+  // Derived active Turma, active Curso, and report stats for the official header
+  const activeTurma = useMemo(() => {
+    if (selectedTurma === 'ALL') return null;
+    return turmas.find(t => t.id === selectedTurma) || null;
+  }, [selectedTurma, turmas]);
+
+  const activeCurso = useMemo(() => {
+    if (activeTurma && activeTurma.curso_id) {
+      return cursos.find(c => c.id === activeTurma.curso_id) || null;
+    }
+    if (selectedCurso !== 'ALL') {
+      return cursos.find(c => c.id === selectedCurso) || null;
+    }
+    return null;
+  }, [activeTurma, selectedCurso, cursos]);
+
+  const reportTurmaStats = useMemo(() => {
+    const enrolled = selectedTurma === 'ALL'
+      ? allStudents
+      : allStudents.filter(s => s.turma_id === selectedTurma);
+    const numInscritos = enrolled.length;
+    const numPreenchidos = selectedTurma === 'ALL'
+      ? filteredSubmissions.length
+      : filteredSubmissions.filter(sub => enrolled.some(s => s.id === sub.aluno_id)).length;
+    const percent = numInscritos > 0 ? (numPreenchidos / numInscritos) * 100 : 0;
+    return {
+      numInscritos,
+      numPreenchidos,
+      percent: percent.toFixed(1)
+    };
+  }, [selectedTurma, allStudents, filteredSubmissions]);
+
   // Handle direct selection and edit action for any students (whether pending or responded)
   const handleSelectAndEditAction = (studentId: string, turmaId: string) => {
     setSelectedTurma(turmaId);
@@ -879,9 +912,10 @@ function RelatorioAvaliacaoAdminContent() {
     try {
       setIsDownloadingReport(true);
       toast.loading('Gerando PDF do relatório gerencial...');
+      const turmaSlug = activeTurma ? `_${activeTurma.nome.toLowerCase().replace(/[^a-z0-9]/g, '_')}` : '';
       await downloadElementAsPDF('relatorio-avaliacao-printable-container', {
         orientation: 'portrait',
-        filename: 'relatorio_gerencial_avaliacao.pdf',
+        filename: `relatorio_questionario_avaliacao${turmaSlug}.pdf`,
         scale: 2,
       });
       toast.dismiss();
@@ -1021,49 +1055,6 @@ function RelatorioAvaliacaoAdminContent() {
     }
   }
 `}</style>
-      {/* PRINT HEADER */}
-      <div className="hidden print:flex items-center justify-between pb-5 border-b-2 border-slate-950 mb-5">
-        <div className="flex items-center gap-6">
-          <div className="w-36 h-36 shrink-0 flex items-center justify-center bg-white">
-            <img
-              src={typeof navalMissionLogo === "string" ? navalMissionLogo : (navalMissionLogo as any)?.src || navalMissionLogo}
-              alt="Logo Missão de Assessoria Naval"
-              className="w-36 h-36 object-contain shrink-0"
-              style={{ width: "144px", height: "144px", maxHeight: "144px", maxWidth: "144px" }}
-            />
-          </div>
-          <div className="text-left flex flex-col justify-center">
-            <h1 className="text-base font-black tracking-widest text-slate-900 uppercase leading-snug">
-              MISSÃO DE ASSESSORIA NAVAL DO BRASIL EM SÃO TOMÉ E PRÍNCIPE
-            </h1>
-            <p className="text-xs font-black tracking-widest text-slate-600 uppercase mt-1.5 leading-none">
-              Relatório de Avaliação e Indicadores de Qualidade Pedagógica
-            </p>
-          </div>
-        </div>
-        <div className="text-right text-[10px] font-mono text-slate-500 hidden print:block">
-          <p className="font-bold text-slate-800">DOCUMENTO OFICIAL DE AVALIAÇÃO</p>
-          <p className="mt-1">Emissão: {new Date().toLocaleDateString("pt-BR")}</p>
-        </div>
-      </div>
-      
-      <div className="hidden print:block mb-4">
-        {selectedTurma !== 'ALL' ? (
-          (() => {
-            const t = turmas.find(t => t.id === selectedTurma);
-            return t ? (
-              <div className="mt-1 text-xs text-slate-800 flex flex-wrap gap-x-6 gap-y-1">
-                <p><strong>Turma:</strong> {t.nome}</p>
-                {t.curso?.nome && <p><strong>Curso:</strong> {t.curso.nome}</p>}
-                {t.instrutor && <p><strong>Instrutor:</strong> {t.instrutor}</p>}
-                {t.periodo && <p><strong>Período:</strong> {t.periodo}</p>}
-              </div>
-            ) : null;
-          })()
-        ) : (
-          <p className="text-xs text-slate-800 mt-1">Relatório Geral (Todas as Turmas)</p>
-        )}
-      </div>
 
       {/* Page Title & Utility buttons */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-200 dark:border-slate-800 pb-4 mt-2 print:hidden">
@@ -1088,9 +1079,23 @@ function RelatorioAvaliacaoAdminContent() {
 
         <div className="flex flex-wrap gap-2 print:hidden items-center">
           <button
+            onClick={() => {
+              const turmaSlug = activeTurma ? `_${activeTurma.nome.toLowerCase().replace(/[^a-z0-9]/g, '_')}` : '';
+              printElementIsolated('relatorio-avaliacao-printable-container', {
+                title: `relatorio_questionario_avaliacao${turmaSlug}`,
+                orientation: 'portrait'
+              });
+            }}
+            className="flex items-center gap-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-bold px-3.5 py-2.5 rounded-lg transition shadow-2xs cursor-pointer active:scale-95"
+            title="Imprimir relatório no navegador"
+          >
+            <Printer className="h-3.5 w-3.5" />
+            <span>Imprimir</span>
+          </button>
+          <button
             onClick={handleDownloadPDF}
             disabled={isDownloadingReport}
-            className="flex items-center gap-1.5 bg-indigo-600 text-white hover:bg-indigo-700 border border-indigo-700 text-xs font-bold px-4 py-2.5 rounded-lg transition shadow-sm cursor-pointer disabled:opacity-50"
+            className="flex items-center gap-1.5 bg-indigo-600 text-white hover:bg-indigo-700 border border-indigo-700 text-xs font-bold px-4 py-2.5 rounded-lg transition shadow-sm cursor-pointer disabled:opacity-50 active:scale-95"
             title="Baixar relatório gerencial em arquivo PDF"
           >
             {isDownloadingReport ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
@@ -1285,6 +1290,119 @@ function RelatorioAvaliacaoAdminContent() {
           ) : (
             <div id="relatorio-avaliacao-printable-container" className="space-y-8">
               
+              {/* CABEÇALHO OFICIAL DO RELATÓRIO REFERENTE À TURMA COM LOGO NO LADO DIREITO */}
+              <div 
+                id="relatorio-avaliacao-turma-header"
+                className="bg-white border-2 border-slate-900 rounded-xl p-5 md:p-6 shadow-xs print:border-slate-950 print:p-4 print:shadow-none print:rounded-none"
+              >
+                <div className="flex flex-col-reverse md:flex-row items-center md:items-start justify-between gap-5 print:flex-row print:items-start">
+                  {/* TEXTO E INFORMAÇÕES REFERENTES À TURMA (ESQUERDA / CENTRO) */}
+                  <div className="flex-1 w-full text-left space-y-3">
+                    <div className="border-b-2 border-slate-900 pb-2.5">
+                      <span className="text-[10px] md:text-[11px] font-black tracking-widest text-slate-900 uppercase font-mono block">
+                        MARINHA DO BRASIL • MISSÃO DE ASSESSORIA NAVAL EM SÃO TOMÉ E PRÍNCIPE
+                      </span>
+                      <h1 className="text-base md:text-xl font-black tracking-tight text-slate-900 uppercase mt-0.5 leading-snug">
+                        Relatório do Questionário de Avaliações
+                      </h1>
+                      <p className="text-[11px] md:text-xs font-bold text-slate-600 uppercase tracking-wide">
+                        Avaliação de Conclusão de Curso e Indicadores de Qualidade Pedagógica
+                      </p>
+                    </div>
+
+                    {/* GRADE DE METADADOS DA TURMA */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 text-xs bg-slate-50 border border-slate-200 rounded-lg p-3 print:bg-white print:border-slate-300">
+                      <div>
+                        <span className="text-[9px] md:text-[10px] font-bold text-slate-500 uppercase tracking-wider block font-mono">
+                          Turma
+                        </span>
+                        <span className="font-extrabold text-slate-900 block text-xs md:text-sm truncate" title={activeTurma ? activeTurma.nome : 'Todas as Turmas (Geral)'}>
+                          {activeTurma ? activeTurma.nome : (selectedTurma === 'ALL' ? 'Todas as Turmas (Geral)' : 'Turma Selecionada')}
+                        </span>
+                      </div>
+
+                      <div>
+                        <span className="text-[9px] md:text-[10px] font-bold text-slate-500 uppercase tracking-wider block font-mono">
+                          Curso
+                        </span>
+                        <span className="font-bold text-slate-800 block text-xs truncate" title={activeCurso?.nome || (activeTurma as any)?.curso?.nome || 'Geral'}>
+                          {activeCurso?.nome || (activeTurma as any)?.curso?.nome || 'Geral / Não especificado'}
+                        </span>
+                      </div>
+
+                      <div>
+                        <span className="text-[9px] md:text-[10px] font-bold text-slate-500 uppercase tracking-wider block font-mono">
+                          Instrutor(a)
+                        </span>
+                        <span className="font-bold text-slate-800 block text-xs truncate">
+                          {activeTurma?.instrutor || (selectedInstructor !== 'ALL' ? selectedInstructor : 'Todos os Instrutores')}
+                        </span>
+                      </div>
+
+                      <div>
+                        <span className="text-[9px] md:text-[10px] font-bold text-slate-500 uppercase tracking-wider block font-mono">
+                          Período
+                        </span>
+                        <span className="font-bold text-slate-800 block text-xs">
+                          {activeTurma?.periodo || (activeTurma?.data_inicio && activeTurma?.data_fim ? `${new Date(activeTurma.data_inicio).toLocaleDateString('pt-BR')} a ${new Date(activeTurma.data_fim).toLocaleDateString('pt-BR')}` : (selectedPeriod !== 'ALL' ? selectedPeriod : 'Geral'))}
+                        </span>
+                      </div>
+
+                      {activeTurma?.documento_criacao && (
+                        <div>
+                          <span className="text-[9px] md:text-[10px] font-bold text-slate-500 uppercase tracking-wider block font-mono">
+                            Portaria / Doc. Criação
+                          </span>
+                          <span className="font-mono font-bold text-slate-900 block text-xs truncate">
+                            {activeTurma.documento_criacao}
+                          </span>
+                        </div>
+                      )}
+
+                      {activeTurma?.carga_horaria && (
+                        <div>
+                          <span className="text-[9px] md:text-[10px] font-bold text-slate-500 uppercase tracking-wider block font-mono">
+                            Carga Horária
+                          </span>
+                          <span className="font-bold text-slate-800 block text-xs">
+                            {activeTurma.carga_horaria} horas
+                          </span>
+                        </div>
+                      )}
+
+                      <div>
+                        <span className="text-[9px] md:text-[10px] font-bold text-slate-500 uppercase tracking-wider block font-mono">
+                          Alunos / Respostas
+                        </span>
+                        <span className="font-bold text-emerald-800 block text-xs">
+                          {reportTurmaStats.numPreenchidos} / {reportTurmaStats.numInscritos} ({reportTurmaStats.percent}%)
+                        </span>
+                      </div>
+
+                      <div>
+                        <span className="text-[9px] md:text-[10px] font-bold text-slate-500 uppercase tracking-wider block font-mono">
+                          Data de Emissão
+                        </span>
+                        <span className="font-mono font-bold text-slate-700 block text-xs">
+                          {new Date().toLocaleDateString('pt-BR')}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* LOGO NO LADO DIREITO */}
+                  <div className="shrink-0 flex items-center justify-center p-2 bg-white rounded-xl border border-slate-200 shadow-2xs self-center md:self-start print:border-none print:shadow-none print:p-0">
+                    <img
+                      src={typeof navalMissionLogo === 'string' ? navalMissionLogo : (navalMissionLogo as any)?.src || navalMissionLogo}
+                      alt="Logo Missão de Assessoria Naval"
+                      className="w-24 h-24 md:w-28 md:h-28 object-contain shrink-0"
+                      style={{ width: '112px', height: '112px', maxWidth: '112px', maxHeight: '112px' }}
+                      crossOrigin="anonymous"
+                    />
+                  </div>
+                </div>
+              </div>
+
               {/* TAB 1: GERAL & ESTATÍSTICAS */}
               {activeTab === 'geral' && (
                 <div className="space-y-8">

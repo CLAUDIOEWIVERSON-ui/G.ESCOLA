@@ -100,14 +100,24 @@ export default function DashboardPage() {
   const handleDownloadExteriorPDF = async () => {
     try {
       setIsDownloadingExteriorPDF(true);
-      await downloadElementAsPDF('print-exterior-sheet', {
+      const filterSuffix = selectedDocumentoFilter !== 'all' 
+        ? `_${selectedDocumentoFilter.replace(/[/\\?%*:|"<>]/g, '_').replace(/\s+/g, '_')}`
+        : '';
+      const filename = `relacao_alunos_missao_exterior${filterSuffix}.pdf`;
+
+      toast.loading(language === 'pt' ? 'Gerando PDF da relação...' : 'Generating PDF...');
+      const success = await downloadElementAsPDF('print-exterior-sheet', {
         orientation: 'landscape',
-        filename: 'relacao_alunos_missao_exterior.pdf',
+        filename,
         scale: 2,
       });
+      toast.dismiss();
+      if (success) {
+        toast.success(language === 'pt' ? 'Relação baixada em PDF!' : 'Roster downloaded as PDF!');
+      }
     } catch (err: any) {
-      console.error('Erro ao gerar PDF da relação do exterior:', err);
-      toast.error(language === 'pt' ? 'Erro ao gerar PDF da relação.' : 'Error generating roster PDF.');
+      toast.dismiss();
+      toast.error(language === 'pt' ? 'Erro ao gerar PDF.' : 'Error generating PDF.');
     } finally {
       setIsDownloadingExteriorPDF(false);
     }
@@ -1097,7 +1107,7 @@ export default function DashboardPage() {
                 <button
                   type="button"
                   onClick={() => printElementIsolated('print-exterior-sheet', { title: 'relacao_alunos_missao_exterior', orientation: 'landscape' })}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-colors shadow-2xs border border-slate-300 cursor-pointer active:scale-95"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 rounded-lg text-xs font-bold transition-colors shadow-2xs border border-slate-300 cursor-pointer active:scale-95"
                   title={language === 'pt' ? 'Imprimir Relação no Navegador' : 'Print Roster in Browser'}
                 >
                   <Printer size={14} />
@@ -1556,12 +1566,12 @@ export default function DashboardPage() {
       {alunosExterior.length > 0 && (
         <>
           {/* PRINT LAYOUT FOR ALUNOS EXTERIOR */}
-          <div id="print-exterior-sheet" className="hidden print:block text-black font-sans w-full max-w-full bg-white p-4">
+          <div id="print-exterior-sheet" className="hidden print:block text-black font-sans w-full max-w-full bg-white p-2">
             <style dangerouslySetInnerHTML={{__html: `
               @media print {
                 @page {
-                  size: A4 landscape;
-                  margin: 8mm 10mm;
+                  size: A4 portrait;
+                  margin: 10mm 12mm;
                 }
                 html, body {
                   background: #ffffff !important;
@@ -1641,12 +1651,14 @@ export default function DashboardPage() {
                 <h2 className="text-sm font-bold uppercase tracking-wide text-slate-800 mt-1">
                   {language === 'pt' ? 'RELAÇÃO DE ALUNOS NO EXTERIOR' : 'STUDENTS ABROAD ROSTER'}
                 </h2>
-                {selectedDocumentoFilter !== 'all' && (
-                  <div className="text-[10px] font-semibold text-slate-700 mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5">
-                    <span><strong>DOCUMENTO:</strong> {selectedDocumentoFilter.toUpperCase()}</span>
-                    <span><strong>TOTAL:</strong> {totalFilteredAlunosExterior} ALUNO(S)</span>
-                  </div>
-                )}
+                <div className="text-[10px] font-semibold text-slate-700 mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-0.5">
+                  <span>
+                    <strong>FILTRO / PORTARIA:</strong>{' '}
+                    {selectedDocumentoFilter !== 'all' ? selectedDocumentoFilter.toUpperCase() : (language === 'pt' ? 'TODOS OS DOCUMENTOS' : 'ALL DOCUMENTS')}
+                  </span>
+                  <span><strong>TOTAL:</strong> {totalFilteredAlunosExterior} {totalFilteredAlunosExterior === 1 ? (language === 'pt' ? 'ALUNO' : 'STUDENT') : (language === 'pt' ? 'ALUNOS' : 'STUDENTS')}</span>
+                  <span><strong>PORTARIAS:</strong> {groupedAlunosExteriorByDoc.length}</span>
+                </div>
               </div>
             </div>
             
@@ -1735,7 +1747,7 @@ export default function DashboardPage() {
                               </div>
                             </td>
                             <td className="p-2 border-r border-black align-middle text-center font-mono font-bold">
-                              {turmaData?.documento_criacao || curso?.documento_criacao || aluno.documento_criacao || '-'}
+                              {getAlunoDocumento(aluno)}
                             </td>
                             <td className="p-2 text-center align-middle border-black">
                               {turmaData?.internacional ? (
