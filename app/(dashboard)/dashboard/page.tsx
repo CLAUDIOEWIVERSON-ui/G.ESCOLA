@@ -1668,7 +1668,10 @@ export default function DashboardPage() {
               </div>
             ) : (
               groupedAlunosExteriorByDoc.map((group, gIdx) => (
-                <div key={`print-group-${group.documento}-${gIdx}`} className="mb-6 print-group-block">
+                <div 
+                  key={`print-group-${group.documento}-${gIdx}`} 
+                  className={`mb-6 print-group-block ${gIdx > 0 ? 'print-page-break page-break-before' : ''}`}
+                >
                   <table className="w-full text-left border-collapse border border-black mb-2 text-black">
                     <thead>
                       <tr className="border-b border-black bg-gray-200 text-xs font-bold uppercase print-avoid-break print-avoid-break-after">

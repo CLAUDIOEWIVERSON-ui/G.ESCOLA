@@ -2121,6 +2121,18 @@ export default function FrequenciaPage() {
                         page-break-inside: avoid !important;
                         break-inside: avoid !important;
                       }
+                      .print-page-break,
+                      .page-break-before,
+                      .break-before-page {
+                        page-break-before: always !important;
+                        break-before: page !important;
+                      }
+                      .print-page-break-after,
+                      .page-break-after,
+                      .break-after-page {
+                        page-break-after: always !important;
+                        break-after: page !important;
+                      }
                       .print-attendance-table {
                         width: 100% !important;
                         border-collapse: collapse !important;

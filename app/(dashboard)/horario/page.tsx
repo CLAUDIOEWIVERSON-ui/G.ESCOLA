@@ -1415,6 +1415,18 @@ export default function HorarioPage() {
 
               {/* Grid Table */}
               <div className="p-3 md:p-5 bg-slate-50 flex-1 print-content">
+                {isEditMode && (
+                  <div className="mb-3 p-2.5 bg-blue-50/80 border border-blue-200/80 rounded-xl flex items-center justify-between text-xs text-blue-900 no-print print:hidden">
+                    <div className="flex items-center gap-2">
+                      <Edit3 size={14} className="text-blue-600 shrink-0" />
+                      <span className="font-medium text-[11px] leading-tight">
+                        {language === "pt"
+                          ? "Modo de Edição: todos os horários estão visíveis para inclusão. Ao salvar, os horários não preenchidos serão ocultados automaticamente."
+                          : "Edit Mode: all time slots are visible for configuration. When saved, unfilled slots will be hidden automatically."}
+                      </span>
+                    </div>
+                  </div>
+                )}
                 <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
                   <table className="w-full border-collapse table-fixed">
                     <thead>
@@ -1455,33 +1467,108 @@ export default function HorarioPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {slots.map((slot, index) => {
+                      {(() => {
                         const isClassFilled = (slotId: string) => {
                           return weekDays.some((day) => {
                             const cell = getCellData(slotId, day.key);
-                            return !!cell.subjectId;
+                            return !!(
+                              cell.subjectId ||
+                              cell.customSubject ||
+                              cell.instructorId ||
+                              cell.customInstructor ||
+                              cell.room ||
+                              cell.topicId ||
+                              cell.topic
+                            );
                           });
                         };
 
-                        let printClass = "";
-                        if (slot.type === "class") {
-                          const filled = isClassFilled(slot.id);
-                          if (!filled) {
-                            printClass = "print:hidden no-print";
-                          }
-                        } else if (slot.type === "interval") {
-                          const prevSlot = slots[index - 1];
-                          const nextSlot = slots[index + 1];
-                          const prevFilled = prevSlot
-                            ? isClassFilled(prevSlot.id)
-                            : false;
-                          const nextFilled = nextSlot
-                            ? isClassFilled(nextSlot.id)
-                            : false;
-                          if (!prevFilled && !nextFilled) {
-                            printClass = "print:hidden no-print";
-                          }
+                        const hasAnyFilledSlot = slots.some(
+                          (slot) => slot.type === "class" && isClassFilled(slot.id),
+                        );
+
+                        if (!isEditMode && !hasAnyFilledSlot) {
+                          return (
+                            <tr>
+                              <td colSpan={6} className="py-12 px-4 text-center bg-slate-50/50">
+                                <div className="flex flex-col items-center justify-center gap-2 max-w-md mx-auto">
+                                  <Clock className="w-8 h-8 text-slate-300" />
+                                  <span className="text-sm font-black text-slate-700 uppercase tracking-wider">
+                                    {language === "pt"
+                                      ? "Nenhum horário preenchido para esta semana"
+                                      : "No scheduled classes for this week"}
+                                  </span>
+                                  <p className="text-xs text-slate-400 font-medium">
+                                    {language === "pt"
+                                      ? "Os horários não preenchidos foram ocultados do detalhe semanal de aulas."
+                                      : "Unfilled time slots have been hidden from the weekly class schedule."}
+                                  </p>
+                                  {profile?.role !== "aluno" &&
+                                    profile?.role !== "convidado" &&
+                                    !isNifStudent && (
+                                      <button
+                                        type="button"
+                                        onClick={handleToggleEdit}
+                                        className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition shadow-sm cursor-pointer"
+                                      >
+                                        <Edit3 size={14} />
+                                        <span>
+                                          {language === "pt"
+                                            ? "Preencher Horários"
+                                            : "Fill Schedule"}
+                                        </span>
+                                      </button>
+                                    )}
+                                </div>
+                              </td>
+                            </tr>
+                          );
                         }
+
+                        return slots.map((slot, index) => {
+                          const filled =
+                            slot.type === "class"
+                              ? isClassFilled(slot.id)
+                              : false;
+
+                          // When not in edit mode, completely omit unfilled class slots
+                          if (!isEditMode && slot.type === "class" && !filled) {
+                            return null;
+                          }
+
+                          // When not in edit mode, omit intervals that are not between two filled class slots
+                          if (!isEditMode && slot.type === "interval") {
+                            const prevSlot = slots[index - 1];
+                            const nextSlot = slots[index + 1];
+                            const prevFilled = prevSlot
+                              ? isClassFilled(prevSlot.id)
+                              : false;
+                            const nextFilled = nextSlot
+                              ? isClassFilled(nextSlot.id)
+                              : false;
+                            if (!prevFilled || !nextFilled) {
+                              return null;
+                            }
+                          }
+
+                          let printClass = "";
+                          if (slot.type === "class") {
+                            if (!filled) {
+                              printClass = "print:hidden no-print";
+                            }
+                          } else if (slot.type === "interval") {
+                            const prevSlot = slots[index - 1];
+                            const nextSlot = slots[index + 1];
+                            const prevFilled = prevSlot
+                              ? isClassFilled(prevSlot.id)
+                              : false;
+                            const nextFilled = nextSlot
+                              ? isClassFilled(nextSlot.id)
+                              : false;
+                            if (!prevFilled && !nextFilled) {
+                              printClass = "print:hidden no-print";
+                            }
+                          }
 
                         if (slot.type === "interval") {
                           return (
@@ -2014,7 +2101,8 @@ export default function HorarioPage() {
                             })}
                           </tr>
                         );
-                      })}
+                      });
+                    })()}
                     </tbody>
                   </table>
                 </div>

@@ -958,7 +958,7 @@ function AvaliacaoAlunoForm() {
                       const filledSlots = slots.map(slot => {
                         const cell = getCellData(slot.id, day.key);
                         return { slot, cell };
-                      }).filter(item => item.cell.subjectId || item.cell.customSubject || item.cell.room);
+                      }).filter(item => item.cell.subjectId || item.cell.customSubject || item.cell.instructorId || item.cell.customInstructor || item.cell.room);
 
                       return (
                         <div key={day.key} className="border border-slate-150 rounded-lg p-3 bg-slate-50/50 hover:bg-slate-100/35 transition flex flex-col justify-start">
@@ -1550,7 +1550,7 @@ function AvaliacaoAlunoForm() {
                                   const filledSlots = slots.map(slot => {
                                     const cell = getCellData(slot.id, day.key);
                                     return { slot, cell };
-                                  }).filter(item => item.cell.subjectId || item.cell.customSubject || item.cell.room);
+                                  }).filter(item => item.cell.subjectId || item.cell.customSubject || item.cell.instructorId || item.cell.customInstructor || item.cell.room);
 
                                   return (
                                     <div key={day.key} className="border border-slate-150 rounded-lg p-3 bg-slate-50/50 hover:bg-slate-100/35 transition flex flex-col justify-start">

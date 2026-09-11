@@ -2213,7 +2213,7 @@ function RelatorioAvaliacaoAdminContent() {
               </div>
 
               {/* Card List of Comments on the General Tab */}
-              <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-6 print:block">
+              <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-6 print:block print-page-break page-break-before">
                 <div className="border-b border-slate-200 pb-3">
                   <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider font-mono flex items-center gap-2">
                     <Edit3 className="h-4 w-4 text-slate-600" />
@@ -2235,7 +2235,7 @@ function RelatorioAvaliacaoAdminContent() {
                       const posto = stud?.posto_graduacao || '';
                       
                       return (
-                        <div key={`comment-${sub.id || index}`} className="border border-slate-200 rounded-xl p-5 bg-slate-50 print:bg-white shadow-sm break-inside-avoid">
+                        <div key={`comment-${sub.id || index}`} className="border border-slate-200 rounded-xl p-5 bg-slate-50 print:bg-white shadow-sm break-inside-avoid print-avoid-break">
                           <div className="flex items-center gap-2 mb-3 border-b border-slate-100 pb-2">
                             <span className="w-2 h-2 rounded-full bg-slate-400"></span>
                             <span className="text-lg font-black text-slate-900 font-mono uppercase tracking-wide flex items-center gap-1.5 flex-wrap">
@@ -2323,8 +2323,8 @@ function RelatorioAvaliacaoAdminContent() {
               </div>
 
               {/* Suggestions and Comments sections consolidated */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 print-page-break page-break-before">
+                <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm break-inside-avoid print-avoid-break">
                   <h3 className="text-sm font-bold text-emerald-800 uppercase tracking-wider border-b pb-2 mb-4 font-mono flex items-center gap-1.5">
                     <CheckCircle className="h-4 w-4 text-emerald-600" />
                     Resumo de Elogios e Pontos Fortes
@@ -3205,7 +3205,7 @@ function RelatorioAvaliacaoAdminContent() {
                       </div>
 
                       {/* Detailed Questionnaire Responses - Faithful to the actual form */}
-                      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-6">
+                      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-6 print-page-break page-break-before">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b pb-4 gap-2">
                           <div>
                             <h4 className="text-sm font-extrabold text-slate-900 font-mono uppercase tracking-wide flex items-center gap-1.5">

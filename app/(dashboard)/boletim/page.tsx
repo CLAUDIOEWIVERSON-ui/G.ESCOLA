@@ -4151,6 +4151,28 @@ function BoletimContent() {
                                       border-collapse: collapse !important;
                                       border: 1.5px solid #0f172a !important;
                                       width: 100% !important;
+                                      page-break-inside: auto !important;
+                                      break-inside: auto !important;
+                                    }
+                                    #class-bulletin-print-area table thead {
+                                      display: table-header-group !important;
+                                      page-break-inside: avoid !important;
+                                      break-inside: avoid !important;
+                                      break-after: avoid !important;
+                                      page-break-after: avoid !important;
+                                    }
+                                    #class-bulletin-print-area table tr {
+                                      page-break-inside: avoid !important;
+                                      break-inside: avoid !important;
+                                    }
+                                    .print-avoid-break {
+                                      page-break-inside: avoid !important;
+                                      break-inside: avoid !important;
+                                    }
+                                    .print-page-break,
+                                    .page-break-before {
+                                      page-break-before: always !important;
+                                      break-before: page !important;
                                     }
                                     #class-bulletin-print-area table th,
                                     #class-bulletin-print-area th {
@@ -4320,7 +4342,7 @@ function BoletimContent() {
                                  </div>
 
                                  {/* Summary stats */}
-                                 <div className="grid grid-cols-2 gap-4 mt-3 border-t border-slate-250 pt-3">
+                                 <div className="grid grid-cols-2 gap-4 mt-3 border-t border-slate-250 pt-3 print-avoid-break break-inside-avoid">
                                    <div className="flex items-center justify-between text-[10px] font-bold text-slate-600">
                                      <span>{language === 'pt' ? 'MÉDIA GERAL DA TURMA:' : 'CLASS OVERALL AVERAGE:'}</span>
                                      <span className="inline-flex items-center justify-center text-center min-w-[50px] font-mono font-black text-blue-700 bg-blue-50 border border-blue-600 px-2 py-0.5 rounded">
@@ -4336,7 +4358,7 @@ function BoletimContent() {
                                  </div>
 
                                  {/* Class Batch Signature Panel */}
-                                 <div className="flex flex-col items-end justify-end pt-3 mt-4 mb-2 border-t border-dashed border-slate-300">
+                                 <div className="flex flex-col items-end justify-end pt-3 mt-4 mb-2 border-t border-dashed border-slate-300 print-avoid-break break-inside-avoid">
                                    <div className="flex flex-col items-center text-center min-w-[320px] max-w-[480px]">
                                      <div className="w-full min-w-[300px] border-b-2 border-slate-800 h-7 mb-1.5"></div>
                                      {signatureName.trim() ? (

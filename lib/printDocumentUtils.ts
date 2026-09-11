@@ -365,6 +365,20 @@ export async function downloadElementAsPDF(
         });
       }
 
+      // Extract explicit forced page breaks (.print-page-break, .page-break-before, .break-before-page, [data-page-break="true"])
+      const forcedBreaks: number[] = [];
+      const pageBreakElements = Array.from(targetElem.querySelectorAll<HTMLElement>(
+        '.print-page-break, .page-break-before, .break-before-page, [data-page-break="true"], .print\\:page-break-before, .print\\:break-before-page'
+      ));
+      for (const pbe of pageBreakElements) {
+        const r = pbe.getBoundingClientRect();
+        const topY = (r.top - containerRect.top) * scaleY;
+        if (topY > 20 && topY < canvas.height - 20) {
+          forcedBreaks.push(topY);
+        }
+      }
+      forcedBreaks.sort((a, b) => a - b);
+
       // 2. Compute intelligent cut points so rows and headers are never cut or orphaned
       const maxPageCanvasHeight = (contentHeight / contentWidth) * canvas.width;
       const cuts: number[] = [0];
@@ -379,6 +393,15 @@ export async function downloadElementAsPDF(
 
         const idealBottom = currentTop + maxPageCanvasHeight;
         let chosenCut = idealBottom;
+
+        // Check if there is an explicit forced page break between currentTop and idealBottom
+        const nextForced = forcedBreaks.find(fb => fb > currentTop + 50 && fb <= idealBottom);
+        if (nextForced) {
+          chosenCut = nextForced;
+          cuts.push(chosenCut);
+          currentTop = chosenCut;
+          continue;
+        }
 
         // A. Check if an avoid-break block crosses the page boundary
         let blockCut: number | null = null;
@@ -655,6 +678,31 @@ export function printElementIsolated(
         .print-turma-unit {
           page-break-inside: avoid !important;
           break-inside: avoid !important;
+        }
+        .print-page-break,
+        .page-break-before,
+        .break-before-page,
+        [data-page-break="true"],
+        .print\\:page-break-before,
+        .print\\:break-before-page {
+          page-break-before: always !important;
+          break-before: page !important;
+          clear: both !important;
+          display: block !important;
+          height: 0 !important;
+          min-height: 0 !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          border: none !important;
+        }
+        .print-page-break-after,
+        .page-break-after,
+        .break-after-page,
+        .print\\:page-break-after,
+        .print\\:break-after-page {
+          page-break-after: always !important;
+          break-after: page !important;
+          clear: both !important;
         }
         .print-section-header,
         .print-avoid-break-after {

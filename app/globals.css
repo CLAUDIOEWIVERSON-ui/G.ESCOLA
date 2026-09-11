@@ -824,15 +824,41 @@ a[class*="bg-indigo-"]:not([class*="bg-indigo-50"]):not([class*="bg-indigo-100"]
     break-inside: avoid !important;
   }
 
+  /* Explicit page break classes */
   .print-page-break,
-  .page-break-before {
+  .page-break-before,
+  .break-before-page,
+  [data-page-break="true"],
+  .print\:page-break-before,
+  .print\:break-before-page {
     page-break-before: always !important;
     break-before: page !important;
+    clear: both !important;
+    display: block !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
   }
 
-  .page-break-after {
+  .print-page-break-after,
+  .page-break-after,
+  .break-after-page,
+  .print\:page-break-after,
+  .print\:break-after-page {
     page-break-after: always !important;
     break-after: page !important;
+    clear: both !important;
+  }
+
+  .print-avoid-break,
+  .break-inside-avoid,
+  .avoid-break,
+  .print-avoid-page-break,
+  .print\:break-inside-avoid {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 
   /* =========================================================================
@@ -1020,3 +1046,12 @@ a[class*="bg-indigo-"]:not([class*="bg-indigo-50"]):not([class*="bg-indigo-100"]
     print-color-adjust: exact !important;
   }
 }
+
+/* Screen mode: hide dedicated print break spacers so they do not alter web UI layout */
+@media screen {
+  .print-page-break,
+  [data-page-break="true"] {
+    display: none !important;
+  }
+}
+
