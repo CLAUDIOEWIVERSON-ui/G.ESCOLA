@@ -343,15 +343,22 @@ function RelatorioAvaliacaoAdminContent() {
       if (cursosData) setCursos(cursosData);
 
       // Fetch Turmas with registered instructor and group fields
-      const { data: turmasData } = await supabase.from('turmas').select('id, nome, curso_id, periodo, instrutor, internacional, grupo_responsavel, data_inicio, data_fim, carga_horaria, local, documento_criacao, status').is('deleted_at', null);
+      const { data: turmasData, error: turmasError } = await supabase
+        .from('turmas')
+        .select('id, nome, curso_id, periodo, instrutor, internacional, grupo_responsavel, data_inicio, data_fim, localizacao, documento_criacao, status')
+        .is('deleted_at', null)
+        .order('nome');
       
-      // Filter out international/exterior classes from the evaluation module
-      let nonInternationalTurmas = (turmasData || []).filter((t: any) => !t.internacional);
+      if (turmasError) {
+        console.error('Erro ao carregar turmas no relatório de avaliação:', turmasError);
+      }
+
+      let availableTurmas = turmasData || [];
 
       // Filter classes by instructor's group responsibility if logged in as an instructor
       if (profile?.role === 'instrutor' && profile?.grupo_responsavel) {
         const userGroup = profile.grupo_responsavel;
-        nonInternationalTurmas = nonInternationalTurmas.filter((t: any) => {
+        availableTurmas = availableTurmas.filter((t: any) => {
           const linkedCurso = (cursosData || []).find((c: any) => c.id === t.curso_id);
           const turmaGroup = t.grupo_responsavel || linkedCurso?.grupo_responsavel;
 
@@ -365,7 +372,7 @@ function RelatorioAvaliacaoAdminContent() {
           return true;
         });
       }
-      setTurmas(nonInternationalTurmas);
+      setTurmas(availableTurmas);
 
       // Fetch Alunos
       const { data: alunosData } = await supabase
@@ -373,12 +380,12 @@ function RelatorioAvaliacaoAdminContent() {
         .select('id, nome, turma_id, posto_graduacao, nome_guerra, om, matricula, email')
         .is('deleted_at', null);
 
-      // Filter out students belonging to international/exterior classes or classes outside instructor's group
-      const nonInternationalAlunos = (alunosData || []).filter((al: any) => {
-        const matchingTurma = nonInternationalTurmas.find((t: any) => t.id === al.turma_id);
+      // Filter students belonging to available classes
+      const availableAlunos = (alunosData || []).filter((al: any) => {
+        const matchingTurma = availableTurmas.find((t: any) => t.id === al.turma_id);
         return !!matchingTurma;
       });
-      setAllStudents(nonInternationalAlunos);
+      setAllStudents(availableAlunos);
 
       // Fetch Questionarios joined with relation metrics and group classifications
       const { data: qData, error: qErr } = await supabase
@@ -417,10 +424,9 @@ function RelatorioAvaliacaoAdminContent() {
         }
       }
 
-      // Filter out submissions belonging to international/exterior classes or classes outside instructor's group
+      // Filter submissions belonging to available classes or within instructor's group
       const activeSubmissions = (qData || []).filter((sub: any) => {
         if (!sub.turma) return false;
-        if (sub.turma.internacional) return false;
 
         // Apply instructor group scope if applicable
         if (profile?.role === 'instrutor' && profile?.grupo_responsavel) {
@@ -443,7 +449,7 @@ function RelatorioAvaliacaoAdminContent() {
       const uniqueInstructorsSet = new Set<string>();
       
       // 1. From classes (turmas)
-      nonInternationalTurmas.forEach((t: any) => {
+      availableTurmas.forEach((t: any) => {
         if (t.instrutor && t.instrutor.trim()) {
           uniqueInstructorsSet.add(t.instrutor.trim());
         }
@@ -1355,6 +1361,17 @@ function RelatorioAvaliacaoAdminContent() {
                           </span>
                           <span className="font-mono font-bold text-slate-900 block text-xs truncate">
                             {activeTurma.documento_criacao}
+                          </span>
+                        </div>
+                      )}
+
+                      {activeTurma?.localizacao && (
+                        <div>
+                          <span className="text-[9px] md:text-[10px] font-bold text-slate-500 uppercase tracking-wider block font-mono">
+                            Localização
+                          </span>
+                          <span className="font-bold text-slate-800 block text-xs truncate">
+                            {activeTurma.localizacao}
                           </span>
                         </div>
                       )}

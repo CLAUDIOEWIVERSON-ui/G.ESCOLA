@@ -176,19 +176,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event: any, session: any) => {
       if (session) {
-        if (event === 'SIGNED_IN') {
-          if (typeof window !== 'undefined') {
-            sessionStorage.removeItem('agenda_popup_already_shown');
-            sessionStorage.setItem('agenda_popup_just_logged_in', 'true');
-          }
-        }
         setLoading(true);
         fetchProfile();
       } else {
-        if (typeof window !== 'undefined') {
-          sessionStorage.removeItem('agenda_popup_already_shown');
-          sessionStorage.removeItem('agenda_popup_just_logged_in');
-        }
         setProfile(null);
         setLoading(false);
       }

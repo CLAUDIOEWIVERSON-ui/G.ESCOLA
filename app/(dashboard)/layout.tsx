@@ -40,7 +40,6 @@ import { useTheme } from '@/lib/theme/ThemeContext';
 
 import { useUser } from '@/lib/auth/UserContext';
 import { fetchWithAuth } from '@/lib/api';
-import { ProximityAlert } from '@/components/ProximityAlert';
 import { EventMarquee } from '@/components/EventMarquee';
 import { HeaderClock } from '@/components/HeaderClock';
 import { FormGuidanceAssistant } from '@/components/FormGuidanceAssistant';
@@ -315,10 +314,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [authLoading, profile, isNifStudent, pathname, router]);
 
   const handleLogout = async () => {
-    if (typeof window !== 'undefined') {
-      sessionStorage.removeItem('agenda_popup_already_shown');
-      sessionStorage.removeItem('agenda_popup_just_logged_in');
-    }
     try {
       await supabase.auth.signOut();
     } catch (e) {
@@ -743,7 +738,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </motion.div>
           </AnimatePresence>
         </main>
-        <ProximityAlert />
         <FormGuidanceAssistant isOpen={showAssistant} onClose={() => setShowAssistant(false)} />
         <SuggestionsModal isOpen={suggestionsOpen} onClose={() => setSuggestionsOpen(false)} />
       </div>
