@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import Modal from './Modal';
 import Image from 'next/image';
@@ -107,6 +107,74 @@ export default function StudentDetailEditModal({
       // ignore storage access errors
     }
   };
+
+  // Identifica se o aluno pertence à categoria / módulo de cursos no exterior
+  const isAlunoExterior = useMemo(() => {
+    const effectiveCursoId = currentAluno?.curso_id || selectedCursoId || aluno?.curso_id || aluno?.turma?.curso_id;
+    const effectiveTurmaId = currentAluno?.turma_id || turmaId || aluno?.turma_id || aluno?.turma?.id;
+    const cObj = allCursos.find((c: any) => c.id === effectiveCursoId);
+    const tObj = allTurmas.find((t: any) => t.id === effectiveTurmaId);
+
+    const alTurma = Array.isArray(aluno?.turma) ? aluno.turma[0] : aluno?.turma;
+    const alCurso = Array.isArray(alTurma?.curso) ? alTurma.curso[0] : (alTurma?.curso || aluno?.curso);
+    const curTurma = Array.isArray(currentAluno?.turma) ? currentAluno.turma[0] : currentAluno?.turma;
+    const curCurso = Array.isArray(curTurma?.curso) ? curTurma.curso[0] : (curTurma?.curso || currentAluno?.curso);
+
+    const isExplicitInternacional = Boolean(
+      turmaInfo?.internacional === true ||
+      tObj?.internacional === true ||
+      cObj?.internacional === true ||
+      currentAluno?.internacional === true ||
+      aluno?.internacional === true ||
+      alTurma?.internacional === true ||
+      alCurso?.internacional === true ||
+      curTurma?.internacional === true ||
+      curCurso?.internacional === true
+    );
+
+    const checkExteriorText = (str?: string | null) => {
+      if (!str) return false;
+      const lower = str.toLowerCase();
+      return lower.includes('exterior') || lower.includes('internacional') || lower.includes('missão no exterior') || lower.includes('missao no exterior');
+    };
+
+    const hasExteriorText = Boolean(
+      checkExteriorText(turmaInfo?.localizacao) ||
+      checkExteriorText(turmaInfo?.curso?.categoria) ||
+      checkExteriorText(tObj?.localizacao) ||
+      checkExteriorText(cObj?.categoria) ||
+      checkExteriorText(alTurma?.localizacao) ||
+      checkExteriorText(alCurso?.categoria) ||
+      checkExteriorText(curTurma?.localizacao) ||
+      checkExteriorText(curCurso?.categoria) ||
+      checkExteriorText(currentAluno?.curso_categoria) ||
+      checkExteriorText(currentAluno?.categoria) ||
+      checkExteriorText(currentAluno?.turma_nome) ||
+      checkExteriorText(currentAluno?.curso_nome) ||
+      checkExteriorText(turmaInputText) ||
+      checkExteriorText(cursoInputText) ||
+      checkExteriorText(aluno?.turma_nome) ||
+      checkExteriorText(aluno?.curso_nome)
+    );
+
+    const hasPassportOnly = Boolean(
+      currentAluno?.passaporte && 
+      currentAluno.passaporte.trim() !== '' && 
+      (!currentAluno?.cpf || currentAluno.cpf.trim() === '')
+    );
+
+    return isExplicitInternacional || hasExteriorText || hasPassportOnly;
+  }, [
+    turmaInfo, 
+    allCursos, 
+    allTurmas, 
+    currentAluno, 
+    selectedCursoId, 
+    aluno, 
+    turmaId, 
+    turmaInputText, 
+    cursoInputText
+  ]);
 
   const loadAllTurmasAndCursos = async () => {
     try {
@@ -823,132 +891,154 @@ export default function StudentDetailEditModal({
               </div>
             </div>
 
-            {/* Attendance Donut Chart (Gráfico de Rosca) */}
-            <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-3">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-                <div className="flex items-center gap-2">
-                  <Calendar size={16} className="text-blue-600" />
-                  <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                    {language === 'pt' ? 'Frequência do Período Letivo' : 'Current Term Attendance'}
-                  </span>
+            {/* Attendance Donut Chart (Gráfico de Rosca) - Ocultado para alunos no exterior */}
+            {!isAlunoExterior ? (
+              <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                  <div className="flex items-center gap-2">
+                    <Calendar size={16} className="text-blue-600" />
+                    <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                      {language === 'pt' ? 'Frequência do Período Letivo' : 'Current Term Attendance'}
+                    </span>
+                  </div>
+                  {loadingAttendance ? (
+                    <span className="text-[10px] text-slate-400 font-mono animate-pulse">
+                      {language === 'pt' ? 'Carregando...' : 'Loading...'}
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-mono font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded">
+                      {attendanceStats.total} {language === 'pt' ? 'aulas' : 'classes'}
+                    </span>
+                  )}
                 </div>
-                {loadingAttendance ? (
-                  <span className="text-[10px] text-slate-400 font-mono animate-pulse">
-                    {language === 'pt' ? 'Carregando...' : 'Loading...'}
-                  </span>
+
+                <div className="h-48 w-full flex items-center justify-center relative my-1">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={pieData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={48}
+                        outerRadius={72}
+                        paddingAngle={attendanceStats.total > 0 ? 5 : 0}
+                        dataKey="value"
+                      >
+                        {pieData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      {attendanceStats.total > 0 && (
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: '#ffffff',
+                            borderRadius: '10px',
+                            border: '1px solid #cbd5e1',
+                            fontSize: '11px',
+                            fontWeight: 'bold',
+                            color: '#0f172a'
+                          }}
+                          formatter={(value: any, name: any) => [
+                            `${value} dia(s) (${name === (language === 'pt' ? 'Presenças' : 'Present') ? attendanceStats.percentPresenca : attendanceStats.percentFalta}%)`,
+                            name
+                          ]}
+                        />
+                      )}
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">
+                      {language === 'pt' ? 'Presença' : 'Attendance'}
+                    </span>
+                    <span className={cn(
+                      "text-xl font-black font-mono",
+                      attendanceStats.total === 0
+                        ? "text-slate-400"
+                        : attendanceStats.percentPresenca >= 75
+                        ? "text-emerald-600"
+                        : "text-rose-600"
+                    )}>
+                      {attendanceStats.total > 0 ? `${attendanceStats.percentPresenca}%` : '--'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Attendance Legend and Summary */}
+                {attendanceStats.total > 0 ? (
+                  <div className="space-y-2 pt-1 border-t border-slate-100 text-xs">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" />
+                        <span className="text-slate-600 font-medium">
+                          {language === 'pt' ? 'Presenças registradas' : 'Present days'}
+                        </span>
+                      </div>
+                      <span className="font-bold font-mono text-emerald-600">
+                        {attendanceStats.presentes} ({attendanceStats.percentPresenca}%)
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block" />
+                        <span className="text-slate-600 font-medium">
+                          {language === 'pt' ? 'Faltas registradas' : 'Absent days'}
+                        </span>
+                      </div>
+                      <span className="font-bold font-mono text-rose-600">
+                        {attendanceStats.faltas} ({attendanceStats.percentFalta}%)
+                      </span>
+                    </div>
+
+                    <div className="pt-2">
+                      {attendanceStats.percentPresenca >= 75 ? (
+                        <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl p-2 flex items-center gap-2">
+                          <CheckCircle size={16} className="text-emerald-600 shrink-0" />
+                          <span className="text-[11px] font-bold leading-tight">
+                            {language === 'pt' 
+                              ? 'Frequência regular (mínimo exigido de 75% atingido)' 
+                              : 'Good attendance (meets 75% requirement)'}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="bg-rose-50 border border-rose-200 text-rose-800 rounded-xl p-2 flex items-center gap-2">
+                          <AlertTriangle size={16} className="text-rose-600 shrink-0" />
+                          <span className="text-[11px] font-bold leading-tight">
+                            {language === 'pt'
+                              ? 'Atenção: Abaixo do mínimo exigido de 75% de presença'
+                              : 'Warning: Below 75% required attendance'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 ) : (
-                  <span className="text-[10px] font-mono font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded">
-                    {attendanceStats.total} {language === 'pt' ? 'aulas' : 'classes'}
-                  </span>
+                  <div className="text-center py-2 text-xs text-slate-400 italic">
+                    {language === 'pt' ? 'Nenhum registro de frequência lançado para este aluno no período.' : 'No attendance records logged for this student yet.'}
+                  </div>
                 )}
               </div>
-
-              <div className="h-48 w-full flex items-center justify-center relative my-1">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={pieData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={48}
-                      outerRadius={72}
-                      paddingAngle={attendanceStats.total > 0 ? 5 : 0}
-                      dataKey="value"
-                    >
-                      {pieData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    {attendanceStats.total > 0 && (
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: '#ffffff',
-                          borderRadius: '10px',
-                          border: '1px solid #cbd5e1',
-                          fontSize: '11px',
-                          fontWeight: 'bold',
-                          color: '#0f172a'
-                        }}
-                        formatter={(value: any, name: any) => [
-                          `${value} dia(s) (${name === (language === 'pt' ? 'Presenças' : 'Present') ? attendanceStats.percentPresenca : attendanceStats.percentFalta}%)`,
-                          name
-                        ]}
-                      />
-                    )}
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">
-                    {language === 'pt' ? 'Presença' : 'Attendance'}
+            ) : (
+              <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-3">
+                <div className="flex items-center gap-2 border-b border-slate-100 pb-2.5">
+                  <Globe size={16} className="text-blue-600" />
+                  <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    {language === 'pt' ? 'Missão / Curso no Exterior' : 'International Mission'}
                   </span>
-                  <span className={cn(
-                    "text-xl font-black font-mono",
-                    attendanceStats.total === 0
-                      ? "text-slate-400"
-                      : attendanceStats.percentPresenca >= 75
-                      ? "text-emerald-600"
-                      : "text-rose-600"
-                  )}>
-                    {attendanceStats.total > 0 ? `${attendanceStats.percentPresenca}%` : '--'}
-                  </span>
+                </div>
+                <div className="p-3 bg-blue-50/60 border border-blue-200/80 rounded-xl space-y-1.5">
+                  <div className="flex items-center gap-1.5 text-blue-900 font-bold text-xs">
+                    <CheckCircle size={14} className="text-blue-600 shrink-0" />
+                    <span>{language === 'pt' ? 'Frequência e Assiduidade' : 'Attendance & Punctuality'}</span>
+                  </div>
+                  <p className="text-[11px] text-slate-600 leading-relaxed">
+                    {language === 'pt' 
+                      ? 'Registro de frequência e assiduidade dispensado da ficha de cadastro para alunos em missão ou curso no exterior.' 
+                      : 'Attendance and punctuality records are exempted from the registration sheet for students on missions abroad.'}
+                  </p>
                 </div>
               </div>
-
-              {/* Attendance Legend and Summary */}
-              {attendanceStats.total > 0 ? (
-                <div className="space-y-2 pt-1 border-t border-slate-100 text-xs">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" />
-                      <span className="text-slate-600 font-medium">
-                        {language === 'pt' ? 'Presenças registradas' : 'Present days'}
-                      </span>
-                    </div>
-                    <span className="font-bold font-mono text-emerald-600">
-                      {attendanceStats.presentes} ({attendanceStats.percentPresenca}%)
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block" />
-                      <span className="text-slate-600 font-medium">
-                        {language === 'pt' ? 'Faltas registradas' : 'Absent days'}
-                      </span>
-                    </div>
-                    <span className="font-bold font-mono text-rose-600">
-                      {attendanceStats.faltas} ({attendanceStats.percentFalta}%)
-                    </span>
-                  </div>
-
-                  <div className="pt-2">
-                    {attendanceStats.percentPresenca >= 75 ? (
-                      <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl p-2 flex items-center gap-2">
-                        <CheckCircle size={16} className="text-emerald-600 shrink-0" />
-                        <span className="text-[11px] font-bold leading-tight">
-                          {language === 'pt' 
-                            ? 'Frequência regular (mínimo exigido de 75% atingido)' 
-                            : 'Good attendance (meets 75% requirement)'}
-                        </span>
-                      </div>
-                    ) : (
-                      <div className="bg-rose-50 border border-rose-200 text-rose-800 rounded-xl p-2 flex items-center gap-2">
-                        <AlertTriangle size={16} className="text-rose-600 shrink-0" />
-                        <span className="text-[11px] font-bold leading-tight">
-                          {language === 'pt'
-                            ? 'Atenção: Abaixo do mínimo exigido de 75% de presença'
-                            : 'Warning: Below 75% required attendance'}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-2 text-xs text-slate-400 italic">
-                  {language === 'pt' ? 'Nenhum registro de frequência lançado para este aluno no período.' : 'No attendance records logged for this student yet.'}
-                </div>
-              )}
-            </div>
+            )}
           </div>
 
           {/* RIGHT COLUMN: Edit Student Form */}
@@ -1811,53 +1901,55 @@ export default function StudentDetailEditModal({
             </table>
           </div>
 
-          {/* Seção 3: Registro de Frequência e Assiduidade */}
-          <div className="mb-3 print-avoid-break break-inside-avoid">
-            <h3 
-              style={{ backgroundColor: '#002776', color: '#ffffff', WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}
-              className="text-[9px] font-black uppercase tracking-wider bg-[#002776] text-white px-2 py-1 rounded-t section-blue-bar !text-white !bg-[#002776]"
-            >
-              3. REGISTRO DE FREQUÊNCIA E ASSIDUIDADE
-            </h3>
-            <table className="w-full border-collapse border border-slate-500 text-xs text-center">
-              <thead>
-                <tr className="bg-slate-100 font-bold border-b border-slate-400">
-                  <th className="p-1 border-r border-slate-400">Total de Aulas</th>
-                  <th className="p-1 border-r border-slate-400">Presenças (%)</th>
-                  <th className="p-1 border-r border-slate-400">Faltas (%)</th>
-                  <th className="p-1">Situação da Frequência</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td className="p-1 font-mono border-r border-slate-400">{attendanceStats.total} aulas</td>
-                  <td className="p-1 font-mono font-bold text-emerald-800 border-r border-slate-400">
-                    {attendanceStats.presentes} ({attendanceStats.percentPresenca}%)
-                  </td>
-                  <td className="p-1 font-mono font-bold text-rose-800 border-r border-slate-400">
-                    {attendanceStats.faltas} ({attendanceStats.percentFalta}%)
-                  </td>
-                  <td className="p-1 font-bold uppercase">
-                    {attendanceStats.total === 0 ? (
-                      <span className="text-slate-500">SEM REGISTROS</span>
-                    ) : attendanceStats.percentPresenca >= 75 ? (
-                      <span className="text-emerald-700">REGULAR (&ge; 75%)</span>
-                    ) : (
-                      <span className="text-rose-700">ABAIXO DO EXIGIDO (&lt; 75%)</span>
-                    )}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          {/* Seção 3: Registro de Frequência e Assiduidade (Omitida para alunos no exterior) */}
+          {!isAlunoExterior && (
+            <div className="mb-3 print-avoid-break break-inside-avoid">
+              <h3 
+                style={{ backgroundColor: '#002776', color: '#ffffff', WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}
+                className="text-[9px] font-black uppercase tracking-wider bg-[#002776] text-white px-2 py-1 rounded-t section-blue-bar !text-white !bg-[#002776]"
+              >
+                3. REGISTRO DE FREQUÊNCIA E ASSIDUIDADE
+              </h3>
+              <table className="w-full border-collapse border border-slate-500 text-xs text-center">
+                <thead>
+                  <tr className="bg-slate-100 font-bold border-b border-slate-400">
+                    <th className="p-1 border-r border-slate-400">Total de Aulas</th>
+                    <th className="p-1 border-r border-slate-400">Presenças (%)</th>
+                    <th className="p-1 border-r border-slate-400">Faltas (%)</th>
+                    <th className="p-1">Situação da Frequência</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td className="p-1 font-mono border-r border-slate-400">{attendanceStats.total} aulas</td>
+                    <td className="p-1 font-mono font-bold text-emerald-800 border-r border-slate-400">
+                      {attendanceStats.presentes} ({attendanceStats.percentPresenca}%)
+                    </td>
+                    <td className="p-1 font-mono font-bold text-rose-800 border-r border-slate-400">
+                      {attendanceStats.faltas} ({attendanceStats.percentFalta}%)
+                    </td>
+                    <td className="p-1 font-bold uppercase">
+                      {attendanceStats.total === 0 ? (
+                        <span className="text-slate-500">SEM REGISTROS</span>
+                      ) : attendanceStats.percentPresenca >= 75 ? (
+                        <span className="text-emerald-700">REGULAR (&ge; 75%)</span>
+                      ) : (
+                        <span className="text-rose-700">ABAIXO DO EXIGIDO (&lt; 75%)</span>
+                      )}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )}
 
-          {/* Seção 4: Observações Pedagógicas */}
+          {/* Seção 4 (ou 3 se exterior): Observações Pedagógicas */}
           <div className="mb-4 print-avoid-break break-inside-avoid">
             <h3 
               style={{ backgroundColor: '#002776', color: '#ffffff', WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}
               className="text-[9px] font-black uppercase tracking-wider bg-[#002776] text-white px-2 py-1 rounded-t section-blue-bar !text-white !bg-[#002776]"
             >
-              4. OBSERVAÇÕES PEDAGÓGICAS E DISCIPLINARES
+              {isAlunoExterior ? '3. OBSERVAÇÕES PEDAGÓGICAS E DISCIPLINARES' : '4. OBSERVAÇÕES PEDAGÓGICAS E DISCIPLINARES'}
             </h3>
             <div className="border border-slate-500 p-2 text-xs font-sans min-h-[40px] bg-slate-50/30">
               {currentAluno?.observacoes ? (
