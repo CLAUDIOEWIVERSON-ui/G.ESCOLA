@@ -825,6 +825,19 @@ a[class*="bg-indigo-"]:not([class*="bg-indigo-50"]):not([class*="bg-indigo-100"]
   }
 
   /* Explicit page break classes */
+  .print-page-break:empty,
+  .page-break-before:empty,
+  .break-before-page:empty,
+  [data-page-break="true"]:empty,
+  .print\:page-break-before:empty,
+  .print\:break-before-page:empty {
+    height: 0 !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+  }
+
   .print-page-break,
   .page-break-before,
   .break-before-page,
@@ -835,11 +848,6 @@ a[class*="bg-indigo-"]:not([class*="bg-indigo-50"]):not([class*="bg-indigo-100"]
     break-before: page !important;
     clear: both !important;
     display: block !important;
-    height: 0 !important;
-    min-height: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    border: none !important;
   }
 
   .print-page-break-after,
@@ -1047,10 +1055,10 @@ a[class*="bg-indigo-"]:not([class*="bg-indigo-50"]):not([class*="bg-indigo-100"]
   }
 }
 
-/* Screen mode: hide dedicated print break spacers so they do not alter web UI layout */
+/* Screen mode: hide dedicated empty print break spacers so they do not alter web UI layout */
 @media screen {
-  .print-page-break,
-  [data-page-break="true"] {
+  .print-page-break:empty,
+  [data-page-break="true"]:empty {
     display: none !important;
   }
 }

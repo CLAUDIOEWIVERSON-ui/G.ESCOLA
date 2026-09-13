@@ -234,6 +234,12 @@ export async function downloadElementAsPDF(
           clonedElem.style.setProperty('box-shadow', 'none', 'important');
           clonedElem.style.setProperty('border', 'none', 'important');
 
+          // Hide elements marked as print:hidden or no-print
+          const hiddenInPrint = clonedElem.querySelectorAll('.print\\:hidden, .no-print, [class*="print:hidden"]');
+          hiddenInPrint.forEach((el) => {
+            (el as HTMLElement).style.setProperty('display', 'none', 'important');
+          });
+
           // Inline all images in the clone to base64 to eliminate any CORS / taint problems
           await inlineAllImagesInElement(clonedElem);
 
@@ -679,6 +685,18 @@ export function printElementIsolated(
           page-break-inside: avoid !important;
           break-inside: avoid !important;
         }
+        .print-page-break:empty,
+        .page-break-before:empty,
+        .break-before-page:empty,
+        [data-page-break="true"]:empty,
+        .print\\:page-break-before:empty,
+        .print\\:break-before-page:empty {
+          height: 0 !important;
+          min-height: 0 !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          border: none !important;
+        }
         .print-page-break,
         .page-break-before,
         .break-before-page,
@@ -689,11 +707,6 @@ export function printElementIsolated(
           break-before: page !important;
           clear: both !important;
           display: block !important;
-          height: 0 !important;
-          min-height: 0 !important;
-          margin: 0 !important;
-          padding: 0 !important;
-          border: none !important;
         }
         .print-page-break-after,
         .page-break-after,

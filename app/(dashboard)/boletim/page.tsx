@@ -220,7 +220,7 @@ function BoletimContent() {
   const [loading, setLoading] = useState(false);
   const { cursos: rawCursos } = useCursos();
   const { turmas: rawTurmas } = useTurmas();
-  const { disciplinas } = useDisciplinas();
+  const { disciplinas, mutate: mutateDisciplinas } = useDisciplinas();
   const { configuracoes } = useConfiguracoes();
   const searchParams = useSearchParams();
 
@@ -306,6 +306,40 @@ function BoletimContent() {
   const [selectedStudentForReport, setSelectedStudentForReport] = useState<string | null>(null);
   const [loadingReport, setLoadingReport] = useState(false);
   const [reportData, setReportData] = useState<any | null>(null);
+  const [updatingCargaHorariaId, setUpdatingCargaHorariaId] = useState<string | null>(null);
+
+  const handleInlineUpdateCargaHoraria = async (discId: string, newCargaHoraria: number | null) => {
+    if (isConvidado || isNifStudent || !discId) return;
+    const parsedCH = newCargaHoraria !== null && !isNaN(newCargaHoraria) && newCargaHoraria > 0 ? Number(newCargaHoraria) : null;
+    
+    // Optimistic update of local reportData state so total hours update immediately
+    setReportData((prev: any) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        disciplines: (prev.disciplines || []).map((d: any) =>
+          d.id === discId ? { ...d, carga_horaria: parsedCH } : d
+        )
+      };
+    });
+
+    setUpdatingCargaHorariaId(discId);
+    try {
+      const { error } = await supabase
+        .from('disciplinas')
+        .update({ carga_horaria: parsedCH })
+        .eq('id', discId);
+      
+      if (error) throw error;
+      if (mutateDisciplinas) mutateDisciplinas();
+      toast.success(language === 'pt' ? `Carga horária salva: ${parsedCH ? `${parsedCH}h` : '0h'}` : `Workload saved: ${parsedCH ? `${parsedCH}h` : '0h'}`);
+    } catch (err: any) {
+      console.error('Erro ao atualizar carga horária:', err);
+      toast.error(language === 'pt' ? 'Erro ao salvar carga horária no banco' : 'Error saving workload to database');
+    } finally {
+      setUpdatingCargaHorariaId(null);
+    }
+  };
 
   const getReportFirstGrade = useCallback((rData: any) => {
     if (!rData || !rData.grades || rData.grades.length === 0) return null;
@@ -2214,9 +2248,26 @@ function BoletimContent() {
 
               {/* Academic Performance Map */}
               <div className="space-y-3 font-sans">
-                <h3 className="text-[11px] font-black text-slate-600 tracking-[0.15em] uppercase pb-1 border-b border-slate-200 text-left">
-                  {reportT[language as "pt" | "en"].academicMap}
-                </h3>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-1 border-b border-slate-200 gap-2">
+                  <h3 className="text-[11px] font-black text-slate-600 tracking-[0.15em] uppercase text-left">
+                    {reportT[language as "pt" | "en"].academicMap}
+                  </h3>
+                  {reportData && (
+                    <div className="flex flex-wrap items-center gap-2 print:hidden">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase">
+                        {language === 'pt' ? 'C.H. Total do Curso:' : 'Total Workload:'}
+                      </span>
+                      <span className="font-mono font-black text-xs bg-blue-50 text-blue-800 border border-blue-200 px-2 py-0.5 rounded-md">
+                        {(reportData.disciplines || []).reduce((acc: number, d: any) => acc + (Number(d.carga_horaria) || 0), 0)}h
+                      </span>
+                      {!isConvidado && !isNifStudent && (
+                        <span className="text-[9px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md flex items-center gap-1">
+                          ✏️ {language === 'pt' ? 'Preenchimento direto na coluna C.H.' : 'Direct fill enabled in C.H. column'}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
                 <div className="overflow-x-auto">
                   {(() => {
                     if (!reportData) return null;
@@ -2332,14 +2383,50 @@ function BoletimContent() {
                                     </td>
                                     <td className="p-0 border border-black align-middle w-[10%] text-center">
                                       <div className="flex flex-col w-full h-full divide-y divide-black">
-                                        {discs.map((disc: any, dIdx: number) => (
-                                          <div
-                                            key={`ch-${disc.id || dIdx}`}
-                                            className="px-2 py-2 text-center font-mono text-slate-700 flex items-center justify-center flex-1 min-h-[28px]"
-                                          >
-                                            {disc.carga_horaria ? `${disc.carga_horaria}h` : '-'}
-                                          </div>
-                                        ))}
+                                        {discs.map((disc: any, dIdx: number) => {
+                                          const canDirectEdit = !isConvidado && !isNifStudent && disc.id;
+                                          return (
+                                            <div
+                                              key={`ch-${disc.id || dIdx}`}
+                                              className="px-1.5 py-1 text-center font-mono text-slate-700 flex items-center justify-center flex-1 min-h-[30px]"
+                                            >
+                                              {canDirectEdit ? (
+                                                <div className="flex items-center justify-center gap-1 w-full">
+                                                  <input
+                                                    id={`direct-ch-input-${disc.id}`}
+                                                    type="number"
+                                                    min={1}
+                                                    max={999}
+                                                    key={`ch-input-${disc.id}-${disc.carga_horaria}`}
+                                                    defaultValue={disc.carga_horaria !== null && disc.carga_horaria !== undefined ? disc.carga_horaria : ''}
+                                                    onBlur={(e) => {
+                                                      const val = e.target.value.trim() === '' ? null : parseInt(e.target.value, 10);
+                                                      if (val !== disc.carga_horaria) {
+                                                        handleInlineUpdateCargaHoraria(disc.id, val);
+                                                      }
+                                                    }}
+                                                    onKeyDown={(e) => {
+                                                      if (e.key === 'Enter') {
+                                                        (e.target as HTMLInputElement).blur();
+                                                      }
+                                                    }}
+                                                    placeholder="0"
+                                                    title={language === 'pt' ? 'Clique para preencher a carga horária diretamente' : 'Click to fill workload directly'}
+                                                    className="w-14 text-center font-mono font-black text-xs bg-amber-50/90 hover:bg-amber-100 focus:bg-white focus:ring-2 focus:ring-blue-600 border border-amber-300 rounded px-1 py-0.5 text-slate-900 transition shadow-2xs print:hidden cursor-text"
+                                                  />
+                                                  <span className="text-[10px] font-bold text-slate-400 print:hidden select-none">h</span>
+                                                  <span className="hidden print:inline font-mono font-bold text-slate-900">
+                                                    {disc.carga_horaria ? `${disc.carga_horaria}h` : '-'}
+                                                  </span>
+                                                </div>
+                                              ) : (
+                                                <span className="font-mono font-bold text-slate-800">
+                                                  {disc.carga_horaria ? `${disc.carga_horaria}h` : '-'}
+                                                </span>
+                                              )}
+                                            </div>
+                                          );
+                                        })}
                                       </div>
                                     </td>
                                     <td className="border border-black p-2 text-center align-middle font-mono font-black text-slate-900 text-sm w-[15%]">
@@ -2356,6 +2443,26 @@ function BoletimContent() {
                               })
                             )}
                           </tbody>
+                          {(() => {
+                            const totalCH = (reportData.disciplines || []).reduce((acc: number, d: any) => acc + (Number(d.carga_horaria) || 0), 0);
+                            return (
+                              <tfoot>
+                                <tr className="bg-slate-100 font-bold border-t-2 border-black text-xs">
+                                  <td colSpan={2} className="border border-black p-2.5 text-right uppercase tracking-wider font-black text-slate-900">
+                                    {language === 'pt' ? 'CARGA HORÁRIA TOTAL DO CURSO:' : 'TOTAL COURSE WORKLOAD:'}
+                                  </td>
+                                  <td className="border border-black p-2 text-center font-mono font-black text-slate-900 bg-amber-50/70 print:bg-white text-sm">
+                                    {totalCH > 0 ? `${totalCH}h` : '-'}
+                                  </td>
+                                  <td colSpan={2} className="border border-black p-2 text-center text-[10px] text-slate-600 font-bold uppercase tracking-wider">
+                                    {language === 'pt' 
+                                      ? `${(reportData.disciplines || []).length} Disciplina(s) Computada(s)` 
+                                      : `${(reportData.disciplines || []).length} Subject(s) Computed`}
+                                  </td>
+                                </tr>
+                              </tfoot>
+                            );
+                          })()}
                         </table>
                     );
                   })()}
@@ -3712,6 +3819,24 @@ function BoletimContent() {
                                                 })
                                               )}
                                             </tbody>
+                                            {(() => {
+                                              const totalBatchCH = sortedDisciplines.reduce((acc: number, d: any) => acc + (Number(d.carga_horaria) || 0), 0);
+                                              return (
+                                                <tfoot>
+                                                  <tr className="bg-slate-100 font-bold border-t-2 border-black text-[9px]">
+                                                    <td colSpan={2} className="border border-black p-1.5 text-right uppercase tracking-wider font-black text-slate-900">
+                                                      {language === 'pt' ? 'CARGA HORÁRIA TOTAL DO CURSO:' : 'TOTAL COURSE WORKLOAD:'}
+                                                    </td>
+                                                    <td className="border border-black p-1.5 text-center font-mono font-black text-slate-900 text-xs">
+                                                      {totalBatchCH > 0 ? `${totalBatchCH}h` : '-'}
+                                                    </td>
+                                                    <td colSpan={2} className="border border-black p-1.5 text-center text-[8px] text-slate-600 font-bold uppercase tracking-wider">
+                                                      {language === 'pt' ? `${sortedDisciplines.length} Disciplinas` : `${sortedDisciplines.length} Subjects`}
+                                                    </td>
+                                                  </tr>
+                                                </tfoot>
+                                              );
+                                            })()}
                                           </table>
                                         );
                                       })()}

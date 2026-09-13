@@ -2213,66 +2213,105 @@ function RelatorioAvaliacaoAdminContent() {
               </div>
 
               {/* Card List of Comments on the General Tab */}
-              <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-6 print:block print-page-break page-break-before">
-                <div className="border-b border-slate-200 pb-3">
-                  <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider font-mono flex items-center gap-2">
-                    <Edit3 className="h-4 w-4 text-slate-600" />
-                    Comentários Escritos pelos Alunos
+              <div className="print-page-break" />
+              <div 
+                id="relatorio-avaliacao-comentarios-alunos"
+                className="bg-white border-2 border-slate-900 rounded-xl p-6 shadow-xs space-y-6 print:border-slate-950 print:p-5 print:rounded-none print:shadow-none print-group-block break-inside-auto"
+              >
+                <div className="border-b-2 border-slate-900 pb-3">
+                  <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider font-mono flex items-center gap-2">
+                    <Edit3 className="h-4 w-4 text-slate-800" />
+                    Sugestões e Comentários Escritos pelos Alunos
                   </h3>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Sugestões, críticas, elogios e outras observações inseridas nas avaliações respondidas.
+                  <p className="text-xs text-slate-600 mt-1 font-medium">
+                    Sugestões de melhoria, críticas construtivas, elogios, necessidades de novos cursos e observações registradas nas avaliações respondidas.
                   </p>
                 </div>
-                {filteredSubmissions.filter(s => s.sugestoes_melhoria || s.criticas_construtivas || s.elogios || s.necessidades_novos_cursos || s.comentarios_adicionais).length === 0 ? (
-                  <div className="text-center py-6 text-slate-400 italic text-xs font-mono">
-                    📭 Nenhum comentário por escrito registrado nesta seleção.
+                {filteredSubmissions.filter(s => 
+                  (s.sugestoes_melhoria && s.sugestoes_melhoria.trim()) || 
+                  (s.criticas_construtivas && s.criticas_construtivas.trim()) || 
+                  (s.elogios && s.elogios.trim()) || 
+                  (s.necessidades_novos_cursos && s.necessidades_novos_cursos.trim()) || 
+                  (s.comentarios_adicionais && s.comentarios_adicionais.trim())
+                ).length === 0 ? (
+                  <div className="text-center py-6 text-slate-500 italic text-xs font-mono bg-slate-50 border border-slate-200 rounded-lg print:bg-white print:border-slate-300">
+                    Nenhum comentário ou sugestão por escrito registrado nesta seleção.
                   </div>
                 ) : (
                   <div className="space-y-6">
-                    {filteredSubmissions.filter(s => s.sugestoes_melhoria || s.criticas_construtivas || s.elogios || s.necessidades_novos_cursos || s.comentarios_adicionais).map((sub, index) => {
+                    {filteredSubmissions.filter(s => 
+                      (s.sugestoes_melhoria && s.sugestoes_melhoria.trim()) || 
+                      (s.criticas_construtivas && s.criticas_construtivas.trim()) || 
+                      (s.elogios && s.elogios.trim()) || 
+                      (s.necessidades_novos_cursos && s.necessidades_novos_cursos.trim()) || 
+                      (s.comentarios_adicionais && s.comentarios_adicionais.trim())
+                    ).map((sub, index) => {
                       const stud = allStudents.find(a => a.id === sub.aluno_id);
                       const studentName = stud ? stud.nome : (sub.aluno_nome || 'Aluno Desconhecido');
                       const posto = stud?.posto_graduacao || '';
+                      const om = stud?.om || '';
                       
                       return (
-                        <div key={`comment-${sub.id || index}`} className="border border-slate-200 rounded-xl p-5 bg-slate-50 print:bg-white shadow-sm break-inside-avoid print-avoid-break">
-                          <div className="flex items-center gap-2 mb-3 border-b border-slate-100 pb-2">
-                            <span className="w-2 h-2 rounded-full bg-slate-400"></span>
-                            <span className="text-lg font-black text-slate-900 font-mono uppercase tracking-wide flex items-center gap-1.5 flex-wrap">
-                              {posto ? <span className="text-lg font-black text-slate-800">{posto}</span> : null}
-                              <span className="text-lg font-black text-slate-900">{studentName}</span>
-                            </span>
+                        <div key={`comment-${sub.id || index}`} className="border-2 border-slate-300 print:border-slate-800 rounded-xl p-5 bg-slate-50 print:bg-white shadow-xs break-inside-avoid print-avoid-break">
+                          <div className="flex items-center justify-between gap-2 mb-3 border-b border-slate-200 print:border-slate-300 pb-2">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="w-2.5 h-2.5 rounded-full bg-slate-700"></span>
+                              <span className="text-sm font-black text-slate-900 font-mono uppercase tracking-wide flex items-center gap-1.5 flex-wrap">
+                                {posto ? <span className="text-slate-700 font-bold">{posto}</span> : null}
+                                <span>{studentName}</span>
+                              </span>
+                              {om && (
+                                <span className="text-[10px] font-mono text-slate-600 font-bold uppercase bg-white print:bg-white px-2 py-0.5 rounded border border-slate-200 print:border-slate-300">
+                                  OM: {om}
+                                </span>
+                              )}
+                            </div>
+                            {sub.assinatura_digital && (
+                              <span className="text-[9px] font-mono text-slate-500 font-semibold print:text-black">
+                                Assinado Digitalmente
+                              </span>
+                            )}
                           </div>
                           
-                          <div className="space-y-4">
-                            {sub.sugestoes_melhoria && (
-                              <div>
-                                <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Sugestões de Melhoria</h4>
-                                <p className="text-xs text-slate-700 bg-white print:bg-white p-3 rounded border border-slate-100">{sub.sugestoes_melhoria}</p>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                            {sub.sugestoes_melhoria && sub.sugestoes_melhoria.trim() && (
+                              <div className="bg-white print:bg-white p-3.5 rounded-lg border border-slate-200 print:border-slate-400 md:col-span-2">
+                                <h4 className="text-[11px] font-black text-indigo-900 print:text-black uppercase tracking-wider mb-1 flex items-center gap-1 font-mono">
+                                  💡 Sugestões de Melhoria
+                                </h4>
+                                <p className="text-xs text-slate-800 leading-relaxed font-medium whitespace-pre-wrap">{sub.sugestoes_melhoria.trim()}</p>
                               </div>
                             )}
-                            {sub.criticas_construtivas && (
-                              <div>
-                                <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Críticas Construtivas</h4>
-                                <p className="text-xs text-slate-700 bg-white print:bg-white p-3 rounded border border-slate-100">{sub.criticas_construtivas}</p>
+                            {sub.criticas_construtivas && sub.criticas_construtivas.trim() && (
+                              <div className="bg-white print:bg-white p-3.5 rounded-lg border border-slate-200 print:border-slate-400">
+                                <h4 className="text-[11px] font-black text-amber-900 print:text-black uppercase tracking-wider mb-1 flex items-center gap-1 font-mono">
+                                  ⚠️ Críticas Construtivas
+                                </h4>
+                                <p className="text-xs text-slate-800 leading-relaxed font-medium whitespace-pre-wrap">{sub.criticas_construtivas.trim()}</p>
                               </div>
                             )}
-                            {sub.elogios && (
-                              <div>
-                                <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Elogios</h4>
-                                <p className="text-xs text-slate-700 bg-white print:bg-white p-3 rounded border border-slate-100">{sub.elogios}</p>
+                            {sub.elogios && sub.elogios.trim() && (
+                              <div className="bg-white print:bg-white p-3.5 rounded-lg border border-slate-200 print:border-slate-400">
+                                <h4 className="text-[11px] font-black text-emerald-900 print:text-black uppercase tracking-wider mb-1 flex items-center gap-1 font-mono">
+                                  ⭐ Elogios
+                                </h4>
+                                <p className="text-xs text-slate-800 leading-relaxed font-medium whitespace-pre-wrap">{sub.elogios.trim()}</p>
                               </div>
                             )}
-                            {sub.necessidades_novos_cursos && (
-                              <div>
-                                <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Necessidade de Novos Cursos</h4>
-                                <p className="text-xs text-slate-700 bg-white print:bg-white p-3 rounded border border-slate-100">{sub.necessidades_novos_cursos}</p>
+                            {sub.necessidades_novos_cursos && sub.necessidades_novos_cursos.trim() && (
+                              <div className="bg-white print:bg-white p-3.5 rounded-lg border border-slate-200 print:border-slate-400">
+                                <h4 className="text-[11px] font-black text-sky-900 print:text-black uppercase tracking-wider mb-1 flex items-center gap-1 font-mono">
+                                  📚 Necessidade de Novos Cursos
+                                </h4>
+                                <p className="text-xs text-slate-800 leading-relaxed font-medium whitespace-pre-wrap">{sub.necessidades_novos_cursos.trim()}</p>
                               </div>
                             )}
-                            {sub.comentarios_adicionais && (
-                              <div>
-                                <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Comentários Adicionais</h4>
-                                <p className="text-xs text-slate-700 bg-white print:bg-white p-3 rounded border border-slate-100">{sub.comentarios_adicionais}</p>
+                            {sub.comentarios_adicionais && sub.comentarios_adicionais.trim() && (
+                              <div className="bg-white print:bg-white p-3.5 rounded-lg border border-slate-200 print:border-slate-400">
+                                <h4 className="text-[11px] font-black text-slate-800 print:text-black uppercase tracking-wider mb-1 flex items-center gap-1 font-mono">
+                                  📝 Comentários Adicionais
+                                </h4>
+                                <p className="text-xs text-slate-800 leading-relaxed font-medium whitespace-pre-wrap">{sub.comentarios_adicionais.trim()}</p>
                               </div>
                             )}
                           </div>
@@ -2323,50 +2362,137 @@ function RelatorioAvaliacaoAdminContent() {
               </div>
 
               {/* Suggestions and Comments sections consolidated */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 print-page-break page-break-before">
-                <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm break-inside-avoid print-avoid-break">
-                  <h3 className="text-sm font-bold text-emerald-800 uppercase tracking-wider border-b pb-2 mb-4 font-mono flex items-center gap-1.5">
-                    <CheckCircle className="h-4 w-4 text-emerald-600" />
-                    Resumo de Elogios e Pontos Fortes
+              <div className="print-page-break" />
+              <div className="space-y-4">
+                <div className="border-b-2 border-slate-900 pb-2">
+                  <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider font-mono flex items-center gap-2">
+                    <Edit3 className="h-4 w-4 text-slate-800" />
+                    Observações Qualitativas e Sugestões dos Alunos sobre o Curso
                   </h3>
-                  <div className="space-y-3.5 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar print:max-h-none print:overflow-visible ">
-                    {filteredSubmissions.filter(sub => sub.elogios && sub.elogios.trim()).length === 0 ? (
-                      <p className="text-xs text-slate-400 italic">Nenhum elogio em destaque no filtro de busca selecionado.</p>
-                    ) : (
-                      filteredSubmissions
-                        .filter(sub => sub.elogios && sub.elogios.trim())
-                        .map((sub, idx) => (
-                          <div key={`elogio-${sub.id || idx}`} className="bg-emerald-50/40 p-3 rounded-lg border border-emerald-100/50 text-xs">
-                            <p className="text-slate-800">{sub.elogios}</p>
-                            <span className="text-sm font-black text-emerald-950 uppercase block mt-1.5 font-mono">
-                              — {sub.aluno?.posto_graduacao ? `${sub.aluno.posto_graduacao} ` : ''}{sub.aluno?.nome || "Aluno"}
-                            </span>
-                          </div>
-                        ))
-                    )}
-                  </div>
+                  <p className="text-xs text-slate-600 mt-0.5 font-medium">
+                    Compilado de sugestões de melhoria, críticas construtivas, elogios e demandas de novos cursos.
+                  </p>
                 </div>
 
-                <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-                  <h3 className="text-sm font-bold text-rose-800 uppercase tracking-wider border-b pb-2 mb-4 font-mono flex items-center gap-1.5">
-                    <AlertTriangle className="h-4 w-4 text-rose-600" />
-                    Críticas e Pontos Críticos do Curso
-                  </h3>
-                  <div className="space-y-3.5 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar print:max-h-none print:overflow-visible ">
-                    {filteredSubmissions.filter(sub => sub.criticas_construtivas && sub.criticas_construtivas.trim()).length === 0 ? (
-                      <p className="text-xs text-slate-400 italic">Nenhuma crítica registrada no filtro de busca selecionado.</p>
-                    ) : (
-                      filteredSubmissions
-                        .filter(sub => sub.criticas_construtivas && sub.criticas_construtivas.trim())
-                        .map((sub, idx) => (
-                          <div key={`critica-${sub.id || idx}`} className="bg-rose-50/40 p-3 rounded-lg border border-rose-100/55 text-xs">
-                            <p className="text-slate-800">{sub.criticas_construtivas}</p>
-                            <span className="text-sm font-black text-rose-950 uppercase block mt-1.5 font-mono">
-                              — {sub.aluno?.posto_graduacao ? `${sub.aluno.posto_graduacao} ` : ''}{sub.aluno?.nome || "Aluno"}
-                            </span>
-                          </div>
-                        ))
-                    )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  {/* Card 1: Sugestões de Melhoria */}
+                  <div className="bg-white border-2 border-indigo-200 print:border-slate-800 rounded-xl p-5 shadow-xs break-inside-avoid print-avoid-break">
+                    <h3 className="text-xs font-black text-indigo-900 print:text-black uppercase tracking-wider border-b pb-2 mb-3 font-mono flex items-center gap-1.5">
+                      💡 Sugestões de Melhoria e Recomendações
+                    </h3>
+                    <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1 custom-scrollbar print:max-h-none print:overflow-visible">
+                      {filteredSubmissions.filter(sub => sub.sugestoes_melhoria && sub.sugestoes_melhoria.trim()).length === 0 ? (
+                        <p className="text-xs text-slate-400 italic">Nenhuma sugestão registrada para este curso no filtro atual.</p>
+                      ) : (
+                        filteredSubmissions
+                          .filter(sub => sub.sugestoes_melhoria && sub.sugestoes_melhoria.trim())
+                          .map((sub, idx) => {
+                            const stud = allStudents.find(a => a.id === sub.aluno_id);
+                            const nome = stud?.nome || sub.aluno?.nome || 'Aluno';
+                            const posto = stud?.posto_graduacao || sub.aluno?.posto_graduacao || '';
+                            const om = stud?.om || sub.aluno?.om || '';
+
+                            return (
+                              <div key={`sugestao-${sub.id || idx}`} className="bg-indigo-50/40 print:bg-white p-3 rounded-lg border border-indigo-100 print:border-slate-300 text-xs">
+                                <p className="text-slate-800 font-medium leading-relaxed whitespace-pre-wrap">{sub.sugestoes_melhoria}</p>
+                                <span className="text-[11px] font-bold text-indigo-950 print:text-black uppercase block mt-1.5 font-mono">
+                                  — {posto ? `${posto} ` : ''}{nome}{om ? ` (${om})` : ''}
+                                </span>
+                              </div>
+                            );
+                          })
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Card 2: Críticas Construtivas */}
+                  <div className="bg-white border-2 border-amber-200 print:border-slate-800 rounded-xl p-5 shadow-xs break-inside-avoid print-avoid-break">
+                    <h3 className="text-xs font-black text-amber-900 print:text-black uppercase tracking-wider border-b pb-2 mb-3 font-mono flex items-center gap-1.5">
+                      ⚠️ Críticas Construtivas e Pontos a Aperfeiçoar
+                    </h3>
+                    <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1 custom-scrollbar print:max-h-none print:overflow-visible">
+                      {filteredSubmissions.filter(sub => sub.criticas_construtivas && sub.criticas_construtivas.trim()).length === 0 ? (
+                        <p className="text-xs text-slate-400 italic">Nenhuma crítica registrada no filtro de busca selecionado.</p>
+                      ) : (
+                        filteredSubmissions
+                          .filter(sub => sub.criticas_construtivas && sub.criticas_construtivas.trim())
+                          .map((sub, idx) => {
+                            const stud = allStudents.find(a => a.id === sub.aluno_id);
+                            const nome = stud?.nome || sub.aluno?.nome || 'Aluno';
+                            const posto = stud?.posto_graduacao || sub.aluno?.posto_graduacao || '';
+                            const om = stud?.om || sub.aluno?.om || '';
+
+                            return (
+                              <div key={`critica-${sub.id || idx}`} className="bg-amber-50/40 print:bg-white p-3 rounded-lg border border-amber-100 print:border-slate-300 text-xs">
+                                <p className="text-slate-800 font-medium leading-relaxed whitespace-pre-wrap">{sub.criticas_construtivas}</p>
+                                <span className="text-[11px] font-bold text-amber-950 print:text-black uppercase block mt-1.5 font-mono">
+                                  — {posto ? `${posto} ` : ''}{nome}{om ? ` (${om})` : ''}
+                                </span>
+                              </div>
+                            );
+                          })
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Card 3: Resumo de Elogios */}
+                  <div className="bg-white border-2 border-emerald-200 print:border-slate-800 rounded-xl p-5 shadow-xs break-inside-avoid print-avoid-break">
+                    <h3 className="text-xs font-black text-emerald-900 print:text-black uppercase tracking-wider border-b pb-2 mb-3 font-mono flex items-center gap-1.5">
+                      ⭐ Elogios e Pontos Fortes do Curso
+                    </h3>
+                    <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1 custom-scrollbar print:max-h-none print:overflow-visible">
+                      {filteredSubmissions.filter(sub => sub.elogios && sub.elogios.trim()).length === 0 ? (
+                        <p className="text-xs text-slate-400 italic">Nenhum elogio registrado no filtro de busca selecionado.</p>
+                      ) : (
+                        filteredSubmissions
+                          .filter(sub => sub.elogios && sub.elogios.trim())
+                          .map((sub, idx) => {
+                            const stud = allStudents.find(a => a.id === sub.aluno_id);
+                            const nome = stud?.nome || sub.aluno?.nome || 'Aluno';
+                            const posto = stud?.posto_graduacao || sub.aluno?.posto_graduacao || '';
+                            const om = stud?.om || sub.aluno?.om || '';
+
+                            return (
+                              <div key={`elogio-${sub.id || idx}`} className="bg-emerald-50/40 print:bg-white p-3 rounded-lg border border-emerald-100 print:border-slate-300 text-xs">
+                                <p className="text-slate-800 font-medium leading-relaxed whitespace-pre-wrap">{sub.elogios}</p>
+                                <span className="text-[11px] font-bold text-emerald-950 print:text-black uppercase block mt-1.5 font-mono">
+                                  — {posto ? `${posto} ` : ''}{nome}{om ? ` (${om})` : ''}
+                                </span>
+                              </div>
+                            );
+                          })
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Card 4: Necessidade de Novos Cursos */}
+                  <div className="bg-white border-2 border-sky-200 print:border-slate-800 rounded-xl p-5 shadow-xs break-inside-avoid print-avoid-break">
+                    <h3 className="text-xs font-black text-sky-900 print:text-black uppercase tracking-wider border-b pb-2 mb-3 font-mono flex items-center gap-1.5">
+                      📚 Demandas e Sugestões de Novos Cursos
+                    </h3>
+                    <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1 custom-scrollbar print:max-h-none print:overflow-visible">
+                      {filteredSubmissions.filter(sub => sub.necessidades_novos_cursos && sub.necessidades_novos_cursos.trim()).length === 0 ? (
+                        <p className="text-xs text-slate-400 italic">Nenhuma solicitação de novo curso registrada.</p>
+                      ) : (
+                        filteredSubmissions
+                          .filter(sub => sub.necessidades_novos_cursos && sub.necessidades_novos_cursos.trim())
+                          .map((sub, idx) => {
+                            const stud = allStudents.find(a => a.id === sub.aluno_id);
+                            const nome = stud?.nome || sub.aluno?.nome || 'Aluno';
+                            const posto = stud?.posto_graduacao || sub.aluno?.posto_graduacao || '';
+                            const om = stud?.om || sub.aluno?.om || '';
+
+                            return (
+                              <div key={`novocurso-${sub.id || idx}`} className="bg-sky-50/40 print:bg-white p-3 rounded-lg border border-sky-100 print:border-slate-300 text-xs">
+                                <p className="text-slate-800 font-medium leading-relaxed whitespace-pre-wrap">{sub.necessidades_novos_cursos}</p>
+                                <span className="text-[11px] font-bold text-sky-950 print:text-black uppercase block mt-1.5 font-mono">
+                                  — {posto ? `${posto} ` : ''}{nome}{om ? ` (${om})` : ''}
+                                </span>
+                              </div>
+                            );
+                          })
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -3173,31 +3299,44 @@ function RelatorioAvaliacaoAdminContent() {
                         </div>
 
                         {/* Qualitative observations card */}
-                        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-4">
-                          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider font-mono border-b pb-2">
-                            Comentários Escritos pelo Aluno
+                        <div className="bg-white border-2 border-slate-300 print:border-slate-800 rounded-xl p-6 shadow-xs space-y-4">
+                          <h4 className="text-xs font-black text-slate-800 print:text-black uppercase tracking-wider font-mono border-b pb-2 flex items-center gap-1.5">
+                            <Edit3 className="h-4 w-4 text-slate-700" />
+                            Observações e Comentários Escritos pelo Aluno
                           </h4>
                           
-                          <div className="space-y-3 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar text-xs print:max-h-none print:overflow-visible">
+                          <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar text-xs print:max-h-none print:overflow-visible">
                             {studentSub.sugestoes_melhoria && (
                               <div>
-                                <span className="font-bold text-slate-650 block">Sugestões de Melhorias:</span>
-                                <p className="text-slate-600 bg-slate-50 print:bg-white p-2.5 rounded-lg mt-0.5">{studentSub.sugestoes_melhoria}</p>
+                                <span className="font-bold text-indigo-900 print:text-black block font-mono">💡 Sugestões de Melhorias:</span>
+                                <p className="text-slate-800 bg-slate-50 print:bg-white p-2.5 rounded-lg border border-slate-200 print:border-slate-300 mt-0.5 leading-relaxed whitespace-pre-wrap">{studentSub.sugestoes_melhoria}</p>
                               </div>
                             )}
                             {studentSub.criticas_construtivas && (
                               <div>
-                                <span className="font-bold text-slate-650 block">Críticas Construtivas:</span>
-                                <p className="text-slate-600 bg-slate-50 print:bg-white p-2.5 rounded-lg mt-0.5">{studentSub.criticas_construtivas}</p>
+                                <span className="font-bold text-amber-900 print:text-black block font-mono">⚠️ Críticas Construtivas:</span>
+                                <p className="text-slate-800 bg-slate-50 print:bg-white p-2.5 rounded-lg border border-slate-200 print:border-slate-300 mt-0.5 leading-relaxed whitespace-pre-wrap">{studentSub.criticas_construtivas}</p>
                               </div>
                             )}
                             {studentSub.elogios && (
                               <div>
-                                <span className="font-bold text-slate-650 block">Elogios Registrados:</span>
-                                <p className="text-slate-600 bg-slate-50 print:bg-white p-2.5 rounded-lg mt-0.5">{studentSub.elogios}</p>
+                                <span className="font-bold text-emerald-900 print:text-black block font-mono">⭐ Elogios Registrados:</span>
+                                <p className="text-slate-800 bg-slate-50 print:bg-white p-2.5 rounded-lg border border-slate-200 print:border-slate-300 mt-0.5 leading-relaxed whitespace-pre-wrap">{studentSub.elogios}</p>
                               </div>
                             )}
-                            {!studentSub.sugestoes_melhoria && !studentSub.criticas_construtivas && !studentSub.elogios && (
+                            {studentSub.necessidades_novos_cursos && (
+                              <div>
+                                <span className="font-bold text-sky-900 print:text-black block font-mono">📚 Necessidade de Novos Cursos:</span>
+                                <p className="text-slate-800 bg-slate-50 print:bg-white p-2.5 rounded-lg border border-slate-200 print:border-slate-300 mt-0.5 leading-relaxed whitespace-pre-wrap">{studentSub.necessidades_novos_cursos}</p>
+                              </div>
+                            )}
+                            {studentSub.comentarios_adicionais && (
+                              <div>
+                                <span className="font-bold text-slate-900 print:text-black block font-mono">📝 Comentários Adicionais:</span>
+                                <p className="text-slate-800 bg-slate-50 print:bg-white p-2.5 rounded-lg border border-slate-200 print:border-slate-300 mt-0.5 leading-relaxed whitespace-pre-wrap">{studentSub.comentarios_adicionais}</p>
+                              </div>
+                            )}
+                            {!studentSub.sugestoes_melhoria && !studentSub.criticas_construtivas && !studentSub.elogios && !studentSub.necessidades_novos_cursos && !studentSub.comentarios_adicionais && (
                               <p className="text-slate-400 italic">O aluno enviou a avaliação sem observações abertas por escrito.</p>
                             )}
                           </div>
@@ -3205,7 +3344,8 @@ function RelatorioAvaliacaoAdminContent() {
                       </div>
 
                       {/* Detailed Questionnaire Responses - Faithful to the actual form */}
-                      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-6 print-page-break page-break-before">
+                      <div className="print-page-break" />
+                      <div className="bg-white border-2 border-slate-900 rounded-xl p-6 shadow-xs space-y-6 print:rounded-none print:border-slate-950">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b pb-4 gap-2">
                           <div>
                             <h4 className="text-sm font-extrabold text-slate-900 font-mono uppercase tracking-wide flex items-center gap-1.5">
@@ -3379,6 +3519,70 @@ function RelatorioAvaliacaoAdminContent() {
                                   </div>
                                 );
                               })}
+                            </div>
+                          </div>
+
+                          {/* Part 5: Comentários e Sugestões Abertas do Aluno */}
+                          <div className="space-y-4 pt-4 border-t border-slate-200">
+                            <h5 className="text-xs font-black text-indigo-700 uppercase tracking-widest bg-indigo-50 border border-indigo-100 px-3 py-2 rounded-lg flex items-center gap-1.5 font-mono">
+                              <span>💬</span> V. Observações, Sugestões e Comentários Abertos do Aluno
+                            </h5>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="bg-slate-50 print:bg-white p-3.5 rounded-lg border border-slate-200 print:border-slate-300 md:col-span-2">
+                                <span className="text-[11px] font-bold text-indigo-900 print:text-black uppercase block mb-1 font-mono">
+                                  💡 1. Sugestões de Melhoria para o Curso e Instrução:
+                                </span>
+                                <p className="text-xs text-slate-800 leading-relaxed font-medium whitespace-pre-wrap">
+                                  {studentSub.sugestoes_melhoria && studentSub.sugestoes_melhoria.trim() 
+                                    ? studentSub.sugestoes_melhoria.trim() 
+                                    : <span className="text-slate-400 italic">Nenhuma sugestão registrada.</span>}
+                                </p>
+                              </div>
+
+                              <div className="bg-slate-50 print:bg-white p-3.5 rounded-lg border border-slate-200 print:border-slate-300">
+                                <span className="text-[11px] font-bold text-amber-900 print:text-black uppercase block mb-1 font-mono">
+                                  ⚠️ 2. Críticas Construtivas e Pontos Fracos:
+                                </span>
+                                <p className="text-xs text-slate-800 leading-relaxed font-medium whitespace-pre-wrap">
+                                  {studentSub.criticas_construtivas && studentSub.criticas_construtivas.trim() 
+                                    ? studentSub.criticas_construtivas.trim() 
+                                    : <span className="text-slate-400 italic">Nenhuma crítica registrada.</span>}
+                                </p>
+                              </div>
+
+                              <div className="bg-slate-50 print:bg-white p-3.5 rounded-lg border border-slate-200 print:border-slate-300">
+                                <span className="text-[11px] font-bold text-emerald-900 print:text-black uppercase block mb-1 font-mono">
+                                  ⭐ 3. Elogios e Pontos Fortes:
+                                </span>
+                                <p className="text-xs text-slate-800 leading-relaxed font-medium whitespace-pre-wrap">
+                                  {studentSub.elogios && studentSub.elogios.trim() 
+                                    ? studentSub.elogios.trim() 
+                                    : <span className="text-slate-400 italic">Nenhum elogio registrado.</span>}
+                                </p>
+                              </div>
+
+                              <div className="bg-slate-50 print:bg-white p-3.5 rounded-lg border border-slate-200 print:border-slate-300">
+                                <span className="text-[11px] font-bold text-sky-900 print:text-black uppercase block mb-1 font-mono">
+                                  📚 4. Necessidade de Novos Cursos ou Temas Futuros:
+                                </span>
+                                <p className="text-xs text-slate-800 leading-relaxed font-medium whitespace-pre-wrap">
+                                  {studentSub.necessidades_novos_cursos && studentSub.necessidades_novos_cursos.trim() 
+                                    ? studentSub.necessidades_novos_cursos.trim() 
+                                    : <span className="text-slate-400 italic">Nenhum novo curso solicitado.</span>}
+                                </p>
+                              </div>
+
+                              <div className="bg-slate-50 print:bg-white p-3.5 rounded-lg border border-slate-200 print:border-slate-300">
+                                <span className="text-[11px] font-bold text-slate-900 print:text-black uppercase block mb-1 font-mono">
+                                  📝 5. Comentários e Observações Adicionais:
+                                </span>
+                                <p className="text-xs text-slate-800 leading-relaxed font-medium whitespace-pre-wrap">
+                                  {studentSub.comentarios_adicionais && studentSub.comentarios_adicionais.trim() 
+                                    ? studentSub.comentarios_adicionais.trim() 
+                                    : <span className="text-slate-400 italic">Nenhum comentário adicional registrado.</span>}
+                                </p>
+                              </div>
                             </div>
                           </div>
                         </div>
