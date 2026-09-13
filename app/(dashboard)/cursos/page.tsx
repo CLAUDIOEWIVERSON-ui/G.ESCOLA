@@ -1015,20 +1015,6 @@ function CursosContent() {
                         </span>
                       </div>
                     </div>
-
-                    {!curso.internacional && (
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setManageDisciplinasCurso(curso);
-                          setLoadingDisciplinas(true);
-                        }}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white border border-blue-600 hover:bg-blue-700 hover:border-blue-700 dark:bg-black dark:text-white dark:border-neutral-800 dark:hover:bg-neutral-900 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-300 shadow-sm shrink-0 cursor-pointer"
-                      >
-                        <BookMarked size={12} />
-                        {t.nav.subjects}
-                      </button>
-                    )}
                   </div>
                 </motion.div>
               );
