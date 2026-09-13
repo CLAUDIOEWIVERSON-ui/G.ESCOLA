@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
-import { useCursos, useDisciplinas } from '@/hooks/useCachedData';
+import { useCursos } from '@/hooks/useCachedData';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
 import { cursoSchema } from '@/lib/validations/schemas';
@@ -61,12 +61,7 @@ function CursosContent() {
 
   const isReadOnly = isConvidado || (!isAdmin && !isInstrutor);
   const { cursos, loading, mutate: revalidateCursos } = useCursos();
-  const { disciplinas: allDisciplinas, mutate: mutateAllDisciplinas } = useDisciplinas();
   const [modalOpen, setModalOpen] = useState(false);
-  const [courseModalDisciplinas, setCourseModalDisciplinas] = useState<any[]>([]);
-  const [removedDisciplinaIds, setRemovedDisciplinaIds] = useState<string[]>([]);
-  const [modalActiveTab, setModalActiveTab] = useState<'geral' | 'disciplinas'>('geral');
-  const [targetEqualWorkload, setTargetEqualWorkload] = useState<string>('');
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [skipHeader, setSkipHeader] = useState(false);
   const [bulkData, setBulkData] = useState('');
@@ -75,116 +70,6 @@ function CursosContent() {
   const [searchTerm, setSearchTerm] = useState('');
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState<number>(1);
-
-  const totalModalWorkload = useMemo(() => {
-    return courseModalDisciplinas.reduce((acc, d) => acc + (Number(d.carga_horaria) || 0), 0);
-  }, [courseModalDisciplinas]);
-
-  const handleOpenCreateModal = () => {
-    setEditingCurso(null);
-    reset({
-      nome: '',
-      codigo: '',
-      descricao: '',
-      duracao: 1,
-      duracao_unidade: 'ano',
-      ativo: true,
-      qtd_modulos: 4,
-      categoria: null,
-      internacional: false,
-      localizacao: '',
-      grupo_responsavel: null,
-      documento_criacao: null,
-    });
-    setCourseModalDisciplinas([]);
-    setRemovedDisciplinaIds([]);
-    setModalActiveTab('geral');
-    setTargetEqualWorkload('');
-    setModalOpen(true);
-  };
-
-  const handleOpenEditModal = (curso: any) => {
-    setEditingCurso(curso);
-    reset({
-      ...curso,
-      categoria: curso.categoria || null,
-      documento_criacao: curso.documento_criacao || null,
-      grupo_responsavel: curso.grupo_responsavel || null,
-      localizacao: curso.localizacao || '',
-      internacional: !!curso.internacional
-    });
-    const existing = (allDisciplinas || []).filter((d: any) => d.curso_id === curso.id);
-    const sorted = [...existing].sort((a: any, b: any) => {
-      const mDiff = (a.modulo_index || 1) - (b.modulo_index || 1);
-      if (mDiff !== 0) return mDiff;
-      return (a.nome || '').localeCompare(b.nome || '', 'pt-BR');
-    });
-    setCourseModalDisciplinas(sorted.map((d: any) => ({
-      id: d.id,
-      nome: d.nome || '',
-      codigo: d.codigo || '',
-      carga_horaria: Number(d.carga_horaria) || 60,
-      modulo_index: d.modulo_index || 1,
-      curso_id: curso.id,
-    })));
-    setRemovedDisciplinaIds([]);
-    setModalActiveTab('geral');
-    setTargetEqualWorkload('');
-    setModalOpen(true);
-  };
-
-  const handleAddDisciplinaToModal = (moduloIndex = 1) => {
-    const currentQtd = watch('qtd_modulos') || 4;
-    const safeModulo = Math.min(moduloIndex, currentQtd);
-    const courseCode = (watch('codigo') || 'DISC').toUpperCase();
-    setCourseModalDisciplinas(prev => [
-      ...prev,
-      {
-        id: `temp-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-        nome: '',
-        codigo: `${courseCode}_M${safeModulo}`,
-        carga_horaria: 60,
-        modulo_index: safeModulo,
-        _isNew: true
-      }
-    ]);
-  };
-
-  const handleUpdateModalDisciplina = (index: number, field: string, value: any) => {
-    setCourseModalDisciplinas(prev => {
-      const updated = [...prev];
-      updated[index] = { ...updated[index], [field]: value };
-      return updated;
-    });
-  };
-
-  const handleRemoveModalDisciplina = (index: number) => {
-    const item = courseModalDisciplinas[index];
-    if (item?.id && !item._isNew && !item.id.startsWith('temp-')) {
-      setRemovedDisciplinaIds(prev => [...prev, item.id]);
-    }
-    setCourseModalDisciplinas(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const handleDistributeWorkloadEqually = () => {
-    if (courseModalDisciplinas.length === 0) {
-      toast.error(language === 'pt' ? 'Adicione disciplinas antes de distribuir a carga horária.' : 'Add subjects before distributing workload.');
-      return;
-    }
-    const total = targetEqualWorkload ? parseInt(targetEqualWorkload, 10) : totalModalWorkload;
-    if (!total || total <= 0) {
-      toast.error(language === 'pt' ? 'Informe uma carga horária total válida (em horas).' : 'Please enter a valid total workload (in hours).');
-      return;
-    }
-    const count = courseModalDisciplinas.length;
-    const perDisc = Math.floor(total / count);
-    const remainder = total % count;
-    setCourseModalDisciplinas(prev => prev.map((d, i) => ({
-      ...d,
-      carga_horaria: perDisc + (i === 0 ? remainder : 0)
-    })));
-    toast.success(language === 'pt' ? `Carga horária de ${total}h distribuída igualmente entre ${count} disciplinas.` : `Workload of ${total}h distributed equally among ${count} subjects.`);
-  };
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -246,7 +131,7 @@ function CursosContent() {
   const [savingMateria, setSavingMateria] = useState(false);
   const [activeModuloIndex, setActiveModuloIndex] = useState(1);
 
-  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<z.infer<typeof cursoSchema>>({
+  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<z.infer<typeof cursoSchema>>({
     resolver: zodResolver(cursoSchema),
     defaultValues: {
       nome: '',
@@ -303,7 +188,6 @@ function CursosContent() {
         documento_criacao: data.documento_criacao === "" ? null : data.documento_criacao
       };
 
-      let savedCursoId = editingCurso?.id;
       if (editingCurso) {
         const { error } = await supabase
           .from('cursos')
@@ -311,64 +195,16 @@ function CursosContent() {
           .eq('id', editingCurso.id);
         if (error) throw error;
       } else {
-        const { data: inserted, error } = await supabase
+        const { error } = await supabase
           .from('cursos')
-          .insert([cleanedData])
-          .select('id')
-          .single();
+          .insert([cleanedData]);
         if (error) throw error;
-        savedCursoId = inserted?.id;
       }
-
-      // Sync disciplines and their workloads
-      if (savedCursoId) {
-        if (removedDisciplinaIds.length > 0) {
-          await supabase
-            .from('disciplinas')
-            .update({ deleted_at: new Date().toISOString() })
-            .in('id', removedDisciplinaIds);
-        }
-
-        for (const d of courseModalDisciplinas) {
-          const cleanNome = (d.nome || '').trim();
-          if (!cleanNome) continue;
-
-          const ch = Number(d.carga_horaria) || 60;
-          const modIdx = Number(d.modulo_index) || 1;
-
-          if (d.id && !d._isNew && !d.id.startsWith('temp-')) {
-            await supabase
-              .from('disciplinas')
-              .update({
-                nome: cleanNome,
-                carga_horaria: ch,
-                modulo_index: modIdx
-              })
-              .eq('id', d.id);
-          } else {
-            const prefix = (cleanedData.codigo || 'DISC').toUpperCase();
-            const uniqueSuffix = Math.random().toString(36).substring(2, 8).toUpperCase();
-            const dbCodigo = `${prefix}_${uniqueSuffix}`;
-            await supabase
-              .from('disciplinas')
-              .insert([{
-                nome: cleanNome,
-                codigo: dbCodigo,
-                carga_horaria: ch,
-                curso_id: savedCursoId,
-                modulo_index: modIdx
-              }]);
-          }
-        }
-      }
-
       reset();
       setModalOpen(false);
       setEditingCurso(null);
-      setCourseModalDisciplinas([]);
-      setRemovedDisciplinaIds([]);
-      await Promise.all([revalidateCursos(), mutateAllDisciplinas()]);
-      toast.success(language === 'pt' ? 'Curso e carga horária das disciplinas salvos com sucesso!' : 'Course and subjects workloads saved successfully!');
+      await revalidateCursos();
+      toast.success(language === 'pt' ? 'Curso salvo com sucesso!' : 'Course saved successfully!');
     } catch (err: any) {
       toast.error(err.message);
     }
@@ -766,7 +602,7 @@ function CursosContent() {
               <button 
                 id="add-course-btn"
                 type="button"
-                onClick={handleOpenCreateModal}
+                onClick={() => { reset(); setEditingCurso(null); setModalOpen(true); }}
                 className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-all shadow-sm shadow-blue-100 whitespace-nowrap cursor-pointer"
               >
                 <Plus size={18} />
@@ -903,13 +739,6 @@ function CursosContent() {
                       {canEditCurso(curso) && (
                         <div className="flex items-center gap-1 shrink-0 z-10" onClick={(e) => e.stopPropagation()}>
                           <button 
-                            onClick={(e) => { e.stopPropagation(); handleOpenEditModal(curso); }}
-                            className="p-1.5 bg-slate-100 hover:bg-blue-600 hover:text-white border border-slate-200/50 rounded-lg transition-colors text-slate-500 cursor-pointer"
-                            title={t.common.edit}
-                          >
-                            <Edit2 size={13} />
-                          </button>
-                          <button 
                             onClick={(e) => { e.stopPropagation(); deleteCurso(curso.id); }}
                             className="p-1.5 bg-slate-100 hover:bg-red-600 hover:text-white border border-slate-200/50 rounded-lg transition-colors text-slate-500 cursor-pointer"
                             title={t.common.delete}
@@ -986,47 +815,32 @@ function CursosContent() {
                     <div className="flex items-center gap-1.5 text-slate-500 shrink-0">
                       <Clock size={14} className="text-slate-400" />
                       <div className="flex flex-col select-none">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-xs font-semibold text-slate-700 leading-tight">
-                            {curso.duracao} {
-                              curso.duracao === 1 
-                                ? (curso.duracao_unidade === 'dia' ? t.courses.day : curso.duracao_unidade === 'semana' ? t.courses.week : curso.duracao_unidade === 'mes' ? t.courses.month : t.courses.year)
-                                : (curso.duracao_unidade === 'dia' ? t.courses.days : curso.duracao_unidade === 'semana' ? t.courses.weeks : curso.duracao_unidade === 'mes' ? t.courses.months : t.courses.years)
-                            }
-                          </span>
-                          {(() => {
-                            const cDiscs = (allDisciplinas || []).filter((d: any) => d.curso_id === curso.id);
-                            const totalH = cDiscs.reduce((acc: number, d: any) => acc + (Number(d.carga_horaria) || 0), 0);
-                            return (
-                              <span 
-                                className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200/70 font-mono font-bold text-[10px] leading-none" 
-                                title={language === 'pt' ? `Carga Horária Total: ${totalH}h` : `Total Workload: ${totalH}h`}
-                              >
-                                {totalH > 0 ? `${totalH}h` : '0h'}
-                              </span>
-                            );
-                          })()}
-                        </div>
+                        <span className="text-xs font-semibold text-slate-700 leading-tight">
+                          {curso.duracao} {
+                            curso.duracao === 1 
+                              ? (curso.duracao_unidade === 'dia' ? t.courses.day : curso.duracao_unidade === 'semana' ? t.courses.week : curso.duracao_unidade === 'mes' ? t.courses.month : t.courses.year)
+                              : (curso.duracao_unidade === 'dia' ? t.courses.days : curso.duracao_unidade === 'semana' ? t.courses.weeks : curso.duracao_unidade === 'mes' ? t.courses.months : t.courses.years)
+                          }
+                        </span>
                         <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                          {curso.qtd_modulos || 4} {t.grades.module}s • {(() => {
-                            const cCount = (allDisciplinas || []).filter((d: any) => d.curso_id === curso.id).length;
-                            return `${cCount} ${cCount === 1 ? 'disc.' : 'discs.'}`;
-                          })()}
+                          {curso.qtd_modulos || 4} {t.grades.module}s
                         </span>
                       </div>
                     </div>
 
-                    {!curso.internacional && (
+                    {canEditCurso(curso) && (
                       <button 
                         onClick={(e) => {
                           e.stopPropagation();
-                          setManageDisciplinasCurso(curso);
-                          setLoadingDisciplinas(true);
+                          setEditingCurso(curso);
+                          reset(curso);
+                          setModalOpen(true);
                         }}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white border border-blue-600 hover:bg-blue-700 hover:border-blue-700 dark:bg-black dark:text-white dark:border-neutral-800 dark:hover:bg-neutral-900 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-300 shadow-sm shrink-0 cursor-pointer"
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-blue-600 text-white border border-blue-600 hover:bg-blue-700 hover:border-blue-700 rounded-xl text-xs font-bold transition-all duration-200 shadow-sm shrink-0 cursor-pointer"
+                        title={language === 'pt' ? 'Edição' : 'Edit'}
                       >
-                        <BookMarked size={12} />
-                        {t.nav.subjects}
+                        <Edit2 size={13} />
+                        <span>{language === 'pt' ? 'Edição' : 'Edit'}</span>
                       </button>
                     )}
                   </div>
@@ -1122,62 +936,14 @@ function CursosContent() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-3xl bg-white rounded-2xl shadow-2xl p-6 sm:p-8 flex flex-col max-h-[92vh] overflow-hidden"
+              className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl p-6 sm:p-8 flex flex-col max-h-[90vh] overflow-hidden"
             >
-              <div className="flex items-center justify-between mb-4 shrink-0">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
-                    <BookOpen size={20} />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-slate-900">
-                      {editingCurso ? t.common.edit : t.courses.add}
-                    </h3>
-                    <p className="text-xs text-slate-500">
-                      {editingCurso 
-                        ? (language === 'pt' ? 'Edição de informações e carga horária do curso' : 'Edit course info and workload')
-                        : (language === 'pt' ? 'Cadastre as informações e disciplinas com carga horária' : 'Register course info and subjects with workload')}
-                    </p>
-                  </div>
-                </div>
-                <button 
-                  onClick={() => setModalOpen(false)} 
-                  className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-
-              {/* Tabs Switcher */}
-              <div className="flex bg-slate-100 p-1 rounded-xl gap-1 shrink-0 mb-4">
-                <button
-                  type="button"
-                  onClick={() => setModalActiveTab('geral')}
-                  className={cn(
-                    "flex-1 py-2 px-3 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer",
-                    modalActiveTab === 'geral'
-                      ? "bg-white text-slate-900 shadow-xs"
-                      : "text-slate-500 hover:text-slate-800"
-                  )}
-                >
-                  <FileText size={14} />
-                  <span>{language === 'pt' ? '1. Dados Gerais do Curso' : '1. General Course Data'}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setModalActiveTab('disciplinas')}
-                  className={cn(
-                    "flex-1 py-2 px-3 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer",
-                    modalActiveTab === 'disciplinas'
-                      ? "bg-white text-blue-600 shadow-xs"
-                      : "text-slate-500 hover:text-slate-800"
-                  )}
-                >
-                  <BookMarked size={14} />
-                  <span>{language === 'pt' ? '2. Disciplinas & Carga Horária' : '2. Subjects & Workload'}</span>
-                  <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-black rounded-md font-mono">
-                    {totalModalWorkload}h
-                  </span>
+              <div className="flex items-center justify-between mb-6 shrink-0">
+                <h3 className="text-xl font-bold text-slate-900">
+                  {editingCurso ? t.common.edit : t.courses.add}
+                </h3>
+                <button onClick={() => setModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                  <X size={24} />
                 </button>
               </div>
 
@@ -1196,404 +962,175 @@ function CursosContent() {
                 className="flex flex-col flex-1 overflow-hidden"
               >
                 <div className="flex-1 overflow-y-auto pr-2 space-y-4 custom-scrollbar">
-                  {modalActiveTab === 'geral' ? (
-                    <div className="space-y-4">
-                      <div className="space-y-1">
-                        <label className="text-sm font-semibold text-slate-700">{t.courses.name}</label>
-                        <input
-                          {...register('nome')}
-                          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
-                          placeholder="Ex: Engenharia de Software"
-                        />
-                        {errors.nome && <p className="text-xs text-red-500 mt-1">{errors.nome.message}</p>}
-                      </div>
+                  <div className="space-y-1">
+                    <label className="text-sm font-semibold text-slate-700">{t.courses.name}</label>
+                    <input
+                      {...register('nome')}
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
+                      placeholder="Engenharia de Software"
+                    />
+                    {errors.nome && <p className="text-xs text-red-500 mt-1">{errors.nome.message}</p>}
+                  </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                          <label className="text-sm font-semibold text-slate-700">
-                            {language === 'pt' ? 'Sigla do Curso' : 'Course Initials'}
-                          </label>
-                          <input
-                            {...register('codigo')}
-                            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors uppercase font-medium"
-                            placeholder="Ex: CFMN"
-                          />
-                          {errors.codigo && <p className="text-xs text-red-500 mt-1">{errors.codigo.message}</p>}
-                        </div>
+                  <div className="space-y-1">
+                    <label className="text-sm font-semibold text-slate-700">
+                      {language === 'pt' ? 'Sigla do Curso' : 'Course Initials'}
+                    </label>
+                    <input
+                      {...register('codigo')}
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors uppercase font-medium"
+                      placeholder="Ex: CFMN"
+                    />
+                    {errors.codigo && <p className="text-xs text-red-500 mt-1">{errors.codigo.message}</p>}
+                  </div>
 
-                        <div className="space-y-1">
-                          <label className="text-sm font-semibold text-slate-700">{t.courses.category}</label>
-                          <select
-                            {...register('categoria', {
-                              onChange: (e) => {
-                                const val = e.target.value;
-                                if (val === 'EaD') {
-                                  setValue('documento_criacao', 'PGI');
-                                }
-                              }
-                            })}
-                            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
-                          >
-                            <option value="">Selecione uma categoria</option>
-                            <option value="Expedito">{t.courses.categoryExpedito}</option>
-                            <option value="Especial">{t.courses.categoryEspecial}</option>
-                            <option value="Carreira">{t.courses.categoryCarreira}</option>
-                            <option value="EaD">{t.courses.categoryEad}</option>
-                          </select>
-                          {errors.categoria && <p className="text-xs text-red-500 mt-1">{errors.categoria.message}</p>}
-                        </div>
-                      </div>
+                  <div className="space-y-1">
+                    <label className="text-sm font-semibold text-slate-700">{t.courses.description}</label>
+                    <textarea
+                      {...register('descricao')}
+                      rows={2}
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
+                      placeholder={language === 'pt' ? "Descrição breve do curso..." : "Brief description of the course..."}
+                    />
+                  </div>
 
-                      <div className="space-y-1">
-                        <label className="text-sm font-semibold text-slate-700">{t.courses.description}</label>
-                        <textarea
-                          {...register('descricao')}
-                          rows={2}
-                          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
-                          placeholder={language === 'pt' ? "Descrição breve do curso..." : "Brief description of the course..."}
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div className="space-y-1">
-                          <label className="text-sm font-semibold text-slate-700">{t.courses.durationValue}</label>
-                          <input
-                            type="number"
-                            min="1"
-                            {...register('duracao', { valueAsNumber: true })}
-                            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
-                          />
-                          {errors.duracao && <p className="text-xs text-red-500 mt-1">{errors.duracao.message}</p>}
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="text-sm font-semibold text-slate-700">{t.courses.durationUnit}</label>
-                          <select
-                            {...register('duracao_unidade')}
-                            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
-                          >
-                            <option value="dia">{t.courses.days}</option>
-                            <option value="semana">{t.courses.weeks}</option>
-                            <option value="mes">{t.courses.months}</option>
-                            <option value="ano">{t.courses.years}</option>
-                          </select>
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="text-sm font-semibold text-slate-700">Módulos (Máx 20)</label>
-                          <input
-                            type="number"
-                            min="1"
-                            max="20"
-                            {...register('qtd_modulos', { valueAsNumber: true })}
-                            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
-                          />
-                          {errors.qtd_modulos && <p className="text-xs text-red-500 mt-1">{errors.qtd_modulos.message}</p>}
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                          <label className="text-sm font-semibold text-slate-700">
-                            {language === 'pt' ? 'Documento de Criação' : 'Creation Document'}
-                          </label>
-                          <select
-                            {...register('documento_criacao')}
-                            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
-                          >
-                            <option value="">{language === 'pt' ? 'Selecione um documento' : 'Select a document'}</option>
-                            <option value="Ordem Interna">Ordem Interna</option>
-                            <option value="CENPEM">CENPEM</option>
-                            <option value="ROV">ROV</option>
-                            <option value="PGI">PGI</option>
-                            <option value="PEPME">PEPME</option>
-                          </select>
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="text-sm font-semibold text-slate-700">
-                            {language === 'pt' ? 'Grupo Responsável' : 'Responsible Group'}
-                          </label>
-                          <input
-                            type="text"
-                            list="grupos-responsavel"
-                            placeholder={language === 'pt' ? 'Ex: MAN, GAT, AMBOS' : 'E.g.: MAN, GAT, AMBOS'}
-                            {...register('grupo_responsavel')}
-                            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors text-sm font-medium"
-                          />
-                          <datalist id="grupos-responsavel">
-                            <option value="MAN" />
-                            <option value="GAT" />
-                            <option value="AMBOS" />
-                          </datalist>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2 py-1">
-                        <input
-                          id="checkbox-internacional"
-                          type="checkbox"
-                          {...register('internacional')}
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded cursor-pointer"
-                        />
-                        <label htmlFor="checkbox-internacional" className="text-sm font-semibold text-slate-700 cursor-pointer">
-                          {language === 'pt' ? 'Curso realizado no Exterior (Internacional)' : 'Course conducted Abroad (International)'}
-                        </label>
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className="text-sm font-semibold text-slate-700">
-                          {language === 'pt' ? 'Localização' : 'Location'}
-                        </label>
-                        <input
-                          type="text"
-                          {...register('localizacao')}
-                          placeholder={language === 'pt' ? 'Ex: Luanda, Paris, EaD' : 'E.g., Luanda, Paris, Remote'}
-                          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
-                        />
-                      </div>
-
-                      {/* Workload Banner inside General Tab */}
-                      <div className="bg-blue-50/80 border border-blue-200 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 mt-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold shadow-xs">
-                            <Clock size={20} />
-                          </div>
-                          <div>
-                            <span className="text-[10px] font-black uppercase tracking-wider text-blue-700">
-                              {language === 'pt' ? 'Carga Horária Total do Curso' : 'Total Course Workload'}
-                            </span>
-                            <div className="flex items-baseline gap-2">
-                              <span className="text-xl font-black font-mono text-slate-900">
-                                {totalModalWorkload > 0 ? `${totalModalWorkload}h` : '0h'}
-                              </span>
-                              <span className="text-xs text-slate-500 font-medium">
-                                ({courseModalDisciplinas.length} {language === 'pt' ? 'disciplinas configuradas' : 'subjects configured'})
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setModalActiveTab('disciplinas')}
-                          className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition shadow-xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
-                        >
-                          <BookMarked size={14} />
-                          {language === 'pt' ? 'Preencher Carga Horária por Disciplina' : 'Fill Subject Workload'} &rarr;
-                        </button>
-                      </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-sm font-semibold text-slate-700">{t.courses.durationValue}</label>
+                      <input
+                        type="number"
+                        {...register('duracao', { valueAsNumber: true })}
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
+                      />
+                      {errors.duracao && <p className="text-xs text-red-500 mt-1">{errors.duracao.message}</p>}
                     </div>
-                  ) : (
-                    /* Disciplines & Workload Tab */
-                    <div className="space-y-4">
-                      {/* Summary KPI & Equal Distribution Toolbar */}
-                      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200/80 rounded-2xl p-4 shadow-2xs">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                          <div>
-                            <span className="text-[10px] font-black uppercase tracking-wider text-blue-700 flex items-center gap-1">
-                              <Clock size={12} />
-                              {language === 'pt' ? 'Carga Horária Total do Curso' : 'Total Course Workload'}
-                            </span>
-                            <div className="flex items-baseline gap-2 mt-0.5">
-                              <span className="text-3xl font-black font-mono text-blue-900 tracking-tight">
-                                {totalModalWorkload}
-                              </span>
-                              <span className="text-sm font-black text-blue-700 uppercase">horas</span>
-                              <span className="text-xs font-semibold text-slate-500">
-                                • {courseModalDisciplinas.length} {language === 'pt' ? 'disciplinas' : 'subjects'}
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Quick fill / equal distribution tool */}
-                          <div className="flex flex-wrap items-center gap-2 bg-white/90 backdrop-blur-xs p-2 rounded-xl border border-blue-200/70 shadow-2xs">
-                            <span className="text-[11px] font-bold text-slate-600">
-                              {language === 'pt' ? 'Total Desejado:' : 'Target Total:'}
-                            </span>
-                            <div className="flex items-center bg-slate-50 border border-slate-200 rounded-lg px-2 py-1">
-                              <input
-                                type="number"
-                                min={1}
-                                max={9999}
-                                placeholder={totalModalWorkload > 0 ? String(totalModalWorkload) : "240"}
-                                value={targetEqualWorkload}
-                                onChange={(e) => setTargetEqualWorkload(e.target.value)}
-                                className="w-14 text-center font-mono font-black text-xs text-slate-900 bg-transparent focus:outline-none"
-                              />
-                              <span className="text-[10px] font-bold text-slate-400 select-none">h</span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={handleDistributeWorkloadEqually}
-                              className="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition shadow-2xs cursor-pointer whitespace-nowrap flex items-center gap-1"
-                              title={language === 'pt' ? 'Distribuir horas igualmente entre todas as disciplinas' : 'Distribute hours equally across all subjects'}
-                            >
-                              ⚡ {language === 'pt' ? 'Distribuir Igualmente' : 'Distribute Equally'}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Header and Add Subject Button */}
-                      <div className="flex items-center justify-between pt-1">
-                        <div>
-                          <h4 className="text-xs font-black uppercase tracking-wider text-slate-700">
-                            {language === 'pt' ? 'Disciplinas do Curso e Carga Horária Individual' : 'Course Subjects & Individual Workload'}
-                          </h4>
-                          <p className="text-[11px] text-slate-400">
-                            {language === 'pt' 
-                              ? 'Edite ou insira o número de horas de cada disciplina diretamente abaixo' 
-                              : 'Edit or fill the workload for each subject directly below'}
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => handleAddDisciplinaToModal(1)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 rounded-xl text-xs font-bold transition cursor-pointer"
-                        >
-                          <Plus size={14} />
-                          {language === 'pt' ? 'Adicionar Disciplina' : 'Add Subject'}
-                        </button>
-                      </div>
-
-                      {/* Disciplines Table */}
-                      {courseModalDisciplinas.length === 0 ? (
-                        <div className="text-center py-10 px-4 bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl">
-                          <GraduationCap size={32} className="mx-auto text-slate-300 mb-2" />
-                          <p className="text-xs font-bold text-slate-600">
-                            {language === 'pt' ? 'Nenhuma disciplina cadastrada neste curso' : 'No subjects registered for this course'}
-                          </p>
-                          <p className="text-[11px] text-slate-400 mt-1 max-w-sm mx-auto">
-                            {language === 'pt' 
-                              ? 'Adicione disciplinas para preencher as cargas horárias e calcular o total do curso.' 
-                              : 'Add subjects to configure individual workloads and calculate total hours.'}
-                          </p>
-                          <button
-                            type="button"
-                            onClick={() => handleAddDisciplinaToModal(1)}
-                            className="mt-3 px-3.5 py-1.5 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition cursor-pointer"
-                          >
-                            + {language === 'pt' ? 'Cadastrar Primeira Disciplina' : 'Register First Subject'}
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="border border-slate-200 rounded-xl overflow-hidden shadow-2xs">
-                          <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse">
-                              <thead>
-                                <tr className="bg-slate-100 text-[10px] font-black uppercase tracking-wider text-slate-600 border-b border-slate-200">
-                                  <th className="py-2.5 px-3 w-28">Módulo</th>
-                                  <th className="py-2.5 px-3">Nome da Disciplina</th>
-                                  <th className="py-2.5 px-3 w-36 text-center">Carga Horária (h)</th>
-                                  <th className="py-2.5 px-2 w-12 text-center">Ação</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-slate-100 text-xs">
-                                {courseModalDisciplinas.map((disc, idx) => {
-                                  const qtdModulos = watch('qtd_modulos') || 4;
-                                  return (
-                                    <tr key={disc.id || idx} className="hover:bg-slate-50/80 transition-colors">
-                                      <td className="p-2.5">
-                                        <select
-                                          value={disc.modulo_index || 1}
-                                          onChange={(e) => handleUpdateModalDisciplina(idx, 'modulo_index', Number(e.target.value))}
-                                          className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-700 focus:outline-none focus:border-blue-500 cursor-pointer"
-                                        >
-                                          {Array.from({ length: qtdModulos }).map((_, mIdx) => (
-                                            <option key={mIdx + 1} value={mIdx + 1}>
-                                              Módulo {mIdx + 1}
-                                            </option>
-                                          ))}
-                                        </select>
-                                      </td>
-                                      <td className="p-2.5">
-                                        <input
-                                          type="text"
-                                          placeholder={language === 'pt' ? 'Nome da disciplina' : 'Subject name'}
-                                          value={disc.nome || ''}
-                                          onChange={(e) => handleUpdateModalDisciplina(idx, 'nome', e.target.value)}
-                                          className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-800 focus:outline-none focus:border-blue-500"
-                                        />
-                                      </td>
-                                      <td className="p-2.5 text-center">
-                                        <div className="flex items-center justify-center gap-1.5">
-                                          <input
-                                            type="number"
-                                            min={1}
-                                            max={999}
-                                            value={disc.carga_horaria !== undefined && disc.carga_horaria !== null ? disc.carga_horaria : ''}
-                                            onChange={(e) => {
-                                              const val = e.target.value === '' ? '' : parseInt(e.target.value, 10);
-                                              handleUpdateModalDisciplina(idx, 'carga_horaria', val);
-                                            }}
-                                            placeholder="60"
-                                            className="w-20 text-center font-mono font-black text-sm bg-amber-50/80 hover:bg-amber-100/90 focus:bg-white border border-amber-300 rounded-lg px-2 py-1 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
-                                          />
-                                          <span className="text-xs font-bold text-slate-400 select-none">h</span>
-                                        </div>
-                                      </td>
-                                      <td className="p-2.5 text-center">
-                                        <button
-                                          type="button"
-                                          onClick={() => handleRemoveModalDisciplina(idx)}
-                                          className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer"
-                                          title={language === 'pt' ? 'Remover disciplina' : 'Remove subject'}
-                                        >
-                                          <Trash2 size={15} />
-                                        </button>
-                                      </td>
-                                    </tr>
-                                  );
-                                })}
-                              </tbody>
-                              <tfoot>
-                                <tr className="bg-slate-100 font-bold border-t-2 border-slate-300 text-xs">
-                                  <td colSpan={2} className="py-2.5 px-3 text-right uppercase tracking-wider font-black text-slate-800">
-                                    {language === 'pt' ? 'CARGA HORÁRIA TOTAL DO CURSO:' : 'TOTAL COURSE WORKLOAD:'}
-                                  </td>
-                                  <td className="py-2.5 px-3 text-center font-mono font-black text-slate-900 bg-amber-100/60 text-sm">
-                                    {totalModalWorkload}h
-                                  </td>
-                                  <td className="py-2.5 px-2 text-center text-[10px] text-slate-500 font-bold">
-                                    {courseModalDisciplinas.length} disc.
-                                  </td>
-                                </tr>
-                              </tfoot>
-                            </table>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Button to add subject below table */}
-                      {courseModalDisciplinas.length > 0 && (
-                        <div className="flex justify-end pt-1">
-                          <button
-                            type="button"
-                            onClick={() => handleAddDisciplinaToModal(1)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition cursor-pointer"
-                          >
-                            <Plus size={14} />
-                            {language === 'pt' ? 'Adicionar Outra Disciplina' : 'Add Another Subject'}
-                          </button>
-                        </div>
-                      )}
+                    <div className="space-y-1">
+                      <label className="text-sm font-semibold text-slate-700">{t.courses.durationUnit}</label>
+                      <select
+                        {...register('duracao_unidade')}
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
+                      >
+                        <option value="dia">{t.courses.days}</option>
+                        <option value="semana">{t.courses.weeks}</option>
+                        <option value="mes">{t.courses.months}</option>
+                        <option value="ano">{t.courses.years}</option>
+                      </select>
                     </div>
-                  )}
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-sm font-semibold text-slate-700">Número de Módulos (Máx 20)</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="20"
+                      {...register('qtd_modulos', { valueAsNumber: true })}
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
+                    />
+                    {errors.qtd_modulos && <p className="text-xs text-red-500 mt-1">{errors.qtd_modulos.message}</p>}
+                  </div>
+
+                  <div className="hidden">
+                    <input type="checkbox" {...register('ativo')} />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-sm font-semibold text-slate-700">{t.courses.category}</label>
+                    <select
+                      {...register('categoria', {
+                        onChange: (e) => {
+                          const val = e.target.value;
+                          if (val === 'EaD') {
+                            setValue('documento_criacao', 'PGI');
+                          }
+                        }
+                      })}
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
+                    >
+                      <option value="">Selecione uma categoria</option>
+                      <option value="Expedito">{t.courses.categoryExpedito}</option>
+                      <option value="Especial">{t.courses.categoryEspecial}</option>
+                      <option value="Carreira">{t.courses.categoryCarreira}</option>
+                      <option value="EaD">{t.courses.categoryEad}</option>
+                    </select>
+                    {errors.categoria && <p className="text-xs text-red-500 mt-1">{errors.categoria.message}</p>}
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-sm font-semibold text-slate-700">
+                      {language === 'pt' ? 'Documento de Criação do Curso' : 'Course Creation Document'}
+                    </label>
+                    <select
+                      {...register('documento_criacao')}
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
+                    >
+                      <option value="">{language === 'pt' ? 'Selecione um documento' : 'Select a document'}</option>
+                      <option value="Ordem Interna">Ordem Interna</option>
+                      <option value="CENPEM">CENPEM</option>
+                      <option value="ROV">ROV</option>
+                      <option value="PGI">PGI</option>
+                      <option value="PEPME">PEPME</option>
+                    </select>
+                    {errors.documento_criacao && <p className="text-xs text-red-500 mt-1">{errors.documento_criacao.message}</p>}
+                  </div>
+
+                  <div className="flex items-center gap-2 py-2">
+                    <input
+                      id="checkbox-internacional"
+                      type="checkbox"
+                      {...register('internacional')}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded cursor-pointer"
+                    />
+                    <label htmlFor="checkbox-internacional" className="text-sm font-semibold text-slate-700 cursor-pointer">
+                      {language === 'pt' ? 'Curso realizado no Exterior (Internacional)' : 'Course conducted Abroad (International)'}
+                    </label>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-sm font-semibold text-slate-700">
+                      {language === 'pt' ? 'Localização' : 'Location'}
+                    </label>
+                    <input
+                      type="text"
+                      {...register('localizacao')}
+                      placeholder={language === 'pt' ? 'Ex: Luanda, Paris, EaD' : 'E.g., Luanda, Paris, Remote'}
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-sm font-semibold text-slate-700">
+                      {language === 'pt' ? 'Grupo Responsável' : 'Responsible Group'}
+                    </label>
+                    <input
+                      type="text"
+                      list="grupos-responsavel"
+                      placeholder={language === 'pt' ? 'Digite ou selecione o grupo (Ex: MAN, GAT, AMBOS)' : 'Type or select group (E.g.: MAN, GAT, AMBOS)'}
+                      {...register('grupo_responsavel')}
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-900 transition-colors text-sm font-medium"
+                    />
+                    <datalist id="grupos-responsavel">
+                      <option value="MAN" />
+                      <option value="GAT" />
+                      <option value="AMBOS" />
+                    </datalist>
+                    {errors.grupo_responsavel && <p className="text-xs text-red-500 mt-1">{errors.grupo_responsavel.message}</p>}
+                  </div>
                 </div>
 
                 <div className="flex gap-3 pt-4 border-t border-slate-100 mt-4 shrink-0 bg-white">
                   <button
                     type="button"
                     onClick={() => setModalOpen(false)}
-                    className="flex-1 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-200 transition-colors cursor-pointer"
+                    className="flex-1 py-2 bg-slate-100 text-slate-600 rounded-lg text-sm font-bold hover:bg-slate-200 transition-colors"
                   >
                     {t.common.cancel}
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition-colors shadow-sm shadow-blue-100 cursor-pointer flex items-center justify-center gap-2"
+                    className="flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 transition-colors shadow-sm shadow-blue-100"
                   >
-                    {language === 'pt' ? 'Salvar Curso e Carga Horária' : 'Save Course & Workload'}
+                    {t.common.save}
                   </button>
                 </div>
               </form>
