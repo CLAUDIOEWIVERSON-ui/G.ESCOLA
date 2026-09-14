@@ -240,6 +240,19 @@ export async function downloadElementAsPDF(
             (el as HTMLElement).style.setProperty('display', 'none', 'important');
           });
 
+          // Preservar layout do cabeçalho oficial no impresso/PDF (Logo na esquerda, Texto na direita - igual à tela)
+          const headerContainer = clonedDoc.getElementById('relatorio-avaliacao-turma-header-container');
+          const headerLogo = clonedDoc.getElementById('relatorio-avaliacao-turma-header-logo');
+          const headerText = clonedDoc.getElementById('relatorio-avaliacao-turma-header-text');
+          if (headerContainer && headerLogo && headerText) {
+            headerContainer.style.setProperty('display', 'flex', 'important');
+            headerContainer.style.setProperty('flex-direction', 'row', 'important');
+            headerContainer.style.setProperty('align-items', 'flex-start', 'important');
+            headerLogo.style.setProperty('order', '1', 'important');
+            headerText.style.setProperty('order', '2', 'important');
+            headerText.style.setProperty('flex', '1 1 0%', 'important');
+          }
+
           // Inline all images in the clone to base64 to eliminate any CORS / taint problems
           await inlineAllImagesInElement(clonedElem);
 
@@ -359,9 +372,9 @@ export async function downloadElementAsPDF(
         });
       }
 
-      // Extract avoid-break blocks (summaries, signatures, turma units)
+      // Extract avoid-break blocks (cards, charts, summaries, signatures, turma units, question blocks, comments)
       const avoids = Array.from(targetElem.querySelectorAll<HTMLElement>(
-        '.print-avoid-break, .break-inside-avoid, .print-summary-box, .print-signature, .print-turma-unit'
+        '.print-avoid-break, .break-inside-avoid, .avoid-break, .print-avoid-page-break, [data-avoid-break="true"], .print-summary-box, .print-signature, .print-turma-unit, .relatorio-card, .relatorio-questao-item, .relatorio-comentario-item'
       ));
       for (const b of avoids) {
         const r = b.getBoundingClientRect();
@@ -370,6 +383,7 @@ export async function downloadElementAsPDF(
           bottom: (r.bottom - containerRect.top) * scaleY
         });
       }
+      avoidBreakBlocks.sort((a, b) => a.top - b.top);
 
       // Extract explicit forced page breaks (.print-page-break, .page-break-before, .break-before-page, [data-page-break="true"])
       const forcedBreaks: number[] = [];
@@ -409,13 +423,26 @@ export async function downloadElementAsPDF(
           continue;
         }
 
-        // A. Check if an avoid-break block crosses the page boundary
+        // A. Check if an avoid-break block crosses the page boundary or starts dangerously close to it
         let blockCut: number | null = null;
         for (const b of avoidBreakBlocks) {
-          if (b.top > currentTop && b.top < idealBottom && b.bottom > idealBottom) {
-            if (b.top - currentTop >= maxPageCanvasHeight * 0.3) {
-              blockCut = b.top;
-              break;
+          const blockHeight = b.bottom - b.top;
+          // If a single block is taller than 95% of an entire page, it must span pages
+          if (blockHeight >= maxPageCanvasHeight * 0.95) {
+            continue;
+          }
+
+          // Case 1: Block crosses idealBottom (top is before idealBottom, bottom is after idealBottom)
+          // Case 2: Block starts within 60px of idealBottom (leaving an awkward cutoff)
+          const crosses = b.top > currentTop + 40 && b.top < idealBottom && b.bottom > idealBottom;
+          const tooCloseToEnd = b.top > currentTop + 80 && b.top < idealBottom && (idealBottom - b.top < 60) && (b.bottom - b.top > 70);
+
+          if (crosses || tooCloseToEnd) {
+            if (b.top - currentTop >= maxPageCanvasHeight * 0.15) {
+              const candidateCut = Math.max(currentTop + 40, b.top - 8);
+              if (blockCut === null || candidateCut < blockCut) {
+                blockCut = candidateCut;
+              }
             }
           }
         }
@@ -679,9 +706,15 @@ export function printElementIsolated(
         }
         .print-avoid-break,
         .break-inside-avoid,
+        .avoid-break,
+        .print-avoid-page-break,
+        [data-avoid-break="true"],
         .print-summary-box,
         .print-signature,
-        .print-turma-unit {
+        .print-turma-unit,
+        .relatorio-card,
+        .relatorio-questao-item,
+        .relatorio-comentario-item {
           page-break-inside: avoid !important;
           break-inside: avoid !important;
         }
@@ -730,6 +763,18 @@ export function printElementIsolated(
         }
         .no-print, .print\\:hidden {
           display: none !important;
+        }
+        #relatorio-avaliacao-turma-header-container {
+          display: flex !important;
+          flex-direction: row !important;
+          align-items: flex-start !important;
+        }
+        #relatorio-avaliacao-turma-header-logo {
+          order: 1 !important;
+        }
+        #relatorio-avaliacao-turma-header-text {
+          order: 2 !important;
+          flex: 1 1 0% !important;
         }
       </style>
       <script src="https://cdn.tailwindcss.com"></script>

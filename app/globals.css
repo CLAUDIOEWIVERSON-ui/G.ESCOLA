@@ -864,7 +864,10 @@ a[class*="bg-indigo-"]:not([class*="bg-indigo-50"]):not([class*="bg-indigo-100"]
   .break-inside-avoid,
   .avoid-break,
   .print-avoid-page-break,
-  .print\:break-inside-avoid {
+  .print\:break-inside-avoid,
+  .relatorio-card,
+  .relatorio-questao-item,
+  .relatorio-comentario-item {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
   }

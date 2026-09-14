@@ -338,9 +338,15 @@ function RelatorioAvaliacaoAdminContent() {
     try {
       setLoading(true);
       
-      // Fetch Cursos
-      const { data: cursosData } = await supabase.from('cursos').select('id, nome, grupo_responsavel').is('deleted_at', null);
-      if (cursosData) setCursos(cursosData);
+      // Fetch Cursos (excluindo cursos do exterior)
+      const { data: cursosData } = await supabase
+        .from('cursos')
+        .select('id, nome, grupo_responsavel, internacional')
+        .is('deleted_at', null);
+      if (cursosData) {
+        const nonInternationalCursos = cursosData.filter((c: any) => !c.internacional);
+        setCursos(nonInternationalCursos);
+      }
 
       // Fetch Turmas with registered instructor and group fields
       const { data: turmasData, error: turmasError } = await supabase
@@ -353,7 +359,13 @@ function RelatorioAvaliacaoAdminContent() {
         console.error('Erro ao carregar turmas no relatório de avaliação:', turmasError);
       }
 
-      let availableTurmas = turmasData || [];
+      // Retirar turmas do exterior no filtro de análise e relatórios de questionário
+      let availableTurmas = (turmasData || []).filter((t: any) => {
+        if (t.internacional === true || t.internacional === 'true' || t.internacional === 1) return false;
+        const linkedCurso = (cursosData || []).find((c: any) => c.id === t.curso_id);
+        if (linkedCurso && (linkedCurso.internacional === true || linkedCurso.internacional === 'true' || linkedCurso.internacional === 1)) return false;
+        return true;
+      });
 
       // Filter classes by instructor's group responsibility if logged in as an instructor
       if (profile?.role === 'instrutor' && profile?.grupo_responsavel) {
@@ -427,6 +439,11 @@ function RelatorioAvaliacaoAdminContent() {
       // Filter submissions belonging to available classes or within instructor's group
       const activeSubmissions = (qData || []).filter((sub: any) => {
         if (!sub.turma) return false;
+
+        // Excluir questionários de turmas do exterior
+        if (sub.turma.internacional === true || sub.turma.curso?.internacional === true) return false;
+        const matchingTurma = availableTurmas.find((t: any) => t.id === sub.turma_id || t.id === sub.turma?.id);
+        if (!matchingTurma) return false;
 
         // Apply instructor group scope if applicable
         if (profile?.role === 'instrutor' && profile?.grupo_responsavel) {
@@ -1059,6 +1076,47 @@ function RelatorioAvaliacaoAdminContent() {
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
     }
+
+    /* Layout do cabeçalho oficial no impresso: Logo na esquerda, Texto na direita (igual à tela) */
+    #relatorio-avaliacao-turma-header-container {
+      display: flex !important;
+      flex-direction: row !important;
+      align-items: flex-start !important;
+    }
+    #relatorio-avaliacao-turma-header-logo {
+      order: 1 !important;
+    }
+    #relatorio-avaliacao-turma-header-text {
+      order: 2 !important;
+      flex: 1 1 0% !important;
+    }
+
+    /* Regras de Quebra de Página e Não Fragmentação de Conteúdo */
+    .print-avoid-break,
+    .break-inside-avoid,
+    .avoid-break,
+    .print-avoid-page-break,
+    [data-avoid-break="true"],
+    .relatorio-card,
+    .relatorio-questao-item,
+    .relatorio-comentario-item {
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+
+    .print-page-break,
+    .page-break-before,
+    .break-before-page,
+    [data-page-break="true"] {
+      page-break-before: always !important;
+      break-before: page !important;
+      clear: both !important;
+      display: block !important;
+      height: 0 !important;
+      min-height: 0 !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
   }
 `}</style>
 
@@ -1296,14 +1354,34 @@ function RelatorioAvaliacaoAdminContent() {
           ) : (
             <div id="relatorio-avaliacao-printable-container" className="space-y-8">
               
-              {/* CABEÇALHO OFICIAL DO RELATÓRIO REFERENTE À TURMA COM LOGO NO LADO DIREITO */}
+              {/* CABEÇALHO OFICIAL DO RELATÓRIO REFERENTE À TURMA (LOGO NO LADO ESQUERDO NA TELA E NO IMPRESSO) */}
               <div 
                 id="relatorio-avaliacao-turma-header"
                 className="bg-white border-2 border-slate-900 rounded-xl p-5 md:p-6 shadow-xs print:border-slate-950 print:p-4 print:shadow-none print:rounded-none"
               >
-                <div className="flex flex-col-reverse md:flex-row items-center md:items-start justify-between gap-5 print:flex-row print:items-start">
-                  {/* TEXTO E INFORMAÇÕES REFERENTES À TURMA (ESQUERDA / CENTRO) */}
-                  <div className="flex-1 w-full text-left space-y-3">
+                <div 
+                  id="relatorio-avaliacao-turma-header-container"
+                  className="flex flex-col md:flex-row items-center md:items-start justify-between gap-5 print:!flex-row print:!items-start"
+                >
+                  {/* LOGO DO RELATÓRIO: NA TELA E NO IMPRESSO (LADO ESQUERDO / order-1) */}
+                  <div 
+                    id="relatorio-avaliacao-turma-header-logo"
+                    className="shrink-0 flex items-center justify-center p-2 bg-white rounded-xl border border-slate-200 shadow-2xs self-center md:self-start print:!border-none print:!shadow-none print:!p-0 order-1 md:order-1 print:!order-1"
+                  >
+                    <img
+                      src={typeof navalMissionLogo === 'string' ? navalMissionLogo : (navalMissionLogo as any)?.src || navalMissionLogo}
+                      alt="Logo Missão de Assessoria Naval"
+                      className="w-24 h-24 md:w-28 md:h-28 object-contain shrink-0"
+                      style={{ width: '112px', height: '112px', maxWidth: '112px', maxHeight: '112px' }}
+                      crossOrigin="anonymous"
+                    />
+                  </div>
+
+                  {/* TEXTO E INFORMAÇÕES REFERENTES À TURMA: NA TELA E NO IMPRESSO (LADO DIREITO / order-2) */}
+                  <div 
+                    id="relatorio-avaliacao-turma-header-text"
+                    className="flex-1 w-full text-left space-y-3 order-2 md:order-2 print:!order-2"
+                  >
                     <div className="border-b-2 border-slate-900 pb-2.5">
                       <span className="text-[10px] md:text-[11px] font-black tracking-widest text-slate-900 uppercase font-mono block">
                         MARINHA DO BRASIL • MISSÃO DE ASSESSORIA NAVAL EM SÃO TOMÉ E PRÍNCIPE
@@ -1405,17 +1483,6 @@ function RelatorioAvaliacaoAdminContent() {
                         </span>
                       </div>
                     </div>
-                  </div>
-
-                  {/* LOGO NO LADO DIREITO */}
-                  <div className="shrink-0 flex items-center justify-center p-2 bg-white rounded-xl border border-slate-200 shadow-2xs self-center md:self-start print:border-none print:shadow-none print:p-0">
-                    <img
-                      src={typeof navalMissionLogo === 'string' ? navalMissionLogo : (navalMissionLogo as any)?.src || navalMissionLogo}
-                      alt="Logo Missão de Assessoria Naval"
-                      className="w-24 h-24 md:w-28 md:h-28 object-contain shrink-0"
-                      style={{ width: '112px', height: '112px', maxWidth: '112px', maxHeight: '112px' }}
-                      crossOrigin="anonymous"
-                    />
                   </div>
                 </div>
               </div>
@@ -1572,7 +1639,7 @@ function RelatorioAvaliacaoAdminContent() {
                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 print:grid-cols-1 print:gap-6">
                             
                              {/* Chart 1: Média Detalhada por Categoria */}
-                             <div className={`border rounded-xl p-5 relative overflow-hidden transition-all duration-300 border-b-[4px] border-r-[2px] ${
+                             <div className={`border rounded-xl p-5 relative overflow-hidden transition-all duration-300 border-b-[4px] border-r-[2px] break-inside-avoid print-avoid-break relatorio-card ${
                                chartTheme === 'azul'
                                  ? 'bg-slate-950 print:bg-white border-slate-800 shadow-[0_0_25px_rgba(6,182,212,0.15)] hover:shadow-[0_0_35px_rgba(6,182,212,0.25)] border-cyan-500/20 text-white'
                                  : 'bg-white border-slate-250 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border-cyan-500/30 text-slate-800'
@@ -1718,7 +1785,7 @@ function RelatorioAvaliacaoAdminContent() {
                              </div>
  
                              {/* Chart 2: Perfil de Distribuição de Notas */}
-                             <div className={`border rounded-xl p-5 relative overflow-hidden transition-all duration-300 border-b-[4px] border-r-[2px] ${
+                             <div className={`border rounded-xl p-5 relative overflow-hidden transition-all duration-300 border-b-[4px] border-r-[2px] break-inside-avoid print-avoid-break relatorio-card ${
                                chartTheme === 'azul'
                                  ? 'bg-slate-950 print:bg-white border-slate-800 shadow-[0_0_25px_rgba(168,85,247,0.15)] hover:shadow-[0_0_35px_rgba(168,85,247,0.25)] border-purple-500/20 text-white'
                                  : 'bg-white border-slate-250 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border-purple-500/30 text-slate-800'
@@ -1813,7 +1880,7 @@ function RelatorioAvaliacaoAdminContent() {
 ].filter(item => item.value > 0);
  
                                return (
-                                 <div className={`border rounded-xl p-5 relative overflow-hidden transition-all duration-305 border-b-[4px] border-r-[2px] flex flex-col justify-between ${
+                                 <div className={`border rounded-xl p-5 relative overflow-hidden transition-all duration-305 border-b-[4px] border-r-[2px] flex flex-col justify-between break-inside-avoid print-avoid-break relatorio-card ${
                                    chartTheme === 'azul'
                                      ? 'bg-slate-950 print:bg-white border-slate-800 shadow-[0_0_25px_rgba(16,185,129,0.15)] hover:shadow-[0_0_35px_rgba(16,185,129,0.25)] border-emerald-500/20 text-white'
                                      : 'bg-white border-slate-205 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border-emerald-500/30 text-slate-800'
@@ -1891,10 +1958,13 @@ function RelatorioAvaliacaoAdminContent() {
 
                           </div>
 
+                          {/* Quebra de página estratégica antes dos destaques e parecer */}
+                          <div className="print-page-break page-break-before break-before-page" data-page-break="true" />
+
                           {/* Highlights cards */}
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {/* Pontos Fortes */}
-                            <div className="bg-emerald-50/40 border border-emerald-100/70 rounded-xl p-4 space-y-3 ">
+                            <div className="bg-emerald-50/40 border border-emerald-100/70 rounded-xl p-4 space-y-3 break-inside-avoid print-avoid-break relatorio-card">
                               <h5 className="text-[10px] font-black text-emerald-800 uppercase tracking-wider font-mono flex items-center gap-1.5">
                                 <TrendingUp className="h-4 w-4 text-emerald-600" />
                                 Principais Pontos Fortes da Turma
@@ -1917,7 +1987,7 @@ function RelatorioAvaliacaoAdminContent() {
                             </div>
 
                             {/* Pontos a Melhorar */}
-                            <div className="bg-amber-50/40 border border-amber-100/70 rounded-xl p-4 space-y-3 ">
+                            <div className="bg-amber-50/40 border border-amber-100/70 rounded-xl p-4 space-y-3 break-inside-avoid print-avoid-break relatorio-card">
                               <h5 className="text-[10px] font-black text-amber-800 uppercase tracking-wider font-mono flex items-center gap-1.5">
                                 <AlertTriangle className="h-4 w-4 text-amber-605" />
                                 Oportunidades de Melhoria Acadêmica
@@ -1949,7 +2019,7 @@ function RelatorioAvaliacaoAdminContent() {
                           {/* PARECER DE APOIO AO COORDENADOR & SUGESTÕES DO SISTEMA */}
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                             {/* Card 1: Parecer Técnico de Apoio ao Coordenador */}
-                            <div className="bg-slate-50 print:bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-3">
+                            <div className="bg-slate-50 print:bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-3 break-inside-avoid print-avoid-break relatorio-card">
                               <h5 className="text-[10px] font-black text-slate-800 uppercase tracking-wider font-mono flex items-center gap-1.5">
                                 <Signature className="h-4 w-4 text-slate-600" />
                                 Parecer de Apoio ao Coordenador
@@ -1986,7 +2056,7 @@ function RelatorioAvaliacaoAdminContent() {
                             </div>
 
                             {/* Card 2: Sugestões Dinâmicas do Sistema */}
-                            <div className="bg-indigo-50/35 border border-indigo-100/70 rounded-xl p-5 shadow-sm space-y-3">
+                            <div className="bg-indigo-50/35 border border-indigo-100/70 rounded-xl p-5 shadow-sm space-y-3 break-inside-avoid print-avoid-break relatorio-card">
                               <h5 className="text-[10px] font-black text-indigo-900 uppercase tracking-wider font-mono flex items-center gap-1.5">
                                 <Target className="h-4 w-4 text-indigo-600" />
                                 Sugestões Estratégicas do Sistema
@@ -2213,7 +2283,7 @@ function RelatorioAvaliacaoAdminContent() {
               </div>
 
               {/* Card List of Comments on the General Tab */}
-              <div className="print-page-break" />
+              <div className="print-page-break page-break-before break-before-page" data-page-break="true" />
               <div 
                 id="relatorio-avaliacao-comentarios-alunos"
                 className="bg-white border-2 border-slate-900 rounded-xl p-6 shadow-xs space-y-6 print:border-slate-950 print:p-5 print:rounded-none print:shadow-none print-group-block break-inside-auto"
@@ -2252,7 +2322,7 @@ function RelatorioAvaliacaoAdminContent() {
                       const om = stud?.om || '';
                       
                       return (
-                        <div key={`comment-${sub.id || index}`} className="border-2 border-slate-300 print:border-slate-800 rounded-xl p-5 bg-slate-50 print:bg-white shadow-xs break-inside-avoid print-avoid-break">
+                        <div key={`comment-${sub.id || index}`} className="border-2 border-slate-300 print:border-slate-800 rounded-xl p-5 bg-slate-50 print:bg-white shadow-xs break-inside-avoid print-avoid-break relatorio-comentario-item">
                           <div className="flex items-center justify-between gap-2 mb-3 border-b border-slate-200 print:border-slate-300 pb-2">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="w-2.5 h-2.5 rounded-full bg-slate-700"></span>
@@ -2338,7 +2408,7 @@ function RelatorioAvaliacaoAdminContent() {
                     {CURSO_QUESTIONS.map((q, idx) => {
                       const avg = calculateQuestionAverage(filteredSubmissions, q.key);
                       return (
-                        <div key={q.key} className="border border-slate-100 rounded-lg p-5 hover:bg-slate-50 print:bg-white transition">
+                        <div key={q.key} className="border border-slate-100 rounded-lg p-5 hover:bg-slate-50 print:bg-white transition break-inside-avoid print-avoid-break relatorio-card">
                           <p className="text-xs font-extrabold text-slate-500 uppercase tracking-wider font-mono">Questão {idx + 1}</p>
                           <p className="text-sm font-extrabold text-slate-950 mt-1 mb-3">{q.label}</p>
                           
@@ -2362,7 +2432,7 @@ function RelatorioAvaliacaoAdminContent() {
               </div>
 
               {/* Suggestions and Comments sections consolidated */}
-              <div className="print-page-break" />
+              <div className="print-page-break page-break-before break-before-page" data-page-break="true" />
               <div className="space-y-4">
                 <div className="border-b-2 border-slate-900 pb-2">
                   <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider font-mono flex items-center gap-2">
@@ -2376,7 +2446,7 @@ function RelatorioAvaliacaoAdminContent() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   {/* Card 1: Sugestões de Melhoria */}
-                  <div className="bg-white border-2 border-indigo-200 print:border-slate-800 rounded-xl p-5 shadow-xs break-inside-avoid print-avoid-break">
+                  <div className="bg-white border-2 border-indigo-200 print:border-slate-800 rounded-xl p-5 shadow-xs break-inside-avoid print-avoid-break relatorio-card">
                     <h3 className="text-xs font-black text-indigo-900 print:text-black uppercase tracking-wider border-b pb-2 mb-3 font-mono flex items-center gap-1.5">
                       💡 Sugestões de Melhoria e Recomendações
                     </h3>
@@ -2393,7 +2463,7 @@ function RelatorioAvaliacaoAdminContent() {
                             const om = stud?.om || sub.aluno?.om || '';
 
                             return (
-                              <div key={`sugestao-${sub.id || idx}`} className="bg-indigo-50/40 print:bg-white p-3 rounded-lg border border-indigo-100 print:border-slate-300 text-xs">
+                              <div key={`sugestao-${sub.id || idx}`} className="bg-indigo-50/40 print:bg-white p-3 rounded-lg border border-indigo-100 print:border-slate-300 text-xs break-inside-avoid print-avoid-break relatorio-comentario-item">
                                 <p className="text-slate-800 font-medium leading-relaxed whitespace-pre-wrap">{sub.sugestoes_melhoria}</p>
                                 <span className="text-[11px] font-bold text-indigo-950 print:text-black uppercase block mt-1.5 font-mono">
                                   — {posto ? `${posto} ` : ''}{nome}{om ? ` (${om})` : ''}
@@ -2406,7 +2476,7 @@ function RelatorioAvaliacaoAdminContent() {
                   </div>
 
                   {/* Card 2: Críticas Construtivas */}
-                  <div className="bg-white border-2 border-amber-200 print:border-slate-800 rounded-xl p-5 shadow-xs break-inside-avoid print-avoid-break">
+                  <div className="bg-white border-2 border-amber-200 print:border-slate-800 rounded-xl p-5 shadow-xs break-inside-avoid print-avoid-break relatorio-card">
                     <h3 className="text-xs font-black text-amber-900 print:text-black uppercase tracking-wider border-b pb-2 mb-3 font-mono flex items-center gap-1.5">
                       ⚠️ Críticas Construtivas e Pontos a Aperfeiçoar
                     </h3>
@@ -2423,7 +2493,7 @@ function RelatorioAvaliacaoAdminContent() {
                             const om = stud?.om || sub.aluno?.om || '';
 
                             return (
-                              <div key={`critica-${sub.id || idx}`} className="bg-amber-50/40 print:bg-white p-3 rounded-lg border border-amber-100 print:border-slate-300 text-xs">
+                              <div key={`critica-${sub.id || idx}`} className="bg-amber-50/40 print:bg-white p-3 rounded-lg border border-amber-100 print:border-slate-300 text-xs break-inside-avoid print-avoid-break relatorio-comentario-item">
                                 <p className="text-slate-800 font-medium leading-relaxed whitespace-pre-wrap">{sub.criticas_construtivas}</p>
                                 <span className="text-[11px] font-bold text-amber-950 print:text-black uppercase block mt-1.5 font-mono">
                                   — {posto ? `${posto} ` : ''}{nome}{om ? ` (${om})` : ''}
@@ -2436,7 +2506,7 @@ function RelatorioAvaliacaoAdminContent() {
                   </div>
 
                   {/* Card 3: Resumo de Elogios */}
-                  <div className="bg-white border-2 border-emerald-200 print:border-slate-800 rounded-xl p-5 shadow-xs break-inside-avoid print-avoid-break">
+                  <div className="bg-white border-2 border-emerald-200 print:border-slate-800 rounded-xl p-5 shadow-xs break-inside-avoid print-avoid-break relatorio-card">
                     <h3 className="text-xs font-black text-emerald-900 print:text-black uppercase tracking-wider border-b pb-2 mb-3 font-mono flex items-center gap-1.5">
                       ⭐ Elogios e Pontos Fortes do Curso
                     </h3>
@@ -2453,7 +2523,7 @@ function RelatorioAvaliacaoAdminContent() {
                             const om = stud?.om || sub.aluno?.om || '';
 
                             return (
-                              <div key={`elogio-${sub.id || idx}`} className="bg-emerald-50/40 print:bg-white p-3 rounded-lg border border-emerald-100 print:border-slate-300 text-xs">
+                              <div key={`elogio-${sub.id || idx}`} className="bg-emerald-50/40 print:bg-white p-3 rounded-lg border border-emerald-100 print:border-slate-300 text-xs break-inside-avoid print-avoid-break relatorio-comentario-item">
                                 <p className="text-slate-800 font-medium leading-relaxed whitespace-pre-wrap">{sub.elogios}</p>
                                 <span className="text-[11px] font-bold text-emerald-950 print:text-black uppercase block mt-1.5 font-mono">
                                   — {posto ? `${posto} ` : ''}{nome}{om ? ` (${om})` : ''}
@@ -2466,7 +2536,7 @@ function RelatorioAvaliacaoAdminContent() {
                   </div>
 
                   {/* Card 4: Necessidade de Novos Cursos */}
-                  <div className="bg-white border-2 border-sky-200 print:border-slate-800 rounded-xl p-5 shadow-xs break-inside-avoid print-avoid-break">
+                  <div className="bg-white border-2 border-sky-200 print:border-slate-800 rounded-xl p-5 shadow-xs break-inside-avoid print-avoid-break relatorio-card">
                     <h3 className="text-xs font-black text-sky-900 print:text-black uppercase tracking-wider border-b pb-2 mb-3 font-mono flex items-center gap-1.5">
                       📚 Demandas e Sugestões de Novos Cursos
                     </h3>
@@ -2483,7 +2553,7 @@ function RelatorioAvaliacaoAdminContent() {
                             const om = stud?.om || sub.aluno?.om || '';
 
                             return (
-                              <div key={`novocurso-${sub.id || idx}`} className="bg-sky-50/40 print:bg-white p-3 rounded-lg border border-sky-100 print:border-slate-300 text-xs">
+                              <div key={`novocurso-${sub.id || idx}`} className="bg-sky-50/40 print:bg-white p-3 rounded-lg border border-sky-100 print:border-slate-300 text-xs break-inside-avoid print-avoid-break relatorio-comentario-item">
                                 <p className="text-slate-800 font-medium leading-relaxed whitespace-pre-wrap">{sub.necessidades_novos_cursos}</p>
                                 <span className="text-[11px] font-bold text-sky-950 print:text-black uppercase block mt-1.5 font-mono">
                                   — {posto ? `${posto} ` : ''}{nome}{om ? ` (${om})` : ''}
@@ -2543,7 +2613,7 @@ function RelatorioAvaliacaoAdminContent() {
                   return (
                     <div className="space-y-8">
                       {/* Performance Header summary */}
-                      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6 break-inside-avoid print-avoid-break relatorio-card">
                         <div className="flex items-center gap-4">
                           <div className="w-16 h-16 bg-slate-900 print:bg-white text-white print:text-slate-900 rounded-full flex items-center justify-center font-bold text-xl font-mono">
                             {focusedInstructor.slice(0, 2).toUpperCase()}
@@ -2565,13 +2635,13 @@ function RelatorioAvaliacaoAdminContent() {
 
                       {/* Detailed list of instructor questions */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-4">
+                        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-4 break-inside-avoid print-avoid-break relatorio-card">
                           <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider border-b pb-2 font-mono">
                             Médias Claras por Questionário Objetivos
                           </h3>
                           <div className="space-y-4">
                             {qScores.map((q, idx) => (
-                              <div key={q.key} className="space-y-2">
+                              <div key={q.key} className="space-y-2 break-inside-avoid print-avoid-break relatorio-questao-item">
                                 <div className="flex justify-between text-xs">
                                   <span className="font-extrabold text-slate-950">{idx+1}. {q.label}</span>
                                   <span className="font-bold text-slate-900">{q.score.toFixed(2)} / 5.0</span>
@@ -2590,7 +2660,7 @@ function RelatorioAvaliacaoAdminContent() {
                         {/* Analysis of docent strengths and weaknesses */}
                         <div className="space-y-6">
                           {/* Strengths card */}
-                          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+                          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm break-inside-avoid print-avoid-break relatorio-card">
                             <h3 className="text-xs font-bold text-emerald-800 uppercase tracking-wider border-b pb-2 mb-3.5 font-mono flex items-center gap-1.5">
                               <CheckCircle className="h-4 w-4 text-emerald-600" />
                               Pontos Fortes (Média ≥ 4.0)
@@ -2600,7 +2670,7 @@ function RelatorioAvaliacaoAdminContent() {
                             ) : (
                               <ul className="text-xs text-slate-650 space-y-2">
                                 {strengths.map(s => (
-                                  <li key={s.key} className="flex items-center gap-2 bg-emerald-50/40 p-2.5 rounded-lg border border-emerald-100/30">
+                                  <li key={s.key} className="flex items-center gap-2 bg-emerald-50/40 p-2.5 rounded-lg border border-emerald-100/30 break-inside-avoid print-avoid-break">
                                     <span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />
                                     <span>{s.label} ({s.score.toFixed(1)})</span>
                                   </li>
@@ -2610,7 +2680,7 @@ function RelatorioAvaliacaoAdminContent() {
                           </div>
 
                           {/* Points to improve */}
-                          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+                          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm break-inside-avoid print-avoid-break relatorio-card">
                             <h3 className="text-xs font-bold text-amber-800 uppercase tracking-wider border-b pb-2 mb-3.5 font-mono flex items-center gap-1.5">
                               <AlertTriangle className="h-4 w-4 text-amber-500" />
                               Pontos a Melhorar (Média &lt; 3.5)
@@ -3147,7 +3217,7 @@ function RelatorioAvaliacaoAdminContent() {
                   return (
                     <div className="space-y-8">
                       {/* Identity profile card */}
-                      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-6 break-inside-avoid print-avoid-break relatorio-card">
                         <div className="md:col-span-2 space-y-4">
                           <div className="flex items-center justify-between gap-4">
                             <div className="flex items-center gap-3">
@@ -3246,7 +3316,7 @@ function RelatorioAvaliacaoAdminContent() {
                       {/* Display breakdown of elements */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Course evaluation details */}
-                        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-4">
+                        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-4 break-inside-avoid print-avoid-break relatorio-card">
                           <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider font-mono border-b pb-2">
                             Média por Categoria (Comparado com Média da Turma)
                           </h4>
@@ -3299,7 +3369,7 @@ function RelatorioAvaliacaoAdminContent() {
                         </div>
 
                         {/* Qualitative observations card */}
-                        <div className="bg-white border-2 border-slate-300 print:border-slate-800 rounded-xl p-6 shadow-xs space-y-4">
+                        <div className="bg-white border-2 border-slate-300 print:border-slate-800 rounded-xl p-6 shadow-xs space-y-4 break-inside-avoid print-avoid-break relatorio-card">
                           <h4 className="text-xs font-black text-slate-800 print:text-black uppercase tracking-wider font-mono border-b pb-2 flex items-center gap-1.5">
                             <Edit3 className="h-4 w-4 text-slate-700" />
                             Observações e Comentários Escritos pelo Aluno
@@ -3344,8 +3414,8 @@ function RelatorioAvaliacaoAdminContent() {
                       </div>
 
                       {/* Detailed Questionnaire Responses - Faithful to the actual form */}
-                      <div className="print-page-break" />
-                      <div className="bg-white border-2 border-slate-900 rounded-xl p-6 shadow-xs space-y-6 print:rounded-none print:border-slate-950">
+                      <div className="print-page-break page-break-before break-before-page" data-page-break="true" />
+                      <div className="bg-white border-2 border-slate-900 rounded-xl p-6 shadow-xs space-y-6 print:rounded-none print:border-slate-950 relatorio-card">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b pb-4 gap-2">
                           <div>
                             <h4 className="text-sm font-extrabold text-slate-900 font-mono uppercase tracking-wide flex items-center gap-1.5">
@@ -3371,7 +3441,7 @@ function RelatorioAvaliacaoAdminContent() {
                               {CURSO_QUESTIONS.map((q, idx) => {
                                 const val = studentSub[q.key];
                                 return (
-                                  <div key={q.key} className="p-3.5 bg-slate-50 print:bg-white rounded-lg border border-slate-150 flex flex-col md:flex-row md:items-center md:justify-between gap-4 transition hover:bg-slate-50 print:bg-white">
+                                  <div key={q.key} className="p-3.5 bg-slate-50 print:bg-white rounded-lg border border-slate-150 flex flex-col md:flex-row md:items-center md:justify-between gap-4 transition hover:bg-slate-50 print:bg-white break-inside-avoid print-avoid-break relatorio-questao-item">
                                     <p className="text-xs font-bold text-slate-855 leading-relaxed">
                                       {idx + 1}. {q.label}
                                     </p>
@@ -3411,7 +3481,7 @@ function RelatorioAvaliacaoAdminContent() {
                               {INSTRUTOR_QUESTIONS.map((q, idx) => {
                                 const val = studentSub[q.key];
                                 return (
-                                  <div key={q.key} className="p-3.5 bg-slate-50 print:bg-white rounded-lg border border-slate-150 flex flex-col md:flex-row md:items-center md:justify-between gap-4 transition hover:bg-slate-50 print:bg-white">
+                                  <div key={q.key} className="p-3.5 bg-slate-50 print:bg-white rounded-lg border border-slate-150 flex flex-col md:flex-row md:items-center md:justify-between gap-4 transition hover:bg-slate-50 print:bg-white break-inside-avoid print-avoid-break relatorio-questao-item">
                                     <p className="text-xs font-bold text-slate-855 leading-relaxed">
                                       {idx + 1}. {q.label}
                                     </p>
@@ -3451,7 +3521,7 @@ function RelatorioAvaliacaoAdminContent() {
                               {AUTO_QUESTIONS.map((q, idx) => {
                                 const val = studentSub[q.key];
                                 return (
-                                  <div key={q.key} className="p-3.5 bg-slate-50 print:bg-white rounded-lg border border-slate-150 flex flex-col md:flex-row md:items-center md:justify-between gap-4 transition hover:bg-slate-50 print:bg-white">
+                                  <div key={q.key} className="p-3.5 bg-slate-50 print:bg-white rounded-lg border border-slate-150 flex flex-col md:flex-row md:items-center md:justify-between gap-4 transition hover:bg-slate-50 print:bg-white break-inside-avoid print-avoid-break relatorio-questao-item">
                                     <p className="text-xs font-bold text-slate-855 leading-relaxed">
                                       {idx + 1}. {q.label}
                                     </p>
@@ -3491,7 +3561,7 @@ function RelatorioAvaliacaoAdminContent() {
                               {INFRA_QUESTIONS.map((q, idx) => {
                                 const val = studentSub[q.key];
                                 return (
-                                  <div key={q.key} className="p-3.5 bg-slate-50 print:bg-white rounded-lg border border-slate-150 flex flex-col md:flex-row md:items-center md:justify-between gap-4 transition hover:bg-slate-50 print:bg-white">
+                                  <div key={q.key} className="p-3.5 bg-slate-50 print:bg-white rounded-lg border border-slate-150 flex flex-col md:flex-row md:items-center md:justify-between gap-4 transition hover:bg-slate-50 print:bg-white break-inside-avoid print-avoid-break relatorio-questao-item">
                                     <p className="text-xs font-bold text-slate-855 leading-relaxed">
                                       {idx + 1}. {q.label}
                                     </p>
@@ -3523,13 +3593,14 @@ function RelatorioAvaliacaoAdminContent() {
                           </div>
 
                           {/* Part 5: Comentários e Sugestões Abertas do Aluno */}
-                          <div className="space-y-4 pt-4 border-t border-slate-200">
+                          <div className="print-page-break page-break-before break-before-page" data-page-break="true" />
+                          <div className="space-y-4 pt-4 border-t border-slate-200 break-inside-auto">
                             <h5 className="text-xs font-black text-indigo-700 uppercase tracking-widest bg-indigo-50 border border-indigo-100 px-3 py-2 rounded-lg flex items-center gap-1.5 font-mono">
                               <span>💬</span> V. Observações, Sugestões e Comentários Abertos do Aluno
                             </h5>
                             
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div className="bg-slate-50 print:bg-white p-3.5 rounded-lg border border-slate-200 print:border-slate-300 md:col-span-2">
+                              <div className="bg-slate-50 print:bg-white p-3.5 rounded-lg border border-slate-200 print:border-slate-300 md:col-span-2 break-inside-avoid print-avoid-break relatorio-comentario-item">
                                 <span className="text-[11px] font-bold text-indigo-900 print:text-black uppercase block mb-1 font-mono">
                                   💡 1. Sugestões de Melhoria para o Curso e Instrução:
                                 </span>
@@ -3540,7 +3611,7 @@ function RelatorioAvaliacaoAdminContent() {
                                 </p>
                               </div>
 
-                              <div className="bg-slate-50 print:bg-white p-3.5 rounded-lg border border-slate-200 print:border-slate-300">
+                              <div className="bg-slate-50 print:bg-white p-3.5 rounded-lg border border-slate-200 print:border-slate-300 break-inside-avoid print-avoid-break relatorio-comentario-item">
                                 <span className="text-[11px] font-bold text-amber-900 print:text-black uppercase block mb-1 font-mono">
                                   ⚠️ 2. Críticas Construtivas e Pontos Fracos:
                                 </span>
@@ -3551,7 +3622,7 @@ function RelatorioAvaliacaoAdminContent() {
                                 </p>
                               </div>
 
-                              <div className="bg-slate-50 print:bg-white p-3.5 rounded-lg border border-slate-200 print:border-slate-300">
+                              <div className="bg-slate-50 print:bg-white p-3.5 rounded-lg border border-slate-200 print:border-slate-300 break-inside-avoid print-avoid-break relatorio-comentario-item">
                                 <span className="text-[11px] font-bold text-emerald-900 print:text-black uppercase block mb-1 font-mono">
                                   ⭐ 3. Elogios e Pontos Fortes:
                                 </span>
@@ -3562,7 +3633,7 @@ function RelatorioAvaliacaoAdminContent() {
                                 </p>
                               </div>
 
-                              <div className="bg-slate-50 print:bg-white p-3.5 rounded-lg border border-slate-200 print:border-slate-300">
+                              <div className="bg-slate-50 print:bg-white p-3.5 rounded-lg border border-slate-200 print:border-slate-300 break-inside-avoid print-avoid-break relatorio-comentario-item">
                                 <span className="text-[11px] font-bold text-sky-900 print:text-black uppercase block mb-1 font-mono">
                                   📚 4. Necessidade de Novos Cursos ou Temas Futuros:
                                 </span>
@@ -3573,7 +3644,7 @@ function RelatorioAvaliacaoAdminContent() {
                                 </p>
                               </div>
 
-                              <div className="bg-slate-50 print:bg-white p-3.5 rounded-lg border border-slate-200 print:border-slate-300">
+                              <div className="bg-slate-50 print:bg-white p-3.5 rounded-lg border border-slate-200 print:border-slate-300 break-inside-avoid print-avoid-break relatorio-comentario-item">
                                 <span className="text-[11px] font-bold text-slate-900 print:text-black uppercase block mb-1 font-mono">
                                   📝 5. Comentários e Observações Adicionais:
                                 </span>
