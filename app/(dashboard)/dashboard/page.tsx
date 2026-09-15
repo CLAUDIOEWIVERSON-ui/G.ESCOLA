@@ -801,17 +801,33 @@ export default function DashboardPage() {
               <div className="p-4 sm:p-5 bg-slate-50 border-t border-slate-200/80 flex flex-wrap items-center justify-between gap-3 shrink-0">
                 <div className="flex items-center gap-2">
                   {profile?.role === 'admin' && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsSementeModalOpen(false);
-                        setIsEditingPensamento(true);
-                      }}
-                      className="flex items-center gap-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-sm active:scale-95"
-                    >
-                      <Pencil size={13} className="text-slate-500" />
-                      Editar Semente
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsSementeModalOpen(false);
+                          setIsEditingPensamento(true);
+                        }}
+                        className="flex items-center gap-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-sm active:scale-95"
+                      >
+                        <Pencil size={13} className="text-slate-500" />
+                        Editar
+                      </button>
+                      <button
+                        type="button"
+                        disabled={regeneratingPensamento}
+                        onClick={() => fetchPensamento(true)}
+                        className="flex items-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/80 font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-sm active:scale-95 disabled:opacity-50"
+                        title="Gerar uma nova Semente e Reflexão inéditas via IA"
+                      >
+                        {regeneratingPensamento ? (
+                          <Loader2 size={13} className="animate-spin text-indigo-600" />
+                        ) : (
+                          <Sparkles size={13} className="text-indigo-600" />
+                        )}
+                        Nova Frase Inédita (IA)
+                      </button>
+                    </>
                   )}
                 </div>
 

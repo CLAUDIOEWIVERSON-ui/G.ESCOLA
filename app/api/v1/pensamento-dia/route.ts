@@ -56,119 +56,193 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
   });
 }
 
-// A robust list of offline quotes to fall back on in extreme cases (e.g., API limits or offline mode)
+// A rich, diverse catalog of offline quotes to fall back on if API is unreachable.
+// None of these quotes or authors should collide easily, and selection avoids previously displayed items.
 const fallbackQuotes = [
   {
     texto: "Tudo posso naquele que me fortalece.",
     autor: "Apóstolo Paulo (Filipenses 4:13)",
+    reflexao: "A fé nos dá vigor para enfrentar os dias mais desafiadores, sabendo que nossa força interior provém de um propósito maior.",
     categoria: "religioso"
   },
   {
     texto: "A fé é dar o primeiro passo, mesmo quando você não vê toda a escada.",
     autor: "Martin Luther King Jr.",
+    reflexao: "Grandes transformações começam com a coragem de agir no presente, mesmo cercados por incertezas sobre o destino final.",
     categoria: "religioso"
   },
   {
     texto: "O único modo de fazer um excelente trabalho é amar o que você faz.",
     autor: "Steve Jobs",
+    reflexao: "A paixão pelo processo transforma a obrigação em maestria, impulsionando a excelência mesmo nas tarefas mais simples.",
     categoria: "motivacional"
   },
   {
     texto: "O segredo de progredir é começar.",
     autor: "Mark Twain",
+    reflexao: "Muitas vezes a inércia nos paralisa; quebrar tarefas grandiosas em passos minúsculos destrava nosso verdadeiro potencial.",
     categoria: "motivacional"
   },
   {
     texto: "Conhece-te a ti mesmo e conhecerás o universo e os deuses.",
     autor: "Sócrates",
+    reflexao: "O autoconhecimento é o alicerce de todas as virtudes e a bússola para navegar as tempestades do mundo exterior.",
     categoria: "filosofico"
   },
   {
     texto: "Não vivemos para pensar, pensamos para viver.",
     autor: "Ortega y Gasset",
+    reflexao: "A reflexão só cumpre sua missão quando se traduz em escolhas conscientes, sabedoria viva e ação prática no cotidiano.",
     categoria: "filosofico"
   },
   {
     texto: "Você tem poder sobre sua mente, não sobre eventos externos. Perceba isso e encontrará força.",
     autor: "Marco Aurélio",
+    reflexao: "A verdadeira serenidade nasce quando paramos de lutar contra o que não podemos controlar e assumimos o domínio de nossas reações.",
     categoria: "estoico"
   },
   {
     texto: "Apressa-te a viver bem e pensa que cada dia, por si só, é uma vida.",
     autor: "Sêneca",
+    reflexao: "Não adie a sua paz nem a sua dedicação. Trate este dia de hoje como uma oportunidade singular de expressar suas melhores virtudes.",
     categoria: "estoico"
   },
   {
     texto: "A melhor maneira de prever o futuro é criá-lo.",
     autor: "Peter Drucker",
+    reflexao: "O futuro não é algo que simplesmente nos acontece; ele é esculpido pelas decisões e atitudes que tomamos nas horas presentes.",
     categoria: "lideranca"
   },
   {
     texto: "O guerreiro de sucesso é o homem comum, com foco de laser.",
     autor: "Bruce Lee",
+    reflexao: "Mais importante que um talento nato extraordinário é a disciplina obstinada de manter o foco constante naquilo que realmente importa.",
     categoria: "lideranca"
   },
   {
     texto: "A jornada de mil milhas começa com um único passo.",
     autor: "Lao Tzu",
+    reflexao: "Não se intimide pela distância de seus objetivos mais altos. A constância do passo diário vence qualquer montanha.",
     categoria: "oriental"
   },
   {
     texto: "Seja como a água corrente: sem resistência, mas capaz de moldar o mundo.",
     autor: "Provérbio Zen",
+    reflexao: "A flexibilidade e a humildade conseguem contornar obstáculos rígidos e abrir caminhos onde a força bruta falharia.",
     categoria: "oriental"
   },
   {
     texto: "A imaginação é mais importante que o conhecimento.",
     autor: "Albert Einstein",
+    reflexao: "O conhecimento mapeia o que já existe; a imaginação e a ousadia criativa abrem portas para o que ainda podemos construir.",
     categoria: "criatividade"
   },
   {
     texto: "Não falhei. Apenas descobri 10.000 maneiras que não funcionam.",
     autor: "Thomas Edison",
+    reflexao: "Cada tentativa frustrada é na verdade um aprendizado acumulado que nos aproxima do acerto definitivo.",
     categoria: "criatividade"
   },
   {
     texto: "A gratidão não é apenas a maior das virtudes, mas a mãe de todas as outras.",
     autor: "Cícero",
+    reflexao: "Um coração grato enxerga oportunidades onde outros veem carência, nutrindo a generosidade e a paz de espírito.",
     categoria: "gratidao"
   },
   {
     texto: "Se a única oração que você disser em toda a sua vida for 'obrigado', isso será suficiente.",
     autor: "Mestre Eckhart",
+    reflexao: "Agradecer pelo simples milagre de estar vivo e ter a chance de recomeçar hoje reorganiza toda a nossa perspectiva de mundo.",
     categoria: "gratidao"
   },
   {
     texto: "Acredite que pode e você já está no meio do caminho.",
     autor: "Theodore Roosevelt",
+    reflexao: "A confiança realista em nossas capacidades dissipa as primeiras dúvidas que costumam paralisar os nossos projetos.",
     categoria: "otimismo"
   },
   {
     texto: "Mesmo a noite mais escura terminará com o nascer do sol.",
     autor: "Victor Hugo",
+    reflexao: "As dificuldades e dores são passageiras; manter a esperança ativa é a luz que nos guia até o amanhecer.",
     categoria: "otimismo"
   },
   {
     texto: "A educação é a arma mais poderosa que você pode usar para mudar o mundo.",
     autor: "Nelson Mandela",
+    reflexao: "O conhecimento liberta a mente, quebra ciclos de vulnerabilidade e constrói pontes para um futuro com mais justiça e dignidade.",
     categoria: "educacao"
   },
   {
     texto: "Feliz aquele que transfere o que sabe e aprende o que ensina.",
     autor: "Cora Coralina",
+    reflexao: "O verdadeiro mestre é um eterno aprendiz; a partilha generosa do saber engrandece tanto quem ensina quanto quem aprende.",
     categoria: "educacao"
   },
   {
     texto: "Comece onde você está. Use o que você tem. Faça o que puder.",
     autor: "Arthur Ashe",
+    reflexao: "Não espere condições perfeitas para agir com retidão e afinco. A dignidade está em entregar o nosso melhor com os recursos disponíveis agora.",
     categoria: "geral"
   },
   {
-    texto: "O impossível é apenas uma opinião.",
-    autor: "Paulo Coelho",
+    texto: "A persistência é o menor caminho para o êxito.",
+    autor: "Charles Chaplin",
+    reflexao: "A persistência silenciosa diante do cansaço é a virtude que separa as boas intenções das realizações concretas.",
     categoria: "geral"
+  },
+  {
+    texto: "Quem olha para fora sonha, quem olha para dentro desperta.",
+    autor: "Carl Gustav Jung",
+    reflexao: "O despertar da nossa consciência acontece no silêncio da introspecção e na coragem de encarar nossas próprias verdades.",
+    categoria: "filosofico"
+  },
+  {
+    texto: "O segredo da mudança é concentrar toda a sua energia não em lutar contra o velho, mas em construir o novo.",
+    autor: "Dan Millman",
+    reflexao: "Deixe ir o que já passou e dedique sua energia criativa a plantar as sementes do que você deseja colher no futuro.",
+    categoria: "motivacional"
+  },
+  {
+    texto: "Não espere por circunstâncias ideais; tome as circunstâncias que tiver e faça-as ideais.",
+    autor: "Swami Vivekananda",
+    reflexao: "A mente madura transforma o chão duro em solo fértil por meio da atitude resiliente e do empenho constante.",
+    categoria: "oriental"
+  },
+  {
+    texto: "A sabedoria começa na reflexão sobre o que é essencial para a alma.",
+    autor: "Platão",
+    reflexao: "Filtrar os ruídos e focar no que edifica nosso caráter nos protege das distrações fúteis do dia a dia.",
+    categoria: "filosofico"
   }
 ];
+
+// Helper to clean raw text and parse JSON generated by LLMs
+function parseGeneratedJson(rawText: string): { texto?: string; autor?: string; reflexao?: string } | null {
+  if (!rawText) return null;
+  try {
+    const cleaned = rawText
+      .replace(/```json/gi, '')
+      .replace(/```/g, '')
+      .trim();
+    return JSON.parse(cleaned);
+  } catch {
+    // If strict JSON parsing failed, try extracting via regex matching fields
+    try {
+      const textoMatch = rawText.match(/"texto"\s*:\s*"([^"]+)"/);
+      const autorMatch = rawText.match(/"autor"\s*:\s*"([^"]+)"/);
+      const reflexaoMatch = rawText.match(/"reflexao"\s*:\s*"([^"]+)"/);
+      if (textoMatch && autorMatch) {
+        return {
+          texto: textoMatch[1],
+          autor: autorMatch[1],
+          reflexao: reflexaoMatch ? reflexaoMatch[1] : undefined
+        };
+      }
+    } catch {}
+  }
+  return null;
+}
 
 export async function GET(req: NextRequest) {
   try {
@@ -220,6 +294,23 @@ export async function GET(req: NextRequest) {
       // Checking if the error is due to the table not existing ('42P01')
       const isTableMissing = checkTableError && checkTableError.code === '42P01';
 
+      // Query recent thoughts from DB to ensure novelty and prevent repetitions
+      let recentTexts: string[] = [];
+      let recentAuthors: string[] = [];
+      try {
+        const { data: recentRows } = await supabaseAdmin
+          .from('pensamento_dia')
+          .select('texto, autor')
+          .order('data_exibicao', { ascending: false })
+          .limit(40);
+        if (recentRows && recentRows.length > 0) {
+          recentTexts = recentRows.map(r => r.texto?.trim()).filter(Boolean);
+          recentAuthors = recentRows.map(r => r.autor?.trim()).filter(Boolean);
+        }
+      } catch (historyErr) {
+        console.warn('[DB History Read Warning]:', historyErr);
+      }
+
       // No quote for today, let's generate one dynamically using the Gemini API!
       let generatedQuote = { texto: '', autor: '', reflexao: '' };
 
@@ -228,12 +319,20 @@ export async function GET(req: NextRequest) {
           ? fallbackQuotes.filter(q => q.categoria === cat)
           : fallbackQuotes;
         const candidates = filteredFallbacks.length > 0 ? filteredFallbacks : fallbackQuotes;
-        const randomIndex = Math.floor(Math.random() * candidates.length);
-        const selected = candidates[randomIndex];
+        
+        // Filter out quotes that match recent texts in the database
+        const unrepeated = candidates.filter(c => {
+          const textLower = c.texto.toLowerCase().trim();
+          return !recentTexts.some(r => r.toLowerCase().trim().includes(textLower.slice(0, 25)));
+        });
+
+        const pool = unrepeated.length > 0 ? unrepeated : candidates;
+        const randomIndex = Math.floor(Math.random() * pool.length);
+        const selected = pool[randomIndex];
         return {
           texto: selected.texto,
           autor: selected.autor,
-          reflexao: 'A sabedoria contida nesta lição nos inspira a refletir de forma profunda sobre a força diária e as virtudes do refinamento pessoal constante.'
+          reflexao: selected.reflexao || 'A sabedoria contida nesta lição nos inspira a refletir de forma profunda sobre a força diária e as virtudes do refinamento pessoal constante.'
         };
       };
 
@@ -245,8 +344,8 @@ export async function GET(req: NextRequest) {
         generatedQuote = pickRandomFallback(category);
       } else {
         try {
-          let themePrompt = 'Gere um belo pensamento do dia inspirador.';
-          let systemInstruction = 'Você é um curador literário e espiritual de alto refinamento. Elabore frases profundas em português com o respectivo autor histórico ou religioso consagrado (sempre com autor real ou creditado, como passagens bíblicas, filósofos gregos ou pensadores modernos).';
+          let themePrompt = 'Gere um belo e inédito pensamento do dia inspirador.';
+          let systemInstruction = 'Você é um curador literário, ético e espiritual de alto refinamento. Elabore reflexões e pensamentos profundos e inspiradores em português com autoria real, consagrada e variada (filósofos, cientistas, educadores, grandes líderes éticos, provérbios ou pensadores contemporâneos).';
 
           switch (category) {
             case 'religioso':
@@ -290,124 +389,104 @@ export async function GET(req: NextRequest) {
               systemInstruction = 'Você é um educador consagrado. Gere um ensinamento sobre a força transformadora da educação escolar, disciplina de aprendizado e conhecimento.';
               break;
             default:
-              themePrompt = 'Gere um belo pensamento do dia que se enquadre em temas gerais de sabedoria, persistência, ética ou fé.';
-              systemInstruction = 'Você é um curador espiritual literário. Traga uma frase reflexiva célebre em português que inspire o dia de estudantes e profissionais.';
+              themePrompt = 'Gere um belo pensamento do dia que se enquadre em temas de sabedoria, persistência, ética, coragem ou propósito.';
+              systemInstruction = 'Você é um curador literário e humanista. Traga uma frase reflexiva célebre ou inspiradora em português que motive o dia de estudantes e profissionais.';
               break;
           }
 
-          let response;
-          try {
-            response = await withTimeout(
-              getGeminiAI().models.generateContent({
-                model: 'gemini-3.5-flash',
-                contents: `${themePrompt} Varie os autores e temas. Retorne estritamente em formato JSON estruturado com os campos "texto" (o pensamento), "autor" e "reflexao" (uma reflexão breve e profunda inspirada no pensamento).`,
-                config: {
-                  systemInstruction,
-                  responseMimeType: 'application/json',
-                  responseSchema: {
-                    type: 'OBJECT' as any,
-                    properties: {
-                      texto: {
-                        type: 'STRING' as any,
-                        description: 'A frase ou pensamento inspirador do dia em português.'
-                      },
-                      autor: {
-                        type: 'STRING' as any,
-                        description: 'O nome do autor do pensamento.'
-                      },
-                      reflexao: {
-                        type: 'STRING' as any,
-                        description: 'Uma breve, profunda e edificante reflexão em português sobre a lição prática ou aplicação deste pensamento para o dia de hoje.'
-                      }
-                    },
-                    required: ['texto', 'autor', 'reflexao']
+          // Build anti-repetition blacklist instructions
+          const avoidQuotesSample = recentTexts.slice(0, 15).map(t => `"${t.slice(0, 45)}..."`).join(', ');
+          const avoidAuthorsSample = Array.from(new Set(recentAuthors)).slice(0, 10).join(', ');
+
+          const uniquenessDirectives = [
+            'IMPORTANTE: É terminantemente proibido repetir frases ou reflexões já utilizadas recentemente.',
+            avoidQuotesSample ? `Frases recentemente utilizadas que NÃO PODEM SER REPETIDAS: [${avoidQuotesSample}].` : '',
+            avoidAuthorsSample ? `Autores já bastante frequentes (priorize outros autores para diversificar): [${avoidAuthorsSample}].` : '',
+            'NUNCA repita frases clássicas batidas como "O correr da vida embrulha tudo" de Guimarães Rosa ou "O sucesso é a soma de pequenos esforços" de Robert Collier.',
+            'A frase (texto) e a reflexão prática (reflexao) DEVEM SER TOTALMENTE INÉDITAS, originais e exclusivas para o dia de hoje.',
+            'Retorne estritamente em formato JSON com as chaves: "texto" (a frase ou pensamento), "autor" (o nome do autor ou pensador) e "reflexao" (uma reflexão profunda e inédita de 2 a 3 frases sobre como aplicar essa lição hoje).'
+          ].filter(Boolean).join(' ');
+
+          const fullUserPrompt = `${themePrompt} ${uniquenessDirectives}`;
+
+          // High-availability model priority cascade
+          const candidateModels = [
+            'gemini-3-flash-preview',
+            'gemini-3.6-flash',
+            'gemini-3.1-flash-lite',
+            'gemini-3.5-flash-lite',
+            'gemini-3.8-flash'
+          ];
+
+          let parsedResult: { texto?: string; autor?: string; reflexao?: string } | null = null;
+          let lastModelError: any = null;
+
+          for (const modelName of candidateModels) {
+            try {
+              const response = await withTimeout(
+                getGeminiAI().models.generateContent({
+                  model: modelName,
+                  contents: fullUserPrompt,
+                  config: {
+                    systemInstruction,
+                    responseMimeType: 'application/json'
+                  }
+                }),
+                4500
+              );
+
+              if (response && response.text) {
+                const parsed = parseGeneratedJson(response.text);
+                if (parsed && parsed.texto && parsed.autor) {
+                  // Check that it does not collide with recent database entries
+                  const isRepetitive = recentTexts.some(rt => 
+                    rt.toLowerCase().includes(parsed.texto!.toLowerCase().slice(0, 25))
+                  );
+                  if (!isRepetitive) {
+                    parsedResult = parsed;
+                    break;
+                  } else {
+                    console.warn(`[Gemini Generation] Model ${modelName} returned a repetitive quote. Trying next model...`);
                   }
                 }
-              }),
-              12000
-            );
-          } catch (primaryError: any) {
-            console.warn('[Gemini API Primary Model Error or Timeout] Main model gemini-3.5-flash failed or timed out. Retrying with fallback model gemini-3.1-flash-lite. Reason:', primaryError?.message || primaryError);
-            // Try with the other model with 8000ms timeout
-            response = await withTimeout(
-              getGeminiAI().models.generateContent({
-                model: 'gemini-3.1-flash-lite',
-                contents: `${themePrompt} Varie os autores e temas. Retorne estritamente em formato JSON estruturado com os campos "texto" (o pensamento), "autor" e "reflexao" (uma reflexão breve e profunda inspirada no pensamento).`,
-                config: {
-                  systemInstruction,
-                  responseMimeType: 'application/json',
-                  responseSchema: {
-                    type: 'OBJECT' as any,
-                    properties: {
-                      texto: {
-                        type: 'STRING' as any,
-                        description: 'A frase ou pensamento inspirador do dia em português.'
-                      },
-                      autor: {
-                        type: 'STRING' as any,
-                        description: 'O nome do autor do pensamento.'
-                      },
-                      reflexao: {
-                        type: 'STRING' as any,
-                        description: 'Uma breve, profunda e edificante reflexão em português sobre a lição prática ou aplicação deste pensamento para o dia de hoje.'
-                      }
-                    },
-                    required: ['texto', 'autor', 'reflexao']
-                  }
-                }
-              }),
-              8000
-            );
+              }
+            } catch (err: any) {
+              lastModelError = err;
+              const errStr = String(err?.message || err || '');
+              console.warn(`[Gemini Model Fail] Model ${modelName} encountered error: ${errStr.slice(0, 80)}. Trying fallback model...`);
+            }
           }
 
-          if (response && response.text) {
-            generatedQuote = JSON.parse(response.text.trim());
-          } else {
-            console.warn('[Gemini API] Empty response returned from dynamic generator. Falling back.');
-            const filteredFallbacks = category 
-              ? fallbackQuotes.filter(q => q.categoria === category)
-              : fallbackQuotes;
-            const candidates = filteredFallbacks.length > 0 ? filteredFallbacks : fallbackQuotes;
-            const randomIndex = Math.floor(Math.random() * candidates.length);
-            const selectedQuote = candidates[randomIndex];
+          if (parsedResult && parsedResult.texto && parsedResult.autor) {
             generatedQuote = {
-              texto: selectedQuote.texto,
-              autor: selectedQuote.autor,
-              reflexao: ''
+              texto: parsedResult.texto.trim(),
+              autor: parsedResult.autor.trim(),
+              reflexao: (parsedResult.reflexao || '').trim()
             };
+          } else {
+            console.warn('[Gemini Cascade] All Gemini models either failed or were unavailable. Falling back to diverse offline catalog.', lastModelError?.message);
+            generatedQuote = pickRandomFallback(category);
           }
         } catch (apiError: any) {
-          console.warn('[Gemini API Error or Timeout] Falling back to preloaded thoughts catalog gracefully. Reason:', apiError?.message || apiError);
+          console.warn('[Gemini API General Error] Falling back to preloaded thoughts catalog gracefully. Reason:', apiError?.message || apiError);
           
-          // Cooldown mechanism: block the Gemini API calls for 10 minutes if we hit a 429 rate limit, quota issue, or a timeout!
           const errMsg = String(apiError?.message || apiError?.status || apiError || '').toLowerCase();
-          if (errMsg.includes('429') || errMsg.includes('quota') || errMsg.includes('resource_exhausted') || errMsg.includes('timeout')) {
-            console.warn('[Gemini API Cooldown] Quota exceeded or limit/timeout hit. Cooldown active for 10 minutes.');
-            geminiBlockedUntil = Date.now() + 10 * 60 * 1000;
+          if (errMsg.includes('429') || errMsg.includes('resource_exhausted')) {
+            console.warn('[Gemini API Cooldown] Rate limit encountered. Cooldown active for 3 minutes.');
+            geminiBlockedUntil = Date.now() + 3 * 60 * 1000;
           }
 
-          // Pick random fallback catalog item
-          const filteredFallbacks = category 
-            ? fallbackQuotes.filter(q => q.categoria === category)
-            : fallbackQuotes;
-          const candidates = filteredFallbacks.length > 0 ? filteredFallbacks : fallbackQuotes;
-          const randomIndex = Math.floor(Math.random() * candidates.length);
-          const selectedQuote = candidates[randomIndex];
-          generatedQuote = {
-            texto: selectedQuote.texto,
-            autor: selectedQuote.autor,
-            reflexao: ''
-          };
+          generatedQuote = pickRandomFallback(category);
         }
       }
 
       if (!generatedQuote.texto || !generatedQuote.autor) {
-        generatedQuote = fallbackQuotes[0] as any;
+        generatedQuote = pickRandomFallback(category);
       }
 
-      // Ensure reflexao field is present, even if chosen from a legacy fallback quote catalog
+      // Ensure reflexao field is present, inspiring and unpublished
       if (!generatedQuote.reflexao) {
-        generatedQuote.reflexao = `${generatedQuote.texto} — Este ensinamento nos convida a reavaliar as nossas atitudes, cultivando clareza de propósito, ética e resiliência a cada novo amanhecer.`;
+        generatedQuote.reflexao = `${generatedQuote.texto} — Este ensinamento nos convida a cultivar serenidade, perseverança e clareza de propósito para vencer os desafios de hoje.`;
       }
 
       // Try to insert the quote into Supabase for today's persistent retrieval
