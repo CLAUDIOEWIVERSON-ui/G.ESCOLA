@@ -43,6 +43,7 @@ import { fetchWithAuth } from '@/lib/api';
 import { EventMarquee } from '@/components/EventMarquee';
 import { HeaderClock } from '@/components/HeaderClock';
 import { FormGuidanceAssistant } from '@/components/FormGuidanceAssistant';
+import SimultaneousAccessModal, { SimultaneousAccessData } from '@/components/SimultaneousAccessModal';
 import { SuggestionsModal } from '@/components/SuggestionsModal';
 
 // Isolated search bar component to avoid CSR bailout in layout.tsx
@@ -202,25 +203,32 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const [onlineCount, setOnlineCount] = useState<number>(0);
+  const [simultaneousData, setSimultaneousData] = useState<SimultaneousAccessData | null>(null);
+  const [showSimultaneousModal, setShowSimultaneousModal] = useState(false);
+  const [loadingSimultaneous, setLoadingSimultaneous] = useState(false);
   const [showAssistant, setShowAssistant] = useState(false);
 
   const fetchOnlineUsers = async () => {
     if (!isAdmin) return;
+    setLoadingSimultaneous(true);
     try {
       const res = await fetchWithAuth('/api/auth/heartbeat');
       const data = await res.json();
       if (data.success) {
-        setOnlineCount(data.count || 0);
+        setOnlineCount(data.totalSessions ?? data.count ?? 0);
+        setSimultaneousData(data);
       }
     } catch (err) {
       // Silently fail network errors for polling
+    } finally {
+      setLoadingSimultaneous(false);
     }
   };
 
   useEffect(() => {
     if (!isAdmin) return;
     fetchOnlineUsers();
-    const interval = setInterval(fetchOnlineUsers, 15000); // refresh every 15s for admins
+    const interval = setInterval(fetchOnlineUsers, 10000); // refresh every 10s for admins
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin]);
@@ -650,13 +658,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
           <div className="flex items-center gap-4 md:gap-6">
             {isAdmin && (
-              <div 
-                className="hidden sm:flex items-center gap-1.5 px-2 py-1 bg-emerald-50 text-emerald-600 rounded-lg border border-emerald-100 shadow-sm"
-                title={language === 'pt' ? 'Usuários online' : 'Online users'}
+              <button 
+                type="button"
+                onClick={() => setShowSimultaneousModal(true)}
+                className="flex items-center gap-2 px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-xl border border-emerald-200/90 shadow-2xs transition-all cursor-pointer group active:scale-95"
+                title={language === 'pt' ? 'Acessos Simultâneos Ativos (Clique para abrir o monitor em tempo real)' : 'Simultaneous Active Accesses (Click to open real-time monitor)'}
               >
-                <MousePointer2 size={14} className="animate-pulse" />
-                <span className="text-xs font-bold">{onlineCount}</span>
-              </div>
+                <div className="relative flex items-center justify-center">
+                  <span className="animate-ping absolute inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600"></span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] font-bold text-emerald-700 hidden sm:inline uppercase tracking-wider">
+                    {language === 'pt' ? 'Simultâneos:' : 'Concurrent:'}
+                  </span>
+                  <span className="text-xs font-black font-mono bg-white px-1.5 py-0.2 rounded-md text-emerald-800 border border-emerald-200 shadow-2xs">
+                    {onlineCount}
+                  </span>
+                </div>
+              </button>
             )}
             <div className="hidden md:flex items-center gap-2">
                <Suspense fallback={<div className="w-48 h-8 bg-slate-50 border border-slate-200 rounded-lg animate-pulse" />}>
@@ -831,6 +851,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           )}
         </button>
       </nav>
+
+      {isAdmin && (
+        <SimultaneousAccessModal
+          isOpen={showSimultaneousModal}
+          onClose={() => setShowSimultaneousModal(false)}
+          data={simultaneousData}
+          isLoading={loadingSimultaneous}
+          onRefresh={fetchOnlineUsers}
+        />
+      )}
     </div>
   );
 }

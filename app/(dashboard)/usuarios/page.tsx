@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase/client';
 import { fetchWithAuth } from '@/lib/api';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
-import { Plus, Search, User, Shield, ShieldAlert, Mail, Trash2, Pencil, Loader2, CheckCircle2, ChevronLeft, ChevronRight , RefreshCw } from 'lucide-react';
+import { Plus, Search, User, Shield, ShieldAlert, Mail, Trash2, Pencil, Loader2, CheckCircle2, ChevronLeft, ChevronRight, RefreshCw, Activity, Radio } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import Modal from '@/components/Modal';
@@ -27,6 +27,8 @@ export default function UsuariosPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [onlineUsersMap, setOnlineUsersMap] = useState<Record<string, any>>({});
+  const [simultaneousCount, setSimultaneousCount] = useState<number>(0);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -67,14 +69,33 @@ export default function UsuariosPage() {
     }
   }, []);
 
+  const fetchOnlineStatus = useCallback(async () => {
+    if (!isAdmin) return;
+    try {
+      const res = await fetchWithAuth('/api/auth/heartbeat');
+      const data = await res.json();
+      if (data.success && data.users) {
+        setSimultaneousCount(data.totalSessions ?? data.count ?? 0);
+        const map: Record<string, any> = {};
+        data.users.forEach((u: any) => {
+          map[u.userId] = u;
+          if (u.email) map[u.email.toLowerCase()] = u;
+        });
+        setOnlineUsersMap(map);
+      }
+    } catch {
+      // ignore
+    }
+  }, [isAdmin]);
+
   useEffect(() => {
     if (isAdmin) {
-      const init = async () => {
-        await fetchUsers();
-      };
-      init();
+      fetchUsers();
+      fetchOnlineStatus();
+      const interval = setInterval(fetchOnlineStatus, 10000);
+      return () => clearInterval(interval);
     }
-  }, [isAdmin, fetchUsers]);
+  }, [isAdmin, fetchUsers, fetchOnlineStatus]);
 
   const handleSync = async () => {
     if (!confirm(language === 'pt' ? 'Deseja sincronizar as contas de alunos com o módulo de turmas?' : 'Do you want to sync student accounts with the classes module?')) return;
@@ -195,7 +216,12 @@ export default function UsuariosPage() {
   const filteredUsers = users.filter(u => {
     const matchesSearch = (u.full_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                           (u.email || '').toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRole = roleFilter === 'all' || u.role === roleFilter;
+    const isUserOnline = Boolean(onlineUsersMap[u.id] || (u.email && onlineUsersMap[u.email.toLowerCase()]));
+    const matchesRole = roleFilter === 'all' 
+      ? true 
+      : roleFilter === 'online' 
+        ? isUserOnline 
+        : u.role === roleFilter;
     return matchesSearch && matchesRole;
   });
 
@@ -248,12 +274,29 @@ export default function UsuariosPage() {
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <h2 className="text-2xl font-bold text-slate-800 tracking-tight">{t.users.title}</h2>
             {isConvidado && (
               <span className="bg-slate-100 text-slate-600 border border-slate-200 text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">
                 {language === 'pt' ? 'Somente Leitura' : 'Read-Only'}
               </span>
+            )}
+            {isAdmin && (
+              <div 
+                className="flex items-center gap-2 px-3 py-1 bg-emerald-50 border border-emerald-200/80 rounded-xl text-xs font-bold text-emerald-800 shadow-2xs"
+                title={language === 'pt' ? 'Total de conexões e abas simultâneas ativas no sistema' : 'Total active concurrent accesses'}
+              >
+                <div className="relative flex items-center justify-center">
+                  <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600"></span>
+                </div>
+                <span>
+                  {language === 'pt' ? 'Acessos Simultâneos:' : 'Concurrent Accesses:'}
+                </span>
+                <span className="bg-white px-2 py-0.5 rounded-md font-mono text-emerald-900 border border-emerald-200 shadow-2xs">
+                  {simultaneousCount}
+                </span>
+              </div>
             )}
           </div>
           <p className="text-slate-500 text-sm mt-1">{t.users.subtitle}</p>
@@ -298,6 +341,7 @@ export default function UsuariosPage() {
           <div className="flex flex-wrap gap-1 p-1 bg-slate-100 border border-slate-200/60 rounded-xl w-fit">
             {[
               { id: 'all', label: language === 'pt' ? 'Todos' : 'All' },
+              { id: 'online', label: language === 'pt' ? `● Online (${Object.keys(onlineUsersMap).length})` : `● Online (${Object.keys(onlineUsersMap).length})` },
               { id: 'aluno', label: language === 'pt' ? 'Alunos' : 'Students' },
               { id: 'instrutor', label: language === 'pt' ? 'Instrutores' : 'Instructors' },
               { id: 'admin', label: language === 'pt' ? 'Administradores' : 'Administrators' }
@@ -310,10 +354,12 @@ export default function UsuariosPage() {
                   setCurrentPage(1);
                 }}
                 className={cn(
-                  "px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all select-none cursor-pointer",
+                  "px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all select-none cursor-pointer flex items-center gap-1.5",
                   roleFilter === tab.id
                     ? "bg-white text-blue-600 shadow-sm border border-slate-200/40"
-                    : "text-slate-500 hover:bg-white/40 hover:text-slate-800"
+                    : tab.id === 'online'
+                      ? "text-emerald-700 hover:bg-white/40"
+                      : "text-slate-500 hover:bg-white/40 hover:text-slate-800"
                 )}
               >
                 {tab.label}
@@ -341,15 +387,38 @@ export default function UsuariosPage() {
                   </td>
                 </tr>
               ) : paginatedUsers.length > 0 ? (
-                paginatedUsers.map((user) => (
+                paginatedUsers.map((user) => {
+                  const onlineSession = onlineUsersMap[user.id] || (user.email && onlineUsersMap[user.email.toLowerCase()]);
+                  const isOnline = Boolean(onlineSession);
+
+                  return (
                   <tr key={user.id} className="hover:bg-slate-50/30 transition-colors group">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
-                          <User size={18} />
+                        <div className="relative shrink-0">
+                          <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
+                            <User size={18} />
+                          </div>
+                          {isOnline && (
+                            <span 
+                              className="absolute -bottom-0.5 -right-0.5 flex h-3 w-3" 
+                              title={language === 'pt' ? `Online agora (${onlineSession.sessionsCount || 1} sessão/sessões)` : `Online now`}
+                            >
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500 border-2 border-white"></span>
+                            </span>
+                          )}
                         </div>
                         <div>
-                          <p className="text-sm font-bold text-slate-800">{user.full_name || 'No Name'}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-bold text-slate-800">{user.full_name || 'No Name'}</p>
+                            {isOnline && (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded-md">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                Online {onlineSession?.sessionsCount > 1 ? `(${onlineSession.sessionsCount})` : ''}
+                              </span>
+                            )}
+                          </div>
                           <p className="text-[10px] text-slate-400 font-medium">UID: {user.id.slice(0, 8)}...</p>
                         </div>
                       </div>
@@ -410,8 +479,9 @@ export default function UsuariosPage() {
                       </td>
                     )}
                   </tr>
-                ))
-              ) : (
+                );
+              })
+            ) : (
                 <tr>
                   <td colSpan={isConvidado ? 4 : 5} className="px-6 py-12 text-center text-slate-400 italic text-sm font-medium">
                     {t.users.noUsers}

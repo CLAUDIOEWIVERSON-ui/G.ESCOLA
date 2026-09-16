@@ -191,28 +191,104 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!profile) return;
 
-    const sendHeartbeat = async () => {
+    // Helper to detect device and browser
+    const getClientDeviceInfo = () => {
+      if (typeof window === 'undefined') return { device: 'Desktop', browser: 'Navegador', os: 'Sistema' };
+      const ua = navigator.userAgent || '';
+      
+      let device = 'Desktop';
+      if (/iPad|tablet|(android(?!.*mobile))|(windows(?!.*phone)(.*touch))|kindle|playbook|silk/i.test(ua)) {
+        device = 'Tablet';
+      } else if (/Mobile|iPhone|iPod|BlackBerry|IEMobile|Opera Mini|Android/i.test(ua)) {
+        device = 'Mobile';
+      }
+
+      let browser = 'Navegador';
+      if (ua.includes('Firefox')) browser = 'Firefox';
+      else if (ua.includes('Edg/')) browser = 'Edge';
+      else if (ua.includes('Chrome')) browser = 'Chrome';
+      else if (ua.includes('Safari')) browser = 'Safari';
+      else if (ua.includes('Opera') || ua.includes('OPR/')) browser = 'Opera';
+
+      let os = 'Sistema';
+      if (ua.includes('Win')) os = 'Windows';
+      else if (ua.includes('Mac')) os = 'macOS';
+      else if (ua.includes('Linux')) os = 'Linux';
+      else if (ua.includes('Android')) os = 'Android';
+      else if (ua.includes('iPhone') || ua.includes('iPad')) os = 'iOS';
+
+      return { device, browser, os };
+    };
+
+    const getTabSessionId = () => {
+      if (typeof window === 'undefined') return 'srv_tab';
+      let sid = sessionStorage.getItem('applet_tab_session_id');
+      if (!sid) {
+        sid = `tab_${(profile.id || 'usr').substring(0, 6)}_${Math.random().toString(36).substring(2, 9)}_${Date.now().toString(36)}`;
+        sessionStorage.setItem('applet_tab_session_id', sid);
+      }
+      return sid;
+    };
+
+    const sendHeartbeat = async (action?: string) => {
       try {
+        const { device, browser, os } = getClientDeviceInfo();
+        const sessionId = getTabSessionId();
+        const currentPage = typeof window !== 'undefined' ? window.location.pathname : '/';
+
         await fetch('/api/auth/heartbeat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            action,
+            sessionId,
             name: profile.full_name || profile.nome || 'Usuário',
-            role: profile.role
-          })
+            role: profile.role,
+            currentPage,
+            device,
+            browser,
+            os
+          }),
+          keepalive: true
         });
       } catch (err) {
-        console.warn('Failed to send heartbeat presence:', err);
+        // Silently capture heartbeat warnings
       }
     };
 
-    // Send immediately
+    // Send immediately on profile load
     sendHeartbeat();
 
-    // Send every 40 seconds (well within the 60 seconds server expiration threshold)
-    const interval = setInterval(sendHeartbeat, 40000);
+    // Send every 25 seconds for precise simultaneous tracking
+    const interval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        sendHeartbeat();
+      }
+    }, 25000);
 
-    return () => clearInterval(interval);
+    // Refresh instantly when user tabs back into the app
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        sendHeartbeat();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Notify server to release session instantly when closing tab
+    const handleBeforeUnload = () => {
+      const sessionId = getTabSessionId();
+      if (navigator.sendBeacon) {
+        const blob = new Blob([JSON.stringify({ action: 'leave', sessionId })], { type: 'application/json' });
+        navigator.sendBeacon('/api/auth/heartbeat?action=leave', blob);
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
   }, [profile]);
 
   const value = {
