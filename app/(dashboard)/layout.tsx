@@ -23,6 +23,7 @@ import {
   Search,
   Calendar,
   Link2,
+  BookMarked,
   ArrowLeft,
   ArrowRight,
   Home,
@@ -182,6 +183,14 @@ const MOBILE_NAV_COLORS: Record<string, {
     border: 'border-emerald-200 dark:border-emerald-800',
     indicator: 'bg-emerald-600',
   },
+  '/manual': {
+    text: 'text-amber-600 dark:text-amber-400',
+    activeText: 'text-amber-700 dark:text-amber-300',
+    bg: 'bg-amber-50 text-amber-600 border border-amber-200/80 dark:bg-amber-950/60 dark:text-amber-400 dark:border-amber-800/50',
+    activeBg: 'bg-amber-600 text-white shadow-xs shadow-amber-500/30 border border-amber-700',
+    border: 'border-amber-200 dark:border-amber-800',
+    indicator: 'bg-amber-600',
+  },
 };
 
 const MENU_BUTTON_COLOR = {
@@ -313,7 +322,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           checkClassStatus();
         }
 
-        if (isNifStudent && !['/boletim', '/horario', '/avaliacao'].includes(pathname || '')) {
+        if (isNifStudent && !['/boletim', '/horario', '/avaliacao', '/manual'].includes(pathname || '')) {
           // Force students logged in via NIF to only access allowed sections
           router.push('/boletim');
         }
@@ -347,6 +356,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: t.nav.reportCard, icon: FileText, path: '/boletim' },
     { name: t.schedule.title, icon: Calendar, path: '/horario' },
     { name: "Avaliação Pós-Curso", icon: FileCheck, path: '/avaliacao' },
+    { name: t.nav.manual, icon: BookMarked, path: '/manual' },
   ] : [
     { name: t.nav.dashboard, icon: LayoutDashboard, path: '/dashboard' },
     { name: t.nav.courses, icon: BookOpen, path: '/cursos' },
@@ -359,6 +369,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     ...((isAdmin || isInstrutor || isConvidado) ? [{ name: "Análise de Avaliações", icon: FileCheck, path: '/relatorio-avaliacao' }] : []),
     { name: t.nav.links, icon: Link2, path: '/links' },
     { name: t.nav.settings, icon: Settings, path: '/configuracoes' },
+    { name: t.nav.manual, icon: BookMarked, path: '/manual' },
   ];
 
   // Ordenar todos os módulos por ordem alfabética de acordo com o idioma ativo

@@ -102,6 +102,7 @@ export const translations = {
       attendance: "Frequência",
       settings: "Configurações",
       links: "Links Úteis",
+      manual: "Manual & Guia de Uso",
     },
     courses: {
       title: "Gerenciamento de Cursos",
@@ -514,6 +515,7 @@ export const translations = {
       attendance: "Attendance",
       settings: "Settings",
       links: "Useful Links",
+      manual: "User Manual & Guide",
     },
     courses: {
       title: "Course Management",
