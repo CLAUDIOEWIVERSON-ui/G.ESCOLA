@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase/client';
+import { ensureNotGuest } from '@/lib/auth/serverAuth';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,6 +20,11 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const authCheck = await ensureNotGuest(request);
+    if (!authCheck.allowed && authCheck.errorResponse) {
+      return authCheck.errorResponse;
+    }
+
     const body = await request.json();
     const { data, error } = await supabase
       .from('cursos')

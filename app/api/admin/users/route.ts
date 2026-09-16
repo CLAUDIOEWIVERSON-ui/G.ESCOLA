@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin, isSupabaseAdminConfigured } from '@/lib/supabase/admin';
+import { ensureAdmin } from '@/lib/auth/serverAuth';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,6 +47,11 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const authCheck = await ensureAdmin(request);
+  if (!authCheck.allowed && authCheck.errorResponse) {
+    return authCheck.errorResponse;
+  }
+
   if (!isSupabaseAdminConfigured()) {
     return NextResponse.json({ error: 'Supabase Admin not configured. Please set SUPABASE_SERVICE_ROLE_KEY in Secrets.' }, { status: 500 });
   }
@@ -150,6 +156,11 @@ export async function POST(request: Request) {
 }
 
 export async function PUT(request: Request) {
+  const authCheck = await ensureAdmin(request);
+  if (!authCheck.allowed && authCheck.errorResponse) {
+    return authCheck.errorResponse;
+  }
+
   if (!isSupabaseAdminConfigured()) {
     return NextResponse.json({ error: 'Supabase Admin not configured. Please set SUPABASE_SERVICE_ROLE_KEY in Secrets.' }, { status: 500 });
   }
@@ -225,6 +236,11 @@ export async function PUT(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  const authCheck = await ensureAdmin(request);
+  if (!authCheck.allowed && authCheck.errorResponse) {
+    return authCheck.errorResponse;
+  }
+
   if (!isSupabaseAdminConfigured()) {
     return NextResponse.json({ error: 'Supabase Admin not configured. Please set SUPABASE_SERVICE_ROLE_KEY in Secrets.' }, { status: 500 });
   }

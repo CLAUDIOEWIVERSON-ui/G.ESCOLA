@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { ensureNotGuest } from '@/lib/auth/serverAuth';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,6 +40,11 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const authCheck = await ensureNotGuest(request);
+    if (!authCheck.allowed && authCheck.errorResponse) {
+      return authCheck.errorResponse;
+    }
+
     const supabase = await createClient();
     const user = await getAuthUser(supabase);
 
@@ -66,6 +72,11 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
   try {
+    const authCheck = await ensureNotGuest(request);
+    if (!authCheck.allowed && authCheck.errorResponse) {
+      return authCheck.errorResponse;
+    }
+
     const supabase = await createClient();
     const user = await getAuthUser(supabase);
 
@@ -92,6 +103,11 @@ export async function PUT(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
+    const authCheck = await ensureNotGuest(request);
+    if (!authCheck.allowed && authCheck.errorResponse) {
+      return authCheck.errorResponse;
+    }
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 

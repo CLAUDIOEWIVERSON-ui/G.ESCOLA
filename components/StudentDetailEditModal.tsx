@@ -31,6 +31,7 @@ import { supabase } from '@/lib/supabase/client';
 import { mutate } from 'swr';
 import { toast } from 'sonner';
 import { useI18n } from '@/lib/i18n/LanguageContext';
+import { useUser } from '@/lib/auth/UserContext';
 import { cn } from '@/lib/utils';
 import { downloadElementAsPDF } from '@/lib/printDocumentUtils';
 import maleAvatar from '@/src/assets/images/avatar_male_1778977230783.png';
@@ -56,6 +57,8 @@ export default function StudentDetailEditModal({
   onSave
 }: StudentDetailEditModalProps) {
   const { language } = useI18n();
+  const { isConvidado } = useUser();
+  const isReadOnly = Boolean(isConvidado);
   const [currentAluno, setCurrentAluno] = useState<any>({});
   const [saving, setSaving] = useState(false);
   const [loadingAttendance, setLoadingAttendance] = useState(false);
@@ -464,6 +467,14 @@ export default function StudentDetailEditModal({
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (isReadOnly) {
+      toast.error(
+        language === 'pt'
+          ? 'Acesso restrito: Usuários com perfil de convidado não têm permissão para alterar a foto do aluno.'
+          : 'Restricted access: Guest users cannot update student photos.'
+      );
+      return;
+    }
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -497,6 +508,16 @@ export default function StudentDetailEditModal({
   const handleSaveStudent = async (e?: React.FormEvent | React.MouseEvent) => {
     if (e) e.preventDefault();
     if (saving) return;
+
+    if (isReadOnly) {
+      toast.error(
+        language === 'pt'
+          ? 'Acesso restrito: Usuários com perfil de convidado possuem permissão exclusivamente de leitura e não podem alterar dados.'
+          : 'Restricted access: Guest users have read-only permissions and cannot modify data.'
+      );
+      return;
+    }
+
     setSaving(true);
 
     try {
@@ -822,12 +843,31 @@ export default function StudentDetailEditModal({
             </div>
           </div>
 
+          {isReadOnly && (
+            <div className="bg-amber-50 border border-amber-200/80 text-amber-900 px-4 py-3 rounded-xl flex items-center justify-between gap-3 text-xs shadow-xs">
+              <div className="flex items-center gap-2.5">
+                <span className="text-base shrink-0">🛡️</span>
+                <p className="font-medium leading-relaxed">
+                  {language === 'pt'
+                    ? 'Acesso de Convidado (Somente Leitura): Você pode visualizar todas as informações deste aluno, consultar frequência, gerar a ficha cadastral em PDF e emitir documentos. Alterações cadastrais e alteração de foto estão bloqueadas.'
+                    : 'Guest Access (Read Only): You can view all information, check attendance, and export documents, but modifications are restricted.'}
+                </p>
+              </div>
+              <span className="px-2.5 py-1 rounded-md bg-amber-200/70 text-amber-900 text-[10px] font-bold uppercase tracking-wider shrink-0 border border-amber-300/60">
+                {language === 'pt' ? 'Convidado' : 'Guest'}
+              </span>
+            </div>
+          )}
+
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* LEFT COLUMN: Photo, Summary & Attendance Donut Chart */}
           <div className="lg:col-span-5 space-y-4">
             {/* Student Photo and Avatar Header */}
             <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-col items-center text-center shadow-sm">
-              <div className="relative group cursor-pointer w-32 h-40 bg-white rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 hover:border-blue-400 hover:text-blue-500 transition-all overflow-hidden p-2 shadow-inner mb-3">
+              <div className={cn(
+                "relative group w-32 h-40 bg-white rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 overflow-hidden p-2 shadow-inner mb-3",
+                isReadOnly ? "cursor-default" : "cursor-pointer hover:border-blue-400 hover:text-blue-500 transition-all"
+              )}>
                 {currentAluno?.foto_url ? (
                   <Image
                     src={currentAluno.foto_url}
@@ -855,13 +895,15 @@ export default function StudentDetailEditModal({
                     </div>
                   </>
                 )}
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileUpload}
-                  className="absolute inset-0 opacity-0 cursor-pointer"
-                  title="Alterar foto do aluno"
-                />
+                {!isReadOnly && (
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileUpload}
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                    title="Alterar foto do aluno"
+                  />
+                )}
               </div>
 
               <h3 className="text-base font-bold text-slate-800 line-clamp-1">
@@ -1042,7 +1084,7 @@ export default function StudentDetailEditModal({
           </div>
 
           {/* RIGHT COLUMN: Edit Student Form */}
-          <div className="lg:col-span-7 space-y-4">
+          <fieldset disabled={isReadOnly} className="lg:col-span-7 space-y-4 border-0 p-0 m-0 disabled:opacity-95">
             <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-4">
               <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider border-b border-slate-100 pb-2.5 flex items-center gap-2">
                 <User size={15} className="text-blue-600" />
@@ -1636,7 +1678,7 @@ export default function StudentDetailEditModal({
                 </div>
               </div>
             )}
-          </div>
+          </fieldset>
         </div>
 
         {/* Modal Action Buttons */}
@@ -1660,16 +1702,18 @@ export default function StudentDetailEditModal({
           >
             {language === 'pt' ? 'Cancelar / Fechar' : 'Cancel / Close'}
           </button>
-          <button
-            type="button"
-            disabled={saving}
-            onClick={(e) => handleSaveStudent(e)}
-            className="px-6 py-2 bg-blue-600 print:hidden hover:bg-blue-700 text-white rounded-xl text-sm font-bold shadow-sm transition-colors disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
-          >
-            {saving 
-              ? (language === 'pt' ? 'Salvando...' : 'Saving...') 
-              : (language === 'pt' ? 'Salvar Alterações' : 'Save Changes')}
-          </button>
+          {!isReadOnly && (
+            <button
+              type="button"
+              disabled={saving}
+              onClick={(e) => handleSaveStudent(e)}
+              className="px-6 py-2 bg-blue-600 print:hidden hover:bg-blue-700 text-white rounded-xl text-sm font-bold shadow-sm transition-colors disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
+            >
+              {saving 
+                ? (language === 'pt' ? 'Salvando...' : 'Saving...') 
+                : (language === 'pt' ? 'Salvar Alterações' : 'Save Changes')}
+            </button>
+          )}
         </div>
       </form>
     </Modal>
