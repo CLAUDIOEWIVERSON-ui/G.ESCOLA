@@ -1407,20 +1407,6 @@ export default function ManualGuiaPage() {
         </div>
       )}
 
-      {/* FOOTER NOTICE */}
-      <div className="p-4 rounded-2xl bg-slate-100/80 border border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 print:hidden">
-        <div className="flex items-center gap-2">
-          <BookMarked size={16} className="text-amber-600" />
-          <span>
-            {isPt 
-              ? 'Módulo normativo permanente. Não altera registros ou dados existentes do sistema.' 
-              : 'Permanent normative module. Does not alter any existing system records or database state.'}
-          </span>
-        </div>
-        <div className="text-[11px] font-mono text-slate-400">
-          CIAGA / Ensino & Instrução • {new Date().getFullYear()}
-        </div>
-      </div>
     </div>
   );
 }
