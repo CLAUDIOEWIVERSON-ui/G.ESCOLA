@@ -315,6 +315,18 @@ function LoginContent() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
 
+        // Record access log with user details
+        try {
+          fetch('/api/auth/access-logs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              accessType: 'Login no Sistema',
+              path: '/dashboard'
+            })
+          }).catch(() => {});
+        } catch (_) {}
+
         // Force reload context profile information in a blocking await
         await refreshProfile();
       } else {

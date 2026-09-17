@@ -599,6 +599,20 @@ export async function GET() {
             .limit(1);
           return error;
         }
+      },
+      {
+        key: 'access_logs_table',
+        tableName: 'access_logs',
+        fileName: '60_create_access_logs_table.sql',
+        description: 'Tabela de histórico e auditoria de acessos de usuários ao sistema com registro de data/hora, dispositivo, perfil e nome do usuário.',
+        isColumn: false,
+        checkFn: async () => {
+          const { error } = await supabaseAdmin
+            .from('access_logs')
+            .select('id')
+            .limit(1);
+          return error;
+        }
       }
     ];
 

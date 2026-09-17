@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { supabaseAdmin, isSupabaseAdminConfigured } from '@/lib/supabase/admin';
+import { recordAccessLog, getRecentAccessLogs } from '@/lib/auth/accessLogs';
 
 export const dynamic = 'force-dynamic';
 
@@ -95,6 +96,7 @@ export async function POST(req: NextRequest) {
     const os = body.os || 'Sistema';
 
     const existing = sessionsMap[sessionId];
+    const isNewSession = !existing;
     const firstSeen = existing?.firstSeen || now;
 
     sessionsMap[sessionId] = {
@@ -110,6 +112,25 @@ export async function POST(req: NextRequest) {
       firstSeen,
       lastSeen: now
     };
+
+    // Log the access event if it is a new session
+    if (isNewSession) {
+      const ip = req.headers.get('x-forwarded-for')?.split(',')[0] || req.headers.get('x-real-ip') || undefined;
+      const ua = req.headers.get('user-agent') || undefined;
+      recordAccessLog({
+        userId: user.id,
+        userName: name,
+        email: user.email || null,
+        role,
+        path: currentPage,
+        device,
+        browser,
+        os,
+        accessType: 'Acesso ao Sistema',
+        ipAddress: ip,
+        userAgent: ua
+      }).catch(err => console.warn('[heartbeat] Non-blocking access log record warning:', err));
+    }
 
     cleanupExpiredSessions(now);
 
@@ -257,6 +278,7 @@ export async function GET(req: NextRequest) {
     });
 
     const uniqueUsersList = Object.values(usersGroupMap).sort((a, b) => b.lastSeen - a.lastSeen);
+    const recentAccesses = await getRecentAccessLogs(10);
 
     return NextResponse.json({
       success: true,
@@ -267,6 +289,7 @@ export async function GET(req: NextRequest) {
       byRole,
       sessions: sessionList,
       users: uniqueUsersList,
+      recentAccesses,
       timestamp: now
     });
   } catch (error: any) {

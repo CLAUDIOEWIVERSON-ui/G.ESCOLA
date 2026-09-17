@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin, isSupabaseAdminConfigured } from '@/lib/supabase/admin';
+import { recordAccessLog } from '@/lib/auth/accessLogs';
 import crypto from 'crypto';
 
 export async function POST(req: NextRequest) {
@@ -260,6 +261,20 @@ export async function POST(req: NextRequest) {
         login_count: (accessRecord.login_count || 0) + 1
       })
       .eq('id', accessRecord.id);
+
+    // Record into the central access logs history
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0] || req.headers.get('x-real-ip') || undefined;
+    const ua = req.headers.get('user-agent') || undefined;
+    recordAccessLog({
+      userId: authUserId,
+      userName: student.nome,
+      email,
+      role: 'aluno',
+      path: '/boletim',
+      accessType: 'Login Aluno (Código NIF)',
+      ipAddress: ip,
+      userAgent: ua
+    }).catch(err => console.warn('[student-login] Access log record error:', err));
 
     return NextResponse.json({
       success: true,

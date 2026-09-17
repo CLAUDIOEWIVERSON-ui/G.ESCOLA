@@ -24,13 +24,15 @@ import {
   ChevronRight,
   UserCheck,
   ShieldCheck,
-  Radio
+  Radio,
+  History
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { toast } from 'sonner';
 import { fetchWithAuth } from '@/lib/api';
+import type { AccessLogItem } from '@/lib/auth/accessLogs';
 
 export interface ActiveSessionData {
   sessionId: string;
@@ -73,6 +75,7 @@ export interface SimultaneousAccessData {
   };
   sessions: ActiveSessionData[];
   users: UniqueUserData[];
+  recentAccesses?: AccessLogItem[];
   timestamp: number;
 }
 
@@ -96,7 +99,7 @@ export default function SimultaneousAccessModal({
 
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'instrutor' | 'aluno' | 'convidado'>('all');
-  const [activeTab, setActiveTab] = useState<'sessions' | 'users'>('sessions');
+  const [activeTab, setActiveTab] = useState<'sessions' | 'users' | 'history'>('sessions');
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
 
   const totalSessions = data?.totalSessions ?? 0;
@@ -238,6 +241,23 @@ export default function SimultaneousAccessModal({
       return matchesSearch && matchesRole;
     });
   }, [data?.users, searchTerm, roleFilter]);
+
+  const filteredHistory = useMemo(() => {
+    const list = data?.recentAccesses || [];
+    return list.filter(item => {
+      const matchesSearch = 
+        !searchTerm ||
+        item.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (item.email && item.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        item.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (item.device && item.device.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.browser && item.browser.toLowerCase().includes(searchTerm.toLowerCase()));
+      
+      const matchesRole = roleFilter === 'all' || item.role.toLowerCase() === roleFilter;
+
+      return matchesSearch && matchesRole;
+    });
+  }, [data?.recentAccesses, searchTerm, roleFilter]);
 
   if (!isOpen) return null;
 
@@ -417,6 +437,18 @@ export default function SimultaneousAccessModal({
               <Users size={14} className="text-blue-600" />
               {isPt ? `Usuários Únicos (${uniqueUsers})` : `Unique Users (${uniqueUsers})`}
             </button>
+            <button
+              onClick={() => setActiveTab('history')}
+              className={cn(
+                "px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1.5",
+                activeTab === 'history'
+                  ? "bg-white text-slate-900 shadow-xs"
+                  : "text-slate-600 hover:text-slate-900"
+              )}
+            >
+              <History size={14} className="text-amber-600" />
+              {isPt ? `Últimos 10 Acessos (${data?.recentAccesses?.length || 0})` : `Last 10 Accesses (${data?.recentAccesses?.length || 0})`}
+            </button>
           </div>
 
           {/* Search bar & Role Chips */}
@@ -580,7 +612,7 @@ export default function SimultaneousAccessModal({
                 );
               })
             )
-          ) : (
+          ) : activeTab === 'users' ? (
             /* UNIQUE USERS VIEW */
             filteredUsers.length === 0 ? (
               <div className="text-center py-12 px-4 text-slate-400">
@@ -643,6 +675,95 @@ export default function SimultaneousAccessModal({
                   </div>
                 );
               })
+            )
+          ) : (
+            /* HISTORY (ÚLTIMOS 10 ACESSOS) VIEW */
+            filteredHistory.length === 0 ? (
+              <div className="text-center py-12 px-4 text-slate-400">
+                <History size={36} className="mx-auto mb-2 opacity-40 text-slate-400" />
+                <p className="text-sm font-bold text-slate-600">
+                  {isPt ? 'Nenhum registro de acesso recente encontrado.' : 'No recent access records found.'}
+                </p>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  {searchTerm 
+                    ? (isPt ? 'Tente ajustar os termos da busca.' : 'Try adjusting search filter.') 
+                    : (isPt ? 'Os acessos de login e visitas aparecerão aqui.' : 'Login and access records will appear here.')}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {filteredHistory.slice(0, 10).map((log, index) => {
+                  const roleInfo = getRoleBadge(log.role);
+                  return (
+                    <div
+                      key={log.id || `history-${index}`}
+                      className="p-3.5 bg-white border border-slate-200/80 hover:border-amber-300 rounded-xl shadow-xs transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 group"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-6 h-6 rounded-md bg-slate-100 text-slate-600 text-xs font-mono font-bold flex items-center justify-center shrink-0">
+                          #{index + 1}
+                        </div>
+                        <div className="relative shrink-0">
+                          <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 font-bold text-sm">
+                            {log.userName ? log.userName.substring(0, 2).toUpperCase() : 'U'}
+                          </div>
+                          {log.isOnline && (
+                            <span 
+                              className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white animate-pulse"
+                              title={isPt ? 'Online agora' : 'Online now'}
+                            />
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="text-sm font-extrabold text-slate-900 truncate">
+                              {log.userName}
+                            </h4>
+                            <span className={cn("px-2 py-0.5 rounded-md text-[10px] font-bold border flex items-center gap-1", roleInfo.bg)}>
+                              <span className={cn("w-1.5 h-1.5 rounded-full", roleInfo.dot)} />
+                              {roleInfo.label}
+                            </span>
+                            {log.isOnline && (
+                              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                {isPt ? 'Online agora' : 'Online now'}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
+                            {log.email && (
+                              <span className="truncate max-w-[200px] font-mono text-[11px]">
+                                {log.email}
+                              </span>
+                            )}
+                            <span className="text-slate-300">•</span>
+                            <span className="text-slate-500 text-[11px]">
+                              {log.accessType}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600">
+                          {getDeviceIcon(log.device)}
+                          <span className="font-medium text-[11px]">{log.device}</span>
+                          <span className="text-slate-300">•</span>
+                          <span className="text-slate-500 text-[11px]">{log.browser}</span>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-xs font-bold text-slate-800 flex items-center gap-1 justify-end">
+                            <Clock size={11} className="text-slate-400" />
+                            <span>{new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                          </div>
+                          <div className="text-[10px] text-slate-400 font-mono">
+                            {new Date(log.createdAt).toLocaleDateString(isPt ? 'pt-BR' : 'en-US', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             )
           )}
         </div>

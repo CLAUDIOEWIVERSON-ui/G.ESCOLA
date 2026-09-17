@@ -9,6 +9,7 @@ import { Plus, Search, User, Shield, ShieldAlert, Mail, Trash2, Pencil, Loader2,
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import Modal from '@/components/Modal';
+import RecentAccessHistoryCard from '@/components/RecentAccessHistoryCard';
 
 import { toast } from 'sonner';
 
@@ -563,6 +564,9 @@ export default function UsuariosPage() {
           </div>
         )}
       </div>
+
+      {/* HISTÓRICO DOS ÚLTIMOS 10 ACESSOS (COM O NOME DO USUÁRIO) */}
+      <RecentAccessHistoryCard limit={10} />
 
       <Modal
         isOpen={isModalOpen}
