@@ -52,7 +52,6 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import ExchangeRateTicker from '@/components/ExchangeRateTicker';
 import HolidaysWidget from '@/components/HolidaysWidget';
-import RecentAccessHistoryCard from '@/components/RecentAccessHistoryCard';
 import StudentDetailEditModal from '@/components/StudentDetailEditModal';
 import Image from 'next/image';
 import navalMissionLogo from '@/src/assets/images/regenerated_image_1782409801823.png';
@@ -2198,12 +2197,6 @@ function TurmasListTable({
           </div>
         </div>
       </div>
-
-      {isAdmin && (
-        <div className="pt-2">
-          <RecentAccessHistoryCard limit={10} />
-        </div>
-      )}
     </div>
   );
 }
