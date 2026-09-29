@@ -2228,6 +2228,48 @@ export default function FrequenciaPage() {
                     }
                   `}} />
 
+                  {/* Official Header with Logo */}
+                  <div className="flex items-center justify-between pb-2 mb-2 border-b-2 border-black">
+                    <div className="flex items-center gap-3">
+                      <div className="w-14 h-14 shrink-0 flex items-center justify-center overflow-hidden bg-white">
+                        <img
+                          src={typeof navalMissionLogo === 'string' ? navalMissionLogo : (navalMissionLogo as any)?.src || navalMissionLogo}
+                          alt="Logo Missão de Assessoria Naval"
+                          className="w-14 h-14 object-contain"
+                          style={{ width: '56px', height: '56px' }}
+                          crossOrigin="anonymous"
+                        />
+                      </div>
+                      <div className="text-left flex flex-col justify-center">
+                        <h1 className="text-[12px] font-black tracking-wider text-black uppercase leading-tight">
+                          MISSÃO DE ASSESSORIA NAVAL DO BRASIL EM SÃO TOMÉ E PRÍNCIPE
+                        </h1>
+                        <h2 className="text-[11px] font-black tracking-tight text-black uppercase mt-0.5">
+                          {printSheetType === 'semanal' 
+                            ? (language === 'pt' ? 'FOLHA DE FREQUÊNCIA SEMANAL' : 'WEEKLY ATTENDANCE SHEET') 
+                            : (language === 'pt' ? 'FOLHA DE FREQUÊNCIA MENSAL' : 'MONTHLY ATTENDANCE SHEET')
+                          }
+                        </h2>
+                        {(activePrintCurso?.nome || (activePrintTurma as any)?.curso?.nome) && (
+                          <p className="text-[9px] font-bold text-neutral-800 uppercase mt-0.5">
+                            {activePrintCurso?.nome || (activePrintTurma as any)?.curso?.nome}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right flex flex-col justify-center">
+                      <span className="text-[8.5px] font-extrabold uppercase tracking-wider text-neutral-700">
+                        {language === 'pt' ? 'DOCUMENTO OFICIAL DE FREQUÊNCIA' : 'OFFICIAL ATTENDANCE RECORD'}
+                      </span>
+                      <span className="text-[10px] font-mono font-black text-black uppercase mt-0.5">
+                        {printSheetType === 'semanal'
+                          ? (activeWeeksList[activeWeekIndex]?.label || printPeriod) 
+                          : printPeriod
+                        }
+                      </span>
+                    </div>
+                  </div>
+
                   {/* Print Header - Matching Exact Official Layout */}
                   <div className="mb-2 text-black">
                     <div className="grid grid-cols-4 gap-4 font-bold uppercase text-[9.5px] text-black">
