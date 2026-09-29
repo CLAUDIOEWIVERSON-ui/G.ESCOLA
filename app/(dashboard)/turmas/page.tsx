@@ -319,7 +319,12 @@ function TurmasContent() {
     return new Date(year, month + 1, 0).getDate();
   };
 
-  const getWeeksOfMonth = (month: number, year: number): { days: PrintDay[] }[] => {
+  const getWeeksOfMonth = (
+    month: number, 
+    year: number,
+    startDateStr?: string | null,
+    endDateStr?: string | null
+  ): { days: PrintDay[] }[] => {
     const firstDayOfMonth = new Date(year, month, 1);
     const dayOfWeek = firstDayOfMonth.getDay(); // 0 = Sunday, 1 = Monday, ...
     const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
@@ -331,18 +336,29 @@ function TurmasContent() {
     const currentMonday = new Date(firstMonday);
 
     while (currentMonday <= lastDayOfMonth) {
-      const weekDays: PrintDay[] = [];
+      const allDays: PrintDay[] = [];
       for (let i = 0; i < 7; i++) {
         const d = new Date(currentMonday);
         d.setDate(currentMonday.getDate() + i);
-        weekDays.push({
+        allDays.push({
           dayNum: d.getDate(),
           month: d.getMonth(),
           year: d.getFullYear(),
           isCurrentMonth: d.getMonth() === month,
         });
       }
-      weeks.push({ days: weekDays });
+
+      // Filter days strictly within the course period
+      const validDays = allDays.filter((d) => {
+        const dStr = `${d.year}-${String(d.month + 1).padStart(2, '0')}-${String(d.dayNum).padStart(2, '0')}`;
+        if (startDateStr && dStr < startDateStr) return false;
+        if (endDateStr && dStr > endDateStr) return false;
+        return true;
+      });
+
+      if (validDays.length > 0) {
+        weeks.push({ days: validDays });
+      }
       currentMonday.setDate(currentMonday.getDate() + 7);
     }
     return weeks;
@@ -356,7 +372,10 @@ function TurmasContent() {
     const year = parseInt(parts[1], 10);
     if (isNaN(month) || isNaN(year)) return [];
 
-    const weeks = getWeeksOfMonth(month, year);
+    const effectiveStart = printTurma?.data_inicio || printTurma?.curso?.data_inicio || null;
+    const effectiveEnd = printTurma?.data_postergacao || printTurma?.data_fim || printTurma?.curso?.data_fim || null;
+
+    const weeks = getWeeksOfMonth(month, year, effectiveStart, effectiveEnd);
     return weeks.map((w, idx) => {
       const firstDay = w.days[0];
       const lastDay = w.days[w.days.length - 1];
@@ -1202,22 +1221,9 @@ function TurmasContent() {
 
   const activeWeeksList = getWeeksList();
   
-  // Find which week contains today's date
-  const getTodayWeekIndex = (): number => {
-    const today = new Date();
-    const todayDay = today.getDate();
-    const todayMonth = today.getMonth();
-    const todayYear = today.getFullYear();
-
-    const idx = activeWeeksList.findIndex(w => 
-      w.days.some(d => d.dayNum === todayDay && d.month === todayMonth && d.year === todayYear)
-    );
-    return idx !== -1 ? idx : 0;
-  };
-
   const activeWeekIndex = selectedWeekIndex !== null 
     ? (selectedWeekIndex >= activeWeeksList.length ? 0 : selectedWeekIndex)
-    : getTodayWeekIndex();
+    : 0;
 
   const activeWeekObj = activeWeeksList[activeWeekIndex];
   
@@ -1229,13 +1235,23 @@ function TurmasContent() {
     const year = parseInt(parts[1], 10);
     if (isNaN(month) || isNaN(year)) return [];
 
+    const effectiveStart = printTurma?.data_inicio || printTurma?.curso?.data_inicio || null;
+    const effectiveEnd = printTurma?.data_postergacao || printTurma?.data_fim || printTurma?.curso?.data_fim || null;
+
     const daysCount = new Date(year, month + 1, 0).getDate();
-    return Array.from({ length: daysCount }).map((_, i) => ({
-      dayNum: i + 1,
-      month: month,
-      year: year,
-      isCurrentMonth: true
-    }));
+    const days: PrintDay[] = [];
+    for (let i = 1; i <= daysCount; i++) {
+      const dStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+      if (effectiveStart && dStr < effectiveStart) continue;
+      if (effectiveEnd && dStr > effectiveEnd) continue;
+      days.push({
+        dayNum: i,
+        month: month,
+        year: year,
+        isCurrentMonth: true
+      });
+    }
+    return days;
   };
 
   const daysToRender = printSheetType === 'semanal' 

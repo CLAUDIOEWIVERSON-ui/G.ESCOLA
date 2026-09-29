@@ -84,8 +84,13 @@ const isHoliday = (date: Date) => {
   return null;
 };
 
-// Helper to compute weeks of a given month
-function getWeeksOfMonth(month: number, year: number) {
+// Helper to compute weeks of a given month according to course start and end dates
+function getWeeksOfMonth(
+  month: number, 
+  year: number, 
+  startDateStr?: string | null, 
+  endDateStr?: string | null
+) {
   const weeks: { weekNumber: number; label: string; start: Date; end: Date; days: { dayNum: number; month: number; year: number }[] }[] = [];
   const firstDayOfMonth = new Date(year, month, 1);
   const lastDayOfMonth = new Date(year, month + 1, 0);
@@ -100,29 +105,42 @@ function getWeeksOfMonth(month: number, year: number) {
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekStart.getDate() + 6);
 
-    const days: { dayNum: number; month: number; year: number }[] = [];
+    const allDaysInWeek: { dayNum: number; month: number; year: number }[] = [];
     for (let d = 0; d < 7; d++) {
       const dayDate = new Date(weekStart);
       dayDate.setDate(weekStart.getDate() + d);
-      days.push({
+      allDaysInWeek.push({
         dayNum: dayDate.getDate(),
         month: dayDate.getMonth(),
         year: dayDate.getFullYear()
       });
     }
 
-    const startLabel = `${String(weekStart.getDate()).padStart(2, '0')}/${String(weekStart.getMonth() + 1).padStart(2, '0')}`;
-    const endLabel = `${String(weekEnd.getDate()).padStart(2, '0')}/${String(weekEnd.getMonth() + 1).padStart(2, '0')}`;
-    
-    weeks.push({
-      weekNumber: weekCount,
-      label: `Semana ${weekCount} (${startLabel} a ${endLabel})`,
-      start: new Date(weekStart),
-      end: new Date(weekEnd),
-      days
+    // Filter days in this week that fall strictly within the course period
+    const validDays = allDaysInWeek.filter((dayItem) => {
+      const dStr = `${dayItem.year}-${String(dayItem.month + 1).padStart(2, '0')}-${String(dayItem.dayNum).padStart(2, '0')}`;
+      if (startDateStr && dStr < startDateStr) return false;
+      if (endDateStr && dStr > endDateStr) return false;
+      return true;
     });
 
-    weekCount++;
+    // Only include this week if it contains at least one day within the course period
+    if (validDays.length > 0) {
+      const firstValid = validDays[0];
+      const lastValid = validDays[validDays.length - 1];
+      const startLabel = `${String(firstValid.dayNum).padStart(2, '0')}/${String(firstValid.month + 1).padStart(2, '0')}`;
+      const endLabel = `${String(lastValid.dayNum).padStart(2, '0')}/${String(lastValid.month + 1).padStart(2, '0')}`;
+      
+      weeks.push({
+        weekNumber: weekCount,
+        label: `Semana ${weekCount} (${startLabel} a ${endLabel})`,
+        start: new Date(firstValid.year, firstValid.month, firstValid.dayNum),
+        end: new Date(lastValid.year, lastValid.month, lastValid.dayNum),
+        days: validDays
+      });
+      weekCount++;
+    }
+
     weekStart.setDate(weekStart.getDate() + 7);
     if (weekStart > lastDayOfMonth && weekStart.getMonth() !== month) {
       break;
@@ -199,23 +217,32 @@ export default function FrequenciaPage() {
   }, [printPeriod]);
 
   const activeWeeksList = useMemo(() => {
-    return getWeeksOfMonth(printMonth, printYear);
-  }, [printMonth, printYear]);
+    return getWeeksOfMonth(printMonth, printYear, effectivePrintStartDate, effectivePrintEndDate);
+  }, [printMonth, printYear, effectivePrintStartDate, effectivePrintEndDate]);
 
-  // Days to render for print modal
+  // Days to render for print modal - strictly starting from course start date according to course period
   const daysToRender = useMemo(() => {
     if (printSheetType === 'semanal') {
       const selectedWeek = activeWeeksList[activeWeekIndex];
-      return selectedWeek ? selectedWeek.days : [];
+      if (!selectedWeek) return [];
+      return selectedWeek.days.filter((d) => {
+        const dStr = `${d.year}-${String(d.month + 1).padStart(2, '0')}-${String(d.dayNum).padStart(2, '0')}`;
+        if (effectivePrintStartDate && dStr < effectivePrintStartDate) return false;
+        if (effectivePrintEndDate && dStr > effectivePrintEndDate) return false;
+        return true;
+      });
     } else {
       const lastDay = new Date(printYear, printMonth + 1, 0).getDate();
-      const days = [];
+      const days: { dayNum: number; month: number; year: number }[] = [];
       for (let d = 1; d <= lastDay; d++) {
+        const dStr = `${printYear}-${String(printMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        if (effectivePrintStartDate && dStr < effectivePrintStartDate) continue;
+        if (effectivePrintEndDate && dStr > effectivePrintEndDate) continue;
         days.push({ dayNum: d, month: printMonth, year: printYear });
       }
       return days;
     }
-  }, [printSheetType, activeWeekIndex, activeWeeksList, printMonth, printYear]);
+  }, [printSheetType, activeWeekIndex, activeWeeksList, printMonth, printYear, effectivePrintStartDate, effectivePrintEndDate]);
 
   const getWeekdayName = (dayOfWeek: number) => {
     const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
@@ -370,7 +397,15 @@ export default function FrequenciaPage() {
       return;
     }
 
-    const currentPeriodStr = `${String(currentMapDate.getMonth() + 1).padStart(2, '0')}/${currentMapDate.getFullYear()}`;
+    // Start strictly from course start date according to course period
+    let currentPeriodStr = `${String(currentMapDate.getMonth() + 1).padStart(2, '0')}/${currentMapDate.getFullYear()}`;
+    const startCandidate = activeTurma?.data_inicio || activeCurso?.data_inicio;
+    if (startCandidate) {
+      const parts = startCandidate.split('-');
+      if (parts.length >= 2) {
+        currentPeriodStr = `${parts[1]}/${parts[0]}`;
+      }
+    }
     setPrintTurmaId(selectedTurma);
     setPrintPeriod(currentPeriodStr);
     setPrintSheetType(mapGranularity === 'week' ? 'semanal' : 'mensal');
@@ -1894,6 +1929,14 @@ export default function FrequenciaPage() {
                         if (foundTurma?.documento_criacao) {
                           setPrintDocumento(foundTurma.documento_criacao);
                         }
+                        const foundStart = foundTurma?.data_inicio || foundTurma?.curso?.data_inicio;
+                        if (foundStart) {
+                          const parts = foundStart.split('-');
+                          if (parts.length >= 2) {
+                            setPrintPeriod(`${parts[1]}/${parts[0]}`);
+                            setActiveWeekIndex(0);
+                          }
+                        }
                       }}
                       className="px-2.5 py-1 bg-slate-900 border border-white/20 rounded-lg text-xs font-bold text-white focus:outline-none focus:border-blue-500 min-w-[180px] max-w-[240px] cursor-pointer h-[32px]"
                     >
@@ -1945,7 +1988,7 @@ export default function FrequenciaPage() {
                       >
                         {activeWeeksList.map((week, idx) => (
                           <option key={idx} value={idx}>
-                            Semana {idx + 1} ({week.label})
+                            {week.label}
                           </option>
                         ))}
                       </select>
