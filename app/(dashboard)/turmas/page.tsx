@@ -2812,8 +2812,8 @@ function TurmasContent() {
                       overflow: visible !important;
                       white-space: normal !important;
                       text-overflow: unset !important;
-                      padding: ${printSheetType === 'semanal' ? '3px 2px' : '1.5px 1px'} !important;
-                      font-size: ${printSheetType === 'semanal' ? '8.5px' : '7.5px'} !important;
+                      padding: ${printSheetType === 'semanal' ? '3.5px 2px' : '1.5px 1px'} !important;
+                      font-size: ${printSheetType === 'semanal' ? '9px' : '7.5px'} !important;
                       background-color: #ffffff !important;
                       -webkit-print-color-adjust: exact !important;
                       print-color-adjust: exact !important;
@@ -2822,7 +2822,7 @@ function TurmasContent() {
                     #print-attendance-sheet .print-attendance-table th {
                       background-color: #f1f5f9 !important;
                       font-weight: 900 !important;
-                      font-size: ${printSheetType === 'semanal' ? '8.5px' : '7px'} !important;
+                      font-size: ${printSheetType === 'semanal' ? '9px' : '7.5px'} !important;
                       color: #000000 !important;
                     }
 
@@ -2902,7 +2902,7 @@ function TurmasContent() {
                         <th 
                           className={cn(
                             "border border-black p-1 text-left pl-2 font-black text-black",
-                            printSheetType === 'semanal' ? "w-[240px] text-[9px]" : "w-[175px] text-[8.5px]"
+                            printSheetType === 'semanal' ? "w-[280px] text-[9.5px]" : "w-[215px] text-[8.5px]"
                           )}
                         >
                           {language === 'pt' ? 'Nome do Aluno' : 'Student Name'}
@@ -2916,16 +2916,16 @@ function TurmasContent() {
                               key={`${day.year}-${day.month}-${day.dayNum}`} 
                               className={cn(
                                 "border border-black p-0.5 text-center font-mono font-black text-black",
-                                printSheetType === 'semanal' ? "w-[42px] text-[8px]" : "w-[20px] text-[7.5px]",
+                                printSheetType === 'semanal' ? "w-[68px] text-[8.5px]" : "w-[21px] text-[7.5px]",
                                 !status.isValid ? "bg-neutral-200 text-neutral-600" :
                                 status.label === 'FE' ? "bg-red-100 text-red-800" :
                                 (status.label === 'S' || status.label === 'D') ? "bg-neutral-100 text-neutral-800" : ""
                               )}
                             >
                               <div className="flex flex-col items-center justify-center leading-tight">
-                                <span className={cn(printSheetType === 'semanal' ? "text-[8.5px]" : "text-[7.5px]", "font-black")}>{day.dayNum}</span>
+                                <span className={cn(printSheetType === 'semanal' ? "text-[9px]" : "text-[7.5px]", "font-black")}>{day.dayNum}</span>
                                 {printSheetType === 'semanal' ? (
-                                  <span className="text-[7px] uppercase text-neutral-600 font-black">{getWeekdayName(dayOfWeek)}</span>
+                                  <span className="text-[7.5px] uppercase text-neutral-600 font-black">{getWeekdayName(dayOfWeek)}</span>
                                 ) : (
                                   status.isValid && (status.label === 'FE' || status.label === 'S' || status.label === 'D') && (
                                     <span className="text-[5.5px] font-black text-red-600">{status.label}</span>
@@ -2936,22 +2936,13 @@ function TurmasContent() {
                           );
                         })}
 
-                        {/* Summary Columns for Weekly and Monthly */}
-                        <th className={cn("border border-black p-0.5 text-center font-black text-emerald-800 bg-emerald-50/50", printSheetType === 'semanal' ? "w-[36px] text-[8px]" : "w-[22px] text-[7px]")}>
-                          P
-                        </th>
-                        <th className={cn("border border-black p-0.5 text-center font-black text-rose-800 bg-rose-50/50", printSheetType === 'semanal' ? "w-[36px] text-[8px]" : "w-[22px] text-[7px]")}>
-                          F
-                        </th>
-                        <th className={cn("border border-black p-0.5 text-center font-black text-amber-800 bg-amber-50/50", printSheetType === 'semanal' ? "w-[36px] text-[8px]" : "w-[22px] text-[7px]")}>
-                          FJ
-                        </th>
+                        {/* Summary Column for Weekly and Monthly */}
                         {printSheetType === 'semanal' ? (
-                          <th className="border border-black p-0.5 text-center font-black text-black w-[110px] text-[8px]">
+                          <th className="border border-black p-0.5 text-center font-black text-black w-[160px] text-[8.5px]">
                             {language === 'pt' ? 'Rubrica / Visto' : 'Signature'}
                           </th>
                         ) : (
-                          <th className="border border-black p-0.5 text-center font-black text-blue-900 bg-blue-50/50 w-[28px] text-[7px]">
+                          <th className="border border-black p-0.5 text-center font-black text-blue-900 bg-blue-50/50 w-[34px] text-[7.5px]" title={language === 'pt' ? 'Percentual de Frequência' : 'Attendance Percentage'}>
                             %
                           </th>
                         )}
@@ -2980,14 +2971,14 @@ function TurmasContent() {
                           const pctFreq = totalRecorded > 0 ? Math.round((studentP / totalRecorded) * 100) : null;
 
                           return (
-                            <tr key={student.id || index} className={cn("text-[8px] font-bold uppercase", printSheetType === 'semanal' ? "h-[5.5mm]" : "h-[4.2mm]")}>
+                            <tr key={student.id || index} className={cn("text-[8px] font-bold uppercase", printSheetType === 'semanal' ? "h-[6.2mm]" : "h-[4.4mm]")}>
                               <td className="border border-black text-center font-mono font-bold text-[8px] text-black px-0.5">
                                 {index + 1}
                               </td>
                               <td 
                                 className={cn(
                                   "border border-black px-1.5 text-[8.5px] font-sans font-bold text-black",
-                                  printSheetType === 'semanal' ? "w-[240px]" : "w-[175px]"
+                                  printSheetType === 'semanal' ? "w-[280px]" : "w-[215px]"
                                 )}
                               >
                                 <div className="flex flex-col justify-center py-0.5 leading-tight text-black">
@@ -3003,7 +2994,7 @@ function TurmasContent() {
                                     key={`${day.year}-${day.month}-${day.dayNum}`} 
                                     className={cn(
                                       "border border-black p-0 text-center font-black font-mono select-none text-black",
-                                      printSheetType === 'semanal' ? "text-[8.5px]" : "text-[7px]",
+                                      printSheetType === 'semanal' ? "text-[9px]" : "text-[7px]",
                                       status.bgClass
                                     )}
                                   >
@@ -3012,16 +3003,7 @@ function TurmasContent() {
                                 );
                               })}
 
-                              {/* Summary Totals */}
-                              <td className="border border-black p-0 text-center font-bold font-mono text-emerald-800 bg-emerald-50/20 text-[8px]">
-                                {studentP > 0 ? studentP : '—'}
-                              </td>
-                              <td className="border border-black p-0 text-center font-bold font-mono text-rose-800 bg-rose-50/20 text-[8px]">
-                                {studentF > 0 ? studentF : '—'}
-                              </td>
-                              <td className="border border-black p-0 text-center font-bold font-mono text-amber-800 bg-amber-50/20 text-[8px]">
-                                {studentFJ > 0 ? studentFJ : '—'}
-                              </td>
+                              {/* Summary Total / Signature */}
                               {printSheetType === 'semanal' ? (
                                 <td className="border border-black p-0 text-center text-[7px] text-neutral-300">
                                 </td>
@@ -3044,9 +3026,6 @@ function TurmasContent() {
                           {daysToRender.map((day) => (
                             <td key={`${day.year}-${day.month}-${day.dayNum}`} className="border border-black p-0 bg-neutral-100"></td>
                           ))}
-                          <td className="border border-black"></td>
-                          <td className="border border-black"></td>
-                          <td className="border border-black"></td>
                           <td className="border border-black"></td>
                         </tr>
                       )}

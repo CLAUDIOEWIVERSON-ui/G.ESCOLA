@@ -1242,7 +1242,10 @@ export default function FrequenciaPage() {
                       <th className="sticky left-0 z-20 bg-slate-100 p-2.5 w-[36px] min-w-[36px] text-center text-[10px] font-black text-slate-600 border border-slate-200">
                         #
                       </th>
-                      <th className="sticky left-[36px] z-20 bg-slate-50 p-3 min-w-[220px] text-[10.5px] font-black text-slate-700 uppercase tracking-wider text-left border border-slate-200">
+                      <th className={cn(
+                        "sticky left-[36px] z-20 bg-slate-50 p-3 text-[10.5px] font-black text-slate-700 uppercase tracking-wider text-left border border-slate-200",
+                        mapGranularity === 'week' ? "min-w-[260px]" : "min-w-[220px]"
+                      )}>
                         {language === 'pt' ? 'POSTO / GRADUAÇÃO / NOME DE GUERRA' : 'RANK / WAR NAME / STUDENT'}
                       </th>
                       {mapGranularity === 'year' ? (
@@ -1271,7 +1274,8 @@ export default function FrequenciaPage() {
                             <th 
                               key={`th-d-${dayStr}`} 
                               className={cn(
-                                "p-2 min-w-[44px] text-center transition-colors border border-slate-200 relative",
+                                "p-2 text-center transition-colors border border-slate-200 relative",
+                                mapGranularity === 'week' ? "min-w-[64px]" : "min-w-[44px]",
                                 isStartDay ? "bg-blue-50/70 border-b-2 border-b-blue-500 font-bold" : "",
                                 holiday ? "bg-rose-100/80 text-rose-800 border-rose-300 font-black" : 
                                 isWk ? "bg-slate-100/80 text-slate-500 font-semibold" : "bg-slate-50 text-slate-600"
@@ -1321,24 +1325,15 @@ export default function FrequenciaPage() {
                         })
                       )}
 
-                      {/* Summary Columns on Header */}
+                      {/* Summary Column on Header */}
                       {mapGranularity !== 'year' && (
                         <>
-                          <th className="p-2 min-w-[36px] text-center text-[10px] font-black text-emerald-800 bg-emerald-50/70 border border-slate-200" title={language === 'pt' ? 'Total de Presenças' : 'Total Presents'}>
-                            P
-                          </th>
-                          <th className="p-2 min-w-[36px] text-center text-[10px] font-black text-rose-800 bg-rose-50/70 border border-slate-200" title={language === 'pt' ? 'Total de Faltas' : 'Total Absences'}>
-                            F
-                          </th>
-                          <th className="p-2 min-w-[36px] text-center text-[10px] font-black text-amber-800 bg-amber-50/70 border border-slate-200" title={language === 'pt' ? 'Faltas Justificadas' : 'Excused Absences'}>
-                            FJ
-                          </th>
                           {mapGranularity === 'month' ? (
-                            <th className="p-2 min-w-[46px] text-center text-[10px] font-black text-blue-900 bg-blue-50/70 border border-slate-200" title={language === 'pt' ? 'Percentual de Frequência' : 'Attendance Percentage'}>
+                            <th className="p-2 min-w-[50px] text-center text-[10px] font-black text-blue-900 bg-blue-50/70 border border-slate-200" title={language === 'pt' ? 'Percentual de Frequência' : 'Attendance Percentage'}>
                               %
                             </th>
                           ) : (
-                            <th className="p-2 min-w-[100px] text-center text-[10px] font-black text-slate-700 bg-slate-50 border border-slate-200">
+                            <th className="p-2 min-w-[150px] text-center text-[10px] font-black text-slate-700 bg-slate-50 border border-slate-200">
                               {language === 'pt' ? 'Rubrica / Visto' : 'Signature'}
                             </th>
                           )}
@@ -1356,7 +1351,7 @@ export default function FrequenciaPage() {
                               : getFilteredDays(eachDayOfInterval({
                                   start: mapGranularity === 'week' ? startOfWeek(currentMapDate, { weekStartsOn: 1 }) : startOfMonth(currentMapDate),
                                   end: mapGranularity === 'week' ? endOfWeek(currentMapDate, { weekStartsOn: 1 }) : endOfMonth(currentMapDate)
-                                })).length + 4
+                                })).length + 1
                             )
                           } 
                           className="py-20 text-center text-slate-400 font-bold bg-white text-base"
@@ -1495,18 +1490,9 @@ export default function FrequenciaPage() {
                               );
                             })}
 
-                            {/* Summary Totals */}
+                            {/* Summary Total / Signature */}
                             {mapGranularity !== 'year' && (
                               <>
-                                <td className="border border-slate-200 p-1 text-center font-bold font-mono text-xs text-emerald-800 bg-emerald-50/30">
-                                  {studentP > 0 ? studentP : '—'}
-                                </td>
-                                <td className="border border-slate-200 p-1 text-center font-bold font-mono text-xs text-rose-800 bg-rose-50/30">
-                                  {studentF > 0 ? studentF : '—'}
-                                </td>
-                                <td className="border border-slate-200 p-1 text-center font-bold font-mono text-xs text-amber-800 bg-amber-50/30">
-                                  {studentFJ > 0 ? studentFJ : '—'}
-                                </td>
                                 {mapGranularity === 'month' ? (
                                   <td className="border border-slate-200 p-1 text-center font-black font-mono text-xs text-blue-900 bg-blue-50/40">
                                     {pctFreq !== null ? `${pctFreq}%` : '—'}
@@ -2165,15 +2151,15 @@ export default function FrequenciaPage() {
                         print-color-adjust: exact !important;
                       }
                       .print-attendance-table th {
-                        font-size: ${printSheetType === 'semanal' ? '8.5px' : '7px'} !important;
-                        padding: ${printSheetType === 'semanal' ? '3px 2px' : '1.5px 1px'} !important;
+                        font-size: ${printSheetType === 'semanal' ? '9px' : '7.5px'} !important;
+                        padding: ${printSheetType === 'semanal' ? '3.5px 2px' : '1.5px 1px'} !important;
                         background-color: #f1f5f9 !important;
                         font-weight: 900 !important;
                         color: #000000 !important;
                       }
                       .print-attendance-table td {
-                        font-size: ${printSheetType === 'semanal' ? '8.5px' : '7.5px'} !important;
-                        padding: ${printSheetType === 'semanal' ? '3px 2px' : '1.5px 1px'} !important;
+                        font-size: ${printSheetType === 'semanal' ? '9px' : '7.5px'} !important;
+                        padding: ${printSheetType === 'semanal' ? '3.5px 2px' : '1.5px 1px'} !important;
                         color: #000000 !important;
                       }
                       #print-attendance-sheet .text-emerald-700,
@@ -2252,7 +2238,7 @@ export default function FrequenciaPage() {
                           <th 
                             className={cn(
                               "border border-black p-1 text-left pl-2 font-black text-black",
-                              printSheetType === 'semanal' ? "w-[240px] text-[9px]" : "w-[175px] text-[8.5px]"
+                              printSheetType === 'semanal' ? "w-[280px] text-[9.5px]" : "w-[215px] text-[8.5px]"
                             )}
                           >
                             {language === 'pt' ? 'Nome do Aluno' : 'Student Name'}
@@ -2266,16 +2252,16 @@ export default function FrequenciaPage() {
                                 key={`${day.year}-${day.month}-${day.dayNum}`} 
                                 className={cn(
                                   "border border-black p-0.5 text-center font-mono font-black text-black",
-                                  printSheetType === 'semanal' ? "w-[42px] text-[8px]" : "w-[20px] text-[7.5px]",
+                                  printSheetType === 'semanal' ? "w-[68px] text-[8.5px]" : "w-[21px] text-[7.5px]",
                                   !status.isValid ? "bg-neutral-200 text-neutral-600" :
                                   status.label === 'FE' ? "bg-red-100 text-red-800" :
                                   (status.label === 'S' || status.label === 'D') ? "bg-neutral-100 text-neutral-800" : ""
                                 )}
                               >
                                 <div className="flex flex-col items-center justify-center leading-tight">
-                                  <span className={cn(printSheetType === 'semanal' ? "text-[8.5px]" : "text-[7.5px]", "font-black")}>{day.dayNum}</span>
+                                  <span className={cn(printSheetType === 'semanal' ? "text-[9px]" : "text-[7.5px]", "font-black")}>{day.dayNum}</span>
                                   {printSheetType === 'semanal' ? (
-                                    <span className="text-[7px] uppercase text-neutral-600 font-black">{getWeekdayName(dayOfWeek)}</span>
+                                    <span className="text-[7.5px] uppercase text-neutral-600 font-black">{getWeekdayName(dayOfWeek)}</span>
                                   ) : (
                                     status.isValid && (status.label === 'FE' || status.label === 'S' || status.label === 'D') && (
                                       <span className="text-[5.5px] font-black text-red-600">{status.label}</span>
@@ -2286,22 +2272,13 @@ export default function FrequenciaPage() {
                             );
                           })}
 
-                          {/* Summary Columns for Weekly and Monthly */}
-                          <th className={cn("border border-black p-0.5 text-center font-black text-emerald-800 bg-emerald-50/50", printSheetType === 'semanal' ? "w-[36px] text-[8px]" : "w-[22px] text-[7px]")}>
-                            P
-                          </th>
-                          <th className={cn("border border-black p-0.5 text-center font-black text-rose-800 bg-rose-50/50", printSheetType === 'semanal' ? "w-[36px] text-[8px]" : "w-[22px] text-[7px]")}>
-                            F
-                          </th>
-                          <th className={cn("border border-black p-0.5 text-center font-black text-amber-800 bg-amber-50/50", printSheetType === 'semanal' ? "w-[36px] text-[8px]" : "w-[22px] text-[7px]")}>
-                            FJ
-                          </th>
+                          {/* Summary Column for Weekly and Monthly */}
                           {printSheetType === 'semanal' ? (
-                            <th className="border border-black p-0.5 text-center font-black text-black w-[110px] text-[8px]">
+                            <th className="border border-black p-0.5 text-center font-black text-black w-[160px] text-[8.5px]">
                               {language === 'pt' ? 'Rubrica / Visto' : 'Signature'}
                             </th>
                           ) : (
-                            <th className="border border-black p-0.5 text-center font-black text-blue-900 bg-blue-50/50 w-[28px] text-[7px]">
+                            <th className="border border-black p-0.5 text-center font-black text-blue-900 bg-blue-50/50 w-[34px] text-[7.5px]" title={language === 'pt' ? 'Percentual de Frequência' : 'Attendance Percentage'}>
                               %
                             </th>
                           )}
@@ -2330,14 +2307,14 @@ export default function FrequenciaPage() {
                             const pctFreq = totalRecorded > 0 ? Math.round((studentP / totalRecorded) * 100) : null;
 
                             return (
-                              <tr key={`print-student-${student.id || index}`} className={cn("text-[8px] font-bold uppercase", printSheetType === 'semanal' ? "h-[5.5mm]" : "h-[4.2mm]")}>
+                              <tr key={`print-student-${student.id || index}`} className={cn("text-[8px] font-bold uppercase", printSheetType === 'semanal' ? "h-[6.2mm]" : "h-[4.4mm]")}>
                                 <td className="border border-black text-center font-mono font-bold text-[8px] text-black px-0.5">
                                   {index + 1}
                                 </td>
                                 <td 
                                   className={cn(
                                     "border border-black px-1.5 text-[8.5px] font-sans font-bold text-black",
-                                    printSheetType === 'semanal' ? "w-[240px]" : "w-[175px]"
+                                    printSheetType === 'semanal' ? "w-[280px]" : "w-[215px]"
                                   )}
                                 >
                                   <div className="flex flex-col justify-center py-0.5 leading-tight text-black">
@@ -2353,7 +2330,7 @@ export default function FrequenciaPage() {
                                       key={`print-cell-${student.id || index}-${day.year}-${day.month}-${day.dayNum}`} 
                                       className={cn(
                                         "border border-black p-0 text-center font-black font-mono select-none text-black",
-                                        printSheetType === 'semanal' ? "text-[8.5px]" : "text-[7px]",
+                                        printSheetType === 'semanal' ? "text-[9px]" : "text-[7px]",
                                         status.bgClass
                                       )}
                                     >
@@ -2362,16 +2339,7 @@ export default function FrequenciaPage() {
                                   );
                                 })}
 
-                                {/* Summary Totals */}
-                                <td className="border border-black p-0 text-center font-bold font-mono text-emerald-800 bg-emerald-50/20 text-[8px]">
-                                  {studentP > 0 ? studentP : '—'}
-                                </td>
-                                <td className="border border-black p-0 text-center font-bold font-mono text-rose-800 bg-rose-50/20 text-[8px]">
-                                  {studentF > 0 ? studentF : '—'}
-                                </td>
-                                <td className="border border-black p-0 text-center font-bold font-mono text-amber-800 bg-amber-50/20 text-[8px]">
-                                  {studentFJ > 0 ? studentFJ : '—'}
-                                </td>
+                                {/* Summary Total / Signature */}
                                 {printSheetType === 'semanal' ? (
                                   <td className="border border-black p-0 text-center text-[7px] text-neutral-300">
                                   </td>
@@ -2394,9 +2362,6 @@ export default function FrequenciaPage() {
                             {daysToRender.map((day) => (
                               <td key={`${day.year}-${day.month}-${day.dayNum}`} className="border border-black p-0 bg-neutral-100"></td>
                             ))}
-                            <td className="border border-black"></td>
-                            <td className="border border-black"></td>
-                            <td className="border border-black"></td>
                             <td className="border border-black"></td>
                           </tr>
                         )}
