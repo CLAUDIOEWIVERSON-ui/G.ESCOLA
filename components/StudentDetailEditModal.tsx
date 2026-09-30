@@ -179,6 +179,10 @@ export default function StudentDetailEditModal({
     cursoInputText
   ]);
 
+  const isManualRegistration = useMemo(() => {
+    return !currentAluno?.id || !aluno?.id;
+  }, [currentAluno?.id, aluno?.id]);
+
   const loadAllTurmasAndCursos = async () => {
     try {
       const [cursosRes, turmasRes] = await Promise.all([
@@ -878,22 +882,11 @@ export default function StudentDetailEditModal({
                     referrerPolicy="no-referrer"
                   />
                 ) : (
-                  <>
-                    <Image
-                      src={getAvatarImage()}
-                      alt="Avatar"
-                      fill
-                      className="object-cover opacity-20 group-hover:opacity-30 transition-opacity"
-                      sizes="128px"
-                      referrerPolicy="no-referrer"
-                    />
-                    <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 group-hover:text-blue-500 transition-colors pointer-events-none">
-                      <Camera size={22} strokeWidth={1.5} />
-                      <span className="text-[9px] font-bold uppercase mt-1">
-                        {language === 'pt' ? 'Foto 3x4' : 'Photo 3x4'}
-                      </span>
-                    </div>
-                  </>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-500 group-hover:text-blue-600 transition-colors pointer-events-none bg-slate-50">
+                    <span className="text-sm font-black tracking-widest uppercase text-slate-600">
+                      {language === 'pt' ? 'FOTO' : 'PHOTO'}
+                    </span>
+                  </div>
                 )}
                 {!isReadOnly && (
                   <input
@@ -933,8 +926,9 @@ export default function StudentDetailEditModal({
               </div>
             </div>
 
-            {/* Attendance Donut Chart (Gráfico de Rosca) - Ocultado para alunos no exterior */}
-            {!isAlunoExterior ? (
+            {/* Attendance Donut Chart (Gráfico de Rosca) - Ocultado para cadastro manual e alunos no exterior */}
+            {!isManualRegistration && (
+              !isAlunoExterior ? (
               <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-3">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
                   <div className="flex items-center gap-2">
@@ -1080,8 +1074,9 @@ export default function StudentDetailEditModal({
                   </p>
                 </div>
               </div>
-            )}
-          </div>
+            )
+          )}
+        </div>
 
           {/* RIGHT COLUMN: Edit Student Form */}
           <fieldset disabled={isReadOnly} className="lg:col-span-7 space-y-4 border-0 p-0 m-0 disabled:opacity-95">
@@ -1746,19 +1741,19 @@ export default function StudentDetailEditModal({
                   ESCOLA DE FORMAÇÃO E APERFEIÇOAMENTO MILITAR
                 </h2>
                 <p className="text-xs font-extrabold text-blue-900 uppercase tracking-widest mt-1">
-                  FICHA INDIVIDUAL DO ALUNO
+                  {isManualRegistration ? 'FICHA DE CADASTRO DO ALUNO (MANUAL)' : 'FICHA INDIVIDUAL DO ALUNO'}
                 </p>
               </div>
             </div>
             <div className="text-right text-[9px] space-y-0.5 shrink-0">
               <div className="font-mono bg-slate-100 border border-slate-300 px-2 py-0.5 rounded font-bold text-slate-900">
-                MATRÍCULA: {currentAluno?.matricula || 'N/A'}
+                MATRÍCULA: {currentAluno?.matricula || (isManualRegistration ? '________________' : 'N/A')}
               </div>
               <div className="font-mono text-slate-600">
                 Emissão: {new Date().toLocaleDateString('pt-BR')} {new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
               </div>
               <div className="inline-block px-2 py-0.5 rounded text-[8px] font-black uppercase border border-slate-400 bg-slate-50">
-                SITUAÇÃO: {currentAluno?.status?.toUpperCase() || 'ATIVO'}
+                SITUAÇÃO: {isManualRegistration ? 'CADASTRO MANUAL' : (currentAluno?.status?.toUpperCase() || 'ATIVO')}
               </div>
             </div>
           </div>
@@ -1768,13 +1763,21 @@ export default function StudentDetailEditModal({
             {/* Foto 3x4 */}
             <div className="w-24 shrink-0 flex flex-col items-center justify-center border-r border-slate-400 pr-3">
               <div className="w-20 h-28 border-2 border-slate-800 rounded bg-white overflow-hidden shadow-sm flex items-center justify-center">
-                <img
-                  src={currentAluno?.foto_url || (typeof getAvatarImage() === 'string' ? getAvatarImage() : (getAvatarImage() as any)?.src)}
-                  alt={currentAluno?.nome || 'Foto do Aluno'}
-                  className="w-full h-full object-cover"
-                />
+                {currentAluno?.foto_url ? (
+                  <img
+                    src={currentAluno.foto_url}
+                    alt={currentAluno?.nome || 'Foto do Aluno'}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-white border border-dashed border-slate-400">
+                    <span className="text-xs font-black tracking-widest text-slate-900 uppercase">
+                      FOTO
+                    </span>
+                  </div>
+                )}
               </div>
-              <span className="text-[7px] font-bold text-slate-600 uppercase tracking-wider mt-1">FOTO 3x4 OFICIAL</span>
+              <span className="text-[7px] font-bold text-slate-600 uppercase tracking-wider mt-1">FOTO</span>
             </div>
 
             {/* Identificação do Aluno em Tabela para Alinhamento Perfeito na Impressão */}
@@ -1945,8 +1948,8 @@ export default function StudentDetailEditModal({
             </table>
           </div>
 
-          {/* Seção 3: Registro de Frequência e Assiduidade (Omitida para alunos no exterior) */}
-          {!isAlunoExterior && (
+          {/* Seção 3: Registro de Frequência e Assiduidade (Omitida para cadastro manual e alunos no exterior) */}
+          {!isAlunoExterior && !isManualRegistration && (
             <div className="mb-3 print-avoid-break break-inside-avoid">
               <h3 
                 style={{ backgroundColor: '#002776', color: '#ffffff', WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}
@@ -1987,13 +1990,13 @@ export default function StudentDetailEditModal({
             </div>
           )}
 
-          {/* Seção 4 (ou 3 se exterior): Observações Pedagógicas */}
+          {/* Seção 4 (ou 3 se exterior ou cadastro manual): Observações Pedagógicas */}
           <div className="mb-4 print-avoid-break break-inside-avoid">
             <h3 
               style={{ backgroundColor: '#002776', color: '#ffffff', WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}
               className="text-[9px] font-black uppercase tracking-wider bg-[#002776] text-white px-2 py-1 rounded-t section-blue-bar !text-white !bg-[#002776]"
             >
-              {isAlunoExterior ? '3. OBSERVAÇÕES PEDAGÓGICAS E DISCIPLINARES' : '4. OBSERVAÇÕES PEDAGÓGICAS E DISCIPLINARES'}
+              {isAlunoExterior || isManualRegistration ? '3. OBSERVAÇÕES PEDAGÓGICAS E DISCIPLINARES' : '4. OBSERVAÇÕES PEDAGÓGICAS E DISCIPLINARES'}
             </h3>
             <div className="border border-slate-500 p-2 text-xs font-sans min-h-[40px] bg-slate-50/30">
               {currentAluno?.observacoes ? (
