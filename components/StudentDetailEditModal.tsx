@@ -25,7 +25,8 @@ import {
   GraduationCap,
   MapPin,
   School,
-  Globe
+  Globe,
+  Printer
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { mutate } from 'swr';
@@ -697,6 +698,25 @@ export default function StudentDetailEditModal({
     }
   };
 
+  const handlePrintFicha = () => {
+    try {
+      const element = document.getElementById('student-ficha-printable');
+      if (element) {
+        element.classList.remove('hidden');
+      }
+      document.body.classList.add('printing-student-ficha');
+      window.print();
+      setTimeout(() => {
+        document.body.classList.remove('printing-student-ficha');
+        if (element) {
+          element.classList.add('hidden');
+        }
+      }, 1000);
+    } catch (err) {
+      console.error('Erro ao imprimir ficha:', err);
+    }
+  };
+
   const pieData = attendanceStats.total > 0 ? [
     {
       name: language === 'pt' ? 'Presenças' : 'Present',
@@ -822,6 +842,21 @@ export default function StudentDetailEditModal({
               >
                 MATRÍCULA: <span className={cn("font-extrabold", bannerBgMode === 'blue' ? "text-white !text-white" : "text-black !text-black")}>{currentAluno?.matricula || 'N/A'}</span>
               </div>
+              <button
+                type="button"
+                onClick={handlePrintFicha}
+                className="btn-print-sheet px-3 py-1.5 text-xs font-black rounded-lg transition-colors flex items-center gap-1.5 shadow-sm border border-slate-300 bg-white hover:bg-slate-100 text-black cursor-pointer"
+                style={{ color: '#000000' }}
+                title={language === 'pt' ? 'Imprimir Ficha Cadastral (A4)' : 'Print Registration Form (A4)'}
+              >
+                <Printer size={14} className="text-black shrink-0" style={{ color: '#000000' }} />
+                <span 
+                  className="text-black !text-black btn-text-black font-black"
+                  style={{ color: '#000000' }}
+                >
+                  {language === 'pt' ? 'Imprimir Ficha' : 'Print Sheet'}
+                </span>
+              </button>
               <button
                 type="button"
                 onClick={handleDownloadPDF}
@@ -1677,19 +1712,30 @@ export default function StudentDetailEditModal({
         </div>
 
         {/* Modal Action Buttons */}
-        <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 sticky bottom-0 bg-white pb-1">
-          <button
-            type="button"
-            onClick={handleDownloadPDF}
-            disabled={isDownloadingPDF}
-            className="px-4 py-2 bg-slate-800 text-white rounded-xl text-sm font-bold hover:bg-slate-900 transition-colors flex items-center gap-2 print:hidden mr-auto disabled:opacity-50"
-            title={language === 'pt' ? 'Baixar Ficha Cadastral em PDF' : 'Download Registration Form as PDF'}
-          >
-            {isDownloadingPDF ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
-            {isDownloadingPDF 
-              ? (language === 'pt' ? 'Gerando PDF...' : 'Generating PDF...') 
-              : (language === 'pt' ? 'Baixar Ficha (PDF)' : 'Download Sheet (PDF)')}
-          </button>
+        <div className="flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-slate-200 sticky bottom-0 bg-white pb-1">
+          <div className="flex items-center gap-2 mr-auto">
+            <button
+              type="button"
+              onClick={handlePrintFicha}
+              className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 rounded-xl text-sm font-bold transition-colors flex items-center gap-2 print:hidden cursor-pointer"
+              title={language === 'pt' ? 'Imprimir Ficha Cadastral diretamente em A4' : 'Print Registration Form directly to A4'}
+            >
+              <Printer size={16} />
+              <span>{language === 'pt' ? 'Imprimir Ficha (A4)' : 'Print Sheet (A4)'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleDownloadPDF}
+              disabled={isDownloadingPDF}
+              className="px-3.5 py-2 bg-slate-800 text-white rounded-xl text-sm font-bold hover:bg-slate-900 transition-colors flex items-center gap-2 print:hidden disabled:opacity-50 cursor-pointer"
+              title={language === 'pt' ? 'Baixar Ficha Cadastral em PDF' : 'Download Registration Form as PDF'}
+            >
+              {isDownloadingPDF ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+              {isDownloadingPDF 
+                ? (language === 'pt' ? 'Gerando PDF...' : 'Generating PDF...') 
+                : (language === 'pt' ? 'Baixar Ficha (PDF)' : 'Download Sheet (PDF)')}
+            </button>
+          </div>
           <button
             type="button"
             onClick={onClose}
@@ -1714,55 +1760,58 @@ export default function StudentDetailEditModal({
     </Modal>
 
       {/* ========================================================================= */}
-      {/* PRINT-ONLY OFFICIAL DOCUMENT: FICHA INDIVIDUAL DO ALUNO */}
+      {/* PRINT-ONLY OFFICIAL DOCUMENT: FICHA INDIVIDUAL DO ALUNO (MODELO / OFICIAL) */}
       {/* ========================================================================= */}
       {mounted && isOpen && createPortal(
         <div 
           id="student-ficha-printable"
           data-document-sheet="true"
-          className="hidden print:block student-ficha-printable-doc official-document-sheet text-slate-900 bg-white p-2 font-sans text-xs w-full"
+          className="hidden print:block student-ficha-printable-doc official-document-sheet text-slate-900 bg-white px-7 py-6 font-sans text-xs w-full max-w-[210mm] mx-auto box-border"
+          style={{
+            fontFamily: "'Liberation Sans', Arial, Helvetica, sans-serif"
+          }}
         >
           {/* Cabeçalho Institucional */}
           <div className="border-b-2 border-slate-900 pb-3 mb-4 flex items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="w-24 h-24 shrink-0 flex items-center justify-center">
+              <div className="w-20 h-20 shrink-0 flex items-center justify-center">
                 <img
                   src={typeof navalMissionLogo === 'string' ? navalMissionLogo : (navalMissionLogo as any)?.src || navalMissionLogo}
                   alt="Brasão"
-                  className="w-24 h-24 object-contain shrink-0"
-                  style={{ width: '96px', height: '96px' }}
+                  className="w-20 h-20 object-contain shrink-0"
+                  style={{ width: '80px', height: '80px' }}
                 />
               </div>
               <div>
-                <h1 className="text-[10px] font-black uppercase tracking-widest text-slate-600 leading-tight">
-                  SISTEMA DE GESTÃO ESCOLAR E ACADÊMICA
+                <h1 className="text-[11px] font-black uppercase tracking-widest text-slate-700 leading-tight">
+                  MISSÃO DE ASSESSORIA NAVAL DO BRASIL EM SÃO TOMÉ E PRÍNCIPE
                 </h1>
                 <h2 className="text-sm font-black uppercase tracking-wider text-slate-900 leading-tight mt-0.5">
                   ESCOLA DE FORMAÇÃO E APERFEIÇOAMENTO MILITAR
                 </h2>
-                <p className="text-xs font-extrabold text-blue-900 uppercase tracking-widest mt-1">
-                  {isManualRegistration ? 'FICHA DE CADASTRO DO ALUNO (MANUAL)' : 'FICHA INDIVIDUAL DO ALUNO'}
+                <p className="text-xs font-black text-[#002776] uppercase tracking-widest mt-1">
+                  {isManualRegistration ? 'FICHA DE CADASTRO DO ALUNO (MODELO / PREENCHIMENTO MANUAL)' : 'FICHA INDIVIDUAL DE CADASTRO DO ALUNO'}
                 </p>
               </div>
             </div>
-            <div className="text-right text-[9px] space-y-0.5 shrink-0">
-              <div className="font-mono bg-slate-100 border border-slate-300 px-2 py-0.5 rounded font-bold text-slate-900">
+            <div className="text-right text-[9.5px] space-y-1 shrink-0">
+              <div className="font-mono bg-slate-100 border border-slate-300 px-3 py-1 rounded font-bold text-slate-900">
                 MATRÍCULA: {currentAluno?.matricula || (isManualRegistration ? '________________' : 'N/A')}
               </div>
-              <div className="font-mono text-slate-600">
+              <div className="font-mono text-slate-600 text-[8.5px]">
                 Emissão: {new Date().toLocaleDateString('pt-BR')} {new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
               </div>
-              <div className="inline-block px-2 py-0.5 rounded text-[8px] font-black uppercase border border-slate-400 bg-slate-50">
-                SITUAÇÃO: {isManualRegistration ? 'CADASTRO MANUAL' : (currentAluno?.status?.toUpperCase() || 'ATIVO')}
+              <div className="inline-block px-2.5 py-0.5 rounded text-[8.5px] font-black uppercase border border-slate-400 bg-slate-50">
+                SITUAÇÃO: {isManualRegistration ? 'CADASTRO OFICIAL' : (currentAluno?.status?.toUpperCase() || 'ATIVO')}
               </div>
             </div>
           </div>
 
           {/* Perfil do Aluno: Foto 3x4 + Identificadores Principais */}
-          <div className="flex border border-slate-500 rounded-lg p-2.5 mb-3 bg-slate-50/50 gap-3">
-            {/* Foto 3x4 */}
-            <div className="w-24 shrink-0 flex flex-col items-center justify-center border-r border-slate-400 pr-3">
-              <div className="w-20 h-28 border-2 border-slate-800 rounded bg-white overflow-hidden shadow-sm flex items-center justify-center">
+          <div className="flex border border-slate-500 rounded-lg p-3.5 mb-4 bg-slate-50/50 gap-4 items-center">
+            {/* Foto 3x4 Oficial - Somente palavra FOTO em cadastro manual ou sem foto */}
+            <div className="w-28 shrink-0 flex flex-col items-center justify-center border-r border-slate-400 pr-4">
+              <div className="w-24 h-32 border-2 border-slate-800 rounded bg-white overflow-hidden shadow-sm flex flex-col items-center justify-center">
                 {currentAluno?.foto_url ? (
                   <img
                     src={currentAluno.foto_url}
@@ -1770,51 +1819,64 @@ export default function StudentDetailEditModal({
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-white border border-dashed border-slate-400">
-                    <span className="text-xs font-black tracking-widest text-slate-900 uppercase">
+                  <div className="w-full h-full flex flex-col items-center justify-center bg-white border border-dashed border-slate-300 p-2">
+                    <span className="text-sm font-black tracking-widest text-slate-800 uppercase">
                       FOTO
+                    </span>
+                    <span className="text-[8.5px] font-bold text-slate-400 uppercase mt-1">
+                      3x4 cm
                     </span>
                   </div>
                 )}
               </div>
-              <span className="text-[7px] font-bold text-slate-600 uppercase tracking-wider mt-1">FOTO</span>
+              <span className="text-[7.5px] font-bold text-slate-600 uppercase tracking-wider mt-1.5">FOTO OFICIAL 3x4</span>
             </div>
 
-            {/* Identificação do Aluno em Tabela para Alinhamento Perfeito na Impressão */}
+            {/* Identificação do Aluno em Tabela Espaçada e Redimensionada */}
             <table className="w-full text-xs border-collapse">
               <tbody>
                 <tr className="border-b border-slate-400">
-                  <td colSpan={2} className="pb-1">
-                    <span className="text-[8px] font-bold text-slate-500 uppercase block leading-none">Nome Completo</span>
-                    <span className="text-xs font-black text-slate-900 uppercase leading-tight">{currentAluno?.nome || 'NÃO INFORMADO'}</span>
+                  <td colSpan={2} className="pb-2">
+                    <span className="text-[8.5px] font-bold text-slate-500 uppercase block leading-none mb-1">Nome Completo</span>
+                    <span className="text-sm font-black text-slate-900 uppercase leading-snug">
+                      {currentAluno?.nome || (isManualRegistration ? '____________________________________________________________________' : 'NÃO INFORMADO')}
+                    </span>
                   </td>
                 </tr>
                 <tr className="border-b border-slate-400">
-                  <td className="py-1 w-1/2 pr-2">
-                    <span className="text-[8px] font-bold text-slate-500 uppercase block leading-none">Nome de Guerra / Apelido</span>
-                    <span className="font-bold text-slate-800 uppercase leading-snug">{currentAluno?.nome_guerra || '-'}</span>
+                  <td className="py-2 w-1/2 pr-3">
+                    <span className="text-[8.5px] font-bold text-slate-500 uppercase block leading-none mb-1">Nome de Guerra / Apelido</span>
+                    <span className="font-bold text-slate-800 uppercase leading-snug text-xs">
+                      {currentAluno?.nome_guerra || (isManualRegistration ? '______________________________' : '-')}
+                    </span>
                   </td>
-                  <td className="py-1 w-1/2">
-                    <span className="text-[8px] font-bold text-slate-500 uppercase block leading-none">Posto / Graduação</span>
-                    <span className="font-bold text-slate-800 uppercase leading-snug">{currentAluno?.posto_graduacao || '-'}</span>
-                  </td>
-                </tr>
-                <tr className="border-b border-slate-400">
-                  <td className="py-1 pr-2">
-                    <span className="text-[8px] font-bold text-slate-500 uppercase block leading-none">Categoria / Tipo</span>
-                    <span className="font-bold text-slate-800 uppercase leading-snug">{currentAluno?.tipo_aluno || 'Militar'}</span>
-                  </td>
-                  <td className="py-1">
-                    <span className="text-[8px] font-bold text-slate-500 uppercase block leading-none">Organização Militar (OM)</span>
-                    <span className="font-bold text-slate-800 uppercase leading-snug">{currentAluno?.om || '-'}</span>
+                  <td className="py-2 w-1/2">
+                    <span className="text-[8.5px] font-bold text-slate-500 uppercase block leading-none mb-1">Posto / Graduação</span>
+                    <span className="font-bold text-slate-800 uppercase leading-snug text-xs">
+                      {currentAluno?.posto_graduacao || (isManualRegistration ? '______________________________' : '-')}
+                    </span>
                   </td>
                 </tr>
                 <tr className="border-b border-slate-400">
-                  <td colSpan={2} className="py-1">
-                    <span className="text-[8px] font-bold text-slate-500 uppercase block leading-none">
+                  <td className="py-2 pr-3">
+                    <span className="text-[8.5px] font-bold text-slate-500 uppercase block leading-none mb-1">Categoria / Tipo</span>
+                    <span className="font-bold text-slate-800 uppercase leading-snug text-xs">
+                      {currentAluno?.tipo_aluno || (isManualRegistration ? 'Militar (   )   Civil (   )' : 'Militar')}
+                    </span>
+                  </td>
+                  <td className="py-2">
+                    <span className="text-[8.5px] font-bold text-slate-500 uppercase block leading-none mb-1">Organização Militar (OM)</span>
+                    <span className="font-bold text-slate-800 uppercase leading-snug text-xs">
+                      {currentAluno?.om || (isManualRegistration ? '______________________________' : '-')}
+                    </span>
+                  </td>
+                </tr>
+                <tr className="border-b border-slate-400">
+                  <td colSpan={2} className="py-2">
+                    <span className="text-[8.5px] font-bold text-slate-500 uppercase block leading-none mb-1">
                       {turmaInfo?.internacional ? 'Curso (Inscrição no Exterior) / Turma' : 'Curso de Matrícula'}
                     </span>
-                    <span className="font-bold text-blue-900 uppercase leading-snug">
+                    <span className="font-bold text-blue-900 uppercase leading-snug text-xs">
                       {(() => {
                         const cursoNome = (cursoInputText || turmaInfo?.curso?.nome || allCursos.find(c => c.id === currentAluno?.curso_id || c.id === selectedCursoId)?.nome || currentAluno?.curso_nome || currentAluno?.curso || '').trim();
                         const turmaNome = (turmaInputText || turmaInfo?.nome || allTurmas.find(t => t.id === currentAluno?.turma_id)?.nome || currentAluno?.turma_nome || currentAluno?.turma || currentAluno?.turma_manual || '').trim();
@@ -1838,7 +1900,7 @@ export default function StudentDetailEditModal({
                         if (turmaNome) {
                           return <span className="text-blue-900 font-extrabold">{turmaNome}</span>;
                         }
-                        return <span className="text-slate-700">Não informado</span>;
+                        return <span className="text-slate-700">{isManualRegistration ? '____________________________________________________________' : 'Não informado'}</span>;
                       })()}
                       {turmaInfo?.localizacao && (
                         <span className="ml-2 text-slate-600 font-semibold text-[10px]">📍 {turmaInfo.localizacao}</span>
@@ -1847,14 +1909,14 @@ export default function StudentDetailEditModal({
                   </td>
                 </tr>
                 <tr>
-                  <td colSpan={2} className="pt-1">
-                    <span className="text-[8px] font-bold text-slate-500 uppercase block leading-none">
+                  <td colSpan={2} className="pt-2">
+                    <span className="text-[8.5px] font-bold text-slate-500 uppercase block leading-none mb-1">
                       Período de Realização do Curso / Missão
                     </span>
                     <span className="font-bold text-slate-800 uppercase leading-snug font-mono text-[11px]">
-                      {currentAluno?.data_inicio_curso ? format(new Date(currentAluno.data_inicio_curso), 'dd/MM/yyyy') : (turmaInfo?.data_inicio ? format(new Date(turmaInfo.data_inicio), 'dd/MM/yyyy') : '-')}
+                      {currentAluno?.data_inicio_curso ? format(new Date(currentAluno.data_inicio_curso), 'dd/MM/yyyy') : (turmaInfo?.data_inicio ? format(new Date(turmaInfo.data_inicio), 'dd/MM/yyyy') : (isManualRegistration ? '___ / ___ / ______' : '-'))}
                       {' a '}
-                      {currentAluno?.data_fim_curso ? format(new Date(currentAluno.data_fim_curso), 'dd/MM/yyyy') : (turmaInfo?.data_fim ? format(new Date(turmaInfo.data_fim), 'dd/MM/yyyy') : '-')}
+                      {currentAluno?.data_fim_curso ? format(new Date(currentAluno.data_fim_curso), 'dd/MM/yyyy') : (turmaInfo?.data_fim ? format(new Date(turmaInfo.data_fim), 'dd/MM/yyyy') : (isManualRegistration ? '___ / ___ / ______' : '-'))}
                     </span>
                   </td>
                 </tr>
@@ -1862,163 +1924,126 @@ export default function StudentDetailEditModal({
             </table>
           </div>
 
-          {/* Seção 1: Dados Pessoais e Documentação Civil */}
-          <div className="mb-3 print-avoid-break break-inside-avoid">
+          {/* Seção 1: Dados Pessoais e Documentação Civil - Redimensionada e Ampliada */}
+          <div className="mb-4 print-avoid-break break-inside-avoid">
             <h3 
               style={{ backgroundColor: '#002776', color: '#ffffff', WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}
-              className="text-[9px] font-black uppercase tracking-wider bg-[#002776] text-white px-2 py-1 rounded-t section-blue-bar !text-white !bg-[#002776]"
+              className="text-[10.5px] font-black uppercase tracking-wider bg-[#002776] text-white px-3.5 py-1.5 rounded-t section-blue-bar !text-white !bg-[#002776]"
             >
               1. DADOS PESSOAIS E DOCUMENTAÇÃO CIVIL
             </h3>
             <table className="w-full border-collapse border border-slate-500 text-xs">
               <tbody>
                 <tr className="border-b border-slate-400">
-                  <td className="p-1 font-bold bg-slate-100 w-1/4 border-r border-slate-400">Gênero:</td>
-                  <td className="p-1 w-1/4 border-r border-slate-400 capitalize">{currentAluno?.genero || '-'}</td>
-                  <td className="p-1 font-bold bg-slate-100 w-1/4 border-r border-slate-400">Data de Nascimento:</td>
-                  <td className="p-1 w-1/4 font-mono">{currentAluno?.data_nascimento ? format(new Date(currentAluno.data_nascimento), 'dd/MM/yyyy') : '-'}</td>
+                  <td className="py-2.5 px-3 font-bold bg-slate-100 w-1/4 border-r border-slate-400 text-slate-700">Gênero:</td>
+                  <td className="py-2.5 px-3 w-1/4 border-r border-slate-400 capitalize">{currentAluno?.genero || (isManualRegistration ? 'Masc (  )  Fem (  )' : '-')}</td>
+                  <td className="py-2.5 px-3 font-bold bg-slate-100 w-1/4 border-r border-slate-400 text-slate-700">Data de Nascimento:</td>
+                  <td className="py-2.5 px-3 w-1/4 font-mono">{currentAluno?.data_nascimento ? format(new Date(currentAluno.data_nascimento), 'dd/MM/yyyy') : (isManualRegistration ? '____ / ____ / ________' : '-')}</td>
                 </tr>
                 <tr className="border-b border-slate-400">
-                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-400">RG:</td>
-                  <td className="p-1 font-mono border-r border-slate-400">{currentAluno?.rg || '-'}</td>
-                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-400">NIF (Identificação Fiscal):</td>
-                  <td className="p-1 font-mono">{currentAluno?.nif || '-'}</td>
+                  <td className="py-2.5 px-3 font-bold bg-slate-100 border-r border-slate-400 text-slate-700">RG:</td>
+                  <td className="py-2.5 px-3 font-mono border-r border-slate-400">{currentAluno?.rg || (isManualRegistration ? '________________________' : '-')}</td>
+                  <td className="py-2.5 px-3 font-bold bg-slate-100 border-r border-slate-400 text-slate-700">NIF (Identificação Fiscal):</td>
+                  <td className="py-2.5 px-3 font-mono">{currentAluno?.nif || (isManualRegistration ? '________________________' : '-')}</td>
                 </tr>
                 <tr className="border-b border-slate-400">
-                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-400">Passaporte:</td>
-                  <td className="p-1 font-mono border-r border-slate-400 font-bold text-slate-900">{currentAluno?.passaporte || '-'}</td>
-                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-400">Título de Eleitor:</td>
-                  <td className="p-1 font-mono">{currentAluno?.titulo_eleitor || '-'}</td>
+                  <td className="py-2.5 px-3 font-bold bg-slate-100 border-r border-slate-400 text-slate-700">Passaporte:</td>
+                  <td className="py-2.5 px-3 font-mono border-r border-slate-400 font-bold text-slate-900">{currentAluno?.passaporte || (isManualRegistration ? '________________________' : '-')}</td>
+                  <td className="py-2.5 px-3 font-bold bg-slate-100 border-r border-slate-400 text-slate-700">Título de Eleitor:</td>
+                  <td className="py-2.5 px-3 font-mono">{currentAluno?.titulo_eleitor || (isManualRegistration ? '________________________' : '-')}</td>
                 </tr>
                 <tr className="border-b border-slate-400">
-                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-400">Tipo Sanguíneo/Fator RH:</td>
-                  <td className="p-1 font-mono border-r border-slate-400">{currentAluno?.tipo_sanguineo || '-'}{currentAluno?.fator_rh || ''}</td>
-                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-400">Altura / Peso:</td>
-                  <td className="p-1 font-mono">
-                    {currentAluno?.altura ? `${currentAluno.altura} m` : '-'} / {currentAluno?.peso ? `${currentAluno.peso} kg` : '-'}
+                  <td className="py-2.5 px-3 font-bold bg-slate-100 border-r border-slate-400 text-slate-700">Tipo Sanguíneo / Fator RH:</td>
+                  <td className="py-2.5 px-3 font-mono border-r border-slate-400">{currentAluno?.tipo_sanguineo ? `${currentAluno.tipo_sanguineo}${currentAluno.fator_rh || ''}` : (isManualRegistration ? '[       ]  /  Fator: [  +  /  -  ]' : '-')}</td>
+                  <td className="py-2.5 px-3 font-bold bg-slate-100 border-r border-slate-400 text-slate-700">Altura / Peso:</td>
+                  <td className="py-2.5 px-3 font-mono">
+                    {currentAluno?.altura ? `${currentAluno.altura} m` : (isManualRegistration ? '_______ m' : '-')} / {currentAluno?.peso ? `${currentAluno.peso} kg` : (isManualRegistration ? '_______ kg' : '-')}
                   </td>
                 </tr>
                 <tr className="border-b border-slate-400">
-                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-400">Nome do Pai:</td>
-                  <td className="p-1 uppercase border-r border-slate-400" colSpan={3}>{currentAluno?.nome_pai || '-'}</td>
+                  <td className="py-2.5 px-3 font-bold bg-slate-100 border-r border-slate-400 text-slate-700">Nome do Pai:</td>
+                  <td className="py-2.5 px-3 uppercase border-r border-slate-400" colSpan={3}>{currentAluno?.nome_pai || (isManualRegistration ? '____________________________________________________________________' : '-')}</td>
                 </tr>
                 <tr className="border-b border-slate-400">
-                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-400">Nome da Mãe:</td>
-                  <td className="p-1 uppercase border-r border-slate-400" colSpan={3}>{currentAluno?.nome_mae || '-'}</td>
+                  <td className="py-2.5 px-3 font-bold bg-slate-100 border-r border-slate-400 text-slate-700">Nome da Mãe:</td>
+                  <td className="py-2.5 px-3 uppercase border-r border-slate-400" colSpan={3}>{currentAluno?.nome_mae || (isManualRegistration ? '____________________________________________________________________' : '-')}</td>
                 </tr>
                 <tr>
-                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-400">Ano de Admissão:</td>
-                  <td className="p-1 font-mono border-r border-slate-400">{currentAluno?.ano_admissao || '-'}</td>
-                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-400">Função / Cargo:</td>
-                  <td className="p-1 uppercase">{currentAluno?.funcao || '-'}</td>
+                  <td className="py-2.5 px-3 font-bold bg-slate-100 border-r border-slate-400 text-slate-700">Ano de Admissão:</td>
+                  <td className="py-2.5 px-3 font-mono border-r border-slate-400">{currentAluno?.ano_admissao || (isManualRegistration ? '____________' : '-')}</td>
+                  <td className="py-2.5 px-3 font-bold bg-slate-100 border-r border-slate-400 text-slate-700">Função / Cargo:</td>
+                  <td className="py-2.5 px-3 uppercase">{currentAluno?.funcao || (isManualRegistration ? '________________________________________' : '-')}</td>
                 </tr>
               </tbody>
             </table>
           </div>
 
-          {/* Seção 2: Contato e Comunicação */}
-          <div className="mb-3 print-avoid-break break-inside-avoid">
+          {/* Seção 2: Contato e Comunicação - Redimensionada e Ampliada */}
+          <div className="mb-5 print-avoid-break break-inside-avoid">
             <h3 
               style={{ backgroundColor: '#002776', color: '#ffffff', WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}
-              className="text-[9px] font-black uppercase tracking-wider bg-[#002776] text-white px-2 py-1 rounded-t section-blue-bar !text-white !bg-[#002776]"
+              className="text-[10.5px] font-black uppercase tracking-wider bg-[#002776] text-white px-3.5 py-1.5 rounded-t section-blue-bar !text-white !bg-[#002776]"
             >
               2. CONTATO E COMUNICAÇÃO
             </h3>
             <table className="w-full border-collapse border border-slate-500 text-xs">
               <tbody>
                 <tr className="border-b border-slate-400">
-                  <td className="p-1 font-bold bg-slate-100 w-1/6 border-r border-slate-400">E-mail:</td>
-                  <td className="p-1 font-mono w-2/6 border-r border-slate-400">{currentAluno?.email || '-'}</td>
-                  <td className="p-1 font-bold bg-slate-100 w-1/6 border-r border-slate-400">Telefone:</td>
-                  <td className="p-1 font-mono w-2/6">{currentAluno?.telefone || '-'}</td>
+                  <td className="py-2.5 px-3 font-bold bg-slate-100 w-1/6 border-r border-slate-400 text-slate-700">E-mail:</td>
+                  <td className="py-2.5 px-3 font-mono w-2/6 border-r border-slate-400">{currentAluno?.email || (isManualRegistration ? '________________________________________' : '-')}</td>
+                  <td className="py-2.5 px-3 font-bold bg-slate-100 w-1/6 border-r border-slate-400 text-slate-700">Telefone:</td>
+                  <td className="py-2.5 px-3 font-mono w-2/6">{currentAluno?.telefone || (isManualRegistration ? '(_____) ____________________' : '-')}</td>
                 </tr>
                 <tr className="border-b border-slate-400">
-                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-400">WhatsApp:</td>
-                  <td className="p-1 font-mono border-r border-slate-400">{currentAluno?.whatsapp || '-'}</td>
-                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-400">Código de Acesso:</td>
-                  <td className="p-1 font-mono font-bold text-blue-900">{studentAccess?.access_code || '-'}</td>
+                  <td className="py-2.5 px-3 font-bold bg-slate-100 border-r border-slate-400 text-slate-700">WhatsApp:</td>
+                  <td className="py-2.5 px-3 font-mono border-r border-slate-400">{currentAluno?.whatsapp || (isManualRegistration ? '(_____) ____________________' : '-')}</td>
+                  <td className="py-2.5 px-3 font-bold bg-slate-100 border-r border-slate-400 text-slate-700">Código de Acesso:</td>
+                  <td className="py-2.5 px-3 font-mono font-bold text-blue-900">{studentAccess?.access_code || (isManualRegistration ? '____________________' : '-')}</td>
                 </tr>
                 <tr>
-                  <td className="p-1 font-bold bg-slate-100 border-r border-slate-400">Endereço Residencial:</td>
-                  <td className="p-1 uppercase border-r border-slate-400 font-medium" colSpan={3}>
-                    {currentAluno?.endereco || '-'}
+                  <td className="py-2.5 px-3 font-bold bg-slate-100 border-r border-slate-400 text-slate-700">Endereço Residencial:</td>
+                  <td className="py-2.5 px-3 uppercase border-r border-slate-400 font-medium" colSpan={3}>
+                    {currentAluno?.endereco || (isManualRegistration ? '____________________________________________________________________' : '-')}
                   </td>
                 </tr>
               </tbody>
             </table>
           </div>
 
-          {/* Seção 3: Registro de Frequência e Assiduidade (Omitida para cadastro manual e alunos no exterior) */}
-          {!isAlunoExterior && !isManualRegistration && (
-            <div className="mb-3 print-avoid-break break-inside-avoid">
-              <h3 
-                style={{ backgroundColor: '#002776', color: '#ffffff', WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}
-                className="text-[9px] font-black uppercase tracking-wider bg-[#002776] text-white px-2 py-1 rounded-t section-blue-bar !text-white !bg-[#002776]"
-              >
-                3. REGISTRO DE FREQUÊNCIA E ASSIDUIDADE
-              </h3>
-              <table className="w-full border-collapse border border-slate-500 text-xs text-center">
-                <thead>
-                  <tr className="bg-slate-100 font-bold border-b border-slate-400">
-                    <th className="p-1 border-r border-slate-400">Total de Aulas</th>
-                    <th className="p-1 border-r border-slate-400">Presenças (%)</th>
-                    <th className="p-1 border-r border-slate-400">Faltas (%)</th>
-                    <th className="p-1">Situação da Frequência</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td className="p-1 font-mono border-r border-slate-400">{attendanceStats.total} aulas</td>
-                    <td className="p-1 font-mono font-bold text-emerald-800 border-r border-slate-400">
-                      {attendanceStats.presentes} ({attendanceStats.percentPresenca}%)
-                    </td>
-                    <td className="p-1 font-mono font-bold text-rose-800 border-r border-slate-400">
-                      {attendanceStats.faltas} ({attendanceStats.percentFalta}%)
-                    </td>
-                    <td className="p-1 font-bold uppercase">
-                      {attendanceStats.total === 0 ? (
-                        <span className="text-slate-500">SEM REGISTROS</span>
-                      ) : attendanceStats.percentPresenca >= 75 ? (
-                        <span className="text-emerald-700">REGULAR (&ge; 75%)</span>
-                      ) : (
-                        <span className="text-rose-700">ABAIXO DO EXIGIDO (&lt; 75%)</span>
-                      )}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          )}
+          {/* Declaração de Veracidade e Responsabilidade */}
+          <div className="mt-6 mb-3 text-center print-avoid-break break-inside-avoid">
+            <p className="text-[9.5px] font-medium text-slate-600 italic">
+              Declaro sob as penas cabíveis que todas as informações acima prestadas são verdadeiras e exatas, assumindo total responsabilidade pelas mesmas.
+            </p>
+          </div>
 
-          {/* Seção 4 (ou 3 se exterior ou cadastro manual): Observações Pedagógicas */}
-          <div className="mb-4 print-avoid-break break-inside-avoid">
-            <h3 
-              style={{ backgroundColor: '#002776', color: '#ffffff', WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}
-              className="text-[9px] font-black uppercase tracking-wider bg-[#002776] text-white px-2 py-1 rounded-t section-blue-bar !text-white !bg-[#002776]"
-            >
-              {isAlunoExterior || isManualRegistration ? '3. OBSERVAÇÕES PEDAGÓGICAS E DISCIPLINARES' : '4. OBSERVAÇÕES PEDAGÓGICAS E DISCIPLINARES'}
-            </h3>
-            <div className="border border-slate-500 p-2 text-xs font-sans min-h-[40px] bg-slate-50/30">
-              {currentAluno?.observacoes ? (
-                <p className="whitespace-pre-wrap leading-relaxed">{currentAluno.observacoes}</p>
-              ) : (
-                <p className="text-slate-400 italic">Nenhuma observação ou anotação disciplinar cadastrada até a presente data.</p>
-              )}
+          {/* Termo de Assinaturas - Espaçamento Amplo e Nobre */}
+          <div className="pt-6 mt-4 grid grid-cols-2 gap-12 text-center text-xs print-avoid-break break-inside-avoid">
+            <div>
+              <div className="border-b-2 border-slate-800 w-4/5 mx-auto mb-2"></div>
+              <p className="font-black text-slate-900 uppercase text-xs">
+                {currentAluno?.nome || 'ASSINATURA DO ALUNO / CANDIDATO'}
+              </p>
+              <p className="text-[8.5px] font-bold text-slate-500 uppercase mt-0.5">Assinatura do Aluno / Candidato</p>
+            </div>
+            <div>
+              <div className="border-b-2 border-slate-800 w-4/5 mx-auto mb-2"></div>
+              <p className="font-black text-slate-900 uppercase text-xs">
+                COORDENADOR DE CURSOS
+              </p>
+              <p className="text-[8.5px] font-bold text-slate-500 uppercase mt-0.5">Assinatura e Carimbo Oficial</p>
             </div>
           </div>
 
-          {/* Termo de Assinaturas */}
-          <div className="pt-8 mt-8 grid grid-cols-2 gap-8 text-center text-xs print-avoid-break break-inside-avoid">
-            <div>
-              <div className="border-b-2 border-slate-800 w-4/5 mx-auto mb-1"></div>
-              <p className="font-bold text-slate-800 uppercase">{currentAluno?.nome || 'Aluno'}</p>
-              <p className="text-[8px] text-slate-500 uppercase">Assinatura do Aluno</p>
-            </div>
-            <div>
-              <div className="border-b-2 border-slate-800 w-4/5 mx-auto mb-1"></div>
-              <p className="font-bold text-slate-800 uppercase">Coordenador de Cursos</p>
-              <p className="text-[8px] text-slate-500 uppercase">Assinatura</p>
-            </div>
+          {/* Datação e Localidade Oficial */}
+          <div className="mt-5 text-center text-[10px] font-bold text-slate-800 font-mono print-avoid-break break-inside-avoid">
+            São Tomé, _____ de ____________________ de 20____.
+          </div>
+
+          {/* Rodapé Oficial da Ficha */}
+          <div className="border-t-2 border-slate-300 mt-6 pt-2 flex items-center justify-between text-[8px] font-bold text-slate-500 uppercase print-avoid-break break-inside-avoid">
+            <span>MISSÃO DE ASSESSORIA NAVAL DO BRASIL EM SÃO TOMÉ E PRÍNCIPE</span>
+            <span>FICHA DE REGISTRO E CONTROLE ACADÊMICO • DOCUMENTO OFICIAL</span>
           </div>
         </div>,
         document.body

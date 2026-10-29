@@ -383,24 +383,27 @@ function BoletimContent() {
   const getDisciplineGradeAndFreq = useCallback((disc: any, discIdx: number, rData: any, firstGrade: any) => {
     const moduleNum = disc.modulo_index || (discIdx + 1);
     const directGrade = (rData?.grades || []).find((g: any) => g.disciplina_id === disc.id);
+    const totalModules = rData?.courseObj?.qtd_modulos || rData?.classObj?.curso?.qtd_modulos || courseModules || 1;
 
     let finalGradeValue: number | null = null;
-    if (directGrade && directGrade.nota_final !== null && directGrade.nota_final !== undefined && directGrade.nota_final !== '') {
-      finalGradeValue = Number(directGrade.nota_final);
-    } else if (directGrade && directGrade[`nota${moduleNum}`] !== null && directGrade[`nota${moduleNum}`] !== undefined && directGrade[`nota${moduleNum}`] !== '') {
-      finalGradeValue = Number(directGrade[`nota${moduleNum}`]);
+    const directVal = directGrade ? (directGrade[`nota${moduleNum}`] ?? directGrade[`nota_u${moduleNum}`]) : null;
+
+    if (directVal !== null && directVal !== undefined && directVal !== '' && !isNaN(Number(directVal))) {
+      finalGradeValue = Number(directVal);
     } else {
       const anyModularRow = (rData?.grades || []).find((g: any) => {
-        const val = g[`nota${moduleNum}`];
-        return val !== null && val !== undefined && val !== '';
+        const val = g[`nota${moduleNum}`] ?? g[`nota_u${moduleNum}`];
+        return val !== null && val !== undefined && val !== '' && !isNaN(Number(val));
       });
       if (anyModularRow) {
-        const val = anyModularRow[`nota${moduleNum}`];
-        if (val !== null && val !== undefined && val !== '') {
-          finalGradeValue = Number(val);
+        const val = anyModularRow[`nota${moduleNum}`] ?? anyModularRow[`nota_u${moduleNum}`];
+        finalGradeValue = Number(val);
+      } else if (totalModules <= 1 && moduleNum === 1) {
+        if (directGrade && directGrade.nota_final !== null && directGrade.nota_final !== undefined && directGrade.nota_final !== '' && !isNaN(Number(directGrade.nota_final))) {
+          finalGradeValue = Number(directGrade.nota_final);
+        } else if (directGrade && directGrade.nota1 !== null && directGrade.nota1 !== undefined && directGrade.nota1 !== '' && !isNaN(Number(directGrade.nota1))) {
+          finalGradeValue = Number(directGrade.nota1);
         }
-      } else if (directGrade && directGrade.nota1 !== null && directGrade.nota1 !== undefined && directGrade.nota1 !== '') {
-        finalGradeValue = Number(directGrade.nota1);
       }
     }
 
@@ -415,7 +418,7 @@ function BoletimContent() {
     }
 
     return { finalGradeValue, freqValue, moduleNum };
-  }, []);
+  }, [courseModules]);
 
   const [pendingDetailsStudent, setPendingDetailsStudent] = useState<any | null>(null);
   const [scale, setScale] = useState(0.55);
@@ -1330,22 +1333,24 @@ function BoletimContent() {
           const directGrade = studentGradesList.find((g: any) => g.disciplina_id === disc.id);
 
           let finalGradeValue: number | null = null;
-          if (directGrade && directGrade.nota_final !== null && directGrade.nota_final !== undefined && directGrade.nota_final !== '') {
-            finalGradeValue = Number(directGrade.nota_final);
-          } else if (directGrade && directGrade[`nota${moduleNum}`] !== null && directGrade[`nota${moduleNum}`] !== undefined && directGrade[`nota${moduleNum}`] !== '') {
-            finalGradeValue = Number(directGrade[`nota${moduleNum}`]);
+          const directVal = directGrade ? (directGrade[`nota${moduleNum}`] ?? directGrade[`nota_u${moduleNum}`]) : null;
+
+          if (directVal !== null && directVal !== undefined && directVal !== '' && !isNaN(Number(directVal))) {
+            finalGradeValue = Number(directVal);
           } else {
             const anyModularRow = studentGradesList.find((g: any) => {
-              const val = g[`nota${moduleNum}`];
-              return val !== null && val !== undefined && val !== '';
+              const val = g[`nota${moduleNum}`] ?? g[`nota_u${moduleNum}`];
+              return val !== null && val !== undefined && val !== '' && !isNaN(Number(val));
             });
             if (anyModularRow) {
-              const val = anyModularRow[`nota${moduleNum}`];
-              if (val !== null && val !== undefined && val !== '') {
-                finalGradeValue = Number(val);
+              const val = anyModularRow[`nota${moduleNum}`] ?? anyModularRow[`nota_u${moduleNum}`];
+              finalGradeValue = Number(val);
+            } else if (localCourseModules <= 1 && moduleNum === 1) {
+              if (directGrade && directGrade.nota_final !== null && directGrade.nota_final !== undefined && directGrade.nota_final !== '' && !isNaN(Number(directGrade.nota_final))) {
+                finalGradeValue = Number(directGrade.nota_final);
+              } else if (directGrade && directGrade.nota1 !== null && directGrade.nota1 !== undefined && directGrade.nota1 !== '' && !isNaN(Number(directGrade.nota1))) {
+                finalGradeValue = Number(directGrade.nota1);
               }
-            } else if (directGrade && directGrade.nota1 !== null && directGrade.nota1 !== undefined && directGrade.nota1 !== '') {
-              finalGradeValue = Number(directGrade.nota1);
             }
           }
 
@@ -1397,10 +1402,11 @@ function BoletimContent() {
           } else {
             // Fallback: search in studentGrades for any modular column matching nota{i}
             const anyModularRow = studentGrades.find((g: any) => {
-              const val = g[`nota${i}`];
-              return val !== null && val !== undefined && val !== '';
+              const val = g[`nota${i}`] ?? g[`nota_u${i}`];
+              return val !== null && val !== undefined && val !== '' && !isNaN(Number(val));
             });
-            computedModuleGrades[`nota${i}`] = anyModularRow ? Number(anyModularRow[`nota${i}`]) : null;
+            const val = anyModularRow ? (anyModularRow[`nota${i}`] ?? anyModularRow[`nota_u${i}`]) : null;
+            computedModuleGrades[`nota${i}`] = (val !== null && val !== undefined && val !== '' && !isNaN(Number(val))) ? Number(val) : null;
           }
         }
 
@@ -2583,9 +2589,29 @@ function BoletimContent() {
                       });
 
                       const validFinalGrades = computedDisciplines.filter((cd: any) => cd.finalGradeValue !== null && cd.finalGradeValue !== undefined);
-                      const averageGrade = validFinalGrades.length > 0
-                        ? validFinalGrades.reduce((sum, cd) => sum + (cd.finalGradeValue || 0), 0) / validFinalGrades.length
-                        : null;
+
+                      const moduleGroupsMap = new Map<number, any[]>();
+                      sortedDisciplines.forEach((disc: any, discIdx: number) => {
+                        const moduleNum = disc.modulo_index || (discIdx + 1);
+                        if (!moduleGroupsMap.has(moduleNum)) {
+                          moduleGroupsMap.set(moduleNum, []);
+                        }
+                        moduleGroupsMap.get(moduleNum)!.push({ disc, discIdx });
+                      });
+
+                      const moduleScores = Array.from(moduleGroupsMap.entries()).map(([moduleNum, groupItems]) => {
+                        const evaluated = groupItems.map(({ disc, discIdx }) => {
+                          return getDisciplineGradeAndFreq(disc, discIdx, reportData, firstGrade);
+                        });
+                        const validGrades = evaluated
+                          .map(e => e.finalGradeValue)
+                          .filter((g): g is number => g !== null && g !== undefined && !isNaN(g));
+                        return validGrades.length > 0 ? Math.max(...validGrades) : null;
+                      }).filter((g): g is number => g !== null && g !== undefined && !isNaN(g));
+
+                      const averageGrade = moduleScores.length > 0
+                        ? Math.round((moduleScores.reduce((sum, val) => sum + val, 0) / moduleScores.length) * 100) / 100
+                        : (validFinalGrades.length > 0 ? Math.round((validFinalGrades.reduce((sum, cd) => sum + (cd.finalGradeValue || 0), 0) / validFinalGrades.length) * 100) / 100 : null);
 
                       const expirationDate = reportData.classObj?.data_postergacao || reportData.classObj?.data_fim;
                       const todayStr = format(new Date(), 'yyyy-MM-dd');
@@ -3937,9 +3963,29 @@ function BoletimContent() {
                                         });
 
                                         const validFinalGrades = computedDisciplines.filter((cd: any) => cd.finalGradeValue !== null && cd.finalGradeValue !== undefined);
-                                        const averageGrade = validFinalGrades.length > 0
-                                          ? validFinalGrades.reduce((sum, cd) => sum + (cd.finalGradeValue || 0), 0) / validFinalGrades.length
-                                          : null;
+
+                                        const moduleGroupsMap = new Map<number, any[]>();
+                                        sortedDisciplines.forEach((disc: any, discIdx: number) => {
+                                          const moduleNum = disc.modulo_index || (discIdx + 1);
+                                          if (!moduleGroupsMap.has(moduleNum)) {
+                                            moduleGroupsMap.set(moduleNum, []);
+                                          }
+                                          moduleGroupsMap.get(moduleNum)!.push({ disc, discIdx });
+                                        });
+
+                                        const moduleScores = Array.from(moduleGroupsMap.entries()).map(([moduleNum, groupItems]) => {
+                                          const evaluated = groupItems.map(({ disc, discIdx }) => {
+                                            return getDisciplineGradeAndFreq(disc, discIdx, reportData, firstGrade);
+                                          });
+                                          const validGrades = evaluated
+                                            .map(e => e.finalGradeValue)
+                                            .filter((g): g is number => g !== null && g !== undefined && !isNaN(g));
+                                          return validGrades.length > 0 ? Math.max(...validGrades) : null;
+                                        }).filter((g): g is number => g !== null && g !== undefined && !isNaN(g));
+
+                                        const averageGrade = moduleScores.length > 0
+                                          ? Math.round((moduleScores.reduce((sum, val) => sum + val, 0) / moduleScores.length) * 100) / 100
+                                          : (validFinalGrades.length > 0 ? Math.round((validFinalGrades.reduce((sum, cd) => sum + (cd.finalGradeValue || 0), 0) / validFinalGrades.length) * 100) / 100 : null);
 
                                         const expirationDate = reportData.classObj?.data_postergacao || reportData.classObj?.data_fim;
                                          const todayStr = format(new Date(), 'yyyy-MM-dd');
