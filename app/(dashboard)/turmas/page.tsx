@@ -449,6 +449,7 @@ function TurmasContent() {
         else if (statusVal === 'FJ') bgClass = 'bg-amber-50 text-amber-700 print:text-amber-800 print:bg-amber-50/20';
         else if (statusVal === 'A') bgClass = 'bg-orange-50 text-orange-700 print:text-orange-800 print:bg-orange-50/20';
         else if (statusVal === 'D') bgClass = 'bg-sky-50 text-sky-700 print:text-sky-800 print:bg-sky-50/20';
+        else if (statusVal === 'LE') bgClass = 'bg-purple-50 text-purple-700 print:text-purple-800 print:bg-purple-50/20';
         
         return { label: statusVal, bgClass: `${bgClass} font-black`, isValid: true };
       }
@@ -3015,6 +3016,7 @@ function TurmasContent() {
                           let studentFJ = 0;
                           let studentA = 0;
                           let studentD = 0;
+                          let studentLE = 0;
 
                           daysToRender.forEach((day) => {
                             const st = getDayStatus(day.dayNum, day.month, day.year, student.id);
@@ -3023,6 +3025,7 @@ function TurmasContent() {
                             else if (st.label === 'FJ') studentFJ++;
                             else if (st.label === 'A') studentA++;
                             else if (st.label === 'D') studentD++;
+                            else if (st.label === 'LE') studentLE++;
                           });
 
                           const totalRecorded = studentP + studentF + studentFJ;
@@ -3104,6 +3107,7 @@ function TurmasContent() {
                         <span className="text-amber-700 font-black"><strong>FJ</strong> = {language === 'pt' ? 'Justificada' : 'Excused'}</span>
                         <span className="text-neutral-900 font-black"><strong>A</strong> = {language === 'pt' ? 'Atraso' : 'Delay'}</span>
                         <span className="text-sky-700 font-black"><strong>D</strong> = {language === 'pt' ? 'Dispensado' : 'Exempt'}</span>
+                        <span className="text-purple-700 font-black"><strong>LE</strong> = {language === 'pt' ? 'Licença Extraordinária' : 'Special Leave'}</span>
                         <span className="text-red-700 border-l border-black pl-1.5 font-black"><strong>FE</strong> = {language === 'pt' ? 'Feriado' : 'Holiday'}</span>
                         <span className="text-neutral-700 border-l border-black pl-1.5 font-black"><strong>S/D</strong> = Sáb/Dom</span>
                       </div>

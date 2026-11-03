@@ -300,14 +300,15 @@ export default function FrequenciaPage() {
 
       if (record) {
         const obs = (record.observacao || '').trim().toUpperCase();
-        if (obs === 'F' || obs === 'FJ' || obs === 'A' || obs === 'D' || obs === 'P') {
+        if (obs === 'F' || obs === 'FJ' || obs === 'A' || obs === 'D' || obs === 'P' || obs === 'LE') {
           return {
             label: obs,
             bgClass: obs === 'P' ? 'text-emerald-700 bg-emerald-50/60 font-black' :
                      obs === 'F' ? 'text-rose-700 bg-rose-50/60 font-black' :
                      obs === 'FJ' ? 'text-amber-700 bg-amber-50/60 font-black' :
                      obs === 'A' ? 'text-orange-700 bg-orange-50/60 font-black' :
-                     obs === 'D' ? 'text-sky-700 bg-sky-50/60 font-black' : '',
+                     obs === 'D' ? 'text-sky-700 bg-sky-50/60 font-black' :
+                     obs === 'LE' ? 'text-purple-700 bg-purple-50/60 font-black' : '',
             isValid: true
           };
         }
@@ -570,7 +571,7 @@ export default function FrequenciaPage() {
     return () => { isMounted = false; };
   }, [fetchAttendance]);
 
-  const handleToggleMapAttendance = async (studentId: string, dayStr: string, status: 'P' | 'F' | 'FJ' | 'A' | 'D' | null) => {
+  const handleToggleMapAttendance = async (studentId: string, dayStr: string, status: 'P' | 'F' | 'FJ' | 'A' | 'D' | 'LE' | null) => {
     if (isReadOnly) return;
 
     if (effectiveEndDate && dayStr > effectiveEndDate) {
@@ -623,7 +624,7 @@ export default function FrequenciaPage() {
           turma_id: selectedTurma,
           disciplina_id: selectedDisciplina || null,
           data: dayStr,
-          presente: status === 'P' || status === 'A' || status === 'D',
+          presente: status === 'P' || status === 'A' || status === 'D' || status === 'LE',
           observacao: status === 'P' || status === 'F' ? null : status
         };
 
@@ -677,7 +678,7 @@ export default function FrequenciaPage() {
     }
   };
 
-  const handleMarkAllStatus = async (dayStr: string, status: 'P' | 'F' | 'FJ' | 'A' | 'D' | null) => {
+  const handleMarkAllStatus = async (dayStr: string, status: 'P' | 'F' | 'FJ' | 'A' | 'D' | 'LE' | null) => {
     if (isReadOnly) return;
     if (!selectedTurma) return;
     if (students.length === 0) {
@@ -725,7 +726,7 @@ export default function FrequenciaPage() {
           turma_id: selectedTurma,
           disciplina_id: selectedDisciplina || null,
           data: dayStr,
-          presente: status === 'P' || status === 'A' || status === 'D',
+          presente: status === 'P' || status === 'A' || status === 'D' || status === 'LE',
           observacao: status === 'P' || status === 'F' ? null : status
         }));
 
@@ -1409,6 +1410,7 @@ export default function FrequenciaPage() {
                         let studentFJ = 0;
                         let studentA = 0;
                         let studentD = 0;
+                        let studentLE = 0;
 
                         filteredDays.forEach(day => {
                           const dayStr = format(day, 'yyyy-MM-dd');
@@ -1423,6 +1425,7 @@ export default function FrequenciaPage() {
                           else if (st === 'FJ') studentFJ++;
                           else if (st === 'A') studentA++;
                           else if (st === 'D') studentD++;
+                          else if (st === 'LE') studentLE++;
                         });
 
                         const totalCounted = studentP + studentF + studentFJ;
@@ -1505,7 +1508,8 @@ export default function FrequenciaPage() {
                                         status === 'F' && "bg-rose-500 text-white shadow-xs",
                                         status === 'FJ' && "bg-amber-500 text-white shadow-xs",
                                         status === 'A' && "bg-orange-500 text-white shadow-xs",
-                                        status === 'D' && "bg-sky-500 text-white shadow-xs"
+                                        status === 'D' && "bg-sky-500 text-white shadow-xs",
+                                        status === 'LE' && "bg-purple-600 text-white shadow-xs"
                                       )}>
                                         {status}
                                       </div>
@@ -1560,6 +1564,7 @@ export default function FrequenciaPage() {
                       <span className="text-amber-700 font-extrabold bg-amber-100/70 px-1.5 py-0.5 rounded"><strong>FJ</strong> = {language === 'pt' ? 'Justificada' : 'Excused'}</span>
                       <span className="text-orange-700 font-extrabold bg-orange-100/70 px-1.5 py-0.5 rounded"><strong>A</strong> = {language === 'pt' ? 'Atraso' : 'Delay'}</span>
                       <span className="text-sky-700 font-extrabold bg-sky-100/70 px-1.5 py-0.5 rounded"><strong>D</strong> = {language === 'pt' ? 'Dispensado' : 'Exempt'}</span>
+                      <span className="text-purple-700 font-extrabold bg-purple-100/70 px-1.5 py-0.5 rounded"><strong>LE</strong> = {language === 'pt' ? 'Licença Extraordinária' : 'Special Leave'}</span>
                       <span className="text-red-700 font-extrabold bg-red-100/70 px-1.5 py-0.5 rounded border border-red-200"><strong>FE</strong> = {language === 'pt' ? 'Feriado Nacional (STP)' : 'Holiday (STP)'}</span>
                       <span className="text-slate-600 font-bold bg-slate-200/70 px-1.5 py-0.5 rounded"><strong>S/D</strong> = Sáb/Dom</span>
                     </div>
@@ -1663,17 +1668,17 @@ export default function FrequenciaPage() {
                   </div>
 
                   {/* Horizontal Options Row */}
-                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2.5 sm:gap-3 py-2">
+                  <div className="grid grid-cols-4 sm:grid-cols-7 gap-2 sm:gap-2.5 py-2">
                     {/* Option P */}
                     <button
                       onClick={() => {
                         handleToggleMapAttendance(activeStudent.id, activeCell.dayStr, 'P');
                         setActiveCell(null);
                       }}
-                      className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-emerald-50 border border-transparent hover:border-emerald-100 transition-all text-emerald-800 text-center cursor-pointer group"
+                      className="flex flex-col items-center gap-2 p-2.5 sm:p-3 rounded-xl hover:bg-emerald-50 border border-transparent hover:border-emerald-100 transition-all text-emerald-800 text-center cursor-pointer group"
                     >
                       <span className="w-10 h-10 flex items-center justify-center bg-emerald-500 text-white rounded-xl text-sm font-black shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform">P</span>
-                      <span className="text-[11px] font-black tracking-tight">{language === 'pt' ? 'Presente' : 'Present'}</span>
+                      <span className="text-[10.5px] sm:text-[11px] font-black tracking-tight">{language === 'pt' ? 'Presente' : 'Present'}</span>
                     </button>
 
                     {/* Option F */}
@@ -1682,10 +1687,10 @@ export default function FrequenciaPage() {
                         handleToggleMapAttendance(activeStudent.id, activeCell.dayStr, 'F');
                         setActiveCell(null);
                       }}
-                      className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-rose-50 border border-transparent hover:border-rose-100 transition-all text-rose-800 text-center cursor-pointer group"
+                      className="flex flex-col items-center gap-2 p-2.5 sm:p-3 rounded-xl hover:bg-rose-50 border border-transparent hover:border-rose-100 transition-all text-rose-800 text-center cursor-pointer group"
                     >
                       <span className="w-10 h-10 flex items-center justify-center bg-rose-500 text-white rounded-xl text-sm font-black shadow-md shadow-rose-500/20 group-hover:scale-105 transition-transform">F</span>
-                      <span className="text-[11px] font-black tracking-tight">{language === 'pt' ? 'Falta' : 'Absent'}</span>
+                      <span className="text-[10.5px] sm:text-[11px] font-black tracking-tight">{language === 'pt' ? 'Falta' : 'Absent'}</span>
                     </button>
 
                     {/* Option FJ */}
@@ -1694,10 +1699,10 @@ export default function FrequenciaPage() {
                         handleToggleMapAttendance(activeStudent.id, activeCell.dayStr, 'FJ');
                         setActiveCell(null);
                       }}
-                      className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-amber-50 border border-transparent hover:border-amber-100 transition-all text-amber-800 text-center cursor-pointer group"
+                      className="flex flex-col items-center gap-2 p-2.5 sm:p-3 rounded-xl hover:bg-amber-50 border border-transparent hover:border-amber-100 transition-all text-amber-800 text-center cursor-pointer group"
                     >
                       <span className="w-10 h-10 flex items-center justify-center bg-amber-500 text-white rounded-xl text-sm font-black shadow-md shadow-amber-500/20 group-hover:scale-105 transition-transform">FJ</span>
-                      <span className="text-[11px] font-black tracking-tight leading-tight">{language === 'pt' ? 'Justificada' : 'Excused'}</span>
+                      <span className="text-[10.5px] sm:text-[11px] font-black tracking-tight leading-tight">{language === 'pt' ? 'Justificada' : 'Excused'}</span>
                     </button>
 
                     {/* Option A */}
@@ -1706,10 +1711,10 @@ export default function FrequenciaPage() {
                         handleToggleMapAttendance(activeStudent.id, activeCell.dayStr, 'A');
                         setActiveCell(null);
                       }}
-                      className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-orange-50 border border-transparent hover:border-orange-100 transition-all text-orange-800 text-center cursor-pointer group"
+                      className="flex flex-col items-center gap-2 p-2.5 sm:p-3 rounded-xl hover:bg-orange-50 border border-transparent hover:border-orange-100 transition-all text-orange-800 text-center cursor-pointer group"
                     >
                       <span className="w-10 h-10 flex items-center justify-center bg-orange-500 text-white rounded-xl text-sm font-black shadow-md shadow-orange-500/20 group-hover:scale-105 transition-transform">A</span>
-                      <span className="text-[11px] font-black tracking-tight">{language === 'pt' ? 'Atraso' : 'Delay'}</span>
+                      <span className="text-[10.5px] sm:text-[11px] font-black tracking-tight">{language === 'pt' ? 'Atraso' : 'Delay'}</span>
                     </button>
 
                     {/* Option D */}
@@ -1718,10 +1723,23 @@ export default function FrequenciaPage() {
                         handleToggleMapAttendance(activeStudent.id, activeCell.dayStr, 'D');
                         setActiveCell(null);
                       }}
-                      className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-sky-50 border border-transparent hover:border-sky-100 transition-all text-sky-800 text-center cursor-pointer group"
+                      className="flex flex-col items-center gap-2 p-2.5 sm:p-3 rounded-xl hover:bg-sky-50 border border-transparent hover:border-sky-100 transition-all text-sky-800 text-center cursor-pointer group"
                     >
                       <span className="w-10 h-10 flex items-center justify-center bg-sky-500 text-white rounded-xl text-sm font-black shadow-md shadow-sky-500/20 group-hover:scale-105 transition-transform">D</span>
-                      <span className="text-[11px] font-black tracking-tight">{language === 'pt' ? 'Dispensado' : 'Exempt'}</span>
+                      <span className="text-[10.5px] sm:text-[11px] font-black tracking-tight">{language === 'pt' ? 'Dispensado' : 'Exempt'}</span>
+                    </button>
+
+                    {/* Option LE (Licença Extraordinária) */}
+                    <button
+                      onClick={() => {
+                        handleToggleMapAttendance(activeStudent.id, activeCell.dayStr, 'LE');
+                        setActiveCell(null);
+                      }}
+                      className="flex flex-col items-center gap-2 p-2.5 sm:p-3 rounded-xl hover:bg-purple-50 border border-transparent hover:border-purple-100 transition-all text-purple-800 text-center cursor-pointer group"
+                      title={language === 'pt' ? 'Licença Extraordinária' : 'Special Leave'}
+                    >
+                      <span className="w-10 h-10 flex items-center justify-center bg-purple-600 text-white rounded-xl text-sm font-black shadow-md shadow-purple-500/20 group-hover:scale-105 transition-transform">LE</span>
+                      <span className="text-[10px] sm:text-[10.5px] font-black tracking-tight leading-tight">{language === 'pt' ? 'Lic. Extraord.' : 'Special Leave'}</span>
                     </button>
 
                     {/* Option Limpar */}
@@ -1730,10 +1748,10 @@ export default function FrequenciaPage() {
                         handleToggleMapAttendance(activeStudent.id, activeCell.dayStr, null);
                         setActiveCell(null);
                       }}
-                      className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-slate-100 border border-transparent hover:border-slate-200 transition-all text-slate-500 text-center cursor-pointer group"
+                      className="flex flex-col items-center gap-2 p-2.5 sm:p-3 rounded-xl hover:bg-slate-100 border border-transparent hover:border-slate-200 transition-all text-slate-500 text-center cursor-pointer group"
                     >
                       <span className="w-10 h-10 flex items-center justify-center bg-slate-100 text-slate-600 rounded-xl text-lg font-black shadow-sm group-hover:scale-105 transition-transform">―</span>
-                      <span className="text-[11px] font-black tracking-tight">{language === 'pt' ? 'Limpar' : 'Clear'}</span>
+                      <span className="text-[10.5px] sm:text-[11px] font-black tracking-tight">{language === 'pt' ? 'Limpar' : 'Clear'}</span>
                     </button>
                   </div>
                 </motion.div>
@@ -1786,17 +1804,17 @@ export default function FrequenciaPage() {
                   </div>
 
                   {/* Horizontal Options Row */}
-                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2.5 sm:gap-3 py-2">
+                  <div className="grid grid-cols-4 sm:grid-cols-7 gap-2 sm:gap-2.5 py-2">
                     {/* Option P */}
                     <button
                       onClick={() => {
                         handleMarkAllStatus(activeBulkDay.dayStr, 'P');
                         setActiveBulkDay(null);
                       }}
-                      className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-emerald-50 border border-transparent hover:border-emerald-100 transition-all text-emerald-800 text-center cursor-pointer group"
+                      className="flex flex-col items-center gap-2 p-2.5 sm:p-3 rounded-xl hover:bg-emerald-50 border border-transparent hover:border-emerald-100 transition-all text-emerald-800 text-center cursor-pointer group"
                     >
                       <span className="w-10 h-10 flex items-center justify-center bg-emerald-500 text-white rounded-xl text-sm font-black shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform">P</span>
-                      <span className="text-[11px] font-black tracking-tight">{language === 'pt' ? 'Presentes' : 'Present'}</span>
+                      <span className="text-[10.5px] sm:text-[11px] font-black tracking-tight">{language === 'pt' ? 'Presentes' : 'Present'}</span>
                     </button>
 
                     {/* Option F */}
@@ -1805,10 +1823,10 @@ export default function FrequenciaPage() {
                         handleMarkAllStatus(activeBulkDay.dayStr, 'F');
                         setActiveBulkDay(null);
                       }}
-                      className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-rose-50 border border-transparent hover:border-rose-100 transition-all text-rose-800 text-center cursor-pointer group"
+                      className="flex flex-col items-center gap-2 p-2.5 sm:p-3 rounded-xl hover:bg-rose-50 border border-transparent hover:border-rose-100 transition-all text-rose-800 text-center cursor-pointer group"
                     >
                       <span className="w-10 h-10 flex items-center justify-center bg-rose-500 text-white rounded-xl text-sm font-black shadow-md shadow-rose-500/20 group-hover:scale-105 transition-transform">F</span>
-                      <span className="text-[11px] font-black tracking-tight">{language === 'pt' ? 'Faltas' : 'Absent'}</span>
+                      <span className="text-[10.5px] sm:text-[11px] font-black tracking-tight">{language === 'pt' ? 'Faltas' : 'Absent'}</span>
                     </button>
 
                     {/* Option FJ */}
@@ -1817,10 +1835,10 @@ export default function FrequenciaPage() {
                         handleMarkAllStatus(activeBulkDay.dayStr, 'FJ');
                         setActiveBulkDay(null);
                       }}
-                      className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-amber-50 border border-transparent hover:border-amber-100 transition-all text-amber-800 text-center cursor-pointer group"
+                      className="flex flex-col items-center gap-2 p-2.5 sm:p-3 rounded-xl hover:bg-amber-50 border border-transparent hover:border-amber-100 transition-all text-amber-800 text-center cursor-pointer group"
                     >
                       <span className="w-10 h-10 flex items-center justify-center bg-amber-500 text-white rounded-xl text-sm font-black shadow-md shadow-amber-500/20 group-hover:scale-105 transition-transform">FJ</span>
-                      <span className="text-[11px] font-black tracking-tight leading-tight">{language === 'pt' ? 'Justificadas' : 'Excused'}</span>
+                      <span className="text-[10.5px] sm:text-[11px] font-black tracking-tight leading-tight">{language === 'pt' ? 'Justificadas' : 'Excused'}</span>
                     </button>
 
                     {/* Option A */}
@@ -1829,10 +1847,10 @@ export default function FrequenciaPage() {
                         handleMarkAllStatus(activeBulkDay.dayStr, 'A');
                         setActiveBulkDay(null);
                       }}
-                      className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-orange-50 border border-transparent hover:border-orange-100 transition-all text-orange-800 text-center cursor-pointer group"
+                      className="flex flex-col items-center gap-2 p-2.5 sm:p-3 rounded-xl hover:bg-orange-50 border border-transparent hover:border-orange-100 transition-all text-orange-800 text-center cursor-pointer group"
                     >
                       <span className="w-10 h-10 flex items-center justify-center bg-orange-500 text-white rounded-xl text-sm font-black shadow-md shadow-orange-500/20 group-hover:scale-105 transition-transform">A</span>
-                      <span className="text-[11px] font-black tracking-tight">{language === 'pt' ? 'Atrasos' : 'Delay'}</span>
+                      <span className="text-[10.5px] sm:text-[11px] font-black tracking-tight">{language === 'pt' ? 'Atrasos' : 'Delay'}</span>
                     </button>
 
                     {/* Option D */}
@@ -1841,10 +1859,23 @@ export default function FrequenciaPage() {
                         handleMarkAllStatus(activeBulkDay.dayStr, 'D');
                         setActiveBulkDay(null);
                       }}
-                      className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-sky-50 border border-transparent hover:border-sky-100 transition-all text-sky-800 text-center cursor-pointer group"
+                      className="flex flex-col items-center gap-2 p-2.5 sm:p-3 rounded-xl hover:bg-sky-50 border border-transparent hover:border-sky-100 transition-all text-sky-800 text-center cursor-pointer group"
                     >
                       <span className="w-10 h-10 flex items-center justify-center bg-sky-500 text-white rounded-xl text-sm font-black shadow-md shadow-sky-500/20 group-hover:scale-105 transition-transform">D</span>
-                      <span className="text-[11px] font-black tracking-tight">{language === 'pt' ? 'Dispensas' : 'Exempt'}</span>
+                      <span className="text-[10.5px] sm:text-[11px] font-black tracking-tight">{language === 'pt' ? 'Dispensas' : 'Exempt'}</span>
+                    </button>
+
+                    {/* Option LE (Licença Extraordinária) */}
+                    <button
+                      onClick={() => {
+                        handleMarkAllStatus(activeBulkDay.dayStr, 'LE');
+                        setActiveBulkDay(null);
+                      }}
+                      className="flex flex-col items-center gap-2 p-2.5 sm:p-3 rounded-xl hover:bg-purple-50 border border-transparent hover:border-purple-100 transition-all text-purple-800 text-center cursor-pointer group"
+                      title={language === 'pt' ? 'Licença Extraordinária' : 'Special Leave'}
+                    >
+                      <span className="w-10 h-10 flex items-center justify-center bg-purple-600 text-white rounded-xl text-sm font-black shadow-md shadow-purple-500/20 group-hover:scale-105 transition-transform">LE</span>
+                      <span className="text-[10px] sm:text-[10.5px] font-black tracking-tight leading-tight">{language === 'pt' ? 'Lic. Extraord.' : 'Special Leave'}</span>
                     </button>
 
                     {/* Option Limpar */}
@@ -1853,10 +1884,10 @@ export default function FrequenciaPage() {
                         handleMarkAllStatus(activeBulkDay.dayStr, null);
                         setActiveBulkDay(null);
                       }}
-                      className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-slate-100 border border-transparent hover:border-slate-200 transition-all text-slate-500 text-center cursor-pointer group"
+                      className="flex flex-col items-center gap-2 p-2.5 sm:p-3 rounded-xl hover:bg-slate-100 border border-transparent hover:border-slate-200 transition-all text-slate-500 text-center cursor-pointer group"
                     >
                       <span className="w-10 h-10 flex items-center justify-center bg-slate-100 text-slate-600 rounded-xl text-lg font-black shadow-sm group-hover:scale-105 transition-transform">―</span>
-                      <span className="text-[11px] font-black tracking-tight">{language === 'pt' ? 'Limpar' : 'Clear'}</span>
+                      <span className="text-[10.5px] sm:text-[11px] font-black tracking-tight">{language === 'pt' ? 'Limpar' : 'Clear'}</span>
                     </button>
                   </div>
                 </motion.div>
@@ -2378,6 +2409,7 @@ export default function FrequenciaPage() {
                             let studentFJ = 0;
                             let studentA = 0;
                             let studentD = 0;
+                            let studentLE = 0;
 
                             daysToRender.forEach((day) => {
                               const st = getDayStatus(day.dayNum, day.month, day.year, student.id);
@@ -2386,6 +2418,7 @@ export default function FrequenciaPage() {
                               else if (st.label === 'FJ') studentFJ++;
                               else if (st.label === 'A') studentA++;
                               else if (st.label === 'D') studentD++;
+                              else if (st.label === 'LE') studentLE++;
                             });
 
                             const totalRecorded = studentP + studentF + studentFJ;
@@ -2467,6 +2500,7 @@ export default function FrequenciaPage() {
                           <span className="text-amber-700 font-black"><strong>FJ</strong> = {language === 'pt' ? 'Justificada' : 'Excused'}</span>
                           <span className="text-neutral-900 font-black"><strong>A</strong> = {language === 'pt' ? 'Atraso' : 'Delay'}</span>
                           <span className="text-sky-700 font-black"><strong>D</strong> = {language === 'pt' ? 'Dispensado' : 'Exempt'}</span>
+                          <span className="text-purple-700 font-black"><strong>LE</strong> = {language === 'pt' ? 'Licença Extraordinária' : 'Special Leave'}</span>
                           <span className="text-red-700 border-l border-black pl-1.5 font-black"><strong>FE</strong> = {language === 'pt' ? 'Feriado' : 'Holiday'}</span>
                           <span className="text-neutral-700 border-l border-black pl-1.5 font-black"><strong>S/D</strong> = Sáb/Dom</span>
                         </div>
