@@ -2221,10 +2221,6 @@ function BoletimContent() {
                     <span className="font-bold text-slate-800 uppercase">{reportData.student.nome_guerra || (language === 'pt' ? 'Não declarado' : 'Not declared')}</span>
                   </div>
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Matrícula</span>
-                    <span className="font-bold font-mono text-slate-800">#{reportData.student.matricula}</span>
-                  </div>
-                  <div className="flex flex-col gap-0.5">
                     <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">{reportT[language as "pt" | "en"].course}</span>
                     <span className="font-bold text-slate-800">{reportData.courseObj?.nome || (language === 'pt' ? 'Não disponível' : 'Not available')}</span>
                   </div>
@@ -2972,7 +2968,6 @@ function BoletimContent() {
                                  </span>
                                )}
                              </div>
-                             <div className="text-[10px] font-mono text-slate-400 tracking-tight">#{row.aluno?.matricula}</div>
                              {false && (
                                <div className="text-[9px] font-black text-red-500 uppercase tracking-widest mt-1">{language === 'pt' ? 'Pendente de Pgto.' : 'Payment Pending'}</div>
                              )}
@@ -3105,9 +3100,6 @@ function BoletimContent() {
                     <p className="text-sm font-extrabold text-slate-900">
                       {studentToDeleteGrades.aluno?.nome_guerra || studentToDeleteGrades.aluno?.nome}
                     </p>
-                    <p className="text-[10px] font-mono font-semibold text-slate-500 mt-0.5">
-                      Matrícula: #{studentToDeleteGrades.aluno?.matricula}
-                    </p>
                   </div>
 
                   <p className="text-xs text-slate-600 leading-relaxed">
@@ -3180,9 +3172,6 @@ function BoletimContent() {
                             </p>
                             <p className="text-sm font-extrabold text-slate-800">
                               {pendingDetailsStudent.aluno?.nome}
-                            </p>
-                            <p className="text-[10px] font-mono font-bold text-slate-500 mt-0.5">
-                              Matrícula: #{pendingDetailsStudent.aluno?.matricula}
                             </p>
                           </div>
 
@@ -3669,11 +3658,7 @@ function BoletimContent() {
                                       <span className="text-[8px] font-black tracking-widest text-slate-400 uppercase leading-none">{language === 'pt' ? 'Guerra' : 'War Name'}</span>
                                       <span className="text-xs font-black uppercase text-slate-800 tracking-wide mt-1 leading-tight">{reportData.student.nome_guerra || '—'}</span>
                                     </div>
-                                    <div className="flex flex-col gap-0.5 mt-2 pt-1.5 border-t border-slate-200/60">
-                                      <span className="text-[8px] font-black tracking-widest text-slate-400 uppercase leading-none">Matrícula</span>
-                                      <span className="text-xs font-mono font-black text-slate-800 mt-1 leading-tight">#{reportData.student.matricula}</span>
-                                    </div>
-                                    <div className="col-span-1 flex flex-col gap-0.5 mt-2 pt-1.5 border-t border-slate-200/60">
+                                    <div className="col-span-2 flex flex-col gap-0.5 mt-2 pt-1.5 border-t border-slate-200/60">
                                       <span className="text-[8px] font-black tracking-widest text-slate-400 uppercase leading-none">{reportT[language as "pt" | "en"].course}</span>
                                       <span className="text-[10px] font-extrabold text-slate-850 break-words whitespace-normal mt-1 leading-normal">{reportData.courseObj?.nome || (language === 'pt' ? 'Não disponível' : 'Not available')}</span>
                                     </div>
@@ -4485,7 +4470,6 @@ function BoletimContent() {
                                                  </td>
                                                  <td className="px-3.5 py-1.5 font-bold text-slate-800 border-r border-slate-400">
                                                    <div className="font-extrabold">{row.aluno?.nome}</div>
-                                                   <div className="text-[8px] font-mono text-slate-400">#{row.aluno?.matricula}</div>
                                                  </td>
                                                  {Array.from({ length: courseModules }).map((_, i) => {
                                                    const notaValue = (row as any)[`nota${i + 1}`];

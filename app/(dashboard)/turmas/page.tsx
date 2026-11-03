@@ -2307,7 +2307,7 @@ function TurmasContent() {
                         {aluno.nome}
                       </div>
                       <div className="text-[10px] text-slate-500 font-medium">
-                        {[aluno.posto_graduacao, aluno.nome_guerra].filter(Boolean).join(' ') || 'Aluno'} • {aluno.matricula}
+                        {[aluno.posto_graduacao, aluno.nome_guerra].filter(Boolean).join(' ') || 'Aluno'}
                       </div>
                       
                       {(aluno.data_nascimento || aluno.funcao || aluno.passaporte) && (
@@ -3426,7 +3426,7 @@ function TurmasContent() {
                           {language === 'pt' ? 'Nome Completo do Aluno / Posto / Graduação' : 'Full Student Name / Rank'}
                         </th>
                         <th className="w-[120px] border border-black p-1 text-center">
-                          {language === 'pt' ? 'NIP / Matrícula' : 'NIP / ID'}
+                          {language === 'pt' ? 'NIP' : 'NIP / ID'}
                         </th>
                         <th className="w-[140px] border border-black p-1 text-center">
                           {language === 'pt' ? 'Assinatura / Visto' : 'Signature / Notes'}
@@ -3494,7 +3494,7 @@ function TurmasContent() {
                                 </div>
                               </td>
                               <td className="border border-black p-1 text-center align-middle font-mono text-xs font-bold">
-                                <div>{student.nip || student.matricula || student.cpf || '—'}</div>
+                                <div>{student.nip || student.cpf || '—'}</div>
                                 {student.passaporte && (
                                   <div className="text-[8px] font-mono font-bold text-amber-900 bg-amber-50 border border-amber-200 rounded px-1 py-0.2 mt-0.5">
                                     PASS: {student.passaporte}

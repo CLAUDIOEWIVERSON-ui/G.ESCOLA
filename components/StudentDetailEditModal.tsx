@@ -831,17 +831,6 @@ export default function StudentDetailEditModal({
                     : (language === 'pt' ? 'Fundo Azul' : 'Blue Bg')}
                 </span>
               </button>
-
-              <div 
-                className={cn(
-                  "text-right font-mono text-xs px-3 py-1.5 rounded-lg border transition-colors",
-                  bannerBgMode === 'blue'
-                    ? "text-white bg-blue-950/70 border-blue-400/40"
-                    : "text-black bg-slate-100 border-slate-300"
-                )}
-              >
-                MATRÍCULA: <span className={cn("font-extrabold", bannerBgMode === 'blue' ? "text-white !text-white" : "text-black !text-black")}>{currentAluno?.matricula || 'N/A'}</span>
-              </div>
               <button
                 type="button"
                 onClick={handlePrintFicha}
@@ -937,9 +926,6 @@ export default function StudentDetailEditModal({
               <h3 className="text-base font-bold text-slate-800 line-clamp-1">
                 {currentAluno?.nome || (language === 'pt' ? 'Novo Aluno' : 'New Student')}
               </h3>
-              <p className="text-xs text-slate-500 font-mono mt-0.5">
-                {currentAluno?.matricula || 'MAT---'}
-              </p>
 
               <div className="flex flex-wrap items-center justify-center gap-1.5 mt-2">
                 <span className={cn(
@@ -1247,32 +1233,17 @@ export default function StudentDetailEditModal({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
-                      {language === 'pt' ? 'E-mail do Aluno' : 'Email Address'}
-                    </label>
-                    <input
-                      type="email"
-                      value={currentAluno?.email || ''}
-                      onChange={(e) => setCurrentAluno({ ...currentAluno, email: e.target.value })}
-                      placeholder="aluno@exemplo.com"
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
-                      {language === 'pt' ? 'Matrícula / NIP' : 'Registration ID'}
-                    </label>
-                    <input
-                      type="text"
-                      value={currentAluno?.matricula || ''}
-                      onChange={(e) => setCurrentAluno({ ...currentAluno, matricula: e.target.value })}
-                      placeholder="Ex: MAT2026..."
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 font-mono"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    {language === 'pt' ? 'E-mail do Aluno' : 'Email Address'}
+                  </label>
+                  <input
+                    type="email"
+                    value={currentAluno?.email || ''}
+                    onChange={(e) => setCurrentAluno({ ...currentAluno, email: e.target.value })}
+                    placeholder="aluno@exemplo.com"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500"
+                  />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1795,9 +1766,6 @@ export default function StudentDetailEditModal({
               </div>
             </div>
             <div className="text-right text-[9.5px] space-y-1 shrink-0">
-              <div className="font-mono bg-slate-100 border border-slate-300 px-3 py-1 rounded font-bold text-slate-900">
-                MATRÍCULA: {currentAluno?.matricula || (isManualRegistration ? '________________' : 'N/A')}
-              </div>
               <div className="font-mono text-slate-600 text-[8.5px]">
                 Emissão: {new Date().toLocaleDateString('pt-BR')} {new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
               </div>

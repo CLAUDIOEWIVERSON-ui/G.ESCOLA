@@ -3157,7 +3157,6 @@ function RelatorioAvaliacaoAdminContent() {
                           </p>
                         </div>
                         <div className="bg-slate-50 print:bg-white rounded-lg p-3.5 border text-xs text-slate-600 font-mono text-left space-y-1 max-w-xs mx-auto">
-                          <p><strong>Matrícula:</strong> {studentDetails?.matricula || "Não disponível"}</p>
                           <p><strong>OM:</strong> {studentDetails?.om || "Não disponível"}</p>
                           <p><strong>Frequência:</strong> Dependente de envio</p>
                         </div>

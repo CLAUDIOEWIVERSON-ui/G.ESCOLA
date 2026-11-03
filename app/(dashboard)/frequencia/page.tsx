@@ -1450,9 +1450,6 @@ export default function FrequenciaPage() {
                                 </div>
                                 <div className="flex flex-col min-w-0">
                                   <span className="truncate max-w-[200px] text-xs font-black text-slate-800">{displayName}</span>
-                                  {student.matricula && (
-                                    <span className="text-[9px] font-mono text-slate-400">Nº {student.matricula}</span>
-                                  )}
                                 </div>
                               </div>
                             </td>
