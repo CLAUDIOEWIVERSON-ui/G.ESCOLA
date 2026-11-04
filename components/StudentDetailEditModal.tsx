@@ -1153,6 +1153,8 @@ export default function StudentDetailEditModal({
                       <option value="Cabo" />
                       <option value="Marinheiro" />
                       <option value="Soldado" />
+                      <option value="Grumete" />
+                      <option value="GR" />
                       <option value="Cadete" />
                       <option value="Civil" />
                     </datalist>

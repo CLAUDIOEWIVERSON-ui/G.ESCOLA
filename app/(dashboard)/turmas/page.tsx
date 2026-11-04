@@ -6,12 +6,13 @@ import { supabase } from '@/lib/supabase/client';
 import { useTurmas, useCursos, useDisciplinas } from '@/hooks/useCachedData';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
-import { Plus, Search, Layers as LayersIcon, Library, Calendar, Clock, MapPin, Pencil, Trash2, Loader2, CheckCircle2, RefreshCcw, Users, Mail, Phone, Building, Camera, MessageCircle, XCircle, FileText, X, GraduationCap, School, ChevronLeft, ChevronRight, Monitor, Globe, Anchor, Swords, Download, Archive } from 'lucide-react';
+import { Plus, Search, Layers as LayersIcon, Library, Calendar, Clock, MapPin, Pencil, Trash2, Loader2, CheckCircle2, RefreshCcw, Users, Mail, Phone, Building, Camera, MessageCircle, XCircle, FileText, X, GraduationCap, School, ChevronLeft, ChevronRight, Monitor, Globe, Anchor, Swords, Download, Archive, Printer } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn, getCleanTurmaName } from '@/lib/utils';
 import { downloadElementAsPDF } from '@/lib/printDocumentUtils';
 import Modal from '@/components/Modal';
 import StudentDetailEditModal from '@/components/StudentDetailEditModal';
+import BatchTurmaFichasModal from '@/components/BatchTurmaFichasModal';
 import { getCardStyleForItem, getCardColorSettings, CardColorSettings } from '@/lib/cardColors';
 import Image from 'next/image';
 import maleAvatar from '@/src/assets/images/avatar_male_1778977230783.png';
@@ -129,6 +130,16 @@ function TurmasContent() {
   const [rosterAlunos, setRosterAlunos] = useState<any[]>([]);
   const [loadingRosterAlunos, setLoadingRosterAlunos] = useState(false);
   const [rosterProfessorName, setRosterProfessorName] = useState('');
+
+  // Batch Student Registration Sheets Print state
+  const [isPrintAllFichasOpen, setIsPrintAllFichasOpen] = useState(false);
+  const [printAllFichasTurma, setPrintAllFichasTurma] = useState<any>(null);
+
+  const handleOpenPrintAllFichas = (turma: any) => {
+    if (!turma) return;
+    setPrintAllFichasTurma(turma);
+    setIsPrintAllFichasOpen(true);
+  };
 
   const loadTurmaForAttendancePrint = async (turma: any, type?: 'mensal' | 'semanal') => {
     if (!turma) return;
@@ -1548,22 +1559,39 @@ function TurmasContent() {
                   <ChevronRight size={13} className="text-slate-300 group-hover/btn:text-white transition-colors" />
                 </button>
 
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleOpenPrintRoster(turma);
-                  }}
-                  className="w-full flex items-center justify-between p-2.5 rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white group/print-roster transition-all cursor-pointer border border-indigo-100/80 shadow-2xs"
-                  title={language === 'pt' ? 'Baixar Relação de Alunos em PDF (com Foto)' : 'Download Student Roster PDF (with Photos)'}
-                >
-                  <div className="flex items-center gap-2 text-indigo-700 group-hover/print-roster:text-white transition-colors">
-                    <FileText size={14} className="shrink-0" />
-                    <span className="text-[8.5px] font-black uppercase tracking-wider">
-                      {language === 'pt' ? 'Relação de Alunos (PDF)' : 'Student Roster (PDF)'}
-                    </span>
-                  </div>
-                  <Camera size={13} className="text-indigo-400 group-hover/print-roster:text-white transition-colors shrink-0" />
-                </button>
+                <div className="grid grid-cols-2 gap-2">
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleOpenPrintRoster(turma);
+                    }}
+                    className="flex items-center justify-between p-2 rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white group/print-roster transition-all cursor-pointer border border-indigo-100/80 shadow-2xs"
+                    title={language === 'pt' ? 'Baixar Relação de Alunos em PDF (com Foto)' : 'Download Student Roster PDF (with Photos)'}
+                  >
+                    <div className="flex items-center gap-1.5 text-indigo-700 group-hover/print-roster:text-white transition-colors truncate">
+                      <FileText size={13} className="shrink-0" />
+                      <span className="text-[8px] font-black uppercase tracking-wider truncate">
+                        {language === 'pt' ? 'Relação (Fotos)' : 'Roster (PDF)'}
+                      </span>
+                    </div>
+                  </button>
+
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleOpenPrintAllFichas(turma);
+                    }}
+                    className="flex items-center justify-between p-2 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white group/print-fichas transition-all cursor-pointer border border-blue-100/80 shadow-2xs"
+                    title={language === 'pt' ? 'Imprimir todas as fichas de cadastro dos alunos da turma' : 'Print all student registration forms'}
+                  >
+                    <div className="flex items-center gap-1.5 text-blue-700 group-hover/print-fichas:text-white transition-colors truncate">
+                      <Printer size={13} className="shrink-0" />
+                      <span className="text-[8px] font-black uppercase tracking-wider truncate">
+                        {language === 'pt' ? 'Fichas Cadastrais' : 'Student Forms'}
+                      </span>
+                    </div>
+                  </button>
+                </div>
 
                 {!turma.internacional && (
                   <div className="grid grid-cols-2 gap-2">
@@ -2136,6 +2164,14 @@ function TurmasContent() {
               <FileText size={13} strokeWidth={2.5} />
               {language === 'pt' ? 'Relação com Fotos (PDF)' : 'Roster with Photos (PDF)'}
             </button>
+            <button
+              onClick={() => handleOpenPrintAllFichas(viewingTurma)}
+              className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-600 hover:text-white transition-all cursor-pointer shadow-sm shadow-blue-100"
+              title={language === 'pt' ? 'Imprimir todas as fichas de cadastro dos alunos desta turma' : 'Print all student registration forms'}
+            >
+              <Printer size={13} strokeWidth={2.5} />
+              {language === 'pt' ? 'Fichas Cadastrais (Todas)' : 'Student Forms (All)'}
+            </button>
             {!viewingTurma?.internacional && (
               <button
                 onClick={() => handleOpenPrintAttendance(viewingTurma)}
@@ -2450,6 +2486,16 @@ function TurmasContent() {
           }
           refreshData();
         }}
+      />
+
+      <BatchTurmaFichasModal
+        isOpen={isPrintAllFichasOpen}
+        onClose={() => {
+          setIsPrintAllFichasOpen(false);
+          setPrintAllFichasTurma(null);
+        }}
+        turma={printAllFichasTurma}
+        language={language}
       />
 
       <Modal
