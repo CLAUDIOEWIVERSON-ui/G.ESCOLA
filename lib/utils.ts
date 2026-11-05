@@ -78,3 +78,94 @@ export function getCleanTurmaName(
   return turmaName;
 }
 
+export interface StudentCourseAttendanceStats {
+  pct: number | null;
+  presences: number;
+  totalDays: number;
+  delays: number;
+  absences: number;
+  justified: number;
+  dispensed: number;
+  leaves: number;
+}
+
+/**
+ * Calculates a student's attendance percentage across the whole course period of the class.
+ *
+ * @param studentId ID of the student
+ * @param allCourseAttendance List of all attendance records for the class in the course period
+ * @param effectiveStart Optional course start date (YYYY-MM-DD)
+ * @param effectiveEnd Optional course end date (YYYY-MM-DD)
+ */
+export function calculateStudentCoursePercentage(
+  studentId: string,
+  allCourseAttendance: any[],
+  effectiveStart?: string | null,
+  effectiveEnd?: string | null
+): StudentCourseAttendanceStats {
+  if (!allCourseAttendance || allCourseAttendance.length === 0) {
+    return { pct: null, presences: 0, totalDays: 0, delays: 0, absences: 0, justified: 0, dispensed: 0, leaves: 0 };
+  }
+
+  // Filter records within course bounds
+  const validRecords = allCourseAttendance.filter(r => {
+    if (!r || !r.data) return false;
+    const dStr = typeof r.data === 'string' 
+      ? r.data.substring(0, 10) 
+      : (r.data instanceof Date ? r.data.toISOString().substring(0, 10) : String(r.data).substring(0, 10));
+    if (effectiveStart && dStr < effectiveStart) return false;
+    if (effectiveEnd && dStr > effectiveEnd) return false;
+    return true;
+  });
+
+  // Distinct dates where attendance was recorded for the class during the course period
+  const distinctTurmaDays = new Set<string>();
+  validRecords.forEach(r => {
+    const dStr = typeof r.data === 'string' 
+      ? r.data.substring(0, 10) 
+      : (r.data instanceof Date ? r.data.toISOString().substring(0, 10) : String(r.data).substring(0, 10));
+    if (dStr) distinctTurmaDays.add(dStr);
+  });
+
+  // Records for this specific student
+  const studentRecords = validRecords.filter(r => r.aluno_id === studentId);
+
+  let p = 0;
+  let a = 0;
+  let f = 0;
+  let fj = 0;
+  let d = 0;
+  let le = 0;
+
+  studentRecords.forEach(r => {
+    const obs = ((r.observacao || '') as string).trim().toUpperCase();
+    if (obs === 'P') p++;
+    else if (obs === 'A') a++;
+    else if (obs === 'F') f++;
+    else if (obs === 'FJ') fj++;
+    else if (obs === 'D') d++;
+    else if (obs === 'LE') le++;
+    else if (r.presente === true) p++;
+    else if (r.presente === false) f++;
+  });
+
+  const studentCounted = p + a + f + fj + d + le;
+  const totalDays = Math.max(distinctTurmaDays.size, studentCounted);
+  const presences = p + a;
+
+  if (totalDays === 0) {
+    return { pct: null, presences: 0, totalDays: 0, delays: a, absences: f, justified: fj, dispensed: d, leaves: le };
+  }
+
+  const pct = Math.round((presences / totalDays) * 100);
+  return {
+    pct: Math.min(100, Math.max(0, pct)),
+    presences,
+    totalDays,
+    delays: a,
+    absences: f,
+    justified: fj,
+    dispensed: d,
+    leaves: le
+  };
+}
