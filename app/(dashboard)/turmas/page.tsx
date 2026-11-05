@@ -848,28 +848,39 @@ function TurmasContent() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (!file.type.startsWith('image/')) {
+      toast.error(language === 'pt' ? 'Por favor, selecione uma imagem válida (JPG, PNG, WebP).' : 'Please select a valid image file.');
+      return;
+    }
+
     setSavingStudent(true);
+    const toastId = toast.loading(language === 'pt' ? 'Carregando foto...' : 'Uploading photo...');
     try {
-      const fileExt = file.name.includes('.') ? file.name.split('.').pop() : 'jpg';
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 11)}.${fileExt}`;
-      const filePath = `alunos/${fileName}`;
+      const formData = new FormData();
+      formData.append('file', file);
+      if (currentAluno?.id) {
+        formData.append('alunoId', currentAluno.id);
+      }
 
-      const { error: uploadError } = await supabase.storage
-        .from('escola')
-        .upload(filePath, file);
+      const res = await fetch('/api/alunos/foto', {
+        method: 'POST',
+        body: formData,
+      });
 
-      if (uploadError) throw uploadError;
+      const data = await res.json();
+      if (!res.ok || !data.success || !data.publicUrl) {
+        throw new Error(data.error || 'Falha ao processar o upload da foto.');
+      }
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('escola')
-        .getPublicUrl(filePath);
-
-      setCurrentAluno({ ...currentAluno, foto_url: publicUrl });
-      toast.success(language === 'pt' ? 'Foto carregada!' : 'Photo uploaded!');
+      setCurrentAluno({ ...currentAluno, foto_url: data.publicUrl });
+      toast.dismiss(toastId);
+      toast.success(language === 'pt' ? 'Foto carregada com sucesso!' : 'Photo uploaded successfully!');
     } catch (err: any) {
+      toast.dismiss(toastId);
       toast.error(t.common.uploadError + ': ' + (err.message || ''));
     } finally {
       setSavingStudent(false);
+      e.target.value = '';
     }
   };
 

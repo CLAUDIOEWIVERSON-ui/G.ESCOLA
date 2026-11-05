@@ -483,30 +483,52 @@ export default function StudentDetailEditModal({
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (!file.type.startsWith('image/')) {
+      toast.error(
+        language === 'pt'
+          ? 'Por favor, selecione um arquivo de imagem válido (JPG, PNG, WebP).'
+          : 'Please select a valid image file (JPG, PNG, WebP).'
+      );
+      return;
+    }
+
     setSaving(true);
+    const toastId = toast.loading(
+      language === 'pt' ? 'Carregando foto do aluno...' : 'Uploading student photo...'
+    );
+
     try {
-      const fileExt = file.name.includes('.') ? file.name.split('.').pop() : 'jpg';
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 11)}.${fileExt}`;
-      const filePath = `alunos/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('alunos-fotos')
-        .upload(filePath, file, { cacheControl: '3600', upsert: true });
-
-      if (uploadError) throw uploadError;
-
-      const { data: publicUrlData } = supabase.storage
-        .from('alunos-fotos')
-        .getPublicUrl(filePath);
-
-      if (publicUrlData?.publicUrl) {
-        setCurrentAluno((prev: any) => ({ ...prev, foto_url: publicUrlData.publicUrl }));
-        toast.success(language === 'pt' ? 'Foto carregada com sucesso!' : 'Photo uploaded successfully!');
+      const formData = new FormData();
+      formData.append('file', file);
+      if (currentAluno?.id) {
+        formData.append('alunoId', currentAluno.id);
       }
+
+      const res = await fetch('/api/alunos/foto', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success || !data.publicUrl) {
+        throw new Error(data.error || 'Falha ao processar a foto.');
+      }
+
+      setCurrentAluno((prev: any) => ({ ...prev, foto_url: data.publicUrl }));
+      toast.dismiss(toastId);
+      toast.success(
+        language === 'pt' ? 'Foto do aluno carregada com sucesso!' : 'Student photo uploaded successfully!'
+      );
     } catch (err: any) {
-      toast.error(err.message || 'Erro ao fazer upload da foto.');
+      console.error('Erro no upload da foto:', err);
+      toast.dismiss(toastId);
+      toast.error(
+        err.message || (language === 'pt' ? 'Erro ao fazer upload da foto.' : 'Error uploading photo.')
+      );
     } finally {
       setSaving(false);
+      e.target.value = '';
     }
   };
 
@@ -912,16 +934,34 @@ export default function StudentDetailEditModal({
                     </span>
                   </div>
                 )}
+                {saving && (
+                  <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-xs flex flex-col items-center justify-center text-white z-20 pointer-events-none">
+                    <Loader2 size={24} className="animate-spin text-white mb-1" />
+                    <span className="text-[10px] font-bold uppercase tracking-wider">
+                      {language === 'pt' ? 'Carregando...' : 'Uploading...'}
+                    </span>
+                  </div>
+                )}
                 {!isReadOnly && (
                   <input
                     type="file"
                     accept="image/*"
                     onChange={handleFileUpload}
-                    className="absolute inset-0 opacity-0 cursor-pointer"
-                    title="Alterar foto do aluno"
+                    className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                    title={language === 'pt' ? 'Alterar foto do aluno' : 'Change student photo'}
                   />
                 )}
               </div>
+
+              {currentAluno?.foto_url && !isReadOnly && (
+                <button
+                  type="button"
+                  onClick={() => setCurrentAluno((prev: any) => ({ ...prev, foto_url: null }))}
+                  className="text-[10px] font-bold text-rose-600 hover:text-rose-800 underline mb-2 cursor-pointer transition-colors"
+                >
+                  {language === 'pt' ? 'Remover foto' : 'Remove photo'}
+                </button>
+              )}
 
               <h3 className="text-base font-bold text-slate-800 line-clamp-1">
                 {currentAluno?.nome || (language === 'pt' ? 'Novo Aluno' : 'New Student')}
