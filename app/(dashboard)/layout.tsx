@@ -372,10 +372,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: t.nav.manual, icon: BookMarked, path: '/manual' },
   ];
 
-  // Ordenar todos os módulos por ordem alfabética de acordo com o idioma ativo
-  const navItems = [...rawNavItems].sort((a, b) =>
-    a.name.localeCompare(b.name, language === 'pt' ? 'pt-BR' : 'en', { sensitivity: 'base' })
-  );
+  // Colocar o "Início" sempre como primeiro módulo da lista e os demais em ordem alfabética
+  const dashboardItem = rawNavItems.find(item => item.path === '/dashboard');
+  const otherItems = rawNavItems
+    .filter(item => item.path !== '/dashboard')
+    .sort((a, b) =>
+      a.name.localeCompare(b.name, language === 'pt' ? 'pt-BR' : 'en', { sensitivity: 'base' })
+    );
+  const navItems = dashboardItem ? [dashboardItem, ...otherItems] : otherItems;
 
   const userInitials = profile?.full_name ? profile.full_name.slice(0, 2).toUpperCase() : 'US';
   const roleName = profile?.role === 'admin' 
@@ -613,6 +617,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       </div>
                     );
                   })}
+
+                  {/* Botão de Sair do Sistema na barra de módulos */}
+                  <div className="pt-2 mt-2 border-t border-white/5">
+                    <button
+                      onClick={handleLogout}
+                      title={language === 'pt' ? 'Sair do Sistema' : 'Sign Out'}
+                      className={cn(
+                        "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group relative overflow-hidden text-left cursor-pointer",
+                        "text-rose-400/90 hover:text-rose-200 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 active:scale-[0.98]"
+                      )}
+                    >
+                      <LogOut size={18} className="shrink-0 text-rose-400 group-hover:scale-110 group-hover:-translate-x-0.5 transition-transform" />
+                      <span className={cn(
+                        "text-sm font-semibold tracking-wide transition-opacity whitespace-nowrap",
+                        !sidebarOpen && "opacity-0 invisible w-0"
+                      )}>
+                        {language === 'pt' ? 'Sair do Sistema' : 'Sign Out'}
+                      </span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </nav>
