@@ -2328,17 +2328,26 @@ function TurmasContent() {
           ) : alunosInTurma.length > 0 ? (
             <div className="space-y-2">
               {alunosInTurma.map((aluno, index) => (
-                <div key={aluno.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100 group">
+                <div 
+                  key={aluno.id} 
+                  onClick={() => handleOpenStudentModal(aluno)}
+                  className="flex items-center justify-between p-3 bg-slate-50 hover:bg-indigo-50/50 rounded-lg border border-slate-100 hover:border-indigo-200 transition-colors group cursor-pointer"
+                >
                   <div className="flex items-center gap-3">
                     <span className="font-mono text-xs font-black text-indigo-700 bg-indigo-50 border border-indigo-200/80 px-2 py-1 rounded-md min-w-[2.5rem] text-center shrink-0 shadow-2xs">
                       Nº {index + 1}
                     </span>
                     <div 
                       className={cn(
-                        "w-12 h-16 bg-slate-200 rounded-lg overflow-hidden relative border border-slate-200 shrink-0 shadow-sm transition-transform group",
+                        "w-12 h-16 bg-slate-200 rounded-lg overflow-hidden relative border border-slate-200 shrink-0 shadow-sm transition-transform group/img",
                         aluno.foto_url ? "hover:scale-110 cursor-pointer" : ""
                       )}
-                      onClick={() => aluno.foto_url && setExpandedPhoto({ url: aluno.foto_url, name: aluno.nome })}
+                      onClick={(e) => {
+                        if (aluno.foto_url) {
+                          e.stopPropagation();
+                          setExpandedPhoto({ url: aluno.foto_url, name: aluno.nome });
+                        }
+                      }}
                     >
                       {aluno.foto_url ? (
                         <>
@@ -2396,14 +2405,20 @@ function TurmasContent() {
                       {canEditViewingTurma && (
                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button 
-                            onClick={() => handleOpenStudentModal(aluno)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenStudentModal(aluno);
+                            }}
                             className="p-1.5 hover:bg-blue-100 text-blue-600 rounded"
                           >
                             <Pencil size={12} />
                           </button>
                           <button 
                             disabled={deletingStudent === aluno.id}
-                            onClick={() => handleDeleteStudent(aluno.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteStudent(aluno.id);
+                            }}
                             className="p-1.5 hover:bg-red-100 text-red-600 rounded disabled:opacity-50"
                           >
                             {deletingStudent === aluno.id ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}

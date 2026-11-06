@@ -1242,6 +1242,8 @@ function TurmasListTable({
   const [selectedTurmas, setSelectedTurmas] = useState<string[]>([]);
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState<boolean>(false);
   const [expandedTurmaIds, setExpandedTurmaIds] = useState<Set<string>>(new Set());
+  const [loadedStudentsByTurma, setLoadedStudentsByTurma] = useState<Record<string, any[]>>({});
+  const [loadingTurmaStudents, setLoadingTurmaStudents] = useState<Record<string, boolean>>({});
 
   // Helper to extract course name safely from any turma object structure
   const getCursoNome = useCallback((t: any): string => {
@@ -1355,10 +1357,10 @@ function TurmasListTable({
     setCurrentPage(1);
   };
 
-  const toggleTurmaExpansion = (turmaId: string) => {
+  const toggleTurmaExpansion = async (turmaId: string) => {
+    const idStr = String(turmaId);
     setExpandedTurmaIds((prev) => {
       const next = new Set(prev);
-      const idStr = String(turmaId);
       if (next.has(idStr)) {
         next.delete(idStr);
       } else {
@@ -1366,14 +1368,66 @@ function TurmasListTable({
       }
       return next;
     });
+
+    const targetTurma = turmas.find(t => String(t.id) === idStr);
+    const existingAlunos = (targetTurma?.alunos && targetTurma.alunos.length > 0) 
+      ? targetTurma.alunos 
+      : loadedStudentsByTurma[idStr];
+
+    if (!existingAlunos || existingAlunos.length === 0) {
+      setLoadingTurmaStudents(prev => ({ ...prev, [idStr]: true }));
+      try {
+        const { data, error } = await supabase
+          .from('alunos')
+          .select('*')
+          .eq('turma_id', turmaId)
+          .is('deleted_at', null)
+          .order('nome');
+        if (!error && data) {
+          setLoadedStudentsByTurma(prev => ({ ...prev, [idStr]: data }));
+        }
+      } catch (err) {
+        console.error('Error fetching students for expanded turma:', err);
+      } finally {
+        setLoadingTurmaStudents(prev => ({ ...prev, [idStr]: false }));
+      }
+    }
   };
 
-  const toggleAllExpansions = () => {
+  const toggleAllExpansions = async () => {
     if (expandedTurmaIds.size > 0) {
       setExpandedTurmaIds(new Set());
     } else {
       const allIds = new Set<string>(filteredTurmas.map((t) => String(t.id)).filter(Boolean));
       setExpandedTurmaIds(allIds);
+
+      // Load any missing students for the filtered turmas in batch
+      const missingTurmaIds = filteredTurmas
+        .filter(t => (!t.alunos || t.alunos.length === 0) && !loadedStudentsByTurma[String(t.id)])
+        .map(t => String(t.id));
+
+      if (missingTurmaIds.length > 0) {
+        try {
+          const { data, error } = await supabase
+            .from('alunos')
+            .select('*')
+            .in('turma_id', missingTurmaIds)
+            .is('deleted_at', null)
+            .order('nome');
+          if (!error && data) {
+            const grouped: Record<string, any[]> = {};
+            data.forEach((al: any) => {
+              if (al.turma_id) {
+                if (!grouped[al.turma_id]) grouped[al.turma_id] = [];
+                grouped[al.turma_id].push(al);
+              }
+            });
+            setLoadedStudentsByTurma(prev => ({ ...prev, ...grouped }));
+          }
+        } catch (err) {
+          console.error('Error batch loading students:', err);
+        }
+      }
     }
   };
 
@@ -1848,22 +1902,33 @@ function TurmasListTable({
                 const isHighlighted = turma.id === activeHighlight;
                 const cursoNome = getCursoNome(turma);
                 const cleanName = getCleanTurmaName(turma, cursoNome, turma.nome || 'Turma');
-                const alunoCount = Number(turma.alunos?.length ?? turma.alunos_count ?? turma.total_alunos ?? 0);
+                const rawAlunos = (turma.alunos && turma.alunos.length > 0)
+                  ? turma.alunos
+                  : (loadedStudentsByTurma[String(turma.id)] || []);
+                const isLoadingThisTurma = Boolean(loadingTurmaStudents[String(turma.id)]);
+                const alunoCount = rawAlunos.length > 0 ? rawAlunos.length : Number(turma.alunos?.length ?? turma.alunos_count ?? turma.total_alunos ?? 0);
                 const capacidadeMax = Number(turma.capacidade_max || 40);
-                const isExpanded = expandedTurmaIds.has(turma.id);
-                const turmaAlunos: any[] = Array.isArray(turma.alunos) ? turma.alunos : [];
+                const isExpanded = expandedTurmaIds.has(String(turma.id));
+
+                // Ordenar os alunos ordenadamente (alfabeticamente por nome ou nome de guerra)
+                const sortedAlunos = [...rawAlunos].sort((a: any, b: any) => {
+                  const nomeA = (a.nome || a.nome_guerra || '').trim().toLowerCase();
+                  const nomeB = (b.nome || b.nome_guerra || '').trim().toLowerCase();
+                  return nomeA.localeCompare(nomeB, 'pt-BR');
+                });
 
                 return (
                   <React.Fragment key={turma.id}>
                     <tr 
                       id={`turma-row-${turma.id}`}
                       tabIndex={0}
+                      onClick={() => toggleTurmaExpansion(turma.id)}
                       className={cn(
-                        "transition-all duration-300 outline-none",
+                        "transition-all duration-300 outline-none cursor-pointer select-none",
                         isHighlighted
                           ? "bg-amber-50/90 ring-2 ring-amber-500 ring-offset-2 shadow-md scale-[1.003]"
                           : isExpanded
-                          ? "bg-indigo-50/30"
+                          ? "bg-indigo-50/40 border-b border-indigo-100"
                           : "hover:bg-slate-50 focus:bg-slate-50 focus:ring-1 focus:ring-blue-400"
                       )}
                     >
@@ -1874,7 +1939,7 @@ function TurmasListTable({
                               👉 Turma Escolhida
                             </span>
                           )}
-                          <div className={cn("font-bold", isArquivada ? "text-slate-600" : isPreInscrito ? "text-red-600" : "text-slate-800")}>
+                          <div className={cn("font-bold text-sm", isArquivada ? "text-slate-600" : isPreInscrito ? "text-red-600" : "text-slate-800")}>
                             {cleanName}
                           </div>
                         </div>
@@ -1910,7 +1975,10 @@ function TurmasListTable({
                         <div className="flex flex-col items-center justify-center gap-1">
                           <button
                             type="button"
-                            onClick={() => toggleTurmaExpansion(turma.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleTurmaExpansion(turma.id);
+                            }}
                             className={cn(
                               "inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-lg transition cursor-pointer border shadow-2xs",
                               isExpanded
@@ -1942,11 +2010,12 @@ function TurmasListTable({
                           {isArquivada ? (isPt ? 'Turma Arquivada' : 'Archived Class') : isPreInscrito ? (isPt ? 'Pré-inscrita' : 'Pre-registered') : (isPt ? 'Turma Ativa' : 'Active Class')}
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             type="button"
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               router.push(`/turmas?action=view-students&turmaId=${turma.id}&returnTo=dashboard&card=${selectedCard || 'expedito'}`);
                             }}
                             className="px-2.5 py-1 bg-slate-100 hover:bg-indigo-600 hover:text-white text-slate-700 rounded-lg text-xs font-bold transition cursor-pointer border border-slate-200/60"
@@ -1971,20 +2040,30 @@ function TurmasListTable({
                       </td>
                     </tr>
 
-                    {/* RELAÇÃO NOMINAL DE ALUNOS EXPANDIDA NA TELA */}
+                    {/* RELAÇÃO NOMINAL DE ALUNOS EXPANDIDA NA TELA — IGUAL AOS ALUNOS NO EXTERIOR */}
                     {isExpanded && (
-                      <tr className="bg-slate-50/80 border-b-2 border-indigo-200">
-                        <td colSpan={6} className="p-4 sm:p-5">
-                          <div className="bg-white rounded-xl border border-indigo-100 p-4 shadow-sm space-y-3">
-                            <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-100">
-                              <div className="flex items-center gap-2">
-                                <Users size={15} className="text-indigo-600" />
-                                <span className="text-xs font-extrabold text-slate-800 uppercase tracking-wide">
-                                  {isPt ? `Relação Nominal de Alunos — ${cleanName}` : `Nominal Student Roster — ${cleanName}`}
-                                </span>
-                                <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">
-                                  {turmaAlunos.length} {isPt ? 'matriculados' : 'enrolled'}
-                                </span>
+                      <tr className="bg-indigo-50/20 border-b-2 border-indigo-200">
+                        <td colSpan={6} className="p-3 sm:p-5">
+                          <div className="bg-white rounded-xl border border-indigo-100 shadow-sm overflow-hidden">
+                            {/* Cabeçalho do Card da Turma */}
+                            <div className="px-5 py-3.5 bg-slate-100/70 border-b border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                              <div className="flex items-center gap-2.5">
+                                <div className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg border border-indigo-100 shadow-2xs">
+                                  <Users size={16} />
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <h4 className="font-bold text-slate-800 text-sm">
+                                      {isPt ? `Relação Nominal de Alunos — ${cleanName}` : `Nominal Student Roster — ${cleanName}`}
+                                    </h4>
+                                    <span className="px-2.5 py-0.5 bg-indigo-50 text-indigo-700 font-bold text-xs rounded-full border border-indigo-200/60 shadow-2xs">
+                                      {sortedAlunos.length} {sortedAlunos.length === 1 ? (isPt ? 'aluno' : 'student') : (isPt ? 'alunos' : 'students')}
+                                    </span>
+                                  </div>
+                                  <p className="text-[11px] text-slate-400 font-medium">
+                                    {cursoNome ? `Curso: ${cursoNome}` : ''} {turma.localizacao ? `• Localização: ${turma.localizacao}` : ''}
+                                  </p>
+                                </div>
                               </div>
 
                               <button
@@ -1992,74 +2071,139 @@ function TurmasListTable({
                                 onClick={() => {
                                   router.push(`/turmas?action=view-students&turmaId=${turma.id}&returnTo=dashboard&card=${selectedCard || 'expedito'}`);
                                 }}
-                                className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+                                className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 rounded-lg border border-indigo-100 transition cursor-pointer self-start sm:self-auto"
                               >
-                                <span>{isPt ? 'Editar / Adicionar Alunos nesta turma' : 'Edit / Add Students'}</span>
+                                <span>{isPt ? 'Gerenciar Alunos na Turma' : 'Manage Students in Class'}</span>
                                 <ArrowRight size={12} />
                               </button>
                             </div>
 
-                            {turmaAlunos.length === 0 ? (
-                              <p className="text-xs text-slate-400 italic py-2">
+                            {/* Conteúdo da Tabela de Alunos com Foto ao Lado (Igual a Alunos no Exterior) */}
+                            {isLoadingThisTurma ? (
+                              <div className="py-10 flex flex-col items-center justify-center gap-2 text-slate-400">
+                                <Loader2 size={24} className="animate-spin text-indigo-600" />
+                                <span className="text-xs font-semibold">{isPt ? 'Carregando alunos da turma...' : 'Loading students...'}</span>
+                              </div>
+                            ) : sortedAlunos.length === 0 ? (
+                              <div className="p-8 text-center text-slate-400 italic text-xs">
                                 {isPt ? 'Nenhum aluno matriculado nesta turma até o momento.' : 'No students enrolled in this class yet.'}
-                              </p>
+                              </div>
                             ) : (
-                              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5">
-                                {turmaAlunos.map((aluno: any, alIdx: number) => {
-                                  const photoSrc = aluno.foto_url ||
-                                    (aluno.tipo_aluno === 'civil'
-                                      ? (aluno.genero === 'feminino' ? femaleAvatar : maleAvatar)
-                                      : (aluno.genero === 'feminino' ? militaryFemaleAvatar : militaryMaleAvatar));
-                                  const photoUrl = typeof photoSrc === 'string' ? photoSrc : (photoSrc?.src || '');
-                                  const displayName = aluno.posto_graduacao || aluno.nome_guerra
-                                    ? `${aluno.posto_graduacao || ''} ${aluno.nome_guerra || aluno.nome}`.trim()
-                                    : aluno.nome;
+                              <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse">
+                                  <thead>
+                                    <tr className="text-[10px] font-bold text-slate-400 border-b border-slate-100 uppercase tracking-wider bg-slate-50/50">
+                                      <th className="px-5 py-3 w-14 text-center">Nº</th>
+                                      <th className="px-6 py-3">{t.students.name}</th>
+                                      <th className="px-6 py-3">{t.dashboard.courseLocation}</th>
+                                      <th className="px-6 py-3">{isPt ? 'Documento' : 'Document'}</th>
+                                      <th className="px-6 py-3 text-center">{t.dashboard.startEnd}</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-slate-50 text-sm">
+                                    {sortedAlunos.map((aluno: any, alIdx: number) => {
+                                      const displayName = aluno.posto_graduacao || aluno.nome_guerra
+                                        ? `${aluno.posto_graduacao || ''} ${aluno.nome_guerra || aluno.nome}`.trim()
+                                        : aluno.nome;
+                                      const photoSrc = aluno.foto_url ||
+                                        (aluno.tipo_aluno === 'civil'
+                                          ? (aluno.genero === 'feminino' ? femaleAvatar : maleAvatar)
+                                          : (aluno.genero === 'feminino' ? militaryFemaleAvatar : militaryMaleAvatar));
 
-                                  return (
-                                    <div
-                                      key={`screen-aluno-${aluno.id || alIdx}`}
-                                      onClick={() => onSelectStudent && onSelectStudent(aluno)}
-                                      className="p-2 rounded-lg border border-slate-200 bg-slate-50/70 hover:bg-indigo-50/60 hover:border-indigo-300 transition flex items-center gap-2.5 cursor-pointer group shadow-2xs"
-                                    >
-                                      <div
-                                        onClick={(e) => {
-                                          if (onExpandPhoto && aluno.foto_url) {
-                                            e.stopPropagation();
-                                            onExpandPhoto({ url: aluno.foto_url, name: displayName });
-                                          }
-                                        }}
-                                        className="w-9 h-11 rounded-md overflow-hidden bg-slate-200 border border-slate-300 shrink-0 relative group/photo"
-                                        title={isPt ? "Clique para ampliar foto" : "Click to enlarge photo"}
-                                      >
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img src={photoUrl} alt={displayName} className="w-full h-full object-cover" />
-                                        {aluno.foto_url && (
-                                          <div className="absolute inset-0 bg-black/30 opacity-0 group-hover/photo:opacity-100 flex items-center justify-center transition">
-                                            <Maximize2 size={10} className="text-white" />
-                                          </div>
-                                        )}
-                                      </div>
-
-                                      <div className="min-w-0 flex-1">
-                                        <div className="flex items-center gap-1">
-                                          <span className="font-mono text-[10px] font-bold text-slate-400">{alIdx + 1}.</span>
-                                          <p className="text-xs font-bold text-slate-800 group-hover:text-indigo-900 truncate leading-tight">
-                                            {displayName}
-                                          </p>
-                                        </div>
-                                        <p className="text-[10px] text-slate-500 font-medium truncate mt-0.5">
-                                          {aluno.om ? `${aluno.om}` : (aluno.tipo_aluno ? `Tipo: ${aluno.tipo_aluno}` : 'Aluno')}
-                                        </p>
-                                        {(aluno.data_inicio_curso || aluno.data_fim_curso) && (
-                                          <p className="text-[9px] text-blue-600 font-medium truncate">
-                                            {aluno.data_inicio_curso ? aluno.data_inicio_curso.split('-').reverse().join('/') : ''}
-                                            {aluno.data_fim_curso ? ` a ${aluno.data_fim_curso.split('-').reverse().join('/')}` : ''}
-                                          </p>
-                                        )}
-                                      </div>
-                                    </div>
-                                  );
-                                })}
+                                      return (
+                                        <tr
+                                          key={`expanded-aluno-${aluno.id || alIdx}`}
+                                          onClick={() => onSelectStudent && onSelectStudent(aluno)}
+                                          className="transition-colors cursor-pointer hover:bg-slate-50"
+                                        >
+                                          <td className="px-5 py-3.5 text-center font-mono text-xs font-bold text-indigo-700">
+                                            <span className="bg-indigo-50 border border-indigo-200/70 px-2 py-0.5 rounded-md">
+                                              {alIdx + 1}
+                                            </span>
+                                          </td>
+                                          <td className="px-6 py-3.5">
+                                            <div className="flex items-center gap-3">
+                                              {aluno.foto_url ? (
+                                                <div
+                                                  className="w-11 h-14 rounded-lg overflow-hidden border border-slate-200 shrink-0 shadow-xs hover:scale-105 transition-transform cursor-pointer relative bg-slate-100 group"
+                                                  onClick={(e) => {
+                                                    if (onExpandPhoto) {
+                                                      e.stopPropagation();
+                                                      onExpandPhoto({ url: aluno.foto_url, name: displayName });
+                                                    }
+                                                  }}
+                                                  title={isPt ? "Clique para ampliar foto" : "Click to enlarge photo"}
+                                                >
+                                                  <Image
+                                                    src={aluno.foto_url}
+                                                    alt={displayName}
+                                                    fill
+                                                    className="object-cover"
+                                                    referrerPolicy="no-referrer"
+                                                    sizes="44px"
+                                                  />
+                                                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                                                    <LayersIcon size={13} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                  </div>
+                                                </div>
+                                              ) : (
+                                                <div className="w-11 h-14 rounded-lg overflow-hidden border border-slate-200 shrink-0 shadow-xs relative bg-slate-100">
+                                                  <Image
+                                                    src={photoSrc}
+                                                    alt={displayName}
+                                                    fill
+                                                    className="object-cover opacity-60"
+                                                    referrerPolicy="no-referrer"
+                                                    sizes="44px"
+                                                  />
+                                                </div>
+                                              )}
+                                              <div>
+                                                <div className={cn("font-bold text-xs sm:text-sm", isPreInscrito ? "text-red-600" : "text-slate-800")}>
+                                                  {displayName}
+                                                </div>
+                                                <div className="text-[10px] text-slate-400 font-mono uppercase">
+                                                  {aluno.om || '-'}
+                                                </div>
+                                                {aluno.nip && (
+                                                  <div className="text-[9px] text-slate-400 font-mono">
+                                                    NIP: {aluno.nip}
+                                                  </div>
+                                                )}
+                                              </div>
+                                            </div>
+                                          </td>
+                                          <td className="px-6 py-3.5">
+                                            <div className={cn("font-medium text-xs", isPreInscrito ? "text-red-500" : "text-slate-700")}>
+                                              {cursoNome || aluno.curso_nome || '-'}
+                                            </div>
+                                            <div className="text-[10px] text-slate-400 uppercase font-bold">
+                                              {turma.localizacao || '-'}
+                                            </div>
+                                          </td>
+                                          <td className="px-6 py-3.5 text-slate-600 font-mono text-xs font-semibold">
+                                            <div>
+                                              {turma.documento_criacao || aluno.documento_criacao || '-'}
+                                            </div>
+                                            {aluno.passaporte && (
+                                              <div className="text-[9px] text-amber-700 font-bold mt-0.5">
+                                                🛂 {aluno.passaporte}
+                                              </div>
+                                            )}
+                                          </td>
+                                          <td className="px-6 py-3.5 text-center text-slate-600 font-mono text-xs">
+                                            <div className="font-semibold text-slate-700">
+                                              {turma.data_inicio ? turma.data_inicio.split('-').reverse().join('/') : (aluno.data_inicio_curso ? aluno.data_inicio_curso.split('-').reverse().join('/') : '—')}
+                                            </div>
+                                            <div className="text-[10px] text-slate-400">
+                                              até {turma.data_fim ? turma.data_fim.split('-').reverse().join('/') : (aluno.data_fim_curso ? aluno.data_fim_curso.split('-').reverse().join('/') : '—')}
+                                            </div>
+                                          </td>
+                                        </tr>
+                                      );
+                                    })}
+                                  </tbody>
+                                </table>
                               </div>
                             )}
                           </div>
