@@ -6,7 +6,7 @@ import { fetchWithAuth } from '@/lib/api';
 
 type Role = 'admin' | 'instrutor' | 'aluno' | 'convidado';
 
-interface UserProfile {
+export interface UserProfile {
   id: string;
   role: Role;
   full_name: string | null;
@@ -17,6 +17,12 @@ interface UserProfile {
   student_id?: string;
   turma_id?: string;
   grupo_responsavel?: string | null;
+  foto_url?: string | null;
+  avatar_url?: string | null;
+  posto_graduacao?: string | null;
+  nome_guerra?: string | null;
+  om?: string | null;
+  nip?: string | null;
 }
 
 interface UserContextType {
@@ -125,7 +131,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
           try {
             const { data: stun, error: stunErr } = await supabase
               .from('alunos')
-              .select('id, nome, turma_id')
+              .select('id, nome, turma_id, foto_url, posto_graduacao, nome_guerra, nip, om')
               .eq('id', sId)
               .maybeSingle();
 
@@ -133,6 +139,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
               finalProfile.full_name = stun.nome;
               finalProfile.nome = stun.nome;
               finalProfile.turma_id = stun.turma_id;
+              finalProfile.foto_url = stun.foto_url || null;
+              finalProfile.posto_graduacao = stun.posto_graduacao || null;
+              finalProfile.nome_guerra = stun.nome_guerra || null;
+              finalProfile.om = stun.om || null;
+              finalProfile.nip = stun.nip || null;
             } else if (session.user.user_metadata?.turma_id) {
               finalProfile.turma_id = session.user.user_metadata.turma_id;
             }
@@ -145,6 +156,52 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         } else if (session.user.user_metadata?.turma_id) {
           finalProfile.turma_id = session.user.user_metadata.turma_id;
         }
+      }
+
+      // Check metadata or profile data for foto_url and identification for any role
+      if (finalProfile.role !== 'admin' && !finalProfile.foto_url) {
+        finalProfile.foto_url = (data as any)?.foto_url || session.user.user_metadata?.foto_url || (data as any)?.avatar_url || session.user.user_metadata?.avatar_url || null;
+      }
+      if (!finalProfile.posto_graduacao) {
+        finalProfile.posto_graduacao = (data as any)?.posto_graduacao || session.user.user_metadata?.posto_graduacao || null;
+      }
+      if (!finalProfile.nome_guerra) {
+        finalProfile.nome_guerra = (data as any)?.nome_guerra || session.user.user_metadata?.nome_guerra || null;
+      }
+      if (!finalProfile.om) {
+        finalProfile.om = (data as any)?.om || session.user.user_metadata?.om || null;
+      }
+
+      // Search in alunos by email if foto_url is still empty (matches instrutor/aluno accounts, rank for admins)
+      if (session.user.email) {
+        try {
+          const { data: matchedAluno } = await supabase
+            .from('alunos')
+            .select('id, nome, turma_id, foto_url, posto_graduacao, nome_guerra, nip, om')
+            .eq('email', session.user.email)
+            .is('deleted_at', null)
+            .limit(1)
+            .maybeSingle();
+
+          if (matchedAluno) {
+            // Manter foto apenas para os demais usuários (não-administradores)
+            if (finalProfile.role !== 'admin' && matchedAluno.foto_url) {
+              finalProfile.foto_url = matchedAluno.foto_url;
+            }
+            if (!finalProfile.posto_graduacao && matchedAluno.posto_graduacao) finalProfile.posto_graduacao = matchedAluno.posto_graduacao;
+            if (!finalProfile.nome_guerra && matchedAluno.nome_guerra) finalProfile.nome_guerra = matchedAluno.nome_guerra;
+            if (!finalProfile.om && matchedAluno.om) finalProfile.om = matchedAluno.om;
+            if (!finalProfile.nip && matchedAluno.nip) finalProfile.nip = matchedAluno.nip;
+          }
+        } catch (matchErr) {
+          // Ignore match fallback error
+        }
+      }
+
+      // Garantir remoção total de fotos para usuários administradores na área de trabalho
+      if (finalProfile.role === 'admin') {
+        finalProfile.foto_url = null;
+        finalProfile.avatar_url = null;
       }
 
       setProfile(finalProfile);

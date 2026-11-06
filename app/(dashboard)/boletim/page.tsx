@@ -40,6 +40,7 @@ import { useUser } from '@/lib/auth/UserContext';
 import { fetchWithAuth } from '@/lib/api';
 import navalMissionLogo from '@/src/assets/images/regenerated_image_1782409801823.png';
 import { getHtml2Canvas, savePDFWithDialog } from '@/lib/printDocumentUtils';
+import { UserWorkspaceHeader } from '@/components/UserWorkspaceHeader';
 
 const formatGradePT = (val: number | string | null | undefined, fallback = '-'): string => {
   if (val === null || val === undefined || val === '') return fallback;
@@ -1911,6 +1912,9 @@ function BoletimContent() {
   if (isNifStudent) {
     return (
       <div className="space-y-6">
+        {/* Identificação do Aluno na Área de Trabalho */}
+        <UserWorkspaceHeader />
+
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 print:hidden">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 md:w-20 md:h-20 shrink-0 flex items-center justify-center overflow-hidden bg-white border border-slate-200 dark:border-slate-700 rounded-2xl p-1.5 shadow-sm">

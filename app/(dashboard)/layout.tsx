@@ -3,6 +3,7 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { supabase } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { Logo } from '@/components/Logo';
@@ -32,7 +33,8 @@ import {
   AlertCircle,
   Sparkles,
   Sun,
-  Moon
+  Moon,
+  ShieldCheck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -644,12 +646,32 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           <div className="p-4 border-t border-white/5 bg-white/[0.01]">
             <div className="flex items-center gap-3 mb-4 px-2">
-              <div className="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center text-xs border border-white/10 text-white font-bold transition-transform hover:scale-105 cursor-pointer shadow-lg shadow-black/20">
-                {userInitials}
-              </div>
+              {profile?.foto_url && profile?.role !== 'admin' ? (
+                <div className="w-9 h-9 rounded-xl overflow-hidden border border-white/20 shrink-0 relative shadow-lg shadow-black/20 transition-transform hover:scale-105 bg-slate-800">
+                  <Image 
+                    src={profile.foto_url} 
+                    alt={profile.full_name || 'Usuário'} 
+                    fill 
+                    className="object-cover" 
+                    sizes="36px"
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+              ) : (
+                <div className={cn(
+                  "w-9 h-9 rounded-xl flex items-center justify-center text-xs border shrink-0 transition-transform hover:scale-105 shadow-lg shadow-black/20",
+                  profile?.role === 'admin' 
+                    ? "bg-gradient-to-br from-blue-900 to-indigo-950 border-blue-500/40 text-blue-300 font-bold" 
+                    : "bg-slate-800 border-white/10 text-white font-bold"
+                )}>
+                  {profile?.role === 'admin' ? <ShieldCheck size={16} /> : userInitials}
+                </div>
+              )}
               <div className={cn("flex-1 overflow-hidden transition-opacity", !sidebarOpen && "opacity-0 w-0 invisible")}>
-                <p className="text-xs font-bold text-white truncate uppercase tracking-tight">{profile?.full_name || profile?.id.slice(0, 8)}</p>
-                <p className="text-[10px] text-slate-500 truncate font-semibold uppercase tracking-wider">{profile?.role === 'admin' ? t.users.admin : profile?.role === 'instrutor' ? t.users.instrutor : t.users.aluno}</p>
+                <p className="text-xs font-bold text-white truncate uppercase tracking-tight">
+                  {profile?.posto_graduacao || profile?.nome_guerra ? `${profile.posto_graduacao || ''} ${profile.nome_guerra || profile.full_name}`.trim() : (profile?.full_name || profile?.id.slice(0, 8))}
+                </p>
+                <p className="text-[10px] text-slate-500 truncate font-semibold uppercase tracking-wider">{roleName}</p>
               </div>
             </div>
             <button
@@ -777,6 +799,39 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <Moon size={15} className="text-slate-600 transition-transform hover:-rotate-12" />
               )}
             </button>
+
+            {/* Crachá / Visão de Identidade do Usuário no Cabeçalho */}
+            <div className="hidden sm:flex items-center gap-2 pl-2.5 border-l border-slate-200">
+              {profile?.foto_url && profile?.role !== 'admin' ? (
+                <div className="w-8 h-8 rounded-lg overflow-hidden border border-slate-200 shrink-0 relative shadow-2xs">
+                  <Image 
+                    src={profile.foto_url} 
+                    alt={profile.full_name || 'Usuário'} 
+                    fill 
+                    className="object-cover" 
+                    sizes="32px"
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+              ) : (
+                <div className={cn(
+                  "w-8 h-8 rounded-lg border flex items-center justify-center text-xs font-bold shrink-0 shadow-2xs",
+                  profile?.role === 'admin'
+                    ? "bg-blue-50 border-blue-200 text-blue-700"
+                    : "bg-indigo-50 border-indigo-200/80 text-indigo-700"
+                )}>
+                  {profile?.role === 'admin' ? <ShieldCheck size={15} /> : userInitials}
+                </div>
+              )}
+              <div className="hidden md:flex flex-col text-left leading-tight">
+                <span className="text-xs font-bold text-slate-800 truncate max-w-[130px]">
+                  {profile?.posto_graduacao || profile?.nome_guerra ? `${profile.posto_graduacao || ''} ${profile.nome_guerra || profile.full_name}`.trim() : (profile?.full_name || profile?.email?.split('@')[0])}
+                </span>
+                <span className="text-[9px] font-bold text-indigo-600 uppercase tracking-wider">
+                  {roleName}
+                </span>
+              </div>
+            </div>
           </div>
         </header>
 
