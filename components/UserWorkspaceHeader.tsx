@@ -139,19 +139,19 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
             <span className="p-1 rounded-md bg-white/10 text-indigo-300">
               <IdCard size={14} />
             </span>
-            <span className="font-extrabold uppercase tracking-widest text-[10px] text-slate-200">
+            <span className="font-extrabold uppercase tracking-widest text-[10px] text-white">
               {isPt ? 'Área de Trabalho • Identificação do Usuário' : 'Workspace • User Identity'}
             </span>
-            <span className="hidden sm:inline text-slate-500 font-mono text-[10px]">•</span>
-            <span className="hidden sm:inline text-[10px] text-indigo-300 font-bold uppercase tracking-wider">
+            <span className="hidden sm:inline text-slate-400 font-mono text-[10px]">•</span>
+            <span className="hidden sm:inline text-[10px] text-white font-bold uppercase tracking-wider">
               {isPt ? 'Visão Pessoal do Usuário' : 'Personal User View'}
             </span>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-white border border-emerald-500/40">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span>{isPt ? 'Sessão Ativa' : 'Active Session'}</span>
+              <span className="text-white">{isPt ? 'Sessão Ativa' : 'Active Session'}</span>
             </span>
           </div>
         </div>
