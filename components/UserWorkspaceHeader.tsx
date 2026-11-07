@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useUser } from '@/lib/auth/UserContext';
 import { useI18n } from '@/lib/i18n/LanguageContext';
+import { supabase } from '@/lib/supabase/client';
 import { 
   User, 
   Camera, 
@@ -18,7 +19,8 @@ import {
   BadgeCheck,
   Building,
   IdCard,
-  Sparkles
+  Sparkles,
+  FileText
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -39,13 +41,46 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
 
   const [isUploading, setIsUploading] = useState(false);
   const [expandedPhoto, setExpandedPhoto] = useState<{ url: string; name: string } | null>(null);
+  const [liveStudentPhoto, setLiveStudentPhoto] = useState<string | null>(profile?.foto_url || null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const userRole = profile?.role || 'aluno';
+  const isAdmin = userRole === 'admin';
+  const isAluno = userRole === 'aluno';
+  const canUploadPhoto = !isAdmin && !isAluno;
+
+  // Para alunos: a foto é obrigatoriamente puxada do cadastro oficial da turma em alunos.foto_url
+  useEffect(() => {
+    if (isAluno && profile) {
+      const fetchLatestStudentPhoto = async () => {
+        try {
+          let q = supabase
+            .from('alunos')
+            .select('foto_url')
+            .is('deleted_at', null);
+
+          if (profile.student_id) {
+            q = q.eq('id', profile.student_id);
+          } else if (profile.email) {
+            q = q.eq('email', profile.email);
+          } else {
+            q = q.eq('id', profile.id);
+          }
+
+          const { data, error } = await q.maybeSingle();
+          if (data && !error && data.foto_url) {
+            setLiveStudentPhoto(data.foto_url);
+          }
+        } catch (e) {
+          // ignore
+        }
+      };
+      fetchLatestStudentPhoto();
+    }
+  }, [isAluno, profile, profile?.student_id, profile?.email, profile?.id]);
 
   if (!profile) return null;
 
-  // Resolve display name and identity
-  const userRole = profile.role || 'aluno';
-  const isAdmin = userRole === 'admin';
   const roleLabel = userRole === 'admin' 
     ? (isPt ? 'Administrador do Sistema' : 'System Administrator')
     : userRole === 'instrutor'
@@ -73,8 +108,15 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
     ? militaryMaleAvatar
     : maleAvatar;
 
-  // Foto individual: desativada para administradores conforme solicitação, mantida para demais usuários
-  const currentPhotoUrl = isAdmin ? null : (profile.foto_url || profile.avatar_url);
+  // Foto individual:
+  // - Administradores: sem foto (retirada conforme solicitação anterior)
+  // - Alunos: estritamente puxada do cadastro oficial da turma em alunos.foto_url
+  // - Demais usuários: foto individual de perfil
+  const currentPhotoUrl = isAdmin 
+    ? null 
+    : isAluno 
+    ? (liveStudentPhoto || profile.foto_url || null)
+    : (profile.foto_url || profile.avatar_url);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -134,24 +176,42 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
         )}
       >
         {/* Barra superior de status da Área de Trabalho */}
-        <div className="px-5 py-2.5 bg-gradient-to-r from-slate-900 via-slate-850 to-indigo-950 text-white flex flex-wrap items-center justify-between gap-2 text-xs">
+        <div 
+          data-topbar="true"
+          className="workspace-header-dark-bar px-5 py-2.5 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-2 text-xs"
+          style={{ backgroundColor: '#0f172a', color: '#ffffff' }}
+        >
           <div className="flex items-center gap-2">
-            <span className="p-1 rounded-md bg-white/10 text-indigo-300">
-              <IdCard size={14} />
+            <span className="p-1 rounded-md bg-white/10 text-white" style={{ color: '#ffffff' }}>
+              <IdCard size={14} className="text-white" style={{ color: '#ffffff', stroke: '#ffffff' }} />
             </span>
-            <span className="font-extrabold uppercase tracking-widest text-[10px] text-white">
+            <span 
+              className="font-extrabold uppercase tracking-widest text-[10px] text-white"
+              style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff' }}
+            >
               {isPt ? 'Área de Trabalho • Identificação do Usuário' : 'Workspace • User Identity'}
             </span>
-            <span className="hidden sm:inline text-slate-400 font-mono text-[10px]">•</span>
-            <span className="hidden sm:inline text-[10px] text-white font-bold uppercase tracking-wider">
+            <span className="hidden sm:inline text-slate-300 font-mono text-[10px]" style={{ color: '#ffffff', opacity: 0.8 }}>•</span>
+            <span 
+              className="hidden sm:inline text-[10px] text-white font-bold uppercase tracking-wider"
+              style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff' }}
+            >
               {isPt ? 'Visão Pessoal do Usuário' : 'Personal User View'}
             </span>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-white border border-emerald-500/40">
+            <span 
+              className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-white border border-emerald-500/40"
+              style={{ color: '#ffffff' }}
+            >
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-white">{isPt ? 'Sessão Ativa' : 'Active Session'}</span>
+              <span 
+                className="text-white"
+                style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff' }}
+              >
+                {isPt ? 'Sessão Ativa' : 'Active Session'}
+              </span>
             </span>
           </div>
         </div>
@@ -172,7 +232,7 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
                       setExpandedPhoto({ url: currentPhotoUrl, name: displayName });
                     }
                   }}
-                  title={currentPhotoUrl ? (isPt ? "Clique para ampliar a foto" : "Click to enlarge photo") : undefined}
+                  title={currentPhotoUrl ? (isPt ? "Clique para ampliar a foto (Cadastro Oficial da Turma)" : "Click to enlarge photo (Class Registration)") : undefined}
                 >
                   {currentPhotoUrl ? (
                     <>
@@ -189,6 +249,11 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
                           <Maximize2 size={13} />
                         </span>
                       </div>
+                      {isAluno && (
+                        <div className="absolute bottom-0 inset-x-0 bg-slate-900/80 text-[8px] font-bold text-white text-center py-0.5 uppercase tracking-tight">
+                          {isPt ? 'Foto da Turma' : 'Class Photo'}
+                        </div>
+                      )}
                     </>
                   ) : (
                     <div className="w-full h-full relative flex flex-col items-center justify-center text-slate-400 p-2 text-center">
@@ -200,10 +265,12 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
                         sizes="112px"
                         referrerPolicy="no-referrer"
                       />
-                      <div className="absolute inset-0 bg-slate-900/40 flex flex-col items-center justify-center gap-1 p-1">
-                        <Camera size={18} className="text-white drop-shadow" />
-                        <span className="text-[9px] font-black text-white uppercase tracking-wider drop-shadow">
-                          {isPt ? 'Sem Foto' : 'No Photo'}
+                      <div className="absolute inset-0 bg-slate-900/50 flex flex-col items-center justify-center gap-1 p-2">
+                        <span className="text-[9px] font-black text-white uppercase tracking-wider text-center leading-tight drop-shadow">
+                          {isPt ? 'Foto da Turma' : 'Class Photo'}
+                        </span>
+                        <span className="text-[8px] font-bold text-slate-200 uppercase tracking-tight text-center leading-tight drop-shadow">
+                          {isPt ? 'A ser cadastrada pela coordenação' : 'Awaiting coordination'}
                         </span>
                       </div>
                     </div>
@@ -217,24 +284,28 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
                   )}
                 </div>
 
-                {/* Botão de Trocar/Adicionar Foto (Apenas para não-administradores) */}
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isUploading}
-                  className="absolute -bottom-2 -right-2 p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-md border-2 border-white transition-all cursor-pointer active:scale-95 disabled:opacity-50"
-                  title={isPt ? "Clique para alterar ou adicionar foto" : "Click to change or add photo"}
-                >
-                  <Camera size={13} />
-                </button>
+                {/* Botão de Trocar/Adicionar Foto (Apenas para não-alunos e não-administradores: instrutores/outros) */}
+                {canUploadPhoto && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploading}
+                      className="absolute -bottom-2 -right-2 p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-md border-2 border-white transition-all cursor-pointer active:scale-95 disabled:opacity-50"
+                      title={isPt ? "Clique para alterar ou adicionar foto" : "Click to change or add photo"}
+                    >
+                      <Camera size={13} />
+                    </button>
 
-                <input 
-                  ref={fileInputRef}
-                  type="file" 
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="hidden" 
-                />
+                    <input 
+                      ref={fileInputRef}
+                      type="file" 
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="hidden" 
+                    />
+                  </>
+                )}
               </div>
             )}
 
@@ -303,7 +374,7 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
 
           {/* 3. AÇÕES RÁPIDAS DA ÁREA DE TRABALHO */}
           <div className="flex flex-row md:flex-col items-center md:items-end gap-2 w-full md:w-auto pt-3 md:pt-0 border-t md:border-t-0 border-slate-100 shrink-0">
-            {!isAdmin ? (
+            {canUploadPhoto && (
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
@@ -314,7 +385,9 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
                 <Camera size={14} />
                 <span>{currentPhotoUrl ? (isPt ? 'Alterar Minha Foto' : 'Change Photo') : (isPt ? 'Inserir Minha Foto' : 'Upload Photo')}</span>
               </button>
-            ) : (
+            )}
+
+            {isAdmin && (
               <Link
                 href="/usuarios"
                 className="flex-1 md:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-xs font-bold border border-blue-200 transition-all cursor-pointer shadow-2xs active:scale-95"
@@ -322,6 +395,17 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
               >
                 <ShieldCheck size={14} className="text-blue-600" />
                 <span>{isPt ? 'Painel de Usuários' : 'Manage Users'}</span>
+              </Link>
+            )}
+
+            {isAluno && (
+              <Link
+                href="/boletim"
+                className="flex-1 md:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-xl text-xs font-bold border border-emerald-200 transition-all cursor-pointer shadow-2xs active:scale-95"
+                title={isPt ? "Acessar Meu Boletim Escolar e Desempenho" : "Access Report Card"}
+              >
+                <FileText size={14} className="text-emerald-700" />
+                <span>{isPt ? 'Meu Boletim' : 'Report Card'}</span>
               </Link>
             )}
 

@@ -125,41 +125,45 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         if (!sId && isStudentEmail) {
           sId = userEmail.replace('aluno_nif_', '').split('@')[0];
         }
-        finalProfile.student_id = sId;
 
-        if (sId) {
-          try {
-            const { data: stun, error: stunErr } = await supabase
-              .from('alunos')
-              .select('id, nome, turma_id, foto_url, posto_graduacao, nome_guerra, nip, om')
-              .eq('id', sId)
-              .maybeSingle();
+        try {
+          let stunQuery = supabase
+            .from('alunos')
+            .select('id, nome, turma_id, foto_url, posto_graduacao, nome_guerra, nip, om')
+            .is('deleted_at', null);
 
-            if (stun && !stunErr) {
-              finalProfile.full_name = stun.nome;
-              finalProfile.nome = stun.nome;
-              finalProfile.turma_id = stun.turma_id;
-              finalProfile.foto_url = stun.foto_url || null;
-              finalProfile.posto_graduacao = stun.posto_graduacao || null;
-              finalProfile.nome_guerra = stun.nome_guerra || null;
-              finalProfile.om = stun.om || null;
-              finalProfile.nip = stun.nip || null;
-            } else if (session.user.user_metadata?.turma_id) {
-              finalProfile.turma_id = session.user.user_metadata.turma_id;
-            }
-          } catch (fetchErr) {
-            console.error('Error fetching student details in UserContext:', fetchErr);
-            if (session.user.user_metadata?.turma_id) {
-              finalProfile.turma_id = session.user.user_metadata.turma_id;
-            }
+          if (sId) {
+            stunQuery = stunQuery.eq('id', sId);
+          } else if (session.user.email) {
+            stunQuery = stunQuery.eq('email', session.user.email);
           }
-        } else if (session.user.user_metadata?.turma_id) {
-          finalProfile.turma_id = session.user.user_metadata.turma_id;
+
+          const { data: stun, error: stunErr } = await stunQuery.limit(1).maybeSingle();
+
+          if (stun && !stunErr) {
+            finalProfile.student_id = stun.id;
+            finalProfile.full_name = stun.nome;
+            finalProfile.nome = stun.nome;
+            finalProfile.turma_id = stun.turma_id;
+            // Foto estritamente puxada do cadastro oficial da turma
+            finalProfile.foto_url = stun.foto_url || null;
+            finalProfile.posto_graduacao = stun.posto_graduacao || null;
+            finalProfile.nome_guerra = stun.nome_guerra || null;
+            finalProfile.om = stun.om || null;
+            finalProfile.nip = stun.nip || null;
+          } else if (session.user.user_metadata?.turma_id) {
+            finalProfile.turma_id = session.user.user_metadata.turma_id;
+          }
+        } catch (fetchErr) {
+          console.error('Error fetching student details in UserContext:', fetchErr);
+          if (session.user.user_metadata?.turma_id) {
+            finalProfile.turma_id = session.user.user_metadata.turma_id;
+          }
         }
       }
 
-      // Check metadata or profile data for foto_url and identification for any role
-      if (finalProfile.role !== 'admin' && !finalProfile.foto_url) {
+      // Check metadata or profile data for foto_url (apenas para instrutores/outros; administradores não têm foto e alunos vêm de alunos.foto_url)
+      if (finalProfile.role !== 'admin' && finalProfile.role !== 'aluno' && !finalProfile.foto_url) {
         finalProfile.foto_url = (data as any)?.foto_url || session.user.user_metadata?.foto_url || (data as any)?.avatar_url || session.user.user_metadata?.avatar_url || null;
       }
       if (!finalProfile.posto_graduacao) {

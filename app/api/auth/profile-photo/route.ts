@@ -17,6 +17,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Alunos não podem alterar ou inserir fotos por conta própria (somente pelo cadastro da turma pela coordenação)
+    if (email?.startsWith('aluno_nif_') || email?.endsWith('@aluno.escola.digital')) {
+      return NextResponse.json(
+        { error: 'Alunos não têm permissão para alterar ou inserir foto por conta própria. A foto de perfil deve ser cadastrada pela administração da turma.' },
+        { status: 403 }
+      );
+    }
+
+    if (userId && isSupabaseAdminConfigured()) {
+      try {
+        const { data: userRec } = await supabaseAdmin.auth.admin.getUserById(userId);
+        if (
+          userRec?.user?.user_metadata?.role === 'aluno' || 
+          userRec?.user?.email?.startsWith('aluno_nif_') ||
+          userRec?.user?.email?.endsWith('@aluno.escola.digital')
+        ) {
+          return NextResponse.json(
+            { error: 'Alunos não têm permissão para alterar ou inserir foto por conta própria. A foto de perfil deve ser cadastrada pela administração da turma.' },
+            { status: 403 }
+          );
+        }
+      } catch (checkErr) {
+        // Ignora erro se não localizar
+      }
+    }
+
     if (!file.type.startsWith('image/')) {
       return NextResponse.json(
         { error: 'O arquivo selecionado não é uma imagem válida.' },

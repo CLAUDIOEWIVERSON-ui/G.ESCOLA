@@ -386,6 +386,15 @@ a[class*="bg-indigo-"]:not([class*="bg-indigo-50"]):not([class*="bg-indigo-100"]
   color: #000000 !important;
 }
 
+/* Forçar texto branco puro na barra superior escura do Cartão de Identidade da Área de Trabalho */
+#user-workspace-identity-card .workspace-header-dark-bar,
+#user-workspace-identity-card .workspace-header-dark-bar *,
+#user-workspace-identity-card [data-topbar="true"],
+#user-workspace-identity-card [data-topbar="true"] * {
+  color: #FFFFFF !important;
+  -webkit-text-fill-color: #FFFFFF !important;
+}
+
 /* Regras específicas para o Banner Institucional Oficial da Ficha do Aluno (Fundo Azul -> Letras Brancas e Logo Branco; Fundo Branco -> Letras Pretas) */
 #student-modal-header-banner.banner-bg-blue,
 #student-modal-header-banner.banner-bg-blue h1,

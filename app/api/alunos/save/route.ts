@@ -92,6 +92,29 @@ export async function POST(request: Request) {
     }
 
     const savedData = data && data.length > 0 ? data[0] : null;
+
+    // Se houver foto salva pela administração, sincroniza imediatamente com os metadados do perfil do aluno
+    if (savedData && savedData.id && isSupabaseAdminConfigured() && dataToSave.foto_url !== undefined) {
+      try {
+        const studentShadowEmail = `aluno_nif_${savedData.id}@aluno.escola.digital`;
+        const { data: uList } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+        const targetAuthUser = (uList?.users || []).find(
+          (u: any) => u.email?.toLowerCase() === studentShadowEmail.toLowerCase() || (savedData.email && u.email?.toLowerCase() === savedData.email.toLowerCase())
+        );
+        if (targetAuthUser) {
+          await supabaseAdmin.auth.admin.updateUserById(targetAuthUser.id, {
+            user_metadata: {
+              ...(targetAuthUser.user_metadata || {}),
+              foto_url: dataToSave.foto_url || null,
+              avatar_url: dataToSave.foto_url || null
+            }
+          });
+        }
+      } catch (syncErr) {
+        console.warn('Erro ao sincronizar foto com auth user do aluno:', syncErr);
+      }
+    }
+
     return NextResponse.json({ success: true, data: savedData });
   } catch (error: any) {
     console.error('[api/alunos/save] Exception:', error);
