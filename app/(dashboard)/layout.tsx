@@ -280,7 +280,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   }, [pathname]);
 
-  const isNifStudent = profile?.role === 'aluno' && (profile as any).isNifStudent;
+  const isStudentUser = isAluno || profile?.role === 'aluno' || !!(profile as any)?.isNifStudent;
 
   useEffect(() => {
     if (!authLoading) {
@@ -324,13 +324,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           checkClassStatus();
         }
 
-        if (isNifStudent && !['/boletim', '/horario', '/avaliacao', '/manual'].includes(pathname || '')) {
-          // Force students logged in via NIF to only access allowed sections
+        if (isStudentUser && !['/boletim', '/horario', '/calendario', '/avaliacao', '/configuracoes', '/manual'].includes(pathname || '')) {
+          // Force students logged in to only access allowed sections
           router.push('/boletim');
         }
       }
     }
-  }, [authLoading, profile, isNifStudent, pathname, router]);
+  }, [authLoading, profile, isStudentUser, pathname, router]);
 
   const handleLogout = async () => {
     try {
@@ -354,11 +354,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     );
   }
 
-  const rawNavItems = isNifStudent ? [
-    { name: t.nav.reportCard, icon: FileText, path: '/boletim' },
-    { name: t.schedule.title, icon: Calendar, path: '/horario' },
+  const rawNavItems = isStudentUser ? [
+    { name: t.nav.reportCard || 'Meu Boletim', icon: FileText, path: '/boletim' },
+    { name: t.schedule.title || 'Horários', icon: Calendar, path: '/horario' },
+    { name: t.calendar.title || 'Calendário', icon: CalendarDays, path: '/calendario' },
     { name: "Avaliação Pós-Curso", icon: FileCheck, path: '/avaliacao' },
-    { name: t.nav.manual, icon: BookMarked, path: '/manual' },
+    { name: t.nav.settings || 'Minha Conta', icon: Settings, path: '/configuracoes' },
+    { name: t.nav.manual || 'Manual do Usuário', icon: BookMarked, path: '/manual' },
   ] : [
     { name: t.nav.dashboard, icon: LayoutDashboard, path: '/dashboard' },
     { name: t.nav.courses, icon: BookOpen, path: '/cursos' },
@@ -652,6 +654,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     src={profile.foto_url} 
                     alt={profile.full_name || 'Usuário'} 
                     fill 
+                    unoptimized
                     className="object-cover" 
                     sizes="36px"
                     referrerPolicy="no-referrer"
@@ -808,6 +811,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     src={profile.foto_url} 
                     alt={profile.full_name || 'Usuário'} 
                     fill 
+                    unoptimized
                     className="object-cover" 
                     sizes="32px"
                     referrerPolicy="no-referrer"
@@ -852,11 +856,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <SuggestionsModal isOpen={suggestionsOpen} onClose={() => setSuggestionsOpen(false)} />
       </div>
 
-      {/* Bottom Nav for Mobile */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-1 py-1.5 flex items-center justify-around z-50 h-16 shadow-[0_-4px_16px_rgba(0,0,0,0.06)] print:hidden overflow-x-auto custom-scrollbar">
+      {/* Bottom Nav: Barra Inferior com todos os módulos acessíveis */}
+      <nav 
+        className={cn(
+          "fixed bottom-0 z-50 h-16 shadow-[0_-4px_16px_rgba(0,0,0,0.06)] print:hidden overflow-x-auto custom-scrollbar backdrop-blur-md border-t border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 px-1 py-1.5 flex items-center justify-around transition-all duration-300",
+          isStudentUser 
+            ? (sidebarOpen ? "left-0 lg:left-64 right-0" : "left-0 lg:left-20 right-0") 
+            : "lg:hidden left-0 right-0"
+        )}
+      >
         {navItems.filter(item => {
-          if (isNifStudent) {
-            return ['/boletim', '/horario'].includes(item.path);
+          if (isStudentUser) {
+            return ['/boletim', '/horario', '/calendario', '/avaliacao', '/configuracoes', '/manual'].includes(item.path);
           }
           return ['/dashboard', '/cursos', '/turmas', '/frequencia', '/horario', '/calendario', '/configuracoes'].includes(item.path);
         }).map((item, idx) => {
@@ -871,13 +882,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             indicator: 'bg-blue-600',
             border: 'border-blue-200',
           };
+
+          const label = item.path === '/calendario' 
+            ? (language === 'pt' ? 'AGENDA' : 'CALENDAR') 
+            : item.path === '/frequencia'
+              ? (language === 'pt' ? 'FREQ.' : 'ATTEND.')
+              : item.path === '/avaliacao'
+                ? (language === 'pt' ? 'AVALIAÇÃO' : 'EVALUATION')
+                : item.path === '/boletim'
+                  ? (language === 'pt' ? 'BOLETIM' : 'GRADES')
+                  : item.path === '/horario'
+                    ? (language === 'pt' ? 'HORÁRIO' : 'SCHEDULE')
+                    : item.path === '/configuracoes'
+                      ? (language === 'pt' ? 'CONTA' : 'ACCOUNT')
+                      : item.path === '/manual'
+                        ? (language === 'pt' ? 'MANUAL' : 'MANUAL')
+                        : item.name.split(' ')[0];
           
           return (
             <Link 
               key={`mobile-nav-${item.path}-${idx}`} 
               href={item.path}
+              title={item.name}
               className={cn(
-                "flex flex-col items-center gap-0.5 p-0.5 transition-all min-w-0 flex-1 max-w-[56px] shrink-0 relative group",
+                "flex flex-col items-center gap-0.5 p-0.5 transition-all min-w-0 flex-1 max-w-[58px] shrink-0 relative group",
                 isActive ? "scale-105" : "hover:opacity-100"
               )}
             >
@@ -896,11 +924,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 isActive ? `${colorConfig.activeText} font-black` : `${colorConfig.text} font-bold`,
                 needsPasswordChange && "text-amber-500 font-bold"
               )}>
-                {item.path === '/calendario' 
-                  ? (language === 'pt' ? 'AGENDA' : 'CALENDAR') 
-                  : item.path === '/frequencia'
-                    ? (language === 'pt' ? 'FREQ.' : 'ATTEND.')
-                    : item.name.split(' ')[0]}
+                {label}
               </span>
               {isActive && (
                 <motion.div 
@@ -914,10 +938,27 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </Link>
           );
         })}
+
+        {/* Botão de Sair do Sistema para o Aluno na barra inferior */}
+        {isStudentUser && (
+          <button
+            onClick={handleLogout}
+            title={language === 'pt' ? 'Sair do Sistema' : 'Sign Out'}
+            className="flex flex-col items-center gap-0.5 p-0.5 transition-all min-w-0 flex-1 max-w-[58px] shrink-0 relative group cursor-pointer text-rose-500 hover:text-rose-700"
+          >
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200 shrink-0 bg-rose-50 text-rose-600 border border-rose-200/80 hover:bg-rose-100">
+              <LogOut size={16} />
+            </div>
+            <span className="text-[8px] uppercase tracking-wider truncate w-full text-center font-bold">
+              {language === 'pt' ? 'SAIR' : 'EXIT'}
+            </span>
+          </button>
+        )}
+
         <button
           onClick={() => setSidebarOpen(prev => !prev)}
           className={cn(
-            "flex flex-col items-center gap-0.5 p-0.5 transition-all min-w-0 flex-1 max-w-[56px] shrink-0 relative group",
+            "flex flex-col items-center gap-0.5 p-0.5 transition-all min-w-0 flex-1 max-w-[58px] shrink-0 relative group",
             sidebarOpen ? "scale-105" : "hover:opacity-100"
           )}
         >

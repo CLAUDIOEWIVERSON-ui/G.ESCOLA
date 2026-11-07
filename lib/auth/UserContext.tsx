@@ -126,38 +126,73 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
           sId = userEmail.replace('aluno_nif_', '').split('@')[0];
         }
 
+        const sNome = session.user.user_metadata?.full_name || finalProfile.full_name || '';
+        const sNip = session.user.user_metadata?.nip || finalProfile.nip || '';
+        const sTurmaId = session.user.user_metadata?.turma_id || finalProfile.turma_id || '';
+
+        const params = new URLSearchParams();
+        if (sId) params.set('studentId', sId);
+        else if (session.user.id) params.set('studentId', session.user.id);
+        if (userEmail) params.set('email', userEmail);
+        if (sNome) params.set('nome', sNome);
+        if (sNip) params.set('nip', sNip);
+        if (sTurmaId) params.set('turmaId', sTurmaId);
+
+        // 1. Tentar carregar diretamente pela API do servidor (bypassa RLS de forma 100% segura e confiável)
         try {
-          let stunQuery = supabase
-            .from('alunos')
-            .select('id, nome, turma_id, foto_url, posto_graduacao, nome_guerra, nip, om')
-            .is('deleted_at', null);
-
-          if (sId) {
-            stunQuery = stunQuery.eq('id', sId);
-          } else if (session.user.email) {
-            stunQuery = stunQuery.eq('email', session.user.email);
+          const photoRes = await fetch(`/api/alunos/foto?${params.toString()}`);
+          if (photoRes.ok) {
+            const photoData = await photoRes.json();
+            if (photoData && photoData.success) {
+              if (photoData.id) finalProfile.student_id = photoData.id;
+              if (photoData.nome) { finalProfile.full_name = photoData.nome; finalProfile.nome = photoData.nome; }
+              if (photoData.turma_id) finalProfile.turma_id = photoData.turma_id;
+              if (photoData.foto_url) finalProfile.foto_url = photoData.foto_url;
+              if (photoData.posto_graduacao) finalProfile.posto_graduacao = photoData.posto_graduacao;
+              if (photoData.nome_guerra) finalProfile.nome_guerra = photoData.nome_guerra;
+              if (photoData.nip) finalProfile.nip = photoData.nip;
+              if (photoData.om) finalProfile.om = photoData.om;
+            }
           }
+        } catch (photoApiErr) {
+          console.warn('[UserContext] Server fetch of student photo warning:', photoApiErr);
+        }
 
-          const { data: stun, error: stunErr } = await stunQuery.limit(1).maybeSingle();
+        // 2. Consulta direta ao Supabase client como fallback
+        if (!finalProfile.foto_url) {
+          try {
+            let stunQuery = supabase
+              .from('alunos')
+              .select('id, nome, turma_id, foto_url, posto_graduacao, nome_guerra, nip, om')
+              .is('deleted_at', null);
 
-          if (stun && !stunErr) {
-            finalProfile.student_id = stun.id;
-            finalProfile.full_name = stun.nome;
-            finalProfile.nome = stun.nome;
-            finalProfile.turma_id = stun.turma_id;
-            // Foto estritamente puxada do cadastro oficial da turma
-            finalProfile.foto_url = stun.foto_url || null;
-            finalProfile.posto_graduacao = stun.posto_graduacao || null;
-            finalProfile.nome_guerra = stun.nome_guerra || null;
-            finalProfile.om = stun.om || null;
-            finalProfile.nip = stun.nip || null;
-          } else if (session.user.user_metadata?.turma_id) {
-            finalProfile.turma_id = session.user.user_metadata.turma_id;
-          }
-        } catch (fetchErr) {
-          console.error('Error fetching student details in UserContext:', fetchErr);
-          if (session.user.user_metadata?.turma_id) {
-            finalProfile.turma_id = session.user.user_metadata.turma_id;
+            if (sId) {
+              stunQuery = stunQuery.eq('id', sId);
+            } else if (session.user.email) {
+              stunQuery = stunQuery.eq('email', session.user.email);
+            }
+
+            const { data: stun, error: stunErr } = await stunQuery.limit(1).maybeSingle();
+
+            if (stun && !stunErr) {
+              finalProfile.student_id = stun.id;
+              finalProfile.full_name = stun.nome;
+              finalProfile.nome = stun.nome;
+              finalProfile.turma_id = stun.turma_id;
+              // Foto estritamente puxada do cadastro oficial da turma
+              if (stun.foto_url) finalProfile.foto_url = stun.foto_url;
+              if (stun.posto_graduacao) finalProfile.posto_graduacao = stun.posto_graduacao;
+              if (stun.nome_guerra) finalProfile.nome_guerra = stun.nome_guerra;
+              if (stun.om) finalProfile.om = stun.om;
+              if (stun.nip) finalProfile.nip = stun.nip;
+            } else if (session.user.user_metadata?.turma_id) {
+              finalProfile.turma_id = session.user.user_metadata.turma_id;
+            }
+          } catch (fetchErr) {
+            console.error('Error fetching student details in UserContext:', fetchErr);
+            if (session.user.user_metadata?.turma_id) {
+              finalProfile.turma_id = session.user.user_metadata.turma_id;
+            }
           }
         }
       }

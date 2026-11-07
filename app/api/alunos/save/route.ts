@@ -109,7 +109,15 @@ export async function POST(request: Request) {
               avatar_url: dataToSave.foto_url || null
             }
           });
+          await supabaseAdmin
+            .from('profiles')
+            .update({ foto_url: dataToSave.foto_url || null })
+            .eq('id', targetAuthUser.id);
         }
+        await supabaseAdmin
+          .from('profiles')
+          .update({ foto_url: dataToSave.foto_url || null })
+          .eq('id', savedData.id);
       } catch (syncErr) {
         console.warn('Erro ao sincronizar foto com auth user do aluno:', syncErr);
       }

@@ -967,6 +967,17 @@ function TurmasContent() {
 
       if (saveError) throw saveError;
 
+      // Sincronizar via API de salvamento com permissão administrativa para garantir atualização de perfil
+      try {
+        fetch('/api/alunos/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: currentAluno.id || null, dataToSave })
+        }).catch(() => {});
+      } catch (syncE) {
+        // ignora
+      }
+
       // Refresh list
       const { data } = await supabase
         .from('alunos')

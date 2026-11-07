@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
     // Search for student in database
     const { data: student, error: studentError } = await supabaseAdmin
       .from('alunos')
-      .select('id, nome, turma_id, genero, matricula, posto_graduacao, nome_guerra, om')
+      .select('id, nome, turma_id, genero, matricula, posto_graduacao, nome_guerra, om, foto_url, nip')
       .eq('id', accessRecord.student_id)
       .maybeSingle();
 
@@ -163,7 +163,13 @@ export async function POST(req: NextRequest) {
             full_name: student.nome,
             isNifStudent: true,
             student_id: student.id,
-            turma_id: student.turma_id
+            turma_id: student.turma_id,
+            foto_url: student.foto_url || null,
+            avatar_url: student.foto_url || null,
+            posto_graduacao: student.posto_graduacao || null,
+            nome_guerra: student.nome_guerra || null,
+            om: student.om || null,
+            nip: student.nip || null
           }
         });
 
@@ -234,14 +240,35 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // If we have the User ID, upsert the student profile so they can load successfully
+    // If we have the User ID, sync the student's metadata and upsert the profile with latest photo
     if (authUserId) {
+      try {
+        await supabaseAdmin.auth.admin.updateUserById(authUserId, {
+          user_metadata: {
+            role: 'aluno',
+            full_name: student.nome,
+            isNifStudent: true,
+            student_id: student.id,
+            turma_id: student.turma_id,
+            foto_url: student.foto_url || null,
+            avatar_url: student.foto_url || null,
+            posto_graduacao: student.posto_graduacao || null,
+            nome_guerra: student.nome_guerra || null,
+            om: student.om || null,
+            nip: student.nip || null
+          }
+        });
+      } catch (metaErr) {
+        console.warn('Erro ao sincronizar user_metadata do aluno no login:', metaErr);
+      }
+
       const { error: profileError } = await supabaseAdmin
         .from('profiles')
         .upsert({
           id: authUserId,
           role: 'aluno',
           full_name: student.nome,
+          foto_url: student.foto_url || null,
           has_changed_password: true,
           created_at: new Date().toISOString()
         }, {
@@ -283,7 +310,8 @@ export async function POST(req: NextRequest) {
       student: {
         id: student.id,
         nome: student.nome,
-        turma_id: student.turma_id
+        turma_id: student.turma_id,
+        foto_url: student.foto_url || null
       }
     });
 

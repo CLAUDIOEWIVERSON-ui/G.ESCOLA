@@ -42,6 +42,7 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [expandedPhoto, setExpandedPhoto] = useState<{ url: string; name: string } | null>(null);
   const [liveStudentPhoto, setLiveStudentPhoto] = useState<string | null>(profile?.foto_url || null);
+  const [photoLoadFailed, setPhotoLoadFailed] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const userRole = profile?.role || 'aluno';
@@ -49,11 +50,43 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
   const isAluno = userRole === 'aluno';
   const canUploadPhoto = !isAdmin && !isAluno;
 
+  // Sincroniza sempre que profile.foto_url mudar externamente
+  useEffect(() => {
+    if (profile?.foto_url) {
+      setLiveStudentPhoto(profile.foto_url);
+      setPhotoLoadFailed(false);
+    }
+  }, [profile?.foto_url]);
+
   // Para alunos: a foto é obrigatoriamente puxada do cadastro oficial da turma em alunos.foto_url
   useEffect(() => {
     if (isAluno && profile) {
+      let isMounted = true;
       const fetchLatestStudentPhoto = async () => {
         try {
+          const sId = profile.student_id || profile.id || '';
+          const sEmail = profile.email || '';
+          const sNome = profile.full_name || profile.nome || '';
+          const sNip = profile.nip || '';
+          const sTurmaId = profile.turma_id || '';
+
+          const params = new URLSearchParams();
+          if (sId) params.set('studentId', sId);
+          if (sEmail) params.set('email', sEmail);
+          if (sNome) params.set('nome', sNome);
+          if (sNip) params.set('nip', sNip);
+          if (sTurmaId) params.set('turmaId', sTurmaId);
+
+          const res = await fetch(`/api/alunos/foto?${params.toString()}`);
+          if (res.ok) {
+            const json = await res.json();
+            if (json.foto_url && isMounted) {
+              setLiveStudentPhoto(json.foto_url);
+              setPhotoLoadFailed(false);
+              return;
+            }
+          }
+
           let q = supabase
             .from('alunos')
             .select('foto_url')
@@ -61,23 +94,29 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
 
           if (profile.student_id) {
             q = q.eq('id', profile.student_id);
+          } else if (profile.nip) {
+            q = q.eq('nip', profile.nip);
           } else if (profile.email) {
             q = q.eq('email', profile.email);
+          } else if (profile.full_name) {
+            q = q.ilike('nome', `%${profile.full_name}%`);
           } else {
             q = q.eq('id', profile.id);
           }
 
           const { data, error } = await q.maybeSingle();
-          if (data && !error && data.foto_url) {
+          if (data && !error && data.foto_url && isMounted) {
             setLiveStudentPhoto(data.foto_url);
+            setPhotoLoadFailed(false);
           }
         } catch (e) {
           // ignore
         }
       };
       fetchLatestStudentPhoto();
+      return () => { isMounted = false; };
     }
-  }, [isAluno, profile, profile?.student_id, profile?.email, profile?.id]);
+  }, [isAluno, profile, profile?.student_id, profile?.email, profile?.id, profile?.nip, profile?.full_name, profile?.turma_id]);
 
   if (!profile) return null;
 
@@ -225,24 +264,29 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
                 <div 
                   className={cn(
                     "w-24 h-32 sm:w-28 sm:h-36 rounded-2xl overflow-hidden border-2 border-slate-300/80 shadow-md relative bg-slate-100 flex items-center justify-center transition-transform hover:scale-[1.02]",
-                    currentPhotoUrl ? "cursor-pointer" : ""
+                    currentPhotoUrl && !photoLoadFailed ? "cursor-pointer" : ""
                   )}
                   onClick={() => {
-                    if (currentPhotoUrl) {
+                    if (currentPhotoUrl && !photoLoadFailed) {
                       setExpandedPhoto({ url: currentPhotoUrl, name: displayName });
                     }
                   }}
-                  title={currentPhotoUrl ? (isPt ? "Clique para ampliar a foto (Cadastro Oficial da Turma)" : "Click to enlarge photo (Class Registration)") : undefined}
+                  title={currentPhotoUrl && !photoLoadFailed ? (isPt ? "Clique para ampliar a foto (Cadastro Oficial da Turma)" : "Click to enlarge photo (Class Registration)") : undefined}
                 >
-                  {currentPhotoUrl ? (
+                  {currentPhotoUrl && !photoLoadFailed ? (
                     <>
                       <Image
                         src={currentPhotoUrl}
                         alt={displayName}
                         fill
+                        unoptimized
                         className="object-cover"
                         sizes="112px"
                         referrerPolicy="no-referrer"
+                        onError={() => {
+                          console.warn('Erro ao carregar imagem do aluno, aplicando fallback visual');
+                          setPhotoLoadFailed(true);
+                        }}
                       />
                       <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                         <span className="p-1.5 rounded-full bg-black/60 text-white" title={isPt ? "Ampliar foto" : "Enlarge photo"}>
@@ -444,6 +488,7 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
                   src={expandedPhoto.url}
                   alt={expandedPhoto.name}
                   fill
+                  unoptimized
                   className="object-contain"
                   referrerPolicy="no-referrer"
                 />
