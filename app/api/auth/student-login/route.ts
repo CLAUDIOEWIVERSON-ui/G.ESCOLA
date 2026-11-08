@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin, isSupabaseAdminConfigured } from '@/lib/supabase/admin';
 import { recordAccessLog } from '@/lib/auth/accessLogs';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
 
@@ -162,7 +162,6 @@ export async function POST(req: NextRequest) {
     if (studentError || !student) {
       console.error('Erro ao carregar o estudante correspondente:', studentError);
       return NextResponse.json({ error: 'Estudante correspondente não pôde ser carregado ou não existe.' }, { status: 404 });
-    }
     }
 
     // Validação estrita: somente alunos vinculados à turma (turma_id cadastrado) podem acessar o sistema
