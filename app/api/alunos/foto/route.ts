@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     if (studentId && studentId !== 'null' && studentId !== 'undefined') {
       const { data, error } = await supabaseAdmin
         .from('alunos')
-        .select('id, nome, turma_id, foto_url, posto_graduacao, nome_guerra, nip, om, matricula')
+        .select('*')
         .eq('id', studentId)
         .is('deleted_at', null)
         .maybeSingle();
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
         if (codeRec?.student_id) {
           const { data } = await supabaseAdmin
             .from('alunos')
-            .select('id, nome, turma_id, foto_url, posto_graduacao, nome_guerra, nip, om, matricula')
+            .select('*')
             .eq('id', codeRec.student_id)
             .is('deleted_at', null)
             .maybeSingle();
@@ -60,13 +60,13 @@ export async function GET(request: NextRequest) {
         const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(studentId);
         const sIdFromMeta = authUser?.user?.user_metadata?.student_id;
         const sEmailFromMeta = authUser?.user?.email;
-        const sNipFromMeta = authUser?.user?.user_metadata?.nip;
+        const sNipFromMeta = authUser?.user?.user_metadata?.nip || authUser?.user?.user_metadata?.nif;
         const sNomeFromMeta = authUser?.user?.user_metadata?.full_name;
 
         if (sIdFromMeta) {
           const { data } = await supabaseAdmin
             .from('alunos')
-            .select('id, nome, turma_id, foto_url, posto_graduacao, nome_guerra, nip, om, matricula')
+            .select('*')
             .eq('id', sIdFromMeta)
             .is('deleted_at', null)
             .maybeSingle();
@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
           const extractedId = sEmailFromMeta.replace('aluno_nif_', '').split('@')[0];
           const { data } = await supabaseAdmin
             .from('alunos')
-            .select('id, nome, turma_id, foto_url, posto_graduacao, nome_guerra, nip, om, matricula')
+            .select('*')
             .eq('id', extractedId)
             .is('deleted_at', null)
             .maybeSingle();
@@ -87,8 +87,8 @@ export async function GET(request: NextRequest) {
         if (!alunoData && sNipFromMeta) {
           const { data } = await supabaseAdmin
             .from('alunos')
-            .select('id, nome, turma_id, foto_url, posto_graduacao, nome_guerra, nip, om, matricula')
-            .eq('nip', sNipFromMeta)
+            .select('*')
+            .or(`nif.eq.${sNipFromMeta},matricula.eq.${sNipFromMeta}`)
             .is('deleted_at', null)
             .maybeSingle();
           if (data) alunoData = data;
@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
         if (!alunoData && sNomeFromMeta) {
           const { data } = await supabaseAdmin
             .from('alunos')
-            .select('id, nome, turma_id, foto_url, posto_graduacao, nome_guerra, nip, om, matricula')
+            .select('*')
             .ilike('nome', `%${sNomeFromMeta.trim()}%`)
             .is('deleted_at', null)
             .limit(1)
@@ -119,11 +119,12 @@ export async function GET(request: NextRequest) {
           .maybeSingle();
 
         if (prof) {
-          if (prof.nip) {
+          if (prof.nip || (prof as any).nif) {
+            const codeToSearch = prof.nip || (prof as any).nif;
             const { data } = await supabaseAdmin
               .from('alunos')
-              .select('id, nome, turma_id, foto_url, posto_graduacao, nome_guerra, nip, om, matricula')
-              .eq('nip', prof.nip)
+              .select('*')
+              .or(`nif.eq.${codeToSearch},matricula.eq.${codeToSearch}`)
               .is('deleted_at', null)
               .maybeSingle();
             if (data) alunoData = data;
@@ -132,7 +133,7 @@ export async function GET(request: NextRequest) {
           if (!alunoData && (prof.full_name || prof.nome)) {
             const { data } = await supabaseAdmin
               .from('alunos')
-              .select('id, nome, turma_id, foto_url, posto_graduacao, nome_guerra, nip, om, matricula')
+              .select('*')
               .ilike('nome', `%${(prof.full_name || prof.nome).trim()}%`)
               .is('deleted_at', null)
               .limit(1)
@@ -149,7 +150,7 @@ export async function GET(request: NextRequest) {
               turma_id: prof.turma_id || null,
               posto_graduacao: prof.posto_graduacao || null,
               nome_guerra: prof.nome_guerra || null,
-              nip: prof.nip || null,
+              nip: prof.nip || (prof as any).nif || null,
               om: prof.om || null
             };
           }
@@ -169,7 +170,7 @@ export async function GET(request: NextRequest) {
       if (extractedId) {
         const { data, error } = await supabaseAdmin
           .from('alunos')
-          .select('id, nome, turma_id, foto_url, posto_graduacao, nome_guerra, nip, om, matricula')
+          .select('*')
           .eq('id', extractedId)
           .is('deleted_at', null)
           .maybeSingle();
@@ -179,7 +180,7 @@ export async function GET(request: NextRequest) {
       if (!alunoData) {
         const { data, error } = await supabaseAdmin
           .from('alunos')
-          .select('id, nome, turma_id, foto_url, posto_graduacao, nome_guerra, nip, om, matricula')
+          .select('*')
           .ilike('email', email.trim())
           .is('deleted_at', null)
           .maybeSingle();
@@ -187,12 +188,12 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // 6. Busca por NIP
+    // 6. Busca por NIF / NIP
     if (!alunoData && nip) {
       const { data, error } = await supabaseAdmin
         .from('alunos')
-        .select('id, nome, turma_id, foto_url, posto_graduacao, nome_guerra, nip, om, matricula')
-        .eq('nip', nip.trim())
+        .select('*')
+        .or(`nif.eq.${nip.trim()},matricula.eq.${nip.trim()}`)
         .is('deleted_at', null)
         .maybeSingle();
       if (data && !error) alunoData = data;
@@ -202,7 +203,7 @@ export async function GET(request: NextRequest) {
     if (!alunoData && matricula) {
       const { data, error } = await supabaseAdmin
         .from('alunos')
-        .select('id, nome, turma_id, foto_url, posto_graduacao, nome_guerra, nip, om, matricula')
+        .select('*')
         .eq('matricula', matricula.trim())
         .is('deleted_at', null)
         .maybeSingle();

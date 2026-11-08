@@ -95,7 +95,7 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
           if (profile.student_id) {
             q = q.eq('id', profile.student_id);
           } else if (profile.nip) {
-            q = q.eq('nip', profile.nip);
+            q = q.or(`nif.eq.${profile.nip},matricula.eq.${profile.nip}`);
           } else if (profile.email) {
             q = q.eq('email', profile.email);
           } else if (profile.full_name) {

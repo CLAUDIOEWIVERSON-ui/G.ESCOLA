@@ -58,17 +58,17 @@ export async function POST(req: NextRequest) {
       if (res2.data) accessRecord = res2.data;
     }
 
-    // C) Busca de fallback na tabela alunos (por ID se UUID, ou por matrícula / NIP)
+    // C) Busca de fallback na tabela alunos (por ID se UUID, ou por matrícula / NIF)
     if (!accessRecord) {
       let alunoQuery = supabaseAdmin
         .from('alunos')
-        .select('id, turma_id, nome, matricula, nip')
+        .select('*')
         .is('deleted_at', null);
 
       if (isUUID) {
         alunoQuery = alunoQuery.eq('id', cleanedAccessCode);
       } else {
-        alunoQuery = alunoQuery.or(`matricula.eq.${cleanedAccessCode},nip.eq.${cleanedAccessCode}`);
+        alunoQuery = alunoQuery.or(`matricula.eq.${cleanedAccessCode},nif.eq.${cleanedAccessCode}`);
       }
 
       const { data: matchedAluno } = await alunoQuery.maybeSingle();
@@ -128,16 +128,39 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Search for student in database
-    const { data: student, error: studentError } = await supabaseAdmin
+    // Search for student in database (usa select(*) para compatibilidade total de colunas)
+    let student: any = null;
+    let studentError: any = null;
+
+    const resStudent = await supabaseAdmin
       .from('alunos')
-      .select('id, nome, turma_id, genero, matricula, posto_graduacao, nome_guerra, om, foto_url, nip')
+      .select('*')
       .eq('id', accessRecord.student_id)
       .maybeSingle();
+
+    if (resStudent.data) {
+      student = resStudent.data;
+    } else {
+      studentError = resStudent.error;
+    }
+
+    // Fallback: se o student_id gravado no access code não coincidiu, busca por matrícula ou NIF
+    if (!student) {
+      const { data: altStudent } = await supabaseAdmin
+        .from('alunos')
+        .select('*')
+        .or(`matricula.eq.${accessRecord.access_code},matricula.eq.${cleanedAccessCode},nif.eq.${cleanedAccessCode}`)
+        .maybeSingle();
+      if (altStudent) {
+        student = altStudent;
+        studentError = null;
+      }
+    }
 
     if (studentError || !student) {
       console.error('Erro ao carregar o estudante correspondente:', studentError);
       return NextResponse.json({ error: 'Estudante correspondente não pôde ser carregado ou não existe.' }, { status: 404 });
+    }
     }
 
     // Validação estrita: somente alunos vinculados à turma (turma_id cadastrado) podem acessar o sistema
