@@ -18,15 +18,18 @@ export async function POST(req: NextRequest) {
 
     // Limpeza e normalização do código (extrai de URL completa caso enviado pelo scanner)
     let rawCode = String(accessCode || '').trim();
+    // Remove aspas caso venha como JSON string
+    rawCode = rawCode.replace(/^["']|["']$/g, '');
     if (rawCode.includes('?')) {
       const urlPart = rawCode.split('?')[1] || '';
-      const params = new URLSearchParams(urlPart);
+      const params = new URLSearchParams(urlPart.split('#')[0]);
       rawCode = params.get('code') || params.get('accessCode') || params.get('codigo') || rawCode;
     } else if (rawCode.toUpperCase().includes('CODE=')) {
-      const match = rawCode.match(/CODE=([^&]+)/i);
+      const match = rawCode.match(/CODE=([^&#\s]+)/i);
       if (match && match[1]) rawCode = match[1];
     }
     const cleanedAccessCode = decodeURIComponent(rawCode).trim().toUpperCase();
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanedAccessCode);
 
     // 1. Busca do registro de código de acesso no banco
     let accessRecord: any = null;
@@ -45,8 +48,8 @@ export async function POST(req: NextRequest) {
       accessErr = res1.error;
     }
 
-    // B) Busca por student_id em student_access_codes
-    if (!accessRecord) {
+    // B) Busca por student_id em student_access_codes (somente se cleanedAccessCode for um UUID válido)
+    if (!accessRecord && isUUID) {
       const res2 = await supabaseAdmin
         .from('student_access_codes')
         .select('*')
@@ -55,14 +58,20 @@ export async function POST(req: NextRequest) {
       if (res2.data) accessRecord = res2.data;
     }
 
-    // C) Busca de fallback na tabela alunos (por ID, matrícula ou NIP)
+    // C) Busca de fallback na tabela alunos (por ID se UUID, ou por matrícula / NIP)
     if (!accessRecord) {
-      const { data: matchedAluno } = await supabaseAdmin
+      let alunoQuery = supabaseAdmin
         .from('alunos')
         .select('id, turma_id, nome, matricula, nip')
-        .or(`id.eq.${cleanedAccessCode},matricula.eq.${cleanedAccessCode},nip.eq.${cleanedAccessCode}`)
-        .is('deleted_at', null)
-        .maybeSingle();
+        .is('deleted_at', null);
+
+      if (isUUID) {
+        alunoQuery = alunoQuery.eq('id', cleanedAccessCode);
+      } else {
+        alunoQuery = alunoQuery.or(`matricula.eq.${cleanedAccessCode},nip.eq.${cleanedAccessCode}`);
+      }
+
+      const { data: matchedAluno } = await alunoQuery.maybeSingle();
 
       if (matchedAluno) {
         const { data: existingCode } = await supabaseAdmin
@@ -164,9 +173,8 @@ export async function POST(req: NextRequest) {
 
     // Generate shadow email and deterministic password
     const email = `aluno_nif_${student.id}@aluno.escola.digital`;
-    const secretSalt = process.env.SUPABASE_SERVICE_ROLE_KEY || 'student-salt';
-    const hash = crypto.createHmac('sha256', secretSalt).update(student.id).digest('hex').substring(0, 16);
-    const shadowPassword = `Aluno_${hash}_!1`;
+    const studentHash = crypto.createHash('sha256').update('escola_naval_salt_' + student.id).digest('hex').substring(0, 16);
+    const shadowPassword = `Aluno_${studentHash}_!1`;
 
     let authUserId = '';
 
@@ -194,7 +202,6 @@ export async function POST(req: NextRequest) {
       }
       if (foundUser) {
         authUserId = foundUser.id;
-        console.log(`[student-login] Proactive check found existing auth user: ${authUserId}`);
       }
     } catch (listErr: any) {
       console.warn('[student-login] Error during proactive user list check (non-blocking):', listErr);
@@ -229,70 +236,34 @@ export async function POST(req: NextRequest) {
           authUserId = authData.user.id;
         }
       } catch (err: any) {
-        console.log('[student-login] Caught error during createUser:', err);
-        const errStr = (
-          err?.message || 
-          err?.error_description || 
-          err?.error || 
-          (typeof err === 'string' ? err : '') || 
-          String(err || '')
-        ).toLowerCase();
-
-        const isAlreadyRegistered = 
-          errStr.includes('already registered') || 
-          errStr.includes('already exists') || 
-          errStr.includes('user_already_exists') || 
-          errStr.includes('registered') || 
-          errStr.includes('exists') || 
-          err?.status === 422 || 
-          err?.statusCode === 422;
-
-        if (isAlreadyRegistered) {
-          console.log(`[student-login] User with email ${email} is reported as already registered. Fetching user list...`);
-          try {
-            let page = 1;
-            let foundUser = null;
-            while (true) {
-              const { data: uList, error: listError } = await supabaseAdmin.auth.admin.listUsers({
-                page: page,
-                perPage: 1000
-              });
-              if (listError || !uList?.users || uList.users.length === 0) {
-                break;
-              }
-              const found = uList.users.find((u: any) => u.email?.toLowerCase() === email.toLowerCase());
-              if (found) {
-                foundUser = found;
-                break;
-              }
-              if (uList.users.length < 1000) {
-                break;
-              }
-              page++;
+        try {
+          let page = 1;
+          while (!authUserId && page <= 5) {
+            const { data: uList } = await supabaseAdmin.auth.admin.listUsers({
+              page: page,
+              perPage: 1000
+            });
+            if (!uList?.users || uList.users.length === 0) break;
+            const found = uList.users.find((u: any) => u.email?.toLowerCase() === email.toLowerCase());
+            if (found) {
+              authUserId = found.id;
+              break;
             }
-            if (foundUser) {
-              authUserId = foundUser.id;
-            } else {
-              console.error(`[student-login] User reported already registered, but not found in listUsers format for ${email}`);
-              return NextResponse.json({ 
-                error: `Erro de login: A conta para o e-mail ${email} já existe, mas não pôde ser sincronizada.` 
-			  }, { status: 500 });
-            }
-          } catch (listErr: any) {
-            console.error('[student-login] Error listing users fallback:', listErr);
-            return NextResponse.json({ error: 'Erro ao localizar conta de estudante cadastrada.' }, { status: 500 });
+            if (uList.users.length < 1000) break;
+            page++;
           }
-        } else {
-          console.error('[student-login] Fatal error during student auth provision:', err);
-          return NextResponse.json({ error: 'Erro ao provisionar conta de acesso do aluno.' }, { status: 500 });
+        } catch (listErr: any) {
+          console.error('[student-login] Error listing users fallback:', listErr);
         }
       }
     }
 
-    // If we have the User ID, sync the student's metadata and upsert the profile with latest photo
+    // SEMPRE sincroniza a senha no Supabase auth.users e atualiza os metadados com a foto mais recente
     if (authUserId) {
       try {
         await supabaseAdmin.auth.admin.updateUserById(authUserId, {
+          password: shadowPassword,
+          email_confirm: true,
           user_metadata: {
             role: 'aluno',
             full_name: student.nome,
@@ -308,7 +279,7 @@ export async function POST(req: NextRequest) {
           }
         });
       } catch (metaErr) {
-        console.warn('Erro ao sincronizar user_metadata do aluno no login:', metaErr);
+        console.warn('Erro ao sincronizar senha e user_metadata do aluno no login:', metaErr);
       }
 
       const { error: profileError } = await supabaseAdmin
@@ -319,6 +290,8 @@ export async function POST(req: NextRequest) {
           full_name: student.nome,
           foto_url: student.foto_url || null,
           has_changed_password: true,
+          student_id: student.id,
+          turma_id: student.turma_id,
           created_at: new Date().toISOString()
         }, {
           onConflict: 'id'

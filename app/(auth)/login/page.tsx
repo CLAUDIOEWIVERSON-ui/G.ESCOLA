@@ -67,6 +67,9 @@ function LoginContent() {
                 throw new Error(data.error || 'Erro ao realizar login.');
               }
 
+              // Garante que nenhuma sessão anterior colida
+              await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
+
               const { error: signInError } = await supabase.auth.signInWithPassword({
                 email: data.email,
                 password: data.password
@@ -75,8 +78,9 @@ function LoginContent() {
               if (signInError) throw signInError;
 
               await refreshProfile();
-              router.push('/boletim');
+              window.location.href = '/boletim';
             } catch (err: any) {
+              console.error('[QR AutoLogin Error]:', err);
               setError(err.message || 'Erro ao realizar login automático via QR Code.');
             } finally {
               setLoading(false);
@@ -156,9 +160,9 @@ function LoginContent() {
           ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
           const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
           
-          // Use internal jsqr library
+          // Use internal jsqr library with both polarities supported
           const decoded = jsQR(imageData.data, imageData.width, imageData.height, {
-            inversionAttempts: 'dontInvert',
+            inversionAttempts: 'attemptBoth',
           });
 
           if (decoded) {
@@ -200,21 +204,33 @@ function LoginContent() {
 
     setScanSuccess('QR Code lido com sucesso!');
 
-    // 3. Fallback smart parsing algorithms for barcode scan codes
+    // 3. Algoritmo inteligente de extração do código
     let codeValue = text.trim();
     let passValue = '123'; // Standard student password default
 
     try {
       // Prioridade 1: Leitura de URL ou parâmetros de query (resolve QR Codes com link de acesso)
-      if (text.includes('?') || text.includes('code=') || text.includes('accessCode=') || text.startsWith('http://') || text.startsWith('https://')) {
+      if (text.includes('?') || text.includes('code=') || text.includes('accessCode=') || text.includes('codigo=') || text.startsWith('http://') || text.startsWith('https://')) {
         let queryString = text;
         if (text.includes('?')) {
           queryString = text.split('?')[1] || '';
         }
+        if (queryString.includes('#')) {
+          queryString = queryString.split('#')[0] || '';
+        }
         const urlParams = new URLSearchParams(queryString);
         const codeParam = urlParams.get('code') || urlParams.get('accessCode') || urlParams.get('codigo');
         const passParam = urlParams.get('password') || urlParams.get('pass') || urlParams.get('senha');
-        if (codeParam) codeValue = codeParam.trim().toUpperCase();
+        if (codeParam) {
+          codeValue = codeParam.trim().toUpperCase();
+        } else if (text.startsWith('http')) {
+          // Fallback: extrai do último segmento de caminho da URL caso não venha como query
+          const segments = text.split('?')[0].split('/').filter(Boolean);
+          const lastSeg = segments[segments.length - 1];
+          if (lastSeg && !['login', 'boletim', 'aluno'].includes(lastSeg.toLowerCase())) {
+            codeValue = lastSeg.trim().toUpperCase();
+          }
+        }
         if (passParam) passValue = passParam.trim();
       } else if (text.startsWith('{') && text.endsWith('}')) {
         const parsed = JSON.parse(text);
@@ -245,7 +261,7 @@ function LoginContent() {
     setPassword(passValue);
     setLoginType('aluno');
 
-    // 4. Kick-start auto-login process
+    // 4. Inicia login automático
     setLoading(true);
     setError(null);
 
@@ -261,7 +277,10 @@ function LoginContent() {
         throw new Error(data.error || 'Erro ao realizar login.');
       }
 
-      // Authenticate inside client-side Supabase helper
+      // Limpa qualquer sessão anterior local para não colidir
+      await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
+
+      // Autentica o aluno no cliente Supabase
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password
@@ -270,8 +289,9 @@ function LoginContent() {
       if (signInError) throw signInError;
 
       await refreshProfile();
-      router.push('/boletim');
+      window.location.href = '/boletim';
     } catch (err: any) {
+      console.error('[handleQRCodeDecoded Error]:', err);
       setError(err.message || 'Código lido, mas houve um erro ao realizar o login automático. Tente novamente ou verifique se o QR Code está correto.');
       setScanSuccess(null);
     } finally {
