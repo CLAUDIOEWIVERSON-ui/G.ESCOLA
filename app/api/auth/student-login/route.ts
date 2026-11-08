@@ -3,6 +3,8 @@ import { supabaseAdmin, isSupabaseAdminConfigured } from '@/lib/supabase/admin';
 import { recordAccessLog } from '@/lib/auth/accessLogs';
 import crypto from 'crypto';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   try {
     const reqBody = await req.json();
