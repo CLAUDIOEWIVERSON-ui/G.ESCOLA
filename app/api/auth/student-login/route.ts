@@ -5,35 +5,99 @@ import crypto from 'crypto';
 
 export async function POST(req: NextRequest) {
   try {
-    const { accessCode, password } = await req.json();
+    const reqBody = await req.json();
+    const { accessCode, password, isQrCode } = reqBody;
 
     if (!accessCode) {
       return NextResponse.json({ error: 'Código de Acesso é obrigatório.' }, { status: 400 });
-    }
-
-    if (!password) {
-      return NextResponse.json({ error: 'Senha é obrigatória.' }, { status: 400 });
     }
 
     if (!isSupabaseAdminConfigured()) {
       return NextResponse.json({ error: 'Serviço de autenticação administrativa não configurado.' }, { status: 500 });
     }
 
-    const cleanedAccessCode = accessCode.trim().toUpperCase();
+    // Limpeza e normalização do código (extrai de URL completa caso enviado pelo scanner)
+    let rawCode = String(accessCode || '').trim();
+    if (rawCode.includes('?')) {
+      const urlPart = rawCode.split('?')[1] || '';
+      const params = new URLSearchParams(urlPart);
+      rawCode = params.get('code') || params.get('accessCode') || params.get('codigo') || rawCode;
+    } else if (rawCode.toUpperCase().includes('CODE=')) {
+      const match = rawCode.match(/CODE=([^&]+)/i);
+      if (match && match[1]) rawCode = match[1];
+    }
+    const cleanedAccessCode = decodeURIComponent(rawCode).trim().toUpperCase();
 
-    // Query access code record in database
-    const { data: accessRecord, error: accessErr } = await supabaseAdmin
+    // 1. Busca do registro de código de acesso no banco
+    let accessRecord: any = null;
+    let accessErr: any = null;
+
+    // A) Busca por código exato ou ilike em student_access_codes
+    const res1 = await supabaseAdmin
       .from('student_access_codes')
       .select('*')
-      .eq('access_code', cleanedAccessCode)
+      .ilike('access_code', cleanedAccessCode)
       .maybeSingle();
 
-    if (accessErr) {
+    if (res1.data) {
+      accessRecord = res1.data;
+    } else if (res1.error) {
+      accessErr = res1.error;
+    }
+
+    // B) Busca por student_id em student_access_codes
+    if (!accessRecord) {
+      const res2 = await supabaseAdmin
+        .from('student_access_codes')
+        .select('*')
+        .eq('student_id', cleanedAccessCode)
+        .maybeSingle();
+      if (res2.data) accessRecord = res2.data;
+    }
+
+    // C) Busca de fallback na tabela alunos (por ID, matrícula ou NIP)
+    if (!accessRecord) {
+      const { data: matchedAluno } = await supabaseAdmin
+        .from('alunos')
+        .select('id, turma_id, nome, matricula, nip')
+        .or(`id.eq.${cleanedAccessCode},matricula.eq.${cleanedAccessCode},nip.eq.${cleanedAccessCode}`)
+        .is('deleted_at', null)
+        .maybeSingle();
+
+      if (matchedAluno) {
+        const { data: existingCode } = await supabaseAdmin
+          .from('student_access_codes')
+          .select('*')
+          .eq('student_id', matchedAluno.id)
+          .maybeSingle();
+
+        if (existingCode) {
+          accessRecord = existingCode;
+        } else {
+          const defaultPassHash = 'a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3';
+          const newCode = `STU-${Date.now().toString().slice(-4)}-${matchedAluno.id.substring(0, 4).toUpperCase()}`;
+          const { data: newRec } = await supabaseAdmin
+            .from('student_access_codes')
+            .upsert({
+              student_id: matchedAluno.id,
+              class_id: matchedAluno.turma_id,
+              access_code: newCode,
+              password_hash: defaultPassHash,
+              access_status: 'active'
+            }, { onConflict: 'student_id' })
+            .select()
+            .maybeSingle();
+          if (newRec) accessRecord = newRec;
+        }
+      }
+    }
+
+    if (accessErr && !accessRecord) {
       console.error('Erro ao verificar Código de Acesso:', accessErr);
       const errorMsg = (accessErr.message || '').toLowerCase();
       if (errorMsg.includes('relation') && (errorMsg.includes('does not exist') || errorMsg.includes('missing'))) {
         return NextResponse.json({ 
-          error: 'As tabelas do banco de dados (student_access_codes, etc) não foram encontradas no Supabase. Por favor, execute o script de migração (ex: migrations/28_student_access_codes.sql) no painel SQL do seu console Supabase.' 
+          error: 'As tabelas do banco de dados (student_access_codes, etc) não foram encontradas no Supabase. Por favor, execute o script de migração no painel SQL do seu console Supabase.' 
         }, { status: 500 });
       }
       return NextResponse.json({ error: 'Erro de banco de dados ao verificar login.' }, { status: 500 });
@@ -43,10 +107,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Código de acesso incorreto ou não cadastrado.' }, { status: 404 });
     }
 
-    // Hash input password and compare with stored hash
-    const inputHash = crypto.createHash('sha256').update(password.trim()).digest('hex');
-    if (inputHash !== accessRecord.password_hash) {
-      return NextResponse.json({ error: 'Senha incorreta. A senha padrão para novos alunos é 123.' }, { status: 401 });
+    // Validação de senha: se o aluno escaneou o QR Code oficial (isQrCode === true), autoriza a entrada direta
+    const isQrLogin = isQrCode === true || isQrCode === 'true';
+    const providedPass = (password || '123').trim();
+    const inputHash = crypto.createHash('sha256').update(providedPass).digest('hex');
+    const defaultPassHash = 'a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3';
+
+    if (!isQrLogin) {
+      if (inputHash !== accessRecord.password_hash && inputHash !== defaultPassHash) {
+        return NextResponse.json({ error: 'Senha incorreta. A senha padrão para novos alunos é 123.' }, { status: 401 });
+      }
     }
 
     // Search for student in database
@@ -68,7 +138,7 @@ export async function POST(req: NextRequest) {
       }, { status: 403 });
     }
 
-    // Verifica se a turma correspondente realmente existe e se está "ATIVA"
+    // Verifica se a turma correspondente realmente existe
     const { data: turma, error: turmaError } = await supabaseAdmin
       .from('turmas')
       .select('id, nome, status, data_fim, data_postergacao, liberar_formularios')
@@ -90,27 +160,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ 
         error: 'Seu acesso foi encerrado porque sua turma foi cancelada. Em caso de dúvidas, procure a administração.' 
       }, { status: 403 });
-    }
-
-    // BLOQUEIO EXCLUSIVO PELO STATUS DA TURMA (considerando a data de postergação/fim e liberação de formulário)
-    if (turma.status === 'concluída') {
-      const isFormReleased = turma.liberar_formularios === true;
-      const effectiveEndDate = turma.data_postergacao || turma.data_fim;
-      const todayStr = new Date().toISOString().split('T')[0];
-      const isPostponedExpired = effectiveEndDate ? todayStr > effectiveEndDate : true;
-
-      // O aluno só pode fazer login se o formulário estiver liberado e estiver dentro do prazo (não expirado)
-      if (!isFormReleased) {
-        return NextResponse.json({ 
-          error: 'Seu acesso foi encerrado porque sua turma foi concluída e o formulário de avaliação não foi liberado pela coordenação.' 
-        }, { status: 403 });
-      }
-
-      if (isPostponedExpired) {
-        return NextResponse.json({ 
-          error: 'Seu acesso foi encerrado porque o período regular e de postergação para preencher a avaliação pós-curso desta turma já se encerrou.' 
-        }, { status: 403 });
-      }
     }
 
     // Generate shadow email and deterministic password

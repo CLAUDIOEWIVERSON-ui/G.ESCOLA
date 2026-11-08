@@ -310,10 +310,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   const todayStr = new Date().toISOString().split('T')[0];
                   const isPostponedExpired = effectiveEndDate ? todayStr > effectiveEndDate : true;
 
-                  // Se o formulário não estiver liberado OU o prazo de postergação estiver expirado, encerra a sessão
-                  if (!isFormReleased || isPostponedExpired) {
-                    await supabase.auth.signOut();
-                    router.push('/login?blocked=true');
+                  // Se a turma estiver concluída, apenas restringe o acesso ao formulário de avaliação se não estiver liberado
+                  if (pathname === '/avaliacao' && (!isFormReleased || isPostponedExpired)) {
+                    router.push('/boletim');
                   }
                 }
               }

@@ -40,7 +40,7 @@ function LoginContent() {
         setError('Seu acesso foi encerrado porque sua turma foi concluída. Em caso de dúvidas, procure a administração.');
         setLoginType('aluno');
       } else {
-        const codeParam = searchParams.get('code') || searchParams.get('accessCode');
+        const codeParam = searchParams.get('code') || searchParams.get('accessCode') || searchParams.get('codigo');
         const passParam = searchParams.get('password') || searchParams.get('pass') || searchParams.get('senha') || '123';
         if (codeParam) {
           setLoginType('aluno');
@@ -55,7 +55,11 @@ function LoginContent() {
               const response = await fetch('/api/auth/student-login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ accessCode: codeParam.trim().toUpperCase(), password: passParam.trim() })
+                body: JSON.stringify({ 
+                  accessCode: codeParam.trim().toUpperCase(), 
+                  password: passParam.trim(),
+                  isQrCode: true 
+                })
               });
               
               const data = await response.json();
@@ -73,7 +77,7 @@ function LoginContent() {
               await refreshProfile();
               router.push('/boletim');
             } catch (err: any) {
-              setError(err.message || 'Erro ao realizar login automático.');
+              setError(err.message || 'Erro ao realizar login automático via QR Code.');
             } finally {
               setLoading(false);
             }
@@ -201,7 +205,18 @@ function LoginContent() {
     let passValue = '123'; // Standard student password default
 
     try {
-      if (text.startsWith('{') && text.endsWith('}')) {
+      // Prioridade 1: Leitura de URL ou parâmetros de query (resolve QR Codes com link de acesso)
+      if (text.includes('?') || text.includes('code=') || text.includes('accessCode=') || text.startsWith('http://') || text.startsWith('https://')) {
+        let queryString = text;
+        if (text.includes('?')) {
+          queryString = text.split('?')[1] || '';
+        }
+        const urlParams = new URLSearchParams(queryString);
+        const codeParam = urlParams.get('code') || urlParams.get('accessCode') || urlParams.get('codigo');
+        const passParam = urlParams.get('password') || urlParams.get('pass') || urlParams.get('senha');
+        if (codeParam) codeValue = codeParam.trim().toUpperCase();
+        if (passParam) passValue = passParam.trim();
+      } else if (text.startsWith('{') && text.endsWith('}')) {
         const parsed = JSON.parse(text);
         if (parsed.accessCode || parsed.codigo || parsed.code) {
           codeValue = String(parsed.accessCode || parsed.codigo || parsed.code).trim().toUpperCase();
@@ -209,24 +224,18 @@ function LoginContent() {
         if (parsed.password || parsed.senha || parsed.pass) {
           passValue = String(parsed.password || parsed.senha || parsed.pass).trim();
         }
-      } else if (text.includes(':')) {
-        const parts = text.split(':');
-        if (parts.length >= 2) {
-          codeValue = parts[0].trim().toUpperCase();
-          passValue = parts[1].trim();
-        }
-      } else if (text.includes(';')) {
+      } else if (text.includes(';') && !text.startsWith('http')) {
         const parts = text.split(';');
         if (parts.length >= 2) {
           codeValue = parts[0].trim().toUpperCase();
           passValue = parts[1].trim();
         }
-      } else if (text.includes('?')) {
-        const urlParams = new URLSearchParams(text.split('?')[1] || text);
-        const codeParam = urlParams.get('accessCode') || urlParams.get('code') || urlParams.get('codigo');
-        const passParam = urlParams.get('password') || urlParams.get('pass') || urlParams.get('senha');
-        if (codeParam) codeValue = codeParam.trim().toUpperCase();
-        if (passParam) passValue = passParam.trim();
+      } else if (text.includes(':') && !text.startsWith('http')) {
+        const parts = text.split(':');
+        if (parts.length >= 2) {
+          codeValue = parts[0].trim().toUpperCase();
+          passValue = parts[1].trim();
+        }
       }
     } catch (_) {
       // Fall back to literal trimmed string value
@@ -244,7 +253,7 @@ function LoginContent() {
       const response = await fetch('/api/auth/student-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ accessCode: codeValue, password: passValue })
+        body: JSON.stringify({ accessCode: codeValue, password: passValue, isQrCode: true })
       });
       
       const data = await response.json();
