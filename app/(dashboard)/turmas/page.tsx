@@ -2307,13 +2307,6 @@ function TurmasContent() {
                   <span>Carteirinhas QR (Lote)</span>
                 </button>
                 <button
-                  onClick={() => setIsBulkModalOpen(true)}
-                  className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg hover:bg-slate-200 transition-all"
-                >
-                  <FileText size={14} />
-                  {t.common.bulkAdd}
-                </button>
-                <button
                   onClick={() => handleOpenStudentModal()}
                   className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-all"
                 >
