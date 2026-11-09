@@ -246,8 +246,8 @@ function TurmasContent() {
     loadTurmaForAttendancePrint(turma);
   };
 
-  const handleDirectPrintAttendance = (turma: any, type: 'mensal' | 'semanal' = 'mensal') => {
-    loadTurmaForAttendancePrint(turma, type);
+  const handleDirectPrintAttendance = (turma: any) => {
+    loadTurmaForAttendancePrint(turma, 'mensal');
   };
 
   const getStudentPhoto = (student: any) => {
@@ -1636,37 +1636,22 @@ function TurmasContent() {
                 </div>
 
                 {!turma.internacional && (
-                  <div className="grid grid-cols-2 gap-2">
+                  <div>
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
                         handleDirectPrintAttendance(turma, 'mensal');
                       }}
-                      className="flex items-center justify-between p-2.5 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white group/print transition-all cursor-pointer"
+                      className="w-full flex items-center justify-between p-2.5 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white group/print transition-all cursor-pointer border border-emerald-100/80 shadow-2xs"
                       title={language === 'pt' ? 'Baixar Folha Mensal em PDF' : 'Download Monthly Sheet PDF'}
                     >
                       <div className="flex items-center gap-1.5 text-emerald-700 group-hover/print:text-white transition-colors">
                         <FileText size={13} />
                         <span className="text-[8.5px] font-black uppercase tracking-wider">
-                          {language === 'pt' ? 'Folha Mensal (PDF)' : 'Monthly Sheet (PDF)'}
+                          {language === 'pt' ? 'Folha Mensal de Frequência (PDF)' : 'Monthly Attendance Sheet (PDF)'}
                         </span>
                       </div>
-                    </button>
-
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDirectPrintAttendance(turma, 'semanal');
-                      }}
-                      className="flex items-center justify-between p-2.5 rounded-xl bg-teal-50 text-teal-700 hover:bg-teal-600 hover:text-white group/print-week transition-all cursor-pointer"
-                      title={language === 'pt' ? 'Baixar Folha Semanal em PDF' : 'Download Weekly Sheet PDF'}
-                    >
-                      <div className="flex items-center gap-1.5 text-teal-700 group-hover/print-week:text-white transition-colors">
-                        <Calendar size={13} />
-                        <span className="text-[8.5px] font-black uppercase tracking-wider">
-                          {language === 'pt' ? 'Folha Semanal (PDF)' : 'Weekly Sheet (PDF)'}
-                        </span>
-                      </div>
+                      <ChevronRight size={13} className="text-emerald-400 group-hover/print:text-white transition-colors" />
                     </button>
                   </div>
                 )}
