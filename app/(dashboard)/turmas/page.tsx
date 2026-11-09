@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { useTurmas, useCursos, useDisciplinas } from '@/hooks/useCachedData';
@@ -124,6 +124,9 @@ function TurmasContent() {
   const [loadingFrequencia, setLoadingFrequencia] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isGeneratingRosterPDF, setIsGeneratingRosterPDF] = useState(false);
+
+  const effectivePrintStartDate = useMemo(() => printTurma?.data_inicio || printTurma?.curso?.data_inicio || null, [printTurma]);
+  const effectivePrintEndDate = useMemo(() => printTurma?.data_postergacao || printTurma?.data_fim || printTurma?.curso?.data_fim || null, [printTurma]);
 
   // Student Roster Print state
   const [isPrintRosterOpen, setIsPrintRosterOpen] = useState(false);

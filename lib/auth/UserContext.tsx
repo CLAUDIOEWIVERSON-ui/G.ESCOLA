@@ -332,9 +332,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         const sessionId = getTabSessionId();
         const currentPage = typeof window !== 'undefined' ? window.location.pathname : '/';
 
-        await fetch('/api/auth/heartbeat', {
+        await fetchWithAuth('/api/auth/heartbeat', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             action,
             sessionId,

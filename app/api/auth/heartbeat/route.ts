@@ -59,7 +59,20 @@ function cleanupExpiredSessions(now: number) {
 export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    let { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    // Fallback: se os cookies estiverem bloqueados no navegador, valida pelo cabeçalho Authorization Bearer
+    if (!user) {
+      const authHeader = req.headers.get('authorization') || req.headers.get('Authorization');
+      if (authHeader?.startsWith('Bearer ')) {
+        const token = authHeader.substring(7);
+        const { data: adminAuth } = await supabaseAdmin.auth.getUser(token);
+        if (adminAuth?.user) {
+          user = adminAuth.user;
+          authError = null;
+        }
+      }
+    }
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
