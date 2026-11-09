@@ -610,8 +610,8 @@ function TurmasContent() {
     setCurrentPage(1);
   };
   
-  const activeCategory = (categoryParam && ['all', 'expedito', 'especial', 'carreira', 'ead', 'exterior', 'arquivadas'].includes(categoryParam)) 
-    ? (categoryParam as 'all' | 'expedito' | 'especial' | 'carreira' | 'ead' | 'exterior' | 'arquivadas') 
+  const activeCategory = (categoryParam && ['all', 'expedito', 'especial', 'carreira', 'exterior', 'arquivadas'].includes(categoryParam)) 
+    ? (categoryParam as 'all' | 'expedito' | 'especial' | 'carreira' | 'exterior' | 'arquivadas') 
     : 'all';
 
   const setActiveCategory = (cat: string) => {
@@ -1376,7 +1376,7 @@ function TurmasContent() {
             <div className="h-10 w-[1px] bg-slate-200 mx-1 hidden xl:block" />
             <div className="w-full xl:w-auto overflow-x-auto pb-1 max-w-full">
               <div className="flex items-center gap-1 bg-white p-1 rounded-xl shadow-sm border border-slate-200 w-max xl:w-auto">
-                {(['all', 'expedito', 'especial', 'carreira', 'ead', 'exterior', 'arquivadas'] as const).map((cat) => (
+                {(['all', 'expedito', 'especial', 'carreira', 'exterior', 'arquivadas'] as const).map((cat) => (
                   <button
                     key={cat}
                     onClick={() => setActiveCategory(cat)}
@@ -1478,8 +1478,7 @@ function TurmasContent() {
                     {turma.internacional ? <Globe size={28} /> :
                      turma.categoria === 'expedito' ? <LayersIcon size={28} /> :
                      turma.categoria === 'especial' ? <GraduationCap size={28} /> :
-                     turma.categoria === 'carreira' ? <Library size={28} /> :
-                     turma.categoria === 'ead' ? <Monitor size={28} /> : <Library size={28} />}
+                     <Library size={28} />}
                   </div>
                   
                   <div className="flex flex-col items-end gap-2">
@@ -1852,7 +1851,6 @@ function TurmasContent() {
                 <option value="expedito">{t.classes.categoryExpedito}</option>
                 <option value="especial">{t.classes.categoryEspecial}</option>
                 <option value="carreira">{t.classes.categoryCarreira}</option>
-                <option value="ead">{t.classes.categoryEad}</option>
               </select>
             </div>
 
