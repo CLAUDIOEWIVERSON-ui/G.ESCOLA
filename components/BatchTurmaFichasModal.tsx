@@ -307,7 +307,7 @@ export default function BatchTurmaFichasModal({
                   <Printer size={16} />
                 </span>
                 <h2 className="text-sm sm:text-base font-black text-white uppercase tracking-wider">
-                  {language === 'pt' ? 'Fichas de Cadastro da Turma' : 'Class Registration Forms'}
+                  {language === 'pt' ? 'Ficha de Cadastro do Aluno' : 'Student Registration Form'}
                 </h2>
                 
                 {/* Mode status badge */}

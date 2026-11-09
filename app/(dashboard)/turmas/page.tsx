@@ -1621,7 +1621,7 @@ function TurmasContent() {
                       handleOpenPrintAllFichas(turma, true);
                     }}
                     className="flex items-center justify-between p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-black border border-slate-300 group/print-fichas transition-all cursor-pointer shadow-2xs"
-                    title={language === 'pt' ? 'Imprimir fichas de cadastro em branco para preenchimento manual (ou preenchidas)' : 'Print registration forms for manual filling (or filled)'}
+                    title={language === 'pt' ? 'Ficha de Cadastro do Aluno (Preenchimento manual ou preenchida)' : 'Student Registration Form (Manual blank or filled)'}
                   >
                     <div className="flex items-center gap-1.5 text-black transition-colors truncate">
                       <Printer size={13} className="shrink-0 text-black" style={{ color: '#000000' }} />
@@ -1629,7 +1629,7 @@ function TurmasContent() {
                         className="text-[8px] font-black uppercase tracking-wider truncate text-black"
                         style={{ color: '#000000' }}
                       >
-                        {language === 'pt' ? 'Fichas Cadastrais' : 'Student Forms'}
+                        {language === 'pt' ? 'Ficha de Cadastro do Aluno' : 'Student Registration Form'}
                       </span>
                     </div>
                   </button>
@@ -2214,7 +2214,7 @@ function TurmasContent() {
             >
               <Printer size={13} strokeWidth={2.5} className="text-black" style={{ color: '#000000' }} />
               <span style={{ color: '#000000' }}>
-                {language === 'pt' ? 'Fichas Cadastrais (Todas)' : 'Student Forms (All)'}
+                {language === 'pt' ? 'Ficha de Cadastro do Aluno' : 'Student Registration Form'}
               </span>
             </button>
             {!viewingTurma?.internacional && (
