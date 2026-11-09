@@ -138,10 +138,12 @@ function TurmasContent() {
   // Batch Student Registration Sheets Print state
   const [isPrintAllFichasOpen, setIsPrintAllFichasOpen] = useState(false);
   const [printAllFichasTurma, setPrintAllFichasTurma] = useState<any>(null);
+  const [initialBlankFichasMode, setInitialBlankFichasMode] = useState(true);
 
-  const handleOpenPrintAllFichas = (turma: any) => {
+  const handleOpenPrintAllFichas = (turma: any, blankMode: boolean = true) => {
     if (!turma) return;
     setPrintAllFichasTurma(turma);
+    setInitialBlankFichasMode(blankMode);
     setIsPrintAllFichasOpen(true);
   };
 
@@ -1616,14 +1618,17 @@ function TurmasContent() {
                   <button 
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleOpenPrintAllFichas(turma);
+                      handleOpenPrintAllFichas(turma, true);
                     }}
-                    className="flex items-center justify-between p-2 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white group/print-fichas transition-all cursor-pointer border border-blue-100/80 shadow-2xs"
-                    title={language === 'pt' ? 'Imprimir todas as fichas de cadastro dos alunos da turma' : 'Print all student registration forms'}
+                    className="flex items-center justify-between p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-black border border-slate-300 group/print-fichas transition-all cursor-pointer shadow-2xs"
+                    title={language === 'pt' ? 'Imprimir fichas de cadastro em branco para preenchimento manual (ou preenchidas)' : 'Print registration forms for manual filling (or filled)'}
                   >
-                    <div className="flex items-center gap-1.5 text-blue-700 group-hover/print-fichas:text-white transition-colors truncate">
-                      <Printer size={13} className="shrink-0" />
-                      <span className="text-[8px] font-black uppercase tracking-wider truncate">
+                    <div className="flex items-center gap-1.5 text-black transition-colors truncate">
+                      <Printer size={13} className="shrink-0 text-black" style={{ color: '#000000' }} />
+                      <span 
+                        className="text-[8px] font-black uppercase tracking-wider truncate text-black"
+                        style={{ color: '#000000' }}
+                      >
                         {language === 'pt' ? 'Fichas Cadastrais' : 'Student Forms'}
                       </span>
                     </div>
@@ -2202,12 +2207,15 @@ function TurmasContent() {
               {language === 'pt' ? 'Relação com Fotos (PDF)' : 'Roster with Photos (PDF)'}
             </button>
             <button
-              onClick={() => handleOpenPrintAllFichas(viewingTurma)}
-              className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-600 hover:text-white transition-all cursor-pointer shadow-sm shadow-blue-100"
-              title={language === 'pt' ? 'Imprimir todas as fichas de cadastro dos alunos desta turma' : 'Print all student registration forms'}
+              onClick={() => handleOpenPrintAllFichas(viewingTurma, true)}
+              className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider bg-slate-100 text-black border border-slate-300 px-3 py-1.5 rounded-lg hover:bg-slate-200 transition-all cursor-pointer shadow-sm shadow-slate-100"
+              style={{ color: '#000000' }}
+              title={language === 'pt' ? 'Imprimir fichas cadastrais em branco para preenchimento manual (ou preenchidas)' : 'Print registration forms for manual filling (or filled)'}
             >
-              <Printer size={13} strokeWidth={2.5} />
-              {language === 'pt' ? 'Fichas Cadastrais (Todas)' : 'Student Forms (All)'}
+              <Printer size={13} strokeWidth={2.5} className="text-black" style={{ color: '#000000' }} />
+              <span style={{ color: '#000000' }}>
+                {language === 'pt' ? 'Fichas Cadastrais (Todas)' : 'Student Forms (All)'}
+              </span>
             </button>
             {!viewingTurma?.internacional && (
               <button
@@ -2548,6 +2556,7 @@ function TurmasContent() {
         }}
         turma={printAllFichasTurma}
         language={language}
+        initialBlankMode={initialBlankFichasMode}
       />
 
       <Modal
