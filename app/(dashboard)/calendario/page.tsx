@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
@@ -509,30 +510,39 @@ export default function CalendarPage() {
           <h2 className="text-xl font-bold text-blue-600 drop-shadow-[0_0_10px_rgba(37,99,235,0.5)] uppercase tracking-tight">{t.calendar.title}</h2>
           <p className="text-sm text-slate-500">{t.calendar.subtitle}</p>
         </div>
-        {profile && (
-          <button 
-            onClick={() => {
-              setEditingEvent(null);
-              setFormData({
-                titulo: '',
-                descricao: '',
-                tipo_data: 'fixa',
-                data: new Date().toISOString().split('T')[0],
-                data_fim: '',
-                cor: 'bg-blue-600',
-                exibir_aluno: true,
-                exibir_instrutor: true,
-                uniforme_dia: '',
-                target_grupo: 'AMBOS'
-              });
-              setIsModalOpen(true);
-            }}
-            className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors shadow-sm"
+        <div className="flex items-center gap-2">
+          <Link
+            href="/feriados"
+            className="flex items-center justify-center gap-2 px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 rounded-lg text-sm font-semibold transition-colors border border-slate-200 shadow-sm"
           >
-            <Plus size={18} />
-            {t.calendar.newEvent}
-          </button>
-        )}
+            <CalendarRange size={16} className="text-amber-600" />
+            <span>Feriados Oficiais</span>
+          </Link>
+          {profile && (
+            <button 
+              onClick={() => {
+                setEditingEvent(null);
+                setFormData({
+                  titulo: '',
+                  descricao: '',
+                  tipo_data: 'fixa',
+                  data: new Date().toISOString().split('T')[0],
+                  data_fim: '',
+                  cor: 'bg-blue-600',
+                  exibir_aluno: true,
+                  exibir_instrutor: true,
+                  uniforme_dia: '',
+                  target_grupo: 'AMBOS'
+                });
+                setIsModalOpen(true);
+              }}
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors shadow-sm"
+            >
+              <Plus size={18} />
+              {t.calendar.newEvent}
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-4">

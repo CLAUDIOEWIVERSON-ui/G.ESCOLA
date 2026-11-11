@@ -34,7 +34,8 @@ import {
   Sparkles,
   Sun,
   Moon,
-  ShieldCheck
+  ShieldCheck,
+  CalendarRange
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -136,6 +137,14 @@ const MOBILE_NAV_COLORS: Record<string, {
     activeBg: 'bg-rose-600 text-white shadow-xs shadow-rose-500/30 border border-rose-700',
     border: 'border-rose-200 dark:border-rose-800',
     indicator: 'bg-rose-600',
+  },
+  '/feriados': {
+    text: 'text-amber-600 dark:text-amber-400',
+    activeText: 'text-amber-700 dark:text-amber-300',
+    bg: 'bg-amber-50 text-amber-600 border border-amber-200/80 dark:bg-amber-950/60 dark:text-amber-400 dark:border-amber-800/50',
+    activeBg: 'bg-amber-600 text-white shadow-xs shadow-amber-500/30 border border-amber-700',
+    border: 'border-amber-200 dark:border-amber-800',
+    indicator: 'bg-amber-600',
   },
   '/boletim': {
     text: 'text-sky-600 dark:text-sky-400',
@@ -323,7 +332,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           checkClassStatus();
         }
 
-        if (isStudentUser && !['/boletim', '/horario', '/calendario', '/avaliacao', '/configuracoes', '/manual'].includes(pathname || '')) {
+        if (isStudentUser && !['/boletim', '/horario', '/calendario', '/avaliacao', '/configuracoes', '/manual', '/pensamento-do-dia', '/feriados'].includes(pathname || '')) {
           // Force students logged in to only access allowed sections
           router.push('/boletim');
         }
@@ -357,7 +366,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: t.nav.reportCard || 'Meu Boletim', icon: FileText, path: '/boletim' },
     { name: t.schedule.title || 'Horários', icon: Calendar, path: '/horario' },
     { name: t.calendar.title || 'Calendário', icon: CalendarDays, path: '/calendario' },
+    { name: t.nav.holidays || 'Calendário de Feriados', icon: CalendarRange, path: '/feriados' },
     { name: "Avaliação Pós-Curso", icon: FileCheck, path: '/avaliacao' },
+    { name: t.nav.thoughtOfDay || 'Pensamento do Dia', icon: Sparkles, path: '/pensamento-do-dia' },
     { name: t.nav.settings || 'Minha Conta', icon: Settings, path: '/configuracoes' },
     { name: t.nav.manual || 'Manual do Usuário', icon: BookMarked, path: '/manual' },
   ] : [
@@ -368,8 +379,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: t.schedule.title, icon: Calendar, path: '/horario' },
     { name: t.nav.attendance, icon: CalendarDays, path: '/frequencia' },
     { name: t.calendar.title, icon: CalendarDays, path: '/calendario' },
+    { name: t.nav.holidays || 'Calendário de Feriados', icon: CalendarRange, path: '/feriados' },
     ...((isAdmin || isConvidado) ? [{ name: t.users.title, icon: Users, path: '/usuarios' }] : []),
     ...((isAdmin || isInstrutor || isConvidado) ? [{ name: "Análise de Avaliações", icon: FileCheck, path: '/relatorio-avaliacao' }] : []),
+    { name: t.nav.thoughtOfDay || 'Pensamento do Dia', icon: Sparkles, path: '/pensamento-do-dia' },
     { name: t.nav.links, icon: Link2, path: '/links' },
     { name: t.nav.settings, icon: Settings, path: '/configuracoes' },
     { name: t.nav.manual, icon: BookMarked, path: '/manual' },
@@ -866,9 +879,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       >
         {navItems.filter(item => {
           if (isStudentUser) {
-            return ['/boletim', '/horario', '/calendario', '/avaliacao', '/configuracoes', '/manual'].includes(item.path);
+            return ['/boletim', '/horario', '/calendario', '/feriados', '/avaliacao', '/configuracoes', '/manual'].includes(item.path);
           }
-          return ['/dashboard', '/cursos', '/turmas', '/frequencia', '/horario', '/calendario', '/configuracoes'].includes(item.path);
+          return ['/dashboard', '/cursos', '/turmas', '/frequencia', '/horario', '/calendario', '/feriados', '/configuracoes'].includes(item.path);
         }).map((item, idx) => {
           const isActive = pathname === item.path;
           const isSettings = item.path === '/configuracoes';
@@ -884,7 +897,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           const label = item.path === '/calendario' 
             ? (language === 'pt' ? 'AGENDA' : 'CALENDAR') 
-            : item.path === '/frequencia'
+            : item.path === '/feriados'
+              ? (language === 'pt' ? 'FERIADOS' : 'HOLIDAYS')
+              : item.path === '/frequencia'
               ? (language === 'pt' ? 'FREQ.' : 'ATTEND.')
               : item.path === '/avaliacao'
                 ? (language === 'pt' ? 'AVALIAÇÃO' : 'EVALUATION')

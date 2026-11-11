@@ -51,7 +51,6 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ExchangeRateTicker from '@/components/ExchangeRateTicker';
-import HolidaysWidget from '@/components/HolidaysWidget';
 import { UserWorkspaceHeader } from '@/components/UserWorkspaceHeader';
 import StudentDetailEditModal from '@/components/StudentDetailEditModal';
 import Image from 'next/image';
@@ -372,7 +371,6 @@ export default function DashboardPage() {
       <UserWorkspaceHeader />
 
       <ExchangeRateTicker />
-      <HolidaysWidget />
       {profile && !profile.has_changed_password && (
         <motion.div
           initial={{ opacity: 0, y: -15, scale: 0.98 }}
