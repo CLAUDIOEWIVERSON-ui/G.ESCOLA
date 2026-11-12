@@ -249,7 +249,30 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const force = searchParams.get('force') === 'true';
     const category = searchParams.get('category') || ''; // Theme categories
+    const history = searchParams.get('history') === 'true' || searchParams.get('list') === 'true';
     const todayStr = new Date().toISOString().split('T')[0];
+
+    // Return history of previous thoughts & catalog if requested
+    if (history) {
+      let dbThoughts: any[] = [];
+      try {
+        const { data, error } = await supabaseAdmin
+          .from('pensamento_dia')
+          .select('*')
+          .order('data_exibicao', { ascending: false })
+          .limit(60);
+        if (data && !error) {
+          dbThoughts = data;
+        }
+      } catch (err) {
+        console.warn('[History DB error]:', err);
+      }
+      return NextResponse.json({
+        success: true,
+        data: dbThoughts,
+        fallbacks: fallbackQuotes
+      });
+    }
 
     // We query the database on every GET request instead of using an in-memory thoughtCache bypass.
     // This ensures any manual admin thoughts are immediately synchronized for all sessions and devices.
@@ -409,12 +432,13 @@ export async function GET(req: NextRequest) {
 
           const fullUserPrompt = `${themePrompt} ${uniquenessDirectives}`;
 
-          // High-availability model priority cascade per gemini-api skill
+          // High-availability model priority cascade
           const candidateModels = [
-            'gemini-3.8-flash',
-            'gemini-flash-latest',
+            'gemini-3-flash-preview',
+            'gemini-3.6-flash',
             'gemini-3.1-flash-lite',
-            'gemini-3-flash-preview'
+            'gemini-3.5-flash-lite',
+            'gemini-3.8-flash'
           ];
 
           let parsedResult: { texto?: string; autor?: string; reflexao?: string } | null = null;
@@ -444,20 +468,15 @@ export async function GET(req: NextRequest) {
                   if (!isRepetitive) {
                     parsedResult = parsed;
                     break;
+                  } else {
+                    console.warn(`[Gemini Generation] Model ${modelName} returned a repetitive quote. Trying next model...`);
                   }
                 }
               }
             } catch (err: any) {
               lastModelError = err;
-              const errMsg = String(err?.message || err?.status || err || '').toLowerCase();
-              if (errMsg.includes('403') || errMsg.includes('permission_denied') || errMsg.includes('insufficient authentication') || errMsg.includes('scope')) {
-                geminiBlockedUntil = Date.now() + 10 * 60 * 1000;
-                break;
-              }
-              if (errMsg.includes('503') || errMsg.includes('high demand') || errMsg.includes('429') || errMsg.includes('resource_exhausted')) {
-                geminiBlockedUntil = Date.now() + 2 * 60 * 1000;
-                break;
-              }
+              const errStr = String(err?.message || err || '');
+              console.warn(`[Gemini Model Fail] Model ${modelName} encountered error: ${errStr.slice(0, 80)}. Trying fallback model...`);
             }
           }
 
@@ -468,13 +487,18 @@ export async function GET(req: NextRequest) {
               reflexao: (parsedResult.reflexao || '').trim()
             };
           } else {
+            console.warn('[Gemini Cascade] All Gemini models either failed or were unavailable. Falling back to diverse offline catalog.', lastModelError?.message);
             generatedQuote = pickRandomFallback(category);
           }
         } catch (apiError: any) {
+          console.warn('[Gemini API General Error] Falling back to preloaded thoughts catalog gracefully. Reason:', apiError?.message || apiError);
+          
           const errMsg = String(apiError?.message || apiError?.status || apiError || '').toLowerCase();
-          if (errMsg.includes('429') || errMsg.includes('resource_exhausted') || errMsg.includes('503')) {
-            geminiBlockedUntil = Date.now() + 2 * 60 * 1000;
+          if (errMsg.includes('429') || errMsg.includes('resource_exhausted')) {
+            console.warn('[Gemini API Cooldown] Rate limit encountered. Cooldown active for 3 minutes.');
+            geminiBlockedUntil = Date.now() + 3 * 60 * 1000;
           }
+
           generatedQuote = pickRandomFallback(category);
         }
       }
@@ -601,7 +625,7 @@ export async function POST(req: NextRequest) {
       isDemo: true
     };
 
-    // Attempt to upsert the active thought for today
+    // Attempt to upsert the thought for today
     const upsertPayload: any = {
       texto,
       autor,
@@ -634,6 +658,7 @@ export async function POST(req: NextRequest) {
 
     if (error) {
       console.warn('[POST thoughts DB error - falling back to cache]', error);
+      // Keep memory cache updated on manual changes as a fallback
       thoughtCache = {
         data_exibicao: todayStr,
         data: fallbackResponse
@@ -641,12 +666,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ 
         success: true, 
         data: fallbackResponse,
-        warning: 'Salvo em cache temporária.'
+        warning: 'Salvo em cache temporária (banco de dados offline ou tabela não migrada).'
       });
     }
 
     const savedData = data || fallbackResponse;
 
+    // Keep memory cache updated on manual changes
     thoughtCache = {
       data_exibicao: todayStr,
       data: savedData
@@ -659,3 +685,39 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message || 'Erro ao salvar novo pensamento' }, { status: 500 });
   }
 }
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+    const data_exibicao = searchParams.get('data_exibicao');
+
+    if (!id && !data_exibicao) {
+      return NextResponse.json({ error: 'ID ou data_exibicao é obrigatório.' }, { status: 400 });
+    }
+
+    let query = supabaseAdmin.from('pensamento_dia').delete();
+    if (id) {
+      query = query.eq('id', id);
+    } else if (data_exibicao) {
+      query = query.eq('data_exibicao', data_exibicao);
+    }
+
+    const { error } = await query;
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    // Reset memory cache if deleting today's quote
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (data_exibicao === todayStr || (thoughtCache?.data?.id === id)) {
+      thoughtCache = null;
+    }
+
+    return NextResponse.json({ success: true, message: 'Pensamento excluído com sucesso.' });
+  } catch (error: any) {
+    console.error('[DELETE pensamento-dia error]:', error);
+    return NextResponse.json({ error: error.message || 'Erro ao excluir pensamento' }, { status: 500 });
+  }
+}
+

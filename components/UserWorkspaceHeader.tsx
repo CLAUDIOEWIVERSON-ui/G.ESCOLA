@@ -17,8 +17,6 @@ import {
   Loader2, 
   X,
   BadgeCheck,
-  Building,
-  IdCard,
   Sparkles,
   FileText
 } from 'lucide-react';
@@ -214,47 +212,6 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
           className
         )}
       >
-        {/* Barra superior de status da Área de Trabalho */}
-        <div 
-          data-topbar="true"
-          className="workspace-header-dark-bar px-5 py-2.5 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-2 text-xs"
-          style={{ backgroundColor: '#0f172a', color: '#ffffff' }}
-        >
-          <div className="flex items-center gap-2">
-            <span className="p-1 rounded-md bg-white/10 text-white" style={{ color: '#ffffff' }}>
-              <IdCard size={14} className="text-white" style={{ color: '#ffffff', stroke: '#ffffff' }} />
-            </span>
-            <span 
-              className="font-extrabold uppercase tracking-widest text-[10px] text-white"
-              style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff' }}
-            >
-              {isPt ? 'Área de Trabalho • Identificação do Usuário' : 'Workspace • User Identity'}
-            </span>
-            <span className="hidden sm:inline text-slate-300 font-mono text-[10px]" style={{ color: '#ffffff', opacity: 0.8 }}>•</span>
-            <span 
-              className="hidden sm:inline text-[10px] text-white font-bold uppercase tracking-wider"
-              style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff' }}
-            >
-              {isPt ? 'Visão Pessoal do Usuário' : 'Personal User View'}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span 
-              className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-white border border-emerald-500/40"
-              style={{ color: '#ffffff' }}
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span 
-                className="text-white"
-                style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff' }}
-              >
-                {isPt ? 'Sessão Ativa' : 'Active Session'}
-              </span>
-            </span>
-          </div>
-        </div>
-
         {/* Corpo principal do Cartão de Identificação */}
         <div className="p-4 sm:p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-5 bg-gradient-to-b from-white to-slate-50/50">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 flex-1 w-full">
@@ -391,27 +348,6 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
                     {isPt ? 'Nome Completo:' : 'Full Name:'} {profile.full_name}
                   </p>
                 )}
-              </div>
-
-              {/* DETALHES ADICIONAIS (OM, NIP, STATUS) */}
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 pt-1 text-xs text-slate-600 border-t border-slate-100">
-                <div className="flex items-center gap-1">
-                  <Building size={12} className="text-slate-400" />
-                  <span className="font-semibold text-slate-500">{isPt ? 'OM:' : 'Unit:'}</span>
-                  <span className="font-bold text-slate-800">{profile.om || (isPt ? 'Comando da Força' : 'Naval Force')}</span>
-                </div>
-
-                {profile.nip && (
-                  <div className="flex items-center gap-1">
-                    <span className="font-semibold text-slate-500">NIP:</span>
-                    <span className="font-mono font-bold text-slate-800">{profile.nip}</span>
-                  </div>
-                )}
-
-                <div className="flex items-center gap-1 text-[11px] text-slate-400">
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                  <span>{isPt ? 'Acesso Pessoal Verificado' : 'Verified Access'}</span>
-                </div>
               </div>
             </div>
           </div>

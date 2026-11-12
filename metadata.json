@@ -1,8 +1,5 @@
 {
-  "name": "Presença e Frequência",
-  "description": "Sistema de gestão de presença e frequência escolar",
-  "requestFramePermissions": [],
-  "majorCapabilities": [
-    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
-  ]
+  "name": "Sistema de Gestão Escolar",
+  "description": "Sistema completo de gerenciamento escolar",
+  "version": "1.0.0"
 }

@@ -51,6 +51,8 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ExchangeRateTicker from '@/components/ExchangeRateTicker';
+import HolidaysWidget from '@/components/HolidaysWidget';
+import DashboardThoughtWidget from '@/components/DashboardThoughtWidget';
 import { UserWorkspaceHeader } from '@/components/UserWorkspaceHeader';
 import StudentDetailEditModal from '@/components/StudentDetailEditModal';
 import Image from 'next/image';
@@ -371,6 +373,8 @@ export default function DashboardPage() {
       <UserWorkspaceHeader />
 
       <ExchangeRateTicker />
+      <HolidaysWidget />
+      <DashboardThoughtWidget />
       {profile && !profile.has_changed_password && (
         <motion.div
           initial={{ opacity: 0, y: -15, scale: 0.98 }}
@@ -647,7 +651,7 @@ export default function DashboardPage() {
                       <table className="w-full text-left border-collapse">
                         <thead>
                           <tr className="text-[10px] font-bold text-slate-400 border-b border-slate-100 uppercase tracking-wider bg-slate-50/50">
-                            <th className="px-6 py-3">{t.students.name}</th>
+                            <th className="px-6 py-3">{t.students?.name || (language === 'pt' ? 'Nome Completo' : 'Full Name')}</th>
                             <th className="px-6 py-3">{t.dashboard.courseLocation}</th>
                             <th className="px-6 py-3">{language === 'pt' ? 'Documento' : 'Document'}</th>
                             <th className="px-6 py-3 text-center">{t.dashboard.startEnd}</th>
@@ -1091,7 +1095,7 @@ export default function DashboardPage() {
                       <tr className="border-b border-black bg-gray-100 text-[11px]">
                         <th className="p-2 border-r border-black font-bold uppercase w-[35px] text-center">#</th>
                         <th className="p-2 border-r border-black font-bold uppercase w-[60px] text-center">{language === 'pt' ? 'Foto' : 'Photo'}</th>
-                        <th className="p-2 border-r border-black font-bold uppercase">{t.students.name}</th>
+                        <th className="p-2 border-r border-black font-bold uppercase">{t.students?.name || (language === 'pt' ? 'Nome Completo' : 'Full Name')}</th>
                         <th className="p-2 border-r border-black font-bold uppercase">{t.dashboard.courseLocation}</th>
                         <th className="p-2 border-r border-black font-bold uppercase">{language === 'pt' ? 'Documento' : 'Document'}</th>
                         <th className="p-2 font-bold uppercase text-center">{t.dashboard.startEnd}</th>
@@ -2096,7 +2100,7 @@ function TurmasListTable({
                                   <thead>
                                     <tr className="text-[10px] font-bold text-slate-400 border-b border-slate-100 uppercase tracking-wider bg-slate-50/50">
                                       <th className="px-5 py-3 w-14 text-center">Nº</th>
-                                      <th className="px-6 py-3">{t.students.name}</th>
+                                      <th className="px-6 py-3">{t.students?.name || (isPt ? 'Nome Completo' : 'Full Name')}</th>
                                       <th className="px-6 py-3">{t.dashboard.courseLocation}</th>
                                       <th className="px-6 py-3">{isPt ? 'Documento' : 'Document'}</th>
                                       <th className="px-6 py-3 text-center">{t.dashboard.startEnd}</th>

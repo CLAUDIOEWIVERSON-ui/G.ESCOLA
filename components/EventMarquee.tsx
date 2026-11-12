@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useUser } from '@/lib/auth/UserContext';
 import { motion } from 'motion/react';
+import Link from 'next/link';
 import { Bell } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -314,17 +315,22 @@ export function EventMarquee({ thought }: EventMarqueeProps = {}) {
                 );
               })}
               {activeThought && (
-                <div key={`pensamento-${i}`} className="flex items-center gap-2 bg-blue-500/10 py-0.5 px-3 rounded-full border border-blue-500/20 mr-2">
-                  <span className="text-[9px] font-black uppercase tracking-widest text-blue-400 whitespace-nowrap">
+                <Link 
+                  href="/pensamento-do-dia" 
+                  key={`pensamento-${i}`} 
+                  title="Abrir Módulo do Pensamento do Dia"
+                  className="flex items-center gap-2 bg-blue-500/10 hover:bg-blue-500/20 transition-colors py-0.5 px-3 rounded-full border border-blue-500/20 mr-2 cursor-pointer group"
+                >
+                  <span className="text-[9px] font-black uppercase tracking-widest text-blue-400 whitespace-nowrap group-hover:text-blue-300">
                     💡 Pensamento do Dia:
                   </span>
-                  <span className="text-xs font-medium text-slate-200 italic whitespace-nowrap select-all">
+                  <span className="text-xs font-medium text-slate-200 italic whitespace-nowrap select-all group-hover:text-white">
                     &ldquo;{activeThought.texto}&rdquo;
                   </span>
-                  <span className="text-[10px] font-bold text-slate-400 not-italic whitespace-nowrap">
+                  <span className="text-[10px] font-bold text-slate-400 not-italic whitespace-nowrap group-hover:text-slate-300">
                     — {activeThought.autor}
                   </span>
-                </div>
+                </Link>
               )}
               {filteredEventos.map((evento) => (
                 <div key={`${evento.id}-${i}`} className="flex items-center gap-3">
