@@ -368,8 +368,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: t.calendar.title || 'Calendário', icon: CalendarDays, path: '/calendario' },
     { name: (t.nav as any).pensamento || 'Pensamento do Dia', icon: Quote, path: '/pensamento-do-dia' },
     { name: "Avaliação Pós-Curso", icon: FileCheck, path: '/avaliacao' },
-    { name: t.nav.settings || 'Minha Conta', icon: Settings, path: '/configuracoes' },
     { name: t.nav.manual || 'Manual do Usuário', icon: BookMarked, path: '/manual' },
+    { name: t.nav.settings || 'Minha Conta', icon: Settings, path: '/configuracoes' },
   ] : [
     { name: t.nav.dashboard, icon: LayoutDashboard, path: '/dashboard' },
     { name: t.nav.courses, icon: BookOpen, path: '/cursos' },
@@ -382,18 +382,44 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     ...((isAdmin || isConvidado) ? [{ name: t.users.title, icon: Users, path: '/usuarios' }] : []),
     ...((isAdmin || isInstrutor || isConvidado) ? [{ name: "Análise de Avaliações", icon: FileCheck, path: '/relatorio-avaliacao' }] : []),
     { name: t.nav.links, icon: Link2, path: '/links' },
-    { name: t.nav.settings, icon: Settings, path: '/configuracoes' },
     { name: t.nav.manual, icon: BookMarked, path: '/manual' },
+    { name: t.nav.settings, icon: Settings, path: '/configuracoes' },
   ];
 
-  // Colocar o "Início" sempre como primeiro módulo da lista e os demais em ordem alfabética
-  const dashboardItem = rawNavItems.find(item => item.path === '/dashboard');
-  const otherItems = rawNavItems
-    .filter(item => item.path !== '/dashboard')
-    .sort((a, b) =>
-      a.name.localeCompare(b.name, language === 'pt' ? 'pt-BR' : 'en', { sensitivity: 'base' })
-    );
-  const navItems = dashboardItem ? [dashboardItem, ...otherItems] : otherItems;
+  // Ordenação personalizada:
+  // 1. Início (/dashboard)
+  // 2. Cursos (/cursos)
+  // 3. Turmas (/turmas) imediatamente abaixo de Cursos
+  // 4. Módulos intermediários em ordem alfabética
+  // 5. Configurações (/configuracoes) no final, imediatamente acima do botão de Sair do Sistema
+  let navItems: any[];
+  if (!isStudentUser) {
+    const dashboardItem = rawNavItems.find(item => item.path === '/dashboard');
+    const coursesItem = rawNavItems.find(item => item.path === '/cursos');
+    const classesItem = rawNavItems.find(item => item.path === '/turmas');
+    const settingsItem = rawNavItems.find(item => item.path === '/configuracoes');
+
+    const intermediateItems = rawNavItems
+      .filter(item => !['/dashboard', '/cursos', '/turmas', '/configuracoes'].includes(item.path))
+      .sort((a, b) =>
+        a.name.localeCompare(b.name, language === 'pt' ? 'pt-BR' : 'en', { sensitivity: 'base' })
+      );
+
+    navItems = [
+      ...(dashboardItem ? [dashboardItem] : []),
+      ...(coursesItem ? [coursesItem] : []),
+      ...(classesItem ? [classesItem] : []), // Turmas fica abaixo de Cursos
+      ...intermediateItems,
+      ...(settingsItem ? [settingsItem] : []), // Configurações fica imediatamente acima de Sair do Sistema
+    ];
+  } else {
+    const settingsItem = rawNavItems.find(item => item.path === '/configuracoes');
+    const otherStudentItems = rawNavItems.filter(item => item.path !== '/configuracoes');
+    navItems = [
+      ...otherStudentItems,
+      ...(settingsItem ? [settingsItem] : []), // Configurações acima de Sair do Sistema
+    ];
+  }
 
   const userInitials = profile?.full_name ? profile.full_name.slice(0, 2).toUpperCase() : 'US';
   const roleName = profile?.role === 'admin' 
