@@ -829,23 +829,23 @@ function AvaliacaoAlunoForm() {
     return (
       <div className="space-y-6 max-w-4xl mx-auto">
         {profile?.role === 'aluno' && <UserWorkspaceHeader />}
-        <div className="max-w-xl mx-auto my-8 p-8 bg-white border border-slate-200 rounded-xl shadow-sm text-center">
-          <AlertCircle className="h-12 w-12 text-rose-500 mx-auto mb-4 animate-bounce" />
-          <h2 className="text-xl font-bold text-slate-900 mb-2 font-mono uppercase tracking-wide">Preenchimento Bloqueado</h2>
-          <p className="text-slate-600 text-sm mb-4 leading-relaxed">
+        <div className="max-w-xl mx-auto my-8 p-8 bg-white border border-slate-300 rounded-xl shadow-sm text-center">
+          <AlertCircle className="h-12 w-12 text-black mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-black mb-2 font-mono uppercase tracking-wide">Preenchimento Bloqueado</h2>
+          <p className="text-black text-sm mb-4 leading-relaxed">
             {!isFormReleased 
               ? 'O questionário pós-conclusão ainda não foi liberado para preenchimento pela coordenação de curso para sua turma.'
               : isTurmaConcluida && isPostponedExpired
                 ? 'O período regular e de postergação para preencher o questionário pós-curso desta turma concluída já se encerrou.'
                 : 'O questionário pós-conclusão está bloqueado porque esta turma não está ativa ou o prazo de preenchimento expirou.'}
           </p>
-          <p className="text-xs text-slate-400 font-mono mb-6">
+          <p className="text-xs text-black font-mono mb-6">
             Fale com o coordenador ou instrutor caso precise de liberação.
           </p>
           {profile?.role === 'aluno' && (
             <Link
               href="/dashboard"
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-white hover:bg-slate-100 text-black border border-black rounded-xl text-xs font-bold transition-all"
             >
               <Home size={14} />
               Voltar para Área do Aluno
@@ -861,19 +861,19 @@ function AvaliacaoAlunoForm() {
     return (
       <div className="space-y-6 max-w-4xl mx-auto">
         {profile?.role === 'aluno' && <UserWorkspaceHeader />}
-        <div className="max-w-xl mx-auto my-8 p-8 bg-white border border-slate-200 rounded-xl shadow-sm text-center">
-          <AlertCircle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-slate-900 mb-2 font-mono uppercase tracking-wide">Período de Avaliação Encerrado</h2>
-          <p className="text-slate-600 text-sm mb-4 leading-relaxed">
+        <div className="max-w-xl mx-auto my-8 p-8 bg-white border border-slate-300 rounded-xl shadow-sm text-center">
+          <AlertCircle className="h-12 w-12 text-black mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-black mb-2 font-mono uppercase tracking-wide">Período de Avaliação Encerrado</h2>
+          <p className="text-black text-sm mb-4 leading-relaxed">
             O prazo limite para o preenchimento do questionário pós-curso desta turma já se encerrou.
           </p>
-          <p className="text-xs text-slate-400 font-mono mb-6">
+          <p className="text-xs text-black font-mono mb-6">
             Se necessário, solicite um adiamento / postergação com a coordenação de curso.
           </p>
           {profile?.role === 'aluno' && (
             <Link
               href="/dashboard"
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-white hover:bg-slate-100 text-black border border-black rounded-xl text-xs font-bold transition-all"
             >
               <Home size={14} />
               Voltar para Área do Aluno
@@ -888,21 +888,21 @@ function AvaliacaoAlunoForm() {
   if (existingSubmission) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-8 md:py-12">
-        <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden p-6 md:p-8 space-y-6">
-          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-6 text-center space-y-4 max-w-xl mx-auto">
-            <CheckCircle className="h-12 w-12 text-emerald-600 mx-auto" />
-            <h2 className="text-xl font-bold text-slate-800 uppercase tracking-wide font-mono">Avaliação Enviada com Sucesso</h2>
-            <p className="text-sm text-slate-600 leading-relaxed">
-              Obrigado! Sua avaliação foi gravada de forma anônima e desvinculada para fins estatísticos de qualidade acadêmica da turma <strong className="text-slate-900">{studentDetails?.turma?.nome || "em curso"}</strong>.
+        <div className="bg-white border border-slate-300 rounded-xl shadow-sm overflow-hidden p-6 md:p-8 space-y-6">
+          <div className="bg-white border border-black rounded-xl p-6 text-center space-y-4 max-w-xl mx-auto">
+            <CheckCircle className="h-12 w-12 text-black mx-auto" />
+            <h2 className="text-xl font-bold text-black uppercase tracking-wide font-mono">Avaliação Enviada com Sucesso</h2>
+            <p className="text-sm text-black leading-relaxed">
+              Obrigado! Sua avaliação foi gravada de forma anônima e desvinculada para fins estatísticos de qualidade acadêmica da turma <strong className="text-black">{studentDetails?.turma?.nome || "em curso"}</strong>.
             </p>
-            <span className="inline-block text-[10px] uppercase font-mono font-bold bg-slate-100 text-slate-500 px-3 py-1 rounded">
+            <span className="inline-block text-[10px] uppercase font-mono font-bold bg-white border border-slate-300 text-black px-3 py-1 rounded">
               Código de Confirmação: {existingSubmission.id?.substring(0, 8)}...
             </span>
           </div>
 
           {/* Show weekly schedule even after submitting for QR Code, as requested! */}
-          <div className="pt-4 border-t border-slate-100 text-left">
-            <div className="flex items-center gap-3.5 mb-3 pb-2.5 border-b border-slate-200">
+          <div className="pt-4 border-t border-slate-300 text-left">
+            <div className="flex items-center gap-3.5 mb-3 pb-2.5 border-b border-slate-300">
               <div className="relative w-14 h-14 shrink-0 flex items-center justify-center overflow-hidden bg-white">
                 <Image
                   src={navalMissionLogo}
@@ -915,16 +915,16 @@ function AvaliacaoAlunoForm() {
                 />
               </div>
               <div className="text-left flex flex-col justify-center">
-                <h1 className="text-xs sm:text-sm font-black tracking-wider text-slate-900 uppercase leading-tight">
+                <h1 className="text-xs sm:text-sm font-black tracking-wider text-black uppercase leading-tight">
                   MISSÃO DE ASSESSORIA NAVAL DO BRASIL EM SÃO TOMÉ E PRÍNCIPE
                 </h1>
-                <p className="text-[10px] font-black tracking-widest text-slate-500 uppercase mt-0.5 leading-tight">
+                <p className="text-[10px] font-black tracking-widest text-black uppercase mt-0.5 leading-tight">
                   Detalhe Semanal de Aulas
                 </p>
               </div>
             </div>
-            <h3 className="text-xs font-bold text-slate-705 font-mono flex items-center gap-1.5 mb-3">
-              <Clock className="h-4 w-4 text-indigo-650" />
+            <h3 className="text-xs font-bold text-black font-mono flex items-center gap-1.5 mb-3">
+              <Clock className="h-4 w-4 text-black" />
               DETALHE SEMANAL DE AULAS COMPLETO (SÁBADO/DOMINGO LIVRE)
             </h3>
             
@@ -961,19 +961,19 @@ function AvaliacaoAlunoForm() {
 
               return (
                 <div className="space-y-4">
-                  <div className="flex justify-between items-center bg-slate-50 border border-slate-150 rounded-xl p-3 font-mono text-xs">
+                  <div className="flex justify-between items-center bg-white border border-slate-300 rounded-xl p-3 font-mono text-xs">
                     <button 
                       type="button" 
                       onClick={() => setCurrentScheduleDate(addDays(currentScheduleDate, -7))}
-                      className="bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 px-2.5 py-1.5 rounded-lg font-bold transition cursor-pointer"
+                      className="bg-white hover:bg-slate-100 text-black border border-black px-2.5 py-1.5 rounded-lg font-bold transition cursor-pointer"
                     >
                       ◀ Anterior
                     </button>
-                    <span className="font-extrabold text-slate-800 uppercase tracking-widest">{weekPeriodFormatted}</span>
+                    <span className="font-extrabold text-black uppercase tracking-widest">{weekPeriodFormatted}</span>
                     <button 
                       type="button"
                       onClick={() => setCurrentScheduleDate(addDays(currentScheduleDate, 7))}
-                      className="bg-white hover:bg-slate-105 text-slate-800 border border-slate-200 px-2.5 py-1.5 rounded-lg font-bold transition cursor-pointer"
+                      className="bg-white hover:bg-slate-100 text-black border border-black px-2.5 py-1.5 rounded-lg font-bold transition cursor-pointer"
                     >
                       Próxima ▶
                     </button>
@@ -987,25 +987,25 @@ function AvaliacaoAlunoForm() {
                       }).filter(item => item.cell.subjectId || item.cell.customSubject || item.cell.instructorId || item.cell.customInstructor || item.cell.room);
 
                       return (
-                        <div key={day.key} className="border border-slate-150 rounded-lg p-3 bg-slate-50/50 hover:bg-slate-100/35 transition flex flex-col justify-start">
-                          <span className="text-[10px] font-black font-mono text-indigo-700 uppercase tracking-wider block mb-2 pb-1 border-b border-indigo-100">
-                            {day.label} <span className="text-slate-500 font-semibold">({format(day.date, 'dd/MM')})</span>
+                        <div key={day.key} className="border border-slate-300 rounded-lg p-3 bg-white flex flex-col justify-start">
+                          <span className="text-[10px] font-black font-mono text-black uppercase tracking-wider block mb-2 pb-1 border-b border-slate-300">
+                            {day.label} <span className="text-black font-semibold">({format(day.date, 'dd/MM')})</span>
                           </span>
                           {filledSlots.length === 0 ? (
-                            <p className="text-[10px] italic text-slate-400 py-2">Sem programação de aulas</p>
+                            <p className="text-[10px] italic text-black py-2">Sem programação de aulas</p>
                           ) : (
                             <div className="space-y-2">
                               {filledSlots.map(({ slot, cell }) => {
                                 const subjectName = cell.customSubject || disciplinas.find(d => d.id === cell.subjectId)?.nome || cell.subjectId || "Disciplina";
                                 const instructorName = cell.customInstructor || instrutores.find(i => i.id === cell.instructorId)?.full_name || cell.instructorId || "Instrutor";
                                 return (
-                                  <div key={slot.id} className="bg-white border border-slate-150 rounded-lg p-2 shadow-xs text-[10px] space-y-1">
-                                    <div className="flex justify-between items-center gap-1.5 border-b pb-1 mb-1.5 border-slate-100">
-                                      <span className="bg-slate-150 text-slate-700 text-[8.5px] font-bold px-1 py-0.5 rounded font-mono">{slot.time}</span>
-                                      {cell.room && <span className="text-[8px] bg-slate-100 text-slate-600 font-mono px-1 rounded truncate max-w-16">Sala: {cell.room}</span>}
+                                  <div key={slot.id} className="bg-white border border-slate-300 rounded-lg p-2 shadow-xs text-[10px] space-y-1">
+                                    <div className="flex justify-between items-center gap-1.5 border-b pb-1 mb-1.5 border-slate-300">
+                                      <span className="bg-white border border-slate-300 text-black text-[8.5px] font-bold px-1 py-0.5 rounded font-mono">{slot.time}</span>
+                                      {cell.room && <span className="text-[8px] bg-white border border-slate-300 text-black font-mono px-1 rounded truncate max-w-16">Sala: {cell.room}</span>}
                                     </div>
-                                    <p className="font-extrabold text-slate-800 leading-tight block uppercase">{subjectName}</p>
-                                    <p className="text-[8.5px] text-slate-500 font-mono">Prof.: {instructorName}</p>
+                                    <p className="font-extrabold text-black leading-tight block uppercase">{subjectName}</p>
+                                    <p className="text-[8.5px] text-black font-mono">Prof.: {instructorName}</p>
                                   </div>
                                 );
                               })}
@@ -1325,17 +1325,22 @@ function AvaliacaoAlunoForm() {
 
   // Active Wizard flow questions
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="max-w-4xl mx-auto px-4 py-8 bg-white text-black">
+      {profile?.role === 'aluno' && (
+        <div className="mb-6">
+          <UserWorkspaceHeader />
+        </div>
+      )}
       {/* Wizard Header Progress */}
-      <div className="bg-slate-900 text-white rounded-xl shadow-sm p-6 mb-8 flex flex-col md:flex-row justify-between md:items-center gap-4">
+      <div className="bg-white text-black border border-slate-300 rounded-xl shadow-sm p-6 mb-8 flex flex-col md:flex-row justify-between md:items-center gap-4">
         <div>
-          <span className="text-[10px] text-sky-400 font-bold uppercase tracking-wider font-mono">AVALIAÇÃO POST-CURSO</span>
-          <h1 className="text-xl md:text-2xl font-bold tracking-tight">Questionário pós-conclusão</h1>
-          <p className="text-xs text-slate-400 mt-1">Sua resposta orienta nossos critérios de qualidade pedagógica.</p>
+          <span className="text-[10px] text-black font-bold uppercase tracking-wider font-mono">AVALIAÇÃO POST-CURSO</span>
+          <h1 className="text-xl md:text-2xl font-bold tracking-tight text-black">Questionário pós-conclusão</h1>
+          <p className="text-xs text-black mt-1">Sua resposta orienta nossos critérios de qualidade pedagógica.</p>
           {qrTurmaId && (
-            <div className="bg-sky-500/20 border border-sky-400/20 text-sky-300 rounded-lg p-2.5 text-xs mt-3 max-w-md font-sans leading-relaxed">
-              <span className="font-extrabold text-[10px] uppercase font-mono block text-sky-400">Acesso Livre via Código QR</span>
-              Turma: <strong className="text-white">{studentDetails?.turma?.nome}</strong> &bull; Respostas recebidas: <strong className="text-white">{submissionCount} de {studentCount}</strong> matriculados.
+            <div className="bg-white border border-slate-300 text-black rounded-lg p-2.5 text-xs mt-3 max-w-md font-sans leading-relaxed">
+              <span className="font-extrabold text-[10px] uppercase font-mono block text-black">Acesso Livre via Código QR</span>
+              Turma: <strong className="text-black">{studentDetails?.turma?.nome}</strong> &bull; Respostas recebidas: <strong className="text-black">{submissionCount} de {studentCount}</strong> matriculados.
             </div>
           )}
         </div>
@@ -1348,10 +1353,10 @@ function AvaliacaoAlunoForm() {
               key={step} 
               className={`w-8 h-8 rounded-full flex items-center justify-center font-bold font-mono text-xs border transition-all duration-300 ${
                 step === currentStep 
-                  ? "bg-white text-slate-950 border-white scale-110 shadow-lg" 
+                  ? "bg-white text-black border-2 border-black scale-110 shadow-sm font-black" 
                   : step < currentStep 
-                    ? "bg-slate-800 text-teal-400 border-teal-500" 
-                    : "bg-slate-950 text-slate-600 border-slate-800"
+                    ? "bg-white text-black border-black" 
+                    : "bg-white text-black border-slate-300"
               }`}
             >
               {qrTurmaId ? step - 1 : step}
@@ -1360,15 +1365,15 @@ function AvaliacaoAlunoForm() {
           </div>
           <button
             type="button"
-            onClick={() => window.location.href = '/'}
-            className="flex items-center gap-1.5 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/20 px-4 py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+            onClick={() => window.location.href = '/dashboard'}
+            className="flex items-center gap-1.5 bg-white text-black hover:bg-slate-100 border border-black px-4 py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer"
           >
             Abandonar
           </button>
         </div>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden min-h-[450px] flex flex-col">
+      <div className="bg-white text-black border border-slate-300 rounded-xl shadow-sm overflow-hidden min-h-[450px] flex flex-col">
         {/* Step 1: Identification Check */}
         {currentStep === 1 && (
           <div className="p-6 md:p-8 flex-1 flex flex-col justify-between">
@@ -1439,32 +1444,32 @@ function AvaliacaoAlunoForm() {
               </div>
 
               {/* Mensagens / Avisos da Turma */}
-              <div className="bg-slate-900 text-white rounded-xl shadow-md p-5 mt-6">
-                <div className="flex items-center gap-2.5 border-b border-slate-800 pb-3 mb-4">
-                  <div className="h-2 w-2 rounded-full bg-rose-500 animate-ping" />
-                  <h3 className="font-mono text-xs font-bold text-slate-200 tracking-wider uppercase flex items-center gap-1.5">
+              <div className="bg-white text-black border border-slate-300 rounded-xl shadow-sm p-5 mt-6">
+                <div className="flex items-center gap-2.5 border-b border-slate-300 pb-3 mb-4">
+                  <div className="h-2 w-2 rounded-full bg-black" />
+                  <h3 className="font-mono text-xs font-bold text-black tracking-wider uppercase flex items-center gap-1.5">
                     📢 Mensagens e Comunicados da Turma
                   </h3>
                 </div>
                 {loadingMessages ? (
-                  <p className="text-xs text-slate-400 italic animate-pulse py-2 font-mono">Carregando avisos personalizados...</p>
+                  <p className="text-xs text-black italic animate-pulse py-2 font-mono">Carregando avisos personalizados...</p>
                 ) : classMessages.length === 0 ? (
-                  <p className="text-xs text-slate-400 italic py-2">Nenhum aviso ou comunicado cadastrado especificamente para sua turma hoje.</p>
+                  <p className="text-xs text-black italic py-2">Nenhum aviso ou comunicado cadastrado especificamente para sua turma hoje.</p>
                 ) : (
                   <div className="space-y-3">
                     {classMessages.map((msg: any) => (
-                      <div key={msg.id} className="border-l-4 border-indigo-500 pl-3.5 py-1 bg-slate-800/40 rounded-r-lg">
-                        <h4 className="text-xs font-bold text-slate-100 flex items-center gap-2">
-                          <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+                      <div key={msg.id} className="border-l-4 border-black pl-3.5 py-1 bg-white rounded-r-lg">
+                        <h4 className="text-xs font-bold text-black flex items-center gap-2">
+                          <span className="w-1.5 h-1.5 rounded-full bg-black" />
                           {msg.titulo}
                           {msg.uniforme_dia && (
-                            <span className="bg-amber-100/10 text-amber-300 text-[9px] font-black font-mono px-1.5 py-0.5 rounded border border-amber-500/20 uppercase">
-                               Uniforme: {msg.uniforme_dia}
+                            <span className="bg-white text-black text-[9px] font-black font-mono px-1.5 py-0.5 rounded border border-black uppercase">
+                              Uniforme: {msg.uniforme_dia}
                             </span>
                           )}
                         </h4>
-                        {msg.descricao && <p className="text-xs text-slate-300 mt-1.5 leading-relaxed">{msg.descricao}</p>}
-                        <span className="text-[9px] font-bold font-mono text-slate-400 block mt-1">
+                        {msg.descricao && <p className="text-xs text-black mt-1.5 leading-relaxed">{msg.descricao}</p>}
+                        <span className="text-[9px] font-bold font-mono text-black block mt-1">
                           Data: {new Date(msg.data).toLocaleDateString('pt-BR')} 
                           {msg.target_grupo && ` • Alvo: ${msg.target_grupo}`}
                         </span>
@@ -1688,28 +1693,28 @@ function AvaliacaoAlunoForm() {
                 </div>
               )}
 
-              <div className="bg-amber-50 text-amber-900 border border-amber-200 rounded-lg p-4 text-xs leading-relaxed mt-6">
+              <div className="bg-white text-black border border-slate-300 rounded-lg p-4 text-xs leading-relaxed mt-6">
                 <strong>ATENÇÃO:</strong> Ao iniciar, você responderá questões objetivas e comentadas de forma oficial e integrada. Uma vez finalizado, suas opiniões serão armazenadas em banco de dados permanente para fins de melhoria de qualidade de ensino institucional.
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-3 pt-6 border-t mt-8">
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-3 pt-6 border-t border-slate-200 mt-8">
               <button 
                 type="button"
                 onClick={() => setIsPrintingBlank(true)}
-                className="flex items-center justify-center gap-2 bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 text-xs font-bold px-4 py-2.5 rounded-lg transition-colors cursor-pointer w-full sm:w-auto"
+                className="flex items-center justify-center gap-2 bg-white text-black hover:bg-slate-50 border border-slate-300 text-xs font-bold px-4 py-2.5 rounded-lg transition-colors cursor-pointer w-full sm:w-auto"
               >
-                <Download className="h-4 w-4" />
+                <Download className="h-4 w-4 text-black" />
                 Baixar Questionário em PDF (Manual)
               </button>
               
               <button 
                 type="button"
                 onClick={() => setCurrentStep(2)}
-                className="flex items-center justify-center gap-2 bg-slate-900 text-white hover:bg-slate-800 text-xs font-bold px-6 py-3 rounded-lg transition-colors cursor-pointer w-full sm:w-auto"
+                className="flex items-center justify-center gap-2 bg-white text-black hover:bg-slate-100 border-2 border-black text-xs font-black px-6 py-3 rounded-lg transition-colors cursor-pointer w-full sm:w-auto"
               >
                 Iniciar Avaliação Online
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="h-4 w-4 text-black" />
               </button>
             </div>
           </div>
@@ -1717,17 +1722,17 @@ function AvaliacaoAlunoForm() {
 
         {/* Step 2: Curso Questions */}
         {currentStep === 2 && (
-          <div className="p-6 md:p-8 flex-1 flex flex-col justify-between">
+          <div className="p-6 md:p-8 flex-1 flex flex-col justify-between bg-white text-black">
             <div>
-              <div className="flex items-center gap-3 border-b pb-3 mb-6">
-                <BookOpen className="h-5 w-5 text-indigo-600" />
-                <h2 className="text-base font-bold text-slate-900 font-mono">1. Avaliação do Curso</h2>
+              <div className="flex items-center gap-3 border-b border-slate-200 pb-3 mb-6">
+                <BookOpen className="h-5 w-5 text-black" />
+                <h2 className="text-base font-bold text-black font-mono">1. Avaliação do Curso</h2>
               </div>
 
               <div className="space-y-6">
                 {CURSO_QUESTIONS.map((q, idx) => (
-                  <div key={q.key} className="border-b pb-6 last:border-b-0">
-                    <p className="text-sm font-extrabold text-slate-950 mb-3 block">
+                  <div key={q.key} className="border-b border-slate-200 pb-6 last:border-b-0">
+                    <p className="text-sm font-extrabold text-black mb-3 block">
                       {idx + 1}. {q.label}
                     </p>
                     
@@ -1740,13 +1745,13 @@ function AvaliacaoAlunoForm() {
                             key={opt.value}
                             type="button"
                             onClick={() => handleSelectAnswer(q.key, opt.value)}
-                            className={`px-2 py-2.5 rounded-lg border text-center transition-all ${
+                            className={`px-2 py-2.5 rounded-lg border text-center transition-all cursor-pointer ${
                               isSelected 
-                                ? "bg-slate-950 text-white border-slate-950 font-black shadow-md scale-102"
-                                : "bg-white text-slate-800 border-slate-350 hover:bg-slate-50 hover:border-slate-400 font-bold"
+                                ? "bg-white text-black border-2 border-black font-black shadow-sm ring-2 ring-black/20" 
+                                : "bg-white text-black border-slate-300 hover:bg-slate-50 hover:border-black font-bold"
                             }`}
                           >
-                            <span className="block text-[11px] leading-tight font-bold break-words leading-none">{opt.label}</span>
+                            <span className="block text-[11px] leading-tight font-bold break-words">{isSelected ? `✓ ${opt.label}` : opt.label}</span>
                           </button>
                         );
                       })}
@@ -1756,20 +1761,20 @@ function AvaliacaoAlunoForm() {
               </div>
             </div>
 
-            <div className="flex justify-between pt-6 border-t mt-8">
+            <div className="flex justify-between pt-6 border-t border-slate-200 mt-8">
               <button 
                 onClick={handlePrev}
-                className="flex items-center gap-1 bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs font-bold px-5 py-2.5 rounded-lg transition-colors cursor-pointer"
+                className="flex items-center gap-1 bg-white text-black border border-slate-300 hover:bg-slate-100 text-xs font-bold px-5 py-2.5 rounded-lg transition-colors cursor-pointer"
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="h-4 w-4 text-black" />
                 Voltar
               </button>
               <button 
                 onClick={handleNext}
-                className="flex items-center gap-1 bg-slate-900 text-white hover:bg-slate-800 text-xs font-bold px-5 py-2.5 rounded-lg transition-colors cursor-pointer"
+                className="flex items-center gap-1 bg-white text-black border-2 border-black hover:bg-slate-100 text-xs font-black px-5 py-2.5 rounded-lg transition-colors cursor-pointer"
               >
                 Próximo
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="h-4 w-4 text-black" />
               </button>
             </div>
           </div>
@@ -1777,17 +1782,17 @@ function AvaliacaoAlunoForm() {
 
         {/* Step 3: Instrutor Questions */}
         {currentStep === 3 && (
-          <div className="p-6 md:p-8 flex-1 flex flex-col justify-between">
+          <div className="p-6 md:p-8 flex-1 flex flex-col justify-between bg-white text-black">
             <div>
-              <div className="flex items-center gap-3 border-b pb-3 mb-6">
-                <User className="h-5 w-5 text-amber-600" />
-                <h2 className="text-base font-bold text-slate-900 font-mono">2. Avaliação do Instrutor</h2>
+              <div className="flex items-center gap-3 border-b border-slate-200 pb-3 mb-6">
+                <User className="h-5 w-5 text-black" />
+                <h2 className="text-base font-bold text-black font-mono">2. Avaliação do Instrutor</h2>
               </div>
 
               <div className="space-y-6">
                 {INSTRUTOR_QUESTIONS.map((q, idx) => (
-                  <div key={q.key} className="border-b pb-6 last:border-b-0">
-                    <p className="text-sm font-extrabold text-slate-950 mb-3 block">
+                  <div key={q.key} className="border-b border-slate-200 pb-6 last:border-b-0">
+                    <p className="text-sm font-extrabold text-black mb-3 block">
                       {idx + 1}. {q.label}
                     </p>
                     
@@ -1800,13 +1805,13 @@ function AvaliacaoAlunoForm() {
                             key={opt.value}
                             type="button"
                             onClick={() => handleSelectAnswer(q.key, opt.value)}
-                            className={`px-2 py-2.5 rounded-lg border text-center transition-all ${
+                            className={`px-2 py-2.5 rounded-lg border text-center transition-all cursor-pointer ${
                               isSelected 
-                                ? "bg-slate-950 text-white border-slate-950 font-black shadow-md scale-102"
-                                : "bg-white text-slate-800 border-slate-350 hover:bg-slate-50 hover:border-slate-400 font-bold"
+                                ? "bg-white text-black border-2 border-black font-black shadow-sm ring-2 ring-black/20" 
+                                : "bg-white text-black border-slate-300 hover:bg-slate-50 hover:border-black font-bold"
                             }`}
                           >
-                            <span className="block text-[11px] leading-tight font-bold break-words leading-none">{opt.label}</span>
+                            <span className="block text-[11px] leading-tight font-bold break-words">{isSelected ? `✓ ${opt.label}` : opt.label}</span>
                           </button>
                         );
                       })}
@@ -1816,20 +1821,20 @@ function AvaliacaoAlunoForm() {
               </div>
             </div>
 
-            <div className="flex justify-between pt-6 border-t mt-8">
+            <div className="flex justify-between pt-6 border-t border-slate-200 mt-8">
               <button 
                 onClick={handlePrev}
-                className="flex items-center gap-1 bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs font-bold px-5 py-2.5 rounded-lg transition-colors cursor-pointer"
+                className="flex items-center gap-1 bg-white text-black border border-slate-300 hover:bg-slate-100 text-xs font-bold px-5 py-2.5 rounded-lg transition-colors cursor-pointer"
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="h-4 w-4 text-black" />
                 Voltar
               </button>
               <button 
                 onClick={handleNext}
-                className="flex items-center gap-1 bg-slate-900 text-white hover:bg-slate-800 text-xs font-bold px-5 py-2.5 rounded-lg transition-colors cursor-pointer"
+                className="flex items-center gap-1 bg-white text-black border-2 border-black hover:bg-slate-100 text-xs font-black px-5 py-2.5 rounded-lg transition-colors cursor-pointer"
               >
                 Próximo
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="h-4 w-4 text-black" />
               </button>
             </div>
           </div>
@@ -1837,18 +1842,18 @@ function AvaliacaoAlunoForm() {
 
         {/* Step 4: Autoavaliação & Infraestrutura */}
         {currentStep === 4 && (
-          <div className="p-6 md:p-8 flex-1 flex flex-col justify-between">
+          <div className="p-6 md:p-8 flex-1 flex flex-col justify-between bg-white text-black">
             <div className="space-y-8">
               <div>
-                <div className="flex items-center gap-3 border-b pb-3 mb-6">
-                  <Star className="h-5 w-5 text-emerald-600" />
-                  <h2 className="text-base font-bold text-slate-900 font-mono">3. Autoavaliação do Aluno</h2>
+                <div className="flex items-center gap-3 border-b border-slate-200 pb-3 mb-6">
+                  <Star className="h-5 w-5 text-black" />
+                  <h2 className="text-base font-bold text-black font-mono">3. Autoavaliação do Aluno</h2>
                 </div>
 
                 <div className="space-y-6">
                   {AUTO_QUESTIONS.map((q, idx) => (
-                    <div key={q.key} className="border-b pb-6 last:border-b-0">
-                      <p className="text-sm font-extrabold text-slate-950 mb-3 block">
+                    <div key={q.key} className="border-b border-slate-200 pb-6 last:border-b-0">
+                      <p className="text-sm font-extrabold text-black mb-3 block">
                         {idx + 1}. {q.label}
                       </p>
                       
@@ -1861,13 +1866,13 @@ function AvaliacaoAlunoForm() {
                               key={opt.value}
                               type="button"
                               onClick={() => handleSelectAnswer(q.key, opt.value)}
-                              className={`px-2 py-2.5 rounded-lg border text-center transition-all ${
+                              className={`px-2 py-2.5 rounded-lg border text-center transition-all cursor-pointer ${
                                 isSelected 
-                                  ? "bg-slate-950 text-white border-slate-950 font-black shadow-md scale-102"
-                                  : "bg-white text-slate-800 border-slate-350 hover:bg-slate-50 hover:border-slate-400 font-bold"
+                                  ? "bg-white text-black border-2 border-black font-black shadow-sm ring-2 ring-black/20" 
+                                  : "bg-white text-black border-slate-300 hover:bg-slate-50 hover:border-black font-bold"
                               }`}
                             >
-                              <span className="block text-[11px] leading-tight font-bold break-words leading-none">{opt.label}</span>
+                              <span className="block text-[11px] leading-tight font-bold break-words">{isSelected ? `✓ ${opt.label}` : opt.label}</span>
                             </button>
                           );
                         })}
@@ -1878,15 +1883,15 @@ function AvaliacaoAlunoForm() {
               </div>
 
               <div>
-                <div className="flex items-center gap-3 border-b pb-3 mb-6 mt-6">
-                  <MapPin className="h-5 w-5 text-rose-600" />
-                  <h2 className="text-base font-bold text-slate-950 font-mono uppercase tracking-wider">4. Infraestrutura e Recursos</h2>
+                <div className="flex items-center gap-3 border-b border-slate-200 pb-3 mb-6 mt-6">
+                  <MapPin className="h-5 w-5 text-black" />
+                  <h2 className="text-base font-bold text-black font-mono uppercase tracking-wider">4. Infraestrutura e Recursos</h2>
                 </div>
 
                 <div className="space-y-6">
                   {INFRA_QUESTIONS.map((q, idx) => (
-                    <div key={q.key} className="border-b pb-6 last:border-b-0">
-                      <p className="text-sm font-extrabold text-slate-950 mb-3 block">
+                    <div key={q.key} className="border-b border-slate-200 pb-6 last:border-b-0">
+                      <p className="text-sm font-extrabold text-black mb-3 block">
                         {idx + 1}. {q.label}
                       </p>
                       
@@ -1899,13 +1904,13 @@ function AvaliacaoAlunoForm() {
                               key={opt.value}
                               type="button"
                               onClick={() => handleSelectAnswer(q.key, opt.value)}
-                              className={`px-2 py-2.5 rounded-lg border text-center transition-all ${
+                              className={`px-2 py-2.5 rounded-lg border text-center transition-all cursor-pointer ${
                                 isSelected 
-                                  ? "bg-slate-950 text-white border-slate-950 font-black shadow-md scale-102"
-                                  : "bg-white text-slate-800 border-slate-350 hover:bg-slate-50 hover:border-slate-400 font-bold"
+                                  ? "bg-white text-black border-2 border-black font-black shadow-sm ring-2 ring-black/20" 
+                                  : "bg-white text-black border-slate-300 hover:bg-slate-50 hover:border-black font-bold"
                               }`}
                             >
-                              <span className="block text-[11px] leading-tight font-bold break-words leading-none">{opt.label}</span>
+                              <span className="block text-[11px] leading-tight font-bold break-words">{isSelected ? `✓ ${opt.label}` : opt.label}</span>
                             </button>
                           );
                         })}
@@ -1916,20 +1921,20 @@ function AvaliacaoAlunoForm() {
               </div>
             </div>
 
-            <div className="flex justify-between pt-6 border-t mt-8">
+            <div className="flex justify-between pt-6 border-t border-slate-200 mt-8">
               <button 
                 onClick={handlePrev}
-                className="flex items-center gap-1 bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs font-bold px-5 py-2.5 rounded-lg transition-colors cursor-pointer"
+                className="flex items-center gap-1 bg-white text-black border border-slate-300 hover:bg-slate-100 text-xs font-bold px-5 py-2.5 rounded-lg transition-colors cursor-pointer"
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="h-4 w-4 text-black" />
                 Voltar
               </button>
               <button 
                 onClick={handleNext}
-                className="flex items-center gap-1 bg-slate-900 text-white hover:bg-slate-800 text-xs font-bold px-5 py-2.5 rounded-lg transition-colors cursor-pointer"
+                className="flex items-center gap-1 bg-white text-black border-2 border-black hover:bg-slate-100 text-xs font-black px-5 py-2.5 rounded-lg transition-colors cursor-pointer"
               >
                 Próximo
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="h-4 w-4 text-black" />
               </button>
             </div>
           </div>
@@ -1937,74 +1942,74 @@ function AvaliacaoAlunoForm() {
 
         {/* Step 5: Comments & Signature */}
         {currentStep === 5 && (
-          <form onSubmit={handleSubmit} className="p-6 md:p-8 flex-1 flex flex-col justify-between">
+          <form onSubmit={handleSubmit} className="p-6 md:p-8 flex-1 flex flex-col justify-between bg-white text-black">
             <div className="space-y-6">
-              <div className="flex items-center gap-3 border-b pb-3 mb-6">
-                <FileText className="h-5 w-5 text-gray-700" />
-                <h2 className="text-base font-bold text-slate-900 font-mono">5. Comentários, Sugestões e Assinatura</h2>
+              <div className="flex items-center gap-3 border-b border-slate-200 pb-3 mb-6">
+                <FileText className="h-5 w-5 text-black" />
+                <h2 className="text-base font-bold text-black font-mono">5. Comentários, Sugestões e Assinatura</h2>
               </div>
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-extrabold text-slate-950 uppercase tracking-wider mb-2 font-mono">Sugestões de Melhoria</label>
+                  <label className="block text-xs font-extrabold text-black uppercase tracking-wider mb-2 font-mono">Sugestões de Melhoria</label>
                   <textarea 
                     value={comments.sugestoes_melhoria}
                     onChange={(e) => handleCommentChange('sugestoes_melhoria', e.target.value)}
                     placeholder="Quais sugestões você daria para aprimorar esse curso?"
-                    className="w-full border border-slate-355 rounded-lg p-3 text-xs focus:ring-2 focus:ring-slate-900/10 focus:outline-none min-h-[80px] font-bold text-slate-900"
+                    className="w-full border border-slate-300 rounded-lg p-3 text-xs bg-white focus:ring-2 focus:ring-black/15 focus:outline-none min-h-[80px] font-bold text-black"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-extrabold text-slate-955 uppercase tracking-wider mb-2 font-mono font-bold">Críticas Construtivas</label>
+                  <label className="block text-xs font-extrabold text-black uppercase tracking-wider mb-2 font-mono">Críticas Construtivas</label>
                   <textarea 
                     value={comments.criticas_construtivas}
                     onChange={(e) => handleCommentChange('criticas_construtivas', e.target.value)}
                     placeholder="Quais pontos cruciais do curso deveriam ser revistos ou corrigidos?"
-                    className="w-full border border-slate-355 rounded-lg p-3 text-xs focus:ring-2 focus:ring-slate-900/10 focus:outline-none min-h-[80px] font-bold text-slate-900"
+                    className="w-full border border-slate-300 rounded-lg p-3 text-xs bg-white focus:ring-2 focus:ring-black/15 focus:outline-none min-h-[80px] font-bold text-black"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-extrabold text-slate-955 uppercase tracking-wider mb-2 font-mono font-bold">Elogios</label>
+                  <label className="block text-xs font-extrabold text-black uppercase tracking-wider mb-2 font-mono">Elogios</label>
                   <textarea 
                     value={comments.elogios}
                     onChange={(e) => handleCommentChange('elogios', e.target.value)}
                     placeholder="Quais foram os principais pontos fortes deste curso?"
-                    className="w-full border border-slate-355 rounded-lg p-3 text-xs focus:ring-2 focus:ring-slate-900/10 focus:outline-none min-h-[80px] font-bold text-slate-900"
+                    className="w-full border border-slate-300 rounded-lg p-3 text-xs bg-white focus:ring-2 focus:ring-black/15 focus:outline-none min-h-[80px] font-bold text-black"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-extrabold text-slate-955 uppercase tracking-wider mb-2 font-mono font-bold">Necessidade de Novos Cursos</label>
+                  <label className="block text-xs font-extrabold text-black uppercase tracking-wider mb-2 font-mono">Necessidade de Novos Cursos</label>
                   <textarea 
                     value={comments.necessidades_novos_cursos}
                     onChange={(e) => handleCommentChange('necessidades_novos_cursos', e.target.value)}
                     placeholder="Indique novos temas ou disciplinas que você gostaria de realizar futuramente."
-                    className="w-full border border-slate-355 rounded-lg p-3 text-xs focus:ring-2 focus:ring-slate-900/10 focus:outline-none min-h-[80px] font-bold text-slate-900"
+                    className="w-full border border-slate-300 rounded-lg p-3 text-xs bg-white focus:ring-2 focus:ring-black/15 focus:outline-none min-h-[80px] font-bold text-black"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-extrabold text-slate-955 uppercase tracking-wider mb-2 font-mono font-mono">Comentários Adicionais</label>
+                  <label className="block text-xs font-extrabold text-black uppercase tracking-wider mb-2 font-mono">Comentários Adicionais</label>
                   <textarea 
                     value={comments.comentarios_adicionais}
                     onChange={(e) => handleCommentChange('comentarios_adicionais', e.target.value)}
                     placeholder="Alguma consideração final?"
-                    className="w-full border border-slate-355 rounded-lg p-3 text-xs focus:ring-2 focus:ring-slate-900/10 focus:outline-none min-h-[80px] font-bold text-slate-900"
+                    className="w-full border border-slate-300 rounded-lg p-3 text-xs bg-white focus:ring-2 focus:ring-black/15 focus:outline-none min-h-[80px] font-bold text-black"
                   />
                 </div>
               </div>
 
             </div>
 
-            <div className="flex justify-between pt-6 border-t mt-8">
+            <div className="flex justify-between pt-6 border-t border-slate-200 mt-8">
               <button 
                 type="button"
                 onClick={handlePrev}
-                className="flex items-center gap-1 bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs font-bold px-5 py-2.5 rounded-lg transition-colors cursor-pointer"
+                className="flex items-center gap-1 bg-white text-black border border-slate-300 hover:bg-slate-100 text-xs font-bold px-5 py-2.5 rounded-lg transition-colors cursor-pointer"
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="h-4 w-4 text-black" />
                 Voltar
               </button>
               
@@ -2012,10 +2017,10 @@ function AvaliacaoAlunoForm() {
                 id="btn-finalizar-avaliacao"
                 type="submit"
                 disabled={submitting}
-                className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold uppercase px-8 py-3.5 rounded-lg shadow-[0_0_15px_rgba(16,185,129,0.5)] border border-emerald-400 transition-all duration-250 cursor-pointer disabled:opacity-50 tracking-wider animate-pulse"
+                className="flex items-center gap-2 bg-white hover:bg-slate-100 text-black text-xs font-extrabold uppercase px-8 py-3.5 rounded-lg border-2 border-black transition-all duration-250 cursor-pointer disabled:opacity-50 tracking-wider"
               >
                 {submitting ? "Gravando respostas..." : "Finalizar e Enviar Avaliação"}
-                <ArrowRight className="h-4 w-4" />
+                <ArrowRight className="h-4 w-4 text-black" />
               </button>
             </div>
           </form>
@@ -2025,15 +2030,15 @@ function AvaliacaoAlunoForm() {
       {/* Supplemental student support panel on steps >= 2 */}
       {currentStep >= 2 && (
         <div className="mt-8 space-y-6">
-          <div className="bg-slate-900 text-white rounded-xl shadow-md p-5">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+          <div className="bg-white text-black border border-slate-300 rounded-xl shadow-sm p-5">
+            <div className="flex items-center justify-between border-b border-slate-300 pb-3 mb-4">
               <div className="flex items-center gap-2">
-                <Info className="h-4 w-4 text-sky-400" />
-                <h3 className="font-mono text-xs font-bold text-slate-200 uppercase tracking-wider">
+                <Info className="h-4 w-4 text-black" />
+                <h3 className="font-mono text-xs font-bold text-black uppercase tracking-wider">
                   📌 Painel de Apoio Acadêmico (Consulta Rápida)
                 </h3>
               </div>
-              <span className="text-[10px] font-mono bg-slate-800 text-slate-350 px-2.5 py-0.5 rounded font-bold uppercase">
+              <span className="text-[10px] font-mono bg-white text-black border border-slate-300 px-2.5 py-0.5 rounded font-bold uppercase">
                 Etapa {currentStep} de 5
               </span>
             </div>
@@ -2041,30 +2046,30 @@ function AvaliacaoAlunoForm() {
             <div className="space-y-4">
               {/* Class Messages inside Support Panel */}
               <div>
-                <h4 className="text-[11px] font-mono font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                <h4 className="text-[11px] font-mono font-bold text-black uppercase tracking-widest mb-2 flex items-center gap-1.5">
                   📢 Comunicados e Avisos da Turma
                 </h4>
                 {loadingMessages ? (
-                  <p className="text-[11px] text-slate-500 italic animate-pulse font-mono">Carregando mensagens...</p>
+                  <p className="text-[11px] text-black italic animate-pulse font-mono">Carregando mensagens...</p>
                 ) : classMessages.length === 0 ? (
-                  <p className="text-[11px] text-slate-500 italic">Nenhum aviso cadastrado para esta turma hoje.</p>
+                  <p className="text-[11px] text-black italic">Nenhum aviso cadastrado para esta turma hoje.</p>
                 ) : (
                   <div className="grid grid-cols-1 gap-2.5">
                     {classMessages.map((msg: any) => (
-                      <div key={msg.id} className="bg-slate-800/40 border border-slate-800 p-3 rounded-lg text-xs leading-relaxed">
+                      <div key={msg.id} className="bg-white border border-slate-300 p-3 rounded-lg text-xs leading-relaxed text-black">
                         <div className="flex justify-between items-start gap-2 mb-1">
-                          <span className="font-extrabold text-slate-200 flex items-center gap-1.5 uppercase">
-                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                          <span className="font-extrabold text-black flex items-center gap-1.5 uppercase">
+                            <span className="w-1.5 h-1.5 rounded-full bg-black" />
                             {msg.titulo}
                           </span>
                           {msg.uniforme_dia && (
-                            <span className="bg-amber-500/10 text-amber-400 text-[8.5px] font-black font-mono px-1.5 py-0.5 rounded border border-amber-500/20 uppercase">
+                            <span className="bg-white text-black text-[8.5px] font-black font-mono px-1.5 py-0.5 rounded border border-black uppercase">
                               Uniforme: {msg.uniforme_dia}
                             </span>
                           )}
                         </div>
-                        {msg.descricao && <p className="text-slate-300 mb-1">{msg.descricao}</p>}
-                        <span className="text-[9px] font-mono text-slate-500 font-bold block mt-1">
+                        {msg.descricao && <p className="text-black mb-1">{msg.descricao}</p>}
+                        <span className="text-[9px] font-mono text-black font-bold block mt-1">
                           Data: {new Date(msg.data).toLocaleDateString('pt-BR')} 
                           {msg.target_grupo && ` • Grupo: ${msg.target_grupo}`}
                         </span>
@@ -2075,26 +2080,26 @@ function AvaliacaoAlunoForm() {
               </div>
 
               {/* Weekly Schedule Access */}
-              <div className="border-t border-slate-800 pt-4 mt-2">
+              <div className="border-t border-slate-300 pt-4 mt-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-mono font-bold text-slate-400 uppercase tracking-widest">
+                  <span className="text-[11px] font-mono font-bold text-black uppercase tracking-widest">
                     📅 Quadro de Horários da Turma
                   </span>
                   <button
                     type="button"
                     onClick={() => setShowWeeklySchedule(!showWeeklySchedule)}
-                    className="bg-slate-850 hover:bg-slate-800 text-sky-400 hover:text-sky-300 border border-slate-700 font-mono text-[10px] font-bold px-2.5 py-1 rounded transition cursor-pointer select-none"
+                    className="bg-white hover:bg-slate-100 text-black border border-black font-mono text-[10px] font-bold px-2.5 py-1 rounded transition cursor-pointer select-none"
                   >
                     {showWeeklySchedule ? "OCULTAR CRONOGRAMA ▲" : "VISUALIZAR DETALHES ▼"}
                   </button>
                 </div>
 
                 {showWeeklySchedule && (
-                  <div className="bg-white text-slate-800 rounded-lg p-3 mt-3 shadow-inner border border-slate-200">
+                  <div className="bg-white text-black rounded-lg p-3 mt-3 border border-slate-300">
                     {scheduleLoading ? (
-                      <p className="text-xs text-slate-500 italic animate-pulse font-mono py-2 text-center">Carregando cronograma...</p>
+                      <p className="text-xs text-black italic animate-pulse font-mono py-2 text-center">Carregando cronograma...</p>
                     ) : Object.keys(scheduleData).length === 0 ? (
-                      <p className="text-xs text-slate-500 italic py-2 text-center text-amber-600">Nenhum quadro cadastrado nesta semana.</p>
+                      <p className="text-xs text-black italic py-2 text-center">Nenhum quadro cadastrado nesta semana.</p>
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-5 gap-2.5 mt-1.5 text-xs">
                         {(() => {
@@ -2124,20 +2129,20 @@ function AvaliacaoAlunoForm() {
                           return weekDays.map((day) => {
                             const active = slots.map(slot => ({ slot, cell: getCell(slot.id, day.key) })).filter(x => x.cell.subjectId || x.cell.customSubject);
                             return (
-                              <div key={day.key} className="bg-slate-50 border border-slate-250 p-2 rounded-lg">
-                                <span className="text-[10px] font-bold font-mono text-indigo-700 block mb-1.5 pb-0.5 border-b border-indigo-100 uppercase">
+                              <div key={day.key} className="bg-white border border-slate-300 p-2 rounded-lg">
+                                <span className="text-[10px] font-bold font-mono text-black block mb-1.5 pb-0.5 border-b border-slate-300 uppercase">
                                   {day.label} ({format(day.date, 'dd/MM')})
                                 </span>
                                 {active.length === 0 ? (
-                                  <p className="text-[9px] text-slate-400 italic">Sem aulas</p>
+                                  <p className="text-[9px] text-black italic">Sem aulas</p>
                                 ) : (
                                   <div className="space-y-1">
                                     {active.map(({ slot, cell }) => {
                                       const subjectName = cell.customSubject || disciplinas.find(d => d.id === cell.subjectId)?.nome || cell.subjectId || "Disciplina";
                                       return (
-                                        <div key={slot.id} className="bg-white p-1 rounded-sm border border-slate-150 text-[9px] leading-tight">
-                                          <span className="font-mono bg-slate-100 text-slate-500 px-0.5 rounded text-[8px] font-bold">{slot.time}</span>
-                                          <p className="font-extrabold text-slate-800 mt-0.5 uppercase truncate">{subjectName}</p>
+                                        <div key={slot.id} className="bg-white p-1 rounded-sm border border-slate-300 text-[9px] leading-tight">
+                                          <span className="font-mono bg-white border border-slate-300 text-black px-0.5 rounded text-[8px] font-bold">{slot.time}</span>
+                                          <p className="font-extrabold text-black mt-0.5 uppercase truncate">{subjectName}</p>
                                         </div>
                                       );
                                     })}
@@ -2155,12 +2160,12 @@ function AvaliacaoAlunoForm() {
 
               {/* Boletim Escolar summary widget */}
               {reportData && (
-                <div className="border-t border-slate-850 pt-3 mt-1 flex items-center justify-between">
-                  <span className="text-[11px] font-mono font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <div className="border-t border-slate-300 pt-3 mt-1 flex items-center justify-between">
+                  <span className="text-[11px] font-mono font-bold text-black uppercase tracking-widest flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-black" />
                     🎓 Boletim Escolar ({reportData.grades.length} Notas Lançadas)
                   </span>
-                  <span className="text-[9px] bg-emerald-950/60 text-emerald-300 font-mono border border-emerald-500/20 px-2 py-0.5 rounded font-black uppercase">
+                  <span className="text-[9px] bg-white text-black font-mono border border-black px-2 py-0.5 rounded font-black uppercase">
                     Vinculado Ativamente
                   </span>
                 </div>
@@ -2176,10 +2181,10 @@ function AvaliacaoAlunoForm() {
 export default function AvaliacaoAlunoPage() {
   return (
     <Suspense fallback={
-      <div className="flex h-[70vh] items-center justify-center bg-slate-50">
+      <div className="flex h-[70vh] items-center justify-center bg-white text-black">
         <div className="flex flex-col items-center gap-3">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
-          <span className="text-sm text-slate-500 font-mono">Carregando formulário de avaliação...</span>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
+          <span className="text-sm text-black font-mono">Carregando formulário de avaliação...</span>
         </div>
       </div>
     }>

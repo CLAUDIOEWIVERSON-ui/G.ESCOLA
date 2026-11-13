@@ -92,7 +92,7 @@ export function useTurmas() {
 
       let filteredData = dbData;
       if (role === 'instrutor' && grupoResponsavel) {
-        filteredData = mappedData.filter((t: any) => {
+        filteredData = dbData.filter((t: any) => {
           const courseGroup = t.curso?.grupo_responsavel || t.grupo_responsavel;
           if (!courseGroup) return false;
           if (grupoResponsavel === 'MAN') {

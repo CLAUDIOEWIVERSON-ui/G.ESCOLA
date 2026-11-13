@@ -275,13 +275,25 @@ export function EventMarquee({ thought }: EventMarqueeProps = {}) {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  const isStudentView = isAluno || profile?.role === 'aluno';
+
   if (loading || isMobile) return null;
   if (filteredEventos.length === 0 && !activeThought && evaluationBanners.length === 0) return null;
 
   return (
-    <div className="w-full bg-slate-900 hidden md:flex text-white overflow-hidden h-9 flex items-center border-b border-white/10 relative z-50 shrink-0">
-      <div className="absolute left-0 top-0 bottom-0 px-4 bg-blue-600 flex items-center gap-2 z-20 shadow-[4px_0_15px_rgba(0,0,0,0.3)]">
-        <Bell size={14} className="animate-pulse text-white" />
+    <div className={cn(
+      "w-full hidden md:flex overflow-hidden h-9 items-center border-b relative z-50 shrink-0",
+      isStudentView
+        ? "bg-white text-black border-slate-300"
+        : "bg-slate-900 text-white border-white/10"
+    )}>
+      <div className={cn(
+        "absolute left-0 top-0 bottom-0 px-4 flex items-center gap-2 z-20",
+        isStudentView
+          ? "bg-white text-black border-r border-slate-300"
+          : "bg-blue-600 text-white shadow-[4px_0_15px_rgba(0,0,0,0.3)]"
+      )}>
+        <Bell size={14} className={cn("animate-pulse", isStudentView ? "text-black" : "text-white")} />
         <span className="text-[10px] font-black uppercase tracking-tighter whitespace-nowrap">Eventos Próximos</span>
       </div>
       
@@ -301,14 +313,22 @@ export function EventMarquee({ thought }: EventMarqueeProps = {}) {
                 const dateLimit = banner.data_postergacao || banner.data_fim;
                 const formattedDate = formatBannerDate(dateLimit);
                 return (
-                  <div key={`eval-banner-${banner.id}-${i}`} className="flex items-center gap-2 bg-rose-500/10 py-0.5 px-3 rounded-xl border border-rose-500/30 mr-2 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.2)]">
-                    <span className="text-[9px] font-black uppercase tracking-widest text-rose-400 whitespace-nowrap">
+                  <div
+                    key={`eval-banner-${banner.id}-${i}`}
+                    className={cn(
+                      "flex items-center gap-2 py-0.5 px-3 rounded-xl border mr-2",
+                      isStudentView
+                        ? "bg-white border-black text-black"
+                        : "bg-rose-500/10 border-rose-500/30 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.2)]"
+                    )}
+                  >
+                    <span className={cn("text-[9px] font-black uppercase tracking-widest whitespace-nowrap", isStudentView ? "text-black" : "text-rose-400")}>
                       📋 AVALIAÇÃO PÓS-ESCOLAR:
                     </span>
-                    <span className="text-xs font-bold text-slate-100 whitespace-nowrap">
+                    <span className={cn("text-xs font-bold whitespace-nowrap", isStudentView ? "text-black" : "text-slate-100")}>
                       Turma &ldquo;{banner.nome}&rdquo;
                     </span>
-                    <span className="text-[10px] font-medium text-slate-300 whitespace-nowrap">
+                    <span className={cn("text-[10px] font-medium whitespace-nowrap", isStudentView ? "text-black" : "text-slate-300")}>
                       disponível para preenchimento {formattedDate ? `até ${formattedDate}` : 'liberado'}!
                     </span>
                   </div>
@@ -319,31 +339,41 @@ export function EventMarquee({ thought }: EventMarqueeProps = {}) {
                   href="/pensamento-do-dia" 
                   key={`pensamento-${i}`} 
                   title="Abrir Módulo do Pensamento do Dia"
-                  className="flex items-center gap-2 bg-blue-500/10 hover:bg-blue-500/20 transition-colors py-0.5 px-3 rounded-full border border-blue-500/20 mr-2 cursor-pointer group"
+                  className={cn(
+                    "flex items-center gap-2 transition-colors py-0.5 px-3 rounded-full border mr-2 cursor-pointer group",
+                    isStudentView
+                      ? "bg-white border-slate-300 text-black hover:bg-slate-50"
+                      : "bg-blue-500/10 hover:bg-blue-500/20 border-blue-500/20"
+                  )}
                 >
-                  <span className="text-[9px] font-black uppercase tracking-widest text-blue-400 whitespace-nowrap group-hover:text-blue-300">
+                  <span className={cn("text-[9px] font-black uppercase tracking-widest whitespace-nowrap", isStudentView ? "text-black" : "text-blue-400 group-hover:text-blue-300")}>
                     💡 Pensamento do Dia:
                   </span>
-                  <span className="text-xs font-medium text-slate-200 italic whitespace-nowrap select-all group-hover:text-white">
+                  <span className={cn("text-xs font-medium italic whitespace-nowrap select-all", isStudentView ? "text-black" : "text-slate-200 group-hover:text-white")}>
                     &ldquo;{activeThought.texto}&rdquo;
                   </span>
-                  <span className="text-[10px] font-bold text-slate-400 not-italic whitespace-nowrap group-hover:text-slate-300">
+                  <span className={cn("text-[10px] font-bold not-italic whitespace-nowrap", isStudentView ? "text-black" : "text-slate-400 group-hover:text-slate-300")}>
                     — {activeThought.autor}
                   </span>
                 </Link>
               )}
               {filteredEventos.map((evento) => (
                 <div key={`${evento.id}-${i}`} className="flex items-center gap-3">
-                  <div className={cn("w-1.5 h-1.5 rounded-full shrink-0", evento.cor)} />
-                  <span className="text-xs font-bold text-slate-100 whitespace-nowrap">
+                  <div className={cn("w-1.5 h-1.5 rounded-full shrink-0", isStudentView ? "bg-black" : evento.cor)} />
+                  <span className={cn("text-xs font-bold whitespace-nowrap", isStudentView ? "text-black" : "text-slate-100")}>
                     {evento.titulo}
                   </span>
                   {evento.uniforme_dia && (
-                    <span className="text-[10px] font-black bg-blue-500/20 text-blue-300 border border-blue-500/30 px-2 py-0.5 rounded uppercase tracking-widest whitespace-nowrap">
+                    <span className={cn(
+                      "text-[10px] font-black border px-2 py-0.5 rounded uppercase tracking-widest whitespace-nowrap",
+                      isStudentView
+                        ? "bg-white text-black border-slate-300"
+                        : "bg-blue-500/20 text-blue-300 border-blue-500/30"
+                    )}>
                       🥋 Uniforme: {evento.uniforme_dia}
                     </span>
                   )}
-                  <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest whitespace-nowrap">
+                  <span className={cn("text-[10px] font-bold uppercase tracking-widest whitespace-nowrap", isStudentView ? "text-black" : "text-blue-400")}>
                     {evento.tipo_data === 'periodo' && evento.data_fim ? (
                       `${new Date(evento.data).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} a ${new Date(evento.data_fim).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}`
                     ) : (
@@ -357,7 +387,9 @@ export function EventMarquee({ thought }: EventMarqueeProps = {}) {
         </motion.div>
       </div>
       
-      <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-slate-900 to-transparent z-10 pointer-events-none" />
+      {!isStudentView && (
+        <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-slate-900 to-transparent z-10 pointer-events-none" />
+      )}
     </div>
   );
 }

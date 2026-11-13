@@ -1233,21 +1233,21 @@ export default function HorarioPage() {
       {/* Selectors */}
       <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 print:hidden">
         {isNifStudent ? (
-          <div className="space-y-2 col-span-1 md:col-span-2 flex flex-col justify-center">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">
+          <div className="space-y-2 col-span-1 md:col-span-2 flex flex-col justify-center bg-white text-black">
+            <span className="text-[10px] font-black text-black uppercase tracking-widest px-1">
               {language === "pt"
                 ? "Sua Matrícula e Turma"
                 : "Your Registration & Class"}
             </span>
             <div className="flex flex-wrap gap-3 items-center mt-1">
-              <span className="px-4 py-2 bg-blue-50 text-blue-700 font-extrabold text-xs md:text-sm rounded-2xl border border-blue-100 uppercase tracking-wider">
+              <span className="px-4 py-2 bg-white text-black font-extrabold text-xs md:text-sm rounded-2xl border border-black uppercase tracking-wider">
                 {selectedCurso?.nome
                   ? selectedCurso.nome.toLowerCase().startsWith("curso")
                     ? selectedCurso.nome
                     : `Curso: ${selectedCurso.nome}`
                   : "..."}
               </span>
-              <span className="px-4 py-2 bg-emerald-50 text-emerald-700 font-extrabold text-xs md:text-sm rounded-2xl border border-emerald-100 uppercase tracking-wider">
+              <span className="px-4 py-2 bg-white text-black font-extrabold text-xs md:text-sm rounded-2xl border border-black uppercase tracking-wider">
                 {selectedTurma?.nome
                   ? selectedTurma.nome.toLowerCase().startsWith("turma")
                     ? selectedTurma.nome
@@ -1398,26 +1398,26 @@ export default function HorarioPage() {
                 <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 print-header-grid">
                   <div className="col-span-2 space-y-1 print-header-title-container">
                     <div className="flex items-center">
-                      <span className="text-[11px] font-black text-blue-600 uppercase tracking-widest leading-none">
+                      <span className={cn("text-[11px] font-black uppercase tracking-widest leading-none", isNifStudent ? "text-black" : "text-blue-600")}>
                         {selectedCurso?.nome}
                       </span>
                     </div>
-                    <h2 className="text-2xl md:text-3xl font-black tracking-tight leading-tight text-slate-900 animate-fade-in">
+                    <h2 className="text-2xl md:text-3xl font-black tracking-tight leading-tight text-black animate-fade-in">
                       {getCleanTurmaName(selectedTurma, selectedCurso?.nome, language === 'pt' ? 'Turma Única' : 'Single Class')}
                     </h2>
                   </div>
 
                   <div className="flex flex-col md:items-end justify-center">
-                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1 leading-none">
+                    <p className={cn("text-[9px] font-black uppercase tracking-[0.2em] mb-1 leading-none", isNifStudent ? "text-black" : "text-slate-400")}>
                       {t.schedule.period.toUpperCase()}
                     </p>
 
                     {/* Beautiful, static/read-only period badge for both Screen and Print */}
-                    <div className="bg-slate-50 border border-slate-200 px-4 py-2 rounded-xl flex flex-col md:items-end shadow-sm print-period-badge">
-                      <span className="text-base md:text-lg font-black text-slate-800 tracking-tight leading-tight">
+                    <div className={cn("border px-4 py-2 rounded-xl flex flex-col md:items-end shadow-sm print-period-badge", isNifStudent ? "bg-white border-black text-black" : "bg-slate-50 border-slate-200")}>
+                      <span className={cn("text-base md:text-lg font-black tracking-tight leading-tight", isNifStudent ? "text-black" : "text-slate-800")}>
                         {weekPeriodFormatted}
                       </span>
-                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 leading-none">
+                      <span className={cn("text-[9px] font-bold uppercase tracking-widest mt-0.5 leading-none", isNifStudent ? "text-black" : "text-slate-400")}>
                         {format(weekStart, "MMMM yyyy", { locale: ptBR })}
                       </span>
                     </div>
@@ -1426,7 +1426,7 @@ export default function HorarioPage() {
               </div>
 
               {/* Grid Table */}
-              <div className="p-3 md:p-5 bg-slate-50 flex-1 print-content">
+              <div className={cn("p-3 md:p-5 flex-1 print-content", isNifStudent ? "bg-white text-black" : "bg-slate-50")}>
                 {isEditMode && (
                   <div className="mb-3 p-2.5 bg-blue-50/80 border border-blue-200/80 rounded-xl flex items-center justify-between text-xs text-blue-900 no-print print:hidden">
                     <div className="flex items-center gap-2">
@@ -2032,7 +2032,7 @@ export default function HorarioPage() {
                                         <div className="space-y-1.5 flex-1 flex flex-col justify-between">
                                           <div className="space-y-1.5">
                                             {/* 1. MÓDULO */}
-                                            <div className="flex items-center gap-1.5 text-blue-600">
+                                            <div className={cn("flex items-center gap-1.5", isNifStudent ? "text-black" : "text-blue-600")}>
                                               <Layers
                                                 size={10}
                                                 className="shrink-0"
@@ -2043,7 +2043,7 @@ export default function HorarioPage() {
                                             </div>
 
                                             {/* 2. DISCIPLINA */}
-                                            <div className="flex items-center gap-1.5 text-neutral-950">
+                                            <div className={cn("flex items-center gap-1.5", isNifStudent ? "text-black" : "text-neutral-950")}>
                                               <BookOpen
                                                 size={10}
                                                 className="shrink-0"
@@ -2057,12 +2057,12 @@ export default function HorarioPage() {
 
                                             {/* 3. TÓPICO */}
                                             {(cell.topic || cell.topicId) && (
-                                              <div className="flex items-start gap-1.5 text-slate-600 pl-0.5">
+                                              <div className={cn("flex items-start gap-1.5 pl-0.5", isNifStudent ? "text-black" : "text-slate-600")}>
                                                 <Book
                                                   size={10}
-                                                  className="text-slate-400 shrink-0 mt-0.5"
+                                                  className={cn("shrink-0 mt-0.5", isNifStudent ? "text-black" : "text-slate-400")}
                                                 />
-                                                <span className="text-[10px] font-bold leading-tight uppercase tracking-tight text-slate-600 line-clamp-2">
+                                                <span className={cn("text-[10px] font-bold leading-tight uppercase tracking-tight line-clamp-2", isNifStudent ? "text-black" : "text-slate-600")}>
                                                   {cell.topic ||
                                                     cellTopicObj?.nome ||
                                                     ""}
@@ -2071,7 +2071,7 @@ export default function HorarioPage() {
                                             )}
 
                                             {/* 4. INSTRUTOR */}
-                                            <div className="flex items-center gap-1.5 text-neutral-500">
+                                            <div className={cn("flex items-center gap-1.5", isNifStudent ? "text-black" : "text-neutral-500")}>
                                               <User
                                                 size={10}
                                                 className="shrink-0"
@@ -2089,8 +2089,8 @@ export default function HorarioPage() {
                                           </div>
 
                                           {/* 5. SALA */}
-                                          <div className="pt-1.5 flex flex-col gap-1 border-t border-slate-100 mt-auto">
-                                            <div className="flex items-center gap-1.5 text-neutral-400">
+                                          <div className="pt-1.5 flex flex-col gap-1 border-t border-slate-200 mt-auto">
+                                            <div className={cn("flex items-center gap-1.5", isNifStudent ? "text-black" : "text-neutral-400")}>
                                               <MapPin size={10} />
                                               <span className="text-[9px] font-black uppercase tracking-tight leading-none">
                                                 {language === "pt"

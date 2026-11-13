@@ -129,13 +129,13 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
     ? (isPt ? 'Convidado / Visualizador' : 'Guest / Viewer')
     : (isPt ? 'Aluno / Estudante' : 'Student');
 
-  const roleColor = userRole === 'admin'
+  const roleColor = isAluno
+    ? 'bg-white text-black border-slate-300'
+    : userRole === 'admin'
     ? 'bg-blue-50 text-blue-700 border-blue-200'
     : userRole === 'instrutor'
     ? 'bg-purple-50 text-purple-700 border-purple-200'
-    : userRole === 'convidado'
-    ? 'bg-amber-50 text-amber-700 border-amber-200'
-    : 'bg-emerald-50 text-emerald-700 border-emerald-200';
+    : 'bg-amber-50 text-amber-700 border-amber-200';
 
   const displayName = profile.posto_graduacao || profile.nome_guerra
     ? `${profile.posto_graduacao || ''} ${profile.nome_guerra || profile.full_name || profile.nome}`.trim()
@@ -225,19 +225,23 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
       <div 
         id="user-workspace-identity-card"
         className={cn(
-          "bg-white border border-slate-200/90 rounded-2xl shadow-sm overflow-hidden transition-all",
+          "bg-white rounded-2xl shadow-sm overflow-hidden transition-all",
+          isAluno ? "border border-slate-300 text-black" : "border border-slate-200/90",
           className
         )}
       >
         {/* Corpo principal do Cartão de Identificação */}
-        <div className="p-4 sm:p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-5 bg-gradient-to-b from-white to-slate-50/50">
+        <div className={cn(
+          "p-4 sm:p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-5",
+          isAluno ? "bg-white text-black" : "bg-gradient-to-b from-white to-slate-50/50"
+        )}>
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 flex-1 w-full">
             {/* 1. FOTO DO USUÁRIO (APENAS PARA NÃO-ADMINISTRADORES) */}
             {!isAdmin && (
               <div className="relative shrink-0 group">
                 <div 
                   className={cn(
-                    "w-24 h-32 sm:w-28 sm:h-36 rounded-2xl overflow-hidden border-2 border-slate-300/80 shadow-md relative bg-slate-100 flex items-center justify-center transition-transform hover:scale-[1.02]",
+                    "w-24 h-32 sm:w-28 sm:h-36 rounded-2xl overflow-hidden border-2 border-slate-300/80 shadow-md relative bg-white flex items-center justify-center transition-transform hover:scale-[1.02]",
                     currentPhotoUrl && !photoLoadFailed ? "cursor-pointer" : ""
                   )}
                   onClick={() => {
@@ -262,13 +266,13 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
                           setPhotoLoadFailed(true);
                         }}
                       />
-                      <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                      <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 student-photo-overlay">
                         <span className="p-1.5 rounded-full bg-black/60 text-white" title={isPt ? "Ampliar foto" : "Enlarge photo"}>
                           <Maximize2 size={13} />
                         </span>
                       </div>
                       {isAluno && (
-                        <div className="absolute bottom-0 inset-x-0 bg-slate-900/80 text-[8px] font-bold text-white text-center py-0.5 uppercase tracking-tight">
+                        <div className="absolute bottom-0 inset-x-0 bg-black/80 text-[8px] font-bold text-white text-center py-0.5 uppercase tracking-tight student-photo-overlay">
                           {isPt ? 'Foto da Turma' : 'Class Photo'}
                         </div>
                       )}
@@ -283,7 +287,7 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
                         sizes="112px"
                         referrerPolicy="no-referrer"
                       />
-                      <div className="absolute inset-0 bg-slate-900/50 flex flex-col items-center justify-center gap-1 p-2">
+                      <div className="absolute inset-0 bg-slate-900/50 flex flex-col items-center justify-center gap-1 p-2 student-photo-overlay">
                         <span className="text-[9px] font-black text-white uppercase tracking-wider text-center leading-tight drop-shadow">
                           {isPt ? 'Foto da Turma' : 'Class Photo'}
                         </span>
@@ -331,17 +335,26 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
             <div className="space-y-3 flex-1 min-w-0">
               {/* BLOCO USUÁRIO */}
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                <span className={cn(
+                  "text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded border",
+                  isAluno ? "text-black bg-white border-slate-300" : "text-slate-400 bg-slate-100 border-slate-200"
+                )}>
                   {isPt ? 'USUÁRIO' : 'USER'}:
                 </span>
-                <span className="text-xs sm:text-sm font-bold font-mono text-slate-700 truncate max-w-[260px] sm:max-w-none">
+                <span className={cn(
+                  "text-xs sm:text-sm font-bold font-mono truncate max-w-[260px] sm:max-w-none",
+                  isAluno ? "text-black" : "text-slate-700"
+                )}>
                   {userIdentifier}
                 </span>
                 <span className={cn("text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full border shadow-2xs", roleColor)}>
                   {roleLabel}
                 </span>
                 {profile.grupo_responsavel && (
-                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200">
+                  <span className={cn(
+                    "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border",
+                    isAluno ? "bg-white text-black border-slate-300" : "bg-indigo-50 text-indigo-700 border-indigo-200"
+                  )}>
                     Grupo: {profile.grupo_responsavel}
                   </span>
                 )}
@@ -349,31 +362,37 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
 
               {/* BLOCO NOME */}
               <div>
-                <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                <div className={cn(
+                  "flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider",
+                  isAluno ? "text-black" : "text-slate-400"
+                )}>
                   <span>{isPt ? 'NOME DO USUÁRIO' : 'USER NAME'}:</span>
                 </div>
-                <h2 className="text-base sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2 flex-wrap">
+                <h2 className={cn(
+                  "text-base sm:text-xl font-black tracking-tight flex items-center gap-2 flex-wrap",
+                  isAluno ? "text-black" : "text-slate-900"
+                )}>
                   <span>{displayName}</span>
                   {profile.has_changed_password && (
-                    <span className="inline-flex items-center text-emerald-600" title={isPt ? "Conta verificada com senha alterada" : "Verified account"}>
+                    <span className={cn("inline-flex items-center", isAluno ? "text-black" : "text-emerald-600")} title={isPt ? "Conta verificada com senha alterada" : "Verified account"}>
                       <BadgeCheck size={18} />
                     </span>
                   )}
                 </h2>
                 {profile.nome_guerra && profile.full_name && profile.full_name !== profile.nome_guerra && (
-                  <p className="text-xs text-slate-500 font-medium">
+                  <p className={cn("text-xs font-medium", isAluno ? "text-black" : "text-slate-500")}>
                     {isPt ? 'Nome Completo:' : 'Full Name:'} {profile.full_name}
                   </p>
                 )}
                 {isAluno && (profile.curso_nome || profile.turma_nome) && (
                   <div className="flex flex-wrap items-center gap-2 mt-2">
                     {profile.curso_nome && (
-                      <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200">
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-md bg-white text-black border border-slate-300">
                         {profile.curso_nome}
                       </span>
                     )}
                     {profile.turma_nome && (
-                      <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-md bg-white text-black border border-slate-300">
                         {isPt ? 'Turma:' : 'Class:'} {profile.turma_nome}
                       </span>
                     )}
@@ -384,7 +403,7 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
           </div>
 
           {/* 3. AÇÕES RÁPIDAS DA ÁREA DE TRABALHO */}
-          <div className="flex flex-row md:flex-col items-center md:items-end gap-2 w-full md:w-auto pt-3 md:pt-0 border-t md:border-t-0 border-slate-100 shrink-0">
+          <div className="flex flex-row md:flex-col items-center md:items-end gap-2 w-full md:w-auto pt-3 md:pt-0 border-t md:border-t-0 border-slate-200 shrink-0">
             {canUploadPhoto && (
               <button
                 type="button"
@@ -413,32 +432,32 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
               <div className="flex flex-wrap md:flex-col gap-2 w-full md:w-auto">
                 <Link
                   href="/dashboard"
-                  className="flex-1 md:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-2xs active:scale-95"
+                  className="flex-1 md:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-100 text-black border-2 border-black rounded-xl text-xs font-black transition-all cursor-pointer shadow-2xs active:scale-95"
                   title={isPt ? "Ir para a Área de Trabalho do Aluno" : "Go to Student Workspace"}
                 >
-                  <LayoutDashboard size={14} />
+                  <LayoutDashboard size={14} className="text-black" />
                   <span>{isPt ? 'Área do Aluno' : 'Student Hub'}</span>
                 </Link>
                 <div className="flex flex-wrap gap-1.5">
                   <Link
                     href="/horario"
-                    className="flex-1 flex items-center justify-center gap-1 px-2.5 py-1.5 bg-cyan-50 hover:bg-cyan-100 text-cyan-800 rounded-lg text-[11px] font-bold border border-cyan-200 transition-all cursor-pointer"
+                    className="flex-1 flex items-center justify-center gap-1 px-2.5 py-1.5 bg-white hover:bg-slate-100 text-black rounded-lg text-[11px] font-bold border border-slate-300 transition-all cursor-pointer"
                   >
-                    <Calendar size={12} />
+                    <Calendar size={12} className="text-black" />
                     <span>{isPt ? 'Aulas' : 'Schedule'}</span>
                   </Link>
                   <Link
                     href="/boletim"
-                    className="flex-1 flex items-center justify-center gap-1 px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg text-[11px] font-bold border border-emerald-200 transition-all cursor-pointer"
+                    className="flex-1 flex items-center justify-center gap-1 px-2.5 py-1.5 bg-white hover:bg-slate-100 text-black rounded-lg text-[11px] font-bold border border-slate-300 transition-all cursor-pointer"
                   >
-                    <FileText size={12} />
+                    <FileText size={12} className="text-black" />
                     <span>{isPt ? 'Boletim' : 'Grades'}</span>
                   </Link>
                   <Link
                     href="/avaliacao"
-                    className="flex-1 flex items-center justify-center gap-1 px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 rounded-lg text-[11px] font-bold border border-amber-200 transition-all cursor-pointer"
+                    className="flex-1 flex items-center justify-center gap-1 px-2.5 py-1.5 bg-white hover:bg-slate-100 text-black rounded-lg text-[11px] font-bold border border-slate-300 transition-all cursor-pointer"
                   >
-                    <FileCheck size={12} />
+                    <FileCheck size={12} className="text-black" />
                     <span>{isPt ? 'Questionário' : 'Survey'}</span>
                   </Link>
                 </div>
@@ -447,10 +466,13 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
 
             <Link
               href="/configuracoes"
-              className="flex-1 md:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-bold border border-slate-200 transition-all cursor-pointer shadow-2xs active:scale-95"
+              className={cn(
+                "flex-1 md:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-100 rounded-xl text-xs font-bold border transition-all cursor-pointer shadow-2xs active:scale-95",
+                isAluno ? "text-black border-slate-300" : "text-slate-700 border-slate-200"
+              )}
               title={isPt ? "Gerenciar Minha Conta e Senha" : "Manage Account and Password"}
             >
-              <Settings size={14} className="text-slate-400" />
+              <Settings size={14} className={isAluno ? "text-black" : "text-slate-400"} />
               <span>{isPt ? 'Minha Conta' : 'Account'}</span>
             </Link>
           </div>

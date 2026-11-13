@@ -64,9 +64,75 @@ body {
   }
 }
 
-/* Focus-mode: Toda escrita ser na cor branca para melhor visualização do objeto aqui postado */
-div:nth-of-type(2) > div:nth-of-type(2) > main:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(6) > div:nth-of-type(2) > div:nth-of-type(1),
-div:nth-of-type(2) > div:nth-of-type(2) > main:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(6) > div:nth-of-type(2) > div:nth-of-type(1) * {
+/* =========================================================================
+   STUDENT WORKSPACE THEME: Pure White Background + Pure Black Text
+   ========================================================================= */
+.student-white-theme,
+.dark .student-white-theme {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  color-scheme: light;
+}
+
+.student-white-theme aside,
+.student-white-theme header,
+.student-white-theme main,
+.student-white-theme nav,
+.student-white-theme section,
+.student-white-theme article,
+.student-white-theme table,
+.student-white-theme thead,
+.student-white-theme tbody,
+.student-white-theme tfoot,
+.student-white-theme tr,
+.student-white-theme th,
+.student-white-theme td,
+.student-white-theme input,
+.student-white-theme select,
+.student-white-theme textarea,
+.student-white-theme button,
+.student-white-theme a,
+.dark .student-white-theme aside,
+.dark .student-white-theme header,
+.dark .student-white-theme main,
+.dark .student-white-theme nav,
+.dark .student-white-theme .bg-white,
+.dark .student-white-theme .bg-slate-50,
+.dark .student-white-theme .bg-slate-100,
+.dark .student-white-theme .bg-slate-200 {
+  background-color: #ffffff !important;
+  background-image: none !important;
+  color: #000000 !important;
+}
+
+.student-white-theme :not(.student-photo-overlay):not(.student-photo-overlay *):not(img):not(svg):not(path):not(circle):not(rect):not(line):not(polygon):not(polyline) {
+  color: #000000 !important;
+  -webkit-text-fill-color: #000000 !important;
+}
+
+.student-white-theme :is([class*="bg-blue"], [class*="bg-slate-9"], [class*="bg-slate-8"], [class*="bg-slate-50"], [class*="bg-slate-100"], [class*="bg-indigo"], [class*="bg-cyan"], [class*="bg-emerald"], [class*="bg-amber"], [class*="bg-rose"], [class*="bg-purple"], [class*="bg-sky"], [class*="bg-violet"], [class*="bg-teal"], [class*="bg-gradient"]):not(.student-photo-overlay) {
+  background-color: #ffffff !important;
+  background-image: none !important;
+  color: #000000 !important;
+}
+
+.student-white-theme svg {
+  color: #000000 !important;
+}
+
+.student-white-theme :is([class*="border-slate"], [class*="border-blue"], [class*="border-white"], [class*="border-indigo"], [class*="border-cyan"], [class*="border-emerald"], [class*="border-amber"], [class*="border-rose"]):not(.border-black):not(.border-2) {
+  border-color: #d4d4d8 !important;
+}
+
+.student-white-theme .student-photo-overlay,
+.student-white-theme .student-photo-overlay * {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+/* Focus-mode (Staff/Admin): Toda escrita ser na cor branca para melhor visualização do objeto aqui postado */
+div:not(.student-white-theme) > div:nth-of-type(2) > main:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(6) > div:nth-of-type(2) > div:nth-of-type(1),
+div:not(.student-white-theme) > div:nth-of-type(2) > main:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(6) > div:nth-of-type(2) > div:nth-of-type(1) * {
   color: #FFFFFF !important;
   -webkit-text-fill-color: #FFFFFF !important;
 }

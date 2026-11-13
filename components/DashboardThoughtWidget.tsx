@@ -7,7 +7,7 @@ import { useI18n } from '@/lib/i18n/LanguageContext';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
-export default function DashboardThoughtWidget() {
+export default function DashboardThoughtWidget({ studentTheme = false }: { studentTheme?: boolean } = {}) {
   const { language } = useI18n();
   const isPt = language === 'pt';
   const [thought, setThought] = useState<{ texto: string; autor: string; reflexao?: string } | null>(null);
@@ -69,22 +69,53 @@ export default function DashboardThoughtWidget() {
   if (loading || !thought) return null;
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-amber-200/80 dark:border-amber-900/40 bg-gradient-to-r from-amber-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-slate-950 p-4 sm:p-5 shadow-xs transition-all">
+    <div
+      className={cn(
+        "relative overflow-hidden rounded-2xl p-4 sm:p-5 shadow-xs transition-all border",
+        studentTheme
+          ? "bg-white border-slate-300 text-black"
+          : "border-amber-200/80 dark:border-amber-900/40 bg-gradient-to-r from-amber-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-slate-950"
+      )}
+    >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative z-10">
         <div className="flex items-start gap-3.5 flex-1 min-w-0">
-          <div className="w-9 h-9 rounded-xl bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-300/60 dark:border-amber-700/50 mt-0.5">
+          <div
+            className={cn(
+              "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border mt-0.5",
+              studentTheme
+                ? "bg-white text-black border-slate-300"
+                : "bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-300/60 dark:border-amber-700/50"
+            )}
+          >
             <Quote size={18} className="rotate-180" />
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 mb-1 flex-wrap">
-              <span className="text-[10px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-400 bg-amber-100/80 dark:bg-amber-950/80 px-2 py-0.5 rounded-md border border-amber-300/50 dark:border-amber-800">
+              <span
+                className={cn(
+                  "text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border",
+                  studentTheme
+                    ? "text-black bg-white border-slate-300"
+                    : "text-amber-700 dark:text-amber-400 bg-amber-100/80 dark:bg-amber-950/80 border-amber-300/50 dark:border-amber-800"
+                )}
+              >
                 {isPt ? 'Pensamento do Dia' : 'Thought of the Day'}
               </span>
             </div>
-            <p className="text-xs sm:text-sm font-serif italic text-slate-800 dark:text-slate-200 line-clamp-2 leading-relaxed">
+            <p
+              className={cn(
+                "text-xs sm:text-sm font-serif italic line-clamp-2 leading-relaxed",
+                studentTheme ? "text-black" : "text-slate-800 dark:text-slate-200"
+              )}
+            >
               &ldquo;{thought.texto}&rdquo;
             </p>
-            <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 mt-1 truncate">
+            <p
+              className={cn(
+                "text-[11px] font-bold mt-1 truncate",
+                studentTheme ? "text-black" : "text-slate-500 dark:text-slate-400"
+              )}
+            >
               — {thought.autor}
             </p>
           </div>
@@ -95,9 +126,13 @@ export default function DashboardThoughtWidget() {
             onClick={handleSpeech}
             className={cn(
               "p-2 rounded-xl border text-xs transition-all cursor-pointer shadow-2xs",
-              isPlaying 
-                ? "bg-amber-500 text-white border-amber-600 animate-pulse" 
-                : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:text-amber-600"
+              studentTheme
+                ? isPlaying
+                  ? "bg-white text-black border-2 border-black animate-pulse"
+                  : "bg-white text-black border-slate-300 hover:border-black"
+                : isPlaying 
+                  ? "bg-amber-500 text-white border-amber-600 animate-pulse" 
+                  : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:text-amber-600"
             )}
             title={isPlaying ? (isPt ? 'Pausar áudio' : 'Pause audio') : (isPt ? 'Ouvir reflexão' : 'Listen')}
           >
@@ -106,15 +141,25 @@ export default function DashboardThoughtWidget() {
 
           <button
             onClick={handleCopy}
-            className="p-2 rounded-xl bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 cursor-pointer shadow-2xs"
+            className={cn(
+              "p-2 rounded-xl border cursor-pointer shadow-2xs",
+              studentTheme
+                ? "bg-white text-black border-slate-300 hover:border-black"
+                : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50"
+            )}
             title={isPt ? 'Copiar citação' : 'Copy quote'}
           >
-            {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
+            {copied ? <Check size={14} className={studentTheme ? "text-black" : "text-emerald-500"} /> : <Copy size={14} />}
           </button>
 
           <Link
             href="/pensamento-do-dia"
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer active:scale-95"
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer active:scale-95",
+              studentTheme
+                ? "bg-white hover:bg-slate-100 text-black border border-black"
+                : "bg-amber-500 hover:bg-amber-600 text-white"
+            )}
           >
             <span>{isPt ? 'Ver Módulo' : 'Open Module'}</span>
             <ArrowRight size={13} />

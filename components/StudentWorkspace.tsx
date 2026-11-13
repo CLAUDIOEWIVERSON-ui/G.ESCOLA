@@ -105,8 +105,6 @@ export function StudentWorkspace() {
         : 'Check your class weekly timetable, subjects, instruction times, and instructors.',
       href: '/horario',
       icon: Calendar,
-      accent: 'from-cyan-500 to-blue-600',
-      badgeBg: 'bg-cyan-50 text-cyan-700 border-cyan-200',
       badgeText: isPt ? 'Grade Atualizada' : 'Updated Schedule',
       cta: isPt ? 'Ver Horário Semanal' : 'View Weekly Schedule',
     },
@@ -117,8 +115,6 @@ export function StudentWorkspace() {
         : 'Track your subject grades, attendance percentage, academic status, and print your transcript.',
       href: '/boletim',
       icon: FileText,
-      accent: 'from-emerald-500 to-teal-600',
-      badgeBg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
       badgeText: isPt ? 'Notas e Frequência' : 'Grades & Attendance',
       cta: isPt ? 'Abrir Meu Boletim' : 'Open Report Card',
     },
@@ -129,16 +125,6 @@ export function StudentWorkspace() {
         : 'Evaluate the course, instructors, infrastructure, and submit your self-assessment.',
       href: '/avaliacao',
       icon: FileCheck,
-      accent: hasSubmittedSurvey
-        ? 'from-emerald-600 to-green-700'
-        : canFillSurvey
-          ? 'from-amber-500 to-orange-600'
-          : 'from-slate-500 to-slate-600',
-      badgeBg: hasSubmittedSurvey
-        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-        : canFillSurvey
-          ? 'bg-amber-50 text-amber-700 border-amber-200'
-          : 'bg-slate-100 text-slate-600 border-slate-200',
       badgeText: hasSubmittedSurvey
         ? (isPt ? 'Enviado' : 'Submitted')
         : canFillSurvey
@@ -151,7 +137,7 @@ export function StudentWorkspace() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 bg-white text-black">
       {/* Cartão de Identificação do Aluno */}
       <UserWorkspaceHeader />
 
@@ -159,26 +145,25 @@ export function StudentWorkspace() {
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 rounded-2xl p-6 text-white shadow-lg border border-slate-800 relative overflow-hidden"
+        className="bg-white rounded-2xl p-6 text-black shadow-sm border border-slate-300 relative overflow-hidden"
       >
-        <div className="absolute -right-10 -top-10 w-44 h-44 bg-blue-500/15 rounded-full blur-2xl pointer-events-none" />
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1.5">
-            <div className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-blue-300 bg-blue-500/15 border border-blue-400/30 px-2.5 py-1 rounded-full">
-              <GraduationCap size={13} />
+            <div className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-black bg-white border border-slate-300 px-2.5 py-1 rounded-full">
+              <GraduationCap size={13} className="text-black" />
               <span>{isPt ? 'Área de Trabalho do Aluno' : 'Student Workspace'}</span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-black tracking-tight">
+            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-black">
               {isPt ? 'Bem-vindo ao seu Portal Acadêmico' : 'Welcome to your Academic Portal'}
             </h1>
-            <p className="text-xs sm:text-sm text-slate-300 max-w-2xl">
+            <p className="text-xs sm:text-sm text-black max-w-2xl">
               {profile.curso_nome || profile.turma_nome ? (
                 <>
                   {isPt ? 'Você está conectado à turma ' : 'You are signed in to class '}
-                  <strong className="text-white">{profile.turma_nome || '—'}</strong>
+                  <strong className="text-black">{profile.turma_nome || '—'}</strong>
                   {profile.curso_nome ? (
                     <>
-                      {' '}• <span className="text-blue-200">{profile.curso_nome}</span>
+                      {' '}• <span className="text-black font-semibold">{profile.curso_nome}</span>
                     </>
                   ) : null}
                   .
@@ -192,11 +177,11 @@ export function StudentWorkspace() {
           </div>
 
           {profile.access_code && (
-            <div className="shrink-0 bg-white/10 border border-white/15 rounded-xl px-4 py-2.5 text-left md:text-right">
-              <span className="block text-[9px] font-bold uppercase tracking-widest text-blue-200">
+            <div className="shrink-0 bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-left md:text-right">
+              <span className="block text-[9px] font-bold uppercase tracking-widest text-black">
                 {isPt ? 'Código Individual QR' : 'Individual QR Code'}
               </span>
-              <span className="font-mono text-sm font-black tracking-wider text-white">
+              <span className="font-mono text-sm font-black tracking-wider text-black">
                 {profile.access_code}
               </span>
             </div>
@@ -214,26 +199,26 @@ export function StudentWorkspace() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.06 }}
-              className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between gap-5"
+              className="bg-white border border-slate-300 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between gap-5 text-black"
             >
               <div className="space-y-4">
                 <div className="flex items-start justify-between gap-3">
-                  <div className={cn('w-12 h-12 rounded-2xl bg-gradient-to-br text-white flex items-center justify-center shadow-sm shrink-0', mod.accent)}>
-                    <Icon size={22} />
+                  <div className="w-12 h-12 rounded-2xl bg-white border-2 border-black text-black flex items-center justify-center shadow-sm shrink-0">
+                    <Icon size={22} className="text-black" />
                   </div>
-                  <span className={cn('text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full border inline-flex items-center gap-1', mod.badgeBg)}>
-                    {mod.href === '/avaliacao' && hasSubmittedSurvey && <CheckCircle2 size={11} />}
-                    {mod.href === '/avaliacao' && !hasSubmittedSurvey && !canFillSurvey && <Lock size={11} />}
-                    {mod.href === '/avaliacao' && !hasSubmittedSurvey && canFillSurvey && <Sparkles size={11} />}
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full border border-slate-300 bg-white text-black inline-flex items-center gap-1">
+                    {mod.href === '/avaliacao' && hasSubmittedSurvey && <CheckCircle2 size={11} className="text-black" />}
+                    {mod.href === '/avaliacao' && !hasSubmittedSurvey && !canFillSurvey && <Lock size={11} className="text-black" />}
+                    {mod.href === '/avaliacao' && !hasSubmittedSurvey && canFillSurvey && <Sparkles size={11} className="text-black" />}
                     {mod.badgeText}
                   </span>
                 </div>
 
                 <div>
-                  <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
+                  <h2 className="text-base sm:text-lg font-black text-black tracking-tight">
                     {mod.title}
                   </h2>
-                  <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">
+                  <p className="text-xs text-black mt-1.5 leading-relaxed">
                     {mod.description}
                   </p>
                 </div>
@@ -241,10 +226,10 @@ export function StudentWorkspace() {
 
               <Link
                 href={mod.href}
-                className="w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-blue-600 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-[0.98] group"
+                className="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-slate-100 text-black border-2 border-black font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-[0.98] group"
               >
                 <span>{mod.cta}</span>
-                <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
+                <ArrowRight size={14} className="text-black transition-transform group-hover:translate-x-1" />
               </Link>
             </motion.div>
           );
@@ -252,47 +237,47 @@ export function StudentWorkspace() {
       </div>
 
       {/* Pensamento do Dia */}
-      <DashboardThoughtWidget />
+      <DashboardThoughtWidget studentTheme />
 
       {/* Avisos da Coordenação / Próximos Eventos */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <div className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
+        <div className="lg:col-span-2 bg-white border border-slate-300 rounded-2xl p-5 shadow-sm space-y-3 text-black">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Bell size={16} className="text-blue-600" />
-              <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider">
+              <Bell size={16} className="text-black" />
+              <h3 className="text-sm font-black text-black uppercase tracking-wider">
                 {isPt ? 'Avisos e Agenda para o Aluno' : 'Student Notices & Schedule'}
               </h3>
             </div>
-            <Link href="/calendario" className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1">
+            <Link href="/calendario" className="text-xs font-bold text-black hover:underline flex items-center gap-1">
               <span>{isPt ? 'Ver Calendário' : 'View Calendar'}</span>
-              <ArrowRight size={12} />
+              <ArrowRight size={12} className="text-black" />
             </Link>
           </div>
 
           {loadingExtras ? (
-            <div className="py-6 text-center text-xs text-slate-400">
+            <div className="py-6 text-center text-xs text-black">
               {isPt ? 'Carregando avisos da turma...' : 'Loading class notices...'}
             </div>
           ) : announcements.length === 0 ? (
-            <div className="py-6 text-center text-xs text-slate-500 bg-slate-50 rounded-xl border border-slate-100">
+            <div className="py-6 text-center text-xs text-black bg-white rounded-xl border border-slate-300">
               {isPt ? 'Nenhum aviso ou evento futuro publicado no momento.' : 'No upcoming notices or events published right now.'}
             </div>
           ) : (
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y divide-slate-200">
               {announcements.map((evt) => (
                 <div key={evt.id} className="py-3 flex items-start justify-between gap-3">
                   <div className="space-y-0.5">
-                    <p className="text-xs font-bold text-slate-900">{evt.titulo}</p>
-                    {evt.descricao && <p className="text-[11px] text-slate-500 line-clamp-2">{evt.descricao}</p>}
+                    <p className="text-xs font-bold text-black">{evt.titulo}</p>
+                    {evt.descricao && <p className="text-[11px] text-black line-clamp-2">{evt.descricao}</p>}
                     {evt.uniforme_dia && (
-                      <span className="inline-block text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100 mt-1">
+                      <span className="inline-block text-[10px] font-bold text-black bg-white px-2 py-0.5 rounded border border-slate-300 mt-1">
                         {isPt ? 'Uniforme:' : 'Uniform:'} {evt.uniforme_dia}
                       </span>
                     )}
                   </div>
-                  <span className="text-[11px] font-mono font-bold text-slate-500 shrink-0 flex items-center gap-1">
-                    <Clock size={12} />
+                  <span className="text-[11px] font-mono font-bold text-black shrink-0 flex items-center gap-1">
+                    <Clock size={12} className="text-black" />
                     {evt.data ? new Date(evt.data).toLocaleDateString('pt-BR') : '—'}
                   </span>
                 </div>
@@ -302,40 +287,40 @@ export function StudentWorkspace() {
         </div>
 
         {/* Acessos Complementares */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
-          <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider">
+        <div className="bg-white border border-slate-300 rounded-2xl p-5 shadow-sm space-y-3 text-black">
+          <h3 className="text-sm font-black text-black uppercase tracking-wider">
             {isPt ? 'Outros Recursos' : 'Additional Resources'}
           </h3>
           <div className="space-y-2">
             <Link
               href="/calendario"
-              className="flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-blue-50 border border-slate-200/80 transition-colors group"
+              className="flex items-center justify-between p-3 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 transition-colors group"
             >
-              <span className="flex items-center gap-2.5 text-xs font-bold text-slate-700 group-hover:text-blue-700">
-                <CalendarDays size={15} className="text-blue-600" />
+              <span className="flex items-center gap-2.5 text-xs font-bold text-black">
+                <CalendarDays size={15} className="text-black" />
                 {isPt ? 'Calendário de Eventos' : 'Events Calendar'}
               </span>
-              <ArrowRight size={13} className="text-slate-400 group-hover:text-blue-600" />
+              <ArrowRight size={13} className="text-black" />
             </Link>
             <Link
               href="/pensamento-do-dia"
-              className="flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-purple-50 border border-slate-200/80 transition-colors group"
+              className="flex items-center justify-between p-3 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 transition-colors group"
             >
-              <span className="flex items-center gap-2.5 text-xs font-bold text-slate-700 group-hover:text-purple-700">
-                <Quote size={15} className="text-purple-600" />
+              <span className="flex items-center gap-2.5 text-xs font-bold text-black">
+                <Quote size={15} className="text-black" />
                 {isPt ? 'Pensamento do Dia' : 'Thought of the Day'}
               </span>
-              <ArrowRight size={13} className="text-slate-400 group-hover:text-purple-600" />
+              <ArrowRight size={13} className="text-black" />
             </Link>
             <Link
               href="/manual"
-              className="flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-amber-50 border border-slate-200/80 transition-colors group"
+              className="flex items-center justify-between p-3 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 transition-colors group"
             >
-              <span className="flex items-center gap-2.5 text-xs font-bold text-slate-700 group-hover:text-amber-700">
-                <BookMarked size={15} className="text-amber-600" />
+              <span className="flex items-center gap-2.5 text-xs font-bold text-black">
+                <BookMarked size={15} className="text-black" />
                 {isPt ? 'Manual do Usuário' : 'User Manual'}
               </span>
-              <ArrowRight size={13} className="text-slate-400 group-hover:text-amber-600" />
+              <ArrowRight size={13} className="text-black" />
             </Link>
           </div>
         </div>

@@ -1911,13 +1911,13 @@ function BoletimContent() {
 
   if (isNifStudent) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 bg-white text-black">
         {/* Identificação do Aluno na Área de Trabalho */}
         <UserWorkspaceHeader />
 
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 print:hidden">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 md:w-20 md:h-20 shrink-0 flex items-center justify-center overflow-hidden bg-white border border-slate-200 dark:border-slate-700 rounded-2xl p-1.5 shadow-sm">
+            <div className="w-16 h-16 md:w-20 md:h-20 shrink-0 flex items-center justify-center overflow-hidden bg-white border border-slate-300 rounded-2xl p-1.5 shadow-sm">
               <img
                 src={typeof navalMissionLogo === "string" ? navalMissionLogo : (navalMissionLogo as any)?.src || navalMissionLogo}
                 alt="Logo Missão de Assessoria Naval"
@@ -1926,8 +1926,8 @@ function BoletimContent() {
               />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{t.reportCard.title}</h1>
-              <p className="text-slate-500 text-sm">
+              <h1 className="text-2xl font-bold text-black tracking-tight">{t.reportCard.title}</h1>
+              <p className="text-black text-sm">
                 {language === 'pt' ? 'Consulte as suas notas individuais e aproveitamento acadêmico' : 'Check your individual grades and academic performance.'}
               </p>
             </div>
@@ -1936,9 +1936,9 @@ function BoletimContent() {
         </div>
 
         {loadingReport || !reportData ? (
-          <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-3 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-            <Loader2 className="animate-spin text-blue-500" size={36} />
-            <span className="text-xs font-bold tracking-widest uppercase">
+          <div className="flex flex-col items-center justify-center py-20 text-black gap-3 bg-white border border-slate-300 rounded-2xl p-6 shadow-sm">
+            <Loader2 className="animate-spin text-black" size={36} />
+            <span className="text-xs font-bold tracking-widest uppercase text-black">
               {language === 'pt' ? 'Carregando boletim do aluno...' : 'Loading student report...'}
             </span>
           </div>
@@ -1947,7 +1947,7 @@ function BoletimContent() {
             <div 
               id="student-report-print-area" 
               data-document-sheet="true"
-              className="official-document-sheet bg-white text-slate-900 border border-slate-200 shadow-xl p-8 rounded-lg flex flex-col gap-6 font-sans relative text-left text-xs overflow-y-auto scrollbar-thin"
+              className="official-document-sheet bg-white text-black border border-slate-300 shadow-xl p-8 rounded-lg flex flex-col gap-6 font-sans relative text-left text-xs overflow-y-auto scrollbar-thin"
               style={{ width: '100%', boxSizing: 'border-box', maxHeight: '297mm' }}
             >
                <style dangerouslySetInnerHTML={{ __html: `
@@ -2190,16 +2190,16 @@ function BoletimContent() {
               `}} />
 
               {/* Clean Header: Histórico Escolar and participating class(es) only */}
-              <div className="flex flex-col items-center justify-center pb-6 border-b-2 border-slate-900 text-center gap-2">
-                <h1 className="text-2xl font-black text-slate-900 tracking-tight uppercase">
+              <div className="flex flex-col items-center justify-center pb-6 border-b-2 border-black text-center gap-2">
+                <h1 className="text-2xl font-black text-black tracking-tight uppercase">
                   {language === 'pt' ? 'Histórico Escolar' : 'Academic Transcript'}
                 </h1>
-                <p className="text-xs font-black uppercase tracking-widest text-slate-500">
+                <p className="text-xs font-black uppercase tracking-widest text-black">
                   {language === 'pt' 
                     ? `Turma(s) ao qual participou: ${reportData.classObj?.nome || 'Não informada'}` 
                     : `Participated Class(es): ${reportData.classObj?.nome || 'Unassigned'}`}
                   {(reportData.classObj?.documento_criacao || reportData.classObj?.curso?.documento_criacao) && (
-                    <span className="ml-2 font-mono text-slate-700">
+                    <span className="ml-2 font-mono text-black">
                       • Doc: {reportData.classObj?.documento_criacao || reportData.classObj?.curso?.documento_criacao}
                     </span>
                   )}
@@ -2207,43 +2207,43 @@ function BoletimContent() {
               </div>
 
               {/* Personal Info Grid */}
-              <div className="border border-slate-200 rounded-lg p-5 bg-slate-50/50 print-bg-gray text-left">
-                <h3 className="text-[11px] font-black text-slate-600 tracking-[0.15em] uppercase mb-4 pb-1 border-b border-slate-200">
+              <div className="border border-slate-300 rounded-lg p-5 bg-white text-black print-bg-gray text-left">
+                <h3 className="text-[11px] font-black text-black tracking-[0.15em] uppercase mb-4 pb-1 border-b border-slate-300">
                   {reportT[language as "pt" | "en"].studentInfo}
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-y-3 gap-x-6 text-sm">
                   <div className="flex flex-col gap-0.5 col-span-2 md:col-span-1">
-                    <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">{reportT[language as "pt" | "en"].fullName}</span>
-                    <span className="font-extrabold text-slate-900 uppercase text-xs lg:text-sm">{reportData.student.nome}</span>
+                    <span className="text-[10px] font-bold text-black uppercase tracking-wider">{reportT[language as "pt" | "en"].fullName}</span>
+                    <span className="font-extrabold text-black uppercase text-xs lg:text-sm">{reportData.student.nome}</span>
                   </div>
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">{reportT[language as "pt" | "en"].rank}</span>
-                    <span className="font-bold text-slate-800 uppercase">{reportData.student.posto_graduacao || (language === 'pt' ? 'Não declarado' : 'Not declared')}</span>
+                    <span className="text-[10px] font-bold text-black uppercase tracking-wider">{reportT[language as "pt" | "en"].rank}</span>
+                    <span className="font-bold text-black uppercase">{reportData.student.posto_graduacao || (language === 'pt' ? 'Não declarado' : 'Not declared')}</span>
                   </div>
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">{language === 'pt' ? 'Nome de Guerra' : 'War Name'}</span>
-                    <span className="font-bold text-slate-800 uppercase">{reportData.student.nome_guerra || (language === 'pt' ? 'Não declarado' : 'Not declared')}</span>
+                    <span className="text-[10px] font-bold text-black uppercase tracking-wider">{language === 'pt' ? 'Nome de Guerra' : 'War Name'}</span>
+                    <span className="font-bold text-black uppercase">{reportData.student.nome_guerra || (language === 'pt' ? 'Não declarado' : 'Not declared')}</span>
                   </div>
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">{reportT[language as "pt" | "en"].course}</span>
-                    <span className="font-bold text-slate-800">{reportData.courseObj?.nome || (language === 'pt' ? 'Não disponível' : 'Not available')}</span>
+                    <span className="text-[10px] font-bold text-black uppercase tracking-wider">{reportT[language as "pt" | "en"].course}</span>
+                    <span className="font-bold text-black">{reportData.courseObj?.nome || (language === 'pt' ? 'Não disponível' : 'Not available')}</span>
                   </div>
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">{reportT[language as "pt" | "en"].class}</span>
-                    <span className="font-bold text-slate-800">{reportData.classObj?.nome || (language === 'pt' ? 'Não disponível' : 'Not available')}</span>
+                    <span className="text-[10px] font-bold text-black uppercase tracking-wider">{reportT[language as "pt" | "en"].class}</span>
+                    <span className="font-bold text-black">{reportData.classObj?.nome || (language === 'pt' ? 'Não disponível' : 'Not available')}</span>
                   </div>
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">{reportT[language as "pt" | "en"].period}</span>
-                    <span className="font-bold text-slate-800 capitalize">
+                    <span className="text-[10px] font-bold text-black uppercase tracking-wider">{reportT[language as "pt" | "en"].period}</span>
+                    <span className="font-bold text-black capitalize">
                       {reportData.classObj?.periodo === 'manhã' ? t.common.morning :
                        reportData.classObj?.periodo === 'tarde' ? t.common.afternoon :
                        reportData.classObj?.periodo === 'noite' ? t.common.night : reportData.classObj?.periodo}
                     </span>
                   </div>
                   <div className="flex flex-col gap-0.5 col-span-2">
-                    <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">{reportT[language as "pt" | "en"].status}</span>
-                    <span className="font-bold flex items-center gap-1.5 text-slate-800">
-                      <span className={cn("w-2 h-2 rounded-full", reportData.classObj?.status === 'concluida' || reportData.classObj?.status === 'finalizada' ? 'bg-emerald-500' : 'bg-blue-500')} />
+                    <span className="text-[10px] font-bold text-black uppercase tracking-wider">{reportT[language as "pt" | "en"].status}</span>
+                    <span className="font-bold flex items-center gap-1.5 text-black">
+                      <span className="w-2 h-2 rounded-full bg-black" />
                       {reportData.classObj?.status === 'concluida' || reportData.classObj?.status === 'finalizada' 
                         ? reportT[language as "pt" | "en"].completed 
                         : reportT[language as "pt" | "en"].inProgress}
@@ -2254,16 +2254,16 @@ function BoletimContent() {
 
               {/* Academic Performance Map */}
               <div className="space-y-3 font-sans">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-1 border-b border-slate-200 gap-2">
-                  <h3 className="text-[11px] font-black text-slate-600 tracking-[0.15em] uppercase text-left">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-1 border-b border-slate-300 gap-2">
+                  <h3 className="text-[11px] font-black text-black tracking-[0.15em] uppercase text-left">
                     {reportT[language as "pt" | "en"].academicMap}
                   </h3>
                   {reportData && (
                     <div className="flex flex-wrap items-center gap-2 print:hidden">
-                      <span className="text-[10px] font-bold text-slate-500 uppercase">
+                      <span className="text-[10px] font-bold text-black uppercase">
                         {language === 'pt' ? 'C.H. Total do Curso:' : 'Total Workload:'}
                       </span>
-                      <span className="font-mono font-black text-xs bg-blue-50 text-blue-800 border border-blue-200 px-2 py-0.5 rounded-md">
+                      <span className="font-mono font-black text-xs bg-white text-black border border-black px-2 py-0.5 rounded-md">
                         {(reportData.disciplines || []).reduce((acc: number, d: any) => acc + (Number(d.carga_horaria) || 0), 0)}h
                       </span>
                       {!isConvidado && !isNifStudent && (
@@ -2659,21 +2659,15 @@ function BoletimContent() {
                       return (
                         <div className="flex flex-col gap-2">
                           <div className="flex justify-between items-center text-xs p-1">
-                            <span className="font-extrabold text-slate-500 uppercase text-[9px] tracking-wide">{reportT[language as "pt" | "en"].overallAverage}:</span>
-                            <span className={cn(
-                              "inline-flex items-center justify-center text-center min-w-[64px] font-black font-mono text-base px-2.5 py-1 rounded-md border leading-none shadow-2xs",
-                              averageGrade !== null && averageGrade >= settings.media_aprovacao ? "text-blue-700 bg-blue-50 border-blue-600" : "text-rose-700 bg-rose-50 border-rose-600"
-                            )}>
+                            <span className="font-extrabold text-black uppercase text-[9px] tracking-wide">{reportT[language as "pt" | "en"].overallAverage}:</span>
+                            <span className="inline-flex items-center justify-center text-center min-w-[64px] font-black font-mono text-base px-2.5 py-1 rounded-md border border-black bg-white text-black leading-none shadow-2xs">
                               {averageGrade !== null ? formatGradePT(averageGrade) : '-'}
                             </span>
                           </div>
 
-                          <div className="flex justify-between items-center text-xs p-1 border-t border-slate-100">
-                            <span className="font-extrabold text-slate-500 uppercase text-[9px] tracking-wide">{reportT[language as "pt" | "en"].overallStatus}:</span>
-                            <span className={cn(
-                              "inline-flex items-center justify-center text-center min-w-[90px] text-[10px] font-black uppercase px-2.5 py-1 rounded-md border leading-none shadow-2xs",
-                              overallClass
-                            )}>
+                          <div className="flex justify-between items-center text-xs p-1 border-t border-slate-200">
+                            <span className="font-extrabold text-black uppercase text-[9px] tracking-wide">{reportT[language as "pt" | "en"].overallStatus}:</span>
+                            <span className="inline-flex items-center justify-center text-center min-w-[90px] text-[10px] font-black uppercase px-2.5 py-1 rounded-md border border-black bg-white text-black leading-none shadow-2xs">
                               {overallLabel}
                             </span>
                           </div>
