@@ -6,8 +6,8 @@ import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
 import { Logo } from '@/components/Logo';
-import { LogIn, Mail, Lock, AlertCircle, FileText, QrCode, RefreshCw } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { LogIn, Mail, Lock, AlertCircle, QrCode, RefreshCw, Upload, KeyRound } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
 import jsQR from 'jsqr';
 
@@ -31,6 +31,7 @@ function LoginContent() {
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const qrFileInputRef = useRef<HTMLInputElement | null>(null);
   const requestRef = useRef<number | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
@@ -78,7 +79,7 @@ function LoginContent() {
               if (signInError) throw signInError;
 
               await refreshProfile();
-              window.location.href = '/boletim';
+              window.location.href = '/dashboard';
             } catch (err: any) {
               console.error('[QR AutoLogin Error]:', err);
               setError(err.message || 'Erro ao realizar login automático via QR Code.');
@@ -120,7 +121,7 @@ function LoginContent() {
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           videoRef.current.setAttribute('playsinline', 'true');
-          videoRef.current.play();
+          await videoRef.current.play().catch(() => {});
           requestRef.current = requestAnimationFrame(tick);
         }
       } catch (err: any) {
@@ -128,9 +129,9 @@ function LoginContent() {
         const errMsg = err?.message || '';
         const errName = err?.name || '';
         if (errName === 'NotAllowedError' || errMsg.toLowerCase().includes('not allowed') || errMsg.toLowerCase().includes('permission')) {
-          setScanError('Acesso bloqueado pelo navegador. Por favor, clique em "Abrir aplicativo em nova aba" acima para permitir o uso da câmera.');
+          setScanError('Acesso bloqueado pelo navegador. Use "Enviar Imagem do QR Code" abaixo ou abra o aplicativo em nova aba para usar a câmera.');
         } else {
-          setScanError('Câmera indisponível ou permissão negada.');
+          setScanError('Câmera indisponível ou permissão negada. Você pode enviar a foto do QR Code ou digitar o código individual.');
         }
       }
     }, 150);
@@ -150,7 +151,12 @@ function LoginContent() {
   };
 
   const tick = () => {
-    if (videoRef.current && videoRef.current.readyState === videoRef.current.HAVE_ENOUGH_DATA) {
+    if (
+      videoRef.current &&
+      videoRef.current.readyState === videoRef.current.HAVE_ENOUGH_DATA &&
+      videoRef.current.videoWidth > 0 &&
+      videoRef.current.videoHeight > 0
+    ) {
       const canvas = canvasRef.current;
       if (canvas) {
         const ctx = canvas.getContext('2d');
@@ -173,6 +179,50 @@ function LoginContent() {
       }
     }
     requestRef.current = requestAnimationFrame(tick);
+  };
+
+  const handleQRImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setError(null);
+    setScanError(null);
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new window.Image();
+      img.onload = () => {
+        const offscreen = document.createElement('canvas');
+        const maxDim = 1024;
+        const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+        offscreen.width = Math.max(1, Math.floor(img.width * scale));
+        offscreen.height = Math.max(1, Math.floor(img.height * scale));
+        const ctx = offscreen.getContext('2d');
+        if (!ctx) {
+          setError('Não foi possível processar a imagem selecionada.');
+          return;
+        }
+        ctx.drawImage(img, 0, 0, offscreen.width, offscreen.height);
+        const imageData = ctx.getImageData(0, 0, offscreen.width, offscreen.height);
+        const decoded = jsQR(imageData.data, imageData.width, imageData.height, {
+          inversionAttempts: 'attemptBoth',
+        });
+        if (decoded?.data) {
+          handleQRCodeDecoded(decoded.data);
+        } else {
+          setError(
+            language === 'pt'
+              ? 'Nenhum QR Code válido foi encontrado nesta imagem. Tente aproximar o QR Code ou digite o código individual abaixo.'
+              : 'No valid QR Code found in this image. Please try another image or type your access code below.'
+          );
+        }
+      };
+      img.onerror = () => {
+        setError('Erro ao carregar a imagem do QR Code.');
+      };
+      img.src = String(ev.target?.result || '');
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
   };
 
   const handleQRCodeDecoded = async (text: string) => {
@@ -289,7 +339,7 @@ function LoginContent() {
       if (signInError) throw signInError;
 
       await refreshProfile();
-      window.location.href = '/boletim';
+      window.location.href = '/dashboard';
     } catch (err: any) {
       console.error('[handleQRCodeDecoded Error]:', err);
       setError(err.message || 'Código lido, mas houve um erro ao realizar o login automático. Tente novamente ou verifique se o QR Code está correto.');
@@ -312,17 +362,31 @@ function LoginContent() {
 
     try {
       if (loginType === 'aluno') {
+        if (!accessCode.trim()) {
+          throw new Error(
+            language === 'pt'
+              ? 'Informe o Código de Acesso Individual ou leia o seu QR Code.'
+              : 'Please enter your Individual Access Code or scan your QR Code.'
+          );
+        }
+
         // Student login via accessCode
         const response = await fetch('/api/auth/student-login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ accessCode, password })
+          body: JSON.stringify({
+            accessCode: accessCode.trim().toUpperCase(),
+            password: password.trim() || '123',
+            isQrCode: true
+          })
         });
         
         const data = await response.json();
         if (!response.ok || data.error) {
           throw new Error(data.error || 'Erro ao realizar login.');
         }
+
+        await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
 
         // Authenticate client-side to Supabase with shadow account
         const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -335,20 +399,31 @@ function LoginContent() {
         // Force reload context profile information in a blocking await
         await refreshProfile();
 
-        router.push('/boletim');
+        router.push('/dashboard');
         return;
       }
 
       // Staff login (Standard admin / instrutor login)
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data: signInData, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+
+        const accessToken = signInData?.session?.access_token;
+        if (accessToken) {
+          fetch('/api/auth/sync', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${accessToken}` }
+          }).catch(() => {});
+        }
 
         // Record access log with user details
         try {
           fetch('/api/auth/access-logs', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+            },
             body: JSON.stringify({
               accessType: 'Login no Sistema',
               path: '/dashboard'
@@ -625,21 +700,82 @@ function LoginContent() {
                     </button>
                   </>
                 ) : (
-                  <div className="space-y-4 pt-2">
+                  <div className="space-y-3.5 pt-1">
                     {/* Quick QR Reader Trigger */}
                     <button
                       type="button"
                       onClick={startScan}
-                      className="w-full py-4 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2.5 transition-all cursor-pointer shadow-lg shadow-blue-500/35 hover:shadow-xl hover:shadow-blue-500/50 ring-2 ring-blue-500/15 hover:ring-blue-500/25 active:scale-[0.98]"
+                      disabled={loading}
+                      className="w-full py-3.5 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2.5 transition-all cursor-pointer shadow-lg shadow-blue-500/30 hover:shadow-xl active:scale-[0.98] disabled:opacity-60"
                     >
                       <QrCode size={18} />
-                      {language === 'pt' ? 'Acessar via QR Code' : 'Access via QR Code'}
+                      {language === 'pt' ? 'Acessar via QR Code (Câmera)' : 'Access via QR Code (Camera)'}
+                    </button>
+
+                    {/* Upload QR Code Image */}
+                    <button
+                      type="button"
+                      onClick={() => qrFileInputRef.current?.click()}
+                      disabled={loading}
+                      className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center justify-center gap-2 border border-slate-200 transition-all cursor-pointer active:scale-[0.98] disabled:opacity-60"
+                    >
+                      <Upload size={15} />
+                      {language === 'pt' ? 'Enviar Imagem do QR Code' : 'Upload QR Code Image'}
+                    </button>
+                    <input
+                      ref={qrFileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleQRImageUpload}
+                      className="hidden"
+                    />
+
+                    {/* Divider */}
+                    <div className="relative flex items-center py-1">
+                      <div className="flex-grow border-t border-slate-200"></div>
+                      <span className="shrink mx-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                        {language === 'pt' ? 'ou código individual' : 'or individual code'}
+                      </span>
+                      <div className="flex-grow border-t border-slate-200"></div>
+                    </div>
+
+                    {/* Manual Access Code Input */}
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide ml-1">
+                        {language === 'pt' ? 'Código Individual do Aluno' : 'Student Access Code'}
+                      </label>
+                      <div className="relative">
+                        <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                        <input
+                          id="student-access-code"
+                          type="text"
+                          value={accessCode}
+                          onChange={(e) => setAccessCode(e.target.value.toUpperCase())}
+                          className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm font-mono uppercase transition-all"
+                          placeholder="STU-XXXX-XXXX"
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={loading || !accessCode.trim()}
+                      className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-50 shadow-sm cursor-pointer"
+                    >
+                      {loading ? (
+                        <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      ) : (
+                        <>
+                          <LogIn size={15} />
+                          {language === 'pt' ? 'Entrar na Área do Aluno' : 'Enter Student Area'}
+                        </>
+                      )}
                     </button>
                     
-                    <p className="text-[11px] leading-relaxed text-slate-500 text-center font-medium mt-3 bg-slate-50 border border-slate-100 rounded-lg p-3">
+                    <p className="text-[10px] leading-relaxed text-slate-500 text-center font-medium bg-slate-50 border border-slate-100 rounded-lg p-2.5">
                       {language === 'pt' 
-                        ? 'O QR CODE É FORNECIDO PELA ADMINISTRAÇÃO DO CURSO, O ALUNO TERA ACESSO AO DETALHE SEMANAL DE AULAS, RELATORIO DO ALUNO E QUESTIONÁRIO PEDAGÓGICO.' 
-                        : 'THE QR CODE IS PROVIDED BY THE COURSE ADMINISTRATION, THE STUDENT WILL HAVE ACCESS TO THE WEEKLY CLASS DETAILS, STUDENT REPORT, AND PEDAGOGICAL QUESTIONNAIRE.'
+                        ? 'O QR CODE É FORNECIDO PELA ADMINISTRAÇÃO DO CURSO. AO ENTRAR, VOCÊ TERÁ ACESSO AO DETALHE SEMANAL DE AULAS, BOLETIM INDIVIDUAL E QUESTIONÁRIO DE FINAL DE CURSO.' 
+                        : 'THE QR CODE IS PROVIDED BY THE COURSE ADMINISTRATION, GIVING ACCESS TO THE WEEKLY CLASS SCHEDULE, INDIVIDUAL REPORT CARD, AND END-OF-COURSE SURVEY.'
                       }
                     </p>
                   </div>

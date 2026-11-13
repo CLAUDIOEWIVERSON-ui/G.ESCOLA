@@ -217,7 +217,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const { t, language, setLanguage } = useI18n();
   const { isDark, toggleTheme } = useTheme();
-  const { profile, isAdmin, isAluno, isInstrutor, isConvidado, loading: authLoading } = useUser();
+  const { profile, isAdmin, isAluno, isInstrutor, isConvidado, loading: authLoading, logout } = useUser();
   const isReadOnly = !isAdmin;
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
@@ -332,25 +332,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           checkClassStatus();
         }
 
-        if (isStudentUser && !['/boletim', '/horario', '/calendario', '/avaliacao', '/configuracoes', '/manual', '/pensamento-do-dia'].includes(pathname || '')) {
+        if (isStudentUser && !['/dashboard', '/boletim', '/horario', '/calendario', '/avaliacao', '/configuracoes', '/manual', '/pensamento-do-dia'].includes(pathname || '')) {
           // Force students logged in to only access allowed sections
-          router.push('/boletim');
+          router.push('/dashboard');
         }
       }
     }
   }, [authLoading, profile, isStudentUser, pathname, router]);
 
   const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-    } catch (e) {
-      console.warn('Server signout failed, trying local signout:', e);
-      try {
-        await supabase.auth.signOut({ scope: 'local' });
-      } catch (localError) {
-        console.error('Local signout failed:', localError);
-      }
-    }
+    await logout();
     router.push('/login');
   };
 
@@ -363,13 +354,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   const rawNavItems = isStudentUser ? [
-    { name: t.nav.reportCard || 'Meu Boletim', icon: FileText, path: '/boletim' },
-    { name: t.schedule.title || 'Horários', icon: Calendar, path: '/horario' },
+    { name: language === 'pt' ? 'Área do Aluno' : 'Student Area', icon: LayoutDashboard, path: '/dashboard' },
+    { name: language === 'pt' ? 'Detalhe Semanal de Aulas' : 'Weekly Class Details', icon: Calendar, path: '/horario' },
+    { name: language === 'pt' ? 'Boletim Individual' : 'Individual Report', icon: FileText, path: '/boletim' },
+    { name: language === 'pt' ? 'Questionário Final de Curso' : 'Course Survey', icon: FileCheck, path: '/avaliacao' },
     { name: t.calendar.title || 'Calendário', icon: CalendarDays, path: '/calendario' },
     { name: (t.nav as any).pensamento || 'Pensamento do Dia', icon: Quote, path: '/pensamento-do-dia' },
-    { name: "Avaliação Pós-Curso", icon: FileCheck, path: '/avaliacao' },
     { name: t.nav.manual || 'Manual do Usuário', icon: BookMarked, path: '/manual' },
-    { name: t.nav.settings || 'Minha Conta', icon: Settings, path: '/configuracoes' },
+    { name: t.nav.settings || 'Configurações', icon: Settings, path: '/configuracoes' },
   ] : [
     { name: t.nav.dashboard, icon: LayoutDashboard, path: '/dashboard' },
     { name: t.nav.courses, icon: BookOpen, path: '/cursos' },
@@ -903,7 +895,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       >
         {navItems.filter(item => {
           if (isStudentUser) {
-            return ['/boletim', '/horario', '/calendario', '/pensamento-do-dia', '/avaliacao', '/configuracoes', '/manual'].includes(item.path);
+            return ['/dashboard', '/horario', '/boletim', '/avaliacao', '/calendario', '/pensamento-do-dia', '/configuracoes'].includes(item.path);
           }
           return ['/dashboard', '/cursos', '/turmas', '/frequencia', '/horario', '/calendario', '/pensamento-do-dia', '/configuracoes'].includes(item.path);
         }).map((item, idx) => {
@@ -919,7 +911,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             border: 'border-blue-200',
           };
 
-          const label = item.path === '/calendario' 
+          const label = item.path === '/dashboard'
+            ? (language === 'pt' ? 'INÍCIO' : 'HOME')
+            : item.path === '/calendario' 
             ? (language === 'pt' ? 'AGENDA' : 'CALENDAR') 
             : item.path === '/frequencia'
               ? (language === 'pt' ? 'FREQ.' : 'ATTEND.')

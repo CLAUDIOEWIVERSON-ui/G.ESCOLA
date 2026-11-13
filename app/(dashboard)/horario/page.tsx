@@ -35,6 +35,7 @@ import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
 import { toast } from "sonner";
 import { useUser } from "@/lib/auth/UserContext";
+import { UserWorkspaceHeader } from "@/components/UserWorkspaceHeader";
 import { downloadElementAsPDF } from "@/lib/printDocumentUtils";
 
 // Helper to fetch Brazil holidays (Simplified for this version)
@@ -419,7 +420,15 @@ export default function HorarioPage() {
         .select("*")
         .is("deleted_at", null)
         .order("nome");
-      let filteredCuts = (c || []).filter((item: any) => !item.internacional);
+      const { data: tu } = await supabase
+        .from("turmas")
+        .select("*")
+        .is("deleted_at", null)
+        .order("nome");
+      const studentTurmaRow = (tu || []).find((item: any) => item.id === profile?.turma_id);
+      let filteredCuts = (c || []).filter(
+        (item: any) => !item.internacional || (studentTurmaRow && item.id === studentTurmaRow.curso_id)
+      );
       if (profile?.role === "instrutor" && profile?.grupo_responsavel) {
         if (profile.grupo_responsavel === "MAN") {
           filteredCuts = filteredCuts.filter(
@@ -439,12 +448,9 @@ export default function HorarioPage() {
       }
       setCursos(filteredCuts);
 
-      const { data: tu } = await supabase
-        .from("turmas")
-        .select("*")
-        .is("deleted_at", null)
-        .order("nome");
-      let filteredCls = (tu || []).filter((item: any) => !item.internacional);
+      let filteredCls = (tu || []).filter(
+        (item: any) => !item.internacional || item.id === profile?.turma_id
+      );
       if (profile?.role === "instrutor" && profile?.grupo_responsavel) {
         if (profile.grupo_responsavel === "MAN") {
           filteredCls = filteredCls.filter(
@@ -1030,6 +1036,12 @@ export default function HorarioPage() {
       `,
         }}
       />
+
+      {isNifStudent && (
+        <div className="print:hidden">
+          <UserWorkspaceHeader />
+        </div>
+      )}
 
       {/* Header Panel */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 print:hidden">

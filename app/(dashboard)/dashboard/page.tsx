@@ -54,6 +54,7 @@ import ExchangeRateTicker from '@/components/ExchangeRateTicker';
 import HolidaysWidget from '@/components/HolidaysWidget';
 import DashboardThoughtWidget from '@/components/DashboardThoughtWidget';
 import { UserWorkspaceHeader } from '@/components/UserWorkspaceHeader';
+import { StudentWorkspace } from '@/components/StudentWorkspace';
 import StudentDetailEditModal from '@/components/StudentDetailEditModal';
 import Image from 'next/image';
 import navalMissionLogo from '@/src/assets/images/regenerated_image_1782409801823.png';
@@ -65,6 +66,25 @@ import militaryMaleAvatar from '@/src/assets/images/avatar_military_male_1779964
 import militaryFemaleAvatar from '@/src/assets/images/avatar_military_female_1779964903107.png';
 
 export default function DashboardPage() {
+  const { profile, authLoading } = useUser();
+  const isStudentUser = profile?.role === 'aluno' || Boolean(profile?.isNifStudent);
+
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="animate-spin text-blue-600" size={32} />
+      </div>
+    );
+  }
+
+  if (isStudentUser) {
+    return <StudentWorkspace />;
+  }
+
+  return <StaffDashboardContent />;
+}
+
+function StaffDashboardContent() {
   const { t, language } = useI18n();
   const isPt = language === 'pt';
   const { profile, isAdmin } = useUser();

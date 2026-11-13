@@ -18,7 +18,10 @@ import {
   X,
   BadgeCheck,
   Sparkles,
-  FileText
+  FileText,
+  Calendar,
+  FileCheck,
+  LayoutDashboard
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -138,7 +141,21 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
     ? `${profile.posto_graduacao || ''} ${profile.nome_guerra || profile.full_name || profile.nome}`.trim()
     : profile.full_name || profile.nome || 'Usuário';
 
-  const userIdentifier = profile.email || profile.id.slice(0, 12).toUpperCase();
+  const isShadowEmail = Boolean(
+    profile.email &&
+    (profile.email.startsWith('aluno_nif_') || profile.email.endsWith('@aluno.escola.digital'))
+  );
+
+  const userIdentifier = isAluno
+    ? (
+        profile.student_email ||
+        (!isShadowEmail ? profile.email : null) ||
+        profile.nip ||
+        profile.matricula ||
+        profile.access_code ||
+        (profile.id ? profile.id.slice(0, 12).toUpperCase() : 'ALUNO')
+      )
+    : (profile.email || profile.id.slice(0, 12).toUpperCase());
 
   // Fallback avatar selection (for non-admin users)
   const defaultAvatar = userRole === 'instrutor'
@@ -348,6 +365,20 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
                     {isPt ? 'Nome Completo:' : 'Full Name:'} {profile.full_name}
                   </p>
                 )}
+                {isAluno && (profile.curso_nome || profile.turma_nome) && (
+                  <div className="flex flex-wrap items-center gap-2 mt-2">
+                    {profile.curso_nome && (
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200">
+                        {profile.curso_nome}
+                      </span>
+                    )}
+                    {profile.turma_nome && (
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        {isPt ? 'Turma:' : 'Class:'} {profile.turma_nome}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -379,14 +410,39 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
             )}
 
             {isAluno && (
-              <Link
-                href="/boletim"
-                className="flex-1 md:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-xl text-xs font-bold border border-emerald-200 transition-all cursor-pointer shadow-2xs active:scale-95"
-                title={isPt ? "Acessar Meu Boletim Escolar e Desempenho" : "Access Report Card"}
-              >
-                <FileText size={14} className="text-emerald-700" />
-                <span>{isPt ? 'Meu Boletim' : 'Report Card'}</span>
-              </Link>
+              <div className="flex flex-wrap md:flex-col gap-2 w-full md:w-auto">
+                <Link
+                  href="/dashboard"
+                  className="flex-1 md:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-2xs active:scale-95"
+                  title={isPt ? "Ir para a Área de Trabalho do Aluno" : "Go to Student Workspace"}
+                >
+                  <LayoutDashboard size={14} />
+                  <span>{isPt ? 'Área do Aluno' : 'Student Hub'}</span>
+                </Link>
+                <div className="flex flex-wrap gap-1.5">
+                  <Link
+                    href="/horario"
+                    className="flex-1 flex items-center justify-center gap-1 px-2.5 py-1.5 bg-cyan-50 hover:bg-cyan-100 text-cyan-800 rounded-lg text-[11px] font-bold border border-cyan-200 transition-all cursor-pointer"
+                  >
+                    <Calendar size={12} />
+                    <span>{isPt ? 'Aulas' : 'Schedule'}</span>
+                  </Link>
+                  <Link
+                    href="/boletim"
+                    className="flex-1 flex items-center justify-center gap-1 px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg text-[11px] font-bold border border-emerald-200 transition-all cursor-pointer"
+                  >
+                    <FileText size={12} />
+                    <span>{isPt ? 'Boletim' : 'Grades'}</span>
+                  </Link>
+                  <Link
+                    href="/avaliacao"
+                    className="flex-1 flex items-center justify-center gap-1 px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 rounded-lg text-[11px] font-bold border border-amber-200 transition-all cursor-pointer"
+                  >
+                    <FileCheck size={12} />
+                    <span>{isPt ? 'Questionário' : 'Survey'}</span>
+                  </Link>
+                </div>
+              </div>
             )}
 
             <Link

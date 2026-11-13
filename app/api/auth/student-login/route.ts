@@ -343,7 +343,7 @@ export async function POST(req: NextRequest) {
       userName: student.nome,
       email,
       role: 'aluno',
-      path: '/boletim',
+      path: '/dashboard',
       accessType: 'Login Aluno (Código NIF)',
       ipAddress: ip,
       userAgent: ua

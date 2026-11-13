@@ -2,8 +2,10 @@
 
 import { useState, useEffect, Suspense, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import { useUser } from '@/lib/auth/UserContext';
+import { UserWorkspaceHeader } from '@/components/UserWorkspaceHeader';
 
 import { format, startOfWeek, addDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -825,19 +827,31 @@ function AvaliacaoAlunoForm() {
 
   if (profile?.role !== 'admin' && !existingSubmission && !isAllowedToFill) {
     return (
-      <div className="max-w-xl mx-auto my-12 p-8 bg-white border border-slate-200 rounded-xl shadow-sm text-center">
-        <AlertCircle className="h-12 w-12 text-rose-500 mx-auto mb-4 animate-bounce" />
-        <h2 className="text-xl font-bold text-slate-900 mb-2 font-mono uppercase tracking-wide">Preenchimento Bloqueado</h2>
-        <p className="text-slate-600 text-sm mb-4 leading-relaxed">
-          {!isFormReleased 
-            ? 'O questionário pós-conclusão ainda não foi liberado para preenchimento pela coordenação de curso para sua turma.'
-            : isTurmaConcluida && isPostponedExpired
-              ? 'O período regular e de postergação para preencher o questionário pós-curso desta turma concluída já se encerrou.'
-              : 'O questionário pós-conclusão está bloqueado porque esta turma não está ativa ou o prazo de preenchimento expirou.'}
-        </p>
-        <p className="text-xs text-slate-400 font-mono">
-          Fale com o coordenador ou instrutor caso precise de liberação.
-        </p>
+      <div className="space-y-6 max-w-4xl mx-auto">
+        {profile?.role === 'aluno' && <UserWorkspaceHeader />}
+        <div className="max-w-xl mx-auto my-8 p-8 bg-white border border-slate-200 rounded-xl shadow-sm text-center">
+          <AlertCircle className="h-12 w-12 text-rose-500 mx-auto mb-4 animate-bounce" />
+          <h2 className="text-xl font-bold text-slate-900 mb-2 font-mono uppercase tracking-wide">Preenchimento Bloqueado</h2>
+          <p className="text-slate-600 text-sm mb-4 leading-relaxed">
+            {!isFormReleased 
+              ? 'O questionário pós-conclusão ainda não foi liberado para preenchimento pela coordenação de curso para sua turma.'
+              : isTurmaConcluida && isPostponedExpired
+                ? 'O período regular e de postergação para preencher o questionário pós-curso desta turma concluída já se encerrou.'
+                : 'O questionário pós-conclusão está bloqueado porque esta turma não está ativa ou o prazo de preenchimento expirou.'}
+          </p>
+          <p className="text-xs text-slate-400 font-mono mb-6">
+            Fale com o coordenador ou instrutor caso precise de liberação.
+          </p>
+          {profile?.role === 'aluno' && (
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all"
+            >
+              <Home size={14} />
+              Voltar para Área do Aluno
+            </Link>
+          )}
+        </div>
       </div>
     );
   }
@@ -845,15 +859,27 @@ function AvaliacaoAlunoForm() {
   // If the user is NOT an administrator, and the class period is expired, block filling
   if (isPostponedExpired && profile?.role !== 'admin' && !existingSubmission) {
     return (
-      <div className="max-w-xl mx-auto my-12 p-8 bg-white border border-slate-200 rounded-xl shadow-sm text-center">
-        <AlertCircle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
-        <h2 className="text-xl font-bold text-slate-900 mb-2 font-mono uppercase tracking-wide">Período de Avaliação Encerrado</h2>
-        <p className="text-slate-600 text-sm mb-4 leading-relaxed">
-          O prazo limite para o preenchimento do questionário pós-curso desta turma já se encerrou.
-        </p>
-        <p className="text-xs text-slate-400 font-mono">
-          Se necessário, solicite um adiamento / postergação com a coordenação de curso.
-        </p>
+      <div className="space-y-6 max-w-4xl mx-auto">
+        {profile?.role === 'aluno' && <UserWorkspaceHeader />}
+        <div className="max-w-xl mx-auto my-8 p-8 bg-white border border-slate-200 rounded-xl shadow-sm text-center">
+          <AlertCircle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-slate-900 mb-2 font-mono uppercase tracking-wide">Período de Avaliação Encerrado</h2>
+          <p className="text-slate-600 text-sm mb-4 leading-relaxed">
+            O prazo limite para o preenchimento do questionário pós-curso desta turma já se encerrou.
+          </p>
+          <p className="text-xs text-slate-400 font-mono mb-6">
+            Se necessário, solicite um adiamento / postergação com a coordenação de curso.
+          </p>
+          {profile?.role === 'aluno' && (
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all"
+            >
+              <Home size={14} />
+              Voltar para Área do Aluno
+            </Link>
+          )}
+        </div>
       </div>
     );
   }
