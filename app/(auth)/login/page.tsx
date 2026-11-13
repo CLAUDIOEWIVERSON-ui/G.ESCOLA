@@ -472,7 +472,7 @@ function LoginContent() {
   };
 
   return (
-    <div className="w-full max-w-sm bg-white rounded-xl shadow-xl shadow-slate-200/50 p-8 border border-slate-200 overflow-hidden min-h-[420px] flex flex-col justify-between">
+    <div className="w-full max-w-sm bg-white text-slate-900 rounded-xl shadow-xl shadow-slate-200/50 p-6 sm:p-8 border border-slate-200 overflow-hidden min-h-[420px] flex flex-col justify-between">
       <div>
         <div className="flex flex-col items-center mb-4">
           <Logo className="mb-0" dark={true} />
@@ -487,7 +487,7 @@ function LoginContent() {
               "px-3 py-1 text-[10px] font-black rounded-lg border transition-all cursor-pointer",
               language === 'pt' 
                 ? "bg-slate-900 text-white border-slate-900 shadow-sm" 
-                : "bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100"
+                : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
             )}
           >
             Português (PT)
@@ -499,7 +499,7 @@ function LoginContent() {
               "px-3 py-1 text-[10px] font-black rounded-lg border transition-all cursor-pointer",
               language === 'en' 
                 ? "bg-slate-900 text-white border-slate-900 shadow-sm" 
-                : "bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100"
+                : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
             )}
           >
             English (EN)
@@ -659,14 +659,14 @@ function LoginContent() {
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           required
-                          className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition-all"
+                          className="w-full pl-10 pr-4 py-2 bg-white text-slate-900 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition-all"
                           placeholder={t.auth.emailPlaceholder}
                         />
                       </div>
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">
+                      <label className="text-xs font-bold text-slate-600 uppercase tracking-wide ml-1">
                         {t.auth.password}
                       </label>
                       <div className="relative">
@@ -677,7 +677,7 @@ function LoginContent() {
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           required
-                          className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition-all"
+                          className="w-full pl-10 pr-4 py-2 bg-white text-slate-900 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition-all"
                           placeholder="••••••••"
                         />
                       </div>
@@ -717,7 +717,7 @@ function LoginContent() {
                       type="button"
                       onClick={() => qrFileInputRef.current?.click()}
                       disabled={loading}
-                      className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center justify-center gap-2 border border-slate-200 transition-all cursor-pointer active:scale-[0.98] disabled:opacity-60"
+                      className="w-full py-2.5 bg-white hover:bg-slate-50 text-slate-800 rounded-xl text-xs font-bold flex items-center justify-center gap-2 border border-slate-300 transition-all cursor-pointer active:scale-[0.98] disabled:opacity-60"
                     >
                       <Upload size={15} />
                       {language === 'pt' ? 'Enviar Imagem do QR Code' : 'Upload QR Code Image'}
@@ -733,7 +733,7 @@ function LoginContent() {
                     {/* Divider */}
                     <div className="relative flex items-center py-1">
                       <div className="flex-grow border-t border-slate-200"></div>
-                      <span className="shrink mx-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      <span className="shrink mx-3 text-[10px] font-bold uppercase tracking-wider text-slate-500">
                         {language === 'pt' ? 'ou código individual' : 'or individual code'}
                       </span>
                       <div className="flex-grow border-t border-slate-200"></div>
@@ -741,7 +741,7 @@ function LoginContent() {
 
                     {/* Manual Access Code Input */}
                     <div className="space-y-1.5">
-                      <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wide ml-1">
+                      <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wide ml-1">
                         {language === 'pt' ? 'Código Individual do Aluno' : 'Student Access Code'}
                       </label>
                       <div className="relative">
@@ -751,7 +751,7 @@ function LoginContent() {
                           type="text"
                           value={accessCode}
                           onChange={(e) => setAccessCode(e.target.value.toUpperCase())}
-                          className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm font-mono uppercase transition-all"
+                          className="w-full pl-10 pr-4 py-2 bg-white text-slate-900 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm font-mono uppercase transition-all"
                           placeholder="STU-XXXX-XXXX"
                         />
                       </div>
@@ -772,7 +772,7 @@ function LoginContent() {
                       )}
                     </button>
                     
-                    <p className="text-[10px] leading-relaxed text-slate-500 text-center font-medium bg-slate-50 border border-slate-100 rounded-lg p-2.5">
+                    <p className="text-[10px] leading-relaxed text-slate-600 text-center font-medium bg-white border border-slate-200 rounded-lg p-2.5">
                       {language === 'pt' 
                         ? 'O QR CODE É FORNECIDO PELA ADMINISTRAÇÃO DO CURSO. AO ENTRAR, VOCÊ TERÁ ACESSO AO DETALHE SEMANAL DE AULAS, BOLETIM INDIVIDUAL E QUESTIONÁRIO DE FINAL DE CURSO.' 
                         : 'THE QR CODE IS PROVIDED BY THE COURSE ADMINISTRATION, GIVING ACCESS TO THE WEEKLY CLASS SCHEDULE, INDIVIDUAL REPORT CARD, AND END-OF-COURSE SURVEY.'
@@ -791,7 +791,7 @@ function LoginContent() {
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4 font-sans text-slate-900">
+    <div className="auth-white-theme flex min-h-[100dvh] w-full items-center justify-center bg-white p-4 font-sans text-slate-900">
       <Suspense fallback={
         <div className="w-full max-w-sm bg-white rounded-xl shadow-xl shadow-slate-200/50 p-8 border border-slate-200 flex flex-col items-center justify-center min-h-[400px]">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>

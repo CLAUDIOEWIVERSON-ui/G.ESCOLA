@@ -130,6 +130,59 @@ body {
   -webkit-text-fill-color: #ffffff !important;
 }
 
+/* =========================================================================
+   AUTH / LOGIN AREA: Pure White Background on Mobile & Desktop (All Users)
+   ========================================================================= */
+html.dark:has(.auth-white-theme),
+.dark body:has(.auth-white-theme),
+.auth-white-theme,
+.dark .auth-white-theme {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  color-scheme: light;
+}
+
+.dark .auth-white-theme .bg-white,
+.dark .auth-white-theme .bg-slate-50 {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+.dark .auth-white-theme .bg-slate-100 {
+  background-color: #f1f5f9 !important;
+}
+
+.dark .auth-white-theme .text-black {
+  color: #000000 !important;
+}
+
+.dark .auth-white-theme .text-slate-900,
+.dark .auth-white-theme .text-slate-800,
+.dark .auth-white-theme .text-slate-700 {
+  color: #0f172a !important;
+}
+
+.dark .auth-white-theme .text-slate-600,
+.dark .auth-white-theme .text-slate-500 {
+  color: #334155 !important;
+}
+
+.dark .auth-white-theme .text-slate-400 {
+  color: #64748b !important;
+}
+
+.dark .auth-white-theme .border-slate-200,
+.dark .auth-white-theme .border-slate-100,
+.dark .auth-white-theme .border-slate-300 {
+  border-color: #cbd5e1 !important;
+}
+
+.dark .auth-white-theme input {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
 /* Focus-mode (Staff/Admin): Toda escrita ser na cor branca para melhor visualização do objeto aqui postado */
 div:not(.student-white-theme) > div:nth-of-type(2) > main:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(6) > div:nth-of-type(2) > div:nth-of-type(1),
 div:not(.student-white-theme) > div:nth-of-type(2) > main:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(6) > div:nth-of-type(2) > div:nth-of-type(1) * {
