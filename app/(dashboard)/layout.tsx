@@ -354,14 +354,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   const rawNavItems = isStudentUser ? [
-    { name: language === 'pt' ? 'Área do Aluno' : 'Student Area', icon: LayoutDashboard, path: '/dashboard' },
-    { name: language === 'pt' ? 'Detalhe Semanal de Aulas' : 'Weekly Class Details', icon: Calendar, path: '/horario' },
     { name: language === 'pt' ? 'Boletim Individual' : 'Individual Report', icon: FileText, path: '/boletim' },
-    { name: language === 'pt' ? 'Questionário Final de Curso' : 'Course Survey', icon: FileCheck, path: '/avaliacao' },
-    { name: t.calendar.title || 'Calendário', icon: CalendarDays, path: '/calendario' },
-    { name: (t.nav as any).pensamento || 'Pensamento do Dia', icon: Quote, path: '/pensamento-do-dia' },
-    { name: t.nav.manual || 'Manual do Usuário', icon: BookMarked, path: '/manual' },
-    { name: t.nav.settings || 'Configurações', icon: Settings, path: '/configuracoes' },
+    { name: language === 'pt' ? 'Questionário de Final de Curso' : 'End-of-Course Survey', icon: FileCheck, path: '/avaliacao' },
+    { name: language === 'pt' ? 'Detalhe Semanal de Aulas' : 'Weekly Class Details', icon: Calendar, path: '/horario' },
   ] : [
     { name: t.nav.dashboard, icon: LayoutDashboard, path: '/dashboard' },
     { name: t.nav.courses, icon: BookOpen, path: '/cursos' },
@@ -405,12 +400,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       ...(settingsItem ? [settingsItem] : []), // Configurações fica imediatamente acima de Sair do Sistema
     ];
   } else {
-    const settingsItem = rawNavItems.find(item => item.path === '/configuracoes');
-    const otherStudentItems = rawNavItems.filter(item => item.path !== '/configuracoes');
-    navItems = [
-      ...otherStudentItems,
-      ...(settingsItem ? [settingsItem] : []), // Configurações acima de Sair do Sistema
-    ];
+    navItems = rawNavItems;
   }
 
   const userInitials = profile?.full_name ? profile.full_name.slice(0, 2).toUpperCase() : 'US';
@@ -791,7 +781,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             
             <div className="flex flex-col">
               <h1 className={cn("text-lg font-bold leading-none", isStudentUser ? "text-black" : "text-slate-800")}>
-                {navItems.find(item => item.path === pathname)?.name || t.dashboard.title}
+                {navItems.find(item => item.path === pathname)?.name || (isStudentUser && pathname === '/dashboard' ? (language === 'pt' ? 'Área do Aluno' : 'Student Area') : t.dashboard.title)}
               </h1>
             </div>
           </div>
@@ -962,7 +952,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       >
         {navItems.filter(item => {
           if (isStudentUser) {
-            return ['/dashboard', '/horario', '/boletim', '/avaliacao', '/calendario', '/pensamento-do-dia', '/configuracoes'].includes(item.path);
+            return ['/boletim', '/avaliacao', '/horario'].includes(item.path);
           }
           return ['/dashboard', '/cursos', '/turmas', '/frequencia', '/horario', '/calendario', '/pensamento-do-dia', '/configuracoes'].includes(item.path);
         }).map((item, idx) => {
@@ -987,11 +977,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               : item.path === '/pensamento-do-dia'
                 ? (language === 'pt' ? 'REFLEXÃO' : 'THOUGHT')
                 : item.path === '/avaliacao'
-                  ? (language === 'pt' ? 'AVALIAÇÃO' : 'EVALUATION')
+                  ? (language === 'pt' ? 'QUESTIONÁRIO' : 'SURVEY')
                   : item.path === '/boletim'
                     ? (language === 'pt' ? 'BOLETIM' : 'GRADES')
                     : item.path === '/horario'
-                      ? (language === 'pt' ? 'HORÁRIO' : 'SCHEDULE')
+                      ? (language === 'pt' ? 'AULAS' : 'SCHEDULE')
                       : item.path === '/configuracoes'
                         ? (language === 'pt' ? 'CONTA' : 'ACCOUNT')
                         : item.path === '/manual'
@@ -1004,7 +994,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               href={item.path}
               title={item.name}
               className={cn(
-                "flex flex-col items-center gap-0.5 p-0.5 transition-all min-w-0 flex-1 max-w-[58px] shrink-0 relative group",
+                "flex flex-col items-center gap-0.5 p-0.5 transition-all min-w-0 flex-1 shrink-0 relative group",
+                isStudentUser ? "max-w-[92px]" : "max-w-[58px]",
                 isActive ? "scale-105" : "hover:opacity-100"
               )}
             >
