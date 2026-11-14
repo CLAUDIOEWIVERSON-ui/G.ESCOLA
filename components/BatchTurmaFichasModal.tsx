@@ -532,6 +532,9 @@ export default function BatchTurmaFichasModal({
                         <p className="text-xs font-black text-[#002776] uppercase tracking-widest mt-1">
                           FICHA INDIVIDUAL DE CADASTRO DO ALUNO (PREENCHIMENTO MANUAL)
                         </p>
+                        <p className="inline-block mt-1.5 px-2.5 py-0.5 border border-black bg-slate-100 text-[9px] font-black uppercase tracking-widest text-black">
+                          DOCUMENTO PARA USO INTERNO E CONTROLE
+                        </p>
                       </div>
                     </div>
                     <div className="text-right text-[9.5px] space-y-1 shrink-0">
@@ -801,7 +804,7 @@ export default function BatchTurmaFichasModal({
                   {/* Rodapé Oficial da Ficha */}
                   <div className="border-t-2 border-black mt-6 pt-2 flex items-center justify-between text-[8px] font-bold text-black uppercase print-avoid-break break-inside-avoid">
                     <span>MISSÃO DE ASSESSORIA NAVAL DO BRASIL EM SÃO TOMÉ E PRÍNCIPE</span>
-                    <span>FICHA DE REGISTRO E CONTROLE ACADÊMICO • DOCUMENTO OFICIAL</span>
+                    <span>USO INTERNO E CONTROLE • FICHA DE REGISTRO E CONTROLE ACADÊMICO</span>
                   </div>
                 </div>
               ))}

@@ -1805,6 +1805,11 @@ export default function StudentDetailEditModal({
                 <p className="text-xs font-black text-[#002776] uppercase tracking-widest mt-1">
                   {isManualRegistration ? 'FICHA DE CADASTRO DO ALUNO (MODELO / PREENCHIMENTO MANUAL)' : 'FICHA INDIVIDUAL DE CADASTRO DO ALUNO'}
                 </p>
+                {isManualRegistration && (
+                  <p className="inline-block mt-1.5 px-2.5 py-0.5 border border-slate-800 bg-slate-100 text-[9px] font-black uppercase tracking-widest text-slate-900">
+                    DOCUMENTO PARA USO INTERNO E CONTROLE
+                  </p>
+                )}
               </div>
             </div>
             <div className="text-right text-[9.5px] space-y-1 shrink-0">
@@ -2053,7 +2058,7 @@ export default function StudentDetailEditModal({
           {/* Rodapé Oficial da Ficha */}
           <div className="border-t-2 border-slate-300 mt-6 pt-2 flex items-center justify-between text-[8px] font-bold text-slate-500 uppercase print-avoid-break break-inside-avoid">
             <span>MISSÃO DE ASSESSORIA NAVAL DO BRASIL EM SÃO TOMÉ E PRÍNCIPE</span>
-            <span>FICHA DE REGISTRO E CONTROLE ACADÊMICO • DOCUMENTO OFICIAL</span>
+            <span>{isManualRegistration ? 'USO INTERNO E CONTROLE • FICHA DE REGISTRO E CONTROLE ACADÊMICO' : 'FICHA DE REGISTRO E CONTROLE ACADÊMICO • DOCUMENTO OFICIAL'}</span>
           </div>
         </div>,
         document.body
