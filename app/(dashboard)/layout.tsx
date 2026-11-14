@@ -954,7 +954,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           if (isStudentUser) {
             return ['/boletim', '/avaliacao', '/horario'].includes(item.path);
           }
-          return ['/dashboard', '/cursos', '/turmas', '/frequencia', '/horario', '/calendario', '/pensamento-do-dia', '/configuracoes'].includes(item.path);
+          return ['/dashboard', '/cursos', '/turmas', '/frequencia', '/horario', '/calendario', '/configuracoes'].includes(item.path);
         }).map((item, idx) => {
           const isActive = pathname === item.path;
           const isSettings = item.path === '/configuracoes';
@@ -974,19 +974,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             ? (language === 'pt' ? 'AGENDA' : 'CALENDAR') 
             : item.path === '/frequencia'
               ? (language === 'pt' ? 'FREQ.' : 'ATTEND.')
-              : item.path === '/pensamento-do-dia'
-                ? (language === 'pt' ? 'REFLEXÃO' : 'THOUGHT')
-                : item.path === '/avaliacao'
-                  ? (language === 'pt' ? 'QUESTIONÁRIO' : 'SURVEY')
-                  : item.path === '/boletim'
-                    ? (language === 'pt' ? 'BOLETIM' : 'GRADES')
-                    : item.path === '/horario'
-                      ? (language === 'pt' ? 'AULAS' : 'SCHEDULE')
-                      : item.path === '/configuracoes'
-                        ? (language === 'pt' ? 'CONTA' : 'ACCOUNT')
-                        : item.path === '/manual'
-                          ? (language === 'pt' ? 'MANUAL' : 'MANUAL')
-                          : item.name.split(' ')[0];
+              : item.path === '/avaliacao'
+                ? (language === 'pt' ? 'QUESTIONÁRIO' : 'SURVEY')
+                : item.path === '/boletim'
+                  ? (language === 'pt' ? 'BOLETIM' : 'GRADES')
+                  : item.path === '/horario'
+                    ? (language === 'pt' ? 'AULAS' : 'SCHEDULE')
+                    : item.path === '/configuracoes'
+                      ? (language === 'pt' ? 'CONTA' : 'ACCOUNT')
+                      : item.path === '/manual'
+                        ? (language === 'pt' ? 'MANUAL' : 'MANUAL')
+                        : item.name.split(' ')[0];
           
           return (
             <Link 

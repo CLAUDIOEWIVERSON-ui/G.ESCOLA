@@ -431,7 +431,14 @@ function BoletimContent() {
   const [classScale, setClassScale] = useState(0.55);
   const [downloadingClassPDF, setDownloadingClassPDF] = useState(false);
 
-  // Custom Signature states (Full Name, Military Rank/Posto-Graduação, and Role/Function)
+  // Custom Signature states (Signatory 1 & Signatory 2: Full Name, Military Rank/Posto-Graduação, and Role/Function)
+  const [activeSignatureSlot, setActiveSignatureSlot] = useState<1 | 2>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('boletim_active_signature_slot') === '2' ? 2 : 1;
+    }
+    return 1;
+  });
+
   const [signatureName, setSignatureName] = useState<string>(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('boletim_signature_name') || '';
@@ -453,17 +460,53 @@ function BoletimContent() {
     return '';
   });
 
+  const [signatureName2, setSignatureName2] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('boletim_signature_2_name') || '';
+    }
+    return '';
+  });
+
+  const [signatureRank2, setSignatureRank2] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('boletim_signature_2_rank') || '';
+    }
+    return '';
+  });
+
+  const [signatureRole2, setSignatureRole2] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('boletim_signature_2_role') || '';
+    }
+    return '';
+  });
+
   // Ensure persistent state is synchronized from localStorage on client mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      const savedSlot = localStorage.getItem('boletim_active_signature_slot');
       const savedName = localStorage.getItem('boletim_signature_name');
       const savedRank = localStorage.getItem('boletim_signature_rank');
       const savedRole = localStorage.getItem('boletim_signature_role');
+      const savedName2 = localStorage.getItem('boletim_signature_2_name');
+      const savedRank2 = localStorage.getItem('boletim_signature_2_rank');
+      const savedRole2 = localStorage.getItem('boletim_signature_2_role');
+      if (savedSlot === '2' || savedSlot === '1') setActiveSignatureSlot(savedSlot === '2' ? 2 : 1);
       if (savedName !== null) setSignatureName(savedName);
       if (savedRank !== null) setSignatureRank(savedRank);
       if (savedRole !== null) setSignatureRole(savedRole);
+      if (savedName2 !== null) setSignatureName2(savedName2);
+      if (savedRank2 !== null) setSignatureRank2(savedRank2);
+      if (savedRole2 !== null) setSignatureRole2(savedRole2);
     }
   }, []);
+
+  const handleActiveSignatureSlotChange = (slot: 1 | 2) => {
+    setActiveSignatureSlot(slot);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('boletim_active_signature_slot', String(slot));
+    }
+  };
 
   const handleSignatureNameChange = (val: string) => {
     setSignatureName(val);
@@ -486,16 +529,69 @@ function BoletimContent() {
     }
   };
 
-  const handleResetSignature = () => {
-    setSignatureName('');
-    setSignatureRank('');
-    setSignatureRole('');
+  const handleSignatureName2Change = (val: string) => {
+    setSignatureName2(val);
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('boletim_signature_name');
-      localStorage.removeItem('boletim_signature_rank');
-      localStorage.removeItem('boletim_signature_role');
+      localStorage.setItem('boletim_signature_2_name', val);
     }
-    toast.success(language === 'pt' ? 'Assinatura limpa.' : 'Signature cleared.');
+  };
+
+  const handleSignatureRank2Change = (val: string) => {
+    setSignatureRank2(val);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('boletim_signature_2_rank', val);
+    }
+  };
+
+  const handleSignatureRole2Change = (val: string) => {
+    setSignatureRole2(val);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('boletim_signature_2_role', val);
+    }
+  };
+
+  const activeSignatureName = activeSignatureSlot === 2 ? signatureName2 : signatureName;
+  const activeSignatureRank = activeSignatureSlot === 2 ? signatureRank2 : signatureRank;
+  const activeSignatureRole = activeSignatureSlot === 2 ? signatureRole2 : signatureRole;
+
+  const handleActiveSignatureNameChange = (val: string) => {
+    if (activeSignatureSlot === 2) handleSignatureName2Change(val);
+    else handleSignatureNameChange(val);
+  };
+
+  const handleActiveSignatureRankChange = (val: string) => {
+    if (activeSignatureSlot === 2) handleSignatureRank2Change(val);
+    else handleSignatureRankChange(val);
+  };
+
+  const handleActiveSignatureRoleChange = (val: string) => {
+    if (activeSignatureSlot === 2) handleSignatureRole2Change(val);
+    else handleSignatureRoleChange(val);
+  };
+
+  const handleResetSignature = (slot?: 1 | 2) => {
+    const targetSlot = slot || activeSignatureSlot;
+    if (targetSlot === 2) {
+      setSignatureName2('');
+      setSignatureRank2('');
+      setSignatureRole2('');
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('boletim_signature_2_name');
+        localStorage.removeItem('boletim_signature_2_rank');
+        localStorage.removeItem('boletim_signature_2_role');
+      }
+      toast.success(language === 'pt' ? '2ª assinatura limpa.' : '2nd signature cleared.');
+    } else {
+      setSignatureName('');
+      setSignatureRank('');
+      setSignatureRole('');
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('boletim_signature_name');
+        localStorage.removeItem('boletim_signature_rank');
+        localStorage.removeItem('boletim_signature_role');
+      }
+      toast.success(language === 'pt' ? '1ª assinatura limpa.' : '1st signature cleared.');
+    }
   };
 
   // Dynamic auto-fit calculation based on viewport height or width
@@ -2810,8 +2906,8 @@ function BoletimContent() {
         </div>
 
         {/* Signature Configuration Bar */}
-        <div className="mt-5 pt-4 border-t border-slate-100">
-          <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+        <div className="mt-5 pt-4 border-t border-slate-100 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <div className="p-1 rounded bg-blue-50 text-blue-600 border border-blue-100">
                 <PenTool size={13} />
@@ -2820,57 +2916,209 @@ function BoletimContent() {
                 {language === 'pt' ? 'Assinatura dos Boletins e Históricos Oficiais' : 'Official Bulletin & Transcript Signature'}
               </span>
               <span className="text-[10px] text-slate-400 font-medium hidden md:inline">
-                {language === 'pt' ? '— Nome completo, Posto/Graduação e Função impressos no documento' : '— Full name, Rank & Role printed on document'}
+                {language === 'pt' ? '— Registre até 2 assinantes e selecione qual será impresso' : '— Register up to 2 signatories and select the active one'}
               </span>
             </div>
-            {(signatureName || signatureRank || signatureRole) && (
+
+            {/* Quick Active Signature Selector */}
+            <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-lg border border-slate-200">
+              <span className="text-[9px] font-black uppercase tracking-wider text-slate-500 px-1.5">
+                {language === 'pt' ? 'Em uso:' : 'Active:'}
+              </span>
               <button
                 type="button"
-                onClick={handleResetSignature}
-                className="flex items-center gap-1 text-[10px] font-bold text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
-                title={language === 'pt' ? 'Limpar campos da assinatura' : 'Clear signature fields'}
+                onClick={() => handleActiveSignatureSlotChange(1)}
+                className={cn(
+                  "px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1",
+                  activeSignatureSlot === 1
+                    ? "bg-blue-600 text-white shadow-xs"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-white/70"
+                )}
               >
-                <RotateCcw size={11} />
-                <span>{language === 'pt' ? 'Limpar' : 'Clear'}</span>
+                {activeSignatureSlot === 1 && <CheckCircle2 size={11} />}
+                <span>{language === 'pt' ? '1º Nome' : '1st Name'}</span>
               </button>
-            )}
+              <button
+                type="button"
+                onClick={() => handleActiveSignatureSlotChange(2)}
+                className={cn(
+                  "px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1",
+                  activeSignatureSlot === 2
+                    ? "bg-blue-600 text-white shadow-xs"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-white/70"
+                )}
+              >
+                {activeSignatureSlot === 2 && <CheckCircle2 size={11} />}
+                <span>{language === 'pt' ? '2º Nome' : '2nd Name'}</span>
+              </button>
+            </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div>
-              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 px-0.5">
-                {language === 'pt' ? '1. Nome Completo:' : '1. Signatory Full Name:'}
-              </label>
-              <input
-                type="text"
-                value={signatureName}
-                onChange={(e) => handleSignatureNameChange(e.target.value)}
-                placeholder={language === 'pt' ? 'Ex: NOME COMPLETO DO OFICIAL' : 'Ex: FULL NAME OF OFFICIAL'}
-                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition"
-              />
+
+          {/* 1º Assinante */}
+          <div className={cn(
+            "p-3 rounded-xl border transition-all",
+            activeSignatureSlot === 1
+              ? "bg-blue-50/40 border-blue-300 ring-1 ring-blue-200/70"
+              : "bg-slate-50/50 border-slate-200/80 opacity-85 hover:opacity-100"
+          )}>
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <button
+                type="button"
+                onClick={() => handleActiveSignatureSlotChange(1)}
+                className="flex items-center gap-2 text-left cursor-pointer group"
+              >
+                <span className={cn(
+                  "w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors",
+                  activeSignatureSlot === 1 ? "border-blue-600 bg-blue-600" : "border-slate-300 bg-white group-hover:border-blue-400"
+                )}>
+                  {activeSignatureSlot === 1 && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                </span>
+                <span className="text-[10px] font-black uppercase tracking-wider text-slate-700">
+                  {language === 'pt' ? '1º Assinante (Principal)' : '1st Signatory (Primary)'}
+                </span>
+                {activeSignatureSlot === 1 ? (
+                  <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-600 text-white">
+                    {language === 'pt' ? 'Selecionado' : 'Selected'}
+                  </span>
+                ) : (
+                  <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white border border-slate-200 text-slate-500 group-hover:text-blue-600 group-hover:border-blue-300">
+                    {language === 'pt' ? 'Usar este' : 'Use this'}
+                  </span>
+                )}
+              </button>
+              {(signatureName || signatureRank || signatureRole) && (
+                <button
+                  type="button"
+                  onClick={() => handleResetSignature(1)}
+                  className="flex items-center gap-1 text-[10px] font-bold text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
+                  title={language === 'pt' ? 'Limpar 1º assinante' : 'Clear 1st signatory'}
+                >
+                  <RotateCcw size={11} />
+                  <span>{language === 'pt' ? 'Limpar' : 'Clear'}</span>
+                </button>
+              )}
             </div>
-            <div>
-              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 px-0.5">
-                {language === 'pt' ? '2. Posto / Graduação:' : '2. Rank / Title:'}
-              </label>
-              <input
-                type="text"
-                value={signatureRank}
-                onChange={(e) => handleSignatureRankChange(e.target.value)}
-                placeholder={language === 'pt' ? 'Ex: CC (FN) / Capitão de Corveta (FN)' : 'Ex: Commander (FN) / CDR'}
-                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition"
-              />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 px-0.5">
+                  {language === 'pt' ? '1. Nome Completo:' : '1. Signatory Full Name:'}
+                </label>
+                <input
+                  type="text"
+                  value={signatureName}
+                  onChange={(e) => handleSignatureNameChange(e.target.value)}
+                  placeholder={language === 'pt' ? 'Ex: NOME COMPLETO DO 1º OFICIAL' : 'Ex: FULL NAME OF 1ST OFFICIAL'}
+                  className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 px-0.5">
+                  {language === 'pt' ? '2. Posto / Graduação:' : '2. Rank / Title:'}
+                </label>
+                <input
+                  type="text"
+                  value={signatureRank}
+                  onChange={(e) => handleSignatureRankChange(e.target.value)}
+                  placeholder={language === 'pt' ? 'Ex: CC (FN) / Capitão de Corveta (FN)' : 'Ex: Commander (FN) / CDR'}
+                  className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 px-0.5">
+                  {language === 'pt' ? '3. Função / Cargo:' : '3. Function / Role:'}
+                </label>
+                <input
+                  type="text"
+                  value={signatureRole}
+                  onChange={(e) => handleSignatureRoleChange(e.target.value)}
+                  placeholder={language === 'pt' ? 'Ex: Chefe da Missão de Assessoria Naval do Brasil em São Tomé e Príncipe' : 'Ex: Head of Naval Advisory Mission'}
+                  className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition"
+                />
+              </div>
             </div>
-            <div>
-              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 px-0.5">
-                {language === 'pt' ? '3. Função / Cargo:' : '3. Function / Role:'}
-              </label>
-              <input
-                type="text"
-                value={signatureRole}
-                onChange={(e) => handleSignatureRoleChange(e.target.value)}
-                placeholder={language === 'pt' ? 'Ex: Chefe da Missão de Assessoria Naval do Brasil em São Tomé e Príncipe' : 'Ex: Head of Naval Advisory Mission'}
-                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition"
-              />
+          </div>
+
+          {/* 2º Assinante */}
+          <div className={cn(
+            "p-3 rounded-xl border transition-all",
+            activeSignatureSlot === 2
+              ? "bg-blue-50/40 border-blue-300 ring-1 ring-blue-200/70"
+              : "bg-slate-50/50 border-slate-200/80 opacity-85 hover:opacity-100"
+          )}>
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <button
+                type="button"
+                onClick={() => handleActiveSignatureSlotChange(2)}
+                className="flex items-center gap-2 text-left cursor-pointer group"
+              >
+                <span className={cn(
+                  "w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors",
+                  activeSignatureSlot === 2 ? "border-blue-600 bg-blue-600" : "border-slate-300 bg-white group-hover:border-blue-400"
+                )}>
+                  {activeSignatureSlot === 2 && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                </span>
+                <span className="text-[10px] font-black uppercase tracking-wider text-slate-700">
+                  {language === 'pt' ? '2º Assinante (Opcional / Substituto)' : '2nd Signatory (Optional / Alternate)'}
+                </span>
+                {activeSignatureSlot === 2 ? (
+                  <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-600 text-white">
+                    {language === 'pt' ? 'Selecionado' : 'Selected'}
+                  </span>
+                ) : (
+                  <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white border border-slate-200 text-slate-500 group-hover:text-blue-600 group-hover:border-blue-300">
+                    {language === 'pt' ? 'Usar este' : 'Use this'}
+                  </span>
+                )}
+              </button>
+              {(signatureName2 || signatureRank2 || signatureRole2) && (
+                <button
+                  type="button"
+                  onClick={() => handleResetSignature(2)}
+                  className="flex items-center gap-1 text-[10px] font-bold text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
+                  title={language === 'pt' ? 'Limpar 2º assinante' : 'Clear 2nd signatory'}
+                >
+                  <RotateCcw size={11} />
+                  <span>{language === 'pt' ? 'Limpar' : 'Clear'}</span>
+                </button>
+              )}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 px-0.5">
+                  {language === 'pt' ? '1. Nome Completo (2º):' : '1. 2nd Signatory Full Name:'}
+                </label>
+                <input
+                  type="text"
+                  value={signatureName2}
+                  onChange={(e) => handleSignatureName2Change(e.target.value)}
+                  placeholder={language === 'pt' ? 'Ex: NOME COMPLETO DO 2º OFICIAL' : 'Ex: FULL NAME OF 2ND OFFICIAL'}
+                  className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 px-0.5">
+                  {language === 'pt' ? '2. Posto / Graduação (2º):' : '2. Rank / Title (2nd):'}
+                </label>
+                <input
+                  type="text"
+                  value={signatureRank2}
+                  onChange={(e) => handleSignatureRank2Change(e.target.value)}
+                  placeholder={language === 'pt' ? 'Ex: CT (FN) / Capitão-Tenente (FN)' : 'Ex: Lieutenant Commander / LCDR'}
+                  className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 px-0.5">
+                  {language === 'pt' ? '3. Função / Cargo (2º):' : '3. Function / Role (2nd):'}
+                </label>
+                <input
+                  type="text"
+                  value={signatureRole2}
+                  onChange={(e) => handleSignatureRole2Change(e.target.value)}
+                  placeholder={language === 'pt' ? 'Ex: Encarregado / Coordenador de Cursos' : 'Ex: Course Coordinator'}
+                  className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -3245,43 +3493,67 @@ function BoletimContent() {
 
                       {/* Modal Signature Quick-Edit Bar */}
                       <div className="px-6 py-2.5 bg-slate-900/90 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs no-print">
-                        <div className="flex items-center gap-1.5 text-slate-300 font-bold shrink-0">
+                        <div className="flex items-center gap-2 text-slate-300 font-bold shrink-0">
                           <PenTool size={13} className="text-blue-400 shrink-0" />
                           <span className="text-[11px] uppercase tracking-wider font-extrabold text-slate-300">
                             {language === 'pt' ? 'Assinatura:' : 'Signature:'}
                           </span>
+                          <div className="flex items-center gap-1 bg-slate-800 p-0.5 rounded-lg border border-slate-700">
+                            <button
+                              type="button"
+                              onClick={() => handleActiveSignatureSlotChange(1)}
+                              title={signatureName.trim() || (language === 'pt' ? '1º Assinante' : '1st Signatory')}
+                              className={cn(
+                                "px-2 py-0.5 rounded text-[10px] font-black uppercase transition cursor-pointer",
+                                activeSignatureSlot === 1 ? "bg-blue-600 text-white" : "text-slate-400 hover:text-white"
+                              )}
+                            >
+                              {language === 'pt' ? '1º Nome' : '1st'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleActiveSignatureSlotChange(2)}
+                              title={signatureName2.trim() || (language === 'pt' ? '2º Assinante' : '2nd Signatory')}
+                              className={cn(
+                                "px-2 py-0.5 rounded text-[10px] font-black uppercase transition cursor-pointer",
+                                activeSignatureSlot === 2 ? "bg-blue-600 text-white" : "text-slate-400 hover:text-white"
+                              )}
+                            >
+                              {language === 'pt' ? '2º Nome' : '2nd'}
+                            </button>
+                          </div>
                         </div>
                         <div className="flex flex-1 items-center gap-2 min-w-[280px] max-w-4xl">
                           <input
                             type="text"
-                            value={signatureName}
-                            onChange={(e) => handleSignatureNameChange(e.target.value)}
+                            value={activeSignatureName}
+                            onChange={(e) => handleActiveSignatureNameChange(e.target.value)}
                             placeholder={language === 'pt' ? '1. Nome Completo...' : '1. Signatory Full Name...'}
                             className="flex-1 px-2.5 py-1 bg-slate-800 border border-slate-700 rounded-lg text-[11px] font-semibold text-slate-100 placeholder:text-slate-500 focus:border-blue-500 outline-none transition"
                             title={language === 'pt' ? 'Alterar Nome Completo' : 'Change Full Name'}
                           />
                           <input
                             type="text"
-                            value={signatureRank}
-                            onChange={(e) => handleSignatureRankChange(e.target.value)}
+                            value={activeSignatureRank}
+                            onChange={(e) => handleActiveSignatureRankChange(e.target.value)}
                             placeholder={language === 'pt' ? '2. Posto / Graduação...' : '2. Rank / Title...'}
                             className="flex-1 px-2.5 py-1 bg-slate-800 border border-slate-700 rounded-lg text-[11px] font-semibold text-slate-100 placeholder:text-slate-500 focus:border-blue-500 outline-none transition"
                             title={language === 'pt' ? 'Alterar Posto ou Graduação' : 'Change Rank / Title'}
                           />
                           <input
                             type="text"
-                            value={signatureRole}
-                            onChange={(e) => handleSignatureRoleChange(e.target.value)}
+                            value={activeSignatureRole}
+                            onChange={(e) => handleActiveSignatureRoleChange(e.target.value)}
                             placeholder={language === 'pt' ? '3. Função / Cargo...' : '3. Role / Title...'}
                             className="flex-1 px-2.5 py-1 bg-slate-800 border border-slate-700 rounded-lg text-[11px] font-semibold text-slate-100 placeholder:text-slate-500 focus:border-blue-500 outline-none transition"
                             title={language === 'pt' ? 'Alterar Função / Cargo' : 'Change Role / Title'}
                           />
-                          {(signatureName || signatureRank || signatureRole) && (
+                          {(activeSignatureName || activeSignatureRank || activeSignatureRole) && (
                             <button
                               type="button"
-                              onClick={handleResetSignature}
+                              onClick={() => handleResetSignature()}
                               className="p-1 text-slate-400 hover:text-rose-400 transition cursor-pointer"
-                              title={language === 'pt' ? 'Limpar assinatura' : 'Clear signature'}
+                              title={language === 'pt' ? 'Limpar assinatura selecionada' : 'Clear selected signature'}
                             >
                               <RotateCcw size={13} />
                             </button>
@@ -4070,23 +4342,23 @@ function BoletimContent() {
                                       <div className="w-full min-w-[300px] border-b border-slate-900 h-7 mb-1.5"></div>
                                       
                                       {/* Linha 1: Nome Completo */}
-                                      {signatureName.trim() ? (
+                                      {activeSignatureName.trim() ? (
                                         <div className="text-xs font-bold text-slate-900 leading-tight text-center w-full whitespace-nowrap">
-                                          {signatureName.trim()}
+                                          {activeSignatureName.trim()}
                                         </div>
                                       ) : null}
 
                                       {/* Linha 2: Posto / Graduação */}
-                                      {signatureRank.trim() ? (
+                                      {activeSignatureRank.trim() ? (
                                         <div className="text-xs font-bold text-slate-900 leading-tight text-center mt-0.5 w-full whitespace-nowrap">
-                                          {signatureRank.trim()}
+                                          {activeSignatureRank.trim()}
                                         </div>
                                       ) : null}
 
                                       {/* Linha 3: Função */}
-                                      {signatureRole.trim() ? (
+                                      {activeSignatureRole.trim() ? (
                                         <div className="text-xs font-bold text-slate-900 leading-tight text-center mt-0.5 w-full whitespace-nowrap">
-                                          {signatureRole.trim()}
+                                          {activeSignatureRole.trim()}
                                         </div>
                                       ) : null}
                                     </div>
@@ -4177,43 +4449,67 @@ function BoletimContent() {
 
                       {/* Modal Signature Quick-Edit Bar */}
                       <div className="px-6 py-2.5 bg-slate-900/90 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs no-print">
-                        <div className="flex items-center gap-1.5 text-slate-300 font-bold shrink-0">
+                        <div className="flex items-center gap-2 text-slate-300 font-bold shrink-0">
                           <PenTool size={13} className="text-blue-400 shrink-0" />
                           <span className="text-[11px] uppercase tracking-wider font-extrabold text-slate-300">
                             {language === 'pt' ? 'Assinatura do Boletim:' : 'Bulletin Signature:'}
                           </span>
+                          <div className="flex items-center gap-1 bg-slate-800 p-0.5 rounded-lg border border-slate-700">
+                            <button
+                              type="button"
+                              onClick={() => handleActiveSignatureSlotChange(1)}
+                              title={signatureName.trim() || (language === 'pt' ? '1º Assinante' : '1st Signatory')}
+                              className={cn(
+                                "px-2 py-0.5 rounded text-[10px] font-black uppercase transition cursor-pointer",
+                                activeSignatureSlot === 1 ? "bg-blue-600 text-white" : "text-slate-400 hover:text-white"
+                              )}
+                            >
+                              {language === 'pt' ? '1º Nome' : '1st'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleActiveSignatureSlotChange(2)}
+                              title={signatureName2.trim() || (language === 'pt' ? '2º Assinante' : '2nd Signatory')}
+                              className={cn(
+                                "px-2 py-0.5 rounded text-[10px] font-black uppercase transition cursor-pointer",
+                                activeSignatureSlot === 2 ? "bg-blue-600 text-white" : "text-slate-400 hover:text-white"
+                              )}
+                            >
+                              {language === 'pt' ? '2º Nome' : '2nd'}
+                            </button>
+                          </div>
                         </div>
                         <div className="flex flex-1 items-center gap-2 min-w-[280px] max-w-4xl">
                           <input
                             type="text"
-                            value={signatureName}
-                            onChange={(e) => handleSignatureNameChange(e.target.value)}
+                            value={activeSignatureName}
+                            onChange={(e) => handleActiveSignatureNameChange(e.target.value)}
                             placeholder={language === 'pt' ? '1. Nome Completo...' : '1. Signatory Full Name...'}
                             className="flex-1 px-2.5 py-1 bg-slate-800 border border-slate-700 rounded-lg text-[11px] font-semibold text-slate-100 placeholder:text-slate-500 focus:border-blue-500 outline-none transition"
                             title={language === 'pt' ? 'Alterar Nome Completo' : 'Change Full Name'}
                           />
                           <input
                             type="text"
-                            value={signatureRank}
-                            onChange={(e) => handleSignatureRankChange(e.target.value)}
+                            value={activeSignatureRank}
+                            onChange={(e) => handleActiveSignatureRankChange(e.target.value)}
                             placeholder={language === 'pt' ? '2. Posto / Graduação...' : '2. Rank / Title...'}
                             className="flex-1 px-2.5 py-1 bg-slate-800 border border-slate-700 rounded-lg text-[11px] font-semibold text-slate-100 placeholder:text-slate-500 focus:border-blue-500 outline-none transition"
                             title={language === 'pt' ? 'Alterar Posto ou Graduação' : 'Change Rank / Title'}
                           />
                           <input
                             type="text"
-                            value={signatureRole}
-                            onChange={(e) => handleSignatureRoleChange(e.target.value)}
+                            value={activeSignatureRole}
+                            onChange={(e) => handleActiveSignatureRoleChange(e.target.value)}
                             placeholder={language === 'pt' ? '3. Função / Cargo...' : '3. Role / Title...'}
                             className="flex-1 px-2.5 py-1 bg-slate-800 border border-slate-700 rounded-lg text-[11px] font-semibold text-slate-100 placeholder:text-slate-500 focus:border-blue-500 outline-none transition"
                             title={language === 'pt' ? 'Alterar Função / Cargo' : 'Change Role / Title'}
                           />
-                          {(signatureName || signatureRank || signatureRole) && (
+                          {(activeSignatureName || activeSignatureRank || activeSignatureRole) && (
                             <button
                               type="button"
-                              onClick={handleResetSignature}
+                              onClick={() => handleResetSignature()}
                               className="p-1 text-slate-400 hover:text-rose-400 transition cursor-pointer"
-                              title={language === 'pt' ? 'Limpar assinatura' : 'Clear signature'}
+                              title={language === 'pt' ? 'Limpar assinatura selecionada' : 'Clear selected signature'}
                             >
                               <RotateCcw size={13} />
                             </button>
@@ -4514,19 +4810,19 @@ function BoletimContent() {
                                  <div className="flex flex-col items-end justify-end pt-3 mt-4 mb-2 border-t border-dashed border-slate-300 print-avoid-break break-inside-avoid">
                                    <div className="flex flex-col items-center text-center min-w-[320px] max-w-[480px]">
                                      <div className="w-full min-w-[300px] border-b-2 border-slate-800 h-7 mb-1.5"></div>
-                                     {signatureName.trim() ? (
+                                     {activeSignatureName.trim() ? (
                                        <span className="text-xs font-bold text-slate-900 leading-tight text-center w-full whitespace-nowrap">
-                                         {signatureName.trim()}
+                                         {activeSignatureName.trim()}
                                        </span>
                                      ) : null}
-                                     {signatureRank.trim() ? (
+                                     {activeSignatureRank.trim() ? (
                                        <span className="text-xs font-bold text-slate-900 leading-tight text-center mt-0.5 w-full whitespace-nowrap">
-                                         {signatureRank.trim()}
+                                         {activeSignatureRank.trim()}
                                        </span>
                                      ) : null}
-                                     {signatureRole.trim() ? (
+                                     {activeSignatureRole.trim() ? (
                                        <span className="text-xs font-bold text-slate-900 leading-tight text-center mt-0.5 w-full whitespace-nowrap">
-                                         {signatureRole.trim()}
+                                         {activeSignatureRole.trim()}
                                        </span>
                                      ) : null}
                                    </div>
