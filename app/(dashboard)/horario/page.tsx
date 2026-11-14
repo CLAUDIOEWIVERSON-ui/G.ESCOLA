@@ -1709,14 +1709,25 @@ export default function HorarioPage() {
                                   key={day.key}
                                   className="px-2 py-2 md:px-2.5 md:py-2.5 border-r border-slate-100 last:border-r-0"
                                 >
+                                  {(() => {
+                                    const isExamCell =
+                                      cell.modulo === "PROVAS" ||
+                                      cell.modulo === "PROVA" ||
+                                      (cell.customSubject && /prova|exame/i.test(cell.customSubject)) ||
+                                      (cell.topic && /prova|exame/i.test(cell.topic));
+                                    return (
                                   <div
                                     className={cn(
                                       "rounded-xl p-3 h-full flex flex-col transition-all min-h-[105px]",
                                       isEditMode
                                         ? "bg-white border-2 border-dashed border-neutral-300"
-                                        : cell.subjectId
-                                          ? "bg-slate-50 border border-slate-200/80 shadow-sm"
-                                          : "hover:bg-slate-50/40 border border-transparent",
+                                        : isExamCell
+                                          ? isNifStudent
+                                            ? "bg-white border-2 border-black shadow-[3px_3px_0px_0px_#000000]"
+                                            : "bg-rose-50/80 border-2 border-rose-500 shadow-sm"
+                                          : (cell.subjectId || cell.customSubject)
+                                            ? "bg-slate-50 border border-slate-200/80 shadow-sm"
+                                            : "hover:bg-slate-50/40 border border-transparent",
                                     )}
                                   >
                                     {(() => {
@@ -2028,16 +2039,19 @@ export default function HorarioPage() {
                                             />
                                           </div>
                                         </div>
-                                      ) : (cell.subjectId || cell.customSubject) ? (
+                                      ) : (cell.subjectId || cell.customSubject || cell.modulo === "PROVAS" || cell.modulo === "PROVA") ? (
                                         <div className="space-y-1.5 flex-1 flex flex-col justify-between">
                                           <div className="space-y-1.5">
                                             {/* 1. MÓDULO */}
-                                            <div className={cn("flex items-center gap-1.5", isNifStudent ? "text-black" : "text-blue-600")}>
+                                            <div className={cn("flex items-center gap-1.5", isNifStudent ? "text-black" : isExamCell ? "text-rose-700" : "text-blue-600")}>
                                               <Layers
                                                 size={10}
                                                 className="shrink-0"
                                               />
-                                              <span className="text-[9px] font-black uppercase tracking-wider leading-none">
+                                              <span className={cn(
+                                                "text-[9px] font-black uppercase tracking-wider leading-none",
+                                                isExamCell && (isNifStudent ? "border border-black px-1.5 py-0.5 rounded" : "bg-rose-100 border border-rose-300 px-1.5 py-0.5 rounded")
+                                              )}>
                                                 {moduloLabel}
                                               </span>
                                             </div>
@@ -2051,7 +2065,9 @@ export default function HorarioPage() {
                                               <span className="text-[11px] font-black leading-tight uppercase tracking-tight">
                                                 {cell.customSubject ||
                                                   cellDiscObj?.nome ||
-                                                  "Disciplina"}
+                                                  (cell.modulo === "PROVAS" || cell.modulo === "PROVA"
+                                                    ? (language === "pt" ? "Avaliação / Prova" : "Exam / Assessment")
+                                                    : "Disciplina")}
                                               </span>
                                             </div>
 
@@ -2108,6 +2124,8 @@ export default function HorarioPage() {
                                       );
                                     })()}
                                   </div>
+                                    );
+                                  })()}
                                 </td>
                               );
                             })}
