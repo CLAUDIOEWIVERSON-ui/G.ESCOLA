@@ -1490,7 +1490,9 @@ export default function HorarioPage() {
                               cell.customInstructor ||
                               cell.room ||
                               cell.topicId ||
-                              cell.topic
+                              cell.topic ||
+                              cell.modulo === "PROVAS" ||
+                              cell.modulo === "PROVA"
                             );
                           });
                         };
@@ -1710,11 +1712,16 @@ export default function HorarioPage() {
                                   className="px-2 py-2 md:px-2.5 md:py-2.5 border-r border-slate-100 last:border-r-0"
                                 >
                                   {(() => {
+                                    const isExtraClassCell =
+                                      cell.subjectId === "__extraclasse__" ||
+                                      /extra[\s-]*classe/i.test(cell.customSubject || "") ||
+                                      /extra[\s-]*classe/i.test(cell.modulo || "");
                                     const isExamCell =
-                                      cell.modulo === "PROVAS" ||
-                                      cell.modulo === "PROVA" ||
-                                      (cell.customSubject && /prova|exame/i.test(cell.customSubject)) ||
-                                      (cell.topic && /prova|exame/i.test(cell.topic));
+                                      !isExtraClassCell &&
+                                      (cell.modulo === "PROVAS" ||
+                                        cell.modulo === "PROVA" ||
+                                        (cell.customSubject && /prova|exame/i.test(cell.customSubject)) ||
+                                        (cell.topic && /prova|exame/i.test(cell.topic)));
                                     return (
                                   <div
                                     className={cn(
@@ -1725,9 +1732,13 @@ export default function HorarioPage() {
                                           ? isNifStudent
                                             ? "bg-white border-2 border-black shadow-[3px_3px_0px_0px_#000000]"
                                             : "bg-rose-50/80 border-2 border-rose-500 shadow-sm"
-                                          : (cell.subjectId || cell.customSubject)
-                                            ? "bg-slate-50 border border-slate-200/80 shadow-sm"
-                                            : "hover:bg-slate-50/40 border border-transparent",
+                                          : isExtraClassCell
+                                            ? isNifStudent
+                                              ? "bg-white border-2 border-black shadow-[3px_3px_0px_0px_#000000]"
+                                              : "bg-amber-50/80 border-2 border-amber-500 shadow-sm"
+                                            : (cell.subjectId || cell.customSubject)
+                                              ? "bg-slate-50 border border-slate-200/80 shadow-sm"
+                                              : "hover:bg-slate-50/40 border border-transparent",
                                     )}
                                   >
                                     {(() => {
@@ -1741,17 +1752,23 @@ export default function HorarioPage() {
                                         cell.modulo ||
                                         (cellDiscObj?.modulo_index
                                           ? String(cellDiscObj.modulo_index)
-                                          : "1");
+                                          : isExtraClassCell
+                                            ? ""
+                                            : "1");
                                       const moduloLabel =
                                         currentModulo === "PROVAS"
                                           ? language === "pt"
                                             ? "PROVAS"
                                             : "EXAMS"
-                                          : isNaN(Number(currentModulo))
-                                            ? currentModulo
-                                            : language === "pt"
-                                              ? `Módulo ${currentModulo}`
-                                              : `Module ${currentModulo}`;
+                                          : !currentModulo && isExtraClassCell
+                                            ? language === "pt"
+                                              ? "ATIVIDADE"
+                                              : "ACTIVITY"
+                                            : isNaN(Number(currentModulo))
+                                              ? currentModulo
+                                              : language === "pt"
+                                                ? `Módulo ${currentModulo}`
+                                                : `Module ${currentModulo}`;
 
                                       return isEditMode ? (
                                         <div className="space-y-1.5 flex flex-col h-full justify-between">
@@ -1887,6 +1904,11 @@ export default function HorarioPage() {
                                                       updateCell(slot.id, day.key, "subjectIsCustom", "true");
                                                       updateCell(slot.id, day.key, "subjectId", "");
                                                       updateCell(slot.id, day.key, "customSubject", "");
+                                                    } else if (e.target.value === "__extraclasse__") {
+                                                      updateCell(slot.id, day.key, "subjectId", "__extraclasse__");
+                                                      updateCell(slot.id, day.key, "topicId", "");
+                                                      updateCell(slot.id, day.key, "subjectIsCustom", "");
+                                                      updateCell(slot.id, day.key, "customSubject", "");
                                                     } else {
                                                       updateCell(
                                                         slot.id,
@@ -1921,6 +1943,11 @@ export default function HorarioPage() {
                                                   <option value="">
                                                     {t.schedule.subject}
                                                   </option>
+                                                  <option value="__extraclasse__">
+                                                    {language === "pt"
+                                                      ? "EXTRA CLASSE"
+                                                      : "EXTRA CLASS"}
+                                                  </option>
                                                   {filteredDisciplinas.map(
                                                     (d) => (
                                                       <option
@@ -1939,6 +1966,33 @@ export default function HorarioPage() {
                                                 </select>
                                               )}
                                             </div>
+
+                                            {isExtraClassCell && (
+                                              <div className="flex items-center gap-1.5 text-amber-800 bg-amber-50/70 rounded px-1.5 py-0.5 border border-amber-200/80">
+                                                <Book
+                                                  size={9}
+                                                  className="shrink-0 text-amber-600"
+                                                />
+                                                <input
+                                                  type="text"
+                                                  value={cell.topic || ""}
+                                                  onChange={(e) =>
+                                                    updateCell(
+                                                      slot.id,
+                                                      day.key,
+                                                      "topic",
+                                                      e.target.value,
+                                                    )
+                                                  }
+                                                  placeholder={
+                                                    language === "pt"
+                                                      ? "Descrição da atividade (opcional)"
+                                                      : "Activity details (optional)"
+                                                  }
+                                                  className="w-full text-[9px] font-bold text-amber-900 bg-transparent border-none focus:ring-0 p-0 placeholder:text-amber-400"
+                                                />
+                                              </div>
+                                            )}
 
                                             {/* 4. INSTRUTOR SELECT */}
                                             <div className="flex items-center gap-1.5 text-neutral-500">
@@ -2018,11 +2072,14 @@ export default function HorarioPage() {
                                             </div>
                                           </div>
 
-                                          {/* 5. SALA INPUT */}
-                                          <div className="flex items-center gap-1.5 pt-1.5 border-t border-slate-100 mt-auto">
+                                          {/* 5. SALA / LOCAL INPUT */}
+                                          <div className={cn(
+                                            "flex items-center gap-1.5 pt-1.5 border-t mt-auto",
+                                            isExtraClassCell ? "border-amber-300" : "border-slate-100"
+                                          )}>
                                             <MapPin
                                               size={9}
-                                              className="text-slate-400 shrink-0"
+                                              className={cn("shrink-0", isExtraClassCell ? "text-amber-600" : "text-slate-400")}
                                             />
                                             <input
                                               value={cell.room || ""}
@@ -2034,8 +2091,17 @@ export default function HorarioPage() {
                                                   e.target.value,
                                                 )
                                               }
-                                              placeholder="Sala"
-                                              className="w-full text-[9px] font-bold text-slate-500 bg-transparent border-none focus:ring-0 p-0 placeholder:text-slate-200 uppercase"
+                                              placeholder={
+                                                isExtraClassCell
+                                                  ? (language === "pt" ? "Local da atividade" : "Activity location")
+                                                  : "Sala"
+                                              }
+                                              className={cn(
+                                                "w-full text-[9px] font-bold bg-transparent border-none focus:ring-0 p-0 uppercase",
+                                                isExtraClassCell
+                                                  ? "text-amber-950 placeholder:text-amber-500"
+                                                  : "text-slate-500 placeholder:text-slate-200"
+                                              )}
                                             />
                                           </div>
                                         </div>
@@ -2043,14 +2109,15 @@ export default function HorarioPage() {
                                         <div className="space-y-1.5 flex-1 flex flex-col justify-between">
                                           <div className="space-y-1.5">
                                             {/* 1. MÓDULO */}
-                                            <div className={cn("flex items-center gap-1.5", isNifStudent ? "text-black" : isExamCell ? "text-rose-700" : "text-blue-600")}>
+                                            <div className={cn("flex items-center gap-1.5", isNifStudent ? "text-black" : isExamCell ? "text-rose-700" : isExtraClassCell ? "text-amber-800" : "text-blue-600")}>
                                               <Layers
                                                 size={10}
                                                 className="shrink-0"
                                               />
                                               <span className={cn(
                                                 "text-[9px] font-black uppercase tracking-wider leading-none",
-                                                isExamCell && (isNifStudent ? "border border-black px-1.5 py-0.5 rounded" : "bg-rose-100 border border-rose-300 px-1.5 py-0.5 rounded")
+                                                isExamCell && (isNifStudent ? "border border-black px-1.5 py-0.5 rounded" : "bg-rose-100 border border-rose-300 px-1.5 py-0.5 rounded"),
+                                                isExtraClassCell && (isNifStudent ? "border border-black px-1.5 py-0.5 rounded" : "bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded")
                                               )}>
                                                 {moduloLabel}
                                               </span>
@@ -2065,9 +2132,11 @@ export default function HorarioPage() {
                                               <span className="text-[11px] font-black leading-tight uppercase tracking-tight">
                                                 {cell.customSubject ||
                                                   cellDiscObj?.nome ||
-                                                  (cell.modulo === "PROVAS" || cell.modulo === "PROVA"
-                                                    ? (language === "pt" ? "Avaliação / Prova" : "Exam / Assessment")
-                                                    : "Disciplina")}
+                                                  (cell.subjectId === "__extraclasse__"
+                                                    ? (language === "pt" ? "EXTRA CLASSE" : "EXTRA CLASS")
+                                                    : cell.modulo === "PROVAS" || cell.modulo === "PROVA"
+                                                      ? (language === "pt" ? "Avaliação / Prova" : "Exam / Assessment")
+                                                      : "Disciplina")}
                                               </span>
                                             </div>
 
@@ -2104,14 +2173,14 @@ export default function HorarioPage() {
                                             </div>
                                           </div>
 
-                                          {/* 5. SALA */}
+                                          {/* 5. SALA / LOCAL */}
                                           <div className="pt-1.5 flex flex-col gap-1 border-t border-slate-200 mt-auto">
-                                            <div className={cn("flex items-center gap-1.5", isNifStudent ? "text-black" : "text-neutral-400")}>
+                                            <div className={cn("flex items-center gap-1.5", isNifStudent ? "text-black" : isExtraClassCell ? "text-amber-900" : "text-neutral-400")}>
                                               <MapPin size={10} />
                                               <span className="text-[9px] font-black uppercase tracking-tight leading-none">
-                                                {language === "pt"
-                                                  ? "Sala: "
-                                                  : "Room: "}
+                                                {isExtraClassCell
+                                                  ? (language === "pt" ? "Local: " : "Location: ")
+                                                  : (language === "pt" ? "Sala: " : "Room: ")}
                                                 {cell.room || "N/A"}
                                               </span>
                                             </div>

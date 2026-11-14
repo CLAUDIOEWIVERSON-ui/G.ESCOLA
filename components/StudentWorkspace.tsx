@@ -19,6 +19,7 @@ import {
   Sparkles,
   AlertTriangle,
   MapPin,
+  Compass,
 } from 'lucide-react';
 import { useUser } from '@/lib/auth/UserContext';
 import { useI18n } from '@/lib/i18n/LanguageContext';
@@ -39,6 +40,21 @@ interface ScheduledExamItem {
   timeLabel?: string;
   room?: string;
   source: 'horario' | 'evento';
+  startTimeMinutes: number;
+}
+
+interface ExtraClassActivityItem {
+  id: string;
+  dateStr: string;
+  formattedDate: string;
+  weekdayLabel: string;
+  daysUntil: number;
+  title: string;
+  topicName?: string;
+  moduleLabel?: string;
+  timeLabel: string;
+  location: string;
+  instructorName?: string;
   startTimeMinutes: number;
 }
 
@@ -72,6 +88,15 @@ function isExamKeywordMatch(str?: string | null): boolean {
     return false;
   }
   return /\b(provas?|exames?|testes?|avaliac(?:ao|oes)|verificac(?:ao|oes)|simulados?)\b/i.test(norm);
+}
+
+function isExtraClassCellData(cell: any, discName?: string | null): boolean {
+  if (!cell || typeof cell !== 'object') return false;
+  if (cell.subjectId === '__extraclasse__') return true;
+  const combined = [cell.customSubject, discName, cell.modulo]
+    .map(normalizeSearchText)
+    .join(' ');
+  return /\bextra[\s-]*classe\b/i.test(combined);
 }
 
 function extractModuleFromText(str?: string | null, isPt = true): string | null {
@@ -142,6 +167,7 @@ export function StudentWorkspace() {
   const [hasSubmittedSurvey, setHasSubmittedSurvey] = useState(false);
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [scheduledExams, setScheduledExams] = useState<ScheduledExamItem[]>([]);
+  const [extraClassActivities, setExtraClassActivities] = useState<ExtraClassActivityItem[]>([]);
   const [loadingExtras, setLoadingExtras] = useState(true);
 
   useEffect(() => {
@@ -154,7 +180,7 @@ export function StudentWorkspace() {
       try {
         const localTodayStr = getLocalTodayDateStr();
 
-        const [evalRes, horarioRes, discRes, matRes, evtPrimaryRes] = await Promise.all([
+        const [evalRes, horarioRes, discRes, matRes, evtPrimaryRes, instrRes] = await Promise.all([
           supabase
             .from('questionarios_conclusao')
             .select('id, created_at')
@@ -179,6 +205,10 @@ export function StudentWorkspace() {
             .select('id, titulo, descricao, data, data_fim, tipo_data, cor, exibir_aluno, target_grupo, uniforme_dia')
             .order('data', { ascending: true })
             .limit(40),
+          supabase
+            .from('profiles')
+            .select('id, full_name')
+            .in('role', ['instrutor', 'admin']),
         ]);
 
         if (active && evalRes.data) {
@@ -258,12 +288,17 @@ export function StudentWorkspace() {
           );
         }
 
-        // 1. Extrair provas marcadas na grade horária (horarios.data)
+        // 1. Extrair provas e atividades extraclasse marcadas na grade horária (horarios.data)
         const discMap = new Map<string, any>();
         (discRes.data || []).forEach((d: any) => discMap.set(d.id, d));
 
         const matMap = new Map<string, any>();
         (matRes.data || []).forEach((m: any) => matMap.set(m.id, m));
+
+        const instrMap = new Map<string, string>();
+        (instrRes.data || []).forEach((p: any) => {
+          if (p.id && p.full_name) instrMap.set(String(p.id), p.full_name);
+        });
 
         interface RawSlotExam {
           dateStr: string;
@@ -275,7 +310,19 @@ export function StudentWorkspace() {
           endMinutes: number;
         }
 
+        interface RawSlotExtraClass {
+          dateStr: string;
+          title: string;
+          topicName?: string;
+          moduleLabel?: string;
+          location: string;
+          instructorName?: string;
+          startMinutes: number;
+          endMinutes: number;
+        }
+
         const rawSlotExams: RawSlotExam[] = [];
+        const rawSlotExtraClasses: RawSlotExtraClass[] = [];
         const scheduleJson = horarioRes.data?.data as Record<string, any> | null;
 
         if (scheduleJson && typeof scheduleJson === 'object') {
@@ -289,19 +336,65 @@ export function StudentWorkspace() {
             const dayOffset = DAY_OFFSETS[dayKey];
             if (dayOffset === undefined) return;
 
+            // Calcula data exata do dia na semana em hora local segura (12:00)
+            const baseWeekDate = new Date(`${weekKey}T12:00:00`);
+            if (isNaN(baseWeekDate.getTime())) return;
+            baseWeekDate.setDate(baseWeekDate.getDate() + dayOffset);
+            const cellYear = baseWeekDate.getFullYear();
+            const cellMonth = String(baseWeekDate.getMonth() + 1).padStart(2, '0');
+            const cellDay = String(baseWeekDate.getDate()).padStart(2, '0');
+            const cellDateStr = `${cellYear}-${cellMonth}-${cellDay}`;
+
+            if (cellDateStr < localTodayStr) return;
+
             const discObj = cell.subjectId ? discMap.get(cell.subjectId) : null;
             const topicObj = cell.topicId ? matMap.get(cell.topicId) : null;
+            const { startMinutes, endMinutes } = computeSlotTimeRange(slotStart);
 
             const rawModulo = String(cell.modulo || '').trim();
             const rawModuloUpper = rawModulo.toUpperCase();
+            const subjectText = String(cell.customSubject || discObj?.nome || '').trim();
+            const topicText = String(cell.topic || topicObj?.nome || '').trim();
+
+            // 1A. Verificar se é Atividade Extraclasse
+            if (isExtraClassCellData(cell, discObj?.nome)) {
+              const resolvedLocation = cell.room ? String(cell.room).trim() : '';
+              const resolvedTitle =
+                cell.customSubject && !/^extra[\s-]*classe$/i.test(cell.customSubject.trim())
+                  ? String(cell.customSubject).trim()
+                  : isPt
+                    ? 'Atividade Extraclasse'
+                    : 'Extra-Class Activity';
+              const resolvedInstructor =
+                (cell.customInstructor ? String(cell.customInstructor).trim() : '') ||
+                (cell.instructorId ? instrMap.get(String(cell.instructorId)) || '' : '');
+              const modLabel = rawModulo
+                ? !isNaN(Number(rawModulo))
+                  ? isPt
+                    ? `Módulo ${rawModulo}`
+                    : `Module ${rawModulo}`
+                  : rawModulo
+                : undefined;
+
+              rawSlotExtraClasses.push({
+                dateStr: cellDateStr,
+                title: resolvedTitle,
+                topicName: topicText || undefined,
+                moduleLabel: modLabel,
+                location: resolvedLocation,
+                instructorName: resolvedInstructor || undefined,
+                startMinutes,
+                endMinutes,
+              });
+              return;
+            }
+
+            // 1B. Verificar se é Prova
             const isExplicitExamModule =
               rawModuloUpper === 'PROVAS' ||
               rawModuloUpper === 'PROVA' ||
               rawModuloUpper === 'EXAME' ||
               rawModuloUpper === 'EXAMS';
-
-            const subjectText = String(cell.customSubject || discObj?.nome || '').trim();
-            const topicText = String(cell.topic || topicObj?.nome || '').trim();
 
             const hasExamKeyword =
               isExamKeywordMatch(rawModulo) ||
@@ -310,18 +403,6 @@ export function StudentWorkspace() {
 
             if (!isExplicitExamModule && !hasExamKeyword) return;
 
-            // Calcula data exata do dia na semana em hora local segura (12:00)
-            const baseWeekDate = new Date(`${weekKey}T12:00:00`);
-            if (isNaN(baseWeekDate.getTime())) return;
-            baseWeekDate.setDate(baseWeekDate.getDate() + dayOffset);
-            const examYear = baseWeekDate.getFullYear();
-            const examMonth = String(baseWeekDate.getMonth() + 1).padStart(2, '0');
-            const examDay = String(baseWeekDate.getDate()).padStart(2, '0');
-            const examDateStr = `${examYear}-${examMonth}-${examDay}`;
-
-            if (examDateStr < localTodayStr) return;
-
-            // Determina o rótulo do módulo referente à prova
             let moduleLabel = '';
             const effectiveModIndex = discObj?.modulo_index || topicObj?.modulo_index;
             if (rawModulo && !isExplicitExamModule) {
@@ -337,14 +418,13 @@ export function StudentWorkspace() {
               moduleLabel = extracted || (isPt ? 'Avaliação / Prova' : 'Module Exam');
             }
 
-            const { startMinutes, endMinutes } = computeSlotTimeRange(slotStart);
             const resolvedSubject =
               subjectText ||
               topicText ||
               (isPt ? 'Prova do Módulo' : 'Module Exam');
 
             rawSlotExams.push({
-              dateStr: examDateStr,
+              dateStr: cellDateStr,
               moduleLabel,
               subjectName: resolvedSubject,
               topicName: subjectText && topicText ? topicText : undefined,
@@ -355,7 +435,7 @@ export function StudentWorkspace() {
           });
         }
 
-        // Consolida horários consecutivos da mesma prova/disciplina no mesmo dia
+        // Consolida horários consecutivos de provas no mesmo dia
         rawSlotExams.sort((a, b) => {
           if (a.dateStr !== b.dateStr) return a.dateStr.localeCompare(b.dateStr);
           return a.startMinutes - b.startMinutes;
@@ -396,6 +476,48 @@ export function StudentWorkspace() {
           }
         }
 
+        // Consolida horários consecutivos de atividades extraclasse no mesmo dia e local
+        rawSlotExtraClasses.sort((a, b) => {
+          if (a.dateStr !== b.dateStr) return a.dateStr.localeCompare(b.dateStr);
+          return a.startMinutes - b.startMinutes;
+        });
+
+        const consolidatedExtraClasses: ExtraClassActivityItem[] = [];
+        for (const item of rawSlotExtraClasses) {
+          const prev = consolidatedExtraClasses[consolidatedExtraClasses.length - 1];
+          const prevEndMinutes = prev && (prev as any)._endMinutes ? (prev as any)._endMinutes : 0;
+          if (
+            prev &&
+            prev.dateStr === item.dateStr &&
+            prev.location === item.location &&
+            prev.title === item.title &&
+            (prev.topicName || '') === (item.topicName || '') &&
+            item.startMinutes - prevEndMinutes <= 25
+          ) {
+            (prev as any)._endMinutes = item.endMinutes;
+            prev.timeLabel = `${formatMinutesToHHMM(prev.startTimeMinutes)} - ${formatMinutesToHHMM(item.endMinutes)}`;
+            if (!prev.instructorName && item.instructorName) prev.instructorName = item.instructorName;
+            if (!prev.moduleLabel && item.moduleLabel) prev.moduleLabel = item.moduleLabel;
+          } else {
+            const newItem: ExtraClassActivityItem & { _endMinutes?: number } = {
+              id: `extraclasse-${item.dateStr}-${item.startMinutes}-${item.location || 'local'}`,
+              dateStr: item.dateStr,
+              formattedDate: formatDatePtBr(item.dateStr),
+              weekdayLabel: getWeekdayLabel(item.dateStr, isPt),
+              daysUntil: diffDaysLocal(item.dateStr, localTodayStr),
+              title: item.title,
+              topicName: item.topicName,
+              moduleLabel: item.moduleLabel,
+              timeLabel: `${formatMinutesToHHMM(item.startMinutes)} - ${formatMinutesToHHMM(item.endMinutes)}`,
+              location: item.location,
+              instructorName: item.instructorName,
+              startTimeMinutes: item.startMinutes,
+              _endMinutes: item.endMinutes,
+            };
+            consolidatedExtraClasses.push(newItem);
+          }
+        }
+
         // 2. Extrair também eventos de calendário marcados para alunos sobre provas
         const eventExams: ScheduledExamItem[] = parsedStudentEvents
           .filter((e: any) => isExamKeywordMatch(e.titulo) || isExamKeywordMatch(e.cleanDescricao))
@@ -426,6 +548,7 @@ export function StudentWorkspace() {
 
         if (active) {
           setScheduledExams(combinedExams);
+          setExtraClassActivities(consolidatedExtraClasses);
         }
       } catch (err) {
         console.warn('[StudentWorkspace] Aviso ao carregar complementos:', err);
@@ -464,9 +587,13 @@ export function StudentWorkspace() {
           ? isPt
             ? `${scheduledExams.length} Prova(s) Marcada(s)`
             : `${scheduledExams.length} Exam(s) Scheduled`
-          : isPt
-            ? 'Grade Atualizada'
-            : 'Updated Schedule',
+          : extraClassActivities.length > 0
+            ? isPt
+              ? `${extraClassActivities.length} Extra Classe`
+              : `${extraClassActivities.length} Extra Class`
+            : isPt
+              ? 'Grade Atualizada'
+              : 'Updated Schedule',
       cta: isPt ? 'Ver Horário Semanal' : 'View Weekly Schedule',
     },
     {
@@ -631,6 +758,179 @@ export function StudentWorkspace() {
           </div>
         </motion.section>
       )}
+
+      {/* CAMPO DE AVISO AO ALUNO: ATIVIDADE EXTRACLASSE (extraído do Detalhe Semanal de Aulas) */}
+      {extraClassActivities.length > 0 ? (
+        <motion.section
+          initial={{ opacity: 0, y: -6, scale: 0.99 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.3 }}
+          aria-label={isPt ? 'Aviso de Atividade Extraclasse' : 'Extra-Class Activity Notice'}
+          className="bg-white border-2 border-black rounded-2xl p-5 sm:p-6 shadow-[4px_4px_0px_0px_#000000] text-black space-y-4"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b-2 border-black pb-3.5">
+            <div className="flex items-center gap-3">
+              <div className="relative w-11 h-11 rounded-xl border-2 border-black bg-white flex items-center justify-center shrink-0">
+                <Compass size={22} className="text-black" />
+                <span className="absolute -top-1.5 -right-1.5 flex h-3.5 w-3.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-black opacity-40" />
+                  <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-black border border-white" />
+                </span>
+              </div>
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 border border-black rounded bg-white text-black">
+                    {isPt ? 'Aviso: Atividade Extraclasse' : 'Notice: Extra-Class Activity'}
+                  </span>
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-black">
+                    {extraClassActivities.length}{' '}
+                    {extraClassActivities.length === 1
+                      ? isPt
+                        ? 'atividade programada'
+                        : 'scheduled activity'
+                      : isPt
+                        ? 'atividades programadas'
+                        : 'scheduled activities'}
+                  </span>
+                </div>
+                <h2 className="text-lg sm:text-xl font-black tracking-tight uppercase text-black mt-0.5">
+                  {isPt ? 'Atividade Extraclasse — Local e Horário' : 'Extra-Class Activity — Location & Time'}
+                </h2>
+              </div>
+            </div>
+
+            <Link
+              href="/horario"
+              className="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl border-2 border-black bg-white hover:bg-slate-100 text-black text-xs font-black uppercase tracking-wider transition-all shrink-0"
+            >
+              <Calendar size={14} className="text-black" />
+              <span>{isPt ? 'Ver Detalhe Semanal' : 'View Weekly Schedule'}</span>
+              <ArrowRight size={13} className="text-black" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+            {extraClassActivities.map((act) => {
+              const urgencyLabel =
+                act.daysUntil === 0
+                  ? isPt
+                    ? 'HOJE!'
+                    : 'TODAY!'
+                  : act.daysUntil === 1
+                    ? isPt
+                      ? 'AMANHÃ!'
+                      : 'TOMORROW!'
+                    : isPt
+                      ? `EM ${act.daysUntil} DIAS`
+                      : `IN ${act.daysUntil} DAYS`;
+
+              return (
+                <div
+                  key={act.id}
+                  className={cn(
+                    'rounded-xl border-2 border-black bg-white p-4 flex flex-col justify-between gap-3 transition-transform hover:-translate-y-0.5',
+                    act.daysUntil <= 1 && 'shadow-[3px_3px_0px_0px_#000000]'
+                  )}
+                >
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded border-2 border-black bg-white text-black">
+                          {isPt ? 'EXTRA CLASSE' : 'EXTRA CLASS'}
+                        </span>
+                        {act.moduleLabel && (
+                          <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded border border-black bg-white text-black">
+                            {act.moduleLabel}
+                          </span>
+                        )}
+                      </div>
+                      <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded border border-black bg-white text-black">
+                        <Bell size={10} className="text-black" />
+                        {urgencyLabel}
+                      </span>
+                    </div>
+
+                    <div>
+                      <div className="flex items-baseline gap-2 flex-wrap">
+                        <span className="text-xl sm:text-2xl font-black font-mono tracking-tight text-black">
+                          {act.formattedDate}
+                        </span>
+                        {act.weekdayLabel && (
+                          <span className="text-[11px] font-extrabold uppercase tracking-wide text-black">
+                            • {act.weekdayLabel}
+                          </span>
+                        )}
+                      </div>
+
+                      <p className="text-sm font-black uppercase tracking-tight text-black mt-1 leading-snug">
+                        {act.title}
+                      </p>
+                      {act.topicName && (
+                        <p className="text-xs font-semibold text-black mt-0.5 line-clamp-2">
+                          {act.topicName}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Campo de destaque do Local informado na grade */}
+                    <div className="rounded-xl border-2 border-black bg-white px-3 py-2.5 flex items-start gap-2.5">
+                      <MapPin size={16} className="text-black shrink-0 mt-0.5" />
+                      <div className="min-w-0">
+                        <span className="block text-[9px] font-black uppercase tracking-widest text-black">
+                          {isPt ? 'Local da Atividade' : 'Activity Location'}
+                        </span>
+                        <span className="block text-sm font-black uppercase tracking-tight text-black break-words">
+                          {act.location || (isPt ? 'A confirmar no Detalhe Semanal' : 'To be confirmed in Schedule')}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-black/20 flex flex-wrap items-center justify-between gap-2 text-[11px] font-bold text-black">
+                    <span className="inline-flex items-center gap-1 font-mono font-black">
+                      <Clock size={12} className="text-black" />
+                      {act.timeLabel}
+                    </span>
+                    {act.instructorName && (
+                      <span className="text-[10px] font-extrabold uppercase truncate max-w-[160px]">
+                        {act.instructorName}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </motion.section>
+      ) : !loadingExtras ? (
+        <section
+          aria-label={isPt ? 'Aviso de Atividade Extraclasse' : 'Extra-Class Activity Notice'}
+          className="bg-white border border-slate-300 rounded-2xl px-5 py-3.5 text-black flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl border border-black bg-white flex items-center justify-center shrink-0">
+              <Compass size={18} className="text-black" />
+            </div>
+            <div>
+              <h2 className="text-xs font-black uppercase tracking-wider text-black">
+                {isPt ? 'Aviso de Atividade Extraclasse' : 'Extra-Class Activity Notice'}
+              </h2>
+              <p className="text-xs text-black mt-0.5">
+                {isPt
+                  ? 'Nenhuma atividade extraclasse programada no Detalhe Semanal de Aulas no momento.'
+                  : 'No extra-class activity scheduled in the Weekly Class Schedule right now.'}
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/horario"
+            className="inline-flex items-center gap-1.5 text-xs font-black text-black hover:underline shrink-0"
+          >
+            <span>{isPt ? 'Consultar Grade Semanal' : 'Check Weekly Schedule'}</span>
+            <ArrowRight size={13} className="text-black" />
+          </Link>
+        </section>
+      ) : null}
 
       {/* Faixa da Área de Trabalho do Aluno */}
       <motion.div
