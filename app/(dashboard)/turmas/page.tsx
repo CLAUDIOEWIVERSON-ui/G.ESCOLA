@@ -632,6 +632,8 @@ function TurmasContent() {
     isOpen: boolean;
     title: string;
     message: string;
+    confirmLabel?: string;
+    confirmVariant?: 'danger' | 'archive';
     onConfirm: () => void;
   }>({
     isOpen: false,
@@ -671,6 +673,8 @@ function TurmasContent() {
         message: language === 'pt'
           ? 'Deseja arquivar esta turma? Ela será movida para a aba "Arquivadas" e poderá ser desarquivada a qualquer momento.'
           : 'Do you want to archive this class? It will be moved to the "Archived" tab and can be unarchived at any time.',
+        confirmLabel: language === 'pt' ? 'Arquivar' : 'Archive',
+        confirmVariant: 'archive',
         onConfirm: async () => {
           setConfirmConfig(prev => ({ ...prev, isOpen: false }));
           await executeToggle();
@@ -2519,16 +2523,24 @@ function TurmasContent() {
           <p className="text-slate-600 text-sm">{confirmConfig.message}</p>
           <div className="flex gap-3">
             <button
+              type="button"
               onClick={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
-              className="flex-1 px-4 py-2.5 border border-slate-200 text-slate-600 rounded-lg font-bold text-sm hover:bg-slate-50 transition-all"
+              className="flex-1 px-4 py-2.5 border border-slate-200 text-slate-600 rounded-lg font-bold text-sm hover:bg-slate-50 transition-all cursor-pointer"
             >
               {t.common.cancel}
             </button>
             <button
+              type="button"
               onClick={confirmConfig.onConfirm}
-              className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg font-bold text-sm hover:bg-red-700 transition-all shadow-md shadow-red-100"
+              className={cn(
+                "flex-1 px-4 py-2.5 text-white rounded-lg font-bold text-sm transition-all shadow-md cursor-pointer flex items-center justify-center gap-2",
+                confirmConfig.confirmVariant === 'archive'
+                  ? "bg-amber-600 hover:bg-amber-700 shadow-amber-100"
+                  : "bg-red-600 hover:bg-red-700 shadow-red-100"
+              )}
             >
-              {t.common.delete}
+              {confirmConfig.confirmVariant === 'archive' && <Archive size={15} />}
+              <span>{confirmConfig.confirmLabel || t.common.delete}</span>
             </button>
           </div>
         </div>
