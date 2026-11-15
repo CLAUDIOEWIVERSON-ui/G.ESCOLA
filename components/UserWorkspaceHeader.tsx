@@ -238,9 +238,9 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
           isAluno ? "bg-white text-black" : "bg-gradient-to-b from-white to-slate-50/50"
         )}>
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 flex-1 w-full">
-            {/* 1. FOTO DO USUÁRIO (APENAS PARA NÃO-ADMINISTRADORES) + LOGO AO LADO PARA ALUNOS */}
+            {/* 1. FOTO DO USUÁRIO (APENAS PARA NÃO-ADMINISTRADORES) + LOGO MARCA D'ÁGUA AO LADO PARA ALUNOS */}
             {!isAdmin && (
-              <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+              <div className="flex items-center justify-center sm:justify-start gap-4 sm:gap-5 w-full sm:w-auto shrink-0">
                 <div className="relative shrink-0 group">
                   <div 
                     className={cn(
@@ -334,13 +334,16 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
                 </div>
 
                 {isAluno && (
-                  <div className="relative w-20 h-28 sm:w-24 sm:h-32 shrink-0 flex items-center justify-center">
+                  <div
+                    aria-hidden="true"
+                    className="relative w-32 h-32 sm:w-36 sm:h-36 shrink-0 flex items-center justify-center pointer-events-none select-none opacity-20 mix-blend-multiply"
+                  >
                     <Image
                       src="/assets/aistudio/imagem_01_2da3aec8.png"
                       alt="Guarda Costeira de São Tomé e Príncipe"
                       fill
-                      sizes="(max-width: 640px) 80px, 96px"
-                      className="object-contain mix-blend-multiply"
+                      sizes="(max-width: 640px) 128px, 144px"
+                      className="object-contain object-center"
                       referrerPolicy="no-referrer"
                     />
                   </div>
