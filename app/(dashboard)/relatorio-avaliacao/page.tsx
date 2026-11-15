@@ -793,6 +793,7 @@ function RelatorioAvaliacaoAdminContent() {
               .code { font-family: monospace; font-size: 20px; font-weight: bold; background: #f1f5f9; padding: 8px 16px; display: inline-block; border-radius: 6px; border: 1px solid #cbd5e1; color: #1d4ed8; letter-spacing: 1px; }
               .footer { font-size: 11px; color: #64748b; margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 15px; }
               @media print {
+                * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
                 body { background: white; padding: 0; }
                 .card { margin: 0 auto; box-shadow: none; border-color: #334155; }
               }
@@ -809,7 +810,10 @@ function RelatorioAvaliacaoAdminContent() {
               <p><strong>Aluno:</strong> ${studentName}</p>
               <p><strong>Turma:</strong> ${turmaNome}</p>
               <div class="qr-container">
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`${window.location.origin}/login?code=${accessCode}`)}" alt="QR Code" style="width: 140px; height: 140px; border: 1px solid #e2e8f0; padding: 6px; border-radius: 8px; background: white;" />
+                <div style="position: relative; display: inline-flex; align-items: center; justify-content: center; width: 152px; height: 152px; border: 1px solid #e2e8f0; padding: 6px; border-radius: 8px; background: white; overflow: hidden; box-sizing: border-box;">
+                  <img src="${window.location.origin}/assets/aistudio/WhatsApp_Image_2026-02-11_at_22.02.18_8edf921e.jpeg" alt="" style="position: absolute; inset: 4px; width: calc(100% - 8px); height: calc(100% - 8px); object-fit: contain; opacity: 0.18; pointer-events: none; z-index: 0;" />
+                  <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&ecc=H&data=${encodeURIComponent(`${window.location.origin}/login?code=${accessCode}`)}" alt="QR Code" style="position: relative; z-index: 1; width: 138px; height: 138px; mix-blend-mode: multiply;" />
+                </div>
               </div>
               <div class="code">${accessCode}</div>
               <p style="font-size: 11px; color: #64748b; margin-top: 15px;">Aponte o leitor de QR Code para esta imagem para entrar.</p>
@@ -1254,14 +1258,23 @@ function RelatorioAvaliacaoAdminContent() {
             >
               <div className="flex-shrink-0 flex flex-col items-center bg-white p-3 border border-slate-200 rounded-xl shadow-xs">
                 {selectedTurma && typeof window !== 'undefined' && (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
-                      `${window.location.protocol}//${window.location.host}/avaliacao?turmaId=${selectedTurma}`
-                    )}`}
-                    alt="QR Code de Avaliação"
-                    className="w-36 h-36"
-                  />
+                  <div className="relative w-36 h-36 flex items-center justify-center bg-white overflow-hidden rounded-lg">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src="/assets/aistudio/WhatsApp_Image_2026-02-11_at_22.02.18_8edf921e.jpeg"
+                      alt=""
+                      aria-hidden="true"
+                      className="absolute inset-0 w-full h-full object-contain opacity-20 pointer-events-none select-none"
+                    />
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&ecc=H&data=${encodeURIComponent(
+                        `${window.location.protocol}//${window.location.host}/avaliacao?turmaId=${selectedTurma}`
+                      )}`}
+                      alt="QR Code de Avaliação"
+                      className="relative z-10 w-36 h-36 mix-blend-multiply"
+                    />
+                  </div>
                 )}
                 <span className="text-[10px] font-mono text-slate-500 font-bold uppercase tracking-wider mt-2">QR Code Único</span>
               </div>
@@ -2761,8 +2774,11 @@ function RelatorioAvaliacaoAdminContent() {
                                       <p class="value">${studentName}</p>
                                       <p class="label">Turma</p>
                                       <p class="value">${turmaNome}</p>
-                                      <div style="margin: 12px 0;">
-                                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(`${window.location.origin}/login?code=${codeObj.access_code}`)}" alt="QR Code" style="width: 110px; height: 110px; border: 1px solid #cbd5e1; padding: 4px; border-radius: 6px; background: white;" />
+                                      <div style="margin: 12px 0; display: flex; justify-content: center;">
+                                        <div style="position: relative; display: inline-flex; align-items: center; justify-content: center; width: 120px; height: 120px; border: 1px solid #cbd5e1; padding: 5px; border-radius: 6px; background: white; overflow: hidden; box-sizing: border-box;">
+                                          <img src="${window.location.origin}/assets/aistudio/WhatsApp_Image_2026-02-11_at_22.02.18_8edf921e.jpeg" alt="" style="position: absolute; inset: 3px; width: calc(100% - 6px); height: calc(100% - 6px); object-fit: contain; opacity: 0.18; pointer-events: none; z-index: 0;" />
+                                          <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&ecc=H&data=${encodeURIComponent(`${window.location.origin}/login?code=${codeObj.access_code}`)}" alt="QR Code" style="position: relative; z-index: 1; width: 108px; height: 108px; mix-blend-mode: multiply;" />
+                                        </div>
                                       </div>
                                       <code class="code">${codeObj.access_code}</code>
                                     </div>
@@ -2789,6 +2805,7 @@ function RelatorioAvaliacaoAdminContent() {
                                         .value { font-size: 12px; font-weight: bold; margin: 0; color: #334155; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
                                         .code { font-family: monospace; font-size: 13px; font-weight: bold; background: #f1f5f9; padding: 3px 8px; display: inline-block; border-radius: 4px; border: 1px solid #cbd5e1; margin-top: 5px; color: #1d4ed8; }
                                         @media print {
+                                          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
                                           body { background: white; padding: 0; }
                                           .grid { gap: 15px; }
                                           .card { border: 1.5px dashed #475569; box-shadow: none; }
