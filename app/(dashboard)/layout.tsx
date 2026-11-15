@@ -25,8 +25,6 @@ import {
   Calendar,
   Link2,
   BookMarked,
-  ArrowLeft,
-  ArrowRight,
   Home,
   MessageSquare,
   MousePointer2,
@@ -49,6 +47,7 @@ import { HeaderClock } from '@/components/HeaderClock';
 import { FormGuidanceAssistant } from '@/components/FormGuidanceAssistant';
 import SimultaneousAccessModal, { SimultaneousAccessData } from '@/components/SimultaneousAccessModal';
 import { SuggestionsModal } from '@/components/SuggestionsModal';
+import { BackButton } from '@/components/BackButton';
 
 // Isolated search bar component to avoid CSR bailout in layout.tsx
 function HeaderSearchBar() {
@@ -442,6 +441,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (!profile && pathname === '/avaliacao') {
     return (
       <div className="min-h-screen bg-white text-black relative student-white-theme">
+        <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-xs border-b border-slate-200 px-4 py-2.5 flex items-center justify-between print:hidden">
+          <BackButton
+            fallbackPath="/login"
+            isStudentUser={true}
+            showLabelAlways={true}
+          />
+        </div>
         <Suspense fallback={null}>
           {children}
         </Suspense>
@@ -452,7 +458,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (!authLoading && profile?.role === 'aluno' && !profile?.turma_id) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-white relative p-6 font-sans text-black student-white-theme">
-        <div className="flex flex-col items-center justify-center py-16 text-black gap-4 bg-white border border-slate-300 rounded-3xl p-8 shadow-sm text-center max-w-md w-full">
+        <div className="flex flex-col items-center justify-center py-16 text-black gap-4 bg-white border border-slate-300 rounded-3xl p-8 shadow-sm text-center max-w-md w-full relative">
+          <div className="self-start mb-1">
+            <BackButton
+              fallbackPath="/login"
+              isStudentUser={true}
+              showLabelAlways={true}
+            />
+          </div>
           <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-2 border border-slate-300">
              <AlertCircle className="text-black" size={32} />
           </div>
@@ -771,16 +784,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           "h-16 bg-white flex items-center justify-between px-4 lg:px-8 sticky top-0 z-40 print:hidden border-b",
           isStudentUser ? "border-slate-300 text-black" : "border-slate-200"
         )}>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-2.5 sm:gap-4 min-w-0">
             <button 
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className={cn("p-1 hover:bg-slate-100 rounded transition-colors cursor-pointer", isStudentUser ? "text-black" : "text-slate-500")}
+              className={cn("p-1 hover:bg-slate-100 rounded transition-colors cursor-pointer shrink-0", isStudentUser ? "text-black" : "text-slate-500")}
             >
               {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
+
+            <BackButton
+              fallbackPath={prevPagePath}
+              isStudentUser={isStudentUser}
+              excludeLogin={true}
+            />
             
-            <div className="flex flex-col">
-              <h1 className={cn("text-lg font-bold leading-none", isStudentUser ? "text-black" : "text-slate-800")}>
+            <div className="flex flex-col min-w-0">
+              <h1 className={cn("text-base sm:text-lg font-bold leading-none truncate", isStudentUser ? "text-black" : "text-slate-800")}>
                 {navItems.find(item => item.path === pathname)?.name || (isStudentUser && pathname === '/dashboard' ? (language === 'pt' ? 'Área do Aluno' : 'Student Area') : t.dashboard.title)}
               </h1>
             </div>

@@ -4,6 +4,7 @@ import { LanguageProvider } from '@/lib/i18n/LanguageContext';
 import { UserProvider } from '@/lib/auth/UserContext';
 import { ThemeProvider } from '@/lib/theme/ThemeContext';
 import { Toaster } from 'sonner';
+import { RouteHistoryTracker } from '@/components/BackButton';
 
 export const metadata: Metadata = {
   title: 'SISTEMA DE GESTÃO ESCOLAR',
@@ -41,6 +42,7 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
         <ThemeProvider>
           <LanguageProvider>
             <UserProvider>
+              <RouteHistoryTracker />
               {children}
               <Toaster position="top-right" richColors closeButton />
             </UserProvider>

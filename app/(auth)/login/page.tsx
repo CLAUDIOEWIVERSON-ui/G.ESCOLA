@@ -6,6 +6,7 @@ import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
 import { Logo } from '@/components/Logo';
+import { BackButton } from '@/components/BackButton';
 import { LogIn, Mail, Lock, AlertCircle, QrCode, RefreshCw, Upload, KeyRound } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
@@ -474,6 +475,9 @@ function LoginContent() {
   return (
     <div className="w-full max-w-sm bg-white text-slate-900 rounded-xl shadow-xl shadow-slate-200/50 p-6 sm:p-8 border border-slate-200 overflow-hidden min-h-[420px] flex flex-col justify-between">
       <div>
+        <div className="flex items-center justify-start mb-2">
+          <BackButton fallbackPath="/dashboard" showLabelAlways={true} />
+        </div>
         <div className="flex flex-col items-center mb-4">
           <Logo className="mb-0" dark={true} />
         </div>

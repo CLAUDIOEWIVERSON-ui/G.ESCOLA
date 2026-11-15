@@ -574,9 +574,9 @@ function StaffDashboardContent() {
                         ? `📋 Todos os Documentos (${availableDocumentosExterior.length} portarias • ${alunosExterior.length} alunos)`
                         : `📋 All Documents (${availableDocumentosExterior.length} orders • ${alunosExterior.length} students)`}
                     </option>
-                    {availableDocumentosExterior.map((d) => (
+                    {availableDocumentosExterior.map((d, idx) => (
                       <option key={d.documento} value={d.documento}>
-                        📄 {d.documento} ({d.count} {d.count === 1 ? (language === 'pt' ? 'aluno' : 'student') : (language === 'pt' ? 'alunos' : 'students')})
+                        📄 {idx + 1}. {d.documento} ({d.count} {d.count === 1 ? (language === 'pt' ? 'aluno' : 'student') : (language === 'pt' ? 'alunos' : 'students')})
                       </option>
                     ))}
                   </select>
@@ -614,7 +614,7 @@ function StaffDashboardContent() {
                 >
                   {language === 'pt' ? 'Todas' : 'All'} ({availableDocumentosExterior.length})
                 </button>
-                {availableDocumentosExterior.map((d) => (
+                {availableDocumentosExterior.map((d, idx) => (
                   <button
                     key={`pill-doc-${d.documento}`}
                     type="button"
@@ -626,7 +626,7 @@ function StaffDashboardContent() {
                         : "bg-white text-slate-600 border-slate-200 hover:bg-slate-100"
                     )}
                   >
-                    {d.documento} ({d.count})
+                    {idx + 1}. {d.documento} ({d.count})
                   </button>
                 ))}
               </div>
@@ -641,7 +641,7 @@ function StaffDashboardContent() {
               </div>
             ) : (
               <div className="p-4 space-y-5 bg-slate-50/40">
-                {groupedAlunosExteriorByDoc.map((group) => (
+                {groupedAlunosExteriorByDoc.map((group, gIdx) => (
                   <div 
                     key={group.documento} 
                     className="bg-white border border-slate-200/90 rounded-xl shadow-2xs overflow-hidden"
@@ -654,6 +654,9 @@ function StaffDashboardContent() {
                         </div>
                         <div>
                           <h4 className="font-bold text-slate-800 text-sm flex items-center gap-2">
+                            <span className="font-mono text-xs text-indigo-700 bg-indigo-50 border border-indigo-200/70 px-1.5 py-0.5 rounded">
+                              {gIdx + 1}
+                            </span>
                             <span>{group.documento}</span>
                           </h4>
                           <p className="text-[11px] text-slate-400 font-medium">
@@ -671,6 +674,7 @@ function StaffDashboardContent() {
                       <table className="w-full text-left border-collapse">
                         <thead>
                           <tr className="text-[10px] font-bold text-slate-400 border-b border-slate-100 uppercase tracking-wider bg-slate-50/50">
+                            <th className="px-4 py-3 w-14 text-center">Nº</th>
                             <th className="px-6 py-3">{t.students?.name || (language === 'pt' ? 'Nome Completo' : 'Full Name')}</th>
                             <th className="px-6 py-3">{t.dashboard.courseLocation}</th>
                             <th className="px-6 py-3">{language === 'pt' ? 'Documento' : 'Document'}</th>
@@ -678,7 +682,7 @@ function StaffDashboardContent() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50 text-sm">
-                          {group.alunos.map((aluno: any) => {
+                          {group.alunos.map((aluno: any, alIdx: number) => {
                             const turmaData = Array.isArray(aluno.turma) ? aluno.turma[0] : aluno.turma;
                             const curso = Array.isArray(turmaData?.curso) ? turmaData.curso[0] : turmaData?.curso;
                             const isPreInscrito = turmaData?.status?.toLowerCase() === 'pré-inscrito';
@@ -688,6 +692,11 @@ function StaffDashboardContent() {
                                 className="transition-colors cursor-pointer hover:bg-slate-50"
                                 onClick={() => setSelectedAlunoForEdit(aluno)}
                               >
+                                <td className="px-4 py-3.5 text-center font-mono text-xs font-bold text-indigo-700">
+                                  <span className="inline-flex items-center justify-center min-w-[28px] h-7 px-1.5 bg-indigo-50 border border-indigo-200/70 rounded-lg">
+                                    {alIdx + 1}
+                                  </span>
+                                </td>
                                 <td className="px-6 py-3.5">
                                   <div className="flex items-center gap-3">
                                     {aluno.foto_url ? (
@@ -1708,7 +1717,7 @@ function TurmasListTable({
                   <p className="text-xs text-slate-400 italic py-1">{isPt ? 'Nenhum curso disponível nesta categoria.' : 'No courses available in this category.'}</p>
                 ) : (
                   <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto pr-1 custom-scrollbar">
-                    {availableCourses.map((c) => {
+                    {availableCourses.map((c, cIdx) => {
                       const isSelected = selectedCourses.includes(c.nome);
                       return (
                         <button
@@ -1727,6 +1736,9 @@ function TurmasListTable({
                             isSelected ? "bg-white text-indigo-600 border-white" : "border-slate-300 bg-white"
                           )}>
                             {isSelected && <Check size={10} strokeWidth={3} />}
+                          </span>
+                          <span className={cn("text-[10px] font-mono font-bold shrink-0", isSelected ? "text-indigo-100" : "text-slate-400")}>
+                            {cIdx + 1}.
                           </span>
                           <span className="truncate max-w-[200px]">{c.nome}</span>
                           <span className={cn("text-[10px] font-bold px-1 rounded", isSelected ? "bg-indigo-700 text-indigo-100" : "bg-slate-200 text-slate-600")}>
@@ -1766,7 +1778,7 @@ function TurmasListTable({
                   </p>
                 ) : (
                   <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto pr-1 custom-scrollbar">
-                    {availableTurmasOptions.map((t) => {
+                    {availableTurmasOptions.map((t, tIdx) => {
                       const isSelected = selectedTurmas.includes(t.id);
                       return (
                         <button
@@ -1785,6 +1797,9 @@ function TurmasListTable({
                             isSelected ? "bg-white text-indigo-600 border-white" : "border-slate-300 bg-white"
                           )}>
                             {isSelected && <Check size={10} strokeWidth={3} />}
+                          </span>
+                          <span className={cn("text-[10px] font-mono font-bold shrink-0", isSelected ? "text-indigo-100" : "text-slate-400")}>
+                            {tIdx + 1}.
                           </span>
                           <span className="truncate max-w-[220px]">{t.cleanNome}</span>
                           <span className={cn("text-[10px] font-bold px-1 rounded", isSelected ? "bg-indigo-700 text-indigo-100" : "bg-slate-200 text-slate-600")}>
@@ -1903,6 +1918,7 @@ function TurmasListTable({
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="text-[10px] font-bold text-slate-400 border-b border-slate-100 uppercase tracking-wider bg-slate-50/40">
+              <th className="px-4 py-4 w-14 text-center">Nº</th>
               <th className="px-6 py-4">{isPt ? 'Identificador da Turma' : 'Class Identifier'}</th>
               <th className="px-6 py-4">{isPt ? 'Curso / Categoria' : 'Course Name / Category'}</th>
               <th className="px-6 py-4">{isPt ? 'Localização / Período' : 'Location / Period'}</th>
@@ -1914,14 +1930,14 @@ function TurmasListTable({
           <tbody className="divide-y divide-slate-50 text-sm">
             {filteredTurmas.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-6 py-10 text-center text-slate-400 italic font-medium">
+                <td colSpan={7} className="px-6 py-10 text-center text-slate-400 italic font-medium">
                   {searchTerm || hasActiveMultiFilters
                     ? (isPt ? 'Nenhuma turma encontrada para a combinação de filtros selecionada.' : 'No classes found for the selected filter combination.')
                     : (isPt ? 'Nenhuma turma ativa encontrada para esta categoria.' : 'No active classes found for this category.')}
                 </td>
               </tr>
             ) : (
-              paginatedTurmas.map((turma) => {
+              paginatedTurmas.map((turma, turmaIdx) => {
                 const statusLower = (turma.status || 'ativa').toString().toLowerCase().trim();
                 const isArquivada = Boolean(turma.arquivada) === true || statusLower === 'arquivada' || statusLower === 'arquivado';
                 const isPreInscrito = !isArquivada && (statusLower.includes('pré-inscrit') || statusLower.includes('pre-inscrit'));
@@ -1935,6 +1951,7 @@ function TurmasListTable({
                 const alunoCount = rawAlunos.length > 0 ? rawAlunos.length : Number(turma.alunos?.length ?? turma.alunos_count ?? turma.total_alunos ?? 0);
                 const capacidadeMax = Number(turma.capacidade_max || 40);
                 const isExpanded = expandedTurmaIds.has(String(turma.id));
+                const turmaRowNumber = startIndex + turmaIdx + 1;
 
                 // Ordenar os alunos ordenadamente (alfabeticamente por nome ou nome de guerra)
                 const sortedAlunos = [...rawAlunos].sort((a: any, b: any) => {
@@ -1958,6 +1975,11 @@ function TurmasListTable({
                           : "hover:bg-slate-50 focus:bg-slate-50 focus:ring-1 focus:ring-blue-400"
                       )}
                     >
+                      <td className="px-4 py-4 text-center">
+                        <span className="inline-flex items-center justify-center min-w-[28px] h-7 px-1.5 rounded-lg bg-slate-100 text-slate-700 font-mono text-xs font-bold border border-slate-200/70">
+                          {turmaRowNumber}
+                        </span>
+                      </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           {isHighlighted && (
@@ -2069,7 +2091,7 @@ function TurmasListTable({
                     {/* RELAÇÃO NOMINAL DE ALUNOS EXPANDIDA NA TELA — IGUAL AOS ALUNOS NO EXTERIOR */}
                     {isExpanded && (
                       <tr className="bg-indigo-50/20 border-b-2 border-indigo-200">
-                        <td colSpan={6} className="p-3 sm:p-5">
+                        <td colSpan={7} className="p-3 sm:p-5">
                           <div className="bg-white rounded-xl border border-indigo-100 shadow-sm overflow-hidden">
                             {/* Cabeçalho do Card da Turma */}
                             <div className="px-5 py-3.5 bg-slate-100/70 border-b border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
