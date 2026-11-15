@@ -20,6 +20,7 @@ export interface AccessLogItem {
 
 declare global {
   var _recentAccessLogs: AccessLogItem[] | undefined;
+  var _accessLogsClearedAt: number | undefined;
 }
 
 function getMemoryLogs(): AccessLogItem[] {
@@ -205,7 +206,8 @@ export async function getRecentAccessLogs(limit = 10): Promise<AccessLogItem[]> 
     }
   }
 
-  const combined = Array.from(mergedMap.values());
+  const clearedAt = global._accessLogsClearedAt || 0;
+  const combined = Array.from(mergedMap.values()).filter(item => item.timestamp > clearedAt);
   // Ordenar por data/hora decrescente
   combined.sort((a, b) => b.timestamp - a.timestamp);
 
@@ -229,4 +231,31 @@ export async function getRecentAccessLogs(limit = 10): Promise<AccessLogItem[]> 
   }));
 
   return enriched.slice(0, limit);
+}
+
+/**
+ * Limpa todo o histórico de acessos dos usuários (em memória e no banco de dados Supabase)
+ */
+export async function clearAccessLogs(): Promise<{ clearedMemory: boolean; clearedDb: boolean }> {
+  global._recentAccessLogs = [];
+  global._accessLogsClearedAt = Date.now();
+  let clearedDb = false;
+
+  try {
+    const client = isSupabaseAdminConfigured() ? supabaseAdmin : await createClient();
+    const { error } = await client
+      .from('access_logs')
+      .delete()
+      .not('id', 'is', null);
+
+    if (!error) {
+      clearedDb = true;
+    } else {
+      console.warn('[accessLogs] Error clearing access_logs table:', error.message);
+    }
+  } catch (err) {
+    console.warn('[accessLogs] Exception clearing access_logs table:', err);
+  }
+
+  return { clearedMemory: true, clearedDb };
 }

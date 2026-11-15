@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { supabaseAdmin, isSupabaseAdminConfigured } from '@/lib/supabase/admin';
-import { getRecentAccessLogs, recordAccessLog } from '@/lib/auth/accessLogs';
+import { getRecentAccessLogs, recordAccessLog, clearAccessLogs } from '@/lib/auth/accessLogs';
+import { ensureAdmin } from '@/lib/auth/serverAuth';
 
 export const dynamic = 'force-dynamic';
 
@@ -101,5 +102,24 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     console.error('Error in /api/auth/access-logs POST:', error);
     return NextResponse.json({ error: error.message || 'Erro ao registrar acesso.' }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const authCheck = await ensureAdmin(req);
+    if (!authCheck.allowed && authCheck.errorResponse) {
+      return authCheck.errorResponse;
+    }
+
+    const result = await clearAccessLogs();
+    return NextResponse.json({
+      success: true,
+      message: 'Histórico de usuários limpo com sucesso.',
+      ...result
+    });
+  } catch (error: any) {
+    console.error('Error in /api/auth/access-logs DELETE:', error);
+    return NextResponse.json({ error: error.message || 'Erro ao limpar histórico de acessos.' }, { status: 500 });
   }
 }

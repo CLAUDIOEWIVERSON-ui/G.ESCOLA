@@ -16,11 +16,15 @@ import {
   Radio, 
   CheckCircle2, 
   Search,
-  ExternalLink
+  ExternalLink,
+  Trash2,
+  AlertTriangle,
+  Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n/LanguageContext';
+import { useUser } from '@/lib/auth/UserContext';
 import { fetchWithAuth } from '@/lib/api';
 import { toast } from 'sonner';
 
@@ -57,10 +61,13 @@ export default function RecentAccessHistoryCard({
   onViewAll
 }: RecentAccessHistoryCardProps) {
   const { language } = useI18n();
+  const { isAdmin, isConvidado } = useUser();
   const isPt = language === 'pt';
 
   const [logs, setLogs] = useState<AccessLogItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isClearing, setIsClearing] = useState(false);
+  const [confirmingClear, setConfirmingClear] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
@@ -90,6 +97,28 @@ export default function RecentAccessHistoryCard({
     }, 30000);
     return () => clearInterval(interval);
   }, [fetchLogs]);
+
+  const handleClearHistory = async () => {
+    setIsClearing(true);
+    try {
+      const res = await fetchWithAuth('/api/auth/access-logs', {
+        method: 'DELETE'
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        throw new Error(data.error || (isPt ? 'Erro ao limpar histórico de usuários.' : 'Error clearing access history.'));
+      }
+      setLogs([]);
+      setSearchTerm('');
+      setConfirmingClear(false);
+      setLastUpdated(new Date());
+      toast.success(isPt ? 'Histórico de usuários limpo com sucesso!' : 'User access history cleared!');
+    } catch (err: any) {
+      toast.error(err.message || (isPt ? 'Erro ao limpar histórico.' : 'Error clearing history.'));
+    } finally {
+      setIsClearing(false);
+    }
+  };
 
   // Format relative time (e.g. "Há 2 minutos")
   const formatTimeAgo = (isoString?: string, ts?: number) => {
@@ -212,7 +241,7 @@ export default function RecentAccessHistoryCard({
         </div>
 
         {/* ACTIONS */}
-        <div className="flex items-center gap-2 self-end sm:self-center">
+        <div className="flex flex-wrap items-center gap-2 self-end sm:self-center">
           {showSearch && !compact && (
             <div className="relative">
               <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -227,11 +256,12 @@ export default function RecentAccessHistoryCard({
           )}
 
           <button
+            type="button"
             onClick={() => {
               fetchLogs();
               toast.success(isPt ? 'Histórico de acessos atualizado!' : 'Access logs updated!');
             }}
-            disabled={isLoading}
+            disabled={isLoading || isClearing}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition-all cursor-pointer disabled:opacity-50 shadow-2xs"
             title={isPt ? 'Atualizar histórico agora' : 'Refresh history now'}
           >
@@ -239,8 +269,22 @@ export default function RecentAccessHistoryCard({
             <span className="hidden sm:inline">{isPt ? 'Atualizar' : 'Refresh'}</span>
           </button>
 
+          {isAdmin && !isConvidado && (
+            <button
+              type="button"
+              onClick={() => setConfirmingClear(true)}
+              disabled={isLoading || isClearing || logs.length === 0}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition-all cursor-pointer disabled:opacity-45 disabled:cursor-not-allowed shadow-2xs"
+              title={isPt ? 'Limpar todo o histórico de acessos dos usuários' : 'Clear all user access history'}
+            >
+              {isClearing ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
+              <span>{isPt ? 'Limpar Histórico' : 'Clear History'}</span>
+            </button>
+          )}
+
           {onViewAll && (
             <button
+              type="button"
               onClick={onViewAll}
               className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition-all cursor-pointer"
             >
@@ -250,6 +294,48 @@ export default function RecentAccessHistoryCard({
           )}
         </div>
       </div>
+
+      {/* CONFIRMAÇÃO DE LIMPEZA DO HISTÓRICO */}
+      <AnimatePresence>
+        {confirmingClear && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden border-b border-rose-200 bg-rose-50/90"
+          >
+            <div className="px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 text-rose-800 text-xs font-semibold">
+                <AlertTriangle size={16} className="text-rose-600 shrink-0" />
+                <span>
+                  {isPt
+                    ? 'Deseja apagar todos os registros do histórico de acessos dos usuários?'
+                    : 'Do you want to clear all user access history records?'}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 self-end sm:self-center">
+                <button
+                  type="button"
+                  onClick={() => setConfirmingClear(false)}
+                  disabled={isClearing}
+                  className="px-3 py-1.5 text-xs font-bold text-slate-600 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg transition-all cursor-pointer"
+                >
+                  {isPt ? 'Cancelar' : 'Cancel'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleClearHistory}
+                  disabled={isClearing}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-lg transition-all cursor-pointer disabled:opacity-60"
+                >
+                  {isClearing ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
+                  <span>{isPt ? 'Confirmar Limpeza' : 'Confirm Clear'}</span>
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* CONTENT LIST */}
       <div className="p-3 sm:p-4 divide-y divide-slate-100">

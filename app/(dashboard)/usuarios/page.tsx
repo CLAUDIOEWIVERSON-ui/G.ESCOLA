@@ -373,6 +373,7 @@ export default function UsuariosPage() {
           <table className="w-full text-left">
             <thead>
               <tr className="bg-slate-50/50 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-100">
+                <th className="px-4 py-4 w-14 text-center">Nº</th>
                 <th className="px-6 py-4">{t.users.name}</th>
                 <th className="px-6 py-4">{t.users.email}</th>
                 <th className="px-6 py-4">{t.users.role}</th>
@@ -383,17 +384,23 @@ export default function UsuariosPage() {
             <tbody className="divide-y divide-slate-50">
               {loading ? (
                 <tr>
-                  <td colSpan={isConvidado ? 4 : 5} className="px-6 py-12 text-center">
+                  <td colSpan={isConvidado ? 5 : 6} className="px-6 py-12 text-center">
                     <Loader2 className="animate-spin text-blue-600 mx-auto" />
                   </td>
                 </tr>
               ) : paginatedUsers.length > 0 ? (
-                paginatedUsers.map((user) => {
+                paginatedUsers.map((user, index) => {
                   const onlineSession = onlineUsersMap[user.id] || (user.email && onlineUsersMap[user.email.toLowerCase()]);
                   const isOnline = Boolean(onlineSession);
+                  const rowNumber = startIndex + index + 1;
 
                   return (
                   <tr key={user.id} className="hover:bg-slate-50/30 transition-colors group">
+                    <td className="px-4 py-4 text-center">
+                      <span className="inline-flex items-center justify-center min-w-[28px] h-7 px-1.5 rounded-lg bg-slate-100 text-slate-700 font-mono text-xs font-bold border border-slate-200/70">
+                        {rowNumber}
+                      </span>
+                    </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="relative shrink-0">
@@ -484,7 +491,7 @@ export default function UsuariosPage() {
               })
             ) : (
                 <tr>
-                  <td colSpan={isConvidado ? 4 : 5} className="px-6 py-12 text-center text-slate-400 italic text-sm font-medium">
+                  <td colSpan={isConvidado ? 5 : 6} className="px-6 py-12 text-center text-slate-400 italic text-sm font-medium">
                     {t.users.noUsers}
                   </td>
                 </tr>
