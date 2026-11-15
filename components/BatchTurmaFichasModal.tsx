@@ -1134,7 +1134,7 @@ export default function BatchTurmaFichasModal({
                       {/* Rodapé Oficial da Ficha */}
                       <div className="border-t-2 border-slate-300 mt-6 pt-2 flex items-center justify-between text-[8px] font-bold text-slate-500 uppercase print-avoid-break break-inside-avoid">
                         <span>MISSÃO DE ASSESSORIA NAVAL DO BRASIL EM SÃO TOMÉ E PRÍNCIPE</span>
-                        <span>FICHA DE REGISTRO E CONTROLE ACADÊMICO • DOCUMENTO OFICIAL</span>
+                        <span>FICHA DE REGISTRO E CONTROLE ACADÊMICO</span>
                       </div>
                     </div>
                   );

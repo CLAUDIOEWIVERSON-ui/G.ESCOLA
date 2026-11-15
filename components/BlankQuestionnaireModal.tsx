@@ -133,7 +133,7 @@ export default function BlankQuestionnaireModal({ isOpen, onClose }: BlankQuesti
             </div>
             <div>
               <h2 className="text-sm font-black text-slate-905 uppercase tracking-wide">Modelo de Questionário em Branco</h2>
-              <p className="text-[11px] text-slate-500">Imprima para preenchimento manual ou salve em PDF o documento oficial de São Tomé e Príncipe.</p>
+              <p className="text-[11px] text-slate-500">Imprima para preenchimento manual ou salve em PDF o modelo de questionário.</p>
             </div>
           </div>
 
@@ -144,7 +144,7 @@ export default function BlankQuestionnaireModal({ isOpen, onClose }: BlankQuesti
               className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold uppercase tracking-wider px-4 py-2.5 rounded-xl transition shadow-sm disabled:bg-slate-400 cursor-pointer"
             >
               <Download className="h-4 w-4" />
-              {generating ? 'Gerando PDF...' : 'Baixar PDF Oficial'}
+              {generating ? 'Gerando PDF...' : 'Baixar PDF'}
             </button>
 
             <button

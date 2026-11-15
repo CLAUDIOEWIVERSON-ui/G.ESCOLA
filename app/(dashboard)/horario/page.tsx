@@ -448,9 +448,12 @@ export default function HorarioPage() {
       }
       setCursos(filteredCuts);
 
-      let filteredCls = (tu || []).filter(
-        (item: any) => !item.internacional || item.id === profile?.turma_id
-      );
+      let filteredCls = (tu || []).filter((item: any) => {
+        const statusLower = (item.status || "").toString().toLowerCase().trim();
+        const isArquivada = Boolean(item.arquivada) === true || statusLower === "arquivada" || statusLower === "arquivado";
+        if (item.id === profile?.turma_id) return true;
+        return !item.internacional && !isArquivada;
+      });
       if (profile?.role === "instrutor" && profile?.grupo_responsavel) {
         if (profile.grupo_responsavel === "MAN") {
           filteredCls = filteredCls.filter(
@@ -1291,9 +1294,11 @@ export default function HorarioPage() {
               >
                 <option value="">{t.attendance.selectClass}</option>
                 {turmas
-                  .filter(
-                    (tu) => tu.curso_id === selectedCursoId || !selectedCursoId,
-                  )
+                  .filter((tu) => {
+                    const statusLower = (tu.status || "").toString().toLowerCase().trim();
+                    const isArquivada = Boolean(tu.arquivada) === true || statusLower === "arquivada" || statusLower === "arquivado";
+                    return !isArquivada && (tu.curso_id === selectedCursoId || !selectedCursoId);
+                  })
                   .map((tu) => (
                     <option key={tu.id} value={tu.id}>
                       {tu.nome}

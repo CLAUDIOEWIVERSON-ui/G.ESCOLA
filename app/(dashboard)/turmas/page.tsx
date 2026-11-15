@@ -2967,7 +2967,7 @@ function TurmasContent() {
                   </div>
                   <div className="text-right flex flex-col justify-center">
                     <span className="text-[9.5px] font-extrabold uppercase tracking-wider text-neutral-700">
-                      {language === 'pt' ? 'DOCUMENTO OFICIAL DE FREQUÊNCIA' : 'OFFICIAL ATTENDANCE RECORD'}
+                      {language === 'pt' ? 'REGISTRO DE FREQUÊNCIA' : 'ATTENDANCE RECORD'}
                     </span>
                     <span className="text-[11px] font-mono font-black text-black uppercase mt-0.5">
                       {printSheetType === 'semanal'
@@ -3246,10 +3246,6 @@ function TurmasContent() {
                     </div>
                   </div>
 
-                  {/* Micro-printed controlled copy warning centered */}
-                  <div className="mt-4 print:mt-2 text-center text-[8px] font-bold tracking-[0.3em] text-neutral-600 uppercase w-full">
-                    {language === 'pt' ? 'Documento de uso oficial - Cópia controlada' : 'Official Document - Controlled Copy'}
-                  </div>
                 </div>
               </div>
             </div>
@@ -3605,7 +3601,7 @@ function TurmasContent() {
                   </div>
 
                   <div className="mt-6 text-center text-[8px] font-bold tracking-[0.25em] text-neutral-400 uppercase w-full">
-                    DOCUMENTO DE USO OFICIAL • EMISSÃO EM {new Date().toLocaleDateString(language === 'pt' ? 'pt-BR' : 'en-US')}
+                    EMISSÃO EM {new Date().toLocaleDateString(language === 'pt' ? 'pt-BR' : 'en-US')}
                   </div>
                 </div>
               </div>

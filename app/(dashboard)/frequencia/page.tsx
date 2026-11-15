@@ -832,7 +832,7 @@ export default function FrequenciaPage() {
       }
       if (cursosData) setCursos(filteredCuts.filter((c: any) => !c.internacional));
 
-      const { data: turmasData } = await supabase.from('turmas').select('id, nome, curso_id, internacional, data_inicio, data_fim, data_postergacao, grupo_responsavel').is('deleted_at', null).order('nome');
+      const { data: turmasData } = await supabase.from('turmas').select('id, nome, curso_id, internacional, data_inicio, data_fim, data_postergacao, grupo_responsavel, arquivada, status').is('deleted_at', null).order('nome');
       let filteredCls = turmasData || [];
       if (profile?.role === 'instrutor' && profile?.grupo_responsavel) {
         if (profile.grupo_responsavel === 'MAN') {
@@ -843,7 +843,15 @@ export default function FrequenciaPage() {
           filteredCls = filteredCls.filter((t: any) => t.grupo_responsavel === 'MAN' || t.grupo_responsavel === 'GAT');
         }
       }
-      if (turmasData) setTurmas(filteredCls.filter((t: any) => !t.internacional));
+      if (turmasData) {
+        setTurmas(
+          filteredCls.filter((t: any) => {
+            const statusLower = (t.status || '').toString().toLowerCase().trim();
+            const isArquivada = Boolean(t.arquivada) === true || statusLower === 'arquivada' || statusLower === 'arquivado';
+            return !t.internacional && !isArquivada;
+          })
+        );
+      }
 
       const { data: disciplinasData } = await supabase.from('disciplinas').select('id, nome, curso_id').is('deleted_at', null).order('nome');
       if (disciplinasData) setDisciplinas(disciplinasData);
@@ -2391,7 +2399,7 @@ export default function FrequenciaPage() {
                     </div>
                     <div className="text-right flex flex-col justify-center">
                       <span className="text-[9.5px] font-extrabold uppercase tracking-wider text-neutral-700">
-                        {language === 'pt' ? 'DOCUMENTO OFICIAL DE FREQUÊNCIA' : 'OFFICIAL ATTENDANCE RECORD'}
+                        {language === 'pt' ? 'REGISTRO DE FREQUÊNCIA' : 'ATTENDANCE RECORD'}
                       </span>
                       <span className="text-[11px] font-mono font-black text-black uppercase mt-0.5">
                         {printSheetType === 'semanal'
@@ -2670,10 +2678,6 @@ export default function FrequenciaPage() {
                       </div>
                     </div>
 
-                    {/* Micro-printed controlled copy warning centered */}
-                    <div className="mt-4 print:mt-2 text-center text-[8px] font-bold tracking-[0.3em] text-neutral-600 uppercase w-full">
-                      {language === 'pt' ? 'Documento de uso oficial - Cópia controlada' : 'Official Document - Controlled Copy'}
-                    </div>
                   </div>
                 </div>
               </div>

@@ -230,7 +230,11 @@ function BoletimContent() {
   }, [rawCursos]);
 
   const turmas = useMemo(() => {
-    return (rawTurmas || []).filter((t: any) => !t.internacional);
+    return (rawTurmas || []).filter((t: any) => {
+      const statusLower = (t.status || '').toString().toLowerCase().trim();
+      const isArquivada = Boolean(t.arquivada) === true || statusLower === 'arquivada' || statusLower === 'arquivado';
+      return !t.internacional && !isArquivada;
+    });
   }, [rawTurmas]);
 
   const anos = useMemo(() => {
@@ -284,6 +288,8 @@ function BoletimContent() {
           }
           setSelectedTurma(targetTurmaId);
           handleSearch(targetTurmaId);
+        } else if (!paramTurma) {
+          setSelectedTurma('');
         }
       } else {
         const paramCurso = searchParams?.get('cursoId') || (typeof window !== 'undefined' ? sessionStorage.getItem('boletim_selected_curso') : null);

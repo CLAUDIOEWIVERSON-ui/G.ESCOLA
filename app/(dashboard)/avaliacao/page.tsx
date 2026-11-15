@@ -1316,7 +1316,7 @@ function AvaliacaoAlunoForm() {
           </div>
 
           <p className="text-center text-[10px] text-slate-400 font-sans pt-8">
-            Ficha Oficial de Avaliação pós-curso / Escola Digital Mil-Acadêmica
+            Ficha de Avaliação pós-curso / Escola Digital Mil-Acadêmica
           </p>
         </div>
       </div>
