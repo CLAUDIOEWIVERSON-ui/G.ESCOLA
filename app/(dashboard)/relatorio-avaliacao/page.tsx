@@ -786,11 +786,11 @@ function RelatorioAvaliacaoAdminContent() {
             <title>QR Code de Acesso - ${studentName}</title>
             <style>
               body { font-family: sans-serif; padding: 40px; color: #334155; text-align: center; background: #f8fafc; }
-              .card { border: 2.5px dashed #1e3a8a; padding: 30px; border-radius: 16px; max-width: 380px; margin: 40px auto; text-align: center; background: white; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+              .card { position: relative; overflow: hidden; border: 2.5px dashed #1e3a8a; padding: 30px; border-radius: 16px; max-width: 380px; margin: 40px auto; text-align: center; background: white; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
               h2 { margin: 0 0 5px 0; color: #1e3a8a; font-size: 22px; }
               p { line-height: 1.5; margin: 6px 0; font-size: 14px; color: #475569; }
               .qr-container { margin: 20px 0; }
-              .code { font-family: monospace; font-size: 20px; font-weight: bold; background: #f1f5f9; padding: 8px 16px; display: inline-block; border-radius: 6px; border: 1px solid #cbd5e1; color: #1d4ed8; letter-spacing: 1px; }
+              .code { font-family: monospace; font-size: 20px; font-weight: bold; background: rgba(241, 245, 249, 0.88); padding: 8px 16px; display: inline-block; border-radius: 6px; border: 1px solid #cbd5e1; color: #1d4ed8; letter-spacing: 1px; }
               .footer { font-size: 11px; color: #64748b; margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 15px; }
               @media print {
                 * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
@@ -801,23 +801,25 @@ function RelatorioAvaliacaoAdminContent() {
           ${hdEnd}
           ${bdStart}
             <div class="card">
-              <div style="display: flex; justify-content: center; margin-bottom: 12px;">
-                <img src="${window.location.origin}${(navalMissionLogo as any)?.src || navalMissionLogo}" alt="Logo Missão Naval" style="width: 100px; height: 100px; object-fit: contain;" />
-              </div>
-              <h2 style="margin: 0 0 5px 0; color: #1e3a8a; font-size: 18px; text-transform: uppercase;">MISSÃO DE ASSESSORIA NAVAL</h2>
-              <p style="font-size: 10px; font-weight: bold; color: #64748b; margin-top: 0; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">São Tomé e Príncipe • Carteirinha do Aluno</p>
-              <p style="text-transform: uppercase; font-size: 10px; font-weight: bold; letter-spacing: 1px; color: #475569; margin-bottom: 20px;">Área do Aluno • Login por QR Code</p>
-              <p><strong>Aluno:</strong> ${studentName}</p>
-              <p><strong>Turma:</strong> ${turmaNome}</p>
-              <div class="qr-container">
-                <div style="position: relative; display: inline-flex; align-items: center; justify-content: center; width: 152px; height: 152px; border: 1px solid #e2e8f0; padding: 6px; border-radius: 8px; background: white; overflow: hidden; box-sizing: border-box;">
-                  <img src="${window.location.origin}/assets/aistudio/WhatsApp_Image_2026-02-11_at_22.02.18_8edf921e.jpeg" alt="" style="position: absolute; inset: 4px; width: calc(100% - 8px); height: calc(100% - 8px); object-fit: contain; opacity: 0.18; pointer-events: none; z-index: 0;" />
-                  <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&ecc=H&data=${encodeURIComponent(`${window.location.origin}/login?code=${accessCode}`)}" alt="QR Code" style="position: relative; z-index: 1; width: 138px; height: 138px; mix-blend-mode: multiply;" />
+              <img src="${window.location.origin}/assets/aistudio/WhatsApp_Image_2026-02-11_at_22.02.18_8edf921e.jpeg" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: center; padding: 12px; box-sizing: border-box; opacity: 0.18; pointer-events: none; z-index: 0;" />
+              <div style="position: relative; z-index: 1;">
+                <div style="display: flex; justify-content: center; margin-bottom: 12px;">
+                  <img src="${window.location.origin}${(navalMissionLogo as any)?.src || navalMissionLogo}" alt="Logo Missão Naval" style="width: 100px; height: 100px; object-fit: contain; mix-blend-mode: multiply;" />
                 </div>
+                <h2 style="margin: 0 0 5px 0; color: #1e3a8a; font-size: 18px; text-transform: uppercase;">MISSÃO DE ASSESSORIA NAVAL</h2>
+                <p style="font-size: 10px; font-weight: bold; color: #64748b; margin-top: 0; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">São Tomé e Príncipe • Carteirinha do Aluno</p>
+                <p style="text-transform: uppercase; font-size: 10px; font-weight: bold; letter-spacing: 1px; color: #475569; margin-bottom: 20px;">Área do Aluno • Login por QR Code</p>
+                <p><strong>Aluno:</strong> ${studentName}</p>
+                <p><strong>Turma:</strong> ${turmaNome}</p>
+                <div class="qr-container">
+                  <div style="position: relative; display: inline-flex; align-items: center; justify-content: center; width: 152px; height: 152px; border: 1px solid #cbd5e1; padding: 6px; border-radius: 8px; background: transparent; overflow: hidden; box-sizing: border-box;">
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&ecc=H&data=${encodeURIComponent(`${window.location.origin}/login?code=${accessCode}`)}" alt="QR Code" style="width: 138px; height: 138px; mix-blend-mode: multiply;" />
+                  </div>
+                </div>
+                <div class="code">${accessCode}</div>
+                <p style="font-size: 11px; color: #64748b; margin-top: 15px;">Aponte o leitor de QR Code para esta imagem para entrar.</p>
+                <div class="footer">Escola Digital © ${new Date().getFullYear()}</div>
               </div>
-              <div class="code">${accessCode}</div>
-              <p style="font-size: 11px; color: #64748b; margin-top: 15px;">Aponte o leitor de QR Code para esta imagem para entrar.</p>
-              <div class="footer">Escola Digital © ${new Date().getFullYear()}</div>
             </div>
           ${bdEnd}
         ${hEnd}
@@ -2766,21 +2768,23 @@ function RelatorioAvaliacaoAdminContent() {
                                   const studentName = student ? (student.posto_graduacao ? `${student.posto_graduacao} ${student.nome}` : student.nome) : 'Estudante';
                                   return `
                                     <div class="card">
-                                      <div style="display: flex; justify-content: center; margin-bottom: 8px;">
-                                        <img src="${window.location.origin}${(navalMissionLogo as any)?.src || navalMissionLogo}" alt="Logo Missão Naval" style="width: 60px; height: 60px; object-fit: contain;" />
-                                      </div>
-                                      <h3>CARTEIRINHA DE ACESSO</h3>
-                                      <p class="label">Aluno</p>
-                                      <p class="value">${studentName}</p>
-                                      <p class="label">Turma</p>
-                                      <p class="value">${turmaNome}</p>
-                                      <div style="margin: 12px 0; display: flex; justify-content: center;">
-                                        <div style="position: relative; display: inline-flex; align-items: center; justify-content: center; width: 120px; height: 120px; border: 1px solid #cbd5e1; padding: 5px; border-radius: 6px; background: white; overflow: hidden; box-sizing: border-box;">
-                                          <img src="${window.location.origin}/assets/aistudio/WhatsApp_Image_2026-02-11_at_22.02.18_8edf921e.jpeg" alt="" style="position: absolute; inset: 3px; width: calc(100% - 6px); height: calc(100% - 6px); object-fit: contain; opacity: 0.18; pointer-events: none; z-index: 0;" />
-                                          <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&ecc=H&data=${encodeURIComponent(`${window.location.origin}/login?code=${codeObj.access_code}`)}" alt="QR Code" style="position: relative; z-index: 1; width: 108px; height: 108px; mix-blend-mode: multiply;" />
+                                      <img src="${window.location.origin}/assets/aistudio/WhatsApp_Image_2026-02-11_at_22.02.18_8edf921e.jpeg" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: center; padding: 8px; box-sizing: border-box; opacity: 0.18; pointer-events: none; z-index: 0;" />
+                                      <div style="position: relative; z-index: 1;">
+                                        <div style="display: flex; justify-content: center; margin-bottom: 8px;">
+                                          <img src="${window.location.origin}${(navalMissionLogo as any)?.src || navalMissionLogo}" alt="Logo Missão Naval" style="width: 60px; height: 60px; object-fit: contain; mix-blend-mode: multiply;" />
                                         </div>
+                                        <h3>CARTEIRINHA DE ACESSO</h3>
+                                        <p class="label">Aluno</p>
+                                        <p class="value">${studentName}</p>
+                                        <p class="label">Turma</p>
+                                        <p class="value">${turmaNome}</p>
+                                        <div style="margin: 12px 0; display: flex; justify-content: center;">
+                                          <div style="position: relative; display: inline-flex; align-items: center; justify-content: center; width: 120px; height: 120px; border: 1px solid #cbd5e1; padding: 5px; border-radius: 6px; background: transparent; overflow: hidden; box-sizing: border-box;">
+                                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&ecc=H&data=${encodeURIComponent(`${window.location.origin}/login?code=${codeObj.access_code}`)}" alt="QR Code" style="width: 108px; height: 108px; mix-blend-mode: multiply;" />
+                                          </div>
+                                        </div>
+                                        <code class="code">${codeObj.access_code}</code>
                                       </div>
-                                      <code class="code">${codeObj.access_code}</code>
                                     </div>
                                   `;
                                 }).join('');
@@ -2799,11 +2803,11 @@ function RelatorioAvaliacaoAdminContent() {
                                       <style>
                                         body { font-family: sans-serif; padding: 20px; background: #f8fafc; color: #1e293b; }
                                         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
-                                        .card { border: 1px solid #e2e8f0; padding: 20px; border-radius: 12px; background: white; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); page-break-inside: avoid; }
+                                        .card { position: relative; overflow: hidden; border: 1px solid #e2e8f0; padding: 20px; border-radius: 12px; background: white; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); page-break-inside: avoid; }
                                         h3 { margin: 0 0 8px 0; color: #1e3a8a; font-size: 13px; letter-spacing: 0.5px; border-bottom: 2px solid #ef4444; padding-bottom: 6px; text-transform: uppercase; }
                                         .label { font-size: 9px; text-transform: uppercase; color: #64748b; margin: 6px 0 2px 0; font-weight: bold; }
                                         .value { font-size: 12px; font-weight: bold; margin: 0; color: #334155; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-                                        .code { font-family: monospace; font-size: 13px; font-weight: bold; background: #f1f5f9; padding: 3px 8px; display: inline-block; border-radius: 4px; border: 1px solid #cbd5e1; margin-top: 5px; color: #1d4ed8; }
+                                        .code { font-family: monospace; font-size: 13px; font-weight: bold; background: rgba(241, 245, 249, 0.88); padding: 3px 8px; display: inline-block; border-radius: 4px; border: 1px solid #cbd5e1; margin-top: 5px; color: #1d4ed8; }
                                         @media print {
                                           * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
                                           body { background: white; padding: 0; }
