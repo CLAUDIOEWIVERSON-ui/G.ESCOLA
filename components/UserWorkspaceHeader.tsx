@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useUser } from '@/lib/auth/UserContext';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { supabase } from '@/lib/supabase/client';
@@ -36,6 +37,7 @@ interface UserWorkspaceHeaderProps {
 }
 
 export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
+  const pathname = usePathname();
   const { profile, refreshProfile } = useUser();
   const { language } = useI18n();
   const isPt = language === 'pt';
@@ -236,97 +238,112 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
           isAluno ? "bg-white text-black" : "bg-gradient-to-b from-white to-slate-50/50"
         )}>
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 flex-1 w-full">
-            {/* 1. FOTO DO USUÁRIO (APENAS PARA NÃO-ADMINISTRADORES) */}
+            {/* 1. FOTO DO USUÁRIO (APENAS PARA NÃO-ADMINISTRADORES) + LOGO AO LADO PARA ALUNOS */}
             {!isAdmin && (
-              <div className="relative shrink-0 group">
-                <div 
-                  className={cn(
-                    "w-24 h-32 sm:w-28 sm:h-36 rounded-2xl overflow-hidden border-2 border-slate-300/80 shadow-md relative bg-white flex items-center justify-center transition-transform hover:scale-[1.02]",
-                    currentPhotoUrl && !photoLoadFailed ? "cursor-pointer" : ""
-                  )}
-                  onClick={() => {
-                    if (currentPhotoUrl && !photoLoadFailed) {
-                      setExpandedPhoto({ url: currentPhotoUrl, name: displayName });
-                    }
-                  }}
-                  title={currentPhotoUrl && !photoLoadFailed ? (isPt ? "Clique para ampliar a foto (Cadastro Oficial da Turma)" : "Click to enlarge photo (Class Registration)") : undefined}
-                >
-                  {currentPhotoUrl && !photoLoadFailed ? (
-                    <>
-                      <Image
-                        src={currentPhotoUrl}
-                        alt={displayName}
-                        fill
-                        unoptimized
-                        className="object-cover"
-                        sizes="112px"
-                        referrerPolicy="no-referrer"
-                        onError={() => {
-                          console.warn('Erro ao carregar imagem do aluno, aplicando fallback visual');
-                          setPhotoLoadFailed(true);
-                        }}
-                      />
-                      <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 student-photo-overlay">
-                        <span className="p-1.5 rounded-full bg-black/60 text-white" title={isPt ? "Ampliar foto" : "Enlarge photo"}>
-                          <Maximize2 size={13} />
-                        </span>
-                      </div>
-                      {isAluno && (
-                        <div className="absolute bottom-0 inset-x-0 bg-black/80 text-[8px] font-bold text-white text-center py-0.5 uppercase tracking-tight student-photo-overlay">
-                          {isPt ? 'Foto da Turma' : 'Class Photo'}
+              <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+                <div className="relative shrink-0 group">
+                  <div 
+                    className={cn(
+                      "w-24 h-32 sm:w-28 sm:h-36 rounded-2xl overflow-hidden border-2 border-slate-300/80 shadow-md relative bg-white flex items-center justify-center transition-transform hover:scale-[1.02]",
+                      currentPhotoUrl && !photoLoadFailed ? "cursor-pointer" : ""
+                    )}
+                    onClick={() => {
+                      if (currentPhotoUrl && !photoLoadFailed) {
+                        setExpandedPhoto({ url: currentPhotoUrl, name: displayName });
+                      }
+                    }}
+                    title={currentPhotoUrl && !photoLoadFailed ? (isPt ? "Clique para ampliar a foto (Cadastro Oficial da Turma)" : "Click to enlarge photo (Class Registration)") : undefined}
+                  >
+                    {currentPhotoUrl && !photoLoadFailed ? (
+                      <>
+                        <Image
+                          src={currentPhotoUrl}
+                          alt={displayName}
+                          fill
+                          unoptimized
+                          className="object-cover"
+                          sizes="112px"
+                          referrerPolicy="no-referrer"
+                          onError={() => {
+                            console.warn('Erro ao carregar imagem do aluno, aplicando fallback visual');
+                            setPhotoLoadFailed(true);
+                          }}
+                        />
+                        <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 student-photo-overlay">
+                          <span className="p-1.5 rounded-full bg-black/60 text-white" title={isPt ? "Ampliar foto" : "Enlarge photo"}>
+                            <Maximize2 size={13} />
+                          </span>
                         </div>
-                      )}
-                    </>
-                  ) : (
-                    <div className="w-full h-full relative flex flex-col items-center justify-center text-slate-400 p-2 text-center">
-                      <Image
-                        src={defaultAvatar}
-                        alt={displayName}
-                        fill
-                        className="object-cover opacity-60"
-                        sizes="112px"
-                        referrerPolicy="no-referrer"
-                      />
-                      <div className="absolute inset-0 bg-slate-900/50 flex flex-col items-center justify-center gap-1 p-2 student-photo-overlay">
-                        <span className="text-[9px] font-black text-white uppercase tracking-wider text-center leading-tight drop-shadow">
-                          {isPt ? 'Foto da Turma' : 'Class Photo'}
-                        </span>
-                        <span className="text-[8px] font-bold text-slate-200 uppercase tracking-tight text-center leading-tight drop-shadow">
-                          {isPt ? 'A ser cadastrada pela coordenação' : 'Awaiting coordination'}
-                        </span>
+                        {isAluno && (
+                          <div className="absolute bottom-0 inset-x-0 bg-black/80 text-[8px] font-bold text-white text-center py-0.5 uppercase tracking-tight student-photo-overlay">
+                            {isPt ? 'Foto da Turma' : 'Class Photo'}
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="w-full h-full relative flex flex-col items-center justify-center text-slate-400 p-2 text-center">
+                        <Image
+                          src={defaultAvatar}
+                          alt={displayName}
+                          fill
+                          className="object-cover opacity-60"
+                          sizes="112px"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="absolute inset-0 bg-slate-900/50 flex flex-col items-center justify-center gap-1 p-2 student-photo-overlay">
+                          <span className="text-[9px] font-black text-white uppercase tracking-wider text-center leading-tight drop-shadow">
+                            {isPt ? 'Foto da Turma' : 'Class Photo'}
+                          </span>
+                          <span className="text-[8px] font-bold text-slate-200 uppercase tracking-tight text-center leading-tight drop-shadow">
+                            {isPt ? 'A ser cadastrada pela coordenação' : 'Awaiting coordination'}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {isUploading && (
-                    <div className="absolute inset-0 bg-slate-900/70 flex flex-col items-center justify-center gap-1 text-white z-20">
-                      <Loader2 size={18} className="animate-spin text-blue-400" />
-                      <span className="text-[9px] font-bold">{isPt ? 'Enviando...' : 'Uploading...'}</span>
-                    </div>
+                    {isUploading && (
+                      <div className="absolute inset-0 bg-slate-900/70 flex flex-col items-center justify-center gap-1 text-white z-20">
+                        <Loader2 size={18} className="animate-spin text-blue-400" />
+                        <span className="text-[9px] font-bold">{isPt ? 'Enviando...' : 'Uploading...'}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Botão de Trocar/Adicionar Foto (Apenas para não-alunos e não-administradores: instrutores/outros) */}
+                  {canUploadPhoto && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isUploading}
+                        className="absolute -bottom-2 -right-2 p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-md border-2 border-white transition-all cursor-pointer active:scale-95 disabled:opacity-50"
+                        title={isPt ? "Clique para alterar ou adicionar foto" : "Click to change or add photo"}
+                      >
+                        <Camera size={13} />
+                      </button>
+
+                      <input 
+                        ref={fileInputRef}
+                        type="file" 
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        className="hidden" 
+                      />
+                    </>
                   )}
                 </div>
 
-                {/* Botão de Trocar/Adicionar Foto (Apenas para não-alunos e não-administradores: instrutores/outros) */}
-                {canUploadPhoto && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={isUploading}
-                      className="absolute -bottom-2 -right-2 p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-md border-2 border-white transition-all cursor-pointer active:scale-95 disabled:opacity-50"
-                      title={isPt ? "Clique para alterar ou adicionar foto" : "Click to change or add photo"}
-                    >
-                      <Camera size={13} />
-                    </button>
-
-                    <input 
-                      ref={fileInputRef}
-                      type="file" 
-                      accept="image/*"
-                      onChange={handleFileChange}
-                      className="hidden" 
+                {isAluno && (
+                  <div className="relative w-20 h-28 sm:w-24 sm:h-32 shrink-0 flex items-center justify-center">
+                    <Image
+                      src="/assets/aistudio/imagem_01_2da3aec8.png"
+                      alt="Guarda Costeira de São Tomé e Príncipe"
+                      fill
+                      sizes="(max-width: 640px) 80px, 96px"
+                      className="object-contain mix-blend-multiply"
+                      referrerPolicy="no-referrer"
                     />
-                  </>
+                  </div>
                 )}
               </div>
             )}
@@ -428,40 +445,15 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
               </Link>
             )}
 
-            {isAluno && (
-              <div className="flex flex-wrap md:flex-col gap-2 w-full md:w-auto">
-                <Link
-                  href="/dashboard"
-                  className="flex-1 md:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-100 text-black border-2 border-black rounded-xl text-xs font-black transition-all cursor-pointer shadow-2xs active:scale-95"
-                  title={isPt ? "Ir para a Área de Trabalho do Aluno" : "Go to Student Workspace"}
-                >
-                  <LayoutDashboard size={14} className="text-black" />
-                  <span>{isPt ? 'Área do Aluno' : 'Student Hub'}</span>
-                </Link>
-                <div className="flex flex-wrap gap-1.5">
-                  <Link
-                    href="/horario"
-                    className="flex-1 flex items-center justify-center gap-1 px-2.5 py-1.5 bg-white hover:bg-slate-100 text-black rounded-lg text-[11px] font-bold border border-slate-300 transition-all cursor-pointer"
-                  >
-                    <Calendar size={12} className="text-black" />
-                    <span>{isPt ? 'Aulas' : 'Schedule'}</span>
-                  </Link>
-                  <Link
-                    href="/boletim"
-                    className="flex-1 flex items-center justify-center gap-1 px-2.5 py-1.5 bg-white hover:bg-slate-100 text-black rounded-lg text-[11px] font-bold border border-slate-300 transition-all cursor-pointer"
-                  >
-                    <FileText size={12} className="text-black" />
-                    <span>{isPt ? 'Boletim' : 'Grades'}</span>
-                  </Link>
-                  <Link
-                    href="/avaliacao"
-                    className="flex-1 flex items-center justify-center gap-1 px-2.5 py-1.5 bg-white hover:bg-slate-100 text-black rounded-lg text-[11px] font-bold border border-slate-300 transition-all cursor-pointer"
-                  >
-                    <FileCheck size={12} className="text-black" />
-                    <span>{isPt ? 'Questionário' : 'Survey'}</span>
-                  </Link>
-                </div>
-              </div>
+            {isAluno && pathname !== '/dashboard' && (
+              <Link
+                href="/dashboard"
+                className="flex-1 md:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-100 text-black border-2 border-black rounded-xl text-xs font-black transition-all cursor-pointer shadow-2xs active:scale-95"
+                title={isPt ? "Ir para a Área de Trabalho do Aluno" : "Go to Student Workspace"}
+              >
+                <LayoutDashboard size={14} className="text-black" />
+                <span>{isPt ? 'Área do Aluno' : 'Student Hub'}</span>
+              </Link>
             )}
 
             <Link

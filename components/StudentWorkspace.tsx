@@ -670,14 +670,6 @@ export function StudentWorkspace() {
               </div>
             </div>
 
-            <Link
-              href="/horario"
-              className="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl border-2 border-black bg-white hover:bg-slate-100 text-black text-xs font-black uppercase tracking-wider transition-all shrink-0"
-            >
-              <Calendar size={14} className="text-black" />
-              <span>{isPt ? 'Ver Quadro Completo' : 'Full Schedule'}</span>
-              <ArrowRight size={13} className="text-black" />
-            </Link>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
@@ -800,14 +792,6 @@ export function StudentWorkspace() {
               </div>
             </div>
 
-            <Link
-              href="/horario"
-              className="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl border-2 border-black bg-white hover:bg-slate-100 text-black text-xs font-black uppercase tracking-wider transition-all shrink-0"
-            >
-              <Calendar size={14} className="text-black" />
-              <span>{isPt ? 'Ver Detalhe Semanal' : 'View Weekly Schedule'}</span>
-              <ArrowRight size={13} className="text-black" />
-            </Link>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
@@ -923,13 +907,6 @@ export function StudentWorkspace() {
               </p>
             </div>
           </div>
-          <Link
-            href="/horario"
-            className="inline-flex items-center gap-1.5 text-xs font-black text-black hover:underline shrink-0"
-          >
-            <span>{isPt ? 'Consultar Grade Semanal' : 'Check Weekly Schedule'}</span>
-            <ArrowRight size={13} className="text-black" />
-          </Link>
         </section>
       ) : null}
 
@@ -1042,10 +1019,6 @@ export function StudentWorkspace() {
                 {isPt ? 'Avisos e Agenda para o Aluno' : 'Student Notices & Schedule'}
               </h3>
             </div>
-            <Link href="/calendario" className="text-xs font-bold text-black hover:underline flex items-center gap-1">
-              <span>{isPt ? 'Ver Calendário' : 'View Calendar'}</span>
-              <ArrowRight size={12} className="text-black" />
-            </Link>
           </div>
 
           {loadingExtras ? (
@@ -1092,16 +1065,6 @@ export function StudentWorkspace() {
               <span className="flex items-center gap-2.5 text-xs font-bold text-black">
                 <CalendarDays size={15} className="text-black" />
                 {isPt ? 'Calendário de Eventos' : 'Events Calendar'}
-              </span>
-              <ArrowRight size={13} className="text-black" />
-            </Link>
-            <Link
-              href="/pensamento-do-dia"
-              className="flex items-center justify-between p-3 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 transition-colors group"
-            >
-              <span className="flex items-center gap-2.5 text-xs font-bold text-black">
-                <Quote size={15} className="text-black" />
-                {isPt ? 'Pensamento do Dia' : 'Thought of the Day'}
               </span>
               <ArrowRight size={13} className="text-black" />
             </Link>
