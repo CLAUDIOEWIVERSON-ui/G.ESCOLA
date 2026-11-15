@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion } from 'motion/react';
 import {
   Calendar,
@@ -1115,6 +1116,22 @@ export function StudentWorkspace() {
               <ArrowRight size={13} className="text-black" />
             </Link>
           </div>
+        </div>
+      </div>
+      {/* Marca d'água ao final da área de trabalho do aluno */}
+      <div
+        aria-hidden="true"
+        className="pt-4 pb-6 flex items-center justify-center pointer-events-none select-none"
+      >
+        <div className="relative w-44 h-44 sm:w-56 sm:h-56 opacity-20 mix-blend-multiply">
+          <Image
+            src="/assets/aistudio/imagem_01_2da3aec8.png"
+            alt="Guarda Costeira de São Tomé e Príncipe"
+            fill
+            sizes="(max-width: 640px) 176px, 224px"
+            className="object-contain"
+            referrerPolicy="no-referrer"
+          />
         </div>
       </div>
     </div>
