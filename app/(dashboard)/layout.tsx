@@ -25,6 +25,8 @@ import {
   Calendar,
   Link2,
   BookMarked,
+  ArrowLeft,
+  ArrowRight,
   Home,
   MessageSquare,
   MousePointer2,
@@ -413,30 +415,33 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           ? (language === 'pt' ? 'Convidado' : 'Guest')
           : '';
 
-  // Definir navegação dinâmica (Voltar/Próximo) baseada na ordem dos módulos em navItems
+  // Definir navegação dinâmica (Voltar/Próximo) baseada na ordem dos módulos
+  const transitionItems = isStudentUser
+    ? [
+        { name: language === 'pt' ? 'Área do Aluno' : 'Student Area', path: '/dashboard' },
+        ...navItems,
+      ]
+    : navItems;
+
   const currentPath = pathname || '';
-  const currentNavIndex = navItems.findIndex(item => item.path === currentPath);
+  const currentNavIndex = transitionItems.findIndex(item => item.path === currentPath);
 
-  const getPreviousPagePath = () => {
-    if (navItems.length === 0) return '/dashboard';
-    if (currentNavIndex === -1) {
-      return '/dashboard';
-    }
-    const prevIndex = (currentNavIndex - 1 + navItems.length) % navItems.length;
-    return navItems[prevIndex].path;
-  };
+  const prevModule =
+    transitionItems.length === 0
+      ? { name: language === 'pt' ? 'Início' : 'Home', path: '/dashboard' }
+      : currentNavIndex === -1
+        ? transitionItems[0]
+        : transitionItems[(currentNavIndex - 1 + transitionItems.length) % transitionItems.length];
 
-  const getNextPagePath = () => {
-    if (navItems.length === 0) return '/dashboard';
-    if (currentNavIndex === -1) {
-      return navItems[0].path;
-    }
-    const nextIndex = (currentNavIndex + 1) % navItems.length;
-    return navItems[nextIndex].path;
-  };
+  const nextModule =
+    transitionItems.length === 0
+      ? { name: language === 'pt' ? 'Início' : 'Home', path: '/dashboard' }
+      : currentNavIndex === -1
+        ? transitionItems[0]
+        : transitionItems[(currentNavIndex + 1) % transitionItems.length];
 
-  const prevPagePath = getPreviousPagePath();
-  const nextPagePath = getNextPagePath();
+  const prevPagePath = prevModule.path;
+  const nextPagePath = nextModule.path;
 
   if (!profile && pathname === '/avaliacao') {
     return (
@@ -784,7 +789,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           "h-16 bg-white flex items-center justify-between px-4 lg:px-8 sticky top-0 z-40 print:hidden border-b",
           isStudentUser ? "border-slate-300 text-black" : "border-slate-200"
         )}>
-          <div className="flex items-center gap-2.5 sm:gap-4 min-w-0">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <button 
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className={cn("p-1 hover:bg-slate-100 rounded transition-colors cursor-pointer shrink-0", isStudentUser ? "text-black" : "text-slate-500")}
@@ -797,6 +802,40 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               isStudentUser={isStudentUser}
               excludeLogin={true}
             />
+
+            <div className={cn(
+              "inline-flex items-center rounded-lg border overflow-hidden shrink-0 print:hidden",
+              isStudentUser
+                ? "bg-white border-slate-300 divide-x divide-slate-300"
+                : "bg-slate-50 border-slate-200 divide-x divide-slate-200"
+            )}>
+              <Link
+                href={prevPagePath}
+                title={`${language === 'pt' ? 'Módulo anterior' : 'Previous module'}: ${prevModule.name}`}
+                aria-label={`${language === 'pt' ? 'Módulo anterior' : 'Previous module'}: ${prevModule.name}`}
+                className={cn(
+                  "px-2 py-1.5 inline-flex items-center justify-center transition-colors",
+                  isStudentUser
+                    ? "text-black hover:bg-slate-100"
+                    : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
+                )}
+              >
+                <ArrowLeft size={15} />
+              </Link>
+              <Link
+                href={nextPagePath}
+                title={`${language === 'pt' ? 'Próximo módulo' : 'Next module'}: ${nextModule.name}`}
+                aria-label={`${language === 'pt' ? 'Próximo módulo' : 'Next module'}: ${nextModule.name}`}
+                className={cn(
+                  "px-2 py-1.5 inline-flex items-center justify-center transition-colors",
+                  isStudentUser
+                    ? "text-black hover:bg-slate-100"
+                    : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
+                )}
+              >
+                <ArrowRight size={15} />
+              </Link>
+            </div>
             
             <div className="flex flex-col min-w-0">
               <h1 className={cn("text-base sm:text-lg font-bold leading-none truncate", isStudentUser ? "text-black" : "text-slate-800")}>
@@ -955,6 +994,53 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               {children}
             </motion.div>
           </AnimatePresence>
+
+          {/* Barra de Transição entre Módulos no rodapé de todas as páginas */}
+          <div className={cn(
+            "mt-8 pt-4 border-t flex flex-wrap items-center justify-between gap-3 print:hidden",
+            isStudentUser ? "border-slate-300" : "border-slate-200"
+          )}>
+            <div className="flex flex-wrap items-center gap-2">
+              <BackButton
+                fallbackPath={prevPagePath}
+                isStudentUser={isStudentUser}
+                excludeLogin={true}
+                showLabelAlways={true}
+                label={language === 'pt' ? 'Última página' : 'Last page'}
+              />
+              <Link
+                href={prevPagePath}
+                title={`${language === 'pt' ? 'Módulo anterior' : 'Previous module'}: ${prevModule.name}`}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-bold transition-all active:scale-95",
+                  isStudentUser
+                    ? "bg-white text-black border-slate-300 hover:border-black hover:bg-slate-100"
+                    : "bg-white text-slate-700 border-slate-200 hover:bg-slate-100 hover:text-slate-900 shadow-2xs"
+                )}
+              >
+                <ArrowLeft size={15} className="shrink-0" />
+                <span className="truncate max-w-[160px] sm:max-w-[220px]">
+                  {prevModule.name}
+                </span>
+              </Link>
+            </div>
+
+            <Link
+              href={nextPagePath}
+              title={`${language === 'pt' ? 'Próximo módulo' : 'Next module'}: ${nextModule.name}`}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-bold transition-all active:scale-95 ml-auto",
+                isStudentUser
+                  ? "bg-white text-black border-slate-300 hover:border-black hover:bg-slate-100"
+                  : "bg-white text-slate-700 border-slate-200 hover:bg-slate-100 hover:text-slate-900 shadow-2xs"
+              )}
+            >
+              <span className="truncate max-w-[160px] sm:max-w-[220px]">
+                {nextModule.name}
+              </span>
+              <ArrowRight size={15} className="shrink-0" />
+            </Link>
+          </div>
         </main>
         <FormGuidanceAssistant isOpen={showAssistant} onClose={() => setShowAssistant(false)} />
         <SuggestionsModal isOpen={suggestionsOpen} onClose={() => setSuggestionsOpen(false)} />
