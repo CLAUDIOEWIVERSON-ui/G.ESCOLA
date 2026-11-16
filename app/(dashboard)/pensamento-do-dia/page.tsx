@@ -5,6 +5,7 @@ import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
 import { fetchWithAuth } from '@/lib/api';
 import { cn } from '@/lib/utils';
+import { formatThoughtForCopy, copyTextToClipboard } from '@/lib/thoughtFormat';
 import { 
   Quote, 
   Sparkles, 
@@ -222,13 +223,19 @@ export default function PensamentoDoDiaPage() {
   };
 
   // Copy to clipboard
-  const handleCopy = (item: ThoughtItem, key: string) => {
-    const textToCopy = `"${item.texto}"\n— ${item.autor}${item.reflexao ? `\n\nReflexão: ${item.reflexao}` : ''}`;
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(textToCopy);
+  const handleCopy = async (item: ThoughtItem, key: string) => {
+    const textToCopy = formatThoughtForCopy(item, { isPt, includePillars: true });
+    const copiedOk = await copyTextToClipboard(textToCopy);
+    if (copiedOk) {
       setCopiedId(key);
-      toast.success(isPt ? 'Pensamento copiado!' : 'Quote copied!');
+      toast.success(
+        isPt
+          ? 'Pensamento completo copiado com cabeçalho, data e reflexão!'
+          : 'Complete quote copied with header, date, and reflection!'
+      );
       setTimeout(() => setCopiedId(null), 2500);
+    } else {
+      toast.error(isPt ? 'Não foi possível copiar o texto.' : 'Could not copy text.');
     }
   };
 

@@ -6,11 +6,18 @@ import { Quote, Sparkles, ArrowRight, Volume2, VolumeX, Copy, Check } from 'luci
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { formatThoughtForCopy, copyTextToClipboard } from '@/lib/thoughtFormat';
 
 export default function DashboardThoughtWidget({ studentTheme = false }: { studentTheme?: boolean } = {}) {
   const { language } = useI18n();
   const isPt = language === 'pt';
-  const [thought, setThought] = useState<{ texto: string; autor: string; reflexao?: string } | null>(null);
+  const [thought, setThought] = useState<{
+    texto: string;
+    autor: string;
+    reflexao?: string;
+    categoria?: string;
+    data_exibicao?: string;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -41,12 +48,21 @@ export default function DashboardThoughtWidget({ studentTheme = false }: { stude
     };
   }, []);
 
-  const handleCopy = () => {
+  const handleCopy = async () => {
     if (!thought) return;
-    navigator.clipboard.writeText(`"${thought.texto}" — ${thought.autor}`);
-    setCopied(true);
-    toast.success(isPt ? 'Citação copiada!' : 'Quote copied!');
-    setTimeout(() => setCopied(false), 2000);
+    const textToCopy = formatThoughtForCopy(thought, { isPt, includePillars: true });
+    const copiedOk = await copyTextToClipboard(textToCopy);
+    if (copiedOk) {
+      setCopied(true);
+      toast.success(
+        isPt
+          ? 'Pensamento completo copiado com cabeçalho, data e reflexão!'
+          : 'Complete quote copied with header, date, and reflection!'
+      );
+      setTimeout(() => setCopied(false), 2000);
+    } else {
+      toast.error(isPt ? 'Não foi possível copiar o texto.' : 'Could not copy text.');
+    }
   };
 
   const handleSpeech = () => {
