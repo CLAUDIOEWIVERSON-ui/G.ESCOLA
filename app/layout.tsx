@@ -1,10 +1,41 @@
 import type {Metadata} from 'next';
+import { EB_Garamond, Cinzel, Lora, Great_Vibes } from 'next/font/google';
 import './globals.css';
 import { LanguageProvider } from '@/lib/i18n/LanguageContext';
 import { UserProvider } from '@/lib/auth/UserContext';
 import { ThemeProvider } from '@/lib/theme/ThemeContext';
 import { Toaster } from 'sonner';
 import { RouteHistoryTracker } from '@/components/BackButton';
+
+const ebGaramond = EB_Garamond({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800'],
+  style: ['normal', 'italic'],
+  variable: '--font-garamond',
+  display: 'swap',
+});
+
+const cinzel = Cinzel({
+  subsets: ['latin'],
+  weight: ['400', '600', '700', '800'],
+  variable: '--font-cinzel',
+  display: 'swap',
+});
+
+const lora = Lora({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  style: ['normal', 'italic'],
+  variable: '--font-lora',
+  display: 'swap',
+});
+
+const greatVibes = Great_Vibes({
+  subsets: ['latin'],
+  weight: ['400'],
+  variable: '--font-script',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: 'SISTEMA DE GESTÃO ESCOLAR',
@@ -13,7 +44,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({children}: {children: React.ReactNode}) {
   return (
-    <html lang="pt" suppressHydrationWarning>
+    <html
+      lang="pt"
+      suppressHydrationWarning
+      className={`${ebGaramond.variable} ${cinzel.variable} ${lora.variable} ${greatVibes.variable}`}
+    >
       <head>
         <script
           dangerouslySetInnerHTML={{

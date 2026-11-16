@@ -106,6 +106,7 @@ export const translations = {
       thoughtOfDay: "Pensamento do Dia",
       holidays: "Calendário de Feriados",
       manual: "Manual & Guia de Uso",
+      certificates: "Certificados",
     },
     courses: {
       title: "Gerenciamento de Cursos",
@@ -551,6 +552,7 @@ export const translations = {
       thoughtOfDay: "Thought of the Day",
       holidays: "Holidays Calendar",
       manual: "User Manual & Guide",
+      certificates: "Certificates",
     },
     courses: {
       title: "Course Management",

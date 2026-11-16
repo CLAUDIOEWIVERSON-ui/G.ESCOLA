@@ -35,7 +35,8 @@ import {
   Sun,
   Moon,
   ShieldCheck,
-  Quote
+  Quote,
+  Award
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -203,6 +204,14 @@ const MOBILE_NAV_COLORS: Record<string, {
     border: 'border-amber-200 dark:border-amber-800',
     indicator: 'bg-amber-500',
   },
+  '/certificados': {
+    text: 'text-indigo-700 dark:text-indigo-400',
+    activeText: 'text-indigo-800 dark:text-indigo-300',
+    bg: 'bg-indigo-50 text-indigo-700 border border-indigo-200/80 dark:bg-indigo-950/60 dark:text-indigo-400 dark:border-indigo-800/50',
+    activeBg: 'bg-indigo-700 text-white shadow-xs shadow-indigo-500/30 border border-indigo-800',
+    border: 'border-indigo-200 dark:border-indigo-800',
+    indicator: 'bg-indigo-700',
+  },
 };
 
 const MENU_BUTTON_COLOR = {
@@ -369,6 +378,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: (t.nav as any).pensamento || 'Pensamento do Dia', icon: Quote, path: '/pensamento-do-dia' },
     ...((isAdmin || isConvidado) ? [{ name: t.users.title, icon: Users, path: '/usuarios' }] : []),
     ...((isAdmin || isInstrutor || isConvidado) ? [{ name: "Análise de Avaliações", icon: FileCheck, path: '/relatorio-avaliacao' }] : []),
+    ...((isAdmin || isInstrutor || isConvidado) ? [{ name: (t.nav as any).certificates || 'Certificados', icon: Award, path: '/certificados' }] : []),
     { name: t.nav.links, icon: Link2, path: '/links' },
     { name: t.nav.manual, icon: BookMarked, path: '/manual' },
     { name: t.nav.settings, icon: Settings, path: '/configuracoes' },
