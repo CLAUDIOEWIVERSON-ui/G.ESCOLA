@@ -5,6 +5,7 @@ import {
   CertificateStudentContext,
   CertificateTemplateConfig,
   computeBackTotals,
+  groupCertificateRowsByModule,
   resolveCertificateBodySegments,
   resolveCertificateFontCss,
   resolveSimplePlaceholders,
@@ -448,10 +449,15 @@ export function CertificateSheet({
       },
     };
   };
-  const effectiveDisciplines =
+  const rawEffectiveDisciplines =
     student.disciplinas && student.disciplinas.length > 0
       ? student.disciplinas
       : template.disciplinas;
+
+  const shouldGroupByModule = template.agruparPorModulos !== false;
+  const effectiveDisciplines = shouldGroupByModule
+    ? groupCertificateRowsByModule(rawEffectiveDisciplines)
+    : rawEffectiveDisciplines;
 
   const { totalHorasLabel, mediaFinalLabel } = computeBackTotals(
     effectiveDisciplines,

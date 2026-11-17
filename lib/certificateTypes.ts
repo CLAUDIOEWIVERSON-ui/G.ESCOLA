@@ -5,6 +5,7 @@ export interface CertificateDisciplineRow {
   nome: string;
   carga_horaria: string;
   nota: string;
+  modulo?: number | null;
 }
 
 export type CertificateFontKey =
@@ -59,6 +60,7 @@ export interface CertificateTemplateConfig {
   versoLabelCargaTotal: string;
   versoLabelMediaFinal: string;
   disciplinas: CertificateDisciplineRow[];
+  agruparPorModulos?: boolean;
   cargaHorariaTotalManual: string;
   mediaFinalManual: string;
   usarCalculoAutomaticoVerso: boolean;
@@ -183,24 +185,28 @@ export function formatPeriodStartEndPT(
 export const DEFAULT_MARINHEIROS_DISCIPLINES: CertificateDisciplineRow[] = [
   {
     id: 'mod-1',
+    modulo: 1,
     nome: 'MÓDULO 1 - CONTROLE DE AVARIAS / O NAVIO.',
     carga_horaria: '24h',
     nota: '19.5',
   },
   {
     id: 'mod-2',
+    modulo: 2,
     nome: 'MÓDULO 2 - ARTE MARINHEIRA / EMBARCAÇÕES MIÚDAS / MASSAME E POLEAME / SOBREVIVÊNCIA NO MAR.',
     carga_horaria: '58h',
     nota: '19.5',
   },
   {
     id: 'mod-3',
+    modulo: 3,
     nome: 'MÓDULO 3 - COMUNICAÇÕES / GOVERNO DO NAVIO / NOÇÕES DE VIGILÂNCIA.',
     carga_horaria: '42h',
     nota: '19.5',
   },
   {
     id: 'mod-4',
+    modulo: 4,
     nome: 'MÓDULO 4 - PRIMEIROS SOCORROS.',
     carga_horaria: '20h',
     nota: '19.5',
@@ -210,12 +216,14 @@ export const DEFAULT_MARINHEIROS_DISCIPLINES: CertificateDisciplineRow[] = [
 export const DEFAULT_EXPEDITO_DISCIPLINES: CertificateDisciplineRow[] = [
   {
     id: 'exp-1',
+    modulo: 1,
     nome: 'MÓDULO 1 - FUNDAMENTOS TÉCNICOS E OPERACIONAIS.',
     carga_horaria: '20h',
     nota: '18.0',
   },
   {
     id: 'exp-2',
+    modulo: 2,
     nome: 'MÓDULO 2 - PRÁTICAS PROFISSIONAIS E SEGURANÇA MARÍTIMA.',
     carga_horaria: '20h',
     nota: '18.5',
@@ -268,6 +276,7 @@ export function createPresetTemplate(
     disciplinas: isExpedito
       ? DEFAULT_EXPEDITO_DISCIPLINES.map((d) => ({ ...d }))
       : DEFAULT_MARINHEIROS_DISCIPLINES.map((d) => ({ ...d })),
+    agruparPorModulos: true,
     cargaHorariaTotalManual: '',
     mediaFinalManual: '',
     usarCalculoAutomaticoVerso: true,
@@ -328,12 +337,288 @@ export function parseGradeValue(raw: string | number | null | undefined): number
   return Number.isNaN(num) ? null : num;
 }
 
+export function extractModuleNumberFromText(text?: string | null): number | null {
+  if (!text) return null;
+  const match = String(text).match(/^\s*M[ÓO]DULO\s*(\d+)\b/i);
+  if (!match) return null;
+  const num = Number(match[1]);
+  return Number.isFinite(num) && num > 0 ? num : null;
+}
+
+export function extractModuleNumberFromRow(row: CertificateDisciplineRow): number | null {
+  if (row.modulo !== null && row.modulo !== undefined) {
+    const num = Number(row.modulo);
+    if (Number.isFinite(num) && num > 0) return num;
+  }
+  const fromName = extractModuleNumberFromText(row.nome);
+  if (fromName) return fromName;
+  if (row.id) {
+    const idMatch = String(row.id).match(/^mod-(\d+)$/i);
+    if (idMatch) {
+      const num = Number(idMatch[1]);
+      if (Number.isFinite(num) && num > 0) return num;
+    }
+  }
+  return null;
+}
+
+export function stripModulePrefix(rawName: string): string {
+  return String(rawName || '')
+    .trim()
+    .replace(/^\s*M[ÓO]DULO\s*\d+\s*[-–:.]?\s*/i, '')
+    .replace(/\.+$/, '')
+    .trim();
+}
+
+export function formatHoursLabel(totalHours: number, hasAnyNumeric: boolean): string {
+  if (!hasAnyNumeric && totalHours <= 0) return '—';
+  const rounded = Math.round(totalHours * 10) / 10;
+  return `${rounded}h`;
+}
+
+/**
+ * Groups editable CertificateDisciplineRow items that share the same module number
+ * into a single row per module with combined discipline names, summed module workload,
+ * and a single module grade. Rows without a module number remain standalone.
+ */
+export function groupCertificateRowsByModule(
+  rows: CertificateDisciplineRow[]
+): CertificateDisciplineRow[] {
+  if (!rows || rows.length === 0) return [];
+
+  const buckets = new Map<
+    string,
+    { modNum: number | null; items: CertificateDisciplineRow[] }
+  >();
+  const order: string[] = [];
+
+  rows.forEach((row, idx) => {
+    const modNum = extractModuleNumberFromRow(row);
+    const key = modNum !== null ? `mod-${modNum}` : `single-${row.id || idx}`;
+    if (!buckets.has(key)) {
+      buckets.set(key, { modNum, items: [] });
+      order.push(key);
+    }
+    buckets.get(key)!.items.push(row);
+  });
+
+  // Sort module buckets numerically while preserving relative order for ungrouped rows
+  const moduleEntries = order
+    .filter((k) => buckets.get(k)!.modNum !== null)
+    .sort((a, b) => (buckets.get(a)!.modNum || 0) - (buckets.get(b)!.modNum || 0));
+  const standaloneEntries = order.filter((k) => buckets.get(k)!.modNum === null);
+  const finalOrder = [...moduleEntries, ...standaloneEntries];
+
+  return finalOrder.map((key) => {
+    const { modNum, items } = buckets.get(key)!;
+    if (modNum === null) {
+      return items[0];
+    }
+
+    const parts: string[] = [];
+    const seenUpper = new Set<string>();
+    let totalHours = 0;
+    let hasNumericHours = false;
+    const validGrades: number[] = [];
+
+    for (const item of items) {
+      const cleaned = stripModulePrefix(item.nome);
+      if (cleaned) {
+        const subParts = cleaned
+          .split(/\s*\/\s*/)
+          .map((s) => s.trim())
+          .filter(Boolean);
+        for (const sp of subParts) {
+          const upper = sp.toUpperCase();
+          if (!seenUpper.has(upper)) {
+            seenUpper.add(upper);
+            parts.push(upper);
+          }
+        }
+      }
+
+      const hStr = String(item.carga_horaria || '').trim();
+      if (/\d/.test(hStr)) {
+        hasNumericHours = true;
+        totalHours += parseHoursValue(hStr);
+      }
+
+      const g = parseGradeValue(item.nota);
+      if (g !== null) {
+        validGrades.push(g);
+      }
+    }
+
+    const moduleTitle =
+      parts.length > 0
+        ? `MÓDULO ${modNum} - ${parts.join(' / ')}.`
+        : `MÓDULO ${modNum}.`;
+
+    const avgGrade =
+      validGrades.length > 0
+        ? validGrades.reduce((acc, v) => acc + v, 0) / validGrades.length
+        : null;
+
+    return {
+      id: `mod-${modNum}`,
+      modulo: modNum,
+      nome: moduleTitle,
+      carga_horaria: formatHoursLabel(totalHours, hasNumericHours),
+      nota: avgGrade !== null ? (Math.round(avgGrade * 10) / 10).toFixed(1) : '-',
+    };
+  });
+}
+
+/**
+ * Groups course database disciplines by modulo_index (falling back to materias_modulos
+ * or name prefix) and resolves a single grade per module from studentGrades (`nota{modNum}`),
+ * summing each module's workload.
+ */
+export function groupCourseDisciplinesByModule(
+  courseDisciplines: any[],
+  studentGrades: any[] = [],
+  courseTopics: any[] = []
+): CertificateDisciplineRow[] {
+  if (!courseDisciplines || courseDisciplines.length === 0) return [];
+
+  const resolved = courseDisciplines.map((disc: any) => {
+    let modIdx = Number(disc.modulo_index);
+    if (!Number.isFinite(modIdx) || modIdx <= 0) {
+      const discTopics = (courseTopics || []).filter(
+        (t: any) => t.disciplina_id === disc.id
+      );
+      if (discTopics.length > 0) {
+        const validMods = discTopics
+          .map((t: any) => Number(t.modulo_index))
+          .filter((m: number) => Number.isFinite(m) && m > 0);
+        if (validMods.length > 0) {
+          modIdx = Math.min(...validMods);
+        }
+      }
+    }
+    if (!Number.isFinite(modIdx) || modIdx <= 0) {
+      modIdx = extractModuleNumberFromText(disc.nome) || 1;
+    }
+    return { ...disc, resolvedModuloIndex: modIdx };
+  });
+
+  const groups = new Map<number, any[]>();
+  for (const disc of resolved) {
+    const modNum = disc.resolvedModuloIndex;
+    if (!groups.has(modNum)) {
+      groups.set(modNum, []);
+    }
+    groups.get(modNum)!.push(disc);
+  }
+
+  const sortedModNumbers = Array.from(groups.keys()).sort((a, b) => a - b);
+
+  return sortedModNumbers.map((modNum) => {
+    const discsInMod = groups.get(modNum) || [];
+
+    // Collect cleaned discipline names in this module
+    const names: string[] = [];
+    const seenNames = new Set<string>();
+    let modTotalHours = 0;
+    let hasNumericHours = false;
+
+    for (const d of discsInMod) {
+      const cleaned = stripModulePrefix(String(d.nome || ''));
+      if (cleaned) {
+        const upper = cleaned.toUpperCase();
+        if (!seenNames.has(upper)) {
+          seenNames.add(upper);
+          names.push(upper);
+        }
+      }
+      if (d.carga_horaria !== null && d.carga_horaria !== undefined && d.carga_horaria !== '') {
+        const h = parseHoursValue(d.carga_horaria);
+        if (h > 0 || /\d/.test(String(d.carga_horaria))) {
+          hasNumericHours = true;
+          modTotalHours += h;
+        }
+      }
+    }
+
+    // Resolve single grade for this module
+    let moduleGrade: number | null = null;
+    if (studentGrades && studentGrades.length > 0) {
+      // 1. Check modular column nota{modNum} / nota_u{modNum} on a grade row tied to one of this module's disciplines
+      const discIdsInMod = new Set(discsInMod.map((d: any) => d.id));
+      const directModularRow = studentGrades.find((g: any) => {
+        if (!discIdsInMod.has(g.disciplina_id)) return false;
+        const val = g[`nota${modNum}`] ?? g[`nota_u${modNum}`];
+        return val !== null && val !== undefined && val !== '' && !Number.isNaN(Number(val));
+      });
+
+      if (directModularRow) {
+        moduleGrade = Number(
+          directModularRow[`nota${modNum}`] ?? directModularRow[`nota_u${modNum}`]
+        );
+      } else {
+        // 2. Check modular column nota{modNum} / nota_u{modNum} on any student grade row (SGE stores unified nota1..nota20 per student/turma)
+        const anyModularRow = studentGrades.find((g: any) => {
+          const val = g[`nota${modNum}`] ?? g[`nota_u${modNum}`];
+          return val !== null && val !== undefined && val !== '' && !Number.isNaN(Number(val));
+        });
+
+        if (anyModularRow) {
+          moduleGrade = Number(
+            anyModularRow[`nota${modNum}`] ?? anyModularRow[`nota_u${modNum}`]
+          );
+        } else {
+          // 3. Fallback: if individual discipline rows carry nota_final (or nota1 when single module), average them for this module
+          const perDiscGrades: number[] = [];
+          for (const d of discsInMod) {
+            const gRow = studentGrades.find((g: any) => g.disciplina_id === d.id);
+            if (!gRow) continue;
+            if (
+              gRow.nota_final !== null &&
+              gRow.nota_final !== undefined &&
+              gRow.nota_final !== '' &&
+              !Number.isNaN(Number(gRow.nota_final))
+            ) {
+              perDiscGrades.push(Number(gRow.nota_final));
+            } else if (
+              modNum === 1 &&
+              gRow.nota1 !== null &&
+              gRow.nota1 !== undefined &&
+              gRow.nota1 !== '' &&
+              !Number.isNaN(Number(gRow.nota1))
+            ) {
+              perDiscGrades.push(Number(gRow.nota1));
+            }
+          }
+          if (perDiscGrades.length > 0) {
+            moduleGrade =
+              perDiscGrades.reduce((acc, v) => acc + v, 0) / perDiscGrades.length;
+          }
+        }
+      }
+    }
+
+    return {
+      id: `mod-${modNum}`,
+      modulo: modNum,
+      nome:
+        names.length > 0
+          ? `MÓDULO ${modNum} - ${names.join(' / ')}.`
+          : `MÓDULO ${modNum}.`,
+      carga_horaria: formatHoursLabel(modTotalHours, hasNumericHours),
+      nota: moduleGrade !== null ? (Math.round(moduleGrade * 10) / 10).toFixed(1) : '-',
+    };
+  });
+}
+
 export function computeBackTotals(
   rows: CertificateDisciplineRow[],
   template: CertificateTemplateConfig
 ): { totalHorasLabel: string; mediaFinalLabel: string } {
-  const sumHours = rows.reduce((acc, r) => acc + parseHoursValue(r.carga_horaria), 0);
-  const validGrades = rows
+  const effectiveRows =
+    template.agruparPorModulos !== false ? groupCertificateRowsByModule(rows) : rows;
+
+  const sumHours = effectiveRows.reduce((acc, r) => acc + parseHoursValue(r.carga_horaria), 0);
+  const validGrades = effectiveRows
     .map((r) => parseGradeValue(r.nota))
     .filter((v): v is number => v !== null);
 

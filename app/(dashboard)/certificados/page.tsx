@@ -51,8 +51,11 @@ import {
   CertificateTemplateConfig,
   computeBackTotals,
   createPresetTemplate,
+  extractModuleNumberFromRow,
   formatDateExtensoPT,
   formatPeriodStartEndPT,
+  groupCertificateRowsByModule,
+  groupCourseDisciplinesByModule,
 } from '@/lib/certificateTypes';
 import { CertificateSheet } from '@/components/CertificateSheet';
 
@@ -90,6 +93,7 @@ export default function CertificadosPage() {
   const [selectedTurmaId, setSelectedTurmaId] = useState<string>('');
   const [turmaStudents, setTurmaStudents] = useState<any[]>([]);
   const [turmaGradesMap, setTurmaGradesMap] = useState<Record<string, any[]>>({});
+  const [turmaCourseTopics, setTurmaCourseTopics] = useState<any[]>([]);
   const [loadingTurmaData, setLoadingTurmaData] = useState(false);
 
   const [selectedStudentId, setSelectedStudentId] = useState<string>('');
@@ -250,13 +254,48 @@ export default function CertificadosPage() {
       });
   }, [disciplinas, selectedTurmaObj]);
 
-  // Build discipline/grade rows for any student in the selected turma
+  // Load materias_modulos topics for the selected course to resolve modulo_index when absent on disciplinas
+  useEffect(() => {
+    if (turmaCourseDisciplines.length === 0) {
+      setTurmaCourseTopics([]);
+      return;
+    }
+    let cancelled = false;
+    const discIds = turmaCourseDisciplines.map((d: any) => d.id).filter(Boolean);
+    if (discIds.length === 0) return;
+
+    supabase
+      .from('materias_modulos')
+      .select('id, disciplina_id, modulo_index, ordem')
+      .in('disciplina_id', discIds)
+      .is('deleted_at', null)
+      .order('modulo_index', { ascending: true })
+      .then(({ data }) => {
+        if (!cancelled && data) {
+          setTurmaCourseTopics(data);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [turmaCourseDisciplines]);
+
+  // Build discipline/grade rows for any student in the selected turma (grouped by module by default)
   const buildStudentRowsFromGrades = useCallback(
     (studentId: string): CertificateDisciplineRow[] => {
       if (turmaCourseDisciplines.length === 0) {
         return template.disciplinas;
       }
       const studentGrades = turmaGradesMap[studentId] || [];
+
+      if (template.agruparPorModulos !== false) {
+        return groupCourseDisciplinesByModule(
+          turmaCourseDisciplines,
+          studentGrades,
+          turmaCourseTopics
+        );
+      }
 
       return turmaCourseDisciplines.map((disc: any, idx: number) => {
         const modNum = disc.modulo_index || idx + 1;
@@ -303,13 +342,20 @@ export default function CertificadosPage() {
         const ch = disc.carga_horaria ? `${disc.carga_horaria}h` : '—';
         return {
           id: disc.id || `disc-${idx}`,
+          modulo: modNum,
           nome: String(disc.nome || `MÓDULO ${modNum}`).toUpperCase(),
           carga_horaria: ch,
           nota: gradeVal !== null ? (Math.round(gradeVal * 10) / 10).toFixed(1) : '-',
         };
       });
     },
-    [turmaCourseDisciplines, turmaGradesMap, template.disciplinas]
+    [
+      turmaCourseDisciplines,
+      turmaGradesMap,
+      turmaCourseTopics,
+      template.disciplinas,
+      template.agruparPorModulos,
+    ]
   );
 
   // Load students and grades when a turma is selected
@@ -434,26 +480,40 @@ export default function CertificadosPage() {
     if (!turmaChanged) return;
 
     setCustomCourseName(courseDisplay);
-    setTemplate((prev) => ({
-      ...prev,
-      scope: targetScope,
-      turmaId: selectedTurmaObj.id,
-      cursoId: selectedTurmaObj.curso_id || null,
-      textoPeriodoInicio: period.inicio,
-      textoPeriodoFim: period.fim,
-      dataEmissaoExtenso: period.fim || formatDateExtensoPT(new Date()),
-      versoTituloCurso: courseDisplay.toUpperCase(),
-      disciplinas:
+    setTemplate((prev) => {
+      const groupedOrFlat =
         turmaCourseDisciplines.length > 0
-          ? turmaCourseDisciplines.map((d: any, idx: number) => ({
-              id: d.id || `disc-${idx}`,
-              nome: String(d.nome || `MÓDULO ${d.modulo_index || idx + 1}`).toUpperCase(),
-              carga_horaria: d.carga_horaria ? `${d.carga_horaria}h` : '—',
-              nota: '-',
-            }))
-          : prev.disciplinas,
-    }));
-  }, [selectedTurmaObj, selectedCourseObj, turmaCourseDisciplines, savedTemplates, template.turmaId]);
+          ? prev.agruparPorModulos !== false
+            ? groupCourseDisciplinesByModule(turmaCourseDisciplines, [], turmaCourseTopics)
+            : turmaCourseDisciplines.map((d: any, idx: number) => ({
+                id: d.id || `disc-${idx}`,
+                modulo: d.modulo_index || idx + 1,
+                nome: String(d.nome || `MÓDULO ${d.modulo_index || idx + 1}`).toUpperCase(),
+                carga_horaria: d.carga_horaria ? `${d.carga_horaria}h` : '—',
+                nota: '-',
+              }))
+          : prev.disciplinas;
+
+      return {
+        ...prev,
+        scope: targetScope,
+        turmaId: selectedTurmaObj.id,
+        cursoId: selectedTurmaObj.curso_id || null,
+        textoPeriodoInicio: period.inicio,
+        textoPeriodoFim: period.fim,
+        dataEmissaoExtenso: period.fim || formatDateExtensoPT(new Date()),
+        versoTituloCurso: courseDisplay.toUpperCase(),
+        disciplinas: groupedOrFlat,
+      };
+    });
+  }, [
+    selectedTurmaObj,
+    selectedCourseObj,
+    turmaCourseDisciplines,
+    turmaCourseTopics,
+    savedTemplates,
+    template.turmaId,
+  ]);
 
   const filteredTurmaStudents = useMemo(() => {
     if (!studentSearch.trim()) return turmaStudents;
@@ -534,7 +594,7 @@ export default function CertificadosPage() {
     [buildStudentContext, selectedStudentObj]
   );
 
-  // Sync template.disciplinas from current student/turma
+  // Sync template.disciplinas from current student/turma (grouped by module when enabled)
   const handleSyncDisciplinesFromTurma = () => {
     if (!selectedTurmaObj) {
       toast.info('Selecione uma turma primeiro para sincronizar disciplinas e notas.');
@@ -546,18 +606,25 @@ export default function CertificadosPage() {
     }
     const rows = selectedStudentObj
       ? buildStudentRowsFromGrades(selectedStudentObj.id)
-      : turmaCourseDisciplines.map((d: any, idx: number) => ({
-          id: d.id || `disc-${idx}`,
-          nome: String(d.nome || `MÓDULO ${d.modulo_index || idx + 1}`).toUpperCase(),
-          carga_horaria: d.carga_horaria ? `${d.carga_horaria}h` : '—',
-          nota: '-',
-        }));
+      : template.agruparPorModulos !== false
+        ? groupCourseDisciplinesByModule(turmaCourseDisciplines, [], turmaCourseTopics)
+        : turmaCourseDisciplines.map((d: any, idx: number) => ({
+            id: d.id || `disc-${idx}`,
+            modulo: d.modulo_index || idx + 1,
+            nome: String(d.nome || `MÓDULO ${d.modulo_index || idx + 1}`).toUpperCase(),
+            carga_horaria: d.carga_horaria ? `${d.carga_horaria}h` : '—',
+            nota: '-',
+          }));
 
     setTemplate((prev) => ({
       ...prev,
       disciplinas: rows,
     }));
-    toast.success('Disciplinas, cargas horárias e notas sincronizadas!');
+    toast.success(
+      template.agruparPorModulos !== false
+        ? 'Módulos, cargas horárias e notas únicas sincronizados!'
+        : 'Disciplinas, cargas horárias e notas sincronizadas!'
+    );
   };
 
   // Apply preset
@@ -590,29 +657,42 @@ export default function CertificadosPage() {
 
   // Discipline row actions
   const handleAddDisciplineRow = () => {
-    setTemplate((prev) => ({
-      ...prev,
-      disciplinas: [
-        ...prev.disciplinas,
-        {
-          id: `custom-${Date.now()}`,
-          nome: `MÓDULO ${prev.disciplinas.length + 1} - NOVA DISCIPLINA.`,
-          carga_horaria: '20h',
-          nota: '18.0',
-        },
-      ],
-    }));
+    setTemplate((prev) => {
+      const nextMod = prev.disciplinas.length + 1;
+      return {
+        ...prev,
+        disciplinas: [
+          ...prev.disciplinas,
+          {
+            id: `custom-${Date.now()}`,
+            modulo: nextMod,
+            nome: `MÓDULO ${nextMod} - NOVA DISCIPLINA.`,
+            carga_horaria: '20h',
+            nota: '18.0',
+          },
+        ],
+      };
+    });
   };
 
   const handleUpdateDisciplineRow = (
     idx: number,
     field: keyof CertificateDisciplineRow,
-    val: string
+    val: string | number | null
   ) => {
     setTemplate((prev) => ({
       ...prev,
       disciplinas: prev.disciplinas.map((r, i) => (i === idx ? { ...r, [field]: val } : r)),
     }));
+  };
+
+  const handleConsolidateTemplateRowsByModule = () => {
+    setTemplate((prev) => ({
+      ...prev,
+      agruparPorModulos: true,
+      disciplinas: groupCertificateRowsByModule(prev.disciplinas),
+    }));
+    toast.success('Disciplinas consolidadas por módulo no editor!');
   };
 
   const handleRemoveDisciplineRow = (idx: number) => {
@@ -798,12 +878,15 @@ export default function CertificadosPage() {
         versoTituloCurso: courseDisplay.toUpperCase(),
         disciplinas:
           targetDisciplines.length > 0
-            ? targetDisciplines.map((d: any, idx: number) => ({
-                id: d.id || `disc-${idx}`,
-                nome: String(d.nome || `MÓDULO ${d.modulo_index || idx + 1}`).toUpperCase(),
-                carga_horaria: d.carga_horaria ? `${d.carga_horaria}h` : '—',
-                nota: '-',
-              }))
+            ? associatedTemplate.agruparPorModulos !== false
+              ? groupCourseDisciplinesByModule(targetDisciplines, [], [])
+              : targetDisciplines.map((d: any, idx: number) => ({
+                  id: d.id || `disc-${idx}`,
+                  modulo: d.modulo_index || idx + 1,
+                  nome: String(d.nome || `MÓDULO ${d.modulo_index || idx + 1}`).toUpperCase(),
+                  carga_horaria: d.carga_horaria ? `${d.carga_horaria}h` : '—',
+                  nota: '-',
+                }))
             : associatedTemplate.disciplinas,
       };
     }
@@ -1238,10 +1321,14 @@ export default function CertificadosPage() {
   };
 
   const currentStudentIndex = turmaStudents.findIndex((s) => s.id === selectedStudentId);
-  const effectiveBackPreviewRows =
+  const rawBackPreviewRows =
     activeStudentContext.disciplinas.length > 0
       ? activeStudentContext.disciplinas
       : template.disciplinas;
+  const effectiveBackPreviewRows =
+    template.agruparPorModulos !== false
+      ? groupCertificateRowsByModule(rawBackPreviewRows)
+      : rawBackPreviewRows;
   const { totalHorasLabel, mediaFinalLabel } = computeBackTotals(
     effectiveBackPreviewRows,
     template
@@ -2369,7 +2456,7 @@ export default function CertificadosPage() {
                       Quadro de Disciplinas / Módulos (Verso)
                     </h3>
                     <p className="text-[11px] text-slate-500">
-                      Edite módulos, cargas horárias e notas ou sincronize da turma.
+                      Agrupe disciplinas por módulos com nota única, carga horária do módulo, total e média final.
                     </p>
                   </div>
                   <button
@@ -2380,6 +2467,46 @@ export default function CertificadosPage() {
                     <RefreshCw size={13} />
                     <span>Sincronizar Turma</span>
                   </button>
+                </div>
+
+                {/* Module Grouping Toggle */}
+                <div className="p-3 rounded-xl bg-blue-50/70 border border-blue-200 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <label className="flex items-start gap-2 text-xs font-bold text-blue-950 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={template.agruparPorModulos !== false}
+                        onChange={(e) =>
+                          setTemplate((prev) => ({
+                            ...prev,
+                            agruparPorModulos: e.target.checked,
+                          }))
+                        }
+                        className="mt-0.5 rounded border-blue-300"
+                      />
+                      <span>
+                        Agrupar disciplinas por módulos (nota única e carga horária por módulo)
+                      </span>
+                    </label>
+                  </div>
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-blue-900/80 pl-5">
+                    <span>
+                      {template.agruparPorModulos !== false
+                        ? `Exibindo ${effectiveBackPreviewRows.length} módulo(s) agrupado(s) no verso.`
+                        : 'Exibindo disciplinas separadamente sem agrupamento por módulo.'}
+                    </span>
+                    {template.agruparPorModulos !== false &&
+                      groupCertificateRowsByModule(template.disciplinas).length <
+                        template.disciplinas.length && (
+                        <button
+                          type="button"
+                          onClick={handleConsolidateTemplateRowsByModule}
+                          className="px-2 py-0.5 rounded bg-white border border-blue-300 text-[10px] font-bold text-blue-800 hover:bg-blue-100 cursor-pointer"
+                        >
+                          Consolidar linhas abaixo
+                        </button>
+                      )}
+                  </div>
                 </div>
 
                 <div>
@@ -2452,84 +2579,108 @@ export default function CertificadosPage() {
 
                 {/* Editable Rows */}
                 <div className="space-y-2.5">
-                  {template.disciplinas.map((row, idx) => (
-                    <div
-                      key={row.id || idx}
-                      className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-[10px] font-black text-slate-500 uppercase">
-                          Linha {idx + 1}
-                        </span>
-                        <div className="flex items-center gap-1">
-                          <button
-                            type="button"
-                            onClick={() => handleMoveDisciplineRow(idx, -1)}
-                            disabled={idx === 0}
-                            className="p-1 rounded hover:bg-slate-200 text-slate-600 disabled:opacity-30 cursor-pointer"
-                            title="Mover para cima"
-                          >
-                            <ArrowUp size={13} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleMoveDisciplineRow(idx, 1)}
-                            disabled={idx === template.disciplinas.length - 1}
-                            className="p-1 rounded hover:bg-slate-200 text-slate-600 disabled:opacity-30 cursor-pointer"
-                            title="Mover para baixo"
-                          >
-                            <ArrowDown size={13} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveDisciplineRow(idx)}
-                            className="p-1 rounded hover:bg-rose-100 text-rose-600 cursor-pointer"
-                            title="Remover linha"
-                          >
-                            <Trash2 size={13} />
-                          </button>
+                  {template.disciplinas.map((row, idx) => {
+                    const resolvedModNum = extractModuleNumberFromRow(row);
+                    return (
+                      <div
+                        key={row.id || idx}
+                        className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-black text-slate-500 uppercase">
+                              Linha {idx + 1}
+                            </span>
+                            <select
+                              value={resolvedModNum ?? ''}
+                              onChange={(e) =>
+                                handleUpdateDisciplineRow(
+                                  idx,
+                                  'modulo',
+                                  e.target.value ? Number(e.target.value) : null
+                                )
+                              }
+                              className="px-2 py-0.5 bg-white border border-slate-200 rounded-md text-[10px] font-bold text-blue-900 cursor-pointer"
+                              title="Módulo ao qual esta linha pertence para agrupamento"
+                            >
+                              <option value="">Sem módulo</option>
+                              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((m) => (
+                                <option key={m} value={m}>
+                                  Módulo {m}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => handleMoveDisciplineRow(idx, -1)}
+                              disabled={idx === 0}
+                              className="p-1 rounded hover:bg-slate-200 text-slate-600 disabled:opacity-30 cursor-pointer"
+                              title="Mover para cima"
+                            >
+                              <ArrowUp size={13} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleMoveDisciplineRow(idx, 1)}
+                              disabled={idx === template.disciplinas.length - 1}
+                              className="p-1 rounded hover:bg-slate-200 text-slate-600 disabled:opacity-30 cursor-pointer"
+                              title="Mover para baixo"
+                            >
+                              <ArrowDown size={13} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveDisciplineRow(idx)}
+                              className="p-1 rounded hover:bg-rose-100 text-rose-600 cursor-pointer"
+                              title="Remover linha"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                        </div>
+                        <textarea
+                          rows={2}
+                          value={row.nome}
+                          onChange={(e) =>
+                            handleUpdateDisciplineRow(idx, 'nome', e.target.value)
+                          }
+                          className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold uppercase"
+                        />
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-500 mb-0.5">
+                              Carga Horária
+                            </label>
+                            <input
+                              type="text"
+                              value={row.carga_horaria}
+                              onChange={(e) =>
+                                handleUpdateDisciplineRow(idx, 'carga_horaria', e.target.value)
+                              }
+                              placeholder="Ex: 24h"
+                              className="w-full px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-xs font-mono"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-500 mb-0.5">
+                              Nota Única do Módulo
+                            </label>
+                            <input
+                              type="text"
+                              value={row.nota}
+                              onChange={(e) =>
+                                handleUpdateDisciplineRow(idx, 'nota', e.target.value)
+                              }
+                              placeholder="Ex: 19.5"
+                              className="w-full px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-xs font-mono"
+                            />
+                          </div>
                         </div>
                       </div>
-                      <textarea
-                        rows={2}
-                        value={row.nome}
-                        onChange={(e) =>
-                          handleUpdateDisciplineRow(idx, 'nome', e.target.value)
-                        }
-                        className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold uppercase"
-                      />
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <label className="block text-[10px] font-bold text-slate-500 mb-0.5">
-                            Carga Horária
-                          </label>
-                          <input
-                            type="text"
-                            value={row.carga_horaria}
-                            onChange={(e) =>
-                              handleUpdateDisciplineRow(idx, 'carga_horaria', e.target.value)
-                            }
-                            placeholder="Ex: 24h"
-                            className="w-full px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-xs font-mono"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[10px] font-bold text-slate-500 mb-0.5">
-                            Nota (Modelo Base)
-                          </label>
-                          <input
-                            type="text"
-                            value={row.nota}
-                            onChange={(e) =>
-                              handleUpdateDisciplineRow(idx, 'nota', e.target.value)
-                            }
-                            placeholder="Ex: 19.5"
-                            className="w-full px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-xs font-mono"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
 
                   <button
                     type="button"
