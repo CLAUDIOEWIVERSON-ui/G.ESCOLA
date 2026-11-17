@@ -52,12 +52,14 @@ import {
   computeBackTotals,
   createPresetTemplate,
   extractModuleNumberFromRow,
+  formatCertificateGradePT,
   formatCourseTitleCasePT,
   formatDateExtensoPT,
   formatNameTitleCasePT,
   formatPeriodStartEndPT,
   groupCertificateRowsByModule,
   groupCourseDisciplinesByModule,
+  resolveBoletimDisciplineGrade,
 } from '@/lib/certificateTypes';
 import { CertificateSheet } from '@/components/CertificateSheet';
 
@@ -409,13 +411,19 @@ export default function CertificadosPage() {
   const turmaCourseDisciplines = useMemo(() => {
     if (!selectedTurmaObj?.curso_id) return [];
     return (disciplinas || [])
-      .filter((d: any) => d.curso_id === selectedTurmaObj.curso_id)
+      .filter((d: any) => d.curso_id === selectedTurmaObj.curso_id && !d.deleted_at)
       .sort((a: any, b: any) => {
         const modDiff = (a.modulo_index || 1) - (b.modulo_index || 1);
         if (modDiff !== 0) return modDiff;
         return String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR');
       });
   }, [disciplinas, selectedTurmaObj]);
+
+  const courseTotalModules = useMemo(() => {
+    const raw = selectedCourseObj?.qtd_modulos || selectedTurmaObj?.curso?.qtd_modulos || 4;
+    const parsed = Number(raw);
+    return Number.isFinite(parsed) && parsed > 0 ? Math.min(parsed, 20) : 4;
+  }, [selectedCourseObj, selectedTurmaObj]);
 
   // Load materias_modulos topics for the selected course to resolve modulo_index when absent on disciplinas
   useEffect(() => {
@@ -444,63 +452,66 @@ export default function CertificadosPage() {
     };
   }, [turmaCourseDisciplines]);
 
-  // Build discipline/grade rows for any student in the selected turma (grouped by module by default)
+  // Build discipline/grade rows for any student in the selected turma faithfully matching Boletim Individual
   const buildStudentRowsFromGrades = useCallback(
-    (studentId: string): CertificateDisciplineRow[] => {
+    (studentId: string, gradesOverride?: any[]): CertificateDisciplineRow[] => {
+      const studentGrades = gradesOverride ?? turmaGradesMap[studentId] ?? [];
+
       if (turmaCourseDisciplines.length === 0) {
-        return template.disciplinas;
+        const baseRows =
+          template.disciplinas && template.disciplinas.length > 0
+            ? template.disciplinas
+            : Array.from({ length: courseTotalModules }, (_, idx) => ({
+                id: `mod-${idx + 1}`,
+                modulo: idx + 1,
+                nome: `MÓDULO ${idx + 1}.`,
+                carga_horaria: '—',
+                nota: '-',
+              }));
+
+        return baseRows.map((row, idx) => {
+          const modNum = extractModuleNumberFromRow(row) ?? idx + 1;
+          const gradeVal = resolveBoletimDisciplineGrade(
+            null,
+            modNum,
+            studentGrades,
+            courseTotalModules
+          );
+          return {
+            ...row,
+            modulo: modNum,
+            nota: formatCertificateGradePT(gradeVal),
+          };
+        });
       }
-      const studentGrades = turmaGradesMap[studentId] || [];
 
       if (template.agruparPorModulos !== false) {
         return groupCourseDisciplinesByModule(
           turmaCourseDisciplines,
           studentGrades,
-          turmaCourseTopics
+          turmaCourseTopics,
+          courseTotalModules
         );
       }
 
       return turmaCourseDisciplines.map((disc: any, idx: number) => {
-        const modNum = disc.modulo_index || idx + 1;
-        const directGrade = studentGrades.find((g: any) => g.disciplina_id === disc.id);
-        let gradeVal: number | null = null;
-
-        const directModularVal = directGrade
-          ? (directGrade[`nota${modNum}`] ?? directGrade[`nota_u${modNum}`])
-          : null;
-
-        if (
-          directModularVal !== null &&
-          directModularVal !== undefined &&
-          directModularVal !== '' &&
-          !Number.isNaN(Number(directModularVal))
-        ) {
-          gradeVal = Number(directModularVal);
-        } else {
-          const anyRow = studentGrades.find((g: any) => {
-            const v = g[`nota${modNum}`] ?? g[`nota_u${modNum}`];
-            return v !== null && v !== undefined && v !== '' && !Number.isNaN(Number(v));
-          });
-          if (anyRow) {
-            gradeVal = Number(anyRow[`nota${modNum}`] ?? anyRow[`nota_u${modNum}`]);
-          } else if (
-            directGrade &&
-            directGrade.nota_final !== null &&
-            directGrade.nota_final !== undefined &&
-            directGrade.nota_final !== '' &&
-            !Number.isNaN(Number(directGrade.nota_final))
-          ) {
-            gradeVal = Number(directGrade.nota_final);
-          } else if (
-            directGrade &&
-            directGrade.nota1 !== null &&
-            directGrade.nota1 !== undefined &&
-            directGrade.nota1 !== '' &&
-            !Number.isNaN(Number(directGrade.nota1))
-          ) {
-            gradeVal = Number(directGrade.nota1);
-          }
+        let modNum = Number(disc.modulo_index);
+        if (!Number.isFinite(modNum) || modNum <= 0) {
+          const discTopics = (turmaCourseTopics || []).filter(
+            (t: any) => t.disciplina_id === disc.id
+          );
+          const validMods = discTopics
+            .map((t: any) => Number(t.modulo_index))
+            .filter((m: number) => Number.isFinite(m) && m > 0);
+          modNum = validMods.length > 0 ? Math.min(...validMods) : 1;
         }
+
+        const gradeVal = resolveBoletimDisciplineGrade(
+          disc,
+          modNum,
+          studentGrades,
+          courseTotalModules
+        );
 
         const ch = disc.carga_horaria ? `${disc.carga_horaria}h` : '—';
         return {
@@ -508,7 +519,7 @@ export default function CertificadosPage() {
           modulo: modNum,
           nome: String(disc.nome || `MÓDULO ${modNum}`).toUpperCase(),
           carga_horaria: ch,
-          nota: gradeVal !== null ? (Math.round(gradeVal * 10) / 10).toFixed(1) : '-',
+          nota: formatCertificateGradePT(gradeVal),
         };
       });
     },
@@ -516,6 +527,7 @@ export default function CertificadosPage() {
       turmaCourseDisciplines,
       turmaGradesMap,
       turmaCourseTopics,
+      courseTotalModules,
       template.disciplinas,
       template.agruparPorModulos,
     ]
@@ -563,7 +575,8 @@ export default function CertificadosPage() {
         let gradesArr: any[] = [];
         if (notasRes.ok) {
           gradesArr = await notasRes.json();
-        } else {
+        }
+        if (!gradesArr || gradesArr.length === 0) {
           const { data: rawNotas } = await supabase
             .from('notas')
             .select('*')
@@ -715,11 +728,16 @@ export default function CertificadosPage() {
       const groupedOrFlat =
         turmaCourseDisciplines.length > 0
           ? prev.agruparPorModulos !== false
-            ? groupCourseDisciplinesByModule(turmaCourseDisciplines, [], turmaCourseTopics)
+            ? groupCourseDisciplinesByModule(
+                turmaCourseDisciplines,
+                [],
+                turmaCourseTopics,
+                courseTotalModules
+              )
             : turmaCourseDisciplines.map((d: any, idx: number) => ({
                 id: d.id || `disc-${idx}`,
-                modulo: d.modulo_index || idx + 1,
-                nome: String(d.nome || `MÓDULO ${d.modulo_index || idx + 1}`).toUpperCase(),
+                modulo: d.modulo_index || 1,
+                nome: String(d.nome || `MÓDULO ${d.modulo_index || 1}`).toUpperCase(),
                 carga_horaria: d.carga_horaria ? `${d.carga_horaria}h` : '—',
                 nota: '-',
               }))
@@ -742,6 +760,7 @@ export default function CertificadosPage() {
     selectedCourseObj,
     turmaCourseDisciplines,
     turmaCourseTopics,
+    courseTotalModules,
     savedTemplates,
     template.turmaId,
   ]);
@@ -784,7 +803,7 @@ export default function CertificadosPage() {
       const display = rank ? `${rank} ${fullName}` : fullName;
 
       const studentRows =
-        useTurmaStudentGrades && turmaCourseDisciplines.length > 0
+        useTurmaStudentGrades && alunoObj?.id
           ? buildStudentRowsFromGrades(alunoObj.id)
           : template.disciplinas;
 
@@ -815,7 +834,6 @@ export default function CertificadosPage() {
       template.textoPeriodoFim,
       template.disciplinas,
       useTurmaStudentGrades,
-      turmaCourseDisciplines.length,
       buildStudentRowsFromGrades,
     ]
   );
@@ -830,27 +848,57 @@ export default function CertificadosPage() {
     [buildStudentContext, selectedStudentObj]
   );
 
-  // Sync template.disciplinas from current student/turma (grouped by module when enabled)
-  const handleSyncDisciplinesFromTurma = () => {
+  // Sync template.disciplinas and refresh fresh Boletim grades from current student/turma
+  const handleSyncDisciplinesFromTurma = async () => {
     if (!selectedTurmaObj) {
       toast.info('Selecione uma turma primeiro para sincronizar disciplinas e notas.');
       return;
     }
-    if (turmaCourseDisciplines.length === 0) {
-      toast.warning('Este curso não possui disciplinas cadastradas ainda.');
-      return;
+
+    let freshGrouped = turmaGradesMap;
+    try {
+      const notasRes = await fetchWithAuth(`/api/v1/notas?turmaId=${selectedTurmaObj.id}`);
+      let gradesArr: any[] = [];
+      if (notasRes.ok) {
+        gradesArr = await notasRes.json();
+      }
+      if (!gradesArr || gradesArr.length === 0) {
+        const { data: rawNotas } = await supabase
+          .from('notas')
+          .select('*')
+          .eq('turma_id', selectedTurmaObj.id);
+        gradesArr = rawNotas || [];
+      }
+      const grouped: Record<string, any[]> = {};
+      for (const g of gradesArr || []) {
+        if (!grouped[g.aluno_id]) grouped[g.aluno_id] = [];
+        grouped[g.aluno_id].push(g);
+      }
+      freshGrouped = grouped;
+      setTurmaGradesMap(grouped);
+    } catch {
+      // keep existing cached grades on transient network error
     }
+
+    const freshStudentGrades = selectedStudentObj ? freshGrouped[selectedStudentObj.id] || [] : [];
     const rows = selectedStudentObj
-      ? buildStudentRowsFromGrades(selectedStudentObj.id)
-      : template.agruparPorModulos !== false
-        ? groupCourseDisciplinesByModule(turmaCourseDisciplines, [], turmaCourseTopics)
-        : turmaCourseDisciplines.map((d: any, idx: number) => ({
-            id: d.id || `disc-${idx}`,
-            modulo: d.modulo_index || idx + 1,
-            nome: String(d.nome || `MÓDULO ${d.modulo_index || idx + 1}`).toUpperCase(),
-            carga_horaria: d.carga_horaria ? `${d.carga_horaria}h` : '—',
-            nota: '-',
-          }));
+      ? buildStudentRowsFromGrades(selectedStudentObj.id, freshStudentGrades)
+      : turmaCourseDisciplines.length === 0
+        ? template.disciplinas
+        : template.agruparPorModulos !== false
+          ? groupCourseDisciplinesByModule(
+              turmaCourseDisciplines,
+              [],
+              turmaCourseTopics,
+              courseTotalModules
+            )
+          : turmaCourseDisciplines.map((d: any, idx: number) => ({
+              id: d.id || `disc-${idx}`,
+              modulo: d.modulo_index || 1,
+              nome: String(d.nome || `MÓDULO ${d.modulo_index || 1}`).toUpperCase(),
+              carga_horaria: d.carga_horaria ? `${d.carga_horaria}h` : '—',
+              nota: '-',
+            }));
 
     setTemplate((prev) => ({
       ...prev,
@@ -858,8 +906,8 @@ export default function CertificadosPage() {
     }));
     toast.success(
       template.agruparPorModulos !== false
-        ? 'Módulos, cargas horárias e notas únicas sincronizados!'
-        : 'Disciplinas, cargas horárias e notas sincronizadas!'
+        ? 'Módulos, cargas horárias e notas do Boletim sincronizados!'
+        : 'Disciplinas, cargas horárias e notas do Boletim sincronizadas!'
     );
   };
 
@@ -2900,16 +2948,26 @@ export default function CertificadosPage() {
                             />
                           </div>
                           <div>
-                            <label className="block text-[10px] font-bold text-slate-500 mb-0.5">
-                              Nota Única do Módulo
-                            </label>
+                            <div className="flex items-center justify-between gap-1 mb-0.5">
+                              <label className="block text-[10px] font-bold text-slate-500">
+                                Nota Única do Módulo
+                              </label>
+                              {selectedStudentObj && useTurmaStudentGrades && resolvedModNum && (
+                                <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.2 rounded border border-blue-200">
+                                  Boletim:{' '}
+                                  {effectiveBackPreviewRows.find(
+                                    (r) => extractModuleNumberFromRow(r) === resolvedModNum
+                                  )?.nota ?? '-'}
+                                </span>
+                              )}
+                            </div>
                             <input
                               type="text"
                               value={row.nota}
                               onChange={(e) =>
                                 handleUpdateDisciplineRow(idx, 'nota', e.target.value)
                               }
-                              placeholder="Ex: 19.5"
+                              placeholder="Ex: 19,50"
                               className="w-full px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-xs font-mono"
                             />
                           </div>

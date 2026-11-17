@@ -188,28 +188,28 @@ export const DEFAULT_MARINHEIROS_DISCIPLINES: CertificateDisciplineRow[] = [
     modulo: 1,
     nome: 'MÓDULO 1 - CONTROLE DE AVARIAS / O NAVIO.',
     carga_horaria: '24h',
-    nota: '19.5',
+    nota: '19,50',
   },
   {
     id: 'mod-2',
     modulo: 2,
     nome: 'MÓDULO 2 - ARTE MARINHEIRA / EMBARCAÇÕES MIÚDAS / MASSAME E POLEAME / SOBREVIVÊNCIA NO MAR.',
     carga_horaria: '58h',
-    nota: '19.5',
+    nota: '19,50',
   },
   {
     id: 'mod-3',
     modulo: 3,
     nome: 'MÓDULO 3 - COMUNICAÇÕES / GOVERNO DO NAVIO / NOÇÕES DE VIGILÂNCIA.',
     carga_horaria: '42h',
-    nota: '19.5',
+    nota: '19,50',
   },
   {
     id: 'mod-4',
     modulo: 4,
     nome: 'MÓDULO 4 - PRIMEIROS SOCORROS.',
     carga_horaria: '20h',
-    nota: '19.5',
+    nota: '19,50',
   },
 ];
 
@@ -219,14 +219,14 @@ export const DEFAULT_EXPEDITO_DISCIPLINES: CertificateDisciplineRow[] = [
     modulo: 1,
     nome: 'MÓDULO 1 - FUNDAMENTOS TÉCNICOS E OPERACIONAIS.',
     carga_horaria: '20h',
-    nota: '18.0',
+    nota: '18,00',
   },
   {
     id: 'exp-2',
     modulo: 2,
     nome: 'MÓDULO 2 - PRÁTICAS PROFISSIONAIS E SEGURANÇA MARÍTIMA.',
     carga_horaria: '20h',
-    nota: '18.5',
+    nota: '18,50',
   },
 ];
 
@@ -335,6 +335,65 @@ export function parseGradeValue(raw: string | number | null | undefined): number
   if (!str) return null;
   const num = Number(str);
   return Number.isNaN(num) ? null : num;
+}
+
+export function formatCertificateGradePT(
+  val: number | string | null | undefined,
+  fallback = '-'
+): string {
+  if (val === null || val === undefined || val === '') return fallback;
+  const num = typeof val === 'number' ? val : Number(String(val).trim().replace(',', '.'));
+  if (Number.isNaN(num)) return fallback;
+  return (Math.round(num * 100) / 100).toFixed(2).replace('.', ',');
+}
+
+/**
+ * Resolves a discipline/module grade using the exact same rules as Boletim Individual:
+ * 1. Check direct discipline grade row's `nota{modNum}` / `nota_u{modNum}`.
+ * 2. Check any student grade row for `nota{modNum}` / `nota_u{modNum}`.
+ * 3. Only when `totalModules <= 1 && modNum === 1`, fall back to `nota_final` or `nota1`.
+ */
+export function resolveBoletimDisciplineGrade(
+  disc: any | null,
+  modNum: number,
+  studentGrades: any[] = [],
+  totalModules: number = 4
+): number | null {
+  if (!studentGrades || studentGrades.length === 0) return null;
+
+  const isValidNum = (v: any) =>
+    v !== null && v !== undefined && v !== '' && !Number.isNaN(Number(String(v).replace(',', '.')));
+  const toNum = (v: any) => Number(String(v).replace(',', '.'));
+
+  const directRows = disc?.id
+    ? studentGrades.filter((g: any) => g.disciplina_id === disc.id)
+    : [];
+
+  const directWithModular = directRows.find((g: any) =>
+    isValidNum(g[`nota${modNum}`] ?? g[`nota_u${modNum}`])
+  );
+  if (directWithModular) {
+    return toNum(directWithModular[`nota${modNum}`] ?? directWithModular[`nota_u${modNum}`]);
+  }
+
+  const anyModularRow = studentGrades.find((g: any) =>
+    isValidNum(g[`nota${modNum}`] ?? g[`nota_u${modNum}`])
+  );
+  if (anyModularRow) {
+    return toNum(anyModularRow[`nota${modNum}`] ?? anyModularRow[`nota_u${modNum}`]);
+  }
+
+  if (totalModules <= 1 && modNum === 1) {
+    const directGrade = directRows[0] || studentGrades[0];
+    if (directGrade && isValidNum(directGrade.nota_final)) {
+      return toNum(directGrade.nota_final);
+    }
+    if (directGrade && isValidNum(directGrade.nota1)) {
+      return toNum(directGrade.nota1);
+    }
+  }
+
+  return null;
 }
 
 export function extractModuleNumberFromText(text?: string | null): number | null {
@@ -464,20 +523,21 @@ export function groupCertificateRowsByModule(
       modulo: modNum,
       nome: moduleTitle,
       carga_horaria: formatHoursLabel(totalHours, hasNumericHours),
-      nota: avgGrade !== null ? (Math.round(avgGrade * 10) / 10).toFixed(1) : '-',
+      nota: formatCertificateGradePT(avgGrade),
     };
   });
 }
 
 /**
  * Groups course database disciplines by modulo_index (falling back to materias_modulos
- * or name prefix) and resolves a single grade per module from studentGrades (`nota{modNum}`),
- * summing each module's workload.
+ * or module 1, matching Boletim Individual) and resolves a single grade per module
+ * faithfully from Boletim grades (`nota{modNum}` / `nota_u{modNum}`).
  */
 export function groupCourseDisciplinesByModule(
   courseDisciplines: any[],
   studentGrades: any[] = [],
-  courseTopics: any[] = []
+  courseTopics: any[] = [],
+  totalModules?: number
 ): CertificateDisciplineRow[] {
   if (!courseDisciplines || courseDisciplines.length === 0) return [];
 
@@ -497,7 +557,7 @@ export function groupCourseDisciplinesByModule(
       }
     }
     if (!Number.isFinite(modIdx) || modIdx <= 0) {
-      modIdx = extractModuleNumberFromText(disc.nome) || 1;
+      modIdx = 1;
     }
     return { ...disc, resolvedModuloIndex: modIdx };
   });
@@ -512,9 +572,15 @@ export function groupCourseDisciplinesByModule(
   }
 
   const sortedModNumbers = Array.from(groups.keys()).sort((a, b) => a - b);
+  const effectiveTotalModules =
+    totalModules && totalModules > 0
+      ? totalModules
+      : Math.max(sortedModNumbers[sortedModNumbers.length - 1] || 1, 1);
 
   return sortedModNumbers.map((modNum) => {
-    const discsInMod = groups.get(modNum) || [];
+    const discsInMod = [...(groups.get(modNum) || [])].sort((a: any, b: any) =>
+      String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR')
+    );
 
     // Collect cleaned discipline names in this module
     const names: string[] = [];
@@ -540,62 +606,15 @@ export function groupCourseDisciplinesByModule(
       }
     }
 
-    // Resolve single grade for this module
-    let moduleGrade: number | null = null;
-    if (studentGrades && studentGrades.length > 0) {
-      // 1. Check modular column nota{modNum} / nota_u{modNum} on a grade row tied to one of this module's disciplines
-      const discIdsInMod = new Set(discsInMod.map((d: any) => d.id));
-      const directModularRow = studentGrades.find((g: any) => {
-        if (!discIdsInMod.has(g.disciplina_id)) return false;
-        const val = g[`nota${modNum}`] ?? g[`nota_u${modNum}`];
-        return val !== null && val !== undefined && val !== '' && !Number.isNaN(Number(val));
-      });
+    // Resolve single grade for this module identically to Boletim Individual
+    const validGrades = discsInMod
+      .map((d: any) =>
+        resolveBoletimDisciplineGrade(d, modNum, studentGrades, effectiveTotalModules)
+      )
+      .filter((v): v is number => v !== null && !Number.isNaN(v));
 
-      if (directModularRow) {
-        moduleGrade = Number(
-          directModularRow[`nota${modNum}`] ?? directModularRow[`nota_u${modNum}`]
-        );
-      } else {
-        // 2. Check modular column nota{modNum} / nota_u{modNum} on any student grade row (SGE stores unified nota1..nota20 per student/turma)
-        const anyModularRow = studentGrades.find((g: any) => {
-          const val = g[`nota${modNum}`] ?? g[`nota_u${modNum}`];
-          return val !== null && val !== undefined && val !== '' && !Number.isNaN(Number(val));
-        });
-
-        if (anyModularRow) {
-          moduleGrade = Number(
-            anyModularRow[`nota${modNum}`] ?? anyModularRow[`nota_u${modNum}`]
-          );
-        } else {
-          // 3. Fallback: if individual discipline rows carry nota_final (or nota1 when single module), average them for this module
-          const perDiscGrades: number[] = [];
-          for (const d of discsInMod) {
-            const gRow = studentGrades.find((g: any) => g.disciplina_id === d.id);
-            if (!gRow) continue;
-            if (
-              gRow.nota_final !== null &&
-              gRow.nota_final !== undefined &&
-              gRow.nota_final !== '' &&
-              !Number.isNaN(Number(gRow.nota_final))
-            ) {
-              perDiscGrades.push(Number(gRow.nota_final));
-            } else if (
-              modNum === 1 &&
-              gRow.nota1 !== null &&
-              gRow.nota1 !== undefined &&
-              gRow.nota1 !== '' &&
-              !Number.isNaN(Number(gRow.nota1))
-            ) {
-              perDiscGrades.push(Number(gRow.nota1));
-            }
-          }
-          if (perDiscGrades.length > 0) {
-            moduleGrade =
-              perDiscGrades.reduce((acc, v) => acc + v, 0) / perDiscGrades.length;
-          }
-        }
-      }
-    }
+    const moduleGrade: number | null =
+      validGrades.length > 0 ? Math.max(...validGrades) : null;
 
     return {
       id: `mod-${modNum}`,
@@ -605,7 +624,7 @@ export function groupCourseDisciplinesByModule(
           ? `MÓDULO ${modNum} - ${names.join(' / ')}.`
           : `MÓDULO ${modNum}.`,
       carga_horaria: formatHoursLabel(modTotalHours, hasNumericHours),
-      nota: moduleGrade !== null ? (Math.round(moduleGrade * 10) / 10).toFixed(1) : '-',
+      nota: formatCertificateGradePT(moduleGrade),
     };
   });
 }
@@ -628,7 +647,7 @@ export function computeBackTotals(
       : null;
 
   const autoHoursLabel = sumHours > 0 ? `${Math.round(sumHours * 10) / 10}h` : '0h';
-  const autoAvgLabel = avgGrade !== null ? (Math.round(avgGrade * 10) / 10).toFixed(1) : '-';
+  const autoAvgLabel = formatCertificateGradePT(avgGrade);
 
   if (!template.usarCalculoAutomaticoVerso) {
     return {
