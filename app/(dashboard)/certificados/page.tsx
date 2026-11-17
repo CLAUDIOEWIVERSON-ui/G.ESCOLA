@@ -54,6 +54,7 @@ import {
   extractModuleNumberFromRow,
   formatCourseTitleCasePT,
   formatDateExtensoPT,
+  formatNameTitleCasePT,
   formatPeriodStartEndPT,
   groupCertificateRowsByModule,
   groupCourseDisciplinesByModule,
@@ -760,10 +761,12 @@ export default function CertificadosPage() {
   const buildStudentContext = useCallback(
     (alunoObj: any | null): CertificateStudentContext => {
       if (!alunoObj) {
-        const display = `${customStudentRank} ${customStudentName}`.trim();
+        const formattedRank = formatNameTitleCasePT(customStudentRank);
+        const formattedName = formatNameTitleCasePT(customStudentName);
+        const display = `${formattedRank} ${formattedName}`.trim();
         return {
-          nomeCompleto: customStudentName,
-          postoGraduacao: customStudentRank,
+          nomeCompleto: formattedName,
+          postoGraduacao: formattedRank,
           nomeExibicao: display,
           cursoNome: formatCourseTitleCasePT(
             customCourseName || 'Curso de Formação de Marinheiros'
@@ -776,8 +779,8 @@ export default function CertificadosPage() {
         };
       }
 
-      const rank = String(alunoObj.posto_graduacao || '').trim();
-      const fullName = String(alunoObj.nome || '').trim();
+      const rank = formatNameTitleCasePT(String(alunoObj.posto_graduacao || '').trim());
+      const fullName = formatNameTitleCasePT(String(alunoObj.nome || '').trim());
       const display = rank ? `${rank} ${fullName}` : fullName;
 
       const studentRows =

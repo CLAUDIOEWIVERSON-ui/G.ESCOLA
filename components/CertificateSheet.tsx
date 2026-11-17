@@ -6,6 +6,7 @@ import {
   CertificateTemplateConfig,
   computeBackTotals,
   formatCourseTitleCasePT,
+  formatNameTitleCasePT,
   groupCertificateRowsByModule,
   resolveCertificateBodySegments,
   resolveCertificateFontCss,
@@ -471,10 +472,28 @@ export function CertificateSheet({
   const rawCourseName = (student.cursoNome || 'Curso de Formação de Marinheiros').trim();
   const formattedBodyCourse = formatCourseTitleCasePT(rawCourseName);
 
+  const rawStudentRank = (student.postoGraduacao || '').trim();
+  const formattedStudentRank = rawStudentRank ? formatNameTitleCasePT(rawStudentRank) : '';
+  const rawStudentFullName = (student.nomeCompleto || '').trim();
+  const formattedStudentFullName = rawStudentFullName
+    ? formatNameTitleCasePT(rawStudentFullName)
+    : '';
+  const rawStudentDisplay = (
+    student.nomeExibicao ||
+    (formattedStudentRank
+      ? `${formattedStudentRank} ${formattedStudentFullName}`.trim()
+      : formattedStudentFullName) ||
+    'Aluno'
+  ).trim();
+  const formattedStudentDisplay =
+    formattedStudentRank && formattedStudentFullName
+      ? `${formattedStudentRank} ${formattedStudentFullName}`
+      : formatNameTitleCasePT(rawStudentDisplay);
+
   const replacements = {
-    ALUNO: student.nomeExibicao || student.nomeCompleto || 'ALUNO',
-    POSTO_GRADUACAO: student.postoGraduacao || '',
-    NOME_COMPLETO: student.nomeCompleto || '',
+    ALUNO: formattedStudentDisplay,
+    POSTO_GRADUACAO: formattedStudentRank,
+    NOME_COMPLETO: formattedStudentFullName,
     CURSO: formattedBodyCourse,
     TURMA: student.turmaNome || '',
     DATA_INICIO: periodStart,
@@ -483,7 +502,7 @@ export function CertificateSheet({
     MEDIA_FINAL: mediaFinalLabel,
   };
 
-  // Ensure literal all-caps copies of the course name in body text also use Title Case
+  // Ensure literal all-caps copies of the course or student name in body text also use Title Case
   let normalizedBodyTemplate = template.textoCorpo || '';
   const upperCourseLiteral = rawCourseName.toLocaleUpperCase('pt-BR');
   if (
@@ -494,6 +513,28 @@ export function CertificateSheet({
     normalizedBodyTemplate = normalizedBodyTemplate.replaceAll(
       upperCourseLiteral,
       formattedBodyCourse
+    );
+  }
+  const upperDisplayLiteral = rawStudentDisplay.toLocaleUpperCase('pt-BR');
+  if (
+    upperDisplayLiteral.length >= 5 &&
+    upperDisplayLiteral !== formattedStudentDisplay &&
+    normalizedBodyTemplate.includes(upperDisplayLiteral)
+  ) {
+    normalizedBodyTemplate = normalizedBodyTemplate.replaceAll(
+      upperDisplayLiteral,
+      formattedStudentDisplay
+    );
+  }
+  const upperFullNameLiteral = rawStudentFullName.toLocaleUpperCase('pt-BR');
+  if (
+    upperFullNameLiteral.length >= 5 &&
+    upperFullNameLiteral !== formattedStudentFullName &&
+    normalizedBodyTemplate.includes(upperFullNameLiteral)
+  ) {
+    normalizedBodyTemplate = normalizedBodyTemplate.replaceAll(
+      upperFullNameLiteral,
+      formattedStudentFullName
     );
   }
 

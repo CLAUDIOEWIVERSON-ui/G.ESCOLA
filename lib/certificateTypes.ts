@@ -799,7 +799,8 @@ const PT_LOWERCASE_CONNECTORS = new Set([
 ]);
 
 /**
- * Formats a course name in Portuguese Title Case ("Curso de Formação de Marinheiros"):
+ * Formats a course or person name in Portuguese Title Case
+ * (e.g. "Curso de Formação de Marinheiros", "1º Cabo Catiana Quaresma dos Santos Espírito"):
  * capitalizes initials while keeping prepositions/articles lowercase (except first word)
  * and preserving Roman numerals (II, III, IV, etc.).
  */
@@ -833,6 +834,14 @@ export function formatCourseTitleCasePT(raw?: string | null): string {
           if ((currentWordIdx > 0 || partIdx > 0) && PT_LOWERCASE_CONNECTORS.has(lower)) {
             return lower;
           }
+          if (lower.includes("'")) {
+            return lower
+              .split("'")
+              .map((sub) =>
+                sub ? sub.charAt(0).toLocaleUpperCase('pt-BR') + sub.slice(1) : sub
+              )
+              .join("'");
+          }
           return lower.charAt(0).toLocaleUpperCase('pt-BR') + lower.slice(1);
         })
         .join('-');
@@ -841,4 +850,7 @@ export function formatCourseTitleCasePT(raw?: string | null): string {
     })
     .join('');
 }
+
+export const formatNameTitleCasePT = formatCourseTitleCasePT;
+
 
