@@ -119,12 +119,12 @@ function MarinhaBrasilCrest({
         <div
           style={{
             fontSize: labelFontSize,
-            fontWeight: 800,
-            letterSpacing: '0.06em',
-            color: '#071b3b',
-            fontFamily: 'Arial, Helvetica, sans-serif',
+            fontWeight: 500,
+            letterSpacing: '0.04em',
+            color: '#162d4c',
+            fontFamily: '"Segoe UI", system-ui, -apple-system, Arial, sans-serif',
             textAlign: 'center',
-            lineHeight: 1.15,
+            lineHeight: 1.2,
             maxWidth: maxLabelWidth,
           }}
         >
