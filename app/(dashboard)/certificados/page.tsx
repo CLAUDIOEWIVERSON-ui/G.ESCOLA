@@ -34,6 +34,8 @@ import {
   AlignCenter,
   AlignRight,
   Move,
+  Link2,
+  Unlink,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase/client';
@@ -102,10 +104,15 @@ export default function CertificadosPage() {
   const [customCourseName, setCustomCourseName] = useState('Curso de Formação de Marinheiros');
   const [useTurmaStudentGrades, setUseTurmaStudentGrades] = useState(true);
 
-  // Saved templates
+  // Saved templates & turma association
   const [savedTemplates, setSavedTemplates] = useState<SavedTemplateRecord[]>([]);
   const [savingTemplate, setSavingTemplate] = useState(false);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
+  const [associateTurmaId, setAssociateTurmaId] = useState<string>('');
+  const [associatingTurma, setAssociatingTurma] = useState(false);
+  const [syncTurmaDatesOnAssociate, setSyncTurmaDatesOnAssociate] = useState(false);
+  const skipNextTurmaAutoLoadRef = useRef(false);
+  const prevSelectedTurmaIdRef = useRef<string>('');
 
   // Export states
   const [exportingPDF, setExportingPDF] = useState(false);
@@ -204,6 +211,23 @@ export default function CertificadosPage() {
 
     return nonArchived;
   }, [turmas, turmaScopeFilter]);
+
+  const allActiveTurmas = useMemo(() => {
+    return (turmas || []).filter((t: any) => {
+      const st = String(t.status || '').toLowerCase();
+      return !t.arquivada && st !== 'arquivada' && st !== 'cancelada';
+    });
+  }, [turmas]);
+
+  const getTurmaDisplayLabel = useCallback(
+    (turmaId?: string | null) => {
+      if (!turmaId) return '';
+      const found = (turmas || []).find((t: any) => t.id === turmaId);
+      if (!found) return '';
+      return `${getCleanTurmaName(found.nome)}${found.curso?.nome ? ` — ${found.curso.nome}` : ''}${found.ano ? ` (${found.ano})` : ''}`;
+    },
+    [turmas]
+  );
 
   const selectedTurmaObj = useMemo(
     () => (turmas || []).find((t: any) => t.id === selectedTurmaId) || null,
@@ -354,9 +378,36 @@ export default function CertificadosPage() {
     };
   }, [selectedTurmaId]);
 
-  // Auto-adapt template dates & course scope when turma changes
+  // Keep associateTurmaId pre-filled when selecting a turma at the top
   useEffect(() => {
-    if (!selectedTurmaObj) return;
+    if (selectedTurmaId) {
+      setAssociateTurmaId(selectedTurmaId);
+    }
+  }, [selectedTurmaId]);
+
+  // Auto-adapt template dates & course scope when switching to another turma
+  useEffect(() => {
+    if (!selectedTurmaObj) {
+      prevSelectedTurmaIdRef.current = '';
+      return;
+    }
+
+    const turmaChanged = prevSelectedTurmaIdRef.current !== selectedTurmaObj.id;
+    prevSelectedTurmaIdRef.current = selectedTurmaObj.id;
+
+    const courseDisplay = selectedCourseObj?.nome || getCleanTurmaName(selectedTurmaObj.nome);
+
+    if (skipNextTurmaAutoLoadRef.current) {
+      skipNextTurmaAutoLoadRef.current = false;
+      setCustomCourseName(courseDisplay);
+      return;
+    }
+
+    // Avoid resetting current editor state when savedTemplates refreshes after saving for the same turma
+    if (!turmaChanged && template.turmaId === selectedTurmaObj.id) {
+      return;
+    }
+
     const tCat = String(selectedTurmaObj.categoria || '').toLowerCase();
     const cCat = String(selectedCourseObj?.categoria || '').toLowerCase();
     const cName = String(selectedCourseObj?.nome || selectedTurmaObj.nome || '').toLowerCase();
@@ -367,7 +418,6 @@ export default function CertificadosPage() {
       selectedTurmaObj.data_inicio,
       selectedTurmaObj.data_fim
     );
-    const courseDisplay = selectedCourseObj?.nome || getCleanTurmaName(selectedTurmaObj.nome);
 
     // Check if there is already a saved template specifically for this turma
     const matchingSaved = savedTemplates.find((st) => st.turma_id === selectedTurmaObj.id);
@@ -380,6 +430,8 @@ export default function CertificadosPage() {
       setCustomCourseName(courseDisplay);
       return;
     }
+
+    if (!turmaChanged) return;
 
     setCustomCourseName(courseDisplay);
     setTemplate((prev) => ({
@@ -401,7 +453,7 @@ export default function CertificadosPage() {
             }))
           : prev.disciplinas,
     }));
-  }, [selectedTurmaObj, selectedCourseObj, turmaCourseDisciplines, savedTemplates]);
+  }, [selectedTurmaObj, selectedCourseObj, turmaCourseDisciplines, savedTemplates, template.turmaId]);
 
   const filteredTurmaStudents = useMemo(() => {
     if (!studentSearch.trim()) return turmaStudents;
@@ -617,17 +669,34 @@ export default function CertificadosPage() {
 
     setSavingTemplate(true);
     try {
+      const targetTurmaId = template.turmaId ?? (selectedTurmaId || null);
+      const targetTurmaForCourse = targetTurmaId
+        ? (turmas || []).find((t: any) => t.id === targetTurmaId)
+        : selectedTurmaObj;
+
+      const existingForTarget = targetTurmaId
+        ? savedTemplates.find((st) => st.turma_id === targetTurmaId)
+        : null;
+      const existingById = template.id
+        ? savedTemplates.find((st) => st.id === template.id)
+        : null;
+      const safeId =
+        existingById && existingById.turma_id && existingById.turma_id !== targetTurmaId
+          ? existingForTarget?.id
+          : template.id || existingForTarget?.id;
+
       const payloadToSave: CertificateTemplateConfig = {
         ...template,
-        turmaId: selectedTurmaId || template.turmaId || null,
-        cursoId: selectedTurmaObj?.curso_id || template.cursoId || null,
+        id: safeId,
+        turmaId: targetTurmaId,
+        cursoId: targetTurmaForCourse?.curso_id || template.cursoId || null,
       };
 
       const res = await fetchWithAuth('/api/certificados', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          id: template.id,
+          id: safeId,
           turma_id: payloadToSave.turmaId,
           curso_id: payloadToSave.cursoId,
           template_data: payloadToSave,
@@ -639,7 +708,7 @@ export default function CertificadosPage() {
         throw new Error(json.error || 'Erro ao salvar modelo.');
       }
 
-      const savedId = json.data?.id || template.id || `local-${Date.now()}`;
+      const savedId = json.data?.id || safeId || `local-${Date.now()}`;
       const record: SavedTemplateRecord = {
         id: savedId,
         turma_id: payloadToSave.turmaId,
@@ -648,7 +717,12 @@ export default function CertificadosPage() {
         created_at: json.data?.created_at || new Date().toISOString(),
       };
 
-      setTemplate((prev) => ({ ...prev, id: savedId }));
+      setTemplate((prev) => ({
+        ...prev,
+        id: savedId,
+        turmaId: payloadToSave.turmaId,
+        cursoId: payloadToSave.cursoId,
+      }));
 
       setSavedTemplates((prev) => {
         const filtered = prev.filter((item) => item.id !== savedId);
@@ -668,6 +742,200 @@ export default function CertificadosPage() {
     } finally {
       setSavingTemplate(false);
     }
+  };
+
+  // Associate the current working model (or a specific saved model) with any chosen Turma
+  const handleAssociateTemplateToTurma = async (
+    targetTurmaIdParam?: string,
+    overrideTemplate?: CertificateTemplateConfig
+  ) => {
+    const targetTurmaId = targetTurmaIdParam || associateTurmaId;
+    if (!targetTurmaId) {
+      toast.info('Selecione a turma que deseja associar a este modelo.');
+      return;
+    }
+
+    const targetTurmaObj = (turmas || []).find((t: any) => t.id === targetTurmaId);
+    if (!targetTurmaObj) {
+      toast.error('Turma selecionada não encontrada.');
+      return;
+    }
+
+    const baseTemplate = overrideTemplate || template;
+    const targetCourseObj =
+      (cursos || []).find((c: any) => c.id === targetTurmaObj.curso_id) ||
+      targetTurmaObj.curso ||
+      null;
+    const tCat = String(targetTurmaObj.categoria || '').toLowerCase();
+    const cCat = String(targetCourseObj?.categoria || '').toLowerCase();
+    const cName = String(targetCourseObj?.nome || targetTurmaObj.nome || '').toLowerCase();
+    const isExpedito = tCat === 'expedito' || cCat === 'expedito' || cName.includes('expedito');
+    const targetScope: CertificateCourseScope = isExpedito ? 'expedito' : 'formacao_marinheiros';
+    const courseDisplay = targetCourseObj?.nome || getCleanTurmaName(targetTurmaObj.nome);
+
+    let associatedTemplate: CertificateTemplateConfig = {
+      ...baseTemplate,
+      scope: targetScope,
+      turmaId: targetTurmaId,
+      cursoId: targetTurmaObj.curso_id || null,
+    };
+
+    if (syncTurmaDatesOnAssociate) {
+      const period = formatPeriodStartEndPT(targetTurmaObj.data_inicio, targetTurmaObj.data_fim);
+      const targetDisciplines = (disciplinas || [])
+        .filter((d: any) => d.curso_id === targetTurmaObj.curso_id)
+        .sort((a: any, b: any) => {
+          const modDiff = (a.modulo_index || 1) - (b.modulo_index || 1);
+          if (modDiff !== 0) return modDiff;
+          return String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR');
+        });
+
+      associatedTemplate = {
+        ...associatedTemplate,
+        textoPeriodoInicio: period.inicio,
+        textoPeriodoFim: period.fim,
+        dataEmissaoExtenso: period.fim || associatedTemplate.dataEmissaoExtenso,
+        versoTituloCurso: courseDisplay.toUpperCase(),
+        disciplinas:
+          targetDisciplines.length > 0
+            ? targetDisciplines.map((d: any, idx: number) => ({
+                id: d.id || `disc-${idx}`,
+                nome: String(d.nome || `MÓDULO ${d.modulo_index || idx + 1}`).toUpperCase(),
+                carga_horaria: d.carga_horaria ? `${d.carga_horaria}h` : '—',
+                nota: '-',
+              }))
+            : associatedTemplate.disciplinas,
+      };
+    }
+
+    if (!canEdit) {
+      skipNextTurmaAutoLoadRef.current = true;
+      setTemplate(associatedTemplate);
+      setSelectedTurmaId(targetTurmaId);
+      setAssociateTurmaId(targetTurmaId);
+      setCustomCourseName(courseDisplay);
+      toast.success(
+        `Modelo aplicado na sessão para a turma ${getCleanTurmaName(targetTurmaObj.nome)}!`
+      );
+      return;
+    }
+
+    setAssociatingTurma(true);
+    try {
+      const existingForTarget = savedTemplates.find((st) => st.turma_id === targetTurmaId);
+      const existingById = baseTemplate.id
+        ? savedTemplates.find((st) => st.id === baseTemplate.id)
+        : null;
+      const targetRecordId =
+        existingForTarget?.id ||
+        (existingById && (!existingById.turma_id || existingById.turma_id === targetTurmaId)
+          ? existingById.id
+          : undefined);
+
+      const payloadToSave: CertificateTemplateConfig = {
+        ...associatedTemplate,
+        id: targetRecordId,
+      };
+
+      const res = await fetchWithAuth('/api/certificados', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: targetRecordId,
+          turma_id: targetTurmaId,
+          curso_id: targetTurmaObj.curso_id || null,
+          template_data: payloadToSave,
+        }),
+      });
+
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.error || 'Erro ao associar modelo à turma.');
+      }
+
+      const savedId = json.data?.id || targetRecordId || `local-${Date.now()}`;
+      const finalTemplate: CertificateTemplateConfig = {
+        ...payloadToSave,
+        id: savedId,
+      };
+      const record: SavedTemplateRecord = {
+        id: savedId,
+        turma_id: targetTurmaId,
+        curso_id: targetTurmaObj.curso_id || null,
+        template_data: finalTemplate,
+        created_at: json.data?.created_at || new Date().toISOString(),
+      };
+
+      skipNextTurmaAutoLoadRef.current = true;
+      setTemplate(finalTemplate);
+      setSavedTemplates((prev) => {
+        const filtered = prev.filter(
+          (item) => item.id !== savedId && item.turma_id !== targetTurmaId
+        );
+        const updated = [record, ...filtered];
+        try {
+          localStorage.setItem(LOCAL_TEMPLATES_KEY, JSON.stringify(updated));
+        } catch {
+          // ignore
+        }
+        return updated;
+      });
+      setSelectedTurmaId(targetTurmaId);
+      setAssociateTurmaId(targetTurmaId);
+      setCustomCourseName(courseDisplay);
+
+      toast.success(
+        `Modelo associado e salvo para a turma "${getCleanTurmaName(targetTurmaObj.nome)}"!`
+      );
+    } catch (err: any) {
+      console.error('Erro ao associar modelo à turma:', err);
+      toast.error(err?.message || 'Erro ao associar modelo à turma.');
+    } finally {
+      setAssociatingTurma(false);
+    }
+  };
+
+  const handleUnlinkTemplateTurma = async () => {
+    const prevTurmaId = template.turmaId;
+    const unlinkedTemplate: CertificateTemplateConfig = {
+      ...template,
+      turmaId: null,
+    };
+
+    if (canEdit && template.id && prevTurmaId) {
+      try {
+        const res = await fetchWithAuth('/api/certificados', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: template.id,
+            turma_id: null,
+            curso_id: template.cursoId || null,
+            template_data: unlinkedTemplate,
+          }),
+        });
+        if (res.ok) {
+          setSavedTemplates((prev) => {
+            const updated = prev.map((item) =>
+              item.id === template.id
+                ? { ...item, turma_id: null, template_data: unlinkedTemplate }
+                : item
+            );
+            try {
+              localStorage.setItem(LOCAL_TEMPLATES_KEY, JSON.stringify(updated));
+            } catch {
+              // ignore
+            }
+            return updated;
+          });
+        }
+      } catch {
+        // ignore network unlink error; still unlink in editor
+      }
+    }
+
+    setTemplate(unlinkedTemplate);
+    toast.success('Turma desvinculada deste modelo.');
   };
 
   const handleDeleteSavedTemplate = async (id: string) => {
@@ -1115,6 +1383,76 @@ export default function CertificadosPage() {
             >
               <Printer size={14} />
               <span>Imprimir</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Associate Working Model to Any Desired Turma */}
+        <div className="pt-3 border-t border-slate-200 flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-slate-50/80 p-3 rounded-xl border border-slate-200/80">
+          <div className="flex flex-wrap items-center gap-2 min-w-0">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
+              <Link2 size={14} className="text-blue-700 shrink-0" />
+              <span>Associação do Modelo Atual:</span>
+            </div>
+            {template.turmaId ? (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-bold">
+                <CheckCircle2 size={12} className="shrink-0" />
+                <span className="truncate max-w-[320px]">
+                  Vinculado à: {getTurmaDisplayLabel(template.turmaId) || 'Turma selecionada'}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleUnlinkTemplateTurma}
+                  className="ml-1 p-0.5 rounded hover:bg-emerald-200/70 text-emerald-900 cursor-pointer"
+                  title="Desvincular turma deste modelo"
+                >
+                  <Unlink size={11} />
+                </button>
+              </div>
+            ) : (
+              <span className="px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-slate-600 text-[11px] font-semibold">
+                Sem turma associada (modelo livre)
+              </span>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={associateTurmaId}
+              onChange={(e) => setAssociateTurmaId(e.target.value)}
+              className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 min-w-[230px] max-w-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            >
+              <option value="">-- Escolha a turma para associar --</option>
+              {allActiveTurmas.map((turma: any, idx: number) => (
+                <option key={turma.id} value={turma.id}>
+                  {idx + 1}. {getCleanTurmaName(turma.nome)} — {turma.curso?.nome || 'Curso'} (
+                  {turma.ano || ''})
+                </option>
+              ))}
+            </select>
+
+            <label className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 cursor-pointer px-2 py-1 rounded-lg bg-white border border-slate-200">
+              <input
+                type="checkbox"
+                checked={syncTurmaDatesOnAssociate}
+                onChange={(e) => setSyncTurmaDatesOnAssociate(e.target.checked)}
+                className="rounded border-slate-300"
+              />
+              <span>Atualizar datas/disciplinas pela turma</span>
+            </label>
+
+            <button
+              type="button"
+              onClick={() => handleAssociateTemplateToTurma()}
+              disabled={associatingTurma || !associateTurmaId}
+              className="px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-800 hover:bg-blue-900 text-white shadow-2xs transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+            >
+              {associatingTurma ? (
+                <Loader2 size={13} className="animate-spin" />
+              ) : (
+                <Link2 size={13} />
+              )}
+              <span>Associar Modelo à Turma</span>
             </button>
           </div>
         </div>
@@ -3093,13 +3431,51 @@ export default function CertificadosPage() {
             {/* TAB 4: MODELOS SALVOS */}
             {editorTab === 'modelos' && (
               <div className="space-y-4">
+                <div className="p-3.5 rounded-xl bg-blue-50/70 border border-blue-200 space-y-2.5">
+                  <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-blue-900">
+                    <Link2 size={14} />
+                    <span>Associar Modelo em Edição a uma Turma</span>
+                  </div>
+                  <p className="text-[11px] text-slate-600">
+                    Vincule o modelo que você está editando agora a qualquer turma para que ele carregue automaticamente ao selecioná-la.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <select
+                      value={associateTurmaId}
+                      onChange={(e) => setAssociateTurmaId(e.target.value)}
+                      className="flex-1 px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800"
+                    >
+                      <option value="">-- Selecione a turma desejada --</option>
+                      {allActiveTurmas.map((turma: any, idx: number) => (
+                        <option key={turma.id} value={turma.id}>
+                          {idx + 1}. {getCleanTurmaName(turma.nome)} —{' '}
+                          {turma.curso?.nome || 'Curso'} ({turma.ano || ''})
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => handleAssociateTemplateToTurma()}
+                      disabled={associatingTurma || !associateTurmaId}
+                      className="px-3 py-1.5 rounded-lg bg-blue-900 hover:bg-blue-950 text-white text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0"
+                    >
+                      {associatingTurma ? (
+                        <Loader2 size={13} className="animate-spin" />
+                      ) : (
+                        <Link2 size={13} />
+                      )}
+                      <span>Associar Agora</span>
+                    </button>
+                  </div>
+                </div>
+
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-xs font-black uppercase tracking-wider text-slate-800">
                       Modelos Salvos no Sistema
                     </h3>
                     <p className="text-[11px] text-slate-500">
-                      Carregue ou gerencie layouts personalizados salvos por turma ou curso.
+                      Carregue, vincule a uma turma ou gerencie layouts salvos.
                     </p>
                   </div>
                   <button
@@ -3129,45 +3505,88 @@ export default function CertificadosPage() {
                   <div className="space-y-2.5">
                     {savedTemplates.map((rec) => {
                       const td = rec.template_data;
+                      const linkedTurmaId = rec.turma_id || td?.turmaId || null;
+                      const linkedTurmaLabel = getTurmaDisplayLabel(linkedTurmaId);
                       return (
                         <div
                           key={rec.id}
-                          className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-2"
+                          className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2"
                         >
-                          <div className="min-w-0">
-                            <p className="text-xs font-bold text-slate-800 truncate">
-                              {td?.nomeModelo || 'Modelo de Certificado'}
-                            </p>
-                            <p className="text-[10px] text-slate-500">
-                              {td?.scope === 'expedito'
-                                ? 'Cursos Expeditos'
-                                : 'Formação de Marinheiros'}
-                              {rec.created_at
-                                ? ` • ${new Date(rec.created_at).toLocaleDateString('pt-BR')}`
-                                : ''}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setTemplate({ ...td, id: rec.id });
-                                toast.success('Modelo carregado no editor!');
-                              }}
-                              className="px-2.5 py-1 rounded-lg bg-blue-900 hover:bg-blue-950 text-white text-[11px] font-bold cursor-pointer"
-                            >
-                              Usar
-                            </button>
-                            {canEdit && (
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="text-xs font-bold text-slate-800 truncate">
+                                {td?.nomeModelo || 'Modelo de Certificado'}
+                              </p>
+                              <p className="text-[10px] text-slate-500">
+                                {td?.scope === 'expedito'
+                                  ? 'Cursos Expeditos'
+                                  : 'Formação de Marinheiros'}
+                                {rec.created_at
+                                  ? ` • ${new Date(rec.created_at).toLocaleDateString('pt-BR')}`
+                                  : ''}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-1.5 shrink-0">
                               <button
                                 type="button"
-                                onClick={() => handleDeleteSavedTemplate(rec.id)}
-                                className="p-1.5 rounded-lg bg-white border border-slate-200 hover:bg-rose-50 text-rose-600 cursor-pointer"
-                                title="Excluir modelo"
+                                onClick={() => {
+                                  const loaded: CertificateTemplateConfig = {
+                                    ...td,
+                                    id: rec.id,
+                                    turmaId: linkedTurmaId,
+                                  };
+                                  if (linkedTurmaId) {
+                                    skipNextTurmaAutoLoadRef.current = true;
+                                    setSelectedTurmaId(linkedTurmaId);
+                                    setAssociateTurmaId(linkedTurmaId);
+                                  }
+                                  setTemplate(loaded);
+                                  toast.success('Modelo carregado no editor!');
+                                }}
+                                className="px-2.5 py-1 rounded-lg bg-blue-900 hover:bg-blue-950 text-white text-[11px] font-bold cursor-pointer"
                               >
-                                <Trash2 size={13} />
+                                Usar
                               </button>
-                            )}
+                              {associateTurmaId && associateTurmaId !== linkedTurmaId && (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleAssociateTemplateToTurma(associateTurmaId, td)
+                                  }
+                                  disabled={associatingTurma}
+                                  className="px-2 py-1 rounded-lg bg-white border border-blue-200 hover:bg-blue-50 text-blue-800 text-[10px] font-bold flex items-center gap-1 cursor-pointer"
+                                  title="Associar este modelo salvo à turma selecionada acima"
+                                >
+                                  <Link2 size={11} />
+                                  <span>Vincular</span>
+                                </button>
+                              )}
+                              {canEdit && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteSavedTemplate(rec.id)}
+                                  className="p-1.5 rounded-lg bg-white border border-slate-200 hover:bg-rose-50 text-rose-600 cursor-pointer"
+                                  title="Excluir modelo"
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 text-[10px]">
+                            <Link2 size={11} className={linkedTurmaLabel ? 'text-emerald-700' : 'text-slate-400'} />
+                            <span
+                              className={
+                                linkedTurmaLabel
+                                  ? 'font-bold text-emerald-800 truncate'
+                                  : 'text-slate-500'
+                              }
+                            >
+                              {linkedTurmaLabel
+                                ? `Turma associada: ${linkedTurmaLabel}`
+                                : 'Sem turma associada (modelo geral)'}
+                            </span>
                           </div>
                         </div>
                       );
