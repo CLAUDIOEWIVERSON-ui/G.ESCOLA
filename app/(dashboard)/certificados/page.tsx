@@ -52,6 +52,7 @@ import {
   computeBackTotals,
   createPresetTemplate,
   extractModuleNumberFromRow,
+  formatCourseTitleCasePT,
   formatDateExtensoPT,
   formatPeriodStartEndPT,
   groupCertificateRowsByModule,
@@ -60,6 +61,7 @@ import {
 import { CertificateSheet } from '@/components/CertificateSheet';
 
 const LOCAL_TEMPLATES_KEY = 'sge_saved_certificate_templates_v1';
+const LAST_WORKSPACE_KEY = 'sge_certificate_last_workspace_v1';
 
 interface SavedTemplateRecord {
   id: string;
@@ -67,13 +69,31 @@ interface SavedTemplateRecord {
   curso_id?: string | null;
   template_data: CertificateTemplateConfig;
   created_at?: string;
+  data_emissao?: string;
+}
+
+interface CertificateWorkspaceSnapshot {
+  template: CertificateTemplateConfig;
+  turmaScopeFilter: 'all' | 'expedito' | 'formacao';
+  selectedTurmaId: string;
+  selectedStudentId: string;
+  associateTurmaId: string;
+  editorTab: 'frente' | 'verso' | 'visual' | 'modelos';
+  previewMode: 'both' | 'front' | 'back';
+  manualZoom: number;
+  customStudentRank: string;
+  customStudentName: string;
+  customCourseName: string;
+  useTurmaStudentGrades: boolean;
+  syncTurmaDatesOnAssociate: boolean;
+  updatedAt: string;
 }
 
 export default function CertificadosPage() {
   const { isAdmin, isInstrutor, isConvidado } = useUser();
   const canEdit = isAdmin || isInstrutor;
   const { cursos } = useCursos();
-  const { turmas } = useTurmas();
+  const { turmas, loading: loadingTurmas } = useTurmas();
   const { disciplinas } = useDisciplinas();
 
   // Template & Editor State
@@ -115,8 +135,13 @@ export default function CertificadosPage() {
   const [associateTurmaId, setAssociateTurmaId] = useState<string>('');
   const [associatingTurma, setAssociatingTurma] = useState(false);
   const [syncTurmaDatesOnAssociate, setSyncTurmaDatesOnAssociate] = useState(false);
+  const [workspaceHydrated, setWorkspaceHydrated] = useState(false);
   const skipNextTurmaAutoLoadRef = useRef(false);
   const prevSelectedTurmaIdRef = useRef<string>('');
+  const restoredFromWorkspaceRef = useRef<boolean>(false);
+  const restoredTurmaIdRef = useRef<string | null>(null);
+  const preferredStudentIdRef = useRef<string | null>(null);
+  const autoAppliedLatestServerRef = useRef<boolean>(false);
 
   // Export states
   const [exportingPDF, setExportingPDF] = useState(false);
@@ -178,9 +203,146 @@ export default function CertificadosPage() {
     setLoadingTemplates(false);
   }, []);
 
+  // Restore last worked certificate model, selected turma, student and UI preferences on mount
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(LAST_WORKSPACE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Partial<CertificateWorkspaceSnapshot>;
+        if (parsed && parsed.template && typeof parsed.template === 'object') {
+          restoredFromWorkspaceRef.current = true;
+          const basePreset = createPresetTemplate(
+            parsed.template.scope || 'formacao_marinheiros'
+          );
+          setTemplate({
+            ...basePreset,
+            ...parsed.template,
+          });
+          if (
+            parsed.turmaScopeFilter === 'all' ||
+            parsed.turmaScopeFilter === 'expedito' ||
+            parsed.turmaScopeFilter === 'formacao'
+          ) {
+            setTurmaScopeFilter(parsed.turmaScopeFilter);
+          }
+          if (typeof parsed.selectedTurmaId === 'string') {
+            setSelectedTurmaId(parsed.selectedTurmaId);
+            if (parsed.selectedTurmaId) {
+              restoredTurmaIdRef.current = parsed.selectedTurmaId;
+            }
+          }
+          if (typeof parsed.selectedStudentId === 'string' && parsed.selectedStudentId) {
+            preferredStudentIdRef.current = parsed.selectedStudentId;
+          }
+          if (typeof parsed.associateTurmaId === 'string') {
+            setAssociateTurmaId(parsed.associateTurmaId);
+          }
+          if (
+            parsed.editorTab === 'frente' ||
+            parsed.editorTab === 'verso' ||
+            parsed.editorTab === 'visual' ||
+            parsed.editorTab === 'modelos'
+          ) {
+            setEditorTab(parsed.editorTab);
+          }
+          if (
+            parsed.previewMode === 'both' ||
+            parsed.previewMode === 'front' ||
+            parsed.previewMode === 'back'
+          ) {
+            setPreviewMode(parsed.previewMode);
+          }
+          if (typeof parsed.manualZoom === 'number' && parsed.manualZoom >= 60) {
+            setManualZoom(parsed.manualZoom);
+          }
+          if (typeof parsed.customStudentRank === 'string') {
+            setCustomStudentRank(parsed.customStudentRank);
+          }
+          if (typeof parsed.customStudentName === 'string') {
+            setCustomStudentName(parsed.customStudentName);
+          }
+          if (typeof parsed.customCourseName === 'string') {
+            setCustomCourseName(parsed.customCourseName);
+          }
+          if (typeof parsed.useTurmaStudentGrades === 'boolean') {
+            setUseTurmaStudentGrades(parsed.useTurmaStudentGrades);
+          }
+          if (typeof parsed.syncTurmaDatesOnAssociate === 'boolean') {
+            setSyncTurmaDatesOnAssociate(parsed.syncTurmaDatesOnAssociate);
+          }
+        }
+      }
+    } catch {
+      // ignore corrupted storage
+    } finally {
+      setWorkspaceHydrated(true);
+    }
+  }, []);
+
   useEffect(() => {
     loadSavedTemplates();
   }, [loadSavedTemplates]);
+
+  // Continuously persist active model, selected turma, student and preferences so reopening restores exact state
+  useEffect(() => {
+    if (!workspaceHydrated) return;
+
+    const snapshot: CertificateWorkspaceSnapshot = {
+      template,
+      turmaScopeFilter,
+      selectedTurmaId,
+      selectedStudentId,
+      associateTurmaId,
+      editorTab,
+      previewMode,
+      manualZoom,
+      customStudentRank,
+      customStudentName,
+      customCourseName,
+      useTurmaStudentGrades,
+      syncTurmaDatesOnAssociate,
+      updatedAt: new Date().toISOString(),
+    };
+
+    try {
+      localStorage.setItem(LAST_WORKSPACE_KEY, JSON.stringify(snapshot));
+    } catch {
+      // Fallback if uploaded inline data URLs exceed localStorage quota: strip oversized data URLs (>250KB)
+      try {
+        const shrink = (url?: string) =>
+          url && url.startsWith('data:') && url.length > 250_000 ? '' : url;
+        const compactTemplate: CertificateTemplateConfig = {
+          ...template,
+          molduraFrenteUrl: shrink(template.molduraFrenteUrl),
+          logoEsquerdaUrl: shrink(template.logoEsquerdaUrl) || '',
+          logoDireitaUrl: shrink(template.logoDireitaUrl) || '',
+          marcaDaguaFrenteUrl: shrink(template.marcaDaguaFrenteUrl) || '',
+          marcaDaguaVersoUrl: shrink(template.marcaDaguaVersoUrl) || '',
+        };
+        localStorage.setItem(
+          LAST_WORKSPACE_KEY,
+          JSON.stringify({ ...snapshot, template: compactTemplate })
+        );
+      } catch {
+        // ignore storage quota errors
+      }
+    }
+  }, [
+    workspaceHydrated,
+    template,
+    turmaScopeFilter,
+    selectedTurmaId,
+    selectedStudentId,
+    associateTurmaId,
+    editorTab,
+    previewMode,
+    manualZoom,
+    customStudentRank,
+    customStudentName,
+    customCourseName,
+    useTurmaStudentGrades,
+    syncTurmaDatesOnAssociate,
+  ]);
 
   // Filter Turmas for Expeditos and Formação de Marinheiros / All
   const filteredTurmas = useMemo(() => {
@@ -387,11 +549,15 @@ export default function CertificadosPage() {
         const studentsList = alunosData || [];
         setTurmaStudents(studentsList);
         setBatchSelectedIds(studentsList.map((s: any) => s.id));
-        if (studentsList.length > 0) {
+        const preferredId = preferredStudentIdRef.current;
+        if (preferredId && studentsList.some((s: any) => s.id === preferredId)) {
+          setSelectedStudentId(preferredId);
+        } else if (studentsList.length > 0) {
           setSelectedStudentId(studentsList[0].id);
         } else {
           setSelectedStudentId('');
         }
+        preferredStudentIdRef.current = null;
 
         let gradesArr: any[] = [];
         if (notasRes.ok) {
@@ -431,6 +597,61 @@ export default function CertificadosPage() {
     }
   }, [selectedTurmaId]);
 
+  // If opening in a clean browser with no local workspace yet, auto-open the latest saved model & its turma
+  useEffect(() => {
+    if (
+      !workspaceHydrated ||
+      restoredFromWorkspaceRef.current ||
+      autoAppliedLatestServerRef.current ||
+      loadingTemplates ||
+      loadingTurmas ||
+      savedTemplates.length === 0
+    ) {
+      return;
+    }
+
+    autoAppliedLatestServerRef.current = true;
+    const latest = savedTemplates[0];
+    if (!latest?.template_data) return;
+
+    const linkedTurmaId = latest.turma_id || latest.template_data.turmaId || null;
+    const activeTargetTurma = linkedTurmaId
+      ? allActiveTurmas.find((t: any) => t.id === linkedTurmaId)
+      : null;
+
+    if (activeTargetTurma) {
+      restoredTurmaIdRef.current = activeTargetTurma.id;
+      setSelectedTurmaId(activeTargetTurma.id);
+      setAssociateTurmaId(activeTargetTurma.id);
+    }
+
+    const basePreset = createPresetTemplate(
+      latest.template_data.scope || 'formacao_marinheiros'
+    );
+    setTemplate({
+      ...basePreset,
+      ...latest.template_data,
+      id: latest.id,
+      turmaId: activeTargetTurma ? activeTargetTurma.id : linkedTurmaId,
+    });
+  }, [
+    workspaceHydrated,
+    loadingTemplates,
+    loadingTurmas,
+    savedTemplates,
+    allActiveTurmas,
+  ]);
+
+  // Clear restored selectedTurmaId only if that turma no longer exists among active turmas
+  useEffect(() => {
+    if (!workspaceHydrated || !selectedTurmaId || (turmas || []).length === 0) return;
+    const stillActive = allActiveTurmas.some((t: any) => t.id === selectedTurmaId);
+    if (!stillActive) {
+      setSelectedTurmaId('');
+      restoredTurmaIdRef.current = null;
+    }
+  }, [workspaceHydrated, selectedTurmaId, turmas, allActiveTurmas]);
+
   // Auto-adapt template dates & course scope when switching to another turma
   useEffect(() => {
     if (!selectedTurmaObj) {
@@ -438,14 +659,23 @@ export default function CertificadosPage() {
       return;
     }
 
+    const courseDisplay = selectedCourseObj?.nome || getCleanTurmaName(selectedTurmaObj.nome);
+    const formattedCourseTitleCase = formatCourseTitleCasePT(courseDisplay);
+
+    // When restoring the last opened workspace or latest saved template on reopen, preserve the restored model untouched
+    if (restoredTurmaIdRef.current && selectedTurmaObj.id === restoredTurmaIdRef.current) {
+      restoredTurmaIdRef.current = null;
+      prevSelectedTurmaIdRef.current = selectedTurmaObj.id;
+      setCustomCourseName((prev) => prev || formattedCourseTitleCase);
+      return;
+    }
+
     const turmaChanged = prevSelectedTurmaIdRef.current !== selectedTurmaObj.id;
     prevSelectedTurmaIdRef.current = selectedTurmaObj.id;
 
-    const courseDisplay = selectedCourseObj?.nome || getCleanTurmaName(selectedTurmaObj.nome);
-
     if (skipNextTurmaAutoLoadRef.current) {
       skipNextTurmaAutoLoadRef.current = false;
-      setCustomCourseName(courseDisplay);
+      setCustomCourseName(formattedCourseTitleCase);
       return;
     }
 
@@ -473,13 +703,13 @@ export default function CertificadosPage() {
         id: matchingSaved.id,
         turmaId: selectedTurmaObj.id,
       });
-      setCustomCourseName(courseDisplay);
+      setCustomCourseName(formattedCourseTitleCase);
       return;
     }
 
     if (!turmaChanged) return;
 
-    setCustomCourseName(courseDisplay);
+    setCustomCourseName(formattedCourseTitleCase);
     setTemplate((prev) => {
       const groupedOrFlat =
         turmaCourseDisciplines.length > 0
@@ -535,7 +765,9 @@ export default function CertificadosPage() {
           nomeCompleto: customStudentName,
           postoGraduacao: customStudentRank,
           nomeExibicao: display,
-          cursoNome: customCourseName || 'Curso de Formação de Marinheiros',
+          cursoNome: formatCourseTitleCasePT(
+            customCourseName || 'Curso de Formação de Marinheiros'
+          ),
           turmaNome: selectedTurmaObj ? getCleanTurmaName(selectedTurmaObj.nome) : '',
           dataInicioExtenso: template.textoPeriodoInicio,
           dataFimExtenso: template.textoPeriodoFim,
@@ -558,10 +790,11 @@ export default function CertificadosPage() {
         nomeCompleto: fullName,
         postoGraduacao: rank,
         nomeExibicao: display,
-        cursoNome:
+        cursoNome: formatCourseTitleCasePT(
           selectedCourseObj?.nome ||
-          customCourseName ||
-          'Curso de Formação de Marinheiros',
+            customCourseName ||
+            'Curso de Formação de Marinheiros'
+        ),
         turmaNome: selectedTurmaObj ? getCleanTurmaName(selectedTurmaObj.nome) : '',
         dataInicioExtenso: template.textoPeriodoInicio,
         dataFimExtenso: template.textoPeriodoFim,
@@ -896,7 +1129,7 @@ export default function CertificadosPage() {
       setTemplate(associatedTemplate);
       setSelectedTurmaId(targetTurmaId);
       setAssociateTurmaId(targetTurmaId);
-      setCustomCourseName(courseDisplay);
+      setCustomCourseName(formatCourseTitleCasePT(courseDisplay));
       toast.success(
         `Modelo aplicado na sessão para a turma ${getCleanTurmaName(targetTurmaObj.nome)}!`
       );
@@ -965,7 +1198,7 @@ export default function CertificadosPage() {
       });
       setSelectedTurmaId(targetTurmaId);
       setAssociateTurmaId(targetTurmaId);
-      setCustomCourseName(courseDisplay);
+      setCustomCourseName(formatCourseTitleCasePT(courseDisplay));
 
       toast.success(
         `Modelo associado e salvo para a turma "${getCleanTurmaName(targetTurmaObj.nome)}"!`

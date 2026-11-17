@@ -23,6 +23,7 @@ export async function GET(req: NextRequest) {
       .from('certificados')
       .select('id, aluno_id, turma_id, curso_id, tipo, template_data, data_emissao, created_at')
       .is('deleted_at', null)
+      .order('data_emissao', { ascending: false })
       .order('created_at', { ascending: false })
       .limit(100);
 

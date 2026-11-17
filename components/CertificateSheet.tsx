@@ -5,6 +5,7 @@ import {
   CertificateStudentContext,
   CertificateTemplateConfig,
   computeBackTotals,
+  formatCourseTitleCasePT,
   groupCertificateRowsByModule,
   resolveCertificateBodySegments,
   resolveCertificateFontCss,
@@ -467,11 +468,14 @@ export function CertificateSheet({
   const periodStart = student.dataInicioExtenso || template.textoPeriodoInicio;
   const periodEnd = student.dataFimExtenso || template.textoPeriodoFim;
 
+  const rawCourseName = (student.cursoNome || 'Curso de Formação de Marinheiros').trim();
+  const formattedBodyCourse = formatCourseTitleCasePT(rawCourseName);
+
   const replacements = {
     ALUNO: student.nomeExibicao || student.nomeCompleto || 'ALUNO',
     POSTO_GRADUACAO: student.postoGraduacao || '',
     NOME_COMPLETO: student.nomeCompleto || '',
-    CURSO: student.cursoNome || 'Curso de Formação de Marinheiros',
+    CURSO: formattedBodyCourse,
     TURMA: student.turmaNome || '',
     DATA_INICIO: periodStart,
     DATA_FIM: periodEnd,
@@ -479,12 +483,26 @@ export function CertificateSheet({
     MEDIA_FINAL: mediaFinalLabel,
   };
 
+  // Ensure literal all-caps copies of the course name in body text also use Title Case
+  let normalizedBodyTemplate = template.textoCorpo || '';
+  const upperCourseLiteral = rawCourseName.toLocaleUpperCase('pt-BR');
+  if (
+    upperCourseLiteral.length >= 6 &&
+    upperCourseLiteral !== formattedBodyCourse &&
+    normalizedBodyTemplate.includes(upperCourseLiteral)
+  ) {
+    normalizedBodyTemplate = normalizedBodyTemplate.replaceAll(
+      upperCourseLiteral,
+      formattedBodyCourse
+    );
+  }
+
   const baseBodyItalic =
     template.textoCorpoItalico ?? (template.fonteCorpo !== 'sans');
   const baseBodyBold = template.textoCorpoNegrito ?? false;
 
   const bodySegments = resolveCertificateBodySegments(
-    template.textoCorpo,
+    normalizedBodyTemplate,
     replacements,
     {
       defaultBold: baseBodyBold,
@@ -493,8 +511,8 @@ export function CertificateSheet({
   );
   const backTitleResolved = resolveSimplePlaceholders(
     template.versoTituloCurso || '{{CURSO}}',
-    replacements
-  ).toUpperCase();
+    { ...replacements, CURSO: rawCourseName.toLocaleUpperCase('pt-BR') }
+  ).toLocaleUpperCase('pt-BR');
 
   const bodyFontCss = resolveCertificateFontCss(template.fonteCorpo || 'garamond');
   const titleFontCss = resolveCertificateFontCss(

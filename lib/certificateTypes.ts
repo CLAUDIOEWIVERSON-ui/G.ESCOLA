@@ -767,3 +767,78 @@ export function resolveSimplePlaceholders(
   }
   return out;
 }
+
+const PT_LOWERCASE_CONNECTORS = new Set([
+  'de',
+  'da',
+  'do',
+  'das',
+  'dos',
+  'e',
+  'em',
+  'no',
+  'na',
+  'nos',
+  'nas',
+  'a',
+  'o',
+  'as',
+  'os',
+  'ao',
+  'aos',
+  'à',
+  'às',
+  'para',
+  'por',
+  'com',
+  'sem',
+  'sob',
+  'sobre',
+  'entre',
+  'até',
+]);
+
+/**
+ * Formats a course name in Portuguese Title Case ("Curso de Formação de Marinheiros"):
+ * capitalizes initials while keeping prepositions/articles lowercase (except first word)
+ * and preserving Roman numerals (II, III, IV, etc.).
+ */
+export function formatCourseTitleCasePT(raw?: string | null): string {
+  const trimmed = String(raw || '').trim();
+  if (!trimmed) return '';
+
+  const tokens = trimmed.split(/(\s+)/);
+  let wordIdx = 0;
+
+  return tokens
+    .map((token) => {
+      if (/^\s+$/.test(token)) return token;
+      const currentWordIdx = wordIdx++;
+
+      const match = token.match(
+        /^([^A-Za-zÀ-ÖØ-öø-ÿ0-9]*)(.*?)([^A-Za-zÀ-ÖØ-öø-ÿ0-9]*)$/
+      );
+      if (!match) return token;
+      const [, lead, core, trail] = match;
+      if (!core) return token;
+
+      const formattedCore = core
+        .split('-')
+        .map((part, partIdx) => {
+          if (!part) return part;
+          const lower = part.toLocaleLowerCase('pt-BR');
+          if (/^(ii|iii|iv|v|vi|vii|viii|ix|x)$/i.test(lower)) {
+            return lower.toUpperCase();
+          }
+          if ((currentWordIdx > 0 || partIdx > 0) && PT_LOWERCASE_CONNECTORS.has(lower)) {
+            return lower;
+          }
+          return lower.charAt(0).toLocaleUpperCase('pt-BR') + lower.slice(1);
+        })
+        .join('-');
+
+      return `${lead}${formattedCore}${trail}`;
+    })
+    .join('');
+}
+
