@@ -596,7 +596,11 @@ export default function CertificadosPage() {
     reader.onload = (ev) => {
       const dataUrl = String(ev.target?.result || '');
       if (dataUrl) {
-        setTemplate((prev) => ({ ...prev, [field]: dataUrl }));
+        setTemplate((prev) => ({
+          ...prev,
+          [field]: dataUrl,
+          ...(field === 'logoDireitaUrl' ? { mostrarLegendaLogoDireita: false } : {}),
+        }));
         toast.success('Imagem aplicada ao modelo do certificado!');
       }
     };
@@ -1852,6 +1856,9 @@ export default function CertificadosPage() {
                         maxX: 760,
                         minY: -60,
                         maxY: 520,
+                        sizeKey: 'tamanhoLogoEsquerda' as const,
+                        defaultSize: 90,
+                        opacityKey: 'opacidadeLogoEsquerda' as const,
                       },
                       {
                         label: 'Brasão Direito',
@@ -1861,6 +1868,9 @@ export default function CertificadosPage() {
                         maxX: 90,
                         minY: -60,
                         maxY: 520,
+                        sizeKey: 'tamanhoLogoDireita' as const,
+                        defaultSize: 74,
+                        opacityKey: 'opacidadeLogoDireita' as const,
                       },
                       {
                         label: 'Título do Certificado',
@@ -1883,6 +1893,8 @@ export default function CertificadosPage() {
                     ].map((ctrl) => {
                       const valX = template[ctrl.xKey] ?? 0;
                       const valY = template[ctrl.yKey] ?? 0;
+                      const valSize = ctrl.sizeKey ? (template[ctrl.sizeKey] ?? ctrl.defaultSize) : undefined;
+                      const valOpacity = ctrl.opacityKey ? (template[ctrl.opacityKey] ?? 1) : undefined;
                       const isModified = valX !== 0 || valY !== 0;
                       return (
                         <div
@@ -1955,6 +1967,53 @@ export default function CertificadosPage() {
                               className="w-full accent-blue-800"
                             />
                           </div>
+
+                          {ctrl.sizeKey && ctrl.opacityKey && valSize !== undefined && valOpacity !== undefined && (
+                            <div className="pt-1.5 border-t border-slate-100 space-y-1.5">
+                              <div>
+                                <div className="flex items-center justify-between text-[10px] text-slate-600 font-semibold">
+                                  <span>Tamanho do Brasão</span>
+                                  <span className="font-mono text-slate-800">{valSize}px</span>
+                                </div>
+                                <input
+                                  type="range"
+                                  min={36}
+                                  max={220}
+                                  step={2}
+                                  value={valSize}
+                                  onChange={(e) =>
+                                    setTemplate((prev) => ({
+                                      ...prev,
+                                      [ctrl.sizeKey!]: Number(e.target.value),
+                                    }))
+                                  }
+                                  className="w-full accent-blue-800"
+                                />
+                              </div>
+                              <div>
+                                <div className="flex items-center justify-between text-[10px] text-slate-600 font-semibold">
+                                  <span>Opacidade</span>
+                                  <span className="font-mono text-slate-800">
+                                    {Math.round(valOpacity * 100)}%
+                                  </span>
+                                </div>
+                                <input
+                                  type="range"
+                                  min={0}
+                                  max={1}
+                                  step={0.05}
+                                  value={valOpacity}
+                                  onChange={(e) =>
+                                    setTemplate((prev) => ({
+                                      ...prev,
+                                      [ctrl.opacityKey!]: Number(e.target.value),
+                                    }))
+                                  }
+                                  className="w-full accent-blue-800"
+                                />
+                              </div>
+                            </div>
+                          )}
                         </div>
                       );
                     })}
@@ -2788,15 +2847,159 @@ export default function CertificadosPage() {
                   </div>
                 </div>
 
+                {/* Crest Size & Opacity Controls */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-200">
+                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-black uppercase tracking-wider text-slate-800">
+                        Brasão Esquerdo
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setTemplate((prev) => ({
+                            ...prev,
+                            tamanhoLogoEsquerda: 90,
+                            opacidadeLogoEsquerda: 1,
+                          }))
+                        }
+                        className="text-[10px] font-bold text-blue-700 hover:text-blue-900 underline cursor-pointer"
+                      >
+                        Padrão
+                      </button>
+                    </div>
+                    <div>
+                      <label className="flex items-center justify-between text-[11px] font-bold text-slate-700 mb-0.5">
+                        <span>Tamanho</span>
+                        <span className="font-mono">{template.tamanhoLogoEsquerda ?? 90}px</span>
+                      </label>
+                      <input
+                        type="range"
+                        min={36}
+                        max={220}
+                        step={2}
+                        value={template.tamanhoLogoEsquerda ?? 90}
+                        onChange={(e) =>
+                          setTemplate((prev) => ({
+                            ...prev,
+                            tamanhoLogoEsquerda: Number(e.target.value),
+                          }))
+                        }
+                        className="w-full accent-blue-800"
+                      />
+                    </div>
+                    <div>
+                      <label className="flex items-center justify-between text-[11px] font-bold text-slate-700 mb-0.5">
+                        <span>Opacidade</span>
+                        <span className="font-mono">
+                          {Math.round((template.opacidadeLogoEsquerda ?? 1) * 100)}%
+                        </span>
+                      </label>
+                      <input
+                        type="range"
+                        min={0}
+                        max={1}
+                        step={0.05}
+                        value={template.opacidadeLogoEsquerda ?? 1}
+                        onChange={(e) =>
+                          setTemplate((prev) => ({
+                            ...prev,
+                            opacidadeLogoEsquerda: Number(e.target.value),
+                          }))
+                        }
+                        className="w-full accent-blue-800"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-black uppercase tracking-wider text-slate-800">
+                        Brasão Direito
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setTemplate((prev) => ({
+                            ...prev,
+                            tamanhoLogoDireita: 74,
+                            opacidadeLogoDireita: 1,
+                          }))
+                        }
+                        className="text-[10px] font-bold text-blue-700 hover:text-blue-900 underline cursor-pointer"
+                      >
+                        Padrão
+                      </button>
+                    </div>
+                    <div>
+                      <label className="flex items-center justify-between text-[11px] font-bold text-slate-700 mb-0.5">
+                        <span>Tamanho</span>
+                        <span className="font-mono">{template.tamanhoLogoDireita ?? 74}px</span>
+                      </label>
+                      <input
+                        type="range"
+                        min={36}
+                        max={220}
+                        step={2}
+                        value={template.tamanhoLogoDireita ?? 74}
+                        onChange={(e) =>
+                          setTemplate((prev) => ({
+                            ...prev,
+                            tamanhoLogoDireita: Number(e.target.value),
+                          }))
+                        }
+                        className="w-full accent-blue-800"
+                      />
+                    </div>
+                    <div>
+                      <label className="flex items-center justify-between text-[11px] font-bold text-slate-700 mb-0.5">
+                        <span>Opacidade</span>
+                        <span className="font-mono">
+                          {Math.round((template.opacidadeLogoDireita ?? 1) * 100)}%
+                        </span>
+                      </label>
+                      <input
+                        type="range"
+                        min={0}
+                        max={1}
+                        step={0.05}
+                        value={template.opacidadeLogoDireita ?? 1}
+                        onChange={(e) =>
+                          setTemplate((prev) => ({
+                            ...prev,
+                            opacidadeLogoDireita: Number(e.target.value),
+                          }))
+                        }
+                        className="w-full accent-blue-800"
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 {/* Custom Logos & Watermark Uploaders */}
                 <div className="space-y-3 pt-2 border-t border-slate-200">
                   <h4 className="text-xs font-black uppercase tracking-wider text-slate-700">
                     Brasões e Marcas d&apos;Água Personalizados
                   </h4>
 
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                      Legenda do Brasão Direito
+                  <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                    <label className="flex items-center gap-2 text-[11px] font-bold text-slate-700 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={
+                          template.logoDireitaUrl
+                            ? template.mostrarLegendaLogoDireita === true
+                            : template.mostrarLegendaLogoDireita !== false
+                        }
+                        onChange={(e) =>
+                          setTemplate((prev) => ({
+                            ...prev,
+                            mostrarLegendaLogoDireita: e.target.checked,
+                          }))
+                        }
+                        className="rounded border-slate-300"
+                      />
+                      <span>Exibir legenda de texto abaixo do Brasão Direito</span>
                     </label>
                     <input
                       type="text"
@@ -2807,8 +3010,12 @@ export default function CertificadosPage() {
                           logoDireitaTexto: e.target.value,
                         }))
                       }
-                      className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                      placeholder="Ex: MARINHA DO BRASIL (ou deixe vazio)"
+                      className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs"
                     />
+                    <p className="text-[10px] text-slate-500">
+                      Desmarcada automaticamente se você enviar um brasão próprio que já contenha o texto na imagem, evitando duplicação.
+                    </p>
                   </div>
 
                   {[
@@ -2860,7 +3067,16 @@ export default function CertificadosPage() {
                         <button
                           type="button"
                           onClick={() =>
-                            setTemplate((prev) => ({ ...prev, [item.field]: item.defaultVal }))
+                            setTemplate((prev) => ({
+                              ...prev,
+                              [item.field]: item.defaultVal,
+                              ...(item.field === 'logoDireitaUrl'
+                                ? {
+                                    mostrarLegendaLogoDireita: true,
+                                    logoDireitaTexto: prev.logoDireitaTexto || 'MARINHA DO BRASIL',
+                                  }
+                                : {}),
+                            }))
                           }
                           className="p-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-600 cursor-pointer"
                           title="Restaurar padrão"

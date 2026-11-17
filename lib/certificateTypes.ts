@@ -69,6 +69,11 @@ export interface CertificateTemplateConfig {
   logoEsquerdaUrl: string;
   logoDireitaUrl: string; // '' uses built-in Marinha do Brasil crest
   logoDireitaTexto: string;
+  mostrarLegendaLogoDireita?: boolean;
+  tamanhoLogoEsquerda?: number;
+  opacidadeLogoEsquerda?: number;
+  tamanhoLogoDireita?: number;
+  opacidadeLogoDireita?: number;
   marcaDaguaFrenteUrl: string;
   marcaDaguaVersoUrl: string;
   opacidadeMarcaDaguaFrente: number;
@@ -271,6 +276,11 @@ export function createPresetTemplate(
     logoEsquerdaUrl: '/assets/aistudio/imagem_01_2da3aec8.png',
     logoDireitaUrl: '',
     logoDireitaTexto: 'MARINHA DO BRASIL',
+    mostrarLegendaLogoDireita: true,
+    tamanhoLogoEsquerda: 90,
+    opacidadeLogoEsquerda: 1,
+    tamanhoLogoDireita: 74,
+    opacidadeLogoDireita: 1,
     marcaDaguaFrenteUrl: '/assets/aistudio/WhatsApp_Image_2026-02-11_at_22.02.18_8edf921e.jpeg',
     marcaDaguaVersoUrl: '/assets/aistudio/imagem_01_2da3aec8.png',
     opacidadeMarcaDaguaFrente: 0.24,

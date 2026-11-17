@@ -33,12 +33,21 @@ function MarinhaBrasilCrest({
   customUrl,
   label = 'MARINHA DO BRASIL',
   compact = false,
+  size,
+  opacity = 1,
 }: {
   customUrl?: string;
   label?: string;
   compact?: boolean;
+  size?: number;
+  opacity?: number;
 }) {
-  const size = compact ? 54 : 74;
+  const resolvedSize = size ?? (compact ? 54 : 74);
+  const labelFontSize = compact
+    ? '9px'
+    : `${Math.max(9, Math.min(16, Math.round(resolvedSize * 0.148)))}px`;
+  const maxLabelWidth = compact ? '95px' : `${Math.max(110, Math.round(resolvedSize * 1.48))}px`;
+
   return (
     <div
       style={{
@@ -47,25 +56,26 @@ function MarinhaBrasilCrest({
         alignItems: 'center',
         justifyContent: 'center',
         gap: compact ? '3px' : '5px',
+        opacity,
       }}
     >
       {customUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={customUrl}
-          alt={label}
+          alt={label || 'Brasão Marinha do Brasil'}
           crossOrigin="anonymous"
           draggable={false}
           style={{
-            width: `${size}px`,
-            height: `${size}px`,
+            width: `${resolvedSize}px`,
+            height: `${resolvedSize}px`,
             objectFit: 'contain',
           }}
         />
       ) : (
         <svg
-          width={size}
-          height={size}
+          width={resolvedSize}
+          height={resolvedSize}
           viewBox="0 0 120 120"
           xmlns="http://www.w3.org/2000/svg"
           aria-label="Brasão Marinha do Brasil"
@@ -108,14 +118,14 @@ function MarinhaBrasilCrest({
       {label && (
         <div
           style={{
-            fontSize: compact ? '9px' : '11px',
+            fontSize: labelFontSize,
             fontWeight: 800,
             letterSpacing: '0.06em',
             color: '#071b3b',
             fontFamily: 'Arial, Helvetica, sans-serif',
             textAlign: 'center',
             lineHeight: 1.15,
-            maxWidth: compact ? '95px' : '110px',
+            maxWidth: maxLabelWidth,
           }}
         >
           {label.split(' ').length > 2 ? (
@@ -510,6 +520,19 @@ export function CertificateSheet({
   const backWmWidth = Math.round(backWmBase * (backWmScaleW / 100));
   const backWmHeight = Math.round(backWmBase * (backWmScaleH / 100));
 
+  // Crest sizes, opacities & right caption anti-duplication
+  const leftLogoSize = template.tamanhoLogoEsquerda ?? 90;
+  const leftLogoOpacity = template.opacidadeLogoEsquerda ?? 1;
+  const rightLogoSize = template.tamanhoLogoDireita ?? 74;
+  const rightLogoOpacity = template.opacidadeLogoDireita ?? 1;
+  const hasCustomRightLogo = Boolean(template.logoDireitaUrl && template.logoDireitaUrl.trim());
+  const showRightCaption = hasCustomRightLogo
+    ? template.mostrarLegendaLogoDireita === true
+    : template.mostrarLegendaLogoDireita !== false;
+  const rightCaptionText = showRightCaption
+    ? (template.logoDireitaTexto ?? 'MARINHA DO BRASIL').trim()
+    : '';
+
   const useOriginalFrame = template.usarMolduraOriginal !== false;
 
   const outerWrapperStyle: React.CSSProperties =
@@ -637,6 +660,7 @@ export function CertificateSheet({
                 alignItems: 'flex-start',
                 justifyContent: 'space-between',
                 padding: '0 24px',
+                minHeight: '96px',
               }}
             >
               {(() => {
@@ -649,8 +673,8 @@ export function CertificateSheet({
                       left: `${template.logoEsquerdaOffsetX ?? 0}px`,
                       top: `${template.logoEsquerdaOffsetY ?? 0}px`,
                       zIndex: activeDrag === 'logoEsquerda' ? 20 : 12,
-                      width: '92px',
-                      height: '96px',
+                      minWidth: '48px',
+                      minHeight: '48px',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -665,9 +689,10 @@ export function CertificateSheet({
                         crossOrigin="anonymous"
                         draggable={false}
                         style={{
-                          width: '86px',
-                          height: '92px',
+                          width: `${leftLogoSize}px`,
+                          height: `${leftLogoSize}px`,
                           objectFit: 'contain',
+                          opacity: leftLogoOpacity,
                         }}
                       />
                     )}
@@ -690,7 +715,9 @@ export function CertificateSheet({
                   >
                     <MarinhaBrasilCrest
                       customUrl={template.logoDireitaUrl}
-                      label={template.logoDireitaTexto || 'MARINHA DO BRASIL'}
+                      label={rightCaptionText}
+                      size={rightLogoSize}
+                      opacity={rightLogoOpacity}
                     />
                   </div>
                 );
@@ -972,6 +999,7 @@ export function CertificateSheet({
                       width: '66px',
                       height: '70px',
                       objectFit: 'contain',
+                      opacity: leftLogoOpacity,
                     }}
                   />
                 )}
@@ -997,8 +1025,9 @@ export function CertificateSheet({
 
               <MarinhaBrasilCrest
                 customUrl={template.logoDireitaUrl}
-                label={template.logoDireitaTexto || 'MARINHA DO BRASIL'}
+                label={rightCaptionText}
                 compact={true}
+                opacity={rightLogoOpacity}
               />
             </div>
 
