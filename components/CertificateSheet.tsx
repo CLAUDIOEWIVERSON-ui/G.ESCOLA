@@ -558,7 +558,12 @@ export function CertificateSheet({
           {useOriginalFrame ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={template.molduraFrenteUrl || '/assets/certificado-moldura-frente.png'}
+              src={
+                !template.molduraFrenteUrl ||
+                template.molduraFrenteUrl === '/assets/certificado-moldura-frente.png'
+                  ? '/assets/certificado-moldura-frente.png?v=hd2'
+                  : template.molduraFrenteUrl
+              }
               alt=""
               crossOrigin="anonymous"
               style={{
