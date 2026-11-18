@@ -1779,49 +1779,6 @@ export default function CertificadosPage() {
             </p>
           </div>
         </div>
-
-        {/* Preset Switchers + Export Actions */}
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => handleApplyPreset('formacao_marinheiros')}
-            className={cn(
-              'px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5',
-              template.scope === 'formacao_marinheiros'
-                ? 'bg-blue-900 text-white border-blue-950 shadow-xs'
-                : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-            )}
-          >
-            <Award size={14} />
-            <span>Formação de Marinheiros</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleApplyPreset('expedito')}
-            className={cn(
-              'px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5',
-              template.scope === 'expedito'
-                ? 'bg-amber-600 text-white border-amber-700 shadow-xs'
-                : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-            )}
-          >
-            <Layers size={14} />
-            <span>Cursos Expeditos</span>
-          </button>
-
-          {canEdit && (
-            <button
-              type="button"
-              onClick={handleSaveTemplate}
-              disabled={savingTemplate}
-              className="px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
-            >
-              {savingTemplate ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-              <span>Salvar Modelo</span>
-            </button>
-          )}
-        </div>
       </div>
 
       {isConvidado && (
@@ -1902,15 +1859,6 @@ export default function CertificadosPage() {
                 <Download size={14} />
               )}
               <span>Baixar PDF (Frente e Verso)</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handlePrintCertificate}
-              className="px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
-            >
-              <Printer size={14} />
-              <span>Imprimir</span>
             </button>
           </div>
         </div>
