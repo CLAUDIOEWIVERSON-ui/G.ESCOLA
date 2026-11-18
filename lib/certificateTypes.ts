@@ -30,6 +30,7 @@ export interface CertificateTemplateConfig {
   // Front (Frente)
   titulo: string;
   textoCorpo: string;
+  textoCorpoPorAluno?: Record<string, string>;
   textoPeriodoInicio: string;
   textoPeriodoFim: string;
   localEmissao: string;
@@ -118,6 +119,7 @@ export interface CertificateStudentContext {
   dataFimExtenso: string;
   mediaFinalNumero: number | null;
   disciplinas: CertificateDisciplineRow[];
+  textoCorpoPersonalizado?: string;
 }
 
 const MONTHS_PT = [
@@ -246,6 +248,7 @@ export function createPresetTemplate(
     textoCorpo: isExpedito
       ? 'É outorgado o presente certificado ao {{ALUNO}}, por haver concluído com aproveitamento o {{CURSO}} (Curso Expedito), realizado no âmbito da cooperação entre a Guarda Costeira de São Tomé e Príncipe e a Missão de Assessoria Naval do Brasil, no período de {{DATA_INICIO}} a {{DATA_FIM}}.'
       : 'É outorgado o presente certificado ao {{ALUNO}}, por haver concluído o {{CURSO}}, realizado no âmbito da cooperação entre a Guarda Costeira de São Tomé e Príncipe e a Missão de Assessoria Naval do Brasil, no período de {{DATA_INICIO}} a {{DATA_FIM}}.',
+    textoCorpoPorAluno: {},
     textoPeriodoInicio: '08 de outubro',
     textoPeriodoFim: '10 de dezembro de 2026',
     localEmissao: 'São Tomé e Príncipe',

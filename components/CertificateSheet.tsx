@@ -517,7 +517,10 @@ export function CertificateSheet({
   };
 
   // Ensure literal all-caps copies of the course or student name in body text also use Title Case
-  let normalizedBodyTemplate = template.textoCorpo || '';
+  let normalizedBodyTemplate =
+    (student.textoCorpoPersonalizado !== undefined
+      ? student.textoCorpoPersonalizado
+      : template.textoCorpo) || '';
   const upperCourseLiteral = rawCourseName.toLocaleUpperCase('pt-BR');
   if (
     upperCourseLiteral.length >= 6 &&

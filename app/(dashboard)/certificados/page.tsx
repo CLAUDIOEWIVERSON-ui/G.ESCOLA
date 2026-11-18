@@ -38,6 +38,7 @@ import {
   Move,
   Link2,
   Unlink,
+  Pencil,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase/client';
@@ -787,6 +788,7 @@ export default function CertificadosPage() {
         scope: targetScope,
         turmaId: selectedTurmaObj.id,
         cursoId: selectedTurmaObj.curso_id || null,
+        textoCorpoPorAluno: {},
         textoPeriodoInicio: period.inicio,
         textoPeriodoFim: period.fim,
         dataEmissaoExtenso: period.fim || formatDateExtensoPT(new Date()),
@@ -846,6 +848,13 @@ export default function CertificadosPage() {
           ? buildStudentRowsFromGrades(alunoObj.id)
           : template.disciplinas;
 
+      const customBodyText =
+        alunoObj?.id &&
+        template.textoCorpoPorAluno &&
+        Object.prototype.hasOwnProperty.call(template.textoCorpoPorAluno, alunoObj.id)
+          ? template.textoCorpoPorAluno[alunoObj.id]
+          : undefined;
+
       return {
         id: alunoObj.id,
         nomeCompleto: fullName,
@@ -861,6 +870,7 @@ export default function CertificadosPage() {
         dataFimExtenso: template.textoPeriodoFim,
         mediaFinalNumero: null,
         disciplinas: studentRows,
+        textoCorpoPersonalizado: customBodyText,
       };
     },
     [
@@ -872,6 +882,7 @@ export default function CertificadosPage() {
       template.textoPeriodoInicio,
       template.textoPeriodoFim,
       template.disciplinas,
+      template.textoCorpoPorAluno,
       useTurmaStudentGrades,
       buildStudentRowsFromGrades,
     ]
@@ -886,6 +897,106 @@ export default function CertificadosPage() {
     () => buildStudentContext(selectedStudentObj),
     [buildStudentContext, selectedStudentObj]
   );
+
+  const hasCustomBodyForStudent = useCallback(
+    (studentId?: string | null) =>
+      Boolean(
+        studentId &&
+          template.textoCorpoPorAluno &&
+          Object.prototype.hasOwnProperty.call(template.textoCorpoPorAluno, studentId)
+      ),
+    [template.textoCorpoPorAluno]
+  );
+
+  const isEditingIndividualBody = Boolean(
+    selectedStudentObj?.id && hasCustomBodyForStudent(selectedStudentObj.id)
+  );
+
+  const activeBodyTextValue =
+    isEditingIndividualBody && selectedStudentObj?.id
+      ? (template.textoCorpoPorAluno?.[selectedStudentObj.id] ?? '')
+      : template.textoCorpo;
+
+  const customBodyStudentsCount = useMemo(() => {
+    if (!template.textoCorpoPorAluno) return 0;
+    if (turmaStudents.length > 0) {
+      const validIds = new Set(turmaStudents.map((s: any) => s.id));
+      return Object.keys(template.textoCorpoPorAluno).filter((id) => validIds.has(id)).length;
+    }
+    return Object.keys(template.textoCorpoPorAluno).length;
+  }, [template.textoCorpoPorAluno, turmaStudents]);
+
+  const updateActiveBodyText = useCallback(
+    (updater: string | ((current: string) => string)) => {
+      setTemplate((prev) => {
+        const studentId = selectedStudentObj?.id;
+        const hasCustom =
+          Boolean(studentId) &&
+          Boolean(prev.textoCorpoPorAluno) &&
+          Object.prototype.hasOwnProperty.call(prev.textoCorpoPorAluno, studentId as string);
+
+        if (hasCustom && studentId) {
+          const current = prev.textoCorpoPorAluno?.[studentId] ?? '';
+          const nextValue = typeof updater === 'function' ? updater(current) : updater;
+          return {
+            ...prev,
+            textoCorpoPorAluno: {
+              ...(prev.textoCorpoPorAluno || {}),
+              [studentId]: nextValue,
+            },
+          };
+        }
+
+        const current = prev.textoCorpo || '';
+        const nextValue = typeof updater === 'function' ? updater(current) : updater;
+        return {
+          ...prev,
+          textoCorpo: nextValue,
+        };
+      });
+    },
+    [selectedStudentObj?.id]
+  );
+
+  const handleEnableIndividualBody = useCallback(() => {
+    if (!selectedStudentObj?.id) return;
+    const studentId = selectedStudentObj.id;
+    setTemplate((prev) => {
+      if (
+        prev.textoCorpoPorAluno &&
+        Object.prototype.hasOwnProperty.call(prev.textoCorpoPorAluno, studentId)
+      ) {
+        return prev;
+      }
+      return {
+        ...prev,
+        textoCorpoPorAluno: {
+          ...(prev.textoCorpoPorAluno || {}),
+          [studentId]: prev.textoCorpo || '',
+        },
+      };
+    });
+    requestAnimationFrame(() => {
+      bodyTextareaRef.current?.focus();
+    });
+  }, [selectedStudentObj?.id]);
+
+  const handleRestoreDefaultBodyForStudent = useCallback(() => {
+    if (!selectedStudentObj?.id) return;
+    const studentId = selectedStudentObj.id;
+    setTemplate((prev) => {
+      if (!prev.textoCorpoPorAluno || !Object.prototype.hasOwnProperty.call(prev.textoCorpoPorAluno, studentId)) {
+        return prev;
+      }
+      const nextMap = { ...prev.textoCorpoPorAluno };
+      delete nextMap[studentId];
+      return {
+        ...prev,
+        textoCorpoPorAluno: nextMap,
+      };
+    });
+    toast.success('Texto padrão da turma restaurado para este aluno.');
+  }, [selectedStudentObj?.id]);
 
   // Sync template.disciplinas and refresh fresh Boletim grades from current student/turma
   const handleSyncDisciplinesFromTurma = async () => {
@@ -1595,20 +1706,14 @@ export default function CertificadosPage() {
   };
 
   const insertPlaceholder = (token: string) => {
-    setTemplate((prev) => ({
-      ...prev,
-      textoCorpo: `${prev.textoCorpo}${prev.textoCorpo.endsWith(' ') ? '' : ' '}${token}`,
-    }));
+    updateActiveBodyText((prevText) => `${prevText}${prevText.endsWith(' ') ? '' : ' '}${token}`);
   };
 
   const applyInlineBodyFormat = (marker: '**' | '*' | '***') => {
     const ta = bodyTextareaRef.current;
-    const currentText = template.textoCorpo || '';
+    const currentText = activeBodyTextValue || '';
     if (!ta) {
-      setTemplate((prev) => ({
-        ...prev,
-        textoCorpo: `${prev.textoCorpo} ${marker}trecho destacado${marker}`,
-      }));
+      updateActiveBodyText((prevText) => `${prevText} ${marker}trecho destacado${marker}`);
       return;
     }
 
@@ -1620,7 +1725,7 @@ export default function CertificadosPage() {
       const sample = marker === '**' ? 'trecho em negrito' : marker === '*' ? 'trecho em itálico' : 'trecho destacado';
       const insertion = `${marker}${sample}${marker}`;
       const updated = `${currentText.slice(0, start)}${insertion}${currentText.slice(end)}`;
-      setTemplate((prev) => ({ ...prev, textoCorpo: updated }));
+      updateActiveBodyText(updated);
       requestAnimationFrame(() => {
         ta.focus();
         ta.setSelectionRange(start + marker.length, start + marker.length + sample.length);
@@ -1636,7 +1741,7 @@ export default function CertificadosPage() {
     }
 
     const updated = `${currentText.slice(0, start)}${replacement}${currentText.slice(end)}`;
-    setTemplate((prev) => ({ ...prev, textoCorpo: updated }));
+    updateActiveBodyText(updated);
     requestAnimationFrame(() => {
       ta.focus();
       ta.setSelectionRange(start, start + replacement.length);
@@ -1884,11 +1989,20 @@ export default function CertificadosPage() {
         {selectedTurmaId && (
           <div className="pt-3 border-t border-slate-200 space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Users size={15} className="text-blue-700" />
                 <span className="text-xs font-bold text-slate-800">
                   Alunos da Turma ({turmaStudents.length})
                 </span>
+                {customBodyStudentsCount > 0 && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-amber-800 text-[10px] font-bold">
+                    <Pencil size={10} />
+                    <span>
+                      {customBodyStudentsCount}{' '}
+                      {customBodyStudentsCount === 1 ? 'com texto individual' : 'com texto individual'}
+                    </span>
+                  </span>
+                )}
                 <label className="inline-flex items-center gap-1.5 ml-3 text-xs text-slate-600 cursor-pointer">
                   <input
                     type="checkbox"
@@ -1972,6 +2086,7 @@ export default function CertificadosPage() {
                 {filteredTurmaStudents.map((st: any, idx: number) => {
                   const isActive = st.id === selectedStudentId;
                   const isBatchChecked = batchSelectedIds.includes(st.id);
+                  const hasCustomText = hasCustomBodyForStudent(st.id);
                   const display = st.posto_graduacao
                     ? `${st.posto_graduacao} ${st.nome}`
                     : st.nome;
@@ -2002,9 +2117,24 @@ export default function CertificadosPage() {
                       <button
                         type="button"
                         onClick={() => setSelectedStudentId(st.id)}
-                        className="font-semibold cursor-pointer text-left max-w-[210px] truncate"
+                        className="font-semibold cursor-pointer text-left max-w-[210px] truncate flex items-center gap-1"
                       >
-                        {idx + 1}. {display}
+                        <span className="truncate">
+                          {idx + 1}. {display}
+                        </span>
+                        {hasCustomText && (
+                          <span
+                            title="Este aluno possui texto individual personalizado"
+                            className={cn(
+                              'inline-flex items-center justify-center p-0.5 rounded shrink-0',
+                              isActive
+                                ? 'bg-amber-400 text-slate-950'
+                                : 'bg-amber-100 text-amber-800 border border-amber-200'
+                            )}
+                          >
+                            <Pencil size={10} />
+                          </span>
+                        )}
                       </button>
                     </div>
                   );
@@ -2199,14 +2329,91 @@ export default function CertificadosPage() {
                     </div>
                   </div>
 
+                  {selectedStudentObj && (
+                    <div
+                      className={cn(
+                        'mb-2 p-2.5 rounded-xl border flex flex-col gap-2 transition-colors',
+                        isEditingIndividualBody
+                          ? 'bg-amber-50/90 border-amber-300'
+                          : 'bg-slate-50 border-slate-200'
+                      )}
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center gap-1 rounded-lg bg-white p-0.5 border border-slate-200">
+                          <button
+                            type="button"
+                            onClick={handleRestoreDefaultBodyForStudent}
+                            className={cn(
+                              'px-2.5 py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer',
+                              !isEditingIndividualBody
+                                ? 'bg-blue-900 text-white shadow-2xs'
+                                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                            )}
+                          >
+                            Texto Padrão da Turma
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleEnableIndividualBody}
+                            className={cn(
+                              'px-2.5 py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1',
+                              isEditingIndividualBody
+                                ? 'bg-amber-600 text-white shadow-2xs'
+                                : 'text-slate-700 hover:text-slate-900 hover:bg-amber-50'
+                            )}
+                          >
+                            <Pencil size={10} />
+                            <span>Texto Individual deste Aluno</span>
+                          </button>
+                        </div>
+
+                        {isEditingIndividualBody && (
+                          <button
+                            type="button"
+                            onClick={handleRestoreDefaultBodyForStudent}
+                            className="px-2 py-1 rounded-lg bg-white hover:bg-amber-100 border border-amber-300 text-amber-900 text-[10px] font-bold flex items-center gap-1 cursor-pointer"
+                            title="Descartar texto individual e voltar a usar o texto padrão da turma para este aluno"
+                          >
+                            <RotateCcw size={10} />
+                            <span>Voltar ao padrão</span>
+                          </button>
+                        )}
+                      </div>
+
+                      <p className="text-[10px] leading-snug text-slate-600">
+                        {isEditingIndividualBody ? (
+                          <>
+                            Editando texto exclusivo de{' '}
+                            <strong className="text-amber-950">
+                              {activeStudentContext.nomeExibicao}
+                            </strong>
+                            . Outros alunos da turma continuam com o texto padrão.
+                          </>
+                        ) : (
+                          <>
+                            Usando o texto padrão para{' '}
+                            <strong className="text-slate-800">
+                              {activeStudentContext.nomeExibicao}
+                            </strong>
+                            . Clique em <strong>Texto Individual deste Aluno</strong> caso queira
+                            personalizar só este certificado.
+                          </>
+                        )}
+                      </p>
+                    </div>
+                  )}
+
                   <textarea
                     ref={bodyTextareaRef}
                     rows={5}
-                    value={template.textoCorpo}
-                    onChange={(e) =>
-                      setTemplate((prev) => ({ ...prev, textoCorpo: e.target.value }))
-                    }
-                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs leading-relaxed"
+                    value={activeBodyTextValue}
+                    onChange={(e) => updateActiveBodyText(e.target.value)}
+                    className={cn(
+                      'w-full p-3 border rounded-xl text-xs leading-relaxed transition-colors',
+                      isEditingIndividualBody
+                        ? 'bg-amber-50/40 border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-500/20'
+                        : 'bg-slate-50 border-slate-200'
+                    )}
                   />
                   <div className="flex flex-wrap items-center justify-between gap-2 mt-1.5">
                     <p className="text-[10px] text-slate-500">
