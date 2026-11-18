@@ -65,7 +65,7 @@ function MarinhaBrasilCrest({
       {customUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={customUrl}
+          src={resolveAssetCacheSrc(customUrl)}
           alt={label || 'Brasão Marinha do Brasil'}
           crossOrigin="anonymous"
           draggable={false}
@@ -300,6 +300,20 @@ function NauticalOrnateFrame({ borderColor = '#52525b' }: { borderColor?: string
       </g>
     </svg>
   );
+}
+
+function resolveAssetCacheSrc(url: string | undefined): string {
+  if (!url) return '';
+  if (url === '/assets/certificado-moldura-frente.png') {
+    return '/assets/certificado-moldura-frente.png?v=hd3';
+  }
+  if (url === '/assets/aistudio/imagem_01_2da3aec8.png') {
+    return '/assets/aistudio/imagem_01_2da3aec8.png?v=clean2';
+  }
+  if (url === '/assets/aistudio/WhatsApp_Image_2026-02-11_at_22.02.18_8edf921e.jpeg') {
+    return '/assets/aistudio/WhatsApp_Image_2026-02-11_at_22.02.18_8edf921e.jpeg?v=clean2';
+  }
+  return url;
 }
 
 export function CertificateSheet({
@@ -646,12 +660,9 @@ export function CertificateSheet({
           {useOriginalFrame ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={
-                !template.molduraFrenteUrl ||
-                template.molduraFrenteUrl === '/assets/certificado-moldura-frente.png'
-                  ? '/assets/certificado-moldura-frente.png?v=hd2'
-                  : template.molduraFrenteUrl
-              }
+              src={resolveAssetCacheSrc(
+                template.molduraFrenteUrl || '/assets/certificado-moldura-frente.png'
+              )}
               alt=""
               crossOrigin="anonymous"
               style={{
@@ -688,7 +699,7 @@ export function CertificateSheet({
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={template.marcaDaguaFrenteUrl}
+                src={resolveAssetCacheSrc(template.marcaDaguaFrenteUrl)}
                 alt="Marca d'água"
                 crossOrigin="anonymous"
                 style={{
@@ -749,7 +760,7 @@ export function CertificateSheet({
                     {template.logoEsquerdaUrl && (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={template.logoEsquerdaUrl}
+                        src={resolveAssetCacheSrc(template.logoEsquerdaUrl)}
                         alt="Brasão Guarda Costeira"
                         crossOrigin="anonymous"
                         draggable={false}
@@ -818,6 +829,8 @@ export function CertificateSheet({
                       fontFamily: titleFontCss,
                       textAlign: 'center',
                       textTransform: 'uppercase',
+                      textShadow: 'none',
+                      boxShadow: 'none',
                       ...drag.style,
                     }}
                   >
@@ -841,6 +854,7 @@ export function CertificateSheet({
                       left: `${template.textoOffsetX ?? 0}px`,
                       top: `${template.textoOffsetY ?? 0}px`,
                       zIndex: activeDrag === 'texto' ? 20 : 12,
+                      textShadow: 'none',
                       ...drag.style,
                     }}
                   >
@@ -853,6 +867,7 @@ export function CertificateSheet({
                         fontFamily: bodyFontCss,
                         color: '#0f172a',
                         textAlign: template.alinhamentoTexto || 'left',
+                        textShadow: 'none',
                       }}
                     >
                       {bodySegments.map((seg, i) => (
@@ -1029,19 +1044,21 @@ export function CertificateSheet({
               overflow: 'hidden',
               display: 'flex',
               flexDirection: 'column',
+              backgroundColor: '#ffffff',
             }}
           >
-            {/* Back Header */}
+            {/* Back Header (pure white #ffffff isolation so watermark/shadows never bleed onto title) */}
             <div
               style={{
                 position: 'relative',
-                zIndex: 10,
+                zIndex: 20,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 marginBottom: '6px',
-                padding: '0 8px',
+                padding: '2px 8px 4px 8px',
                 gap: '16px',
+                backgroundColor: '#ffffff',
               }}
             >
               <div
@@ -1052,12 +1069,13 @@ export function CertificateSheet({
                   alignItems: 'center',
                   justifyContent: 'center',
                   flexShrink: 0,
+                  backgroundColor: '#ffffff',
                 }}
               >
                 {template.logoEsquerdaUrl && (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={template.logoEsquerdaUrl}
+                    src={resolveAssetCacheSrc(template.logoEsquerdaUrl)}
                     alt="Brasão Guarda Costeira"
                     crossOrigin="anonymous"
                     style={{
@@ -1083,20 +1101,26 @@ export function CertificateSheet({
                   letterSpacing: '0.02em',
                   textTransform: 'uppercase',
                   lineHeight: 1.15,
+                  backgroundColor: '#ffffff',
+                  textShadow: 'none',
+                  boxShadow: 'none',
+                  padding: '2px 10px',
                 }}
               >
                 {backTitleResolved}
               </h2>
 
-              <MarinhaBrasilCrest
-                customUrl={template.logoDireitaUrl}
-                label={rightCaptionText}
-                compact={true}
-                opacity={rightLogoOpacity}
-              />
+              <div style={{ backgroundColor: '#ffffff', flexShrink: 0 }}>
+                <MarinhaBrasilCrest
+                  customUrl={template.logoDireitaUrl}
+                  label={rightCaptionText}
+                  compact={true}
+                  opacity={rightLogoOpacity}
+                />
+              </div>
             </div>
 
-            {/* Disciplines Table Wrapper (Watermark distributed strictly across the table sheet area like original, expandable freely) */}
+            {/* Disciplines Table Wrapper (Watermark strictly clipped inside table area below title) */}
             <div
               style={{
                 position: 'relative',
@@ -1104,6 +1128,8 @@ export function CertificateSheet({
                 flex: 1,
                 display: 'flex',
                 flexDirection: 'column',
+                overflow: 'hidden',
+                backgroundColor: '#ffffff',
               }}
             >
               {/* Watermark distributed across table area from DISCIPLINAS down to MÉDIA FINAL */}
@@ -1118,13 +1144,14 @@ export function CertificateSheet({
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
+                    overflow: 'hidden',
                     pointerEvents: 'none',
                     zIndex: 0,
                   }}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={template.marcaDaguaVersoUrl}
+                    src={resolveAssetCacheSrc(template.marcaDaguaVersoUrl)}
                     alt="Marca d'água Verso"
                     crossOrigin="anonymous"
                     style={{
@@ -1149,6 +1176,7 @@ export function CertificateSheet({
                   fontFamily: versoFontCss,
                   fontStyle: versoItalic ? 'italic' : 'normal',
                   color: '#0f172a',
+                  textShadow: 'none',
                 }}
               >
                 <thead>
