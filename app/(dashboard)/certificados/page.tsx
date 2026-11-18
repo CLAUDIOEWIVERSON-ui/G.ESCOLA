@@ -30,6 +30,8 @@ import {
   Bold,
   Italic,
   Maximize2,
+  Minimize2,
+  X,
   AlignLeft,
   AlignCenter,
   AlignRight,
@@ -107,6 +109,13 @@ export default function CertificadosPage() {
   const [previewMode, setPreviewMode] = useState<'both' | 'front' | 'back'>('both');
   const [manualZoom, setManualZoom] = useState<number>(100);
   const [dragMoveEnabled, setDragMoveEnabled] = useState<boolean>(false);
+  const [fullscreenPreview, setFullscreenPreview] = useState<boolean>(false);
+  const [fullscreenLayout, setFullscreenLayout] = useState<'stacked' | 'sideBySide'>('stacked');
+  const [fullscreenZoom, setFullscreenZoom] = useState<number>(100);
+  const [viewportSize, setViewportSize] = useState<{ w: number; h: number }>({
+    w: 1440,
+    h: 900,
+  });
   const [autoFitWidth, setAutoFitWidth] = useState<number>(720);
   const previewContainerRef = useRef<HTMLDivElement | null>(null);
   const bodyTextareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -171,8 +180,38 @@ export default function CertificadosPage() {
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    if (!fullscreenPreview) return;
+    const updateSize = () =>
+      setViewportSize({ w: window.innerWidth, h: window.innerHeight });
+    updateSize();
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setFullscreenPreview(false);
+    };
+    window.addEventListener('resize', updateSize);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('resize', updateSize);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [fullscreenPreview]);
+
   const baseScale = Math.min(1, Math.max(0.28, autoFitWidth / 1123));
   const effectiveScale = Math.min(1.15, Math.max(0.25, baseScale * (manualZoom / 100)));
+  const fullscreenBaseScale =
+    previewMode === 'both' && fullscreenLayout === 'sideBySide'
+      ? Math.min(
+          1.0,
+          Math.max(0.28, Math.min((viewportSize.w - 88) / (1123 * 2 + 24), (viewportSize.h - 170) / 794))
+        )
+      : Math.min(
+          1.25,
+          Math.max(0.35, Math.min((viewportSize.w - 64) / 1123, (viewportSize.h - 155) / 794))
+        );
+  const fullscreenEffectiveScale = Math.min(
+    1.35,
+    Math.max(0.25, fullscreenBaseScale * (fullscreenZoom / 100))
+  );
 
   // Load saved templates on mount
   const loadSavedTemplates = useCallback(async () => {
@@ -1733,6 +1772,19 @@ export default function CertificadosPage() {
 
           {/* Quick Actions */}
           <div className="md:col-span-4 flex flex-wrap items-center gap-2 justify-end">
+            <button
+              type="button"
+              onClick={() => {
+                setFullscreenZoom(100);
+                setFullscreenPreview(true);
+              }}
+              className="px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
+              title="Visualizar frente e verso em tela toda"
+            >
+              <Maximize2 size={14} />
+              <span>Tela Toda</span>
+            </button>
+
             <button
               type="button"
               onClick={handleDownloadIndividualPDF}
@@ -4135,6 +4187,19 @@ export default function CertificadosPage() {
                 />
                 <span className="font-mono text-[11px] font-bold w-9">{manualZoom}%</span>
               </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setFullscreenZoom(100);
+                  setFullscreenPreview(true);
+                }}
+                className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs"
+                title="Abrir visualização do certificado em tela toda (Frente e Verso)"
+              >
+                <Maximize2 size={13} />
+                <span>Tela Toda</span>
+              </button>
             </div>
           </div>
 
@@ -4188,6 +4253,212 @@ export default function CertificadosPage() {
           </div>
         </div>
       </div>
+
+      {/* Fullscreen Finalization Preview Overlay (Frente e Verso em Tela Toda) */}
+      {fullscreenPreview && (
+        <div
+          className="fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-sm flex flex-col"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Visualização em Tela Toda do Certificado"
+        >
+          <div className="bg-slate-900/95 border-b border-slate-800 px-4 py-3 flex flex-wrap items-center justify-between gap-3 text-white shrink-0">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-8 h-8 rounded-xl bg-blue-600/20 border border-blue-500/30 text-blue-300 flex items-center justify-center shrink-0">
+                <Award size={16} />
+              </div>
+              <div className="min-w-0">
+                <div className="text-xs font-black uppercase tracking-wider text-white truncate">
+                  {activeStudentContext.nomeExibicao}
+                </div>
+                <div className="text-[11px] text-slate-400 truncate">
+                  {activeStudentContext.cursoNome}
+                  {activeStudentContext.turmaNome ? ` • ${activeStudentContext.turmaNome}` : ''}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-1 bg-slate-800 p-1 rounded-xl border border-slate-700">
+                {[
+                  { id: 'both', label: 'Frente e Verso' },
+                  { id: 'front', label: 'Frente' },
+                  { id: 'back', label: 'Verso' },
+                ].map((m) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => setPreviewMode(m.id as 'both' | 'front' | 'back')}
+                    className={cn(
+                      'px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer',
+                      previewMode === m.id
+                        ? 'bg-white text-slate-900 shadow-xs'
+                        : 'text-slate-300 hover:text-white hover:bg-slate-700'
+                    )}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+
+              {previewMode === 'both' && (
+                <div className="flex items-center gap-1 bg-slate-800 p-1 rounded-xl border border-slate-700">
+                  <button
+                    type="button"
+                    onClick={() => setFullscreenLayout('stacked')}
+                    className={cn(
+                      'px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer',
+                      fullscreenLayout === 'stacked'
+                        ? 'bg-blue-600 text-white'
+                        : 'text-slate-300 hover:text-white hover:bg-slate-700'
+                    )}
+                  >
+                    Em Pilha
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFullscreenLayout('sideBySide')}
+                    className={cn(
+                      'px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer',
+                      fullscreenLayout === 'sideBySide'
+                        ? 'bg-blue-600 text-white'
+                        : 'text-slate-300 hover:text-white hover:bg-slate-700'
+                    )}
+                  >
+                    Lado a Lado
+                  </button>
+                </div>
+              )}
+
+              {turmaStudents.length > 1 && (
+                <div className="flex items-center gap-1 bg-slate-800 border border-slate-700 rounded-xl px-2 py-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const prevIdx =
+                        (currentStudentIndex - 1 + turmaStudents.length) % turmaStudents.length;
+                      setSelectedStudentId(turmaStudents[prevIdx].id);
+                    }}
+                    className="p-0.5 hover:bg-slate-700 rounded cursor-pointer text-slate-200"
+                    title="Aluno anterior"
+                  >
+                    <ChevronLeft size={15} />
+                  </button>
+                  <span className="text-[11px] font-bold text-slate-200 px-1.5">
+                    {currentStudentIndex >= 0 ? currentStudentIndex + 1 : 1}/{turmaStudents.length}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const nextIdx = (currentStudentIndex + 1) % turmaStudents.length;
+                      setSelectedStudentId(turmaStudents[nextIdx].id);
+                    }}
+                    className="p-0.5 hover:bg-slate-700 rounded cursor-pointer text-slate-200"
+                    title="Próximo aluno"
+                  >
+                    <ChevronRight size={15} />
+                  </button>
+                </div>
+              )}
+
+              <div className="flex items-center gap-2 bg-slate-800 border border-slate-700 rounded-xl px-2.5 py-1.5 text-xs">
+                <Eye size={13} className="text-slate-400" />
+                <input
+                  type="range"
+                  min={60}
+                  max={135}
+                  step={5}
+                  value={fullscreenZoom}
+                  onChange={(e) => setFullscreenZoom(Number(e.target.value))}
+                  className="w-24 accent-blue-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => setFullscreenZoom(100)}
+                  className="font-mono text-[11px] font-bold text-slate-200 hover:text-white cursor-pointer w-10 text-right"
+                  title="Ajustar à tela (100%)"
+                >
+                  {fullscreenZoom}%
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleDownloadIndividualPDF}
+                disabled={exportingPDF}
+                className="px-3 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+              >
+                {exportingPDF && !batchProgress ? (
+                  <Loader2 size={13} className="animate-spin" />
+                ) : (
+                  <Download size={13} />
+                )}
+                <span>PDF</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handlePrintCertificate}
+                className="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-700 hover:bg-slate-600 text-white transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                <Printer size={13} />
+                <span>Imprimir</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setFullscreenPreview(false)}
+                className="px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white transition-all cursor-pointer flex items-center gap-1.5"
+                title="Fechar visualização em tela toda (ESC)"
+              >
+                <Minimize2 size={13} />
+                <span>Sair</span>
+                <X size={13} className="opacity-80" />
+              </button>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-auto p-4 sm:p-6">
+            <div
+              className={cn(
+                'min-h-full flex items-center justify-center',
+                previewMode === 'both' && fullscreenLayout === 'sideBySide'
+                  ? 'flex-row flex-wrap gap-6 items-start content-center'
+                  : 'flex-col gap-8'
+              )}
+            >
+              {(previewMode === 'both' || previewMode === 'front') && (
+                <div className="flex flex-col items-center gap-2">
+                  <span className="text-[11px] font-black uppercase tracking-wider text-slate-300">
+                    Página 1 — Frente do Certificado
+                  </span>
+                  <CertificateSheet
+                    template={template}
+                    student={activeStudentContext}
+                    side="front"
+                    scale={fullscreenEffectiveScale}
+                    interactiveDrag={false}
+                  />
+                </div>
+              )}
+
+              {(previewMode === 'both' || previewMode === 'back') && (
+                <div className="flex flex-col items-center gap-2">
+                  <span className="text-[11px] font-black uppercase tracking-wider text-slate-300">
+                    Página 2 — Verso do Certificado
+                  </span>
+                  <CertificateSheet
+                    template={template}
+                    student={activeStudentContext}
+                    side="back"
+                    scale={fullscreenEffectiveScale}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Off-screen Full-Resolution 1123x794 Export Targets (1:1 pixel accuracy for PDF & Print) */}
       <div

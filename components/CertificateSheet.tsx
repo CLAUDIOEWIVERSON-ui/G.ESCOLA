@@ -829,6 +829,7 @@ export function CertificateSheet({
                       fontFamily: titleFontCss,
                       textAlign: 'center',
                       textTransform: 'uppercase',
+                      backgroundColor: 'transparent',
                       textShadow: 'none',
                       boxShadow: 'none',
                       ...drag.style,
@@ -854,6 +855,7 @@ export function CertificateSheet({
                       left: `${template.textoOffsetX ?? 0}px`,
                       top: `${template.textoOffsetY ?? 0}px`,
                       zIndex: activeDrag === 'texto' ? 20 : 12,
+                      backgroundColor: 'transparent',
                       textShadow: 'none',
                       ...drag.style,
                     }}
@@ -867,6 +869,7 @@ export function CertificateSheet({
                         fontFamily: bodyFontCss,
                         color: '#0f172a',
                         textAlign: template.alinhamentoTexto || 'left',
+                        backgroundColor: 'transparent',
                         textShadow: 'none',
                       }}
                     >
@@ -1047,7 +1050,7 @@ export function CertificateSheet({
               backgroundColor: '#ffffff',
             }}
           >
-            {/* Back Header (pure white #ffffff isolation so watermark/shadows never bleed onto title) */}
+            {/* Back Header (transparent background so entire watermark remains visible without shadows) */}
             <div
               style={{
                 position: 'relative',
@@ -1058,7 +1061,7 @@ export function CertificateSheet({
                 marginBottom: '6px',
                 padding: '2px 8px 4px 8px',
                 gap: '16px',
-                backgroundColor: '#ffffff',
+                backgroundColor: 'transparent',
               }}
             >
               <div
@@ -1069,7 +1072,7 @@ export function CertificateSheet({
                   alignItems: 'center',
                   justifyContent: 'center',
                   flexShrink: 0,
-                  backgroundColor: '#ffffff',
+                  backgroundColor: 'transparent',
                 }}
               >
                 {template.logoEsquerdaUrl && (
@@ -1101,7 +1104,7 @@ export function CertificateSheet({
                   letterSpacing: '0.02em',
                   textTransform: 'uppercase',
                   lineHeight: 1.15,
-                  backgroundColor: '#ffffff',
+                  backgroundColor: 'transparent',
                   textShadow: 'none',
                   boxShadow: 'none',
                   padding: '2px 10px',
@@ -1110,7 +1113,7 @@ export function CertificateSheet({
                 {backTitleResolved}
               </h2>
 
-              <div style={{ backgroundColor: '#ffffff', flexShrink: 0 }}>
+              <div style={{ backgroundColor: 'transparent', flexShrink: 0 }}>
                 <MarinhaBrasilCrest
                   customUrl={template.logoDireitaUrl}
                   label={rightCaptionText}
@@ -1120,7 +1123,7 @@ export function CertificateSheet({
               </div>
             </div>
 
-            {/* Disciplines Table Wrapper (Watermark strictly clipped inside table area below title) */}
+            {/* Disciplines Table Wrapper (watermark allowed to extend behind transparent header/title cleanly) */}
             <div
               style={{
                 position: 'relative',
@@ -1128,11 +1131,11 @@ export function CertificateSheet({
                 flex: 1,
                 display: 'flex',
                 flexDirection: 'column',
-                overflow: 'hidden',
-                backgroundColor: '#ffffff',
+                overflow: 'visible',
+                backgroundColor: 'transparent',
               }}
             >
-              {/* Watermark distributed across table area from DISCIPLINAS down to MÉDIA FINAL */}
+              {/* Watermark distributed across table area and visible behind transparent title */}
               {template.marcaDaguaVersoUrl && (
                 <div
                   style={{
@@ -1144,7 +1147,7 @@ export function CertificateSheet({
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    overflow: 'hidden',
+                    overflow: 'visible',
                     pointerEvents: 'none',
                     zIndex: 0,
                   }}
