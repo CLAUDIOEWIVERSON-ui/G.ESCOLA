@@ -1023,36 +1023,47 @@ export function CertificateSheet({
         data-certificate-side="back"
         style={{
           ...sheetBaseStyle,
-          padding: '20px',
+          padding: '18px',
         }}
         className="shadow-xl"
       >
-        {/* Outer Thick Navy Frame */}
+        {/* Line 1: Outer Thick Navy Frame */}
         <div
           style={{
             width: '100%',
             height: '100%',
-            border: `7px solid ${navyBorder}`,
-            padding: '5px',
+            border: `6px solid ${navyBorder}`,
+            padding: '4px',
             boxSizing: 'border-box',
             position: 'relative',
           }}
         >
-          {/* Inner Hairline Navy Frame */}
+          {/* Line 2: Middle Navy Frame */}
           <div
             style={{
               width: '100%',
               height: '100%',
               border: `2.5px solid ${navyBorder}`,
-              padding: '10px 18px 14px 18px',
+              padding: '4px',
               boxSizing: 'border-box',
               position: 'relative',
-              overflow: 'hidden',
-              display: 'flex',
-              flexDirection: 'column',
-              backgroundColor: '#ffffff',
             }}
           >
+            {/* Line 3: Inner Fine Navy Frame */}
+            <div
+              style={{
+                width: '100%',
+                height: '100%',
+                border: `1.5px solid ${navyBorder}`,
+                padding: '9px 16px 12px 16px',
+                boxSizing: 'border-box',
+                position: 'relative',
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+                backgroundColor: '#ffffff',
+              }}
+            >
             {/* Back Header (transparent background so entire watermark remains visible without shadows) */}
             <div
               style={{
@@ -1338,6 +1349,7 @@ export function CertificateSheet({
                 </tbody>
               </table>
             </div>
+          </div>
           </div>
         </div>
       </div>
