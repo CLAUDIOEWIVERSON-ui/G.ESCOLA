@@ -104,9 +104,42 @@ export async function POST(req: NextRequest) {
         .from('certificados')
         .update(payload)
         .eq('id', id)
+        .is('deleted_at', null)
         .select('*')
         .maybeSingle();
+    } else if (turma_id) {
+      const existingByTurma = await supabaseAdmin
+        .from('certificados')
+        .select('id')
+        .eq('turma_id', turma_id)
+        .is('deleted_at', null)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (existingByTurma.data?.id) {
+        result = await supabaseAdmin
+          .from('certificados')
+          .update(payload)
+          .eq('id', existingByTurma.data.id)
+          .select('*')
+          .maybeSingle();
+      } else {
+        result = await supabaseAdmin
+          .from('certificados')
+          .insert([payload])
+          .select('*')
+          .maybeSingle();
+      }
     } else {
+      result = await supabaseAdmin
+        .from('certificados')
+        .insert([payload])
+        .select('*')
+        .maybeSingle();
+    }
+
+    if (!result.error && !result.data) {
       result = await supabaseAdmin
         .from('certificados')
         .insert([payload])

@@ -69,6 +69,13 @@ import { CertificateSheet } from '@/components/CertificateSheet';
 const LOCAL_TEMPLATES_KEY = 'sge_saved_certificate_templates_v1';
 const LAST_WORKSPACE_KEY = 'sge_certificate_last_workspace_v1';
 
+function getTemplateSaveSignature(t: CertificateTemplateConfig): string {
+  return JSON.stringify({
+    ...t,
+    id: undefined,
+  });
+}
+
 interface SavedTemplateRecord {
   id: string;
   turma_id?: string | null;
@@ -149,12 +156,26 @@ export default function CertificadosPage() {
   const [associatingTurma, setAssociatingTurma] = useState(false);
   const [syncTurmaDatesOnAssociate, setSyncTurmaDatesOnAssociate] = useState(false);
   const [workspaceHydrated, setWorkspaceHydrated] = useState(false);
+  const [templatesHydrated, setTemplatesHydrated] = useState(false);
+  const [lastAutoSavedAt, setLastAutoSavedAt] = useState<string | null>(null);
   const skipNextTurmaAutoLoadRef = useRef(false);
   const prevSelectedTurmaIdRef = useRef<string>('');
   const restoredFromWorkspaceRef = useRef<boolean>(false);
   const restoredTurmaIdRef = useRef<string | null>(null);
   const preferredStudentIdRef = useRef<string | null>(null);
   const autoAppliedLatestServerRef = useRef<boolean>(false);
+  const lastSavedSignatureRef = useRef<string>('');
+  const initializedAutoSaveBaselineRef = useRef<boolean>(false);
+  const autoSaveInFlightRef = useRef<boolean>(false);
+  const autoSaveQueuedTemplateRef = useRef<CertificateTemplateConfig | null>(null);
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastAutoSaveErrorAtRef = useRef<number>(0);
+  const turmasRef = useRef<any[]>(turmas || []);
+  turmasRef.current = turmas || [];
+  const savedTemplatesRef = useRef<SavedTemplateRecord[]>(savedTemplates);
+  savedTemplatesRef.current = savedTemplates;
+  const selectedTurmaIdRef = useRef<string>(selectedTurmaId);
+  selectedTurmaIdRef.current = selectedTurmaId;
 
   // Export states
   const [exportingPDF, setExportingPDF] = useState(false);
@@ -234,7 +255,13 @@ export default function CertificadosPage() {
         const json = await res.json();
         if (json.success && Array.isArray(json.templates) && json.templates.length > 0) {
           setSavedTemplates(json.templates);
+          try {
+            localStorage.setItem(LOCAL_TEMPLATES_KEY, JSON.stringify(json.templates));
+          } catch {
+            // ignore storage quota errors
+          }
           setLoadingTemplates(false);
+          setTemplatesHydrated(true);
           return;
         }
       }
@@ -244,6 +271,7 @@ export default function CertificadosPage() {
 
     setSavedTemplates(localItems);
     setLoadingTemplates(false);
+    setTemplatesHydrated(true);
   }, []);
 
   // Restore last worked certificate model, selected turma, student and UI preferences on mount
@@ -682,12 +710,15 @@ export default function CertificadosPage() {
     const basePreset = createPresetTemplate(
       latest.template_data.scope || 'formacao_marinheiros'
     );
-    setTemplate({
+    const loadedTemplate: CertificateTemplateConfig = {
       ...basePreset,
       ...latest.template_data,
       id: latest.id,
       turmaId: activeTargetTurma ? activeTargetTurma.id : linkedTurmaId,
-    });
+    };
+    lastSavedSignatureRef.current = getTemplateSaveSignature(loadedTemplate);
+    initializedAutoSaveBaselineRef.current = true;
+    setTemplate(loadedTemplate);
   }, [
     workspaceHydrated,
     loadingTemplates,
@@ -752,11 +783,18 @@ export default function CertificadosPage() {
     // Check if there is already a saved template specifically for this turma
     const matchingSaved = savedTemplates.find((st) => st.turma_id === selectedTurmaObj.id);
     if (matchingSaved?.template_data) {
-      setTemplate({
+      const loadedTurmaTemplate: CertificateTemplateConfig = {
         ...matchingSaved.template_data,
         id: matchingSaved.id,
         turmaId: selectedTurmaObj.id,
-      });
+      };
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+        autoSaveTimerRef.current = null;
+      }
+      lastSavedSignatureRef.current = getTemplateSaveSignature(loadedTurmaTemplate);
+      initializedAutoSaveBaselineRef.current = true;
+      setTemplate(loadedTurmaTemplate);
       setCustomCourseName(formattedCourseTitleCase);
       return;
     }
@@ -1174,88 +1212,197 @@ export default function CertificadosPage() {
     e.target.value = '';
   };
 
-  // Save Template
-  const handleSaveTemplate = async () => {
-    if (!canEdit) {
-      toast.error('Usuário com acesso somente leitura.');
-      return;
-    }
-
-    setSavingTemplate(true);
-    try {
-      const targetTurmaId = template.turmaId ?? (selectedTurmaId || null);
-      const targetTurmaForCourse = targetTurmaId
-        ? (turmas || []).find((t: any) => t.id === targetTurmaId)
-        : selectedTurmaObj;
-
-      const existingForTarget = targetTurmaId
-        ? savedTemplates.find((st) => st.turma_id === targetTurmaId)
-        : null;
-      const existingById = template.id
-        ? savedTemplates.find((st) => st.id === template.id)
-        : null;
-      const safeId =
-        existingById && existingById.turma_id && existingById.turma_id !== targetTurmaId
-          ? existingForTarget?.id
-          : template.id || existingForTarget?.id;
-
-      const payloadToSave: CertificateTemplateConfig = {
-        ...template,
-        id: safeId,
-        turmaId: targetTurmaId,
-        cursoId: targetTurmaForCourse?.curso_id || template.cursoId || null,
-      };
-
-      const res = await fetchWithAuth('/api/certificados', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: safeId,
-          turma_id: payloadToSave.turmaId,
-          curso_id: payloadToSave.cursoId,
-          template_data: payloadToSave,
-        }),
-      });
-
-      const json = await res.json();
-      if (!res.ok) {
-        throw new Error(json.error || 'Erro ao salvar modelo.');
+  // Persist template cleanly (used by debounced auto-save and manual save triggers)
+  const persistTemplateRecord = useCallback(
+    async (
+      targetTemplate: CertificateTemplateConfig,
+      options?: { silent?: boolean }
+    ) => {
+      if (!canEdit) {
+        if (!options?.silent) {
+          toast.error('Usuário com acesso somente leitura.');
+        }
+        return;
       }
 
-      const savedId = json.data?.id || safeId || `local-${Date.now()}`;
-      const record: SavedTemplateRecord = {
-        id: savedId,
-        turma_id: payloadToSave.turmaId,
-        curso_id: payloadToSave.cursoId,
-        template_data: { ...payloadToSave, id: savedId },
-        created_at: json.data?.created_at || new Date().toISOString(),
-      };
+      if (autoSaveInFlightRef.current) {
+        autoSaveQueuedTemplateRef.current = targetTemplate;
+        return;
+      }
 
-      setTemplate((prev) => ({
-        ...prev,
-        id: savedId,
-        turmaId: payloadToSave.turmaId,
-        cursoId: payloadToSave.cursoId,
-      }));
+      autoSaveInFlightRef.current = true;
+      setSavingTemplate(true);
+      const targetSignature = getTemplateSaveSignature(targetTemplate);
 
-      setSavedTemplates((prev) => {
-        const filtered = prev.filter((item) => item.id !== savedId);
-        const updated = [record, ...filtered];
-        try {
-          localStorage.setItem(LOCAL_TEMPLATES_KEY, JSON.stringify(updated));
-        } catch {
-          // ignore
+      try {
+        const currentTurmas = turmasRef.current;
+        const currentSaved = savedTemplatesRef.current;
+        const targetTurmaId = targetTemplate.turmaId ?? (selectedTurmaIdRef.current || null);
+        const targetTurmaForCourse = targetTurmaId
+          ? currentTurmas.find((t: any) => t.id === targetTurmaId)
+          : null;
+
+        const existingForTarget = targetTurmaId
+          ? currentSaved.find((st) => st.turma_id === targetTurmaId)
+          : null;
+        const existingById = targetTemplate.id
+          ? currentSaved.find((st) => st.id === targetTemplate.id)
+          : null;
+        const safeId =
+          existingById && existingById.turma_id && existingById.turma_id !== targetTurmaId
+            ? existingForTarget?.id
+            : targetTemplate.id || existingForTarget?.id;
+
+        const payloadToSave: CertificateTemplateConfig = {
+          ...targetTemplate,
+          id: safeId,
+          turmaId: targetTurmaId,
+          cursoId: targetTurmaForCourse?.curso_id || targetTemplate.cursoId || null,
+        };
+
+        const res = await fetchWithAuth('/api/certificados', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: safeId,
+            turma_id: payloadToSave.turmaId,
+            curso_id: payloadToSave.cursoId,
+            template_data: payloadToSave,
+          }),
+        });
+
+        const json = await res.json();
+        if (!res.ok) {
+          throw new Error(json.error || 'Erro ao salvar modelo.');
         }
-        return updated;
-      });
 
-      toast.success('Modelo de certificado salvo com sucesso!');
-    } catch (err: any) {
-      console.error('Erro ao salvar certificado:', err);
-      toast.error(err?.message || 'Erro ao salvar modelo.');
-    } finally {
-      setSavingTemplate(false);
+        const savedId = json.data?.id || safeId || `local-${Date.now()}`;
+        const finalSavedPayload: CertificateTemplateConfig = {
+          ...payloadToSave,
+          id: savedId,
+        };
+        const record: SavedTemplateRecord = {
+          id: savedId,
+          turma_id: payloadToSave.turmaId,
+          curso_id: payloadToSave.cursoId,
+          template_data: finalSavedPayload,
+          created_at: json.data?.created_at || new Date().toISOString(),
+        };
+
+        lastSavedSignatureRef.current = targetSignature;
+
+        setTemplate((prev) => {
+          if (
+            prev.id === savedId &&
+            prev.turmaId === payloadToSave.turmaId &&
+            prev.cursoId === payloadToSave.cursoId
+          ) {
+            return prev;
+          }
+          return {
+            ...prev,
+            id: savedId,
+            turmaId: payloadToSave.turmaId,
+            cursoId: payloadToSave.cursoId,
+          };
+        });
+
+        setSavedTemplates((prev) => {
+          const filtered = prev.filter(
+            (item) =>
+              item.id !== savedId &&
+              (!payloadToSave.turmaId || item.turma_id !== payloadToSave.turmaId)
+          );
+          const updated = [record, ...filtered];
+          try {
+            localStorage.setItem(LOCAL_TEMPLATES_KEY, JSON.stringify(updated));
+          } catch {
+            // ignore storage quota errors on large images
+          }
+          return updated;
+        });
+
+        setLastAutoSavedAt(
+          new Date().toLocaleTimeString('pt-BR', {
+            hour: '2-digit',
+            minute: '2-digit',
+          })
+        );
+
+        if (!options?.silent) {
+          toast.success('Modelo de certificado salvo com sucesso!');
+        }
+      } catch (err: any) {
+        console.error('Erro ao salvar certificado:', err);
+        const now = Date.now();
+        if (!options?.silent || now - lastAutoSaveErrorAtRef.current > 30_000) {
+          lastAutoSaveErrorAtRef.current = now;
+          toast.error(err?.message || 'Erro ao salvar modelo automaticamente.');
+        }
+      } finally {
+        autoSaveInFlightRef.current = false;
+        setSavingTemplate(false);
+
+        const queued = autoSaveQueuedTemplateRef.current;
+        autoSaveQueuedTemplateRef.current = null;
+        if (queued && getTemplateSaveSignature(queued) !== lastSavedSignatureRef.current) {
+          void persistTemplateRecord(queued, { silent: true });
+        }
+      }
+    },
+    [canEdit]
+  );
+
+  // Automatic debounced saving whenever certificate template is edited
+  useEffect(() => {
+    if (!workspaceHydrated || !templatesHydrated) return;
+
+    const currentSig = getTemplateSaveSignature(template);
+
+    if (!initializedAutoSaveBaselineRef.current) {
+      initializedAutoSaveBaselineRef.current = true;
+      const currentSaved = savedTemplatesRef.current;
+      const matchingById = template.id
+        ? currentSaved.find((st) => st.id === template.id)
+        : undefined;
+      const matchingByTurma = template.turmaId
+        ? currentSaved.find((st) => st.turma_id === template.turmaId)
+        : undefined;
+      const serverMatch = matchingById || matchingByTurma;
+
+      if (
+        (serverMatch?.template_data &&
+          getTemplateSaveSignature(serverMatch.template_data) === currentSig) ||
+        (!restoredFromWorkspaceRef.current && currentSaved.length === 0 && !template.id)
+      ) {
+        lastSavedSignatureRef.current = currentSig;
+        return;
+      }
     }
+
+    if (currentSig === lastSavedSignatureRef.current) return;
+
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+    }
+
+    autoSaveTimerRef.current = setTimeout(() => {
+      autoSaveTimerRef.current = null;
+      if (!canEdit) return;
+      void persistTemplateRecord(template, { silent: true });
+    }, 900);
+
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+        autoSaveTimerRef.current = null;
+      }
+    };
+  }, [template, workspaceHydrated, templatesHydrated, canEdit, persistTemplateRecord]);
+
+  // Save Template (manual helper)
+  const handleSaveTemplate = async () => {
+    await persistTemplateRecord(template, { silent: false });
   };
 
   // Associate the current working model (or a specific saved model) with any chosen Turma
@@ -1384,7 +1531,19 @@ export default function CertificadosPage() {
       };
 
       skipNextTurmaAutoLoadRef.current = true;
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+        autoSaveTimerRef.current = null;
+      }
+      lastSavedSignatureRef.current = getTemplateSaveSignature(finalTemplate);
+      initializedAutoSaveBaselineRef.current = true;
       setTemplate(finalTemplate);
+      setLastAutoSavedAt(
+        new Date().toLocaleTimeString('pt-BR', {
+          hour: '2-digit',
+          minute: '2-digit',
+        })
+      );
       setSavedTemplates((prev) => {
         const filtered = prev.filter(
           (item) => item.id !== savedId && item.turma_id !== targetTurmaId
@@ -1451,6 +1610,12 @@ export default function CertificadosPage() {
       }
     }
 
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = null;
+    }
+    lastSavedSignatureRef.current = getTemplateSaveSignature(unlinkedTemplate);
+    initializedAutoSaveBaselineRef.current = true;
     setTemplate(unlinkedTemplate);
     toast.success('Turma desvinculada deste modelo.');
   };
@@ -1464,6 +1629,22 @@ export default function CertificadosPage() {
       if (!res.ok) {
         const json = await res.json();
         throw new Error(json.error || 'Erro ao excluir.');
+      }
+
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+        autoSaveTimerRef.current = null;
+      }
+
+      if (template.id === id) {
+        const detached: CertificateTemplateConfig = {
+          ...template,
+          id: undefined,
+          turmaId: null,
+        };
+        lastSavedSignatureRef.current = getTemplateSaveSignature(detached);
+        initializedAutoSaveBaselineRef.current = true;
+        setTemplate(detached);
       }
 
       setSavedTemplates((prev) => {
@@ -1779,6 +1960,25 @@ export default function CertificadosPage() {
             </p>
           </div>
         </div>
+        {canEdit && (
+          <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl shrink-0">
+            {savingTemplate ? (
+              <>
+                <Loader2 size={14} className="animate-spin text-blue-700" />
+                <span>Salvando alterações...</span>
+              </>
+            ) : (
+              <>
+                <Save size={14} className="text-emerald-600" />
+                <span>
+                  {lastAutoSavedAt
+                    ? `Salvo automaticamente às ${lastAutoSavedAt}`
+                    : 'Salvamento automático ativo'}
+                </span>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       {isConvidado && (
@@ -4150,7 +4350,7 @@ export default function CertificadosPage() {
                     <BookmarkCheck size={24} className="mx-auto text-slate-400" />
                     <p>Nenhum modelo personalizado salvo ainda.</p>
                     <p className="text-[11px]">
-                      Edite o certificado e clique em <strong>Salvar Modelo</strong> no topo.
+                      Todas as alterações feitas nos modelos são salvas automaticamente.
                     </p>
                   </div>
                 ) : (
@@ -4187,6 +4387,12 @@ export default function CertificadosPage() {
                                     id: rec.id,
                                     turmaId: linkedTurmaId,
                                   };
+                                  if (autoSaveTimerRef.current) {
+                                    clearTimeout(autoSaveTimerRef.current);
+                                    autoSaveTimerRef.current = null;
+                                  }
+                                  lastSavedSignatureRef.current = getTemplateSaveSignature(loaded);
+                                  initializedAutoSaveBaselineRef.current = true;
                                   if (linkedTurmaId) {
                                     skipNextTurmaAutoLoadRef.current = true;
                                     setSelectedTurmaId(linkedTurmaId);
