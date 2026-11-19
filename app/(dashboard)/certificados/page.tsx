@@ -405,6 +405,7 @@ export default function CertificadosPage() {
           ...template,
           molduraFrenteUrl: shrink(template.molduraFrenteUrl),
           logoEsquerdaUrl: shrink(template.logoEsquerdaUrl) || '',
+          logoCentroUrl: shrink(template.logoCentroUrl) || '',
           logoDireitaUrl: shrink(template.logoDireitaUrl) || '',
           marcaDaguaFrenteUrl: shrink(template.marcaDaguaFrenteUrl) || '',
           marcaDaguaVersoUrl: shrink(template.marcaDaguaVersoUrl) || '',
@@ -1212,6 +1213,7 @@ export default function CertificadosPage() {
     field:
       | 'molduraFrenteUrl'
       | 'logoEsquerdaUrl'
+      | 'logoCentroUrl'
       | 'logoDireitaUrl'
       | 'marcaDaguaFrenteUrl'
       | 'marcaDaguaVersoUrl',
@@ -1226,7 +1228,11 @@ export default function CertificadosPage() {
         setTemplate((prev) => ({
           ...prev,
           [field]: dataUrl,
-          ...(field === 'logoDireitaUrl' ? { mostrarLegendaLogoDireita: false } : {}),
+          ...(field === 'logoEsquerdaUrl' ? { mostrarLogoEsquerda: true } : {}),
+          ...(field === 'logoCentroUrl' ? { mostrarLogoCentro: true } : {}),
+          ...(field === 'logoDireitaUrl'
+            ? { mostrarLogoDireita: true, mostrarLegendaLogoDireita: false }
+            : {}),
         }));
         toast.success('Imagem aplicada ao modelo do certificado!');
       }
@@ -3104,6 +3110,8 @@ export default function CertificadosPage() {
                       </button>
                       {((template.logoEsquerdaOffsetX ?? 0) !== 0 ||
                         (template.logoEsquerdaOffsetY ?? 0) !== 0 ||
+                        (template.logoCentroOffsetX ?? 0) !== 0 ||
+                        (template.logoCentroOffsetY ?? 0) !== 0 ||
                         (template.logoDireitaOffsetX ?? 0) !== 0 ||
                         (template.logoDireitaOffsetY ?? 0) !== 0 ||
                         (template.tituloOffsetX ?? 0) !== 0 ||
@@ -3117,6 +3125,8 @@ export default function CertificadosPage() {
                               ...prev,
                               logoEsquerdaOffsetX: 0,
                               logoEsquerdaOffsetY: 0,
+                              logoCentroOffsetX: 0,
+                              logoCentroOffsetY: 0,
                               logoDireitaOffsetX: 0,
                               logoDireitaOffsetY: 0,
                               tituloOffsetX: 0,
@@ -3146,6 +3156,23 @@ export default function CertificadosPage() {
                         sizeKey: 'tamanhoLogoEsquerda' as const,
                         defaultSize: 90,
                         opacityKey: 'opacidadeLogoEsquerda' as const,
+                        showKey: 'mostrarLogoEsquerda' as const,
+                        defaultShown: true,
+                      },
+                      {
+                        label: 'Brasão Central',
+                        xKey: 'logoCentroOffsetX' as const,
+                        yKey: 'logoCentroOffsetY' as const,
+                        minX: -420,
+                        maxX: 420,
+                        minY: -60,
+                        maxY: 520,
+                        sizeKey: 'tamanhoLogoCentro' as const,
+                        defaultSize: 84,
+                        opacityKey: 'opacidadeLogoCentro' as const,
+                        showKey: 'mostrarLogoCentro' as const,
+                        defaultShown: false,
+                        uploadField: 'logoCentroUrl' as const,
                       },
                       {
                         label: 'Brasão Direito',
@@ -3158,6 +3185,8 @@ export default function CertificadosPage() {
                         sizeKey: 'tamanhoLogoDireita' as const,
                         defaultSize: 74,
                         opacityKey: 'opacidadeLogoDireita' as const,
+                        showKey: 'mostrarLogoDireita' as const,
+                        defaultShown: true,
                       },
                       {
                         label: 'Título do Certificado',
@@ -3182,32 +3211,94 @@ export default function CertificadosPage() {
                       const valY = template[ctrl.yKey] ?? 0;
                       const valSize = ctrl.sizeKey ? (template[ctrl.sizeKey] ?? ctrl.defaultSize) : undefined;
                       const valOpacity = ctrl.opacityKey ? (template[ctrl.opacityKey] ?? 1) : undefined;
+                      const isShown = ctrl.showKey
+                        ? ctrl.defaultShown
+                          ? template[ctrl.showKey] !== false
+                          : template[ctrl.showKey] === true
+                        : true;
                       const isModified = valX !== 0 || valY !== 0;
                       return (
                         <div
                           key={ctrl.label}
-                          className="p-2.5 rounded-lg bg-white border border-slate-200 space-y-2"
+                          className={cn(
+                            'p-2.5 rounded-lg border space-y-2',
+                            isShown ? 'bg-white border-slate-200' : 'bg-slate-100/70 border-slate-200'
+                          )}
                         >
                           <div className="flex items-center justify-between gap-1">
                             <span className="text-[11px] font-bold text-slate-800 truncate">
                               {ctrl.label}
                             </span>
-                            {isModified && (
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setTemplate((prev) => ({
-                                    ...prev,
-                                    [ctrl.xKey]: 0,
-                                    [ctrl.yKey]: 0,
-                                  }))
-                                }
-                                className="text-[10px] font-semibold text-blue-700 hover:text-blue-900 underline cursor-pointer shrink-0"
-                              >
-                                Zerar
-                              </button>
-                            )}
+                            <div className="flex items-center gap-2 shrink-0">
+                              {ctrl.showKey && (
+                                <label className="flex items-center gap-1 text-[10px] font-bold text-slate-700 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={isShown}
+                                    onChange={(e) =>
+                                      setTemplate((prev) => ({
+                                        ...prev,
+                                        [ctrl.showKey!]: e.target.checked,
+                                      }))
+                                    }
+                                    className="rounded border-slate-300"
+                                  />
+                                  <span>{isShown ? 'Exibir' : 'Inibido'}</span>
+                                </label>
+                              )}
+                              {isModified && (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setTemplate((prev) => ({
+                                      ...prev,
+                                      [ctrl.xKey]: 0,
+                                      [ctrl.yKey]: 0,
+                                    }))
+                                  }
+                                  className="text-[10px] font-semibold text-blue-700 hover:text-blue-900 underline cursor-pointer shrink-0"
+                                >
+                                  Zerar
+                                </button>
+                              )}
+                            </div>
                           </div>
+
+                          {ctrl.uploadField && (
+                            <div className="flex items-center justify-between gap-2 p-1.5 rounded-md bg-slate-50 border border-slate-200">
+                              <span className="text-[10px] font-medium text-slate-600 truncate">
+                                {template.logoCentroUrl ? 'Imagem carregada' : 'Sem imagem'}
+                              </span>
+                              <div className="flex items-center gap-1 shrink-0">
+                                <label className="px-2 py-0.5 rounded bg-blue-900 hover:bg-blue-950 text-white text-[10px] font-bold cursor-pointer flex items-center gap-1">
+                                  <Upload size={10} />
+                                  <span>{template.logoCentroUrl ? 'Trocar' : 'Inserir'}</span>
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => handleImageUpload('logoCentroUrl', e)}
+                                    className="hidden"
+                                  />
+                                </label>
+                                {template.logoCentroUrl && (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setTemplate((prev) => ({
+                                        ...prev,
+                                        logoCentroUrl: '',
+                                        mostrarLogoCentro: false,
+                                      }))
+                                    }
+                                    className="p-1 rounded bg-white border border-slate-200 hover:bg-rose-50 text-rose-600 cursor-pointer"
+                                    title="Remover imagem do brasão central"
+                                  >
+                                    <Trash2 size={10} />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          )}
 
                           <div>
                             <div className="flex items-center justify-between text-[10px] text-slate-600 font-semibold">
@@ -4208,13 +4299,90 @@ export default function CertificadosPage() {
                   </div>
                 </div>
 
-                {/* Crest Size & Opacity Controls */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-200">
-                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-black uppercase tracking-wider text-slate-800">
-                        Brasão Esquerdo
-                      </span>
+                {/* Crest Visibility, Center Crest, Size & Opacity Controls */}
+                <div className="space-y-3 pt-2 border-t border-slate-200">
+                  <div>
+                    <h4 className="text-xs font-black uppercase tracking-wider text-slate-700">
+                      Brasões no Topo (Exibir / Inibir, Inserir Central, Tamanho e Opacidade)
+                    </h4>
+                    <p className="text-[10px] text-slate-500">
+                      Exiba ou iniba qualquer um dos brasões e insira um brasão centralizado entre os existentes.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    {/* Left Crest */}
+                    <div
+                      className={cn(
+                        'p-3 rounded-xl border space-y-2.5',
+                        template.mostrarLogoEsquerda !== false
+                          ? 'bg-slate-50 border-slate-200'
+                          : 'bg-slate-100/80 border-slate-200 opacity-85'
+                      )}
+                    >
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="text-[11px] font-black uppercase tracking-wider text-slate-800">
+                          Esquerdo
+                        </span>
+                        <label className="flex items-center gap-1 text-[10px] font-bold text-slate-700 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={template.mostrarLogoEsquerda !== false}
+                            onChange={(e) =>
+                              setTemplate((prev) => ({
+                                ...prev,
+                                mostrarLogoEsquerda: e.target.checked,
+                              }))
+                            }
+                            className="rounded border-slate-300"
+                          />
+                          <span>
+                            {template.mostrarLogoEsquerda !== false ? 'Exibir' : 'Inibido'}
+                          </span>
+                        </label>
+                      </div>
+                      <div>
+                        <label className="flex items-center justify-between text-[10px] font-bold text-slate-700 mb-0.5">
+                          <span>Tamanho</span>
+                          <span className="font-mono">{template.tamanhoLogoEsquerda ?? 90}px</span>
+                        </label>
+                        <input
+                          type="range"
+                          min={36}
+                          max={220}
+                          step={2}
+                          value={template.tamanhoLogoEsquerda ?? 90}
+                          onChange={(e) =>
+                            setTemplate((prev) => ({
+                              ...prev,
+                              tamanhoLogoEsquerda: Number(e.target.value),
+                            }))
+                          }
+                          className="w-full accent-blue-800"
+                        />
+                      </div>
+                      <div>
+                        <label className="flex items-center justify-between text-[10px] font-bold text-slate-700 mb-0.5">
+                          <span>Opacidade</span>
+                          <span className="font-mono">
+                            {Math.round((template.opacidadeLogoEsquerda ?? 1) * 100)}%
+                          </span>
+                        </label>
+                        <input
+                          type="range"
+                          min={0}
+                          max={1}
+                          step={0.05}
+                          value={template.opacidadeLogoEsquerda ?? 1}
+                          onChange={(e) =>
+                            setTemplate((prev) => ({
+                              ...prev,
+                              opacidadeLogoEsquerda: Number(e.target.value),
+                            }))
+                          }
+                          className="w-full accent-blue-800"
+                        />
+                      </div>
                       <button
                         type="button"
                         onClick={() =>
@@ -4226,58 +4394,197 @@ export default function CertificadosPage() {
                         }
                         className="text-[10px] font-bold text-blue-700 hover:text-blue-900 underline cursor-pointer"
                       >
-                        Padrão
+                        Restaurar tamanho
                       </button>
                     </div>
-                    <div>
-                      <label className="flex items-center justify-between text-[11px] font-bold text-slate-700 mb-0.5">
-                        <span>Tamanho</span>
-                        <span className="font-mono">{template.tamanhoLogoEsquerda ?? 90}px</span>
-                      </label>
-                      <input
-                        type="range"
-                        min={36}
-                        max={220}
-                        step={2}
-                        value={template.tamanhoLogoEsquerda ?? 90}
-                        onChange={(e) =>
-                          setTemplate((prev) => ({
-                            ...prev,
-                            tamanhoLogoEsquerda: Number(e.target.value),
-                          }))
-                        }
-                        className="w-full accent-blue-800"
-                      />
-                    </div>
-                    <div>
-                      <label className="flex items-center justify-between text-[11px] font-bold text-slate-700 mb-0.5">
-                        <span>Opacidade</span>
-                        <span className="font-mono">
-                          {Math.round((template.opacidadeLogoEsquerda ?? 1) * 100)}%
-                        </span>
-                      </label>
-                      <input
-                        type="range"
-                        min={0}
-                        max={1}
-                        step={0.05}
-                        value={template.opacidadeLogoEsquerda ?? 1}
-                        onChange={(e) =>
-                          setTemplate((prev) => ({
-                            ...prev,
-                            opacidadeLogoEsquerda: Number(e.target.value),
-                          }))
-                        }
-                        className="w-full accent-blue-800"
-                      />
-                    </div>
-                  </div>
 
-                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-black uppercase tracking-wider text-slate-800">
-                        Brasão Direito
-                      </span>
+                    {/* Center Crest */}
+                    <div
+                      className={cn(
+                        'p-3 rounded-xl border space-y-2.5',
+                        template.mostrarLogoCentro === true
+                          ? 'bg-emerald-50/60 border-emerald-200'
+                          : 'bg-slate-50 border-slate-200'
+                      )}
+                    >
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="text-[11px] font-black uppercase tracking-wider text-slate-800">
+                          Central
+                        </span>
+                        <label className="flex items-center gap-1 text-[10px] font-bold text-slate-700 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={template.mostrarLogoCentro === true}
+                            onChange={(e) =>
+                              setTemplate((prev) => ({
+                                ...prev,
+                                mostrarLogoCentro: e.target.checked,
+                              }))
+                            }
+                            className="rounded border-slate-300"
+                          />
+                          <span>{template.mostrarLogoCentro === true ? 'Exibir' : 'Inibido'}</span>
+                        </label>
+                      </div>
+
+                      <div className="flex items-center gap-1.5">
+                        <label className="flex-1 px-2 py-1 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-[10px] font-bold cursor-pointer flex items-center justify-center gap-1">
+                          <Upload size={11} />
+                          <span>{template.logoCentroUrl ? 'Trocar Imagem' : 'Inserir Brasão'}</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => handleImageUpload('logoCentroUrl', e)}
+                            className="hidden"
+                          />
+                        </label>
+                        {template.logoCentroUrl && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setTemplate((prev) => ({
+                                ...prev,
+                                logoCentroUrl: '',
+                                mostrarLogoCentro: false,
+                              }))
+                            }
+                            className="p-1.5 rounded-lg bg-white border border-slate-200 hover:bg-rose-50 text-rose-600 cursor-pointer"
+                            title="Remover brasão central"
+                          >
+                            <Trash2 size={11} />
+                          </button>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="flex items-center justify-between text-[10px] font-bold text-slate-700 mb-0.5">
+                          <span>Tamanho</span>
+                          <span className="font-mono">{template.tamanhoLogoCentro ?? 84}px</span>
+                        </label>
+                        <input
+                          type="range"
+                          min={36}
+                          max={220}
+                          step={2}
+                          value={template.tamanhoLogoCentro ?? 84}
+                          onChange={(e) =>
+                            setTemplate((prev) => ({
+                              ...prev,
+                              tamanhoLogoCentro: Number(e.target.value),
+                            }))
+                          }
+                          className="w-full accent-blue-800"
+                        />
+                      </div>
+                      <div>
+                        <label className="flex items-center justify-between text-[10px] font-bold text-slate-700 mb-0.5">
+                          <span>Opacidade</span>
+                          <span className="font-mono">
+                            {Math.round((template.opacidadeLogoCentro ?? 1) * 100)}%
+                          </span>
+                        </label>
+                        <input
+                          type="range"
+                          min={0}
+                          max={1}
+                          step={0.05}
+                          value={template.opacidadeLogoCentro ?? 1}
+                          onChange={(e) =>
+                            setTemplate((prev) => ({
+                              ...prev,
+                              opacidadeLogoCentro: Number(e.target.value),
+                            }))
+                          }
+                          className="w-full accent-blue-800"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setTemplate((prev) => ({
+                            ...prev,
+                            tamanhoLogoCentro: 84,
+                            opacidadeLogoCentro: 1,
+                          }))
+                        }
+                        className="text-[10px] font-bold text-blue-700 hover:text-blue-900 underline cursor-pointer"
+                      >
+                        Restaurar tamanho
+                      </button>
+                    </div>
+
+                    {/* Right Crest */}
+                    <div
+                      className={cn(
+                        'p-3 rounded-xl border space-y-2.5',
+                        template.mostrarLogoDireita !== false
+                          ? 'bg-slate-50 border-slate-200'
+                          : 'bg-slate-100/80 border-slate-200 opacity-85'
+                      )}
+                    >
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="text-[11px] font-black uppercase tracking-wider text-slate-800">
+                          Direito
+                        </span>
+                        <label className="flex items-center gap-1 text-[10px] font-bold text-slate-700 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={template.mostrarLogoDireita !== false}
+                            onChange={(e) =>
+                              setTemplate((prev) => ({
+                                ...prev,
+                                mostrarLogoDireita: e.target.checked,
+                              }))
+                            }
+                            className="rounded border-slate-300"
+                          />
+                          <span>
+                            {template.mostrarLogoDireita !== false ? 'Exibir' : 'Inibido'}
+                          </span>
+                        </label>
+                      </div>
+                      <div>
+                        <label className="flex items-center justify-between text-[10px] font-bold text-slate-700 mb-0.5">
+                          <span>Tamanho</span>
+                          <span className="font-mono">{template.tamanhoLogoDireita ?? 74}px</span>
+                        </label>
+                        <input
+                          type="range"
+                          min={36}
+                          max={220}
+                          step={2}
+                          value={template.tamanhoLogoDireita ?? 74}
+                          onChange={(e) =>
+                            setTemplate((prev) => ({
+                              ...prev,
+                              tamanhoLogoDireita: Number(e.target.value),
+                            }))
+                          }
+                          className="w-full accent-blue-800"
+                        />
+                      </div>
+                      <div>
+                        <label className="flex items-center justify-between text-[10px] font-bold text-slate-700 mb-0.5">
+                          <span>Opacidade</span>
+                          <span className="font-mono">
+                            {Math.round((template.opacidadeLogoDireita ?? 1) * 100)}%
+                          </span>
+                        </label>
+                        <input
+                          type="range"
+                          min={0}
+                          max={1}
+                          step={0.05}
+                          value={template.opacidadeLogoDireita ?? 1}
+                          onChange={(e) =>
+                            setTemplate((prev) => ({
+                              ...prev,
+                              opacidadeLogoDireita: Number(e.target.value),
+                            }))
+                          }
+                          className="w-full accent-blue-800"
+                        />
+                      </div>
                       <button
                         type="button"
                         onClick={() =>
@@ -4289,50 +4596,8 @@ export default function CertificadosPage() {
                         }
                         className="text-[10px] font-bold text-blue-700 hover:text-blue-900 underline cursor-pointer"
                       >
-                        Padrão
+                        Restaurar tamanho
                       </button>
-                    </div>
-                    <div>
-                      <label className="flex items-center justify-between text-[11px] font-bold text-slate-700 mb-0.5">
-                        <span>Tamanho</span>
-                        <span className="font-mono">{template.tamanhoLogoDireita ?? 74}px</span>
-                      </label>
-                      <input
-                        type="range"
-                        min={36}
-                        max={220}
-                        step={2}
-                        value={template.tamanhoLogoDireita ?? 74}
-                        onChange={(e) =>
-                          setTemplate((prev) => ({
-                            ...prev,
-                            tamanhoLogoDireita: Number(e.target.value),
-                          }))
-                        }
-                        className="w-full accent-blue-800"
-                      />
-                    </div>
-                    <div>
-                      <label className="flex items-center justify-between text-[11px] font-bold text-slate-700 mb-0.5">
-                        <span>Opacidade</span>
-                        <span className="font-mono">
-                          {Math.round((template.opacidadeLogoDireita ?? 1) * 100)}%
-                        </span>
-                      </label>
-                      <input
-                        type="range"
-                        min={0}
-                        max={1}
-                        step={0.05}
-                        value={template.opacidadeLogoDireita ?? 1}
-                        onChange={(e) =>
-                          setTemplate((prev) => ({
-                            ...prev,
-                            opacidadeLogoDireita: Number(e.target.value),
-                          }))
-                        }
-                        className="w-full accent-blue-800"
-                      />
                     </div>
                   </div>
                 </div>
@@ -4342,6 +4607,35 @@ export default function CertificadosPage() {
                   <h4 className="text-xs font-black uppercase tracking-wider text-slate-700">
                     Brasões e Marcas d&apos;Água Personalizados
                   </h4>
+
+                  <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                    <label className="flex items-center gap-2 text-[11px] font-bold text-slate-700 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={template.mostrarLegendaLogoCentro === true}
+                        onChange={(e) =>
+                          setTemplate((prev) => ({
+                            ...prev,
+                            mostrarLegendaLogoCentro: e.target.checked,
+                          }))
+                        }
+                        className="rounded border-slate-300"
+                      />
+                      <span>Exibir legenda de texto abaixo do Brasão Central</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={template.logoCentroTexto || ''}
+                      onChange={(e) =>
+                        setTemplate((prev) => ({
+                          ...prev,
+                          logoCentroTexto: e.target.value,
+                        }))
+                      }
+                      placeholder="Legenda opcional do Brasão Central"
+                      className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs"
+                    />
+                  </div>
 
                   <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
                     <label className="flex items-center gap-2 text-[11px] font-bold text-slate-700 cursor-pointer">
@@ -4391,6 +4685,11 @@ export default function CertificadosPage() {
                       defaultVal: '/assets/aistudio/imagem_01_2da3aec8.png',
                     },
                     {
+                      label: 'Brasão Central (Topo Centro)',
+                      field: 'logoCentroUrl' as const,
+                      defaultVal: '',
+                    },
+                    {
                       label: 'Brasão Direito (Marinha do Brasil)',
                       field: 'logoDireitaUrl' as const,
                       defaultVal: '',
@@ -4417,7 +4716,11 @@ export default function CertificadosPage() {
                       <div className="flex items-center gap-1.5 shrink-0">
                         <label className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-[11px] font-bold text-slate-700 cursor-pointer flex items-center gap-1">
                           <Upload size={12} />
-                          <span>Trocar</span>
+                          <span>
+                            {item.field === 'logoCentroUrl' && !template.logoCentroUrl
+                              ? 'Inserir'
+                              : 'Trocar'}
+                          </span>
                           <input
                             type="file"
                             accept="image/*"
@@ -4431,6 +4734,9 @@ export default function CertificadosPage() {
                             setTemplate((prev) => ({
                               ...prev,
                               [item.field]: item.defaultVal,
+                              ...(item.field === 'logoCentroUrl'
+                                ? { mostrarLogoCentro: false }
+                                : {}),
                               ...(item.field === 'logoDireitaUrl'
                                 ? {
                                     mostrarLegendaLogoDireita: true,
@@ -4440,7 +4746,11 @@ export default function CertificadosPage() {
                             }))
                           }
                           className="p-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-600 cursor-pointer"
-                          title="Restaurar padrão"
+                          title={
+                            item.field === 'logoCentroUrl'
+                              ? 'Remover brasão central'
+                              : 'Restaurar padrão'
+                          }
                         >
                           <RotateCcw size={12} />
                         </button>

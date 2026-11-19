@@ -46,6 +46,8 @@ export interface CertificateTemplateConfig {
   assinaturaAlturaOffset?: number;
   logoEsquerdaOffsetX?: number;
   logoEsquerdaOffsetY?: number;
+  logoCentroOffsetX?: number;
+  logoCentroOffsetY?: number;
   logoDireitaOffsetX?: number;
   logoDireitaOffsetY?: number;
   tituloOffsetX?: number;
@@ -69,12 +71,20 @@ export interface CertificateTemplateConfig {
   // Visuals & Logos
   usarMolduraOriginal?: boolean;
   molduraFrenteUrl?: string;
+  mostrarLogoEsquerda?: boolean;
+  mostrarLogoCentro?: boolean;
+  mostrarLogoDireita?: boolean;
   logoEsquerdaUrl: string;
+  logoCentroUrl?: string;
+  logoCentroTexto?: string;
+  mostrarLegendaLogoCentro?: boolean;
   logoDireitaUrl: string; // '' uses built-in Marinha do Brasil crest
   logoDireitaTexto: string;
   mostrarLegendaLogoDireita?: boolean;
   tamanhoLogoEsquerda?: number;
   opacidadeLogoEsquerda?: number;
+  tamanhoLogoCentro?: number;
+  opacidadeLogoCentro?: number;
   tamanhoLogoDireita?: number;
   opacidadeLogoDireita?: number;
   marcaDaguaFrenteUrl: string;
@@ -265,6 +275,8 @@ export function createPresetTemplate(
     assinaturaAlturaOffset: 0,
     logoEsquerdaOffsetX: 0,
     logoEsquerdaOffsetY: 0,
+    logoCentroOffsetX: 0,
+    logoCentroOffsetY: 0,
     logoDireitaOffsetX: 0,
     logoDireitaOffsetY: 0,
     tituloOffsetX: 0,
@@ -286,12 +298,20 @@ export function createPresetTemplate(
     usarCalculoAutomaticoVerso: true,
     usarMolduraOriginal: true,
     molduraFrenteUrl: '/assets/certificado-moldura-frente.png',
+    mostrarLogoEsquerda: true,
+    mostrarLogoCentro: false,
+    mostrarLogoDireita: true,
     logoEsquerdaUrl: '/assets/aistudio/imagem_01_2da3aec8.png',
+    logoCentroUrl: '',
+    logoCentroTexto: '',
+    mostrarLegendaLogoCentro: false,
     logoDireitaUrl: '',
     logoDireitaTexto: 'MARINHA DO BRASIL',
     mostrarLegendaLogoDireita: true,
     tamanhoLogoEsquerda: 90,
     opacidadeLogoEsquerda: 1,
+    tamanhoLogoCentro: 84,
+    opacidadeLogoCentro: 1,
     tamanhoLogoDireita: 74,
     opacidadeLogoDireita: 1,
     marcaDaguaFrenteUrl: '/assets/aistudio/WhatsApp_Image_2026-02-11_at_22.02.18_8edf921e.jpeg',

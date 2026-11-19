@@ -17,6 +17,7 @@ import {
 
 export type DraggableCertificateElement =
   | 'logoEsquerda'
+  | 'logoCentro'
   | 'logoDireita'
   | 'titulo'
   | 'texto'
@@ -356,6 +357,9 @@ export function CertificateSheet({
     if (element === 'logoEsquerda') {
       origX = template.logoEsquerdaOffsetX ?? 0;
       origY = template.logoEsquerdaOffsetY ?? 0;
+    } else if (element === 'logoCentro') {
+      origX = template.logoCentroOffsetX ?? 0;
+      origY = template.logoCentroOffsetY ?? 0;
     } else if (element === 'logoDireita') {
       origX = template.logoDireitaOffsetX ?? 0;
       origY = template.logoDireitaOffsetY ?? 0;
@@ -399,6 +403,13 @@ export function CertificateSheet({
           ...prev,
           logoEsquerdaOffsetX: clamp(nextX, -90, 760),
           logoEsquerdaOffsetY: clamp(nextY, -60, 520),
+        };
+      }
+      if (element === 'logoCentro') {
+        return {
+          ...prev,
+          logoCentroOffsetX: clamp(nextX, -420, 420),
+          logoCentroOffsetY: clamp(nextY, -60, 520),
         };
       }
       if (element === 'logoDireita') {
@@ -614,9 +625,19 @@ export function CertificateSheet({
   const backWmWidth = Math.round(backWmBase * (backWmScaleW / 100));
   const backWmHeight = Math.round(backWmBase * (backWmScaleH / 100));
 
-  // Crest sizes, opacities & right caption anti-duplication
+  // Crest visibility, sizes, opacities & captions
+  const showLeftLogo = template.mostrarLogoEsquerda !== false;
+  const showCenterLogo = template.mostrarLogoCentro === true;
+  const showRightLogo = template.mostrarLogoDireita !== false;
+
   const leftLogoSize = template.tamanhoLogoEsquerda ?? 90;
   const leftLogoOpacity = template.opacidadeLogoEsquerda ?? 1;
+  const centerLogoSize = template.tamanhoLogoCentro ?? 84;
+  const centerLogoOpacity = template.opacidadeLogoCentro ?? 1;
+  const centerCaptionText =
+    template.mostrarLegendaLogoCentro && template.logoCentroTexto
+      ? template.logoCentroTexto.trim()
+      : '';
   const rightLogoSize = template.tamanhoLogoDireita ?? 74;
   const rightLogoOpacity = template.opacidadeLogoDireita ?? 1;
   const hasCustomRightLogo = Boolean(template.logoDireitaUrl && template.logoDireitaUrl.trim());
@@ -744,75 +765,168 @@ export function CertificateSheet({
               boxSizing: 'border-box',
             }}
           >
-            {/* Header Logos */}
+            {/* Header Logos (Left | Center | Right — each independently showable/hideable) */}
             <div
               style={{
                 display: 'flex',
                 alignItems: 'flex-start',
                 justifyContent: 'space-between',
                 padding: '0 24px',
-                minHeight: '96px',
+                minHeight: showLeftLogo || showCenterLogo || showRightLogo ? '96px' : '28px',
+                gap: '16px',
               }}
             >
-              {(() => {
-                const drag = getDragProps('logoEsquerda', 'Brasão Esquerdo');
-                return (
-                  <div
-                    {...drag}
-                    style={{
-                      position: 'relative',
-                      left: `${template.logoEsquerdaOffsetX ?? 0}px`,
-                      top: `${template.logoEsquerdaOffsetY ?? 0}px`,
-                      zIndex: activeDrag === 'logoEsquerda' ? 20 : 12,
-                      minWidth: '48px',
-                      minHeight: '48px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      ...drag.style,
-                    }}
-                  >
-                    {template.logoEsquerdaUrl && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={resolveAssetCacheSrc(template.logoEsquerdaUrl)}
-                        alt="Brasão Guarda Costeira"
-                        crossOrigin="anonymous"
-                        draggable={false}
+              {/* Left Crest Slot */}
+              <div
+                style={{
+                  flex: '1 1 0%',
+                  display: 'flex',
+                  justifyContent: 'flex-start',
+                  alignItems: 'flex-start',
+                }}
+              >
+                {showLeftLogo &&
+                  (() => {
+                    const drag = getDragProps('logoEsquerda', 'Brasão Esquerdo');
+                    return (
+                      <div
+                        {...drag}
                         style={{
-                          width: `${leftLogoSize}px`,
-                          height: `${leftLogoSize}px`,
-                          objectFit: 'contain',
-                          opacity: leftLogoOpacity,
+                          position: 'relative',
+                          left: `${template.logoEsquerdaOffsetX ?? 0}px`,
+                          top: `${template.logoEsquerdaOffsetY ?? 0}px`,
+                          zIndex: activeDrag === 'logoEsquerda' ? 20 : 12,
+                          minWidth: '48px',
+                          minHeight: '48px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          ...drag.style,
                         }}
-                      />
-                    )}
-                  </div>
-                );
-              })()}
+                      >
+                        {template.logoEsquerdaUrl && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={resolveAssetCacheSrc(template.logoEsquerdaUrl)}
+                            alt="Brasão Guarda Costeira"
+                            crossOrigin="anonymous"
+                            draggable={false}
+                            style={{
+                              width: `${leftLogoSize}px`,
+                              height: `${leftLogoSize}px`,
+                              objectFit: 'contain',
+                              opacity: leftLogoOpacity,
+                            }}
+                          />
+                        )}
+                      </div>
+                    );
+                  })()}
+              </div>
 
-              {(() => {
-                const drag = getDragProps('logoDireita', 'Brasão Direito');
-                return (
-                  <div
-                    {...drag}
-                    style={{
-                      position: 'relative',
-                      left: `${template.logoDireitaOffsetX ?? 0}px`,
-                      top: `${template.logoDireitaOffsetY ?? 0}px`,
-                      zIndex: activeDrag === 'logoDireita' ? 20 : 12,
-                      ...drag.style,
-                    }}
-                  >
-                    <MarinhaBrasilCrest
-                      customUrl={template.logoDireitaUrl}
-                      label={rightCaptionText}
-                      size={rightLogoSize}
-                      opacity={rightLogoOpacity}
-                    />
-                  </div>
-                );
-              })()}
+              {/* Center Crest Slot */}
+              <div
+                style={{
+                  flex: '0 0 auto',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'flex-start',
+                }}
+              >
+                {showCenterLogo &&
+                  (template.logoCentroUrl || centerCaptionText) &&
+                  (() => {
+                    const drag = getDragProps('logoCentro', 'Brasão Central');
+                    return (
+                      <div
+                        {...drag}
+                        style={{
+                          position: 'relative',
+                          left: `${template.logoCentroOffsetX ?? 0}px`,
+                          top: `${template.logoCentroOffsetY ?? 0}px`,
+                          zIndex: activeDrag === 'logoCentro' ? 20 : 12,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '4px',
+                          ...drag.style,
+                        }}
+                      >
+                        {template.logoCentroUrl && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={resolveAssetCacheSrc(template.logoCentroUrl)}
+                            alt={centerCaptionText || 'Brasão Central'}
+                            crossOrigin="anonymous"
+                            draggable={false}
+                            style={{
+                              width: `${centerLogoSize}px`,
+                              height: `${centerLogoSize}px`,
+                              objectFit: 'contain',
+                              opacity: centerLogoOpacity,
+                            }}
+                          />
+                        )}
+                        {centerCaptionText && (
+                          <div
+                            style={{
+                              fontSize: `${Math.max(
+                                9,
+                                Math.min(16, Math.round(centerLogoSize * 0.148))
+                              )}px`,
+                              fontWeight: 500,
+                              letterSpacing: '0.04em',
+                              color: '#162d4c',
+                              fontFamily:
+                                '"Segoe UI", system-ui, -apple-system, Arial, sans-serif',
+                              textAlign: 'center',
+                              lineHeight: 1.2,
+                              maxWidth: `${Math.max(120, Math.round(centerLogoSize * 1.65))}px`,
+                              opacity: centerLogoOpacity,
+                            }}
+                          >
+                            {centerCaptionText}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+              </div>
+
+              {/* Right Crest Slot */}
+              <div
+                style={{
+                  flex: '1 1 0%',
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  alignItems: 'flex-start',
+                }}
+              >
+                {showRightLogo &&
+                  (() => {
+                    const drag = getDragProps('logoDireita', 'Brasão Direito');
+                    return (
+                      <div
+                        {...drag}
+                        style={{
+                          position: 'relative',
+                          left: `${template.logoDireitaOffsetX ?? 0}px`,
+                          top: `${template.logoDireitaOffsetY ?? 0}px`,
+                          zIndex: activeDrag === 'logoDireita' ? 20 : 12,
+                          ...drag.style,
+                        }}
+                      >
+                        <MarinhaBrasilCrest
+                          customUrl={template.logoDireitaUrl}
+                          label={rightCaptionText}
+                          size={rightLogoSize}
+                          opacity={rightLogoOpacity}
+                        />
+                      </div>
+                    );
+                  })()}
+              </div>
             </div>
 
             {/* Title + Body + Date */}
