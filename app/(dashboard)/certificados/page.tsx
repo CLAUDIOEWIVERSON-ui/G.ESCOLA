@@ -17,6 +17,7 @@ import {
   ChevronRight,
   ArrowUp,
   ArrowDown,
+  ArrowLeftRight,
   Search,
   CheckCircle2,
   Loader2,
@@ -2858,7 +2859,7 @@ export default function CertificadosPage() {
                       onChange={(e) =>
                         setTemplate((prev) => ({ ...prev, assinaturaPosto: e.target.value }))
                       }
-                      placeholder="Posto / Patente"
+                      placeholder="Posto / Graduação"
                       className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs"
                     />
                     <input
@@ -2867,7 +2868,7 @@ export default function CertificadosPage() {
                       onChange={(e) =>
                         setTemplate((prev) => ({ ...prev, assinaturaCargo: e.target.value }))
                       }
-                      placeholder="Cargo / Função"
+                      placeholder="Função / Cargo"
                       className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs"
                     />
                   </div>
@@ -2958,62 +2959,119 @@ export default function CertificadosPage() {
                   </div>
                 </div>
 
-                {/* Optional 2nd Signature */}
+                {/* Optional 2nd Signature (Opposite Side) */}
                 <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5">
-                  <label className="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={template.mostrarSegundaAssinatura}
-                      onChange={(e) =>
-                        setTemplate((prev) => ({
-                          ...prev,
-                          mostrarSegundaAssinatura: e.target.checked,
-                        }))
-                      }
-                      className="rounded border-slate-300"
-                    />
-                    <span>Habilitar Segunda Assinatura (à esquerda)</span>
-                  </label>
-
-                  {template.mostrarSegundaAssinatura && (
-                    <div className="space-y-2 pt-1">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <label className="flex items-center gap-2 text-xs font-bold text-slate-800 cursor-pointer">
                       <input
-                        type="text"
-                        value={template.segundaAssinaturaNome}
+                        type="checkbox"
+                        checked={template.mostrarSegundaAssinatura}
                         onChange={(e) =>
                           setTemplate((prev) => ({
                             ...prev,
-                            segundaAssinaturaNome: e.target.value,
+                            mostrarSegundaAssinatura: e.target.checked,
                           }))
                         }
-                        placeholder="Nome completo (2ª Assinatura)"
-                        className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold"
+                        className="rounded border-slate-300"
                       />
-                      <div className="grid grid-cols-2 gap-2">
+                      <span>Inserir 2ª Assinatura (Lado Oposto)</span>
+                    </label>
+
+                    {template.mostrarSegundaAssinatura && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setTemplate((prev) => ({
+                            ...prev,
+                            assinaturaAlinhamento:
+                              prev.assinaturaAlinhamento === 'left' ? 'right' : 'left',
+                          }))
+                        }
+                        className="px-2 py-1 rounded-lg bg-white border border-slate-200 hover:bg-blue-50 text-blue-900 text-[10px] font-bold flex items-center gap-1 cursor-pointer"
+                        title="Alternar em qual lado cada assinatura aparece"
+                      >
+                        <ArrowLeftRight size={11} />
+                        <span>Inverter Lados</span>
+                      </button>
+                    )}
+                  </div>
+
+                  <p className="text-[10px] text-slate-500 leading-snug">
+                    {template.mostrarSegundaAssinatura ? (
+                      <>
+                        Posicionada automaticamente na{' '}
+                        <strong className="text-slate-700">
+                          {(template.assinaturaAlinhamento || 'right') === 'left'
+                            ? 'Direita'
+                            : 'Esquerda'}
+                        </strong>{' '}
+                        (lado oposto à Assinatura Principal na{' '}
+                        <strong className="text-slate-700">
+                          {(template.assinaturaAlinhamento || 'right') === 'left'
+                            ? 'Esquerda'
+                            : 'Direita'}
+                        </strong>
+                        ).
+                      </>
+                    ) : (
+                      'Opcional: habilite para adicionar uma segunda assinatura do lado oposto à assinatura principal.'
+                    )}
+                  </p>
+
+                  {template.mostrarSegundaAssinatura && (
+                    <div className="space-y-2 pt-1 border-t border-slate-200">
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">
+                          Nome Completo
+                        </label>
                         <input
                           type="text"
-                          value={template.segundaAssinaturaPosto}
+                          value={template.segundaAssinaturaNome}
                           onChange={(e) =>
                             setTemplate((prev) => ({
                               ...prev,
-                              segundaAssinaturaPosto: e.target.value,
+                              segundaAssinaturaNome: e.target.value,
                             }))
                           }
-                          placeholder="Posto / Patente"
-                          className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs"
+                          placeholder="Nome completo (2ª Assinatura)"
+                          className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold"
                         />
-                        <input
-                          type="text"
-                          value={template.segundaAssinaturaCargo}
-                          onChange={(e) =>
-                            setTemplate((prev) => ({
-                              ...prev,
-                              segundaAssinaturaCargo: e.target.value,
-                            }))
-                          }
-                          placeholder="Cargo / Função"
-                          className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs"
-                        />
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">
+                            Posto / Graduação
+                          </label>
+                          <input
+                            type="text"
+                            value={template.segundaAssinaturaPosto}
+                            onChange={(e) =>
+                              setTemplate((prev) => ({
+                                ...prev,
+                                segundaAssinaturaPosto: e.target.value,
+                              }))
+                            }
+                            placeholder="Ex: Capitão-Tenente"
+                            className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">
+                            Função
+                          </label>
+                          <input
+                            type="text"
+                            value={template.segundaAssinaturaCargo}
+                            onChange={(e) =>
+                              setTemplate((prev) => ({
+                                ...prev,
+                                segundaAssinaturaCargo: e.target.value,
+                              }))
+                            }
+                            placeholder="Ex: Comandante da Guarda Costeira"
+                            className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs"
+                          />
+                        </div>
                       </div>
                     </div>
                   )}

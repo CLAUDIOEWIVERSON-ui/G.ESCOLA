@@ -924,7 +924,9 @@ export function CertificateSheet({
             {(() => {
               const sigAlign = template.assinaturaAlinhamento || 'right';
               const sigHeightOffset = template.assinaturaAlturaOffset ?? 0;
-              const sigJustify = template.mostrarSegundaAssinatura
+              const hasSecondSig = Boolean(template.mostrarSegundaAssinatura);
+              const isPrimaryLeft = sigAlign === 'left';
+              const sigJustify = hasSecondSig
                 ? 'space-between'
                 : sigAlign === 'left'
                   ? 'flex-start'
@@ -932,6 +934,80 @@ export function CertificateSheet({
                     ? 'center'
                     : 'flex-end';
               const drag = getDragProps('assinatura', 'Altura da Assinatura');
+
+              const primaryBlock = (
+                <div
+                  key="primary-signature"
+                  style={{
+                    textAlign: 'center',
+                    flex: hasSecondSig ? '0 1 420px' : undefined,
+                    minWidth: hasSecondSig ? '310px' : '390px',
+                    maxWidth: hasSecondSig ? '425px' : undefined,
+                    marginLeft: !hasSecondSig && sigAlign === 'left' ? '16px' : '0',
+                    marginRight: !hasSecondSig && sigAlign === 'right' ? '16px' : '0',
+                    fontFamily: signatureFontCss,
+                    fontStyle: sigItalic ? 'italic' : 'normal',
+                    color: '#0f172a',
+                    lineHeight: 1.35,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: '14.5px',
+                      fontWeight: sigBold ? 700 : 400,
+                      letterSpacing: '0.03em',
+                    }}
+                  >
+                    {template.assinaturaNome}
+                  </div>
+                  {template.assinaturaPosto && (
+                    <div style={{ fontSize: '14px', fontWeight: sigBold ? 700 : 400 }}>
+                      {template.assinaturaPosto}
+                    </div>
+                  )}
+                  {template.assinaturaCargo && (
+                    <div style={{ fontSize: '13.5px', fontWeight: sigBold ? 700 : 400 }}>
+                      {template.assinaturaCargo}
+                    </div>
+                  )}
+                </div>
+              );
+
+              const secondaryBlock = hasSecondSig ? (
+                <div
+                  key="secondary-signature"
+                  style={{
+                    textAlign: 'center',
+                    flex: '0 1 420px',
+                    minWidth: '310px',
+                    maxWidth: '425px',
+                    fontFamily: signatureFontCss,
+                    fontStyle: sigItalic ? 'italic' : 'normal',
+                    color: '#0f172a',
+                    lineHeight: 1.35,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: '14.5px',
+                      fontWeight: sigBold ? 700 : 400,
+                      letterSpacing: '0.03em',
+                    }}
+                  >
+                    {template.segundaAssinaturaNome || 'ASSINATURA'}
+                  </div>
+                  {template.segundaAssinaturaPosto && (
+                    <div style={{ fontSize: '14px', fontWeight: sigBold ? 700 : 400 }}>
+                      {template.segundaAssinaturaPosto}
+                    </div>
+                  )}
+                  {template.segundaAssinaturaCargo && (
+                    <div style={{ fontSize: '13.5px', fontWeight: sigBold ? 700 : 400 }}>
+                      {template.segundaAssinaturaCargo}
+                    </div>
+                  )}
+                </div>
+              ) : null;
 
               return (
                 <div
@@ -943,78 +1019,26 @@ export function CertificateSheet({
                     display: 'flex',
                     alignItems: 'flex-end',
                     justifyContent: sigJustify,
-                    padding: '0 28px 6px 28px',
+                    padding: hasSecondSig ? '0 14px 6px 14px' : '0 28px 6px 28px',
                     gap: '32px',
                     ...drag.style,
                   }}
                 >
-                  {template.mostrarSegundaAssinatura && (
-                    <div
-                      style={{
-                        textAlign: 'center',
-                        minWidth: '300px',
-                        fontFamily: signatureFontCss,
-                        fontStyle: sigItalic ? 'italic' : 'normal',
-                        color: '#0f172a',
-                        lineHeight: 1.35,
-                      }}
-                    >
-                      <div
-                        style={{
-                          fontSize: '14px',
-                          fontWeight: sigBold ? 700 : 400,
-                          letterSpacing: '0.03em',
-                        }}
-                      >
-                        {template.segundaAssinaturaNome || 'ASSINATURA'}
-                      </div>
-                      {template.segundaAssinaturaPosto && (
-                        <div style={{ fontSize: '13.5px', fontWeight: sigBold ? 700 : 400 }}>
-                          {template.segundaAssinaturaPosto}
-                        </div>
-                      )}
-                      {template.segundaAssinaturaCargo && (
-                        <div style={{ fontSize: '13px', fontWeight: sigBold ? 700 : 400 }}>
-                          {template.segundaAssinaturaCargo}
-                        </div>
-                      )}
-                    </div>
+                  {hasSecondSig ? (
+                    isPrimaryLeft ? (
+                      <>
+                        {primaryBlock}
+                        {secondaryBlock}
+                      </>
+                    ) : (
+                      <>
+                        {secondaryBlock}
+                        {primaryBlock}
+                      </>
+                    )
+                  ) : (
+                    primaryBlock
                   )}
-
-                  <div
-                    style={{
-                      textAlign: 'center',
-                      minWidth: '390px',
-                      marginLeft:
-                        !template.mostrarSegundaAssinatura && sigAlign === 'left' ? '16px' : '0',
-                      marginRight:
-                        !template.mostrarSegundaAssinatura && sigAlign === 'right' ? '16px' : '0',
-                      fontFamily: signatureFontCss,
-                      fontStyle: sigItalic ? 'italic' : 'normal',
-                      color: '#0f172a',
-                      lineHeight: 1.35,
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: '14.5px',
-                        fontWeight: sigBold ? 700 : 400,
-                        letterSpacing: '0.03em',
-                      }}
-                    >
-                      {template.assinaturaNome}
-                    </div>
-                    {template.assinaturaPosto && (
-                      <div style={{ fontSize: '14px', fontWeight: sigBold ? 700 : 400 }}>
-                        {template.assinaturaPosto}
-                      </div>
-                    )}
-                    {template.assinaturaCargo && (
-                      <div style={{ fontSize: '13.5px', fontWeight: sigBold ? 700 : 400 }}>
-                        {template.assinaturaCargo}
-                      </div>
-                    )}
-                  </div>
                 </div>
               );
             })()}
