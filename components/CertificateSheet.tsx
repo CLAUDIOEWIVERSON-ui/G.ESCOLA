@@ -409,7 +409,7 @@ export function CertificateSheet({
         return {
           ...prev,
           logoCentroOffsetX: clamp(nextX, -420, 420),
-          logoCentroOffsetY: clamp(nextY, -60, 520),
+          logoCentroOffsetY: clamp(nextY, -110, 640),
         };
       }
       if (element === 'logoDireita') {
@@ -739,6 +739,8 @@ export function CertificateSheet({
                 alt="Marca d'água"
                 crossOrigin="anonymous"
                 style={{
+                  position: 'relative',
+                  top: `${template.marcaDaguaFrenteOffsetY ?? 0}px`,
                   width: `${frontWmWidth}px`,
                   height: `${frontWmHeight}px`,
                   maxWidth: 'none',
@@ -1322,6 +1324,8 @@ export function CertificateSheet({
                     alt="Marca d'água Verso"
                     crossOrigin="anonymous"
                     style={{
+                      position: 'relative',
+                      top: `${template.marcaDaguaVersoOffsetY ?? 0}px`,
                       width: `${backWmWidth}px`,
                       height: `${backWmHeight}px`,
                       maxWidth: 'none',

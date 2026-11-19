@@ -94,9 +94,11 @@ export interface CertificateTemplateConfig {
   tamanhoMarcaDaguaFrente?: number;
   escalaLarguraMarcaDaguaFrente?: number;
   escalaAlturaMarcaDaguaFrente?: number;
+  marcaDaguaFrenteOffsetY?: number;
   tamanhoMarcaDaguaVerso?: number;
   escalaLarguraMarcaDaguaVerso?: number;
   escalaAlturaMarcaDaguaVerso?: number;
+  marcaDaguaVersoOffsetY?: number;
   corBordaFrente: string;
   corBordaVerso: string;
 
@@ -321,9 +323,11 @@ export function createPresetTemplate(
     tamanhoMarcaDaguaFrente: 545,
     escalaLarguraMarcaDaguaFrente: 100,
     escalaAlturaMarcaDaguaFrente: 100,
+    marcaDaguaFrenteOffsetY: 0,
     tamanhoMarcaDaguaVerso: 580,
     escalaLarguraMarcaDaguaVerso: 100,
     escalaAlturaMarcaDaguaVerso: 100,
+    marcaDaguaVersoOffsetY: 0,
     corBordaFrente: '#52525b',
     corBordaVerso: '#071b3b',
     fonteCorpo: 'garamond',

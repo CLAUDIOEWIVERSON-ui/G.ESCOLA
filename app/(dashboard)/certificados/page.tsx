@@ -3117,7 +3117,8 @@ export default function CertificadosPage() {
                         (template.tituloOffsetX ?? 0) !== 0 ||
                         (template.tituloOffsetY ?? 0) !== 0 ||
                         (template.textoOffsetX ?? 0) !== 0 ||
-                        (template.textoOffsetY ?? 0) !== 0) && (
+                        (template.textoOffsetY ?? 0) !== 0 ||
+                        (template.marcaDaguaFrenteOffsetY ?? 0) !== 0) && (
                         <button
                           type="button"
                           onClick={() =>
@@ -3133,6 +3134,7 @@ export default function CertificadosPage() {
                               tituloOffsetY: 0,
                               textoOffsetX: 0,
                               textoOffsetY: 0,
+                              marcaDaguaFrenteOffsetY: 0,
                             }))
                           }
                           className="px-2 py-1 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-[10px] font-bold text-slate-600 cursor-pointer"
@@ -3165,8 +3167,8 @@ export default function CertificadosPage() {
                         yKey: 'logoCentroOffsetY' as const,
                         minX: -420,
                         maxX: 420,
-                        minY: -60,
-                        maxY: 520,
+                        minY: -110,
+                        maxY: 640,
                         sizeKey: 'tamanhoLogoCentro' as const,
                         defaultSize: 84,
                         opacityKey: 'opacidadeLogoCentro' as const,
@@ -3395,6 +3397,53 @@ export default function CertificadosPage() {
                         </div>
                       );
                     })}
+
+                    {/* Front Watermark Wide Vertical Control */}
+                    <div className="sm:col-span-2 p-2.5 rounded-lg bg-white border border-slate-200 space-y-1.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[11px] font-bold text-slate-800">
+                          Marca d&apos;Água (Frente) — Movimento Vertical
+                        </span>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="font-mono text-[10px] text-slate-700 font-semibold">
+                            {(template.marcaDaguaFrenteOffsetY ?? 0) > 0
+                              ? `+${template.marcaDaguaFrenteOffsetY}`
+                              : (template.marcaDaguaFrenteOffsetY ?? 0)}
+                            px
+                          </span>
+                          {(template.marcaDaguaFrenteOffsetY ?? 0) !== 0 && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setTemplate((prev) => ({ ...prev, marcaDaguaFrenteOffsetY: 0 }))
+                              }
+                              className="text-[10px] font-semibold text-blue-700 hover:text-blue-900 underline cursor-pointer"
+                            >
+                              Zerar
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <input
+                        type="range"
+                        min={-380}
+                        max={380}
+                        step={4}
+                        value={template.marcaDaguaFrenteOffsetY ?? 0}
+                        onChange={(e) =>
+                          setTemplate((prev) => ({
+                            ...prev,
+                            marcaDaguaFrenteOffsetY: Number(e.target.value),
+                          }))
+                        }
+                        className="w-full accent-blue-800"
+                      />
+                      <div className="flex justify-between text-[9px] text-slate-400 font-semibold">
+                        <span>Topo (-380px)</span>
+                        <span>Centro (0px)</span>
+                        <span>Base (+380px)</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -4106,6 +4155,45 @@ export default function CertificadosPage() {
                       />
                     </div>
 
+                    <div>
+                      <div className="flex items-center justify-between text-[10px] font-bold text-slate-600 mb-0.5">
+                        <span>Posição Vertical (Altura)</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono text-slate-800">
+                            {(template.marcaDaguaFrenteOffsetY ?? 0) > 0
+                              ? `+${template.marcaDaguaFrenteOffsetY}`
+                              : (template.marcaDaguaFrenteOffsetY ?? 0)}
+                            px
+                          </span>
+                          {(template.marcaDaguaFrenteOffsetY ?? 0) !== 0 && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setTemplate((prev) => ({ ...prev, marcaDaguaFrenteOffsetY: 0 }))
+                              }
+                              className="text-[10px] text-blue-700 hover:text-blue-900 underline cursor-pointer"
+                            >
+                              Zerar
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <input
+                        type="range"
+                        min={-380}
+                        max={380}
+                        step={4}
+                        value={template.marcaDaguaFrenteOffsetY ?? 0}
+                        onChange={(e) =>
+                          setTemplate((prev) => ({
+                            ...prev,
+                            marcaDaguaFrenteOffsetY: Number(e.target.value),
+                          }))
+                        }
+                        className="w-full accent-blue-800"
+                      />
+                    </div>
+
                     <div className="flex flex-wrap gap-1 pt-0.5">
                       <button
                         type="button"
@@ -4115,6 +4203,7 @@ export default function CertificadosPage() {
                             tamanhoMarcaDaguaFrente: 545,
                             escalaLarguraMarcaDaguaFrente: 100,
                             escalaAlturaMarcaDaguaFrente: 100,
+                            marcaDaguaFrenteOffsetY: 0,
                           }))
                         }
                         className="px-2 py-0.5 text-[10px] font-bold bg-white border border-slate-200 hover:bg-slate-100 rounded cursor-pointer"
@@ -4252,6 +4341,45 @@ export default function CertificadosPage() {
                       />
                     </div>
 
+                    <div>
+                      <div className="flex items-center justify-between text-[10px] font-bold text-slate-600 mb-0.5">
+                        <span>Posição Vertical (Altura)</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono text-slate-800">
+                            {(template.marcaDaguaVersoOffsetY ?? 0) > 0
+                              ? `+${template.marcaDaguaVersoOffsetY}`
+                              : (template.marcaDaguaVersoOffsetY ?? 0)}
+                            px
+                          </span>
+                          {(template.marcaDaguaVersoOffsetY ?? 0) !== 0 && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setTemplate((prev) => ({ ...prev, marcaDaguaVersoOffsetY: 0 }))
+                              }
+                              className="text-[10px] text-blue-700 hover:text-blue-900 underline cursor-pointer"
+                            >
+                              Zerar
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <input
+                        type="range"
+                        min={-380}
+                        max={380}
+                        step={4}
+                        value={template.marcaDaguaVersoOffsetY ?? 0}
+                        onChange={(e) =>
+                          setTemplate((prev) => ({
+                            ...prev,
+                            marcaDaguaVersoOffsetY: Number(e.target.value),
+                          }))
+                        }
+                        className="w-full accent-blue-800"
+                      />
+                    </div>
+
                     <div className="flex flex-wrap gap-1 pt-0.5">
                       <button
                         type="button"
@@ -4261,6 +4389,7 @@ export default function CertificadosPage() {
                             tamanhoMarcaDaguaVerso: 580,
                             escalaLarguraMarcaDaguaVerso: 100,
                             escalaAlturaMarcaDaguaVerso: 100,
+                            marcaDaguaVersoOffsetY: 0,
                           }))
                         }
                         className="px-2 py-0.5 text-[10px] font-bold bg-white border border-slate-200 hover:bg-slate-100 rounded cursor-pointer"
