@@ -40,6 +40,7 @@ import {
   Link2,
   Unlink,
   Pencil,
+  Copy,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase/client';
@@ -164,6 +165,9 @@ export default function CertificadosPage() {
     'blank' | 'formacao_marinheiros' | 'expedito'
   >('blank');
   const [creatingNewModel, setCreatingNewModel] = useState(false);
+  const [showSaveAsNewModal, setShowSaveAsNewModal] = useState(false);
+  const [saveAsNewName, setSaveAsNewName] = useState('');
+  const [savingAsNewModel, setSavingAsNewModel] = useState(false);
   const [associateTurmaId, setAssociateTurmaId] = useState<string>('');
   const [associatingTurma, setAssociatingTurma] = useState(false);
   const [syncTurmaDatesOnAssociate, setSyncTurmaDatesOnAssociate] = useState(false);
@@ -1507,6 +1511,72 @@ export default function CertificadosPage() {
     }
   };
 
+  // Clone and save the current working certificate configuration as a brand-new standalone model
+  const openSaveAsNewModal = () => {
+    const baseName = (template.nomeModelo || 'Modelo de Certificado').trim();
+    setSaveAsNewName(`${baseName} (Novo)`);
+    setShowSaveAsNewModal(true);
+  };
+
+  const handleSaveCurrentAsNewModel = async () => {
+    const baseName = (template.nomeModelo || 'Modelo de Certificado').trim();
+    const resolvedName = saveAsNewName.trim() || `${baseName} (Novo)`;
+
+    const clonedTemplate: CertificateTemplateConfig = {
+      ...template,
+      disciplinas: (template.disciplinas || []).map((d) => ({ ...d })),
+      textoCorpoPorAluno: { ...(template.textoCorpoPorAluno || {}) },
+      id: undefined,
+      templateKey: `custom_${Date.now()}`,
+      nomeModelo: resolvedName,
+      turmaId: null,
+      cursoId: null,
+    };
+
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = null;
+    }
+
+    if (selectedTurmaIdRef.current) {
+      skipNextTurmaAutoLoadRef.current = true;
+    }
+
+    lastSavedSignatureRef.current = getTemplateSaveSignature(clonedTemplate);
+    initializedAutoSaveBaselineRef.current = true;
+    setTemplate(clonedTemplate);
+
+    setSavingAsNewModel(true);
+    try {
+      if (canEdit) {
+        await persistTemplateRecord(clonedTemplate, { silent: true });
+      } else {
+        const localRecord: SavedTemplateRecord = {
+          id: `local-${Date.now()}`,
+          turma_id: null,
+          curso_id: null,
+          template_data: clonedTemplate,
+          created_at: new Date().toISOString(),
+        };
+        setSavedTemplates((prev) => {
+          const updated = [localRecord, ...prev];
+          try {
+            localStorage.setItem(LOCAL_TEMPLATES_KEY, JSON.stringify(updated));
+          } catch {
+            // ignore storage quota errors
+          }
+          return updated;
+        });
+      }
+
+      setShowSaveAsNewModal(false);
+      setSaveAsNewName('');
+      toast.success(`Novo modelo "${resolvedName}" salvo em Modelos Salvos!`);
+    } finally {
+      setSavingAsNewModel(false);
+    }
+  };
+
   // Associate the current working model (or a specific saved model) with any chosen Turma
   const handleAssociateTemplateToTurma = async (
     targetTurmaIdParam?: string,
@@ -2062,25 +2132,37 @@ export default function CertificadosPage() {
             </p>
           </div>
         </div>
-        {canEdit && (
-          <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl shrink-0">
-            {savingTemplate ? (
-              <>
-                <Loader2 size={14} className="animate-spin text-blue-700" />
-                <span>Salvando alterações...</span>
-              </>
-            ) : (
-              <>
-                <Save size={14} className="text-emerald-600" />
-                <span>
-                  {lastAutoSavedAt
-                    ? `Salvo automaticamente às ${lastAutoSavedAt}`
-                    : 'Salvamento automático ativo'}
-                </span>
-              </>
-            )}
-          </div>
-        )}
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          {canEdit && (
+            <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl">
+              {savingTemplate ? (
+                <>
+                  <Loader2 size={14} className="animate-spin text-blue-700" />
+                  <span>Salvando alterações...</span>
+                </>
+              ) : (
+                <>
+                  <Save size={14} className="text-emerald-600" />
+                  <span>
+                    {lastAutoSavedAt
+                      ? `Salvo automaticamente às ${lastAutoSavedAt}`
+                      : 'Salvamento automático ativo'}
+                  </span>
+                </>
+              )}
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={openSaveAsNewModal}
+            className="px-3.5 py-2 rounded-xl text-xs font-bold bg-blue-900 hover:bg-blue-950 text-white shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
+            title="Salvar uma cópia do modelo atual como um novo modelo independente"
+          >
+            <Copy size={14} />
+            <span>Salvar como Novo Modelo</span>
+          </button>
+        </div>
       </div>
 
       {isConvidado && (
@@ -4893,6 +4975,27 @@ export default function CertificadosPage() {
             {/* TAB 4: MODELOS SALVOS */}
             {editorTab === 'modelos' && (
               <div className="space-y-4">
+                {/* Save Current Model As Brand-New Saved Copy */}
+                <div className="p-3.5 rounded-xl bg-indigo-50/70 border border-indigo-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-indigo-950">
+                      <Copy size={14} />
+                      <span>Salvar Modelo Atual como Novo</span>
+                    </div>
+                    <p className="text-[11px] text-slate-600">
+                      Cria uma cópia independente do layout atual em Modelos Salvos sem alterar o modelo original.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={openSaveAsNewModal}
+                    className="px-3 py-1.5 rounded-lg bg-indigo-700 hover:bg-indigo-800 text-white text-[11px] font-bold flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
+                  >
+                    <Copy size={12} />
+                    <span>Salvar como Novo Modelo</span>
+                  </button>
+                </div>
+
                 {/* Create Brand-New Model From Scratch */}
                 <div className="p-3.5 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-2.5">
                   <div className="flex items-center justify-between gap-2">
@@ -5291,7 +5394,7 @@ export default function CertificadosPage() {
             <div className="px-3 py-2 rounded-xl bg-blue-50 border border-blue-200 text-[11px] font-semibold text-blue-900 flex items-center justify-between gap-2">
               <span className="flex items-center gap-1.5">
                 <Move size={13} className="shrink-0" />
-                Modo Mover na Folha ativo: clique e arraste o Brasão Esquerdo, Brasão Direito, Título, Todo o Texto ou a Assinatura diretamente na folha.
+                Modo Mover na Folha ativo: clique e arraste o Brasão Esquerdo, Brasão Central, Brasão Direito, Título, Todo o Texto ou a Assinatura diretamente na folha.
               </span>
               <button
                 type="button"
@@ -5539,6 +5642,83 @@ export default function CertificadosPage() {
                   />
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Save Current Model As New Model Modal */}
+      {showSaveAsNewModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-md p-5 space-y-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-blue-900 text-white flex items-center justify-center shrink-0">
+                  <Copy size={16} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-slate-900">
+                    Salvar Modelo Atual como Novo
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    Será salvo como um novo registro independente em Modelos Salvos.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowSaveAsNewModal(false)}
+                className="p-1 rounded-lg hover:bg-slate-100 text-slate-500 cursor-pointer"
+                title="Fechar"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700">
+                Nome do Novo Modelo
+              </label>
+              <input
+                type="text"
+                autoFocus
+                value={saveAsNewName}
+                onChange={(e) => setSaveAsNewName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !savingAsNewModel) {
+                    e.preventDefault();
+                    void handleSaveCurrentAsNewModel();
+                  }
+                }}
+                placeholder="Ex: Modelo Curso Especial 2026"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/25"
+              />
+              <p className="text-[10px] text-slate-500 leading-snug">
+                Mantém todas as configurações atuais de frente, verso, brasões, marca d&apos;água e assinaturas sem sobrescrever o modelo anterior.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setShowSaveAsNewModal(false)}
+                className="px-3.5 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-700 cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveCurrentAsNewModel}
+                disabled={savingAsNewModel}
+                className="px-4 py-2 rounded-xl bg-blue-900 hover:bg-blue-950 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                {savingAsNewModel ? (
+                  <Loader2 size={13} className="animate-spin" />
+                ) : (
+                  <Copy size={13} />
+                )}
+                <span>Salvar como Novo</span>
+              </button>
             </div>
           </div>
         </div>
