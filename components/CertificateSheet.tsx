@@ -4,10 +4,12 @@ import React, { useRef, useState } from 'react';
 import {
   CertificateStudentContext,
   CertificateTemplateConfig,
+  adaptPortugueseStudentArticle,
   computeBackTotals,
   formatCourseTitleCasePT,
   formatNameTitleCasePT,
   groupCertificateRowsByModule,
+  isFemaleStudentGenero,
   resolveCertificateBodySegments,
   resolveCertificateFontCss,
   resolveSimplePlaceholders,
@@ -504,10 +506,14 @@ export function CertificateSheet({
       ? `${formattedStudentRank} ${formattedStudentFullName}`
       : formatNameTitleCasePT(rawStudentDisplay);
 
+  const isFemaleStudent = isFemaleStudentGenero(student.genero);
+  const articleBeforeRank = isFemaleStudent ? 'a' : 'ao';
+
   const replacements = {
     ALUNO: formattedStudentDisplay,
     POSTO_GRADUACAO: formattedStudentRank,
     NOME_COMPLETO: formattedStudentFullName,
+    ARTIGO: articleBeforeRank,
     CURSO: formattedBodyCourse,
     TURMA: student.turmaNome || '',
     DATA_INICIO: periodStart,
@@ -554,6 +560,12 @@ export function CertificateSheet({
       formattedStudentFullName
     );
   }
+
+  normalizedBodyTemplate = adaptPortugueseStudentArticle(
+    normalizedBodyTemplate,
+    isFemaleStudent,
+    formattedStudentRank
+  );
 
   const baseBodyItalic =
     template.textoCorpoItalico ?? (template.fonteCorpo !== 'sans');

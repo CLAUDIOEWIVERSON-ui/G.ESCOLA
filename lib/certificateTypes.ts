@@ -120,6 +120,7 @@ export interface CertificateStudentContext {
   mediaFinalNumero: number | null;
   disciplinas: CertificateDisciplineRow[];
   textoCorpoPersonalizado?: string;
+  genero?: string | null;
 }
 
 const MONTHS_PT = [
@@ -321,6 +322,93 @@ export function createPresetTemplate(
     tamanhoFonteCorpo: 19,
     alinhamentoTexto: 'left',
   };
+}
+
+export function createBlankTemplate(
+  nomeModelo = 'Novo Modelo de Certificado',
+  scope: CertificateCourseScope = 'geral'
+): CertificateTemplateConfig {
+  const base = createPresetTemplate(
+    scope === 'expedito' ? 'expedito' : 'formacao_marinheiros'
+  );
+  return {
+    ...base,
+    id: undefined,
+    templateKey: `custom_${Date.now()}`,
+    nomeModelo: nomeModelo.trim() || 'Novo Modelo de Certificado',
+    scope,
+    turmaId: null,
+    cursoId: null,
+    titulo: 'CERTIFICADO',
+    textoCorpo: '',
+    textoCorpoPorAluno: {},
+    textoPeriodoInicio: '',
+    textoPeriodoFim: '',
+    versoTituloCurso: '',
+    disciplinas: [],
+    cargaHorariaTotalManual: '',
+    mediaFinalManual: '',
+  };
+}
+
+export function isFemaleStudentGenero(genero?: string | null): boolean {
+  const g = String(genero || '').trim().toLowerCase();
+  return (
+    g === 'feminino' ||
+    g === 'feminina' ||
+    g === 'mulher' ||
+    g === 'f' ||
+    g === 'female'
+  );
+}
+
+/**
+ * Adapts the Portuguese article immediately before the student's rank/name
+ * ("a" when female, "ao" when male) for {{ARTIGO}}, {{ALUNO}}, {{POSTO_GRADUACAO}},
+ * or literal rank phrases (e.g. "certificado ao 1º Cabo" -> "certificado a 1º Cabo").
+ */
+export function adaptPortugueseStudentArticle(
+  text: string,
+  isFemale: boolean,
+  studentRank?: string
+): string {
+  if (!text) return text;
+  const targetLower = isFemale ? 'a' : 'ao';
+  const targetUpper = isFemale ? 'A' : 'AO';
+  const targetCap = isFemale ? 'A' : 'Ao';
+
+  const formatMatchedArticle = (art: string) => {
+    if (art === art.toUpperCase() && art.length >= 1 && art === 'AO') return targetUpper;
+    if (art === 'A') return targetUpper;
+    if (art === 'Ao') return targetCap;
+    return targetLower;
+  };
+
+  let result = text.replace(
+    /\b(ao|à|a)(\s+\*{0,3}\{\{(?:ALUNO|POSTO_GRADUACAO)\}\})/gi,
+    (full, art, rest, offset, whole) => {
+      const before = whole.slice(0, offset);
+      if (/\b(?:para|por|de|da|do|com|sem|sobre|entre|até|em)\s+$/i.test(before)) {
+        return full;
+      }
+      return `${formatMatchedArticle(art)}${rest}`;
+    }
+  );
+
+  const rankTrimmed = String(studentRank || '').trim();
+  if (rankTrimmed) {
+    const escapedRank = rankTrimmed.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const literalRankRegex = new RegExp(
+      `(\\b(?:certificado|outorgado|conferido|concedido|entregue|diploma)\\s+)(ao|à|a)(\\s+\\*{0,3}${escapedRank}\\b)`,
+      'gi'
+    );
+    result = result.replace(
+      literalRankRegex,
+      (_full, prefix, art, suffix) => `${prefix}${formatMatchedArticle(art)}${suffix}`
+    );
+  }
+
+  return result;
 }
 
 export function parseHoursValue(raw: string | number | null | undefined): number {
@@ -706,6 +794,7 @@ export function resolveCertificateBodySegments(
     ALUNO: string;
     POSTO_GRADUACAO: string;
     NOME_COMPLETO: string;
+    ARTIGO?: string;
     CURSO: string;
     TURMA: string;
     DATA_INICIO: string;
@@ -721,10 +810,10 @@ export function resolveCertificateBodySegments(
 
   // First match inline formatting markers or placeholder tokens
   const markerRegex =
-    /(\*\*\*[^*]+?\*\*\*|\*\*[^*]+?\*\*|\*[^*]+?\*|\{\{(?:ALUNO|POSTO_GRADUACAO|NOME_COMPLETO|CURSO|TURMA|DATA_INICIO|DATA_FIM|CARGA_HORARIA|MEDIA_FINAL)\}\})/g;
+    /(\*\*\*[^*]+?\*\*\*|\*\*[^*]+?\*\*|\*[^*]+?\*|\{\{(?:ALUNO|POSTO_GRADUACAO|NOME_COMPLETO|ARTIGO|CURSO|TURMA|DATA_INICIO|DATA_FIM|CARGA_HORARIA|MEDIA_FINAL)\}\})/g;
 
   const tokenRegex =
-    /(\{\{(?:ALUNO|POSTO_GRADUACAO|NOME_COMPLETO|CURSO|TURMA|DATA_INICIO|DATA_FIM|CARGA_HORARIA|MEDIA_FINAL)\}\})/g;
+    /(\{\{(?:ALUNO|POSTO_GRADUACAO|NOME_COMPLETO|ARTIGO|CURSO|TURMA|DATA_INICIO|DATA_FIM|CARGA_HORARIA|MEDIA_FINAL)\}\})/g;
 
   const expandPlaceholders = (
     raw: string,

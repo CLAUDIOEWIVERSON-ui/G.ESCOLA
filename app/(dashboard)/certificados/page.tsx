@@ -53,6 +53,7 @@ import {
   CertificateStudentContext,
   CertificateTemplateConfig,
   computeBackTotals,
+  createBlankTemplate,
   createPresetTemplate,
   extractModuleNumberFromRow,
   formatCertificateGradePT,
@@ -96,6 +97,7 @@ interface CertificateWorkspaceSnapshot {
   manualZoom: number;
   customStudentRank: string;
   customStudentName: string;
+  customStudentGenero?: 'masculino' | 'feminino';
   customCourseName: string;
   useTurmaStudentGrades: boolean;
   syncTurmaDatesOnAssociate: boolean;
@@ -145,6 +147,9 @@ export default function CertificadosPage() {
   const [customStudentName, setCustomStudentName] = useState(
     'Catiana Quaresma dos Santos Espírito'
   );
+  const [customStudentGenero, setCustomStudentGenero] = useState<'masculino' | 'feminino'>(
+    'feminino'
+  );
   const [customCourseName, setCustomCourseName] = useState('Curso de Formação de Marinheiros');
   const [useTurmaStudentGrades, setUseTurmaStudentGrades] = useState(true);
 
@@ -152,6 +157,12 @@ export default function CertificadosPage() {
   const [savedTemplates, setSavedTemplates] = useState<SavedTemplateRecord[]>([]);
   const [savingTemplate, setSavingTemplate] = useState(false);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
+  const [showNewModelForm, setShowNewModelForm] = useState(false);
+  const [newModelName, setNewModelName] = useState('');
+  const [newModelStarter, setNewModelStarter] = useState<
+    'blank' | 'formacao_marinheiros' | 'expedito'
+  >('blank');
+  const [creatingNewModel, setCreatingNewModel] = useState(false);
   const [associateTurmaId, setAssociateTurmaId] = useState<string>('');
   const [associatingTurma, setAssociatingTurma] = useState(false);
   const [syncTurmaDatesOnAssociate, setSyncTurmaDatesOnAssociate] = useState(false);
@@ -332,6 +343,12 @@ export default function CertificadosPage() {
           if (typeof parsed.customStudentName === 'string') {
             setCustomStudentName(parsed.customStudentName);
           }
+          if (
+            parsed.customStudentGenero === 'masculino' ||
+            parsed.customStudentGenero === 'feminino'
+          ) {
+            setCustomStudentGenero(parsed.customStudentGenero);
+          }
           if (typeof parsed.customCourseName === 'string') {
             setCustomCourseName(parsed.customCourseName);
           }
@@ -369,6 +386,7 @@ export default function CertificadosPage() {
       manualZoom,
       customStudentRank,
       customStudentName,
+      customStudentGenero,
       customCourseName,
       useTurmaStudentGrades,
       syncTurmaDatesOnAssociate,
@@ -410,6 +428,7 @@ export default function CertificadosPage() {
     manualZoom,
     customStudentRank,
     customStudentName,
+    customStudentGenero,
     customCourseName,
     useTurmaStudentGrades,
     syncTurmaDatesOnAssociate,
@@ -866,6 +885,7 @@ export default function CertificadosPage() {
           nomeCompleto: formattedName,
           postoGraduacao: formattedRank,
           nomeExibicao: display,
+          genero: customStudentGenero,
           cursoNome: formatCourseTitleCasePT(
             customCourseName || 'Curso de Formação de Marinheiros'
           ),
@@ -898,6 +918,7 @@ export default function CertificadosPage() {
         nomeCompleto: fullName,
         postoGraduacao: rank,
         nomeExibicao: display,
+        genero: alunoObj.genero || 'masculino',
         cursoNome: formatCourseTitleCasePT(
           selectedCourseObj?.nome ||
             customCourseName ||
@@ -914,6 +935,7 @@ export default function CertificadosPage() {
     [
       customStudentRank,
       customStudentName,
+      customStudentGenero,
       customCourseName,
       selectedTurmaObj,
       selectedCourseObj,
@@ -1237,7 +1259,10 @@ export default function CertificadosPage() {
       try {
         const currentTurmas = turmasRef.current;
         const currentSaved = savedTemplatesRef.current;
-        const targetTurmaId = targetTemplate.turmaId ?? (selectedTurmaIdRef.current || null);
+        const targetTurmaId =
+          targetTemplate.turmaId !== undefined
+            ? targetTemplate.turmaId
+            : selectedTurmaIdRef.current || null;
         const targetTurmaForCourse = targetTurmaId
           ? currentTurmas.find((t: any) => t.id === targetTurmaId)
           : null;
@@ -1403,6 +1428,76 @@ export default function CertificadosPage() {
   // Save Template (manual helper)
   const handleSaveTemplate = async () => {
     await persistTemplateRecord(template, { silent: false });
+  };
+
+  // Create a brand-new standalone model from scratch inside "Modelos Salvos"
+  const handleCreateNewModelFromScratch = async () => {
+    const trimmedName = newModelName.trim();
+    const fallbackName =
+      newModelStarter === 'expedito'
+        ? 'Novo Modelo — Cursos Expeditos'
+        : newModelStarter === 'formacao_marinheiros'
+          ? 'Novo Modelo — Formação de Marinheiros'
+          : 'Novo Modelo de Certificado';
+    const resolvedName = trimmedName || fallbackName;
+
+    const newTemplate: CertificateTemplateConfig =
+      newModelStarter === 'blank'
+        ? createBlankTemplate(resolvedName, 'geral')
+        : {
+            ...createPresetTemplate(newModelStarter),
+            id: undefined,
+            templateKey: `custom_${Date.now()}`,
+            nomeModelo: resolvedName,
+            turmaId: null,
+            cursoId: null,
+            textoCorpoPorAluno: {},
+          };
+
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = null;
+    }
+
+    if (selectedTurmaIdRef.current) {
+      skipNextTurmaAutoLoadRef.current = true;
+    }
+
+    lastSavedSignatureRef.current = getTemplateSaveSignature(newTemplate);
+    initializedAutoSaveBaselineRef.current = true;
+    setTemplate(newTemplate);
+
+    setCreatingNewModel(true);
+    try {
+      if (canEdit) {
+        await persistTemplateRecord(newTemplate, { silent: true });
+      } else {
+        const localRecord: SavedTemplateRecord = {
+          id: `local-${Date.now()}`,
+          turma_id: null,
+          curso_id: null,
+          template_data: newTemplate,
+          created_at: new Date().toISOString(),
+        };
+        setSavedTemplates((prev) => {
+          const updated = [localRecord, ...prev];
+          try {
+            localStorage.setItem(LOCAL_TEMPLATES_KEY, JSON.stringify(updated));
+          } catch {
+            // ignore storage quota errors
+          }
+          return updated;
+        });
+      }
+
+      setShowNewModelForm(false);
+      setNewModelName('');
+      setNewModelStarter('blank');
+      setEditorTab('frente');
+      toast.success('Novo modelo criado! Já pode personalizar frente e verso.');
+    } finally {
+      setCreatingNewModel(false);
+    }
   };
 
   // Associate the current working model (or a specific saved model) with any chosen Turma
@@ -2336,7 +2431,7 @@ export default function CertificadosPage() {
                       <Sparkles size={13} />
                       <span>Dados de Exemplo / Emissão Avulsa</span>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
                       <div>
                         <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">
                           Posto / Graduação
@@ -2358,6 +2453,23 @@ export default function CertificadosPage() {
                           onChange={(e) => setCustomStudentName(e.target.value)}
                           className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs"
                         />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">
+                          Gênero (Artigo)
+                        </label>
+                        <select
+                          value={customStudentGenero}
+                          onChange={(e) =>
+                            setCustomStudentGenero(
+                              e.target.value === 'feminino' ? 'feminino' : 'masculino'
+                            )
+                          }
+                          className="w-full px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800"
+                        >
+                          <option value="feminino">Feminino (a)</option>
+                          <option value="masculino">Masculino (ao)</option>
+                        </select>
                       </div>
                     </div>
                     <div>
@@ -2600,6 +2712,7 @@ export default function CertificadosPage() {
                   </div>
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     {[
+                      '{{ARTIGO}}',
                       '{{ALUNO}}',
                       '{{CURSO}}',
                       '{{DATA_INICIO}}',
@@ -4283,6 +4396,107 @@ export default function CertificadosPage() {
             {/* TAB 4: MODELOS SALVOS */}
             {editorTab === 'modelos' && (
               <div className="space-y-4">
+                {/* Create Brand-New Model From Scratch */}
+                <div className="p-3.5 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-emerald-950">
+                      <Plus size={14} />
+                      <span>Inserir Novo Modelo do Zero</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowNewModelForm((prev) => !prev)}
+                      className={cn(
+                        'px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors',
+                        showNewModelForm
+                          ? 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
+                          : 'bg-emerald-700 hover:bg-emerald-800 text-white'
+                      )}
+                    >
+                      {showNewModelForm ? (
+                        <>
+                          <X size={12} />
+                          <span>Fechar</span>
+                        </>
+                      ) : (
+                        <>
+                          <Plus size={12} />
+                          <span>Novo Modelo do Zero</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {!showNewModelForm ? (
+                    <p className="text-[11px] text-slate-600">
+                      Crie um certificado totalmente novo em branco ou partindo de uma estrutura inicial, salvo separadamente em Modelos Salvos.
+                    </p>
+                  ) : (
+                    <div className="space-y-2.5 pt-1">
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-700 uppercase mb-1">
+                          Nome do Novo Modelo
+                        </label>
+                        <input
+                          type="text"
+                          value={newModelName}
+                          onChange={(e) => setNewModelName(e.target.value)}
+                          placeholder="Ex: Certificado Curso Especial 2026"
+                          className="w-full px-2.5 py-1.5 bg-white border border-emerald-200 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/25"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-700 uppercase mb-1">
+                          Ponto de Partida
+                        </label>
+                        <select
+                          value={newModelStarter}
+                          onChange={(e) =>
+                            setNewModelStarter(
+                              e.target.value as 'blank' | 'formacao_marinheiros' | 'expedito'
+                            )
+                          }
+                          className="w-full px-2.5 py-1.5 bg-white border border-emerald-200 rounded-lg text-xs font-semibold text-slate-800"
+                        >
+                          <option value="blank">Em Branco (totalmente do zero)</option>
+                          <option value="formacao_marinheiros">
+                            Base Formação de Marinheiros
+                          </option>
+                          <option value="expedito">Base Cursos Expeditos</option>
+                        </select>
+                      </div>
+                      <p className="text-[10px] text-slate-600 leading-snug">
+                        O novo modelo será adicionado como um registro independente em Modelos Salvos sem alterar os modelos já vinculados às turmas.
+                      </p>
+                      <div className="flex items-center gap-2 pt-0.5">
+                        <button
+                          type="button"
+                          onClick={handleCreateNewModelFromScratch}
+                          disabled={creatingNewModel}
+                          className="flex-1 px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                        >
+                          {creatingNewModel ? (
+                            <Loader2 size={13} className="animate-spin" />
+                          ) : (
+                            <Plus size={13} />
+                          )}
+                          <span>Criar Modelo e Editar</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowNewModelForm(false);
+                            setNewModelName('');
+                          }}
+                          className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold cursor-pointer"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 <div className="p-3.5 rounded-xl bg-blue-50/70 border border-blue-200 space-y-2.5">
                   <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-blue-900">
                     <Link2 size={14} />
@@ -4346,12 +4560,20 @@ export default function CertificadosPage() {
                     <span>Carregando modelos...</span>
                   </div>
                 ) : savedTemplates.length === 0 ? (
-                  <div className="p-6 text-center rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-500 space-y-2">
+                  <div className="p-6 text-center rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-500 space-y-2.5">
                     <BookmarkCheck size={24} className="mx-auto text-slate-400" />
                     <p>Nenhum modelo personalizado salvo ainda.</p>
                     <p className="text-[11px]">
                       Todas as alterações feitas nos modelos são salvas automaticamente.
                     </p>
+                    <button
+                      type="button"
+                      onClick={() => setShowNewModelForm(true)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold cursor-pointer"
+                    >
+                      <Plus size={13} />
+                      <span>Inserir Novo Modelo do Zero</span>
+                    </button>
                   </div>
                 ) : (
                   <div className="space-y-2.5">
@@ -4372,7 +4594,9 @@ export default function CertificadosPage() {
                               <p className="text-[10px] text-slate-500">
                                 {td?.scope === 'expedito'
                                   ? 'Cursos Expeditos'
-                                  : 'Formação de Marinheiros'}
+                                  : td?.scope === 'geral'
+                                    ? 'Modelo Personalizado'
+                                    : 'Formação de Marinheiros'}
                                 {rec.created_at
                                   ? ` • ${new Date(rec.created_at).toLocaleDateString('pt-BR')}`
                                   : ''}
@@ -4397,6 +4621,8 @@ export default function CertificadosPage() {
                                     skipNextTurmaAutoLoadRef.current = true;
                                     setSelectedTurmaId(linkedTurmaId);
                                     setAssociateTurmaId(linkedTurmaId);
+                                  } else if (selectedTurmaIdRef.current) {
+                                    skipNextTurmaAutoLoadRef.current = true;
                                   }
                                   setTemplate(loaded);
                                   toast.success('Modelo carregado no editor!');
