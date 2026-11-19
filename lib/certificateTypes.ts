@@ -44,6 +44,10 @@ export interface CertificateTemplateConfig {
   segundaAssinaturaCargo: string;
   assinaturaAlinhamento?: 'left' | 'center' | 'right';
   assinaturaAlturaOffset?: number;
+  assinaturaPrincipalOffsetX?: number;
+  assinaturaPrincipalOffsetY?: number;
+  segundaAssinaturaOffsetX?: number;
+  segundaAssinaturaOffsetY?: number;
   logoEsquerdaOffsetX?: number;
   logoEsquerdaOffsetY?: number;
   logoCentroOffsetX?: number;
@@ -54,6 +58,9 @@ export interface CertificateTemplateConfig {
   tituloOffsetY?: number;
   textoOffsetX?: number;
   textoOffsetY?: number;
+  dataAlinhamento?: 'left' | 'center' | 'right';
+  dataOffsetX?: number;
+  dataOffsetY?: number;
 
   // Back (Verso)
   versoTituloCurso: string;
@@ -275,6 +282,10 @@ export function createPresetTemplate(
     segundaAssinaturaCargo: 'Guarda Costeira de São Tomé e Príncipe',
     assinaturaAlinhamento: 'right',
     assinaturaAlturaOffset: 0,
+    assinaturaPrincipalOffsetX: 0,
+    assinaturaPrincipalOffsetY: 0,
+    segundaAssinaturaOffsetX: 0,
+    segundaAssinaturaOffsetY: 0,
     logoEsquerdaOffsetX: 0,
     logoEsquerdaOffsetY: 0,
     logoCentroOffsetX: 0,
@@ -285,6 +296,9 @@ export function createPresetTemplate(
     tituloOffsetY: 0,
     textoOffsetX: 0,
     textoOffsetY: 0,
+    dataAlinhamento: 'center',
+    dataOffsetX: 0,
+    dataOffsetY: 0,
     versoTituloCurso: isExpedito ? '{{CURSO}}' : 'CURSO DE FORMAÇÃO DE MARINHEIROS',
     versoColunaDisciplina: 'DISCIPLINAS',
     versoColunaCargaHoraria: 'CARGA HORÁRIA',

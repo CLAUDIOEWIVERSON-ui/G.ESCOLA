@@ -2888,6 +2888,112 @@ export default function CertificadosPage() {
                   </div>
                 </div>
 
+                {/* Independent Date Position & Alignment */}
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[11px] font-bold text-slate-700">
+                      Posição Independente da Data (Abaixo do Texto)
+                    </span>
+                    {((template.dataOffsetX ?? 0) !== 0 ||
+                      (template.dataOffsetY ?? 0) !== 0 ||
+                      (template.dataAlinhamento || 'center') !== 'center') && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setTemplate((prev) => ({
+                            ...prev,
+                            dataAlinhamento: 'center',
+                            dataOffsetX: 0,
+                            dataOffsetY: 0,
+                          }))
+                        }
+                        className="text-[10px] text-slate-500 hover:text-slate-800 underline cursor-pointer"
+                      >
+                        Zerar
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {[
+                      { id: 'left', label: 'Esquerda', icon: AlignLeft },
+                      { id: 'center', label: 'Centralizado', icon: AlignCenter },
+                      { id: 'right', label: 'Direita', icon: AlignRight },
+                    ].map((pos) => {
+                      const Icon = pos.icon;
+                      const active = (template.dataAlinhamento || 'center') === pos.id;
+                      return (
+                        <button
+                          key={pos.id}
+                          type="button"
+                          onClick={() =>
+                            setTemplate((prev) => ({
+                              ...prev,
+                              dataAlinhamento: pos.id as 'left' | 'center' | 'right',
+                            }))
+                          }
+                          className={cn(
+                            'px-2 py-1.5 rounded-lg border text-[11px] font-bold flex items-center justify-center gap-1 cursor-pointer transition-all',
+                            active
+                              ? 'bg-blue-900 text-white border-blue-950 shadow-2xs'
+                              : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                          )}
+                        >
+                          <Icon size={12} />
+                          <span>{pos.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div>
+                      <div className="flex justify-between text-[10px] font-semibold text-slate-600">
+                        <span>Horizontal (X)</span>
+                        <span className="font-mono text-blue-900">
+                          {template.dataOffsetX ?? 0}px
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min={-380}
+                        max={380}
+                        step={2}
+                        value={template.dataOffsetX ?? 0}
+                        onChange={(e) =>
+                          setTemplate((prev) => ({
+                            ...prev,
+                            dataOffsetX: Number(e.target.value),
+                          }))
+                        }
+                        className="w-full accent-blue-800"
+                      />
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-[10px] font-semibold text-slate-600">
+                        <span>Vertical (Y)</span>
+                        <span className="font-mono text-blue-900">
+                          {template.dataOffsetY ?? 0}px
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min={-220}
+                        max={240}
+                        step={2}
+                        value={template.dataOffsetY ?? 0}
+                        onChange={(e) =>
+                          setTemplate((prev) => ({
+                            ...prev,
+                            dataOffsetY: Number(e.target.value),
+                          }))
+                        }
+                        className="w-full accent-blue-800"
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 {/* Primary Signature */}
                 <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5">
                   <div className="flex items-center justify-between">
@@ -3044,6 +3150,82 @@ export default function CertificadosPage() {
                         <span>Mais abaixo</span>
                       </div>
                     </div>
+
+                    <div className="pt-2 border-t border-slate-200 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold text-slate-700">
+                          Posição Independente (
+                          {(template.assinaturaAlinhamento || 'right') === 'left'
+                            ? 'Esquerda'
+                            : (template.assinaturaAlinhamento || 'right') === 'center'
+                              ? 'Centro'
+                              : 'Direita'}
+                          )
+                        </span>
+                        {((template.assinaturaPrincipalOffsetX ?? 0) !== 0 ||
+                          (template.assinaturaPrincipalOffsetY ?? 0) !== 0) && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setTemplate((prev) => ({
+                                ...prev,
+                                assinaturaPrincipalOffsetX: 0,
+                                assinaturaPrincipalOffsetY: 0,
+                              }))
+                            }
+                            className="text-[10px] text-slate-500 hover:text-slate-800 underline cursor-pointer"
+                          >
+                            Zerar
+                          </button>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div>
+                          <div className="flex justify-between text-[10px] font-semibold text-slate-600">
+                            <span>Horizontal (X)</span>
+                            <span className="font-mono text-blue-900">
+                              {template.assinaturaPrincipalOffsetX ?? 0}px
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min={-380}
+                            max={380}
+                            step={2}
+                            value={template.assinaturaPrincipalOffsetX ?? 0}
+                            onChange={(e) =>
+                              setTemplate((prev) => ({
+                                ...prev,
+                                assinaturaPrincipalOffsetX: Number(e.target.value),
+                              }))
+                            }
+                            className="w-full accent-blue-800"
+                          />
+                        </div>
+                        <div>
+                          <div className="flex justify-between text-[10px] font-semibold text-slate-600">
+                            <span>Vertical (Y)</span>
+                            <span className="font-mono text-blue-900">
+                              {template.assinaturaPrincipalOffsetY ?? 0}px
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min={-220}
+                            max={60}
+                            step={2}
+                            value={template.assinaturaPrincipalOffsetY ?? 0}
+                            onChange={(e) =>
+                              setTemplate((prev) => ({
+                                ...prev,
+                                assinaturaPrincipalOffsetY: Number(e.target.value),
+                              }))
+                            }
+                            className="w-full accent-blue-800"
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -3161,6 +3343,80 @@ export default function CertificadosPage() {
                           />
                         </div>
                       </div>
+
+                      <div className="pt-2 border-t border-slate-200 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-bold text-slate-700">
+                            Posição Independente (2ª Assinatura —{' '}
+                            {(template.assinaturaAlinhamento || 'right') === 'left'
+                              ? 'Direita'
+                              : 'Esquerda'}
+                            )
+                          </span>
+                          {((template.segundaAssinaturaOffsetX ?? 0) !== 0 ||
+                            (template.segundaAssinaturaOffsetY ?? 0) !== 0) && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setTemplate((prev) => ({
+                                  ...prev,
+                                  segundaAssinaturaOffsetX: 0,
+                                  segundaAssinaturaOffsetY: 0,
+                                }))
+                              }
+                              className="text-[10px] text-slate-500 hover:text-slate-800 underline cursor-pointer"
+                            >
+                              Zerar
+                            </button>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <div>
+                            <div className="flex justify-between text-[10px] font-semibold text-slate-600">
+                              <span>Horizontal (X)</span>
+                              <span className="font-mono text-blue-900">
+                                {template.segundaAssinaturaOffsetX ?? 0}px
+                              </span>
+                            </div>
+                            <input
+                              type="range"
+                              min={-380}
+                              max={380}
+                              step={2}
+                              value={template.segundaAssinaturaOffsetX ?? 0}
+                              onChange={(e) =>
+                                setTemplate((prev) => ({
+                                  ...prev,
+                                  segundaAssinaturaOffsetX: Number(e.target.value),
+                                }))
+                              }
+                              className="w-full accent-blue-800"
+                            />
+                          </div>
+                          <div>
+                            <div className="flex justify-between text-[10px] font-semibold text-slate-600">
+                              <span>Vertical (Y)</span>
+                              <span className="font-mono text-blue-900">
+                                {template.segundaAssinaturaOffsetY ?? 0}px
+                              </span>
+                            </div>
+                            <input
+                              type="range"
+                              min={-220}
+                              max={60}
+                              step={2}
+                              value={template.segundaAssinaturaOffsetY ?? 0}
+                              onChange={(e) =>
+                                setTemplate((prev) => ({
+                                  ...prev,
+                                  segundaAssinaturaOffsetY: Number(e.target.value),
+                                }))
+                              }
+                              className="w-full accent-blue-800"
+                            />
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -3200,7 +3456,13 @@ export default function CertificadosPage() {
                         (template.tituloOffsetY ?? 0) !== 0 ||
                         (template.textoOffsetX ?? 0) !== 0 ||
                         (template.textoOffsetY ?? 0) !== 0 ||
-                        (template.marcaDaguaFrenteOffsetY ?? 0) !== 0) && (
+                        (template.dataOffsetX ?? 0) !== 0 ||
+                        (template.dataOffsetY ?? 0) !== 0 ||
+                        (template.marcaDaguaFrenteOffsetY ?? 0) !== 0 ||
+                        (template.assinaturaPrincipalOffsetX ?? 0) !== 0 ||
+                        (template.assinaturaPrincipalOffsetY ?? 0) !== 0 ||
+                        (template.segundaAssinaturaOffsetX ?? 0) !== 0 ||
+                        (template.segundaAssinaturaOffsetY ?? 0) !== 0) && (
                         <button
                           type="button"
                           onClick={() =>
@@ -3216,7 +3478,13 @@ export default function CertificadosPage() {
                               tituloOffsetY: 0,
                               textoOffsetX: 0,
                               textoOffsetY: 0,
+                              dataOffsetX: 0,
+                              dataOffsetY: 0,
                               marcaDaguaFrenteOffsetY: 0,
+                              assinaturaPrincipalOffsetX: 0,
+                              assinaturaPrincipalOffsetY: 0,
+                              segundaAssinaturaOffsetX: 0,
+                              segundaAssinaturaOffsetY: 0,
                             }))
                           }
                           className="px-2 py-1 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-[10px] font-bold text-slate-600 cursor-pointer"
@@ -3282,13 +3550,22 @@ export default function CertificadosPage() {
                         maxY: 260,
                       },
                       {
-                        label: 'Todo o Texto (Corpo e Data)',
+                        label: 'Texto Principal',
                         xKey: 'textoOffsetX' as const,
                         yKey: 'textoOffsetY' as const,
                         minX: -150,
                         maxX: 150,
                         minY: -180,
                         maxY: 200,
+                      },
+                      {
+                        label: 'Data (Local e Data)',
+                        xKey: 'dataOffsetX' as const,
+                        yKey: 'dataOffsetY' as const,
+                        minX: -380,
+                        maxX: 380,
+                        minY: -220,
+                        maxY: 240,
                       },
                     ].map((ctrl) => {
                       const valX = template[ctrl.xKey] ?? 0;
@@ -5320,7 +5597,7 @@ export default function CertificadosPage() {
                       ? 'bg-blue-700 text-white border-blue-800 shadow-xs'
                       : 'bg-blue-50 text-blue-800 border-blue-200 hover:bg-blue-100'
                   )}
-                  title="Permite clicar e arrastar os brasões, título, texto e assinatura diretamente na folha"
+                  title="Permite clicar e arrastar os brasões, título, texto principal, data e cada assinatura (esquerda e direita) de forma independente diretamente na folha"
                 >
                   <Move size={13} />
                   <span>{dragMoveEnabled ? 'Arrastar Ativo' : 'Mover na Folha'}</span>
@@ -5394,7 +5671,7 @@ export default function CertificadosPage() {
             <div className="px-3 py-2 rounded-xl bg-blue-50 border border-blue-200 text-[11px] font-semibold text-blue-900 flex items-center justify-between gap-2">
               <span className="flex items-center gap-1.5">
                 <Move size={13} className="shrink-0" />
-                Modo Mover na Folha ativo: clique e arraste o Brasão Esquerdo, Brasão Central, Brasão Direito, Título, Todo o Texto ou a Assinatura diretamente na folha.
+                Modo Mover na Folha ativo: clique e arraste o Brasão Esquerdo, Brasão Central, Brasão Direito, Título, Texto Principal, Data ou cada Assinatura (Esquerda e Direita) de forma independente diretamente na folha.
               </span>
               <button
                 type="button"

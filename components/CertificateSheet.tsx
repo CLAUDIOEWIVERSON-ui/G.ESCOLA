@@ -21,7 +21,9 @@ export type DraggableCertificateElement =
   | 'logoDireita'
   | 'titulo'
   | 'texto'
-  | 'assinatura';
+  | 'data'
+  | 'assinaturaPrincipal'
+  | 'segundaAssinatura';
 
 interface CertificateSheetProps {
   template: CertificateTemplateConfig;
@@ -369,9 +371,15 @@ export function CertificateSheet({
     } else if (element === 'texto') {
       origX = template.textoOffsetX ?? 0;
       origY = template.textoOffsetY ?? 0;
-    } else if (element === 'assinatura') {
-      origX = 0;
-      origY = template.assinaturaAlturaOffset ?? 0;
+    } else if (element === 'data') {
+      origX = template.dataOffsetX ?? 0;
+      origY = template.dataOffsetY ?? 0;
+    } else if (element === 'assinaturaPrincipal') {
+      origX = template.assinaturaPrincipalOffsetX ?? 0;
+      origY = template.assinaturaPrincipalOffsetY ?? 0;
+    } else if (element === 'segundaAssinatura') {
+      origX = template.segundaAssinaturaOffsetX ?? 0;
+      origY = template.segundaAssinaturaOffsetY ?? 0;
     }
 
     dragRef.current = {
@@ -433,10 +441,25 @@ export function CertificateSheet({
           textoOffsetY: clamp(nextY, -180, 200),
         };
       }
-      if (element === 'assinatura') {
+      if (element === 'data') {
         return {
           ...prev,
-          assinaturaAlturaOffset: clamp(nextY, -90, 45),
+          dataOffsetX: clamp(nextX, -380, 380),
+          dataOffsetY: clamp(nextY, -220, 240),
+        };
+      }
+      if (element === 'assinaturaPrincipal') {
+        return {
+          ...prev,
+          assinaturaPrincipalOffsetX: clamp(nextX, -380, 380),
+          assinaturaPrincipalOffsetY: clamp(nextY, -220, 60),
+        };
+      }
+      if (element === 'segundaAssinatura') {
+        return {
+          ...prev,
+          segundaAssinaturaOffsetX: clamp(nextX, -380, 380),
+          segundaAssinaturaOffsetY: clamp(nextY, -220, 60),
         };
       }
       return prev;
@@ -972,60 +995,74 @@ export function CertificateSheet({
               })()}
 
               {(() => {
-                const drag = getDragProps('texto', 'Todo o Texto (Corpo e Data)');
+                const drag = getDragProps('texto', 'Texto Principal');
                 return (
-                  <div
+                  <p
                     {...drag}
                     style={{
+                      margin: 0,
                       width: '100%',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: '24px',
                       position: 'relative',
                       left: `${template.textoOffsetX ?? 0}px`,
                       top: `${template.textoOffsetY ?? 0}px`,
                       zIndex: activeDrag === 'texto' ? 20 : 12,
+                      fontSize: `${template.tamanhoFonteCorpo || 19}px`,
+                      lineHeight: 1.82,
+                      fontFamily: bodyFontCss,
+                      color: '#0f172a',
+                      textAlign: template.alinhamentoTexto || 'left',
                       backgroundColor: 'transparent',
                       textShadow: 'none',
                       ...drag.style,
                     }}
                   >
-                    <p
-                      style={{
-                        margin: 0,
-                        width: '100%',
-                        fontSize: `${template.tamanhoFonteCorpo || 19}px`,
-                        lineHeight: 1.82,
-                        fontFamily: bodyFontCss,
-                        color: '#0f172a',
-                        textAlign: template.alinhamentoTexto || 'left',
-                        backgroundColor: 'transparent',
-                        textShadow: 'none',
-                      }}
-                    >
-                      {bodySegments.map((seg, i) => (
-                        <span
-                          key={i}
-                          style={{
-                            fontWeight: seg.bold ? 700 : 400,
-                            fontStyle: seg.italic ? 'italic' : 'normal',
-                          }}
-                        >
-                          {seg.text}
-                        </span>
-                      ))}
-                    </p>
+                    {bodySegments.map((seg, i) => (
+                      <span
+                        key={i}
+                        style={{
+                          fontWeight: seg.bold ? 700 : 400,
+                          fontStyle: seg.italic ? 'italic' : 'normal',
+                        }}
+                      >
+                        {seg.text}
+                      </span>
+                    ))}
+                  </p>
+                );
+              })()}
 
+              {(() => {
+                const dateAlign = template.dataAlinhamento || 'center';
+                const dateJustify =
+                  dateAlign === 'left'
+                    ? 'flex-start'
+                    : dateAlign === 'right'
+                      ? 'flex-end'
+                      : 'center';
+                const dateDrag = getDragProps('data', 'Data de Emissão');
+                return (
+                  <div
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      justifyContent: dateJustify,
+                    }}
+                  >
                     <p
+                      {...dateDrag}
                       style={{
                         margin: '4px 0 0 0',
+                        position: 'relative',
+                        left: `${template.dataOffsetX ?? 0}px`,
+                        top: `${template.dataOffsetY ?? 0}px`,
+                        zIndex: activeDrag === 'data' ? 20 : 12,
                         fontSize: `${Math.max(16, (template.tamanhoFonteCorpo || 19) - 1)}px`,
                         fontFamily: bodyFontCss,
                         fontWeight: dateBold ? 700 : 400,
                         fontStyle: dateItalic ? 'italic' : 'normal',
                         color: '#0f172a',
-                        textAlign: 'center',
+                        textAlign: dateAlign,
+                        ...dateDrag.style,
                       }}
                     >
                       {template.localEmissao || 'São Tomé e Príncipe'},{' '}
@@ -1049,12 +1086,18 @@ export function CertificateSheet({
                   : sigAlign === 'center'
                     ? 'center'
                     : 'flex-end';
-              const drag = getDragProps('assinatura', 'Altura da Assinatura');
+              const primaryDrag = getDragProps('assinaturaPrincipal', 'Assinatura Principal');
+              const secondaryDrag = getDragProps('segundaAssinatura', '2ª Assinatura');
 
               const primaryBlock = (
                 <div
                   key="primary-signature"
+                  {...primaryDrag}
                   style={{
+                    position: 'relative',
+                    left: `${template.assinaturaPrincipalOffsetX ?? 0}px`,
+                    top: `${template.assinaturaPrincipalOffsetY ?? 0}px`,
+                    zIndex: activeDrag === 'assinaturaPrincipal' ? 20 : 12,
                     textAlign: 'center',
                     flex: hasSecondSig ? '0 1 420px' : undefined,
                     minWidth: hasSecondSig ? '310px' : '390px',
@@ -1065,6 +1108,7 @@ export function CertificateSheet({
                     fontStyle: sigItalic ? 'italic' : 'normal',
                     color: '#0f172a',
                     lineHeight: 1.35,
+                    ...primaryDrag.style,
                   }}
                 >
                   <div
@@ -1092,7 +1136,12 @@ export function CertificateSheet({
               const secondaryBlock = hasSecondSig ? (
                 <div
                   key="secondary-signature"
+                  {...secondaryDrag}
                   style={{
+                    position: 'relative',
+                    left: `${template.segundaAssinaturaOffsetX ?? 0}px`,
+                    top: `${template.segundaAssinaturaOffsetY ?? 0}px`,
+                    zIndex: activeDrag === 'segundaAssinatura' ? 20 : 12,
                     textAlign: 'center',
                     flex: '0 1 420px',
                     minWidth: '310px',
@@ -1101,6 +1150,7 @@ export function CertificateSheet({
                     fontStyle: sigItalic ? 'italic' : 'normal',
                     color: '#0f172a',
                     lineHeight: 1.35,
+                    ...secondaryDrag.style,
                   }}
                 >
                   <div
@@ -1127,17 +1177,18 @@ export function CertificateSheet({
 
               return (
                 <div
-                  {...drag}
                   style={{
                     position: 'relative',
                     top: `${sigHeightOffset}px`,
-                    zIndex: activeDrag === 'assinatura' ? 20 : 12,
+                    zIndex:
+                      activeDrag === 'assinaturaPrincipal' || activeDrag === 'segundaAssinatura'
+                        ? 20
+                        : 12,
                     display: 'flex',
                     alignItems: 'flex-end',
                     justifyContent: sigJustify,
                     padding: hasSecondSig ? '0 14px 6px 14px' : '0 28px 6px 28px',
                     gap: '32px',
-                    ...drag.style,
                   }}
                 >
                   {hasSecondSig ? (
