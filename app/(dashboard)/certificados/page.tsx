@@ -2225,16 +2225,6 @@ export default function CertificadosPage() {
               )}
             </div>
           )}
-
-          <button
-            type="button"
-            onClick={openSaveAsNewModal}
-            className="px-3.5 py-2 rounded-xl text-xs font-bold bg-blue-900 hover:bg-blue-950 text-white shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
-            title="Salvar uma cópia do modelo atual como um novo modelo independente"
-          >
-            <Copy size={14} />
-            <span>Salvar como Novo Modelo</span>
-          </button>
         </div>
       </div>
 
@@ -3261,6 +3251,16 @@ export default function CertificadosPage() {
                   )}
                 </button>
               )}
+
+              <button
+                type="button"
+                onClick={openSaveAsNewModal}
+                className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-blue-900 hover:bg-blue-950 text-white shadow-2xs transition-all cursor-pointer flex items-center gap-1.5"
+                title="Salvar uma cópia do modelo atual como um novo modelo independente"
+              >
+                <Copy size={13} />
+                <span>Salvar como Novo Modelo</span>
+              </button>
             </div>
 
             <div className="flex items-center gap-3">
