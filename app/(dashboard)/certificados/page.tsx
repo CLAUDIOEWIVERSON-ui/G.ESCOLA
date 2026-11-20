@@ -10,37 +10,25 @@ import {
   Trash2,
   RefreshCw,
   Users,
-  FileText,
-  Image as ImageIcon,
-  Layers,
   ChevronLeft,
   ChevronRight,
-  ArrowUp,
-  ArrowDown,
-  ArrowLeftRight,
   Search,
   CheckCircle2,
   Loader2,
-  Upload,
-  RotateCcw,
   BookmarkCheck,
-  Sparkles,
   Eye,
   CheckSquare,
   Square,
-  Bold,
-  Italic,
   Maximize2,
   Minimize2,
   X,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
   Move,
   Link2,
   Unlink,
   Pencil,
   Copy,
+  MousePointerClick,
+  Settings,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase/client';
@@ -52,6 +40,7 @@ import { getHtml2Canvas, savePDFWithDialog } from '@/lib/printDocumentUtils';
 import {
   CertificateCourseScope,
   CertificateDisciplineRow,
+  CertificateSelectableObject,
   CertificateStudentContext,
   CertificateTemplateConfig,
   computeBackTotals,
@@ -68,6 +57,7 @@ import {
   resolveBoletimDisciplineGrade,
 } from '@/lib/certificateTypes';
 import { CertificateSheet } from '@/components/CertificateSheet';
+import { CertificateInspectorPanel } from '@/components/CertificateInspectorPanel';
 
 const LOCAL_TEMPLATES_KEY = 'sge_saved_certificate_templates_v1';
 const LAST_WORKSPACE_KEY = 'sge_certificate_last_workspace_v1';
@@ -118,6 +108,7 @@ export default function CertificadosPage() {
     createPresetTemplate('formacao_marinheiros')
   );
   const [editorTab, setEditorTab] = useState<'frente' | 'verso' | 'visual' | 'modelos'>('frente');
+  const [selectedObject, setSelectedObject] = useState<CertificateSelectableObject | null>(null);
   const [previewMode, setPreviewMode] = useState<'both' | 'front' | 'back'>('both');
   const [manualZoom, setManualZoom] = useState<number>(100);
   const [dragMoveEnabled, setDragMoveEnabled] = useState<boolean>(false);
@@ -233,6 +224,24 @@ export default function CertificadosPage() {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [fullscreenPreview]);
+
+  useEffect(() => {
+    if (fullscreenPreview || showSaveAsNewModal) return;
+    if (!selectedObject && editorTab !== 'modelos') return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setSelectedObject(null);
+        setEditorTab('frente');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [fullscreenPreview, showSaveAsNewModal, selectedObject, editorTab]);
+
+  const handleSelectObjectOnSheet = useCallback((obj: CertificateSelectableObject) => {
+    setEditorTab((prev) => (prev === 'modelos' ? 'frente' : prev));
+    setSelectedObject(obj);
+  }, []);
 
   const baseScale = Math.min(1, Math.max(0.28, autoFitWidth / 1123));
   const effectiveScale = Math.min(1.15, Math.max(0.25, baseScale * (manualZoom / 100)));
@@ -1127,34 +1136,6 @@ export default function CertificadosPage() {
     );
   };
 
-  // Apply preset
-  const handleApplyPreset = (scope: CertificateCourseScope) => {
-    const preset = createPresetTemplate(scope);
-    if (selectedTurmaObj) {
-      const period = formatPeriodStartEndPT(
-        selectedTurmaObj.data_inicio,
-        selectedTurmaObj.data_fim
-      );
-      const cName = selectedCourseObj?.nome || getCleanTurmaName(selectedTurmaObj.nome);
-      preset.turmaId = selectedTurmaObj.id;
-      preset.cursoId = selectedTurmaObj.curso_id || null;
-      preset.textoPeriodoInicio = period.inicio;
-      preset.textoPeriodoFim = period.fim;
-      preset.dataEmissaoExtenso = period.fim || formatDateExtensoPT(new Date());
-      preset.versoTituloCurso = cName.toUpperCase();
-    } else {
-      setCustomCourseName(
-        scope === 'expedito' ? 'Curso Expedito de Operações Navais' : 'Curso de Formação de Marinheiros'
-      );
-    }
-    setTemplate(preset);
-    toast.success(
-      scope === 'expedito'
-        ? 'Modelo base de Cursos Expeditos carregado!'
-        : 'Modelo base de Formação de Marinheiros carregado!'
-    );
-  };
-
   // Discipline row actions
   const handleAddDisciplineRow = () => {
     setTemplate((prev) => {
@@ -1436,11 +1417,6 @@ export default function CertificadosPage() {
     };
   }, [template, workspaceHydrated, templatesHydrated, canEdit, persistTemplateRecord]);
 
-  // Save Template (manual helper)
-  const handleSaveTemplate = async () => {
-    await persistTemplateRecord(template, { silent: false });
-  };
-
   // Create a brand-new standalone model from scratch inside "Modelos Salvos"
   const handleCreateNewModelFromScratch = async () => {
     const trimmedName = newModelName.trim();
@@ -1505,6 +1481,7 @@ export default function CertificadosPage() {
       setNewModelName('');
       setNewModelStarter('blank');
       setEditorTab('frente');
+      setSelectedObject('titulo');
       toast.success('Novo modelo criado! Já pode personalizar frente e verso.');
     } finally {
       setCreatingNewModel(false);
@@ -2477,2782 +2454,42 @@ export default function CertificadosPage() {
         )}
       </div>
 
-      {/* Main Split: Editor Panel + Live A4 Preview */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
-        {/* LEFT COLUMN: Editor Controls */}
-        <div className="xl:col-span-5 bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-          {/* Editor Tabs */}
-          <div className="grid grid-cols-4 border-b border-slate-200 bg-slate-50">
-            {[
-              { id: 'frente', label: 'Frente', icon: FileText },
-              { id: 'verso', label: 'Verso', icon: Layers },
-              { id: 'visual', label: 'Visual', icon: ImageIcon },
-              { id: 'modelos', label: 'Modelos', icon: BookmarkCheck },
-            ].map((tab) => {
-              const Icon = tab.icon;
-              const active = editorTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setEditorTab(tab.id as any)}
-                  className={cn(
-                    'py-3 px-2 text-xs font-bold flex items-center justify-center gap-1.5 border-b-2 transition-all cursor-pointer',
-                    active
-                      ? 'border-blue-800 text-blue-900 bg-white'
-                      : 'border-transparent text-slate-500 hover:text-slate-800'
-                  )}
-                >
-                  <Icon size={14} />
-                  <span>{tab.label}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="p-5 space-y-5 max-h-[820px] overflow-y-auto custom-scrollbar">
-            {/* TAB 1: FRENTE */}
-            {editorTab === 'frente' && (
-              <div className="space-y-4">
-                {!selectedStudentObj && (
-                  <div className="p-3.5 rounded-xl bg-blue-50/70 border border-blue-200 space-y-3">
-                    <div className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-blue-900">
-                      <Sparkles size={13} />
-                      <span>Dados de Exemplo / Emissão Avulsa</span>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">
-                          Posto / Graduação
-                        </label>
-                        <input
-                          type="text"
-                          value={customStudentRank}
-                          onChange={(e) => setCustomStudentRank(e.target.value)}
-                          className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs"
-                        />
-                      </div>
-                      <div className="sm:col-span-2">
-                        <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">
-                          Nome Completo do Aluno
-                        </label>
-                        <input
-                          type="text"
-                          value={customStudentName}
-                          onChange={(e) => setCustomStudentName(e.target.value)}
-                          className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">
-                          Gênero (Artigo)
-                        </label>
-                        <select
-                          value={customStudentGenero}
-                          onChange={(e) =>
-                            setCustomStudentGenero(
-                              e.target.value === 'feminino' ? 'feminino' : 'masculino'
-                            )
-                          }
-                          className="w-full px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800"
-                        >
-                          <option value="feminino">Feminino (a)</option>
-                          <option value="masculino">Masculino (ao)</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">
-                        Nome do Curso ({`{{CURSO}}`})
-                      </label>
-                      <input
-                        type="text"
-                        value={customCourseName}
-                        onChange={(e) => setCustomCourseName(e.target.value)}
-                        className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Nome deste Modelo
-                  </label>
-                  <input
-                    type="text"
-                    value={template.nomeModelo}
-                    onChange={(e) =>
-                      setTemplate((prev) => ({ ...prev, nomeModelo: e.target.value }))
-                    }
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium"
-                  />
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-bold text-slate-700">
-                      Título Principal do Certificado
-                    </label>
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setTemplate((prev) => ({
-                            ...prev,
-                            tituloNegrito: !(prev.tituloNegrito ?? true),
-                          }))
-                        }
-                        className={cn(
-                          'px-1.5 py-0.5 rounded border text-[10px] font-bold cursor-pointer',
-                          (template.tituloNegrito ?? true)
-                            ? 'bg-slate-900 text-white border-slate-900'
-                            : 'bg-white text-slate-600 border-slate-200'
-                        )}
-                        title="Negrito no título"
-                      >
-                        N
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setTemplate((prev) => ({
-                            ...prev,
-                            tituloItalico: !(prev.tituloItalico ?? true),
-                          }))
-                        }
-                        className={cn(
-                          'px-1.5 py-0.5 rounded border text-[10px] italic font-serif cursor-pointer',
-                          (template.tituloItalico ?? true)
-                            ? 'bg-slate-900 text-white border-slate-900'
-                            : 'bg-white text-slate-600 border-slate-200'
-                        )}
-                        title="Itálico no título"
-                      >
-                        I
-                      </button>
-                    </div>
-                  </div>
-                  <input
-                    type="text"
-                    value={template.titulo}
-                    onChange={(e) =>
-                      setTemplate((prev) => ({ ...prev, titulo: e.target.value }))
-                    }
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold uppercase"
-                  />
-                </div>
-
-                <div>
-                  <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
-                    <label className="text-xs font-bold text-slate-700">
-                      Texto do Certificado (Frente)
-                    </label>
-                    <div className="flex flex-wrap items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => applyInlineBodyFormat('**')}
-                        className="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-bold flex items-center gap-1 cursor-pointer"
-                        title="Selecione um trecho no texto abaixo e clique para negritar (**trecho**)"
-                      >
-                        <Bold size={11} />
-                        <span>Negritar trecho</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => applyInlineBodyFormat('*')}
-                        className="px-2 py-0.5 rounded bg-indigo-700 hover:bg-indigo-800 text-white text-[10px] font-bold flex items-center gap-1 cursor-pointer"
-                        title="Selecione um trecho no texto abaixo e clique para colocar em itálico (*trecho*)"
-                      >
-                        <Italic size={11} />
-                        <span>Itálico trecho</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => applyInlineBodyFormat('***')}
-                        className="px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 text-[10px] font-bold cursor-pointer"
-                        title="Negrito + Itálico no trecho selecionado"
-                      >
-                        N+I
-                      </button>
-                    </div>
-                  </div>
-
-                  {selectedStudentObj && (
-                    <div
-                      className={cn(
-                        'mb-2 p-2.5 rounded-xl border flex flex-col gap-2 transition-colors',
-                        isEditingIndividualBody
-                          ? 'bg-amber-50/90 border-amber-300'
-                          : 'bg-slate-50 border-slate-200'
-                      )}
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div className="flex items-center gap-1 rounded-lg bg-white p-0.5 border border-slate-200">
-                          <button
-                            type="button"
-                            onClick={handleRestoreDefaultBodyForStudent}
-                            className={cn(
-                              'px-2.5 py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer',
-                              !isEditingIndividualBody
-                                ? 'bg-blue-900 text-white shadow-2xs'
-                                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                            )}
-                          >
-                            Texto Padrão da Turma
-                          </button>
-                          <button
-                            type="button"
-                            onClick={handleEnableIndividualBody}
-                            className={cn(
-                              'px-2.5 py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1',
-                              isEditingIndividualBody
-                                ? 'bg-amber-600 text-white shadow-2xs'
-                                : 'text-slate-700 hover:text-slate-900 hover:bg-amber-50'
-                            )}
-                          >
-                            <Pencil size={10} />
-                            <span>Texto Individual deste Aluno</span>
-                          </button>
-                        </div>
-
-                        {isEditingIndividualBody && (
-                          <button
-                            type="button"
-                            onClick={handleRestoreDefaultBodyForStudent}
-                            className="px-2 py-1 rounded-lg bg-white hover:bg-amber-100 border border-amber-300 text-amber-900 text-[10px] font-bold flex items-center gap-1 cursor-pointer"
-                            title="Descartar texto individual e voltar a usar o texto padrão da turma para este aluno"
-                          >
-                            <RotateCcw size={10} />
-                            <span>Voltar ao padrão</span>
-                          </button>
-                        )}
-                      </div>
-
-                      <p className="text-[10px] leading-snug text-slate-600">
-                        {isEditingIndividualBody ? (
-                          <>
-                            Editando texto exclusivo de{' '}
-                            <strong className="text-amber-950">
-                              {activeStudentContext.nomeExibicao}
-                            </strong>
-                            . Outros alunos da turma continuam com o texto padrão.
-                          </>
-                        ) : (
-                          <>
-                            Usando o texto padrão para{' '}
-                            <strong className="text-slate-800">
-                              {activeStudentContext.nomeExibicao}
-                            </strong>
-                            . Clique em <strong>Texto Individual deste Aluno</strong> caso queira
-                            personalizar só este certificado.
-                          </>
-                        )}
-                      </p>
-                    </div>
-                  )}
-
-                  <textarea
-                    ref={bodyTextareaRef}
-                    rows={5}
-                    value={activeBodyTextValue}
-                    onChange={(e) => updateActiveBodyText(e.target.value)}
-                    className={cn(
-                      'w-full p-3 border rounded-xl text-xs leading-relaxed transition-colors',
-                      isEditingIndividualBody
-                        ? 'bg-amber-50/40 border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-500/20'
-                        : 'bg-slate-50 border-slate-200'
-                    )}
-                  />
-                  <div className="flex flex-wrap items-center justify-between gap-2 mt-1.5">
-                    <p className="text-[10px] text-slate-500">
-                      Dica: selecione qualquer parte do texto e clique em <strong>Negritar</strong> ou <em>Itálico</em> (ou use <code className="bg-slate-100 px-1 rounded">**negrito**</code> / <code className="bg-slate-100 px-1 rounded">*itálico*</code>).
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <label className="flex items-center gap-1 text-[10px] font-bold text-slate-700 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={template.textoCorpoItalico ?? (template.fonteCorpo !== 'sans')}
-                          onChange={(e) =>
-                            setTemplate((prev) => ({
-                              ...prev,
-                              textoCorpoItalico: e.target.checked,
-                            }))
-                          }
-                          className="rounded border-slate-300"
-                        />
-                        <span>Texto em Itálico</span>
-                      </label>
-                      <label className="flex items-center gap-1 text-[10px] font-bold text-slate-700 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={template.textoCorpoNegrito ?? false}
-                          onChange={(e) =>
-                            setTemplate((prev) => ({
-                              ...prev,
-                              textoCorpoNegrito: e.target.checked,
-                            }))
-                          }
-                          className="rounded border-slate-300"
-                        />
-                        <span>Tudo em Negrito</span>
-                      </label>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5 mt-2">
-                    {[
-                      '{{ARTIGO}}',
-                      '{{ALUNO}}',
-                      '{{CURSO}}',
-                      '{{DATA_INICIO}}',
-                      '{{DATA_FIM}}',
-                      '{{CARGA_HORARIA}}',
-                      '{{MEDIA_FINAL}}',
-                    ].map((token) => (
-                      <button
-                        key={token}
-                        type="button"
-                        onClick={() => insertPlaceholder(token)}
-                        className="px-2 py-0.5 text-[10px] font-mono font-bold bg-slate-100 hover:bg-blue-100 text-slate-700 hover:text-blue-900 rounded border border-slate-200 cursor-pointer"
-                      >
-                        + {token}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Início do Período ({`{{DATA_INICIO}}`})
-                    </label>
-                    <input
-                      type="text"
-                      value={template.textoPeriodoInicio}
-                      onChange={(e) =>
-                        setTemplate((prev) => ({
-                          ...prev,
-                          textoPeriodoInicio: e.target.value,
-                        }))
-                      }
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Fim do Período ({`{{DATA_FIM}}`})
-                    </label>
-                    <input
-                      type="text"
-                      value={template.textoPeriodoFim}
-                      onChange={(e) =>
-                        setTemplate((prev) => ({
-                          ...prev,
-                          textoPeriodoFim: e.target.value,
-                        }))
-                      }
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Local de Emissão
-                    </label>
-                    <input
-                      type="text"
-                      value={template.localEmissao}
-                      onChange={(e) =>
-                        setTemplate((prev) => ({ ...prev, localEmissao: e.target.value }))
-                      }
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Data por Extenso
-                    </label>
-                    <input
-                      type="text"
-                      value={template.dataEmissaoExtenso}
-                      onChange={(e) =>
-                        setTemplate((prev) => ({
-                          ...prev,
-                          dataEmissaoExtenso: e.target.value,
-                        }))
-                      }
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs"
-                    />
-                  </div>
-                </div>
-
-                {/* Independent Date Position & Alignment */}
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-[11px] font-bold text-slate-700">
-                      Posição Independente da Data (Abaixo do Texto)
-                    </span>
-                    {((template.dataOffsetX ?? 0) !== 0 ||
-                      (template.dataOffsetY ?? 0) !== 0 ||
-                      (template.dataAlinhamento || 'center') !== 'center') && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setTemplate((prev) => ({
-                            ...prev,
-                            dataAlinhamento: 'center',
-                            dataOffsetX: 0,
-                            dataOffsetY: 0,
-                          }))
-                        }
-                        className="text-[10px] text-slate-500 hover:text-slate-800 underline cursor-pointer"
-                      >
-                        Zerar
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {[
-                      { id: 'left', label: 'Esquerda', icon: AlignLeft },
-                      { id: 'center', label: 'Centralizado', icon: AlignCenter },
-                      { id: 'right', label: 'Direita', icon: AlignRight },
-                    ].map((pos) => {
-                      const Icon = pos.icon;
-                      const active = (template.dataAlinhamento || 'center') === pos.id;
-                      return (
-                        <button
-                          key={pos.id}
-                          type="button"
-                          onClick={() =>
-                            setTemplate((prev) => ({
-                              ...prev,
-                              dataAlinhamento: pos.id as 'left' | 'center' | 'right',
-                            }))
-                          }
-                          className={cn(
-                            'px-2 py-1.5 rounded-lg border text-[11px] font-bold flex items-center justify-center gap-1 cursor-pointer transition-all',
-                            active
-                              ? 'bg-blue-900 text-white border-blue-950 shadow-2xs'
-                              : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
-                          )}
-                        >
-                          <Icon size={12} />
-                          <span>{pos.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <div>
-                      <div className="flex justify-between text-[10px] font-semibold text-slate-600">
-                        <span>Horizontal (X)</span>
-                        <span className="font-mono text-blue-900">
-                          {template.dataOffsetX ?? 0}px
-                        </span>
-                      </div>
-                      <input
-                        type="range"
-                        min={-380}
-                        max={380}
-                        step={2}
-                        value={template.dataOffsetX ?? 0}
-                        onChange={(e) =>
-                          setTemplate((prev) => ({
-                            ...prev,
-                            dataOffsetX: Number(e.target.value),
-                          }))
-                        }
-                        className="w-full accent-blue-800"
-                      />
-                    </div>
-                    <div>
-                      <div className="flex justify-between text-[10px] font-semibold text-slate-600">
-                        <span>Vertical (Y)</span>
-                        <span className="font-mono text-blue-900">
-                          {template.dataOffsetY ?? 0}px
-                        </span>
-                      </div>
-                      <input
-                        type="range"
-                        min={-220}
-                        max={240}
-                        step={2}
-                        value={template.dataOffsetY ?? 0}
-                        onChange={(e) =>
-                          setTemplate((prev) => ({
-                            ...prev,
-                            dataOffsetY: Number(e.target.value),
-                          }))
-                        }
-                        className="w-full accent-blue-800"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Primary Signature */}
-                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-xs font-black uppercase tracking-wider text-slate-700">
-                      Assinatura Principal
-                    </h3>
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setTemplate((prev) => ({
-                            ...prev,
-                            assinaturaNegrito: !(prev.assinaturaNegrito ?? true),
-                          }))
-                        }
-                        className={cn(
-                          'px-1.5 py-0.5 rounded border text-[10px] font-bold cursor-pointer',
-                          (template.assinaturaNegrito ?? true)
-                            ? 'bg-slate-900 text-white border-slate-900'
-                            : 'bg-white text-slate-600 border-slate-200'
-                        )}
-                      >
-                        Negrito
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setTemplate((prev) => ({
-                            ...prev,
-                            assinaturaItalico: !(prev.assinaturaItalico ?? false),
-                          }))
-                        }
-                        className={cn(
-                          'px-1.5 py-0.5 rounded border text-[10px] italic font-serif cursor-pointer',
-                          (template.assinaturaItalico ?? false)
-                            ? 'bg-slate-900 text-white border-slate-900'
-                            : 'bg-white text-slate-600 border-slate-200'
-                        )}
-                      >
-                        Itálico
-                      </button>
-                    </div>
-                  </div>
-                  <input
-                    type="text"
-                    value={template.assinaturaNome}
-                    onChange={(e) =>
-                      setTemplate((prev) => ({ ...prev, assinaturaNome: e.target.value }))
-                    }
-                    placeholder="Nome completo"
-                    className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold"
-                  />
-                  <div className="grid grid-cols-2 gap-2">
-                    <input
-                      type="text"
-                      value={template.assinaturaPosto}
-                      onChange={(e) =>
-                        setTemplate((prev) => ({ ...prev, assinaturaPosto: e.target.value }))
-                      }
-                      placeholder="Posto / Graduação"
-                      className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs"
-                    />
-                    <input
-                      type="text"
-                      value={template.assinaturaCargo}
-                      onChange={(e) =>
-                        setTemplate((prev) => ({ ...prev, assinaturaCargo: e.target.value }))
-                      }
-                      placeholder="Função / Cargo"
-                      className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs"
-                    />
-                  </div>
-
-                  {/* Posição Horizontal e Altura Vertical da Assinatura */}
-                  <div className="pt-2 border-t border-slate-200 space-y-2.5">
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                        Posição na Folha
-                      </label>
-                      <div className="grid grid-cols-3 gap-1.5">
-                        {[
-                          { id: 'left', label: 'Esquerda', icon: AlignLeft },
-                          { id: 'center', label: 'Centralizado', icon: AlignCenter },
-                          { id: 'right', label: 'Direita', icon: AlignRight },
-                        ].map((pos) => {
-                          const Icon = pos.icon;
-                          const active = (template.assinaturaAlinhamento || 'right') === pos.id;
-                          return (
-                            <button
-                              key={pos.id}
-                              type="button"
-                              onClick={() =>
-                                setTemplate((prev) => ({
-                                  ...prev,
-                                  assinaturaAlinhamento: pos.id as 'left' | 'center' | 'right',
-                                }))
-                              }
-                              className={cn(
-                                'px-2 py-1.5 rounded-lg border text-[11px] font-bold flex items-center justify-center gap-1 cursor-pointer transition-all',
-                                active
-                                  ? 'bg-blue-900 text-white border-blue-950 shadow-2xs'
-                                  : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
-                              )}
-                            >
-                              <Icon size={12} />
-                              <span>{pos.label}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="flex items-center justify-between text-[11px] font-bold text-slate-700 mb-0.5">
-                        <span>Altura da Assinatura</span>
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-blue-900">
-                            {(template.assinaturaAlturaOffset ?? 0) === 0
-                              ? 'Padrão (0px)'
-                              : (template.assinaturaAlturaOffset ?? 0) < 0
-                                ? `${Math.abs(template.assinaturaAlturaOffset ?? 0)}px acima`
-                                : `${template.assinaturaAlturaOffset}px abaixo`}
-                          </span>
-                          {(template.assinaturaAlturaOffset ?? 0) !== 0 && (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setTemplate((prev) => ({ ...prev, assinaturaAlturaOffset: 0 }))
-                              }
-                              className="text-[10px] text-slate-500 hover:text-slate-800 underline cursor-pointer"
-                            >
-                              Zerar
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                      <input
-                        type="range"
-                        min={-90}
-                        max={45}
-                        step={2}
-                        value={template.assinaturaAlturaOffset ?? 0}
-                        onChange={(e) =>
-                          setTemplate((prev) => ({
-                            ...prev,
-                            assinaturaAlturaOffset: Number(e.target.value),
-                          }))
-                        }
-                        className="w-full accent-blue-800"
-                      />
-                      <div className="flex justify-between text-[9px] text-slate-400 font-semibold">
-                        <span>Mais acima</span>
-                        <span>Padrão</span>
-                        <span>Mais abaixo</span>
-                      </div>
-                    </div>
-
-                    <div className="pt-2 border-t border-slate-200 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-bold text-slate-700">
-                          Posição Independente (
-                          {(template.assinaturaAlinhamento || 'right') === 'left'
-                            ? 'Esquerda'
-                            : (template.assinaturaAlinhamento || 'right') === 'center'
-                              ? 'Centro'
-                              : 'Direita'}
-                          )
-                        </span>
-                        {((template.assinaturaPrincipalOffsetX ?? 0) !== 0 ||
-                          (template.assinaturaPrincipalOffsetY ?? 0) !== 0) && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setTemplate((prev) => ({
-                                ...prev,
-                                assinaturaPrincipalOffsetX: 0,
-                                assinaturaPrincipalOffsetY: 0,
-                              }))
-                            }
-                            className="text-[10px] text-slate-500 hover:text-slate-800 underline cursor-pointer"
-                          >
-                            Zerar
-                          </button>
-                        )}
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        <div>
-                          <div className="flex justify-between text-[10px] font-semibold text-slate-600">
-                            <span>Horizontal (X)</span>
-                            <span className="font-mono text-blue-900">
-                              {template.assinaturaPrincipalOffsetX ?? 0}px
-                            </span>
-                          </div>
-                          <input
-                            type="range"
-                            min={-380}
-                            max={380}
-                            step={2}
-                            value={template.assinaturaPrincipalOffsetX ?? 0}
-                            onChange={(e) =>
-                              setTemplate((prev) => ({
-                                ...prev,
-                                assinaturaPrincipalOffsetX: Number(e.target.value),
-                              }))
-                            }
-                            className="w-full accent-blue-800"
-                          />
+      {/* Main Split: Contextual Inspector (only when clicking an object or Modelos) + Live A4 Preview */}
+      {(() => {
+        const showSidePanel = editorTab === 'modelos' || selectedObject !== null;
+        return (
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+            {/* LEFT COLUMN: Appears ONLY when user clicks an object on the sheet or opens Modelos Salvos */}
+            {showSidePanel && (
+              <div className="xl:col-span-5 xl:sticky xl:top-4 bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+                {editorTab === 'modelos' ? (
+                  <div className="flex flex-col max-h-[calc(100vh-2rem)]">
+                    <div className="px-4 py-3.5 border-b border-slate-200 bg-slate-50 flex items-center justify-between gap-2 shrink-0">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-xl bg-blue-900 text-white flex items-center justify-center shrink-0">
+                          <BookmarkCheck size={15} />
                         </div>
                         <div>
-                          <div className="flex justify-between text-[10px] font-semibold text-slate-600">
-                            <span>Vertical (Y)</span>
-                            <span className="font-mono text-blue-900">
-                              {template.assinaturaPrincipalOffsetY ?? 0}px
-                            </span>
-                          </div>
-                          <input
-                            type="range"
-                            min={-220}
-                            max={60}
-                            step={2}
-                            value={template.assinaturaPrincipalOffsetY ?? 0}
-                            onChange={(e) =>
-                              setTemplate((prev) => ({
-                                ...prev,
-                                assinaturaPrincipalOffsetY: Number(e.target.value),
-                              }))
-                            }
-                            className="w-full accent-blue-800"
-                          />
+                          <h2 className="text-xs font-black uppercase tracking-wider text-slate-900">
+                            Modelos Salvos
+                          </h2>
+                          <p className="text-[10px] text-slate-500">
+                            Crie, carregue ou vincule modelos às turmas
+                          </p>
                         </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Optional 2nd Signature (Opposite Side) */}
-                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <label className="flex items-center gap-2 text-xs font-bold text-slate-800 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={template.mostrarSegundaAssinatura}
-                        onChange={(e) =>
-                          setTemplate((prev) => ({
-                            ...prev,
-                            mostrarSegundaAssinatura: e.target.checked,
-                          }))
-                        }
-                        className="rounded border-slate-300"
-                      />
-                      <span>Inserir 2ª Assinatura (Lado Oposto)</span>
-                    </label>
-
-                    {template.mostrarSegundaAssinatura && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setTemplate((prev) => ({
-                            ...prev,
-                            assinaturaAlinhamento:
-                              prev.assinaturaAlinhamento === 'left' ? 'right' : 'left',
-                          }))
-                        }
-                        className="px-2 py-1 rounded-lg bg-white border border-slate-200 hover:bg-blue-50 text-blue-900 text-[10px] font-bold flex items-center gap-1 cursor-pointer"
-                        title="Alternar em qual lado cada assinatura aparece"
-                      >
-                        <ArrowLeftRight size={11} />
-                        <span>Inverter Lados</span>
-                      </button>
-                    )}
-                  </div>
-
-                  <p className="text-[10px] text-slate-500 leading-snug">
-                    {template.mostrarSegundaAssinatura ? (
-                      <>
-                        Posicionada automaticamente na{' '}
-                        <strong className="text-slate-700">
-                          {(template.assinaturaAlinhamento || 'right') === 'left'
-                            ? 'Direita'
-                            : 'Esquerda'}
-                        </strong>{' '}
-                        (lado oposto à Assinatura Principal na{' '}
-                        <strong className="text-slate-700">
-                          {(template.assinaturaAlinhamento || 'right') === 'left'
-                            ? 'Esquerda'
-                            : 'Direita'}
-                        </strong>
-                        ).
-                      </>
-                    ) : (
-                      'Opcional: habilite para adicionar uma segunda assinatura do lado oposto à assinatura principal.'
-                    )}
-                  </p>
-
-                  {template.mostrarSegundaAssinatura && (
-                    <div className="space-y-2 pt-1 border-t border-slate-200">
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">
-                          Nome Completo
-                        </label>
-                        <input
-                          type="text"
-                          value={template.segundaAssinaturaNome}
-                          onChange={(e) =>
-                            setTemplate((prev) => ({
-                              ...prev,
-                              segundaAssinaturaNome: e.target.value,
-                            }))
-                          }
-                          placeholder="Nome completo (2ª Assinatura)"
-                          className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold"
-                        />
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        <div>
-                          <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">
-                            Posto / Graduação
-                          </label>
-                          <input
-                            type="text"
-                            value={template.segundaAssinaturaPosto}
-                            onChange={(e) =>
-                              setTemplate((prev) => ({
-                                ...prev,
-                                segundaAssinaturaPosto: e.target.value,
-                              }))
-                            }
-                            placeholder="Ex: Capitão-Tenente"
-                            className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">
-                            Função
-                          </label>
-                          <input
-                            type="text"
-                            value={template.segundaAssinaturaCargo}
-                            onChange={(e) =>
-                              setTemplate((prev) => ({
-                                ...prev,
-                                segundaAssinaturaCargo: e.target.value,
-                              }))
-                            }
-                            placeholder="Ex: Comandante da Guarda Costeira"
-                            className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="pt-2 border-t border-slate-200 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[11px] font-bold text-slate-700">
-                            Posição Independente (2ª Assinatura —{' '}
-                            {(template.assinaturaAlinhamento || 'right') === 'left'
-                              ? 'Direita'
-                              : 'Esquerda'}
-                            )
-                          </span>
-                          {((template.segundaAssinaturaOffsetX ?? 0) !== 0 ||
-                            (template.segundaAssinaturaOffsetY ?? 0) !== 0) && (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setTemplate((prev) => ({
-                                  ...prev,
-                                  segundaAssinaturaOffsetX: 0,
-                                  segundaAssinaturaOffsetY: 0,
-                                }))
-                              }
-                              className="text-[10px] text-slate-500 hover:text-slate-800 underline cursor-pointer"
-                            >
-                              Zerar
-                            </button>
-                          )}
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          <div>
-                            <div className="flex justify-between text-[10px] font-semibold text-slate-600">
-                              <span>Horizontal (X)</span>
-                              <span className="font-mono text-blue-900">
-                                {template.segundaAssinaturaOffsetX ?? 0}px
-                              </span>
-                            </div>
-                            <input
-                              type="range"
-                              min={-380}
-                              max={380}
-                              step={2}
-                              value={template.segundaAssinaturaOffsetX ?? 0}
-                              onChange={(e) =>
-                                setTemplate((prev) => ({
-                                  ...prev,
-                                  segundaAssinaturaOffsetX: Number(e.target.value),
-                                }))
-                              }
-                              className="w-full accent-blue-800"
-                            />
-                          </div>
-                          <div>
-                            <div className="flex justify-between text-[10px] font-semibold text-slate-600">
-                              <span>Vertical (Y)</span>
-                              <span className="font-mono text-blue-900">
-                                {template.segundaAssinaturaOffsetY ?? 0}px
-                              </span>
-                            </div>
-                            <input
-                              type="range"
-                              min={-220}
-                              max={60}
-                              step={2}
-                              value={template.segundaAssinaturaOffsetY ?? 0}
-                              onChange={(e) =>
-                                setTemplate((prev) => ({
-                                  ...prev,
-                                  segundaAssinaturaOffsetY: Number(e.target.value),
-                                }))
-                              }
-                              className="w-full accent-blue-800"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Free Positioning Controls: Left Crest, Right Crest, Title, All Text */}
-                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div>
-                      <h3 className="text-xs font-black uppercase tracking-wider text-slate-700">
-                        Mover Brasões, Título e Texto
-                      </h3>
-                      <p className="text-[10px] text-slate-500">
-                        Ajuste pelos controles ou ative o arraste direto na folha.
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => setDragMoveEnabled((v) => !v)}
-                        className={cn(
-                          'px-2 py-1 rounded-lg border text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-all',
-                          dragMoveEnabled
-                            ? 'bg-blue-700 text-white border-blue-800'
-                            : 'bg-white text-blue-800 border-blue-200 hover:bg-blue-50'
-                        )}
-                      >
-                        <Move size={11} />
-                        <span>{dragMoveEnabled ? 'Arraste Ativo' : 'Arrastar na Folha'}</span>
-                      </button>
-                      {((template.logoEsquerdaOffsetX ?? 0) !== 0 ||
-                        (template.logoEsquerdaOffsetY ?? 0) !== 0 ||
-                        (template.logoCentroOffsetX ?? 0) !== 0 ||
-                        (template.logoCentroOffsetY ?? 0) !== 0 ||
-                        (template.logoDireitaOffsetX ?? 0) !== 0 ||
-                        (template.logoDireitaOffsetY ?? 0) !== 0 ||
-                        (template.tituloOffsetX ?? 0) !== 0 ||
-                        (template.tituloOffsetY ?? 0) !== 0 ||
-                        (template.textoOffsetX ?? 0) !== 0 ||
-                        (template.textoOffsetY ?? 0) !== 0 ||
-                        (template.dataOffsetX ?? 0) !== 0 ||
-                        (template.dataOffsetY ?? 0) !== 0 ||
-                        (template.marcaDaguaFrenteOffsetY ?? 0) !== 0 ||
-                        (template.assinaturaPrincipalOffsetX ?? 0) !== 0 ||
-                        (template.assinaturaPrincipalOffsetY ?? 0) !== 0 ||
-                        (template.segundaAssinaturaOffsetX ?? 0) !== 0 ||
-                        (template.segundaAssinaturaOffsetY ?? 0) !== 0) && (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setTemplate((prev) => ({
-                              ...prev,
-                              logoEsquerdaOffsetX: 0,
-                              logoEsquerdaOffsetY: 0,
-                              logoCentroOffsetX: 0,
-                              logoCentroOffsetY: 0,
-                              logoDireitaOffsetX: 0,
-                              logoDireitaOffsetY: 0,
-                              tituloOffsetX: 0,
-                              tituloOffsetY: 0,
-                              textoOffsetX: 0,
-                              textoOffsetY: 0,
-                              dataOffsetX: 0,
-                              dataOffsetY: 0,
-                              marcaDaguaFrenteOffsetY: 0,
-                              assinaturaPrincipalOffsetX: 0,
-                              assinaturaPrincipalOffsetY: 0,
-                              segundaAssinaturaOffsetX: 0,
-                              segundaAssinaturaOffsetY: 0,
-                            }))
-                          }
-                          className="px-2 py-1 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-[10px] font-bold text-slate-600 cursor-pointer"
-                        >
-                          Zerar Tudo
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    {[
-                      {
-                        label: 'Brasão Esquerdo',
-                        xKey: 'logoEsquerdaOffsetX' as const,
-                        yKey: 'logoEsquerdaOffsetY' as const,
-                        minX: -90,
-                        maxX: 760,
-                        minY: -60,
-                        maxY: 520,
-                        sizeKey: 'tamanhoLogoEsquerda' as const,
-                        defaultSize: 90,
-                        opacityKey: 'opacidadeLogoEsquerda' as const,
-                        showKey: 'mostrarLogoEsquerda' as const,
-                        defaultShown: true,
-                      },
-                      {
-                        label: 'Brasão Central',
-                        xKey: 'logoCentroOffsetX' as const,
-                        yKey: 'logoCentroOffsetY' as const,
-                        minX: -420,
-                        maxX: 420,
-                        minY: -110,
-                        maxY: 640,
-                        sizeKey: 'tamanhoLogoCentro' as const,
-                        defaultSize: 84,
-                        opacityKey: 'opacidadeLogoCentro' as const,
-                        showKey: 'mostrarLogoCentro' as const,
-                        defaultShown: false,
-                        uploadField: 'logoCentroUrl' as const,
-                      },
-                      {
-                        label: 'Brasão Direito',
-                        xKey: 'logoDireitaOffsetX' as const,
-                        yKey: 'logoDireitaOffsetY' as const,
-                        minX: -760,
-                        maxX: 90,
-                        minY: -60,
-                        maxY: 520,
-                        sizeKey: 'tamanhoLogoDireita' as const,
-                        defaultSize: 74,
-                        opacityKey: 'opacidadeLogoDireita' as const,
-                        showKey: 'mostrarLogoDireita' as const,
-                        defaultShown: true,
-                      },
-                      {
-                        label: 'Título do Certificado',
-                        xKey: 'tituloOffsetX' as const,
-                        yKey: 'tituloOffsetY' as const,
-                        minX: -350,
-                        maxX: 350,
-                        minY: -200,
-                        maxY: 260,
-                      },
-                      {
-                        label: 'Texto Principal',
-                        xKey: 'textoOffsetX' as const,
-                        yKey: 'textoOffsetY' as const,
-                        minX: -150,
-                        maxX: 150,
-                        minY: -180,
-                        maxY: 200,
-                      },
-                      {
-                        label: 'Data (Local e Data)',
-                        xKey: 'dataOffsetX' as const,
-                        yKey: 'dataOffsetY' as const,
-                        minX: -380,
-                        maxX: 380,
-                        minY: -220,
-                        maxY: 240,
-                      },
-                    ].map((ctrl) => {
-                      const valX = template[ctrl.xKey] ?? 0;
-                      const valY = template[ctrl.yKey] ?? 0;
-                      const valSize = ctrl.sizeKey ? (template[ctrl.sizeKey] ?? ctrl.defaultSize) : undefined;
-                      const valOpacity = ctrl.opacityKey ? (template[ctrl.opacityKey] ?? 1) : undefined;
-                      const isShown = ctrl.showKey
-                        ? ctrl.defaultShown
-                          ? template[ctrl.showKey] !== false
-                          : template[ctrl.showKey] === true
-                        : true;
-                      const isModified = valX !== 0 || valY !== 0;
-                      return (
-                        <div
-                          key={ctrl.label}
-                          className={cn(
-                            'p-2.5 rounded-lg border space-y-2',
-                            isShown ? 'bg-white border-slate-200' : 'bg-slate-100/70 border-slate-200'
-                          )}
-                        >
-                          <div className="flex items-center justify-between gap-1">
-                            <span className="text-[11px] font-bold text-slate-800 truncate">
-                              {ctrl.label}
-                            </span>
-                            <div className="flex items-center gap-2 shrink-0">
-                              {ctrl.showKey && (
-                                <label className="flex items-center gap-1 text-[10px] font-bold text-slate-700 cursor-pointer">
-                                  <input
-                                    type="checkbox"
-                                    checked={isShown}
-                                    onChange={(e) =>
-                                      setTemplate((prev) => ({
-                                        ...prev,
-                                        [ctrl.showKey!]: e.target.checked,
-                                      }))
-                                    }
-                                    className="rounded border-slate-300"
-                                  />
-                                  <span>{isShown ? 'Exibir' : 'Inibido'}</span>
-                                </label>
-                              )}
-                              {isModified && (
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setTemplate((prev) => ({
-                                      ...prev,
-                                      [ctrl.xKey]: 0,
-                                      [ctrl.yKey]: 0,
-                                    }))
-                                  }
-                                  className="text-[10px] font-semibold text-blue-700 hover:text-blue-900 underline cursor-pointer shrink-0"
-                                >
-                                  Zerar
-                                </button>
-                              )}
-                            </div>
-                          </div>
-
-                          {ctrl.uploadField && (
-                            <div className="flex items-center justify-between gap-2 p-1.5 rounded-md bg-slate-50 border border-slate-200">
-                              <span className="text-[10px] font-medium text-slate-600 truncate">
-                                {template.logoCentroUrl ? 'Imagem carregada' : 'Sem imagem'}
-                              </span>
-                              <div className="flex items-center gap-1 shrink-0">
-                                <label className="px-2 py-0.5 rounded bg-blue-900 hover:bg-blue-950 text-white text-[10px] font-bold cursor-pointer flex items-center gap-1">
-                                  <Upload size={10} />
-                                  <span>{template.logoCentroUrl ? 'Trocar' : 'Inserir'}</span>
-                                  <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={(e) => handleImageUpload('logoCentroUrl', e)}
-                                    className="hidden"
-                                  />
-                                </label>
-                                {template.logoCentroUrl && (
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      setTemplate((prev) => ({
-                                        ...prev,
-                                        logoCentroUrl: '',
-                                        mostrarLogoCentro: false,
-                                      }))
-                                    }
-                                    className="p-1 rounded bg-white border border-slate-200 hover:bg-rose-50 text-rose-600 cursor-pointer"
-                                    title="Remover imagem do brasão central"
-                                  >
-                                    <Trash2 size={10} />
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                          )}
-
-                          <div>
-                            <div className="flex items-center justify-between text-[10px] text-slate-600 font-semibold">
-                              <span>Horizontal (Esq/Dir)</span>
-                              <span className="font-mono text-slate-800">
-                                {valX > 0 ? `+${valX}` : valX}px
-                              </span>
-                            </div>
-                            <input
-                              type="range"
-                              min={ctrl.minX}
-                              max={ctrl.maxX}
-                              step={2}
-                              value={valX}
-                              onChange={(e) =>
-                                setTemplate((prev) => ({
-                                  ...prev,
-                                  [ctrl.xKey]: Number(e.target.value),
-                                }))
-                              }
-                              className="w-full accent-blue-800"
-                            />
-                          </div>
-
-                          <div>
-                            <div className="flex items-center justify-between text-[10px] text-slate-600 font-semibold">
-                              <span>Vertical (Altura)</span>
-                              <span className="font-mono text-slate-800">
-                                {valY > 0 ? `+${valY}` : valY}px
-                              </span>
-                            </div>
-                            <input
-                              type="range"
-                              min={ctrl.minY}
-                              max={ctrl.maxY}
-                              step={2}
-                              value={valY}
-                              onChange={(e) =>
-                                setTemplate((prev) => ({
-                                  ...prev,
-                                  [ctrl.yKey]: Number(e.target.value),
-                                }))
-                              }
-                              className="w-full accent-blue-800"
-                            />
-                          </div>
-
-                          {ctrl.sizeKey && ctrl.opacityKey && valSize !== undefined && valOpacity !== undefined && (
-                            <div className="pt-1.5 border-t border-slate-100 space-y-1.5">
-                              <div>
-                                <div className="flex items-center justify-between text-[10px] text-slate-600 font-semibold">
-                                  <span>Tamanho do Brasão</span>
-                                  <span className="font-mono text-slate-800">{valSize}px</span>
-                                </div>
-                                <input
-                                  type="range"
-                                  min={36}
-                                  max={220}
-                                  step={2}
-                                  value={valSize}
-                                  onChange={(e) =>
-                                    setTemplate((prev) => ({
-                                      ...prev,
-                                      [ctrl.sizeKey!]: Number(e.target.value),
-                                    }))
-                                  }
-                                  className="w-full accent-blue-800"
-                                />
-                              </div>
-                              <div>
-                                <div className="flex items-center justify-between text-[10px] text-slate-600 font-semibold">
-                                  <span>Opacidade</span>
-                                  <span className="font-mono text-slate-800">
-                                    {Math.round(valOpacity * 100)}%
-                                  </span>
-                                </div>
-                                <input
-                                  type="range"
-                                  min={0}
-                                  max={1}
-                                  step={0.05}
-                                  value={valOpacity}
-                                  onChange={(e) =>
-                                    setTemplate((prev) => ({
-                                      ...prev,
-                                      [ctrl.opacityKey!]: Number(e.target.value),
-                                    }))
-                                  }
-                                  className="w-full accent-blue-800"
-                                />
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-
-                    {/* Front Watermark Wide Vertical Control */}
-                    <div className="sm:col-span-2 p-2.5 rounded-lg bg-white border border-slate-200 space-y-1.5">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-[11px] font-bold text-slate-800">
-                          Marca d&apos;Água (Frente) — Movimento Vertical
-                        </span>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className="font-mono text-[10px] text-slate-700 font-semibold">
-                            {(template.marcaDaguaFrenteOffsetY ?? 0) > 0
-                              ? `+${template.marcaDaguaFrenteOffsetY}`
-                              : (template.marcaDaguaFrenteOffsetY ?? 0)}
-                            px
-                          </span>
-                          {(template.marcaDaguaFrenteOffsetY ?? 0) !== 0 && (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setTemplate((prev) => ({ ...prev, marcaDaguaFrenteOffsetY: 0 }))
-                              }
-                              className="text-[10px] font-semibold text-blue-700 hover:text-blue-900 underline cursor-pointer"
-                            >
-                              Zerar
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                      <input
-                        type="range"
-                        min={-380}
-                        max={380}
-                        step={4}
-                        value={template.marcaDaguaFrenteOffsetY ?? 0}
-                        onChange={(e) =>
-                          setTemplate((prev) => ({
-                            ...prev,
-                            marcaDaguaFrenteOffsetY: Number(e.target.value),
-                          }))
-                        }
-                        className="w-full accent-blue-800"
-                      />
-                      <div className="flex justify-between text-[9px] text-slate-400 font-semibold">
-                        <span>Topo (-380px)</span>
-                        <span>Centro (0px)</span>
-                        <span>Base (+380px)</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* TAB 2: VERSO */}
-            {editorTab === 'verso' && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between gap-2">
-                  <div>
-                    <h3 className="text-xs font-black uppercase tracking-wider text-slate-800">
-                      Quadro de Disciplinas / Módulos (Verso)
-                    </h3>
-                    <p className="text-[11px] text-slate-500">
-                      Agrupe disciplinas por módulos com nota única, carga horária do módulo, total e média final.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleSyncDisciplinesFromTurma}
-                    className="px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 text-xs font-bold flex items-center gap-1.5 cursor-pointer shrink-0"
-                  >
-                    <RefreshCw size={13} />
-                    <span>Sincronizar Turma</span>
-                  </button>
-                </div>
-
-                {/* Module Grouping Toggle */}
-                <div className="p-3 rounded-xl bg-blue-50/70 border border-blue-200 space-y-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <label className="flex items-start gap-2 text-xs font-bold text-blue-950 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={template.agruparPorModulos !== false}
-                        onChange={(e) =>
-                          setTemplate((prev) => ({
-                            ...prev,
-                            agruparPorModulos: e.target.checked,
-                          }))
-                        }
-                        className="mt-0.5 rounded border-blue-300"
-                      />
-                      <span>
-                        Agrupar disciplinas por módulos (nota única e carga horária por módulo)
-                      </span>
-                    </label>
-                  </div>
-                  <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-blue-900/80 pl-5">
-                    <span>
-                      {template.agruparPorModulos !== false
-                        ? `Exibindo ${effectiveBackPreviewRows.length} módulo(s) agrupado(s) no verso.`
-                        : 'Exibindo disciplinas separadamente sem agrupamento por módulo.'}
-                    </span>
-                    {template.agruparPorModulos !== false &&
-                      groupCertificateRowsByModule(template.disciplinas).length <
-                        template.disciplinas.length && (
-                        <button
-                          type="button"
-                          onClick={handleConsolidateTemplateRowsByModule}
-                          className="px-2 py-0.5 rounded bg-white border border-blue-300 text-[10px] font-bold text-blue-800 hover:bg-blue-100 cursor-pointer"
-                        >
-                          Consolidar linhas abaixo
-                        </button>
-                      )}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Título do Curso no Verso (aceita {`{{CURSO}}`})
-                  </label>
-                  <input
-                    type="text"
-                    value={template.versoTituloCurso}
-                    onChange={(e) =>
-                      setTemplate((prev) => ({
-                        ...prev,
-                        versoTituloCurso: e.target.value,
-                      }))
-                    }
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold uppercase"
-                  />
-                </div>
-
-                <div className="grid grid-cols-3 gap-2">
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-600 mb-1">
-                      Coluna 1
-                    </label>
-                    <input
-                      type="text"
-                      value={template.versoColunaDisciplina}
-                      onChange={(e) =>
-                        setTemplate((prev) => ({
-                          ...prev,
-                          versoColunaDisciplina: e.target.value,
-                        }))
-                      }
-                      className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-600 mb-1">
-                      Coluna 2
-                    </label>
-                    <input
-                      type="text"
-                      value={template.versoColunaCargaHoraria}
-                      onChange={(e) =>
-                        setTemplate((prev) => ({
-                          ...prev,
-                          versoColunaCargaHoraria: e.target.value,
-                        }))
-                      }
-                      className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-600 mb-1">
-                      Coluna 3
-                    </label>
-                    <input
-                      type="text"
-                      value={template.versoColunaNota}
-                      onChange={(e) =>
-                        setTemplate((prev) => ({
-                          ...prev,
-                          versoColunaNota: e.target.value,
-                        }))
-                      }
-                      className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs"
-                    />
-                  </div>
-                </div>
-
-                {/* Editable Rows */}
-                <div className="space-y-2.5">
-                  {template.disciplinas.map((row, idx) => {
-                    const resolvedModNum = extractModuleNumberFromRow(row);
-                    return (
-                      <div
-                        key={row.id || idx}
-                        className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2"
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-black text-slate-500 uppercase">
-                              Linha {idx + 1}
-                            </span>
-                            <select
-                              value={resolvedModNum ?? ''}
-                              onChange={(e) =>
-                                handleUpdateDisciplineRow(
-                                  idx,
-                                  'modulo',
-                                  e.target.value ? Number(e.target.value) : null
-                                )
-                              }
-                              className="px-2 py-0.5 bg-white border border-slate-200 rounded-md text-[10px] font-bold text-blue-900 cursor-pointer"
-                              title="Módulo ao qual esta linha pertence para agrupamento"
-                            >
-                              <option value="">Sem módulo</option>
-                              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((m) => (
-                                <option key={m} value={m}>
-                                  Módulo {m}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <button
-                              type="button"
-                              onClick={() => handleMoveDisciplineRow(idx, -1)}
-                              disabled={idx === 0}
-                              className="p-1 rounded hover:bg-slate-200 text-slate-600 disabled:opacity-30 cursor-pointer"
-                              title="Mover para cima"
-                            >
-                              <ArrowUp size={13} />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleMoveDisciplineRow(idx, 1)}
-                              disabled={idx === template.disciplinas.length - 1}
-                              className="p-1 rounded hover:bg-slate-200 text-slate-600 disabled:opacity-30 cursor-pointer"
-                              title="Mover para baixo"
-                            >
-                              <ArrowDown size={13} />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveDisciplineRow(idx)}
-                              className="p-1 rounded hover:bg-rose-100 text-rose-600 cursor-pointer"
-                              title="Remover linha"
-                            >
-                              <Trash2 size={13} />
-                            </button>
-                          </div>
-                        </div>
-                        <textarea
-                          rows={2}
-                          value={row.nome}
-                          onChange={(e) =>
-                            handleUpdateDisciplineRow(idx, 'nome', e.target.value)
-                          }
-                          className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold uppercase"
-                        />
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <label className="block text-[10px] font-bold text-slate-500 mb-0.5">
-                              Carga Horária
-                            </label>
-                            <input
-                              type="text"
-                              value={row.carga_horaria}
-                              onChange={(e) =>
-                                handleUpdateDisciplineRow(idx, 'carga_horaria', e.target.value)
-                              }
-                              placeholder="Ex: 24h"
-                              className="w-full px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-xs font-mono"
-                            />
-                          </div>
-                          <div>
-                            <div className="flex items-center justify-between gap-1 mb-0.5">
-                              <label className="block text-[10px] font-bold text-slate-500">
-                                Nota Única do Módulo
-                              </label>
-                              {selectedStudentObj && useTurmaStudentGrades && resolvedModNum && (
-                                <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.2 rounded border border-blue-200">
-                                  Boletim:{' '}
-                                  {effectiveBackPreviewRows.find(
-                                    (r) => extractModuleNumberFromRow(r) === resolvedModNum
-                                  )?.nota ?? '-'}
-                                </span>
-                              )}
-                            </div>
-                            <input
-                              type="text"
-                              value={row.nota}
-                              onChange={(e) =>
-                                handleUpdateDisciplineRow(idx, 'nota', e.target.value)
-                              }
-                              placeholder="Ex: 19,50"
-                              className="w-full px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-xs font-mono"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-
-                  <button
-                    type="button"
-                    onClick={handleAddDisciplineRow}
-                    className="w-full py-2.5 rounded-xl border border-dashed border-blue-300 bg-blue-50/50 hover:bg-blue-50 text-blue-800 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
-                  >
-                    <Plus size={14} />
-                    <span>Adicionar Disciplina / Módulo</span>
-                  </button>
-                </div>
-
-                {/* Totals calculation control */}
-                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
-                  <label className="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={template.usarCalculoAutomaticoVerso}
-                      onChange={(e) =>
-                        setTemplate((prev) => ({
-                          ...prev,
-                          usarCalculoAutomaticoVerso: e.target.checked,
-                        }))
-                      }
-                      className="rounded border-slate-300"
-                    />
-                    <span>Calcular Carga Horária Total e Média Final automaticamente</span>
-                  </label>
-
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="p-2 rounded-lg bg-white border border-slate-200">
-                      <span className="text-[10px] text-slate-500 block">
-                        Carga Horária Exibida
-                      </span>
-                      <strong className="text-slate-900 font-mono">{totalHorasLabel}</strong>
-                    </div>
-                    <div className="p-2 rounded-lg bg-white border border-slate-200">
-                      <span className="text-[10px] text-slate-500 block">
-                        Média Final Exibida
-                      </span>
-                      <strong className="text-blue-900 font-mono">{mediaFinalLabel}</strong>
-                    </div>
-                  </div>
-
-                  {!template.usarCalculoAutomaticoVerso && (
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-600 mb-1">
-                          Total Horas Manual
-                        </label>
-                        <input
-                          type="text"
-                          value={template.cargaHorariaTotalManual}
-                          onChange={(e) =>
-                            setTemplate((prev) => ({
-                              ...prev,
-                              cargaHorariaTotalManual: e.target.value,
-                            }))
-                          }
-                          placeholder="Ex: 144h"
-                          className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-600 mb-1">
-                          Média Final Manual
-                        </label>
-                        <input
-                          type="text"
-                          value={template.mediaFinalManual}
-                          onChange={(e) =>
-                            setTemplate((prev) => ({
-                              ...prev,
-                              mediaFinalManual: e.target.value,
-                            }))
-                          }
-                          placeholder="Ex: 19.5"
-                          className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs"
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* TAB 3: VISUAL & BRASÕES */}
-            {editorTab === 'visual' && (
-              <div className="space-y-4">
-                {/* Tipografia Completa */}
-                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <h4 className="text-xs font-black uppercase tracking-wider text-slate-700">
-                      Fontes e Estilo do Certificado
-                    </h4>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setTemplate((prev) => ({
-                          ...prev,
-                          fonteTitulo: prev.fonteCorpo,
-                          fonteAssinatura: prev.fonteCorpo,
-                          fonteVerso: prev.fonteCorpo,
-                        }))
-                      }
-                      className="text-[10px] font-bold text-blue-700 hover:text-blue-900 underline cursor-pointer"
-                    >
-                      Aplicar fonte do texto em tudo
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                        Fonte do Texto (Frente)
-                      </label>
-                      <select
-                        value={template.fonteCorpo === 'serif-italic' ? 'garamond' : template.fonteCorpo}
-                        onChange={(e) =>
-                          setTemplate((prev) => ({
-                            ...prev,
-                            fonteCorpo: e.target.value as any,
-                          }))
-                        }
-                        className="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-xl text-xs"
-                      >
-                        <option value="garamond">Garamond (Padrão Original)</option>
-                        <option value="times">Times New Roman</option>
-                        <option value="georgia">Georgia Clássica</option>
-                        <option value="palatino">Palatino / Book Antiqua</option>
-                        <option value="lora">Lora Editorial</option>
-                        <option value="cinzel">Cinzel Romana</option>
-                        <option value="script">Caligráfica Formal</option>
-                        <option value="sans">Arial Limpa (Sans)</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                        Fonte do Título (Frente)
-                      </label>
-                      <select
-                        value={
-                          (template.fonteTitulo || template.fonteCorpo) === 'serif-italic'
-                            ? 'garamond'
-                            : template.fonteTitulo || template.fonteCorpo
-                        }
-                        onChange={(e) =>
-                          setTemplate((prev) => ({
-                            ...prev,
-                            fonteTitulo: e.target.value as any,
-                          }))
-                        }
-                        className="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-xl text-xs"
-                      >
-                        <option value="garamond">Garamond (Padrão Original)</option>
-                        <option value="times">Times New Roman</option>
-                        <option value="georgia">Georgia Clássica</option>
-                        <option value="palatino">Palatino / Book Antiqua</option>
-                        <option value="lora">Lora Editorial</option>
-                        <option value="cinzel">Cinzel Romana</option>
-                        <option value="script">Caligráfica Formal</option>
-                        <option value="sans">Arial Limpa (Sans)</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                        Fonte da Assinatura
-                      </label>
-                      <select
-                        value={
-                          (template.fonteAssinatura || template.fonteCorpo) === 'serif-italic'
-                            ? 'garamond'
-                            : template.fonteAssinatura || template.fonteCorpo
-                        }
-                        onChange={(e) =>
-                          setTemplate((prev) => ({
-                            ...prev,
-                            fonteAssinatura: e.target.value as any,
-                          }))
-                        }
-                        className="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-xl text-xs"
-                      >
-                        <option value="garamond">Garamond (Padrão Original)</option>
-                        <option value="times">Times New Roman</option>
-                        <option value="georgia">Georgia Clássica</option>
-                        <option value="palatino">Palatino / Book Antiqua</option>
-                        <option value="lora">Lora Editorial</option>
-                        <option value="cinzel">Cinzel Romana</option>
-                        <option value="script">Caligráfica Formal</option>
-                        <option value="sans">Arial Limpa (Sans)</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                        Fonte do Verso
-                      </label>
-                      <select
-                        value={template.fonteVerso || 'sans'}
-                        onChange={(e) =>
-                          setTemplate((prev) => ({
-                            ...prev,
-                            fonteVerso: e.target.value as any,
-                          }))
-                        }
-                        className="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-xl text-xs"
-                      >
-                        <option value="sans">Padrão Original (Arial / Sans)</option>
-                        <option value="garamond">Garamond</option>
-                        <option value="times">Times New Roman</option>
-                        <option value="georgia">Georgia Clássica</option>
-                        <option value="palatino">Palatino</option>
-                        <option value="lora">Lora</option>
-                        <option value="cinzel">Cinzel</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Quick Global Bold & Italic Controls */}
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    <label className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-700 cursor-pointer bg-white px-2.5 py-1 rounded-lg border border-slate-200">
-                      <input
-                        type="checkbox"
-                        checked={template.textoCorpoItalico ?? (template.fonteCorpo !== 'sans')}
-                        onChange={(e) =>
-                          setTemplate((prev) => ({ ...prev, textoCorpoItalico: e.target.checked }))
-                        }
-                        className="rounded border-slate-300"
-                      />
-                      <span>Corpo Itálico</span>
-                    </label>
-                    <label className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-700 cursor-pointer bg-white px-2.5 py-1 rounded-lg border border-slate-200">
-                      <input
-                        type="checkbox"
-                        checked={template.dataItalico ?? (template.textoCorpoItalico ?? true)}
-                        onChange={(e) =>
-                          setTemplate((prev) => ({ ...prev, dataItalico: e.target.checked }))
-                        }
-                        className="rounded border-slate-300"
-                      />
-                      <span>Data Itálico</span>
-                    </label>
-                    <label className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-700 cursor-pointer bg-white px-2.5 py-1 rounded-lg border border-slate-200">
-                      <input
-                        type="checkbox"
-                        checked={template.dataNegrito ?? false}
-                        onChange={(e) =>
-                          setTemplate((prev) => ({ ...prev, dataNegrito: e.target.checked }))
-                        }
-                        className="rounded border-slate-300"
-                      />
-                      <span>Data Negrito</span>
-                    </label>
-                    <label className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-700 cursor-pointer bg-white px-2.5 py-1 rounded-lg border border-slate-200">
-                      <input
-                        type="checkbox"
-                        checked={template.versoItalico ?? false}
-                        onChange={(e) =>
-                          setTemplate((prev) => ({ ...prev, versoItalico: e.target.checked }))
-                        }
-                        className="rounded border-slate-300"
-                      />
-                      <span>Verso Itálico</span>
-                    </label>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Alinhamento do Texto
-                    </label>
-                    <select
-                      value={template.alinhamentoTexto}
-                      onChange={(e) =>
-                        setTemplate((prev) => ({
-                          ...prev,
-                          alinhamentoTexto: e.target.value as any,
-                        }))
-                      }
-                      className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs"
-                    >
-                      <option value="left">Esquerda (Padrão Modelo)</option>
-                      <option value="justify">Justificado</option>
-                      <option value="center">Centralizado</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Tipo de Moldura (Frente)
-                    </label>
-                    <select
-                      value={template.usarMolduraOriginal !== false ? 'original' : 'vetorial'}
-                      onChange={(e) =>
-                        setTemplate((prev) => ({
-                          ...prev,
-                          usarMolduraOriginal: e.target.value === 'original',
-                        }))
-                      }
-                      className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs"
-                    >
-                      <option value="original">Moldura Original (Imagem Base)</option>
-                      <option value="vetorial">Moldura Vetorial Colorida</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="flex items-center justify-between text-xs font-bold text-slate-700 mb-1">
-                    <span>Tamanho da Fonte do Texto</span>
-                    <span className="font-mono text-blue-800">{template.tamanhoFonteCorpo}px</span>
-                  </label>
-                  <input
-                    type="range"
-                    min={14}
-                    max={26}
-                    step={1}
-                    value={template.tamanhoFonteCorpo}
-                    onChange={(e) =>
-                      setTemplate((prev) => ({
-                        ...prev,
-                        tamanhoFonteCorpo: Number(e.target.value),
-                      }))
-                    }
-                    className="w-full accent-blue-800"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  {template.usarMolduraOriginal === false && (
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
-                        Cor Moldura Frente
-                      </label>
-                      <input
-                        type="color"
-                        value={template.corBordaFrente}
-                        onChange={(e) =>
-                          setTemplate((prev) => ({ ...prev, corBordaFrente: e.target.value }))
-                        }
-                        className="w-full h-9 rounded-lg border border-slate-200 cursor-pointer"
-                      />
-                    </div>
-                  )}
-                  <div className={template.usarMolduraOriginal !== false ? 'col-span-2' : ''}>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Cor Moldura Verso
-                    </label>
-                    <input
-                      type="color"
-                      value={template.corBordaVerso}
-                      onChange={(e) =>
-                        setTemplate((prev) => ({ ...prev, corBordaVerso: e.target.value }))
-                      }
-                      className="w-full h-9 rounded-lg border border-slate-200 cursor-pointer"
-                    />
-                  </div>
-                </div>
-
-                {/* Watermark Size & Expansion Controls (Frente & Verso) */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {/* Frente Watermark */}
-                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-black uppercase tracking-wider text-slate-800">
-                        Marca d&apos;Água (Frente)
-                      </span>
-                      <Maximize2 size={12} className="text-slate-500" />
-                    </div>
-
-                    <div>
-                      <label className="flex items-center justify-between text-[11px] font-bold text-slate-700 mb-0.5">
-                        <span>Tamanho Geral</span>
-                        <span className="font-mono">{template.tamanhoMarcaDaguaFrente ?? 545}px</span>
-                      </label>
-                      <input
-                        type="range"
-                        min={200}
-                        max={1150}
-                        step={10}
-                        value={template.tamanhoMarcaDaguaFrente ?? 545}
-                        onChange={(e) =>
-                          setTemplate((prev) => ({
-                            ...prev,
-                            tamanhoMarcaDaguaFrente: Number(e.target.value),
-                          }))
-                        }
-                        className="w-full accent-blue-800"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="flex items-center justify-between text-[10px] font-bold text-slate-600">
-                          <span>Largura</span>
-                          <span className="font-mono">
-                            {template.escalaLarguraMarcaDaguaFrente ?? 100}%
-                          </span>
-                        </label>
-                        <input
-                          type="range"
-                          min={40}
-                          max={200}
-                          step={5}
-                          value={template.escalaLarguraMarcaDaguaFrente ?? 100}
-                          onChange={(e) =>
-                            setTemplate((prev) => ({
-                              ...prev,
-                              escalaLarguraMarcaDaguaFrente: Number(e.target.value),
-                            }))
-                          }
-                          className="w-full accent-blue-800"
-                        />
-                      </div>
-                      <div>
-                        <label className="flex items-center justify-between text-[10px] font-bold text-slate-600">
-                          <span>Altura</span>
-                          <span className="font-mono">
-                            {template.escalaAlturaMarcaDaguaFrente ?? 100}%
-                          </span>
-                        </label>
-                        <input
-                          type="range"
-                          min={40}
-                          max={200}
-                          step={5}
-                          value={template.escalaAlturaMarcaDaguaFrente ?? 100}
-                          onChange={(e) =>
-                            setTemplate((prev) => ({
-                              ...prev,
-                              escalaAlturaMarcaDaguaFrente: Number(e.target.value),
-                            }))
-                          }
-                          className="w-full accent-blue-800"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="flex items-center justify-between text-[10px] font-bold text-slate-600">
-                        <span>Opacidade</span>
-                        <span className="font-mono">
-                          {Math.round(template.opacidadeMarcaDaguaFrente * 100)}%
-                        </span>
-                      </label>
-                      <input
-                        type="range"
-                        min={0}
-                        max={0.6}
-                        step={0.02}
-                        value={template.opacidadeMarcaDaguaFrente}
-                        onChange={(e) =>
-                          setTemplate((prev) => ({
-                            ...prev,
-                            opacidadeMarcaDaguaFrente: Number(e.target.value),
-                          }))
-                        }
-                        className="w-full accent-blue-800"
-                      />
-                    </div>
-
-                    <div>
-                      <div className="flex items-center justify-between text-[10px] font-bold text-slate-600 mb-0.5">
-                        <span>Posição Vertical (Altura)</span>
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-mono text-slate-800">
-                            {(template.marcaDaguaFrenteOffsetY ?? 0) > 0
-                              ? `+${template.marcaDaguaFrenteOffsetY}`
-                              : (template.marcaDaguaFrenteOffsetY ?? 0)}
-                            px
-                          </span>
-                          {(template.marcaDaguaFrenteOffsetY ?? 0) !== 0 && (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setTemplate((prev) => ({ ...prev, marcaDaguaFrenteOffsetY: 0 }))
-                              }
-                              className="text-[10px] text-blue-700 hover:text-blue-900 underline cursor-pointer"
-                            >
-                              Zerar
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                      <input
-                        type="range"
-                        min={-380}
-                        max={380}
-                        step={4}
-                        value={template.marcaDaguaFrenteOffsetY ?? 0}
-                        onChange={(e) =>
-                          setTemplate((prev) => ({
-                            ...prev,
-                            marcaDaguaFrenteOffsetY: Number(e.target.value),
-                          }))
-                        }
-                        className="w-full accent-blue-800"
-                      />
-                    </div>
-
-                    <div className="flex flex-wrap gap-1 pt-0.5">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setTemplate((prev) => ({
-                            ...prev,
-                            tamanhoMarcaDaguaFrente: 545,
-                            escalaLarguraMarcaDaguaFrente: 100,
-                            escalaAlturaMarcaDaguaFrente: 100,
-                            marcaDaguaFrenteOffsetY: 0,
-                          }))
-                        }
-                        className="px-2 py-0.5 text-[10px] font-bold bg-white border border-slate-200 hover:bg-slate-100 rounded cursor-pointer"
-                      >
-                        Padrão
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setTemplate((prev) => ({
-                            ...prev,
-                            tamanhoMarcaDaguaFrente: 740,
-                            escalaLarguraMarcaDaguaFrente: 100,
-                            escalaAlturaMarcaDaguaFrente: 100,
-                          }))
-                        }
-                        className="px-2 py-0.5 text-[10px] font-bold bg-white border border-slate-200 hover:bg-slate-100 rounded cursor-pointer"
-                      >
-                        Grande
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setTemplate((prev) => ({
-                            ...prev,
-                            tamanhoMarcaDaguaFrente: 760,
-                            escalaLarguraMarcaDaguaFrente: 140,
-                            escalaAlturaMarcaDaguaFrente: 100,
-                          }))
-                        }
-                        className="px-2 py-0.5 text-[10px] font-bold bg-blue-50 text-blue-800 border border-blue-200 hover:bg-blue-100 rounded cursor-pointer"
-                      >
-                        Expandir Folha
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Verso Watermark */}
-                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-black uppercase tracking-wider text-slate-800">
-                        Marca d&apos;Água (Verso)
-                      </span>
-                      <Maximize2 size={12} className="text-slate-500" />
-                    </div>
-
-                    <div>
-                      <label className="flex items-center justify-between text-[11px] font-bold text-slate-700 mb-0.5">
-                        <span>Tamanho Geral</span>
-                        <span className="font-mono">{template.tamanhoMarcaDaguaVerso ?? 580}px</span>
-                      </label>
-                      <input
-                        type="range"
-                        min={200}
-                        max={1150}
-                        step={10}
-                        value={template.tamanhoMarcaDaguaVerso ?? 580}
-                        onChange={(e) =>
-                          setTemplate((prev) => ({
-                            ...prev,
-                            tamanhoMarcaDaguaVerso: Number(e.target.value),
-                          }))
-                        }
-                        className="w-full accent-blue-800"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="flex items-center justify-between text-[10px] font-bold text-slate-600">
-                          <span>Largura</span>
-                          <span className="font-mono">
-                            {template.escalaLarguraMarcaDaguaVerso ?? 100}%
-                          </span>
-                        </label>
-                        <input
-                          type="range"
-                          min={40}
-                          max={200}
-                          step={5}
-                          value={template.escalaLarguraMarcaDaguaVerso ?? 100}
-                          onChange={(e) =>
-                            setTemplate((prev) => ({
-                              ...prev,
-                              escalaLarguraMarcaDaguaVerso: Number(e.target.value),
-                            }))
-                          }
-                          className="w-full accent-blue-800"
-                        />
-                      </div>
-                      <div>
-                        <label className="flex items-center justify-between text-[10px] font-bold text-slate-600">
-                          <span>Altura</span>
-                          <span className="font-mono">
-                            {template.escalaAlturaMarcaDaguaVerso ?? 100}%
-                          </span>
-                        </label>
-                        <input
-                          type="range"
-                          min={40}
-                          max={200}
-                          step={5}
-                          value={template.escalaAlturaMarcaDaguaVerso ?? 100}
-                          onChange={(e) =>
-                            setTemplate((prev) => ({
-                              ...prev,
-                              escalaAlturaMarcaDaguaVerso: Number(e.target.value),
-                            }))
-                          }
-                          className="w-full accent-blue-800"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="flex items-center justify-between text-[10px] font-bold text-slate-600">
-                        <span>Opacidade</span>
-                        <span className="font-mono">
-                          {Math.round(template.opacidadeMarcaDaguaVerso * 100)}%
-                        </span>
-                      </label>
-                      <input
-                        type="range"
-                        min={0}
-                        max={0.6}
-                        step={0.02}
-                        value={template.opacidadeMarcaDaguaVerso}
-                        onChange={(e) =>
-                          setTemplate((prev) => ({
-                            ...prev,
-                            opacidadeMarcaDaguaVerso: Number(e.target.value),
-                          }))
-                        }
-                        className="w-full accent-blue-800"
-                      />
-                    </div>
-
-                    <div>
-                      <div className="flex items-center justify-between text-[10px] font-bold text-slate-600 mb-0.5">
-                        <span>Posição Vertical (Altura)</span>
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-mono text-slate-800">
-                            {(template.marcaDaguaVersoOffsetY ?? 0) > 0
-                              ? `+${template.marcaDaguaVersoOffsetY}`
-                              : (template.marcaDaguaVersoOffsetY ?? 0)}
-                            px
-                          </span>
-                          {(template.marcaDaguaVersoOffsetY ?? 0) !== 0 && (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setTemplate((prev) => ({ ...prev, marcaDaguaVersoOffsetY: 0 }))
-                              }
-                              className="text-[10px] text-blue-700 hover:text-blue-900 underline cursor-pointer"
-                            >
-                              Zerar
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                      <input
-                        type="range"
-                        min={-380}
-                        max={380}
-                        step={4}
-                        value={template.marcaDaguaVersoOffsetY ?? 0}
-                        onChange={(e) =>
-                          setTemplate((prev) => ({
-                            ...prev,
-                            marcaDaguaVersoOffsetY: Number(e.target.value),
-                          }))
-                        }
-                        className="w-full accent-blue-800"
-                      />
-                    </div>
-
-                    <div className="flex flex-wrap gap-1 pt-0.5">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setTemplate((prev) => ({
-                            ...prev,
-                            tamanhoMarcaDaguaVerso: 580,
-                            escalaLarguraMarcaDaguaVerso: 100,
-                            escalaAlturaMarcaDaguaVerso: 100,
-                            marcaDaguaVersoOffsetY: 0,
-                          }))
-                        }
-                        className="px-2 py-0.5 text-[10px] font-bold bg-white border border-slate-200 hover:bg-slate-100 rounded cursor-pointer"
-                      >
-                        Original
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setTemplate((prev) => ({
-                            ...prev,
-                            tamanhoMarcaDaguaVerso: 760,
-                            escalaLarguraMarcaDaguaVerso: 100,
-                            escalaAlturaMarcaDaguaVerso: 100,
-                          }))
-                        }
-                        className="px-2 py-0.5 text-[10px] font-bold bg-white border border-slate-200 hover:bg-slate-100 rounded cursor-pointer"
-                      >
-                        Grande
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setTemplate((prev) => ({
-                            ...prev,
-                            tamanhoMarcaDaguaVerso: 700,
-                            escalaLarguraMarcaDaguaVerso: 145,
-                            escalaAlturaMarcaDaguaVerso: 95,
-                          }))
-                        }
-                        className="px-2 py-0.5 text-[10px] font-bold bg-blue-50 text-blue-800 border border-blue-200 hover:bg-blue-100 rounded cursor-pointer"
-                      >
-                        Expandir Folha
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Crest Visibility, Center Crest, Size & Opacity Controls */}
-                <div className="space-y-3 pt-2 border-t border-slate-200">
-                  <div>
-                    <h4 className="text-xs font-black uppercase tracking-wider text-slate-700">
-                      Brasões no Topo (Exibir / Inibir, Inserir Central, Tamanho e Opacidade)
-                    </h4>
-                    <p className="text-[10px] text-slate-500">
-                      Exiba ou iniba qualquer um dos brasões e insira um brasão centralizado entre os existentes.
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                    {/* Left Crest */}
-                    <div
-                      className={cn(
-                        'p-3 rounded-xl border space-y-2.5',
-                        template.mostrarLogoEsquerda !== false
-                          ? 'bg-slate-50 border-slate-200'
-                          : 'bg-slate-100/80 border-slate-200 opacity-85'
-                      )}
-                    >
-                      <div className="flex items-center justify-between gap-1">
-                        <span className="text-[11px] font-black uppercase tracking-wider text-slate-800">
-                          Esquerdo
-                        </span>
-                        <label className="flex items-center gap-1 text-[10px] font-bold text-slate-700 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={template.mostrarLogoEsquerda !== false}
-                            onChange={(e) =>
-                              setTemplate((prev) => ({
-                                ...prev,
-                                mostrarLogoEsquerda: e.target.checked,
-                              }))
-                            }
-                            className="rounded border-slate-300"
-                          />
-                          <span>
-                            {template.mostrarLogoEsquerda !== false ? 'Exibir' : 'Inibido'}
-                          </span>
-                        </label>
-                      </div>
-                      <div>
-                        <label className="flex items-center justify-between text-[10px] font-bold text-slate-700 mb-0.5">
-                          <span>Tamanho</span>
-                          <span className="font-mono">{template.tamanhoLogoEsquerda ?? 90}px</span>
-                        </label>
-                        <input
-                          type="range"
-                          min={36}
-                          max={220}
-                          step={2}
-                          value={template.tamanhoLogoEsquerda ?? 90}
-                          onChange={(e) =>
-                            setTemplate((prev) => ({
-                              ...prev,
-                              tamanhoLogoEsquerda: Number(e.target.value),
-                            }))
-                          }
-                          className="w-full accent-blue-800"
-                        />
-                      </div>
-                      <div>
-                        <label className="flex items-center justify-between text-[10px] font-bold text-slate-700 mb-0.5">
-                          <span>Opacidade</span>
-                          <span className="font-mono">
-                            {Math.round((template.opacidadeLogoEsquerda ?? 1) * 100)}%
-                          </span>
-                        </label>
-                        <input
-                          type="range"
-                          min={0}
-                          max={1}
-                          step={0.05}
-                          value={template.opacidadeLogoEsquerda ?? 1}
-                          onChange={(e) =>
-                            setTemplate((prev) => ({
-                              ...prev,
-                              opacidadeLogoEsquerda: Number(e.target.value),
-                            }))
-                          }
-                          className="w-full accent-blue-800"
-                        />
                       </div>
                       <button
                         type="button"
-                        onClick={() =>
-                          setTemplate((prev) => ({
-                            ...prev,
-                            tamanhoLogoEsquerda: 90,
-                            opacidadeLogoEsquerda: 1,
-                          }))
-                        }
-                        className="text-[10px] font-bold text-blue-700 hover:text-blue-900 underline cursor-pointer"
+                        onClick={() => setEditorTab('frente')}
+                        className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+                        title="Fechar modelos (ESC)"
                       >
-                        Restaurar tamanho
+                        <X size={13} />
+                        <span>Fechar</span>
                       </button>
                     </div>
-
-                    {/* Center Crest */}
-                    <div
-                      className={cn(
-                        'p-3 rounded-xl border space-y-2.5',
-                        template.mostrarLogoCentro === true
-                          ? 'bg-emerald-50/60 border-emerald-200'
-                          : 'bg-slate-50 border-slate-200'
-                      )}
-                    >
-                      <div className="flex items-center justify-between gap-1">
-                        <span className="text-[11px] font-black uppercase tracking-wider text-slate-800">
-                          Central
-                        </span>
-                        <label className="flex items-center gap-1 text-[10px] font-bold text-slate-700 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={template.mostrarLogoCentro === true}
-                            onChange={(e) =>
-                              setTemplate((prev) => ({
-                                ...prev,
-                                mostrarLogoCentro: e.target.checked,
-                              }))
-                            }
-                            className="rounded border-slate-300"
-                          />
-                          <span>{template.mostrarLogoCentro === true ? 'Exibir' : 'Inibido'}</span>
-                        </label>
-                      </div>
-
-                      <div className="flex items-center gap-1.5">
-                        <label className="flex-1 px-2 py-1 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-[10px] font-bold cursor-pointer flex items-center justify-center gap-1">
-                          <Upload size={11} />
-                          <span>{template.logoCentroUrl ? 'Trocar Imagem' : 'Inserir Brasão'}</span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => handleImageUpload('logoCentroUrl', e)}
-                            className="hidden"
-                          />
-                        </label>
-                        {template.logoCentroUrl && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setTemplate((prev) => ({
-                                ...prev,
-                                logoCentroUrl: '',
-                                mostrarLogoCentro: false,
-                              }))
-                            }
-                            className="p-1.5 rounded-lg bg-white border border-slate-200 hover:bg-rose-50 text-rose-600 cursor-pointer"
-                            title="Remover brasão central"
-                          >
-                            <Trash2 size={11} />
-                          </button>
-                        )}
-                      </div>
-
-                      <div>
-                        <label className="flex items-center justify-between text-[10px] font-bold text-slate-700 mb-0.5">
-                          <span>Tamanho</span>
-                          <span className="font-mono">{template.tamanhoLogoCentro ?? 84}px</span>
-                        </label>
-                        <input
-                          type="range"
-                          min={36}
-                          max={220}
-                          step={2}
-                          value={template.tamanhoLogoCentro ?? 84}
-                          onChange={(e) =>
-                            setTemplate((prev) => ({
-                              ...prev,
-                              tamanhoLogoCentro: Number(e.target.value),
-                            }))
-                          }
-                          className="w-full accent-blue-800"
-                        />
-                      </div>
-                      <div>
-                        <label className="flex items-center justify-between text-[10px] font-bold text-slate-700 mb-0.5">
-                          <span>Opacidade</span>
-                          <span className="font-mono">
-                            {Math.round((template.opacidadeLogoCentro ?? 1) * 100)}%
-                          </span>
-                        </label>
-                        <input
-                          type="range"
-                          min={0}
-                          max={1}
-                          step={0.05}
-                          value={template.opacidadeLogoCentro ?? 1}
-                          onChange={(e) =>
-                            setTemplate((prev) => ({
-                              ...prev,
-                              opacidadeLogoCentro: Number(e.target.value),
-                            }))
-                          }
-                          className="w-full accent-blue-800"
-                        />
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setTemplate((prev) => ({
-                            ...prev,
-                            tamanhoLogoCentro: 84,
-                            opacidadeLogoCentro: 1,
-                          }))
-                        }
-                        className="text-[10px] font-bold text-blue-700 hover:text-blue-900 underline cursor-pointer"
-                      >
-                        Restaurar tamanho
-                      </button>
-                    </div>
-
-                    {/* Right Crest */}
-                    <div
-                      className={cn(
-                        'p-3 rounded-xl border space-y-2.5',
-                        template.mostrarLogoDireita !== false
-                          ? 'bg-slate-50 border-slate-200'
-                          : 'bg-slate-100/80 border-slate-200 opacity-85'
-                      )}
-                    >
-                      <div className="flex items-center justify-between gap-1">
-                        <span className="text-[11px] font-black uppercase tracking-wider text-slate-800">
-                          Direito
-                        </span>
-                        <label className="flex items-center gap-1 text-[10px] font-bold text-slate-700 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={template.mostrarLogoDireita !== false}
-                            onChange={(e) =>
-                              setTemplate((prev) => ({
-                                ...prev,
-                                mostrarLogoDireita: e.target.checked,
-                              }))
-                            }
-                            className="rounded border-slate-300"
-                          />
-                          <span>
-                            {template.mostrarLogoDireita !== false ? 'Exibir' : 'Inibido'}
-                          </span>
-                        </label>
-                      </div>
-                      <div>
-                        <label className="flex items-center justify-between text-[10px] font-bold text-slate-700 mb-0.5">
-                          <span>Tamanho</span>
-                          <span className="font-mono">{template.tamanhoLogoDireita ?? 74}px</span>
-                        </label>
-                        <input
-                          type="range"
-                          min={36}
-                          max={220}
-                          step={2}
-                          value={template.tamanhoLogoDireita ?? 74}
-                          onChange={(e) =>
-                            setTemplate((prev) => ({
-                              ...prev,
-                              tamanhoLogoDireita: Number(e.target.value),
-                            }))
-                          }
-                          className="w-full accent-blue-800"
-                        />
-                      </div>
-                      <div>
-                        <label className="flex items-center justify-between text-[10px] font-bold text-slate-700 mb-0.5">
-                          <span>Opacidade</span>
-                          <span className="font-mono">
-                            {Math.round((template.opacidadeLogoDireita ?? 1) * 100)}%
-                          </span>
-                        </label>
-                        <input
-                          type="range"
-                          min={0}
-                          max={1}
-                          step={0.05}
-                          value={template.opacidadeLogoDireita ?? 1}
-                          onChange={(e) =>
-                            setTemplate((prev) => ({
-                              ...prev,
-                              opacidadeLogoDireita: Number(e.target.value),
-                            }))
-                          }
-                          className="w-full accent-blue-800"
-                        />
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setTemplate((prev) => ({
-                            ...prev,
-                            tamanhoLogoDireita: 74,
-                            opacidadeLogoDireita: 1,
-                          }))
-                        }
-                        className="text-[10px] font-bold text-blue-700 hover:text-blue-900 underline cursor-pointer"
-                      >
-                        Restaurar tamanho
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Custom Logos & Watermark Uploaders */}
-                <div className="space-y-3 pt-2 border-t border-slate-200">
-                  <h4 className="text-xs font-black uppercase tracking-wider text-slate-700">
-                    Brasões e Marcas d&apos;Água Personalizados
-                  </h4>
-
-                  <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-                    <label className="flex items-center gap-2 text-[11px] font-bold text-slate-700 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={template.mostrarLegendaLogoCentro === true}
-                        onChange={(e) =>
-                          setTemplate((prev) => ({
-                            ...prev,
-                            mostrarLegendaLogoCentro: e.target.checked,
-                          }))
-                        }
-                        className="rounded border-slate-300"
-                      />
-                      <span>Exibir legenda de texto abaixo do Brasão Central</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={template.logoCentroTexto || ''}
-                      onChange={(e) =>
-                        setTemplate((prev) => ({
-                          ...prev,
-                          logoCentroTexto: e.target.value,
-                        }))
-                      }
-                      placeholder="Legenda opcional do Brasão Central"
-                      className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs"
-                    />
-                  </div>
-
-                  <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-                    <label className="flex items-center gap-2 text-[11px] font-bold text-slate-700 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={
-                          template.logoDireitaUrl
-                            ? template.mostrarLegendaLogoDireita === true
-                            : template.mostrarLegendaLogoDireita !== false
-                        }
-                        onChange={(e) =>
-                          setTemplate((prev) => ({
-                            ...prev,
-                            mostrarLegendaLogoDireita: e.target.checked,
-                          }))
-                        }
-                        className="rounded border-slate-300"
-                      />
-                      <span>Exibir legenda de texto abaixo do Brasão Direito</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={template.logoDireitaTexto}
-                      onChange={(e) =>
-                        setTemplate((prev) => ({
-                          ...prev,
-                          logoDireitaTexto: e.target.value,
-                        }))
-                      }
-                      placeholder="Ex: MARINHA DO BRASIL (ou deixe vazio)"
-                      className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs"
-                    />
-                    <p className="text-[10px] text-slate-500">
-                      Desmarcada automaticamente se você enviar um brasão próprio que já contenha o texto na imagem, evitando duplicação.
-                    </p>
-                  </div>
-
-                  {[
-                    {
-                      label: 'Moldura da Frente',
-                      field: 'molduraFrenteUrl' as const,
-                      defaultVal: '/assets/certificado-moldura-frente.png',
-                    },
-                    {
-                      label: 'Brasão Esquerdo (Guarda Costeira)',
-                      field: 'logoEsquerdaUrl' as const,
-                      defaultVal: '/assets/aistudio/imagem_01_2da3aec8.png',
-                    },
-                    {
-                      label: 'Brasão Central (Topo Centro)',
-                      field: 'logoCentroUrl' as const,
-                      defaultVal: '',
-                    },
-                    {
-                      label: 'Brasão Direito (Marinha do Brasil)',
-                      field: 'logoDireitaUrl' as const,
-                      defaultVal: '',
-                    },
-                    {
-                      label: "Marca d'Água (Frente)",
-                      field: 'marcaDaguaFrenteUrl' as const,
-                      defaultVal:
-                        '/assets/aistudio/WhatsApp_Image_2026-02-11_at_22.02.18_8edf921e.jpeg',
-                    },
-                    {
-                      label: "Marca d'Água (Verso)",
-                      field: 'marcaDaguaVersoUrl' as const,
-                      defaultVal: '/assets/aistudio/imagem_01_2da3aec8.png',
-                    },
-                  ].map((item) => (
-                    <div
-                      key={item.field}
-                      className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200"
-                    >
-                      <span className="text-xs font-semibold text-slate-700 truncate">
-                        {item.label}
-                      </span>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <label className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-[11px] font-bold text-slate-700 cursor-pointer flex items-center gap-1">
-                          <Upload size={12} />
-                          <span>
-                            {item.field === 'logoCentroUrl' && !template.logoCentroUrl
-                              ? 'Inserir'
-                              : 'Trocar'}
-                          </span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => handleImageUpload(item.field, e)}
-                            className="hidden"
-                          />
-                        </label>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setTemplate((prev) => ({
-                              ...prev,
-                              [item.field]: item.defaultVal,
-                              ...(item.field === 'logoCentroUrl'
-                                ? { mostrarLogoCentro: false }
-                                : {}),
-                              ...(item.field === 'logoDireitaUrl'
-                                ? {
-                                    mostrarLegendaLogoDireita: true,
-                                    logoDireitaTexto: prev.logoDireitaTexto || 'MARINHA DO BRASIL',
-                                  }
-                                : {}),
-                            }))
-                          }
-                          className="p-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-600 cursor-pointer"
-                          title={
-                            item.field === 'logoCentroUrl'
-                              ? 'Remover brasão central'
-                              : 'Restaurar padrão'
-                          }
-                        >
-                          <RotateCcw size={12} />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* TAB 4: MODELOS SALVOS */}
-            {editorTab === 'modelos' && (
-              <div className="space-y-4">
-                {/* Save Current Model As Brand-New Saved Copy */}
+                    <div className="p-4 sm:p-5 space-y-4 overflow-y-auto custom-scrollbar">
+                      {/* Save Current Model As Brand-New Saved Copy */}
                 <div className="p-3.5 rounded-xl bg-indigo-50/70 border border-indigo-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                   <div className="space-y-0.5">
                     <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-indigo-950">
@@ -5502,6 +2739,8 @@ export default function CertificadosPage() {
                                     skipNextTurmaAutoLoadRef.current = true;
                                   }
                                   setTemplate(loaded);
+                                  setEditorTab('frente');
+                                  setSelectedObject(null);
                                   toast.success('Modelo carregado no editor!');
                                 }}
                                 className="px-2.5 py-1 rounded-lg bg-blue-900 hover:bg-blue-950 text-white text-[11px] font-bold cursor-pointer"
@@ -5554,15 +2793,58 @@ export default function CertificadosPage() {
                     })}
                   </div>
                 )}
-              </div>
-            )}
+                    </div>
+                  </div>
+            ) : selectedObject ? (
+              <CertificateInspectorPanel
+                selectedObject={selectedObject}
+                template={template}
+                setTemplate={setTemplate}
+                onSelectObject={handleSelectObjectOnSheet}
+                onClose={() => setSelectedObject(null)}
+                dragMoveEnabled={dragMoveEnabled}
+                onToggleDragMove={() => setDragMoveEnabled((v) => !v)}
+                selectedStudentObj={selectedStudentObj}
+                activeStudentContext={activeStudentContext}
+                isEditingIndividualBody={isEditingIndividualBody}
+                activeBodyTextValue={activeBodyTextValue}
+                updateActiveBodyText={updateActiveBodyText}
+                handleEnableIndividualBody={handleEnableIndividualBody}
+                handleRestoreDefaultBodyForStudent={handleRestoreDefaultBodyForStudent}
+                applyInlineBodyFormat={applyInlineBodyFormat}
+                insertPlaceholder={insertPlaceholder}
+                bodyTextareaRef={bodyTextareaRef}
+                customStudentRank={customStudentRank}
+                setCustomStudentRank={setCustomStudentRank}
+                customStudentName={customStudentName}
+                setCustomStudentName={setCustomStudentName}
+                customStudentGenero={customStudentGenero}
+                setCustomStudentGenero={setCustomStudentGenero}
+                customCourseName={customCourseName}
+                setCustomCourseName={setCustomCourseName}
+                handleImageUpload={handleImageUpload}
+                effectiveBackPreviewRows={effectiveBackPreviewRows}
+                totalHorasLabel={totalHorasLabel}
+                mediaFinalLabel={mediaFinalLabel}
+                useTurmaStudentGrades={useTurmaStudentGrades}
+                handleSyncDisciplinesFromTurma={handleSyncDisciplinesFromTurma}
+                handleConsolidateTemplateRowsByModule={handleConsolidateTemplateRowsByModule}
+                handleAddDisciplineRow={handleAddDisciplineRow}
+                handleUpdateDisciplineRow={handleUpdateDisciplineRow}
+                handleRemoveDisciplineRow={handleRemoveDisciplineRow}
+                handleMoveDisciplineRow={handleMoveDisciplineRow}
+              />
+            ) : null}
           </div>
-        </div>
+        )}
 
         {/* RIGHT COLUMN: Live Scaled Preview (Frente e Verso) */}
         <div
           ref={previewContainerRef}
-          className="xl:col-span-7 bg-slate-100 rounded-2xl border border-slate-200 p-4 sm:p-5 space-y-4"
+          className={cn(
+            'bg-slate-100 rounded-2xl border border-slate-200 p-4 sm:p-5 space-y-4 transition-all',
+            showSidePanel ? 'xl:col-span-7' : 'xl:col-span-12'
+          )}
         >
           {/* Preview Controls Bar */}
           <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-xl border border-slate-200 shadow-2xs">
@@ -5603,6 +2885,50 @@ export default function CertificadosPage() {
                   <span>{dragMoveEnabled ? 'Arrastar Ativo' : 'Mover na Folha'}</span>
                 </button>
               )}
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (selectedObject === 'modeloGeral' && editorTab !== 'modelos') {
+                    setSelectedObject(null);
+                  } else {
+                    setEditorTab('frente');
+                    setSelectedObject('modeloGeral');
+                  }
+                }}
+                className={cn(
+                  'px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border',
+                  selectedObject === 'modeloGeral' && editorTab !== 'modelos'
+                    ? 'bg-slate-800 text-white border-slate-900'
+                    : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                )}
+                title="Abrir ou fechar configurações gerais do modelo"
+              >
+                <Settings size={13} />
+                <span>Config. Modelo</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (editorTab === 'modelos') {
+                    setEditorTab('frente');
+                  } else {
+                    setSelectedObject(null);
+                    setEditorTab('modelos');
+                  }
+                }}
+                className={cn(
+                  'px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border',
+                  editorTab === 'modelos'
+                    ? 'bg-blue-900 text-white border-blue-950'
+                    : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                )}
+                title="Abrir ou fechar Modelos Salvos"
+              >
+                <BookmarkCheck size={13} />
+                <span>Modelos Salvos</span>
+              </button>
             </div>
 
             <div className="flex items-center gap-3">
@@ -5683,6 +3009,42 @@ export default function CertificadosPage() {
             </div>
           )}
 
+          {/* Slim contextual helper bar when all controls are hidden */}
+          {!showSidePanel && (
+            <div className="px-3.5 py-2.5 rounded-xl bg-white border border-blue-200/80 shadow-2xs flex flex-wrap items-center justify-between gap-2.5">
+              <div className="flex items-center gap-2 text-xs text-slate-700">
+                <MousePointerClick size={15} className="text-blue-700 shrink-0" />
+                <span>
+                  <strong>Edição Contextual:</strong> clique diretamente em qualquer objeto na{' '}
+                  <strong>Frente</strong> ou no <strong>Verso</strong> (título, texto, data, brasão,
+                  assinatura ou tabela) para abrir os controles ao lado.
+                </span>
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {!template.mostrarLogoCentro && (
+                  <button
+                    type="button"
+                    onClick={() => handleSelectObjectOnSheet('brasaoCentro')}
+                    className="px-2.5 py-1 rounded-lg bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 text-[11px] font-bold text-slate-700 hover:text-blue-900 cursor-pointer flex items-center gap-1"
+                  >
+                    <Plus size={12} />
+                    <span>Brasão Central</span>
+                  </button>
+                )}
+                {!template.mostrarSegundaAssinatura && (
+                  <button
+                    type="button"
+                    onClick={() => handleSelectObjectOnSheet('segundaAssinatura')}
+                    className="px-2.5 py-1 rounded-lg bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 text-[11px] font-bold text-slate-700 hover:text-blue-900 cursor-pointer flex items-center gap-1"
+                  >
+                    <Plus size={12} />
+                    <span>2ª Assinatura</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Preview Sheets */}
           <div className="flex flex-col items-center gap-6 overflow-x-auto pb-2">
             {(previewMode === 'both' || previewMode === 'front') && (
@@ -5696,6 +3058,8 @@ export default function CertificadosPage() {
                   side="front"
                   scale={effectiveScale}
                   interactiveDrag={dragMoveEnabled}
+                  selectedObject={selectedObject}
+                  onSelectObject={handleSelectObjectOnSheet}
                   onUpdateTemplate={setTemplate}
                 />
               </div>
@@ -5711,12 +3075,16 @@ export default function CertificadosPage() {
                   student={activeStudentContext}
                   side="back"
                   scale={effectiveScale}
+                  selectedObject={selectedObject}
+                  onSelectObject={handleSelectObjectOnSheet}
                 />
               </div>
             )}
           </div>
         </div>
-      </div>
+          </div>
+        );
+      })()}
 
       {/* Fullscreen Finalization Preview Overlay (Frente e Verso em Tela Toda) */}
       {fullscreenPreview && (

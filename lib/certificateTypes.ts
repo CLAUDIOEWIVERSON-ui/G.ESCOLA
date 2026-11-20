@@ -19,6 +19,23 @@ export type CertificateFontKey =
   | 'script'
   | 'sans';
 
+export type CertificateSelectableObject =
+  | 'brasaoEsquerdo'
+  | 'brasaoCentro'
+  | 'brasaoDireito'
+  | 'titulo'
+  | 'texto'
+  | 'data'
+  | 'assinaturaPrincipal'
+  | 'segundaAssinatura'
+  | 'marcaDaguaFrente'
+  | 'molduraFrente'
+  | 'versoTitulo'
+  | 'versoTabela'
+  | 'marcaDaguaVerso'
+  | 'versoMoldura'
+  | 'modeloGeral';
+
 export interface CertificateTemplateConfig {
   id?: string;
   templateKey: string;

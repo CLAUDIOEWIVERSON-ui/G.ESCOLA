@@ -2,6 +2,7 @@
 
 import React, { useRef, useState } from 'react';
 import {
+  CertificateSelectableObject,
   CertificateStudentContext,
   CertificateTemplateConfig,
   adaptPortugueseStudentArticle,
@@ -32,6 +33,8 @@ interface CertificateSheetProps {
   elementId?: string;
   scale?: number;
   interactiveDrag?: boolean;
+  selectedObject?: CertificateSelectableObject | null;
+  onSelectObject?: (obj: CertificateSelectableObject) => void;
   onUpdateTemplate?: (
     updater: (prev: CertificateTemplateConfig) => CertificateTemplateConfig
   ) => void;
@@ -328,6 +331,8 @@ export function CertificateSheet({
   elementId,
   scale = 1,
   interactiveDrag = false,
+  selectedObject = null,
+  onSelectObject,
   onUpdateTemplate,
 }: CertificateSheetProps) {
   const dragRef = useRef<{
@@ -338,6 +343,18 @@ export function CertificateSheet({
     origY: number;
   } | null>(null);
   const [activeDrag, setActiveDrag] = useState<DraggableCertificateElement | null>(null);
+  const [hoveredObject, setHoveredObject] = useState<CertificateSelectableObject | null>(null);
+
+  const dragToSelectMap: Record<DraggableCertificateElement, CertificateSelectableObject> = {
+    logoEsquerda: 'brasaoEsquerdo',
+    logoCentro: 'brasaoCentro',
+    logoDireita: 'brasaoDireito',
+    titulo: 'titulo',
+    texto: 'texto',
+    data: 'data',
+    assinaturaPrincipal: 'assinaturaPrincipal',
+    segundaAssinatura: 'segundaAssinatura',
+  };
 
   const clamp = (val: number, min: number, max: number) => Math.max(min, Math.min(max, val));
 
@@ -345,6 +362,7 @@ export function CertificateSheet({
     element: DraggableCertificateElement,
     e: React.PointerEvent<HTMLElement>
   ) => {
+    onSelectObject?.(dragToSelectMap[element]);
     if (!interactiveDrag || !onUpdateTemplate || side !== 'front') return;
     e.preventDefault();
     e.stopPropagation();
@@ -481,22 +499,90 @@ export function CertificateSheet({
     element: DraggableCertificateElement,
     label: string
   ): React.HTMLAttributes<HTMLElement> & { style?: React.CSSProperties } => {
-    if (!interactiveDrag || side !== 'front') return {};
-    const isDragging = activeDrag === element;
+    const selectKey = dragToSelectMap[element];
+    const canDrag = interactiveDrag && side === 'front';
+    const canSelect = Boolean(onSelectObject);
+    if (!canDrag && !canSelect) return {};
+    const isDragging = canDrag && activeDrag === element;
+    const isSelected = canSelect && selectedObject === selectKey;
+    const isHovered = canSelect && hoveredObject === selectKey;
     return {
-      title: `Arraste para mover: ${label}`,
-      onPointerDown: (e) => handleDragPointerDown(element, e),
-      onPointerMove: (e) => handleDragPointerMove(element, e),
-      onPointerUp: handleDragPointerEnd,
-      onPointerCancel: handleDragPointerEnd,
+      title: canDrag
+        ? `Clique para editar ou arraste: ${label}`
+        : `Clique para editar: ${label}`,
+      onClick: canSelect
+        ? (e) => {
+            e.stopPropagation();
+            onSelectObject?.(selectKey);
+          }
+        : undefined,
+      onMouseEnter: canSelect
+        ? (e) => {
+            e.stopPropagation();
+            setHoveredObject(selectKey);
+          }
+        : undefined,
+      onMouseLeave: canSelect
+        ? () => {
+            setHoveredObject((prev) => (prev === selectKey ? null : prev));
+          }
+        : undefined,
+      ...(canDrag
+        ? {
+            onPointerDown: (e: React.PointerEvent<HTMLElement>) =>
+              handleDragPointerDown(element, e),
+            onPointerMove: (e: React.PointerEvent<HTMLElement>) =>
+              handleDragPointerMove(element, e),
+            onPointerUp: handleDragPointerEnd,
+            onPointerCancel: handleDragPointerEnd,
+          }
+        : {}),
       style: {
-        cursor: isDragging ? 'grabbing' : 'grab',
-        userSelect: 'none',
-        touchAction: 'none',
+        cursor: canDrag ? (isDragging ? 'grabbing' : 'grab') : 'pointer',
+        ...(canDrag ? { userSelect: 'none', touchAction: 'none' } : {}),
         outline: isDragging
-          ? '2px solid #2563eb'
-          : '1.5px dashed rgba(37, 99, 235, 0.5)',
+          ? '2.5px solid #1d4ed8'
+          : isSelected
+            ? '2.5px solid #2563eb'
+            : isHovered
+              ? '1.5px dashed rgba(37, 99, 235, 0.72)'
+              : canDrag
+                ? '1.5px dashed rgba(37, 99, 235, 0.42)'
+                : undefined,
         outlineOffset: '5px',
+        borderRadius: '6px',
+      },
+    };
+  };
+
+  const getSelectProps = (
+    selectKey: CertificateSelectableObject,
+    label: string
+  ): React.HTMLAttributes<HTMLElement> & { style?: React.CSSProperties } => {
+    if (!onSelectObject) return {};
+    const isSelected = selectedObject === selectKey;
+    const isHovered = hoveredObject === selectKey;
+    return {
+      title: `Clique para editar: ${label}`,
+      onClick: (e) => {
+        e.stopPropagation();
+        onSelectObject(selectKey);
+      },
+      onMouseEnter: (e) => {
+        e.stopPropagation();
+        setHoveredObject(selectKey);
+      },
+      onMouseLeave: () => {
+        setHoveredObject((prev) => (prev === selectKey ? null : prev));
+      },
+      style: {
+        cursor: 'pointer',
+        outline: isSelected
+          ? '2.5px solid #2563eb'
+          : isHovered
+            ? '1.5px dashed rgba(37, 99, 235, 0.72)'
+            : undefined,
+        outlineOffset: '4px',
         borderRadius: '6px',
       },
     };
@@ -712,7 +798,26 @@ export function CertificateSheet({
         <div
           id={elementId}
           data-certificate-side="front"
-          style={sheetBaseStyle}
+          onClick={(e) => {
+            if (!onSelectObject) return;
+            const rect = e.currentTarget.getBoundingClientRect();
+            const relX = (e.clientX - rect.left) / (scale || 1);
+            const relY = (e.clientY - rect.top) / (scale || 1);
+            if (relX < 62 || relX > 1061 || relY < 62 || relY > 732) {
+              onSelectObject('molduraFrente');
+            } else {
+              onSelectObject('marcaDaguaFrente');
+            }
+          }}
+          style={{
+            ...sheetBaseStyle,
+            outline:
+              onSelectObject &&
+              (selectedObject === 'molduraFrente' || selectedObject === 'marcaDaguaFrente')
+                ? '3px solid #2563eb'
+                : undefined,
+            outlineOffset: '2px',
+          }}
           className="shadow-xl"
         >
           {/* Original Ornate Frame (or optional vector tint frame) */}
@@ -1224,9 +1329,26 @@ export function CertificateSheet({
       <div
         id={elementId}
         data-certificate-side="back"
+        onClick={(e) => {
+          if (!onSelectObject) return;
+          const rect = e.currentTarget.getBoundingClientRect();
+          const relX = (e.clientX - rect.left) / (scale || 1);
+          const relY = (e.clientY - rect.top) / (scale || 1);
+          if (relX < 42 || relX > 1081 || relY < 42 || relY > 752) {
+            onSelectObject('versoMoldura');
+          } else {
+            onSelectObject('marcaDaguaVerso');
+          }
+        }}
         style={{
           ...sheetBaseStyle,
           padding: '18px',
+          outline:
+            onSelectObject &&
+            (selectedObject === 'versoMoldura' || selectedObject === 'marcaDaguaVerso')
+              ? '3px solid #2563eb'
+              : undefined,
+          outlineOffset: '2px',
         }}
         className="shadow-xl"
       >
@@ -1281,63 +1403,89 @@ export function CertificateSheet({
                 backgroundColor: 'transparent',
               }}
             >
-              <div
-                style={{
-                  width: '70px',
-                  height: '72px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  backgroundColor: 'transparent',
-                }}
-              >
-                {template.logoEsquerdaUrl && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={resolveAssetCacheSrc(template.logoEsquerdaUrl)}
-                    alt="Brasão Guarda Costeira"
-                    crossOrigin="anonymous"
+              {(() => {
+                const leftBackSelect = getSelectProps('brasaoEsquerdo', 'Brasão Esquerdo');
+                return (
+                  <div
+                    {...leftBackSelect}
                     style={{
-                      width: '66px',
-                      height: '70px',
-                      objectFit: 'contain',
-                      opacity: leftLogoOpacity,
+                      width: '70px',
+                      height: '72px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                      backgroundColor: 'transparent',
+                      ...leftBackSelect.style,
                     }}
-                  />
-                )}
-              </div>
+                  >
+                    {template.logoEsquerdaUrl && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={resolveAssetCacheSrc(template.logoEsquerdaUrl)}
+                        alt="Brasão Guarda Costeira"
+                        crossOrigin="anonymous"
+                        style={{
+                          width: '66px',
+                          height: '70px',
+                          objectFit: 'contain',
+                          opacity: leftLogoOpacity,
+                        }}
+                      />
+                    )}
+                  </div>
+                );
+              })()}
 
-              <h2
-                style={{
-                  margin: 0,
-                  flex: 1,
-                  textAlign: 'center',
-                  fontSize: '30px',
-                  fontWeight: 800,
-                  fontStyle: versoItalic ? 'italic' : 'normal',
-                  color: '#0f172a',
-                  fontFamily: versoFontCss,
-                  letterSpacing: '0.02em',
-                  textTransform: 'uppercase',
-                  lineHeight: 1.15,
-                  backgroundColor: 'transparent',
-                  textShadow: 'none',
-                  boxShadow: 'none',
-                  padding: '2px 10px',
-                }}
-              >
-                {backTitleResolved}
-              </h2>
+              {(() => {
+                const backTitleSelect = getSelectProps('versoTitulo', 'Título do Verso');
+                return (
+                  <h2
+                    {...backTitleSelect}
+                    style={{
+                      margin: 0,
+                      flex: 1,
+                      textAlign: 'center',
+                      fontSize: '30px',
+                      fontWeight: 800,
+                      fontStyle: versoItalic ? 'italic' : 'normal',
+                      color: '#0f172a',
+                      fontFamily: versoFontCss,
+                      letterSpacing: '0.02em',
+                      textTransform: 'uppercase',
+                      lineHeight: 1.15,
+                      backgroundColor: 'transparent',
+                      textShadow: 'none',
+                      boxShadow: 'none',
+                      padding: '2px 10px',
+                      ...backTitleSelect.style,
+                    }}
+                  >
+                    {backTitleResolved}
+                  </h2>
+                );
+              })()}
 
-              <div style={{ backgroundColor: 'transparent', flexShrink: 0 }}>
-                <MarinhaBrasilCrest
-                  customUrl={template.logoDireitaUrl}
-                  label={rightCaptionText}
-                  compact={true}
-                  opacity={rightLogoOpacity}
-                />
-              </div>
+              {(() => {
+                const rightBackSelect = getSelectProps('brasaoDireito', 'Brasão Direito');
+                return (
+                  <div
+                    {...rightBackSelect}
+                    style={{
+                      backgroundColor: 'transparent',
+                      flexShrink: 0,
+                      ...rightBackSelect.style,
+                    }}
+                  >
+                    <MarinhaBrasilCrest
+                      customUrl={template.logoDireitaUrl}
+                      label={rightCaptionText}
+                      compact={true}
+                      opacity={rightLogoOpacity}
+                    />
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Disciplines Table Wrapper (watermark allowed to extend behind transparent header/title cleanly) */}
@@ -1388,19 +1536,27 @@ export function CertificateSheet({
                 </div>
               )}
 
-              <table
-                style={{
-                  position: 'relative',
-                  zIndex: 2,
-                  width: '100%',
-                  height: '100%',
-                  borderCollapse: 'collapse',
-                  fontFamily: versoFontCss,
-                  fontStyle: versoItalic ? 'italic' : 'normal',
-                  color: '#0f172a',
-                  textShadow: 'none',
-                }}
-              >
+              {(() => {
+                const backTableSelect = getSelectProps(
+                  'versoTabela',
+                  'Quadro de Disciplinas e Notas (Verso)'
+                );
+                return (
+                  <table
+                    {...backTableSelect}
+                    style={{
+                      position: 'relative',
+                      zIndex: 2,
+                      width: '100%',
+                      height: '100%',
+                      borderCollapse: 'collapse',
+                      fontFamily: versoFontCss,
+                      fontStyle: versoItalic ? 'italic' : 'normal',
+                      color: '#0f172a',
+                      textShadow: 'none',
+                      ...backTableSelect.style,
+                    }}
+                  >
                 <thead>
                   <tr>
                     <th
@@ -1553,6 +1709,8 @@ export function CertificateSheet({
                   </tr>
                 </tbody>
               </table>
+                );
+              })()}
             </div>
           </div>
           </div>
