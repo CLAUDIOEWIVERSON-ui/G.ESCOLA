@@ -30,6 +30,34 @@ export type DraggableCertificateElement =
   | 'assinaturaPrincipal'
   | 'segundaAssinatura';
 
+interface SheetBox {
+  element: DraggableCertificateElement;
+  label: string;
+  left: number;
+  right: number;
+  centerX: number;
+  top: number;
+  bottom: number;
+  centerY: number;
+}
+
+interface HorizontalAlignmentGuide {
+  id: string;
+  y: number;
+  x1: number;
+  x2: number;
+  variant: 'aligned' | 'reference' | 'current';
+  label?: string;
+}
+
+interface VerticalAlignmentGuide {
+  id: string;
+  x: number;
+  y1: number;
+  y2: number;
+  label?: string;
+}
+
 interface CertificateSheetProps {
   template: CertificateTemplateConfig;
   student: CertificateStudentContext;
@@ -339,16 +367,27 @@ export function CertificateSheet({
   onSelectObject,
   onUpdateTemplate,
 }: CertificateSheetProps) {
+  const frontSheetRef = useRef<HTMLDivElement | null>(null);
+  const elementRefs = useRef<Partial<Record<DraggableCertificateElement, HTMLElement | null>>>({});
+  const sliderGuideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevOffsetsOnlySigRef = useRef<string | null>(null);
+
   const dragRef = useRef<{
     element: DraggableCertificateElement;
     startClientX: number;
     startClientY: number;
     origX: number;
     origY: number;
+    origBox: SheetBox | null;
+    siblingBoxes: SheetBox[];
   } | null>(null);
   const [activeDrag, setActiveDrag] = useState<DraggableCertificateElement | null>(null);
   const [hoveredObject, setHoveredObject] = useState<CertificateSelectableObject | null>(null);
   const [transparentFrameMap, setTransparentFrameMap] = useState<Record<string, string>>({});
+  const [alignmentGuides, setAlignmentGuides] = useState<{
+    horizontal: HorizontalAlignmentGuide[];
+    vertical: VerticalAlignmentGuide[];
+  }>({ horizontal: [], vertical: [] });
 
   const rawFrontFrameSrc = resolveAssetCacheSrc(
     template.molduraFrenteUrl || '/assets/certificado-moldura-frente.png'
@@ -389,7 +428,238 @@ export function CertificateSheet({
     segundaAssinatura: 'segundaAssinatura',
   };
 
+  const selectToDragMap: Partial<Record<CertificateSelectableObject, DraggableCertificateElement>> = {
+    brasaoEsquerdo: 'logoEsquerda',
+    brasaoCentro: 'logoCentro',
+    brasaoDireito: 'logoDireita',
+    titulo: 'titulo',
+    texto: 'texto',
+    data: 'data',
+    assinaturaPrincipal: 'assinaturaPrincipal',
+    segundaAssinatura: 'segundaAssinatura',
+  };
+
+  const elementLabels: Record<DraggableCertificateElement, string> = {
+    logoEsquerda: 'Brasão Esquerdo',
+    logoCentro: 'Brasão Central',
+    logoDireita: 'Brasão Direito',
+    titulo: 'Título',
+    texto: 'Texto',
+    data: 'Data',
+    assinaturaPrincipal: 'Assinatura Principal',
+    segundaAssinatura: '2ª Assinatura',
+  };
+
+  const elementBounds: Record<
+    DraggableCertificateElement,
+    { minX: number; maxX: number; minY: number; maxY: number }
+  > = {
+    logoEsquerda: { minX: -90, maxX: 760, minY: -60, maxY: 520 },
+    logoCentro: { minX: -420, maxX: 420, minY: -110, maxY: 640 },
+    logoDireita: { minX: -760, maxX: 90, minY: -60, maxY: 520 },
+    titulo: { minX: -350, maxX: 350, minY: -200, maxY: 260 },
+    texto: { minX: -150, maxX: 150, minY: -180, maxY: 200 },
+    data: { minX: -380, maxX: 380, minY: -220, maxY: 240 },
+    assinaturaPrincipal: { minX: -380, maxX: 380, minY: -220, maxY: 60 },
+    segundaAssinatura: { minX: -380, maxX: 380, minY: -220, maxY: 60 },
+  };
+
   const clamp = (val: number, min: number, max: number) => Math.max(min, Math.min(max, val));
+
+  const measureSheetBoxes = (): Partial<Record<DraggableCertificateElement, SheetBox>> => {
+    const sheetEl = frontSheetRef.current;
+    if (!sheetEl) return {};
+    const sheetRect = sheetEl.getBoundingClientRect();
+    const actualScale = sheetRect.width > 0 ? sheetRect.width / 1123 : scale || 1;
+    const out: Partial<Record<DraggableCertificateElement, SheetBox>> = {};
+    (Object.keys(elementLabels) as DraggableCertificateElement[]).forEach((key) => {
+      const el = elementRefs.current[key];
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      if (r.width <= 0 || r.height <= 0) return;
+      const left = (r.left - sheetRect.left) / actualScale;
+      const right = (r.right - sheetRect.left) / actualScale;
+      const top = (r.top - sheetRect.top) / actualScale;
+      const bottom = (r.bottom - sheetRect.top) / actualScale;
+      out[key] = {
+        element: key,
+        label: elementLabels[key],
+        left,
+        right,
+        centerX: (left + right) / 2,
+        top,
+        bottom,
+        centerY: (top + bottom) / 2,
+      };
+    });
+    return out;
+  };
+
+  const computeGuidesForBox = (
+    activeBox: SheetBox,
+    siblings: SheetBox[]
+  ): { horizontal: HorizontalAlignmentGuide[]; vertical: VerticalAlignmentGuide[] } => {
+    const horizontal: HorizontalAlignmentGuide[] = [];
+    const vertical: VerticalAlignmentGuide[] = [];
+    const ALIGN_TOL = 2.0;
+
+    let hasAnyAlignedHoriz = false;
+
+    for (const sib of siblings) {
+      const isBesideHoriz = sib.right < activeBox.left + 12 || sib.left > activeBox.right - 12;
+      const dyCenter = Math.abs(activeBox.centerY - sib.centerY);
+      const dyTop = Math.abs(activeBox.top - sib.top);
+      const dyBottom = Math.abs(activeBox.bottom - sib.bottom);
+
+      let matchedAxisY: number | null = null;
+      let axisLabel = '';
+      if (dyCenter <= ALIGN_TOL) {
+        matchedAxisY = sib.centerY;
+        axisLabel = 'Mesma altura (Centro)';
+      } else if (dyTop <= ALIGN_TOL) {
+        matchedAxisY = sib.top;
+        axisLabel = 'Alinhado pelo topo';
+      } else if (dyBottom <= ALIGN_TOL) {
+        matchedAxisY = sib.bottom;
+        axisLabel = 'Alinhado pela base';
+      }
+
+      const spanX1 = Math.max(20, Math.min(activeBox.left, sib.left) - 20);
+      const spanX2 = Math.min(1103, Math.max(activeBox.right, sib.right) + 20);
+
+      if (matchedAxisY !== null) {
+        hasAnyAlignedHoriz = true;
+        horizontal.push({
+          id: `aligned-${sib.element}`,
+          y: matchedAxisY,
+          x1: spanX1,
+          x2: spanX2,
+          variant: 'aligned',
+          label: `${axisLabel} ✓`,
+        });
+      } else if (isBesideHoriz && dyCenter <= 220) {
+        const diffPx = Math.round(Math.abs(activeBox.centerY - sib.centerY));
+        const dirArrow = activeBox.centerY < sib.centerY ? '↓' : '↑';
+        horizontal.push({
+          id: `ref-${sib.element}`,
+          y: sib.centerY,
+          x1: spanX1,
+          x2: spanX2,
+          variant: 'reference',
+          label: `Altura ${sib.label}`,
+        });
+        horizontal.push({
+          id: `curr-${sib.element}`,
+          y: activeBox.centerY,
+          x1: Math.max(20, activeBox.left - 14),
+          x2: Math.min(1103, activeBox.right + 14),
+          variant: 'current',
+          label: `Desalinhado ${dirArrow} ${diffPx}px`,
+        });
+      }
+
+      // Vertical alignment against siblings (centerX, left, right)
+      const dxCenter = Math.abs(activeBox.centerX - sib.centerX);
+      const dxLeft = Math.abs(activeBox.left - sib.left);
+      const dxRight = Math.abs(activeBox.right - sib.right);
+      const spanY1 = Math.max(20, Math.min(activeBox.top, sib.top) - 16);
+      const spanY2 = Math.min(774, Math.max(activeBox.bottom, sib.bottom) + 16);
+
+      if (dxCenter <= ALIGN_TOL) {
+        vertical.push({
+          id: `vcenter-${sib.element}`,
+          x: sib.centerX,
+          y1: spanY1,
+          y2: spanY2,
+          label: 'Centro alinhado',
+        });
+      } else if (!isBesideHoriz && dxLeft <= ALIGN_TOL) {
+        vertical.push({
+          id: `vleft-${sib.element}`,
+          x: sib.left,
+          y1: spanY1,
+          y2: spanY2,
+        });
+      } else if (!isBesideHoriz && dxRight <= ALIGN_TOL) {
+        vertical.push({
+          id: `vright-${sib.element}`,
+          x: sib.right,
+          y1: spanY1,
+          y2: spanY2,
+        });
+      }
+    }
+
+    // Sheet horizontal center guide
+    if (Math.abs(activeBox.centerX - 561.5) <= ALIGN_TOL) {
+      vertical.push({
+        id: 'v-sheet-center',
+        x: 561.5,
+        y1: 24,
+        y2: 770,
+        label: 'Centro da folha',
+      });
+    }
+
+    // Deduplicate overlapping current guides if multiple neighbors exist
+    const dedupedHoriz: HorizontalAlignmentGuide[] = [];
+    let addedCurrent = false;
+    for (const g of horizontal) {
+      if (g.variant === 'current') {
+        if (hasAnyAlignedHoriz || addedCurrent) continue;
+        addedCurrent = true;
+      }
+      dedupedHoriz.push(g);
+    }
+
+    return { horizontal: dedupedHoriz, vertical };
+  };
+
+  const offsetsOnlySig = `${template.logoEsquerdaOffsetX ?? 0},${template.logoEsquerdaOffsetY ?? 0}|${template.logoCentroOffsetX ?? 0},${template.logoCentroOffsetY ?? 0}|${template.logoDireitaOffsetX ?? 0},${template.logoDireitaOffsetY ?? 0}|${template.tituloOffsetX ?? 0},${template.tituloOffsetY ?? 0}|${template.textoOffsetX ?? 0},${template.textoOffsetY ?? 0}|${template.dataOffsetX ?? 0},${template.dataOffsetY ?? 0}|${template.assinaturaPrincipalOffsetX ?? 0},${template.assinaturaPrincipalOffsetY ?? 0}|${template.segundaAssinaturaOffsetX ?? 0},${template.segundaAssinaturaOffsetY ?? 0}|${template.assinaturaAlturaOffset ?? 0}`;
+  const isInteractiveSheet = side === 'front' && Boolean(onSelectObject);
+
+  useEffect(() => {
+    if (!isInteractiveSheet) {
+      prevOffsetsOnlySigRef.current = offsetsOnlySig;
+      return;
+    }
+    if (prevOffsetsOnlySigRef.current === null) {
+      prevOffsetsOnlySigRef.current = offsetsOnlySig;
+      return;
+    }
+    if (prevOffsetsOnlySigRef.current === offsetsOnlySig) {
+      return;
+    }
+    prevOffsetsOnlySigRef.current = offsetsOnlySig;
+
+    if (activeDrag) return;
+    const activeEl = selectedObject ? selectToDragMap[selectedObject] : undefined;
+    if (!activeEl) return;
+
+    const boxes = measureSheetBoxes();
+    const activeBox = boxes[activeEl];
+    if (!activeBox) return;
+    const siblings = (Object.values(boxes) as SheetBox[]).filter((b) => b.element !== activeEl);
+    const guides = computeGuidesForBox(activeBox, siblings);
+    setAlignmentGuides(guides);
+
+    if (sliderGuideTimerRef.current) {
+      clearTimeout(sliderGuideTimerRef.current);
+    }
+    sliderGuideTimerRef.current = setTimeout(() => {
+      setAlignmentGuides({ horizontal: [], vertical: [] });
+      sliderGuideTimerRef.current = null;
+    }, 1600);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [offsetsOnlySig, isInteractiveSheet, activeDrag, selectedObject]);
+
+  useEffect(() => {
+    return () => {
+      if (sliderGuideTimerRef.current) {
+        clearTimeout(sliderGuideTimerRef.current);
+      }
+    };
+  }, []);
 
   const handleDragPointerDown = (
     element: DraggableCertificateElement,
@@ -433,14 +703,30 @@ export function CertificateSheet({
       origY = template.segundaAssinaturaOffsetY ?? 0;
     }
 
+    const boxes = measureSheetBoxes();
+    const origBox = boxes[element] ?? null;
+    const siblingBoxes = (Object.values(boxes) as SheetBox[]).filter(
+      (b) => b.element !== element
+    );
+
+    if (sliderGuideTimerRef.current) {
+      clearTimeout(sliderGuideTimerRef.current);
+      sliderGuideTimerRef.current = null;
+    }
+
     dragRef.current = {
       element,
       startClientX: e.clientX,
       startClientY: e.clientY,
       origX,
       origY,
+      origBox,
+      siblingBoxes,
     };
     setActiveDrag(element);
+    if (origBox) {
+      setAlignmentGuides(computeGuidesForBox(origBox, siblingBoxes));
+    }
   };
 
   const handleDragPointerMove = (
@@ -453,64 +739,135 @@ export function CertificateSheet({
     const effectiveScale = scale > 0 ? scale : 1;
     const dx = Math.round((e.clientX - dragRef.current.startClientX) / effectiveScale);
     const dy = Math.round((e.clientY - dragRef.current.startClientY) / effectiveScale);
-    const nextX = dragRef.current.origX + dx;
-    const nextY = dragRef.current.origY + dy;
+    const b = elementBounds[element];
+    let nextX = clamp(dragRef.current.origX + dx, b.minX, b.maxX);
+    let nextY = clamp(dragRef.current.origY + dy, b.minY, b.maxY);
+
+    const { origBox, siblingBoxes, origX, origY } = dragRef.current;
+    if (origBox) {
+      const shiftX = nextX - origX;
+      const shiftY = nextY - origY;
+      const predTop = origBox.top + shiftY;
+      const predCenterY = origBox.centerY + shiftY;
+      const predBottom = origBox.bottom + shiftY;
+      const predLeft = origBox.left + shiftX;
+      const predCenterX = origBox.centerX + shiftX;
+      const predRight = origBox.right + shiftX;
+
+      const SNAP_DIST = 4;
+      let bestDeltaY: number | null = null;
+      let bestAbsY = SNAP_DIST + 0.01;
+
+      let bestDeltaX: number | null = null;
+      let bestAbsX = SNAP_DIST + 0.01;
+
+      for (const sib of siblingBoxes) {
+        const yCandidates = [
+          sib.centerY - predCenterY,
+          sib.top - predTop,
+          sib.bottom - predBottom,
+        ];
+        for (const dY of yCandidates) {
+          if (Math.abs(dY) < bestAbsY) {
+            bestAbsY = Math.abs(dY);
+            bestDeltaY = dY;
+          }
+        }
+
+        const isBesideHoriz = sib.right < predLeft + 12 || sib.left > predRight - 12;
+        const xCandidates = isBesideHoriz
+          ? [sib.centerX - predCenterX]
+          : [sib.centerX - predCenterX, sib.left - predLeft, sib.right - predRight];
+        for (const dX of xCandidates) {
+          if (Math.abs(dX) < bestAbsX) {
+            bestAbsX = Math.abs(dX);
+            bestDeltaX = dX;
+          }
+        }
+      }
+
+      const sheetCenterDx = 561.5 - predCenterX;
+      if (Math.abs(sheetCenterDx) < bestAbsX) {
+        bestAbsX = Math.abs(sheetCenterDx);
+        bestDeltaX = sheetCenterDx;
+      }
+
+      if (bestDeltaY !== null) {
+        nextY = clamp(Math.round(nextY + bestDeltaY), b.minY, b.maxY);
+      }
+      if (bestDeltaX !== null) {
+        nextX = clamp(Math.round(nextX + bestDeltaX), b.minX, b.maxX);
+      }
+
+      const finalShiftX = nextX - origX;
+      const finalShiftY = nextY - origY;
+      const currentBox: SheetBox = {
+        ...origBox,
+        left: origBox.left + finalShiftX,
+        right: origBox.right + finalShiftX,
+        centerX: origBox.centerX + finalShiftX,
+        top: origBox.top + finalShiftY,
+        bottom: origBox.bottom + finalShiftY,
+        centerY: origBox.centerY + finalShiftY,
+      };
+      setAlignmentGuides(computeGuidesForBox(currentBox, siblingBoxes));
+    }
 
     onUpdateTemplate((prev) => {
       if (element === 'logoEsquerda') {
         return {
           ...prev,
-          logoEsquerdaOffsetX: clamp(nextX, -90, 760),
-          logoEsquerdaOffsetY: clamp(nextY, -60, 520),
+          logoEsquerdaOffsetX: nextX,
+          logoEsquerdaOffsetY: nextY,
         };
       }
       if (element === 'logoCentro') {
         return {
           ...prev,
-          logoCentroOffsetX: clamp(nextX, -420, 420),
-          logoCentroOffsetY: clamp(nextY, -110, 640),
+          logoCentroOffsetX: nextX,
+          logoCentroOffsetY: nextY,
         };
       }
       if (element === 'logoDireita') {
         return {
           ...prev,
-          logoDireitaOffsetX: clamp(nextX, -760, 90),
-          logoDireitaOffsetY: clamp(nextY, -60, 520),
+          logoDireitaOffsetX: nextX,
+          logoDireitaOffsetY: nextY,
         };
       }
       if (element === 'titulo') {
         return {
           ...prev,
-          tituloOffsetX: clamp(nextX, -350, 350),
-          tituloOffsetY: clamp(nextY, -200, 260),
+          tituloOffsetX: nextX,
+          tituloOffsetY: nextY,
         };
       }
       if (element === 'texto') {
         return {
           ...prev,
-          textoOffsetX: clamp(nextX, -150, 150),
-          textoOffsetY: clamp(nextY, -180, 200),
+          textoOffsetX: nextX,
+          textoOffsetY: nextY,
         };
       }
       if (element === 'data') {
         return {
           ...prev,
-          dataOffsetX: clamp(nextX, -380, 380),
-          dataOffsetY: clamp(nextY, -220, 240),
+          dataOffsetX: nextX,
+          dataOffsetY: nextY,
         };
       }
       if (element === 'assinaturaPrincipal') {
         return {
           ...prev,
-          assinaturaPrincipalOffsetX: clamp(nextX, -380, 380),
-          assinaturaPrincipalOffsetY: clamp(nextY, -220, 60),
+          assinaturaPrincipalOffsetX: nextX,
+          assinaturaPrincipalOffsetY: nextY,
         };
       }
       if (element === 'segundaAssinatura') {
         return {
           ...prev,
-          segundaAssinaturaOffsetX: clamp(nextX, -380, 380),
-          segundaAssinaturaOffsetY: clamp(nextY, -220, 60),
+          segundaAssinaturaOffsetX: nextX,
+          segundaAssinaturaOffsetY: nextY,
         };
       }
       return prev;
@@ -526,20 +883,33 @@ export function CertificateSheet({
     }
     dragRef.current = null;
     setActiveDrag(null);
+    setAlignmentGuides({ horizontal: [], vertical: [] });
   };
 
   const getDragProps = (
     element: DraggableCertificateElement,
     label: string
-  ): React.HTMLAttributes<HTMLElement> & { style?: React.CSSProperties } => {
+  ): React.HTMLAttributes<HTMLElement> & {
+    style?: React.CSSProperties;
+    ref?: (el: HTMLElement | null) => void;
+  } => {
     const selectKey = dragToSelectMap[element];
     const canDrag = interactiveDrag && side === 'front';
     const canSelect = Boolean(onSelectObject);
+    const refProp =
+      side === 'front' && canSelect
+        ? {
+            ref: (el: HTMLElement | null) => {
+              elementRefs.current[element] = el;
+            },
+          }
+        : {};
     if (!canDrag && !canSelect) return {};
     const isDragging = canDrag && activeDrag === element;
     const isSelected = canSelect && selectedObject === selectKey;
     const isHovered = canSelect && hoveredObject === selectKey;
     return {
+      ...refProp,
       title: canDrag
         ? `Clique para editar ou arraste: ${label}`
         : `Clique para editar: ${label}`,
@@ -835,6 +1205,7 @@ export function CertificateSheet({
     return (
       <div style={outerWrapperStyle}>
         <div
+          ref={frontSheetRef}
           id={elementId}
           data-certificate-side="front"
           onClick={(e) => {
@@ -1567,6 +1938,125 @@ export function CertificateSheet({
               );
             })()}
           </div>
+
+          {/* Live Horizontal / Vertical Alignment Guide Overlay */}
+          {isInteractiveEditor &&
+            (alignmentGuides.horizontal.length > 0 || alignmentGuides.vertical.length > 0) && (
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  pointerEvents: 'none',
+                  zIndex: 40,
+                }}
+              >
+                {alignmentGuides.horizontal.map((g) => {
+                  const isAligned = g.variant === 'aligned';
+                  const isRef = g.variant === 'reference';
+                  const lineColor = isAligned
+                    ? '#10b981'
+                    : isRef
+                      ? '#f59e0b'
+                      : '#0284c7';
+                  const labelTop = g.y > 42 ? g.y - 22 : g.y + 6;
+                  const labelLeft = Math.min(890, Math.max(24, (g.x1 + g.x2) / 2 - 75));
+                  return (
+                    <React.Fragment key={g.id}>
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: `${g.y}px`,
+                          left: `${g.x1}px`,
+                          width: `${Math.max(20, g.x2 - g.x1)}px`,
+                          height: '0px',
+                          borderTop: isAligned
+                            ? `2px solid ${lineColor}`
+                            : `1.5px dashed ${lineColor}`,
+                          boxShadow: isAligned
+                            ? '0 0 8px rgba(16, 185, 129, 0.45)'
+                            : undefined,
+                        }}
+                      />
+                      {/* Small end-cap ticks */}
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: `${g.y - 5}px`,
+                          left: `${g.x1}px`,
+                          width: '2px',
+                          height: '10px',
+                          backgroundColor: lineColor,
+                        }}
+                      />
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: `${g.y - 5}px`,
+                          left: `${g.x2}px`,
+                          width: '2px',
+                          height: '10px',
+                          backgroundColor: lineColor,
+                        }}
+                      />
+                      {g.label && (
+                        <div
+                          style={{
+                            position: 'absolute',
+                            top: `${labelTop}px`,
+                            left: `${labelLeft}px`,
+                            backgroundColor: lineColor,
+                            color: '#ffffff',
+                            fontSize: '10px',
+                            fontWeight: 700,
+                            padding: '2px 7px',
+                            borderRadius: '9999px',
+                            whiteSpace: 'nowrap',
+                            boxShadow: '0 2px 6px rgba(15, 23, 42, 0.18)',
+                            fontFamily: '"Segoe UI", system-ui, sans-serif',
+                          }}
+                        >
+                          {g.label}
+                        </div>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+
+                {alignmentGuides.vertical.map((g) => (
+                  <React.Fragment key={g.id}>
+                    <div
+                      style={{
+                        position: 'absolute',
+                        left: `${g.x}px`,
+                        top: `${g.y1}px`,
+                        width: '0px',
+                        height: `${Math.max(20, g.y2 - g.y1)}px`,
+                        borderLeft: '1.5px dashed #2563eb',
+                      }}
+                    />
+                    {g.label && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: `${Math.max(16, g.y1)}px`,
+                          left: `${Math.min(950, g.x + 6)}px`,
+                          backgroundColor: '#2563eb',
+                          color: '#ffffff',
+                          fontSize: '9.5px',
+                          fontWeight: 700,
+                          padding: '1px 6px',
+                          borderRadius: '9999px',
+                          whiteSpace: 'nowrap',
+                          fontFamily: '"Segoe UI", system-ui, sans-serif',
+                        }}
+                      >
+                        {g.label}
+                      </div>
+                    )}
+                  </React.Fragment>
+                ))}
+              </div>
+            )}
         </div>
       </div>
     );
