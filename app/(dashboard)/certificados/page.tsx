@@ -37,6 +37,7 @@ import { useUser } from '@/lib/auth/UserContext';
 import { fetchWithAuth } from '@/lib/api';
 import { cn, getCleanTurmaName } from '@/lib/utils';
 import { getHtml2Canvas, savePDFWithDialog } from '@/lib/printDocumentUtils';
+import { makeFrameCenterTransparent } from '@/lib/certificateImageUtils';
 import {
   CertificateCourseScope,
   CertificateDisciplineRow,
@@ -1207,19 +1208,30 @@ export default function CertificadosPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => {
+    reader.onload = async (ev) => {
       const dataUrl = String(ev.target?.result || '');
       if (dataUrl) {
+        const finalUrl =
+          field === 'molduraFrenteUrl'
+            ? await makeFrameCenterTransparent(dataUrl)
+            : dataUrl;
         setTemplate((prev) => ({
           ...prev,
-          [field]: dataUrl,
+          [field]: finalUrl,
+          ...(field === 'molduraFrenteUrl'
+            ? { estiloMolduraFrente: 'original', usarMolduraOriginal: true }
+            : {}),
           ...(field === 'logoEsquerdaUrl' ? { mostrarLogoEsquerda: true } : {}),
           ...(field === 'logoCentroUrl' ? { mostrarLogoCentro: true } : {}),
           ...(field === 'logoDireitaUrl'
             ? { mostrarLogoDireita: true, mostrarLegendaLogoDireita: false }
             : {}),
         }));
-        toast.success('Imagem aplicada ao modelo do certificado!');
+        toast.success(
+          field === 'molduraFrenteUrl'
+            ? 'Moldura aplicada com centro transparente para exibir a marca d\'água!'
+            : 'Imagem aplicada ao modelo do certificado!'
+        );
       }
     };
     reader.readAsDataURL(file);

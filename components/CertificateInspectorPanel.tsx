@@ -2285,12 +2285,12 @@ export function CertificateInspectorPanel({
                       >
                         <option value="simples">Moldura Simples (Linha Limpa)</option>
                         <option value="nenhuma">Sem Moldura (Folha em Branco)</option>
-                        <option value="original">Moldura Original (Imagem Base)</option>
+                        <option value="original">Moldura com Imagem (Base / Importada)</option>
                         <option value="vetorial">Moldura Vetorial Náutica</option>
                       </select>
                     </div>
 
-                    {currentFrameStyle === 'vetorial' || currentFrameStyle === 'simples' ? (
+                    {(currentFrameStyle === 'vetorial' || currentFrameStyle === 'simples') && (
                       <div>
                         <label className="block text-xs font-bold text-slate-700 mb-1">
                           Cor da Moldura (Frente)
@@ -2307,15 +2307,17 @@ export function CertificateInspectorPanel({
                           className="w-full h-10 rounded-lg border border-slate-200 cursor-pointer"
                         />
                       </div>
-                    ) : currentFrameStyle === 'original' ? (
-                      <div className="flex items-center justify-between gap-2 p-2.5 rounded-lg bg-white border border-slate-200">
+                    )}
+
+                    <div className="p-2.5 rounded-lg bg-white border border-slate-200 space-y-1.5">
+                      <div className="flex items-center justify-between gap-2">
                         <span className="text-[11px] font-semibold text-slate-700">
                           Imagem da Moldura (Frente)
                         </span>
                         <div className="flex items-center gap-1.5">
                           <label className="px-2.5 py-1 rounded-lg bg-blue-900 hover:bg-blue-950 text-white text-[11px] font-bold cursor-pointer flex items-center gap-1">
                             <Upload size={11} />
-                            <span>Trocar</span>
+                            <span>{template.molduraFrenteUrl ? 'Trocar' : 'Importar'}</span>
                             <input
                               type="file"
                               accept="image/*"
@@ -2328,17 +2330,22 @@ export function CertificateInspectorPanel({
                             onClick={() =>
                               setTemplate((prev) => ({
                                 ...prev,
+                                estiloMolduraFrente: 'original',
+                                usarMolduraOriginal: true,
                                 molduraFrenteUrl: '/assets/certificado-moldura-frente.png',
                               }))
                             }
                             className="p-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-600 cursor-pointer"
-                            title="Restaurar padrão"
+                            title="Restaurar moldura padrão"
                           >
                             <RotateCcw size={12} />
                           </button>
                         </div>
                       </div>
-                    ) : null}
+                      <p className="text-[10px] text-slate-500 leading-snug">
+                        O centro branco das molduras importadas fica transparente automaticamente para manter a marca d&apos;água visível.
+                      </p>
+                    </div>
                   </>
                 );
               })()}

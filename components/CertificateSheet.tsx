@@ -1,6 +1,10 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  getCachedTransparentFrameSrc,
+  makeFrameCenterTransparent,
+} from '@/lib/certificateImageUtils';
 import {
   CertificateSelectableObject,
   CertificateStudentContext,
@@ -344,6 +348,35 @@ export function CertificateSheet({
   } | null>(null);
   const [activeDrag, setActiveDrag] = useState<DraggableCertificateElement | null>(null);
   const [hoveredObject, setHoveredObject] = useState<CertificateSelectableObject | null>(null);
+  const [transparentFrameMap, setTransparentFrameMap] = useState<Record<string, string>>({});
+
+  const rawFrontFrameSrc = resolveAssetCacheSrc(
+    template.molduraFrenteUrl || '/assets/certificado-moldura-frente.png'
+  );
+  const resolvedFrontFrameStyle =
+    template.estiloMolduraFrente ??
+    (template.usarMolduraOriginal !== false ? 'original' : 'vetorial');
+  const shouldProcessFrontFrame = side === 'front' && resolvedFrontFrameStyle === 'original';
+
+  useEffect(() => {
+    if (!shouldProcessFrontFrame || !rawFrontFrameSrc) return;
+    if (getCachedTransparentFrameSrc(rawFrontFrameSrc)) return;
+    let active = true;
+    void makeFrameCenterTransparent(rawFrontFrameSrc).then((processed) => {
+      if (!active || !processed || processed === rawFrontFrameSrc) return;
+      setTransparentFrameMap((prev) =>
+        prev[rawFrontFrameSrc] === processed ? prev : { ...prev, [rawFrontFrameSrc]: processed }
+      );
+    });
+    return () => {
+      active = false;
+    };
+  }, [shouldProcessFrontFrame, rawFrontFrameSrc]);
+
+  const effectiveFrontFrameSrc =
+    getCachedTransparentFrameSrc(rawFrontFrameSrc) ||
+    transparentFrameMap[rawFrontFrameSrc] ||
+    rawFrontFrameSrc;
 
   const dragToSelectMap: Record<DraggableCertificateElement, CertificateSelectableObject> = {
     logoEsquerda: 'brasaoEsquerdo',
@@ -830,9 +863,7 @@ export function CertificateSheet({
           {frontFrameStyle === 'original' ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={resolveAssetCacheSrc(
-                template.molduraFrenteUrl || '/assets/certificado-moldura-frente.png'
-              )}
+              src={effectiveFrontFrameSrc}
               alt=""
               crossOrigin="anonymous"
               style={{
@@ -843,6 +874,7 @@ export function CertificateSheet({
                 height: '758px',
                 objectFit: 'fill',
                 pointerEvents: 'none',
+                mixBlendMode: 'multiply',
                 zIndex: 5,
               }}
             />
@@ -902,6 +934,7 @@ export function CertificateSheet({
                   maxHeight: 'none',
                   objectFit: frontWmScaleW === frontWmScaleH ? 'contain' : 'fill',
                   opacity: template.opacidadeMarcaDaguaFrente ?? 0.24,
+                  mixBlendMode: 'multiply',
                   borderRadius: isCircularDefaultFrontWm ? '9999px' : '0px',
                 }}
               />
@@ -1808,6 +1841,7 @@ export function CertificateSheet({
                       maxHeight: 'none',
                       objectFit: backWmScaleW === backWmScaleH ? 'contain' : 'fill',
                       opacity: template.opacidadeMarcaDaguaVerso ?? 0.25,
+                      mixBlendMode: 'multiply',
                     }}
                   />
                 </div>
