@@ -2369,24 +2369,6 @@ export default function CertificadosPage() {
               )}
             </div>
           </div>
-
-          {/* Ação Principal de Emissão */}
-          <div className="flex items-center justify-end gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={handleDownloadIndividualPDF}
-              disabled={exportingPDF}
-              className="h-[34px] px-4 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
-              title="Baixar certificado atual em PDF (Frente e Verso)"
-            >
-              {exportingPDF && !batchProgress ? (
-                <Loader2 size={14} className="animate-spin" />
-              ) : (
-                <Download size={14} />
-              )}
-              <span>Baixar PDF</span>
-            </button>
-          </div>
         </div>
 
         {/* Painel compacto sob demanda para escolher turma de associação */}
@@ -2735,32 +2717,6 @@ export default function CertificadosPage() {
                 <span>Notas do Boletim no Verso</span>
               </label>
             </div>
-
-            {turmaStudents.length > 0 && (
-              <div className="flex items-center gap-1.5 shrink-0">
-                <button
-                  type="button"
-                  onClick={handleDownloadBatchPDF}
-                  disabled={exportingPDF || batchSelectedIds.length === 0}
-                  className="h-[34px] px-3 rounded-xl text-xs font-bold bg-blue-800 hover:bg-blue-900 text-white flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                  title="Gerar PDF em lote para os alunos marcados"
-                >
-                  {batchProgress ? (
-                    <>
-                      <Loader2 size={13} className="animate-spin" />
-                      <span>
-                        {batchProgress.current}/{batchProgress.total}
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <Download size={13} />
-                      <span>Lote PDF ({batchSelectedIds.length})</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            )}
           </div>
         )}
       </div>
@@ -3264,6 +3220,47 @@ export default function CertificadosPage() {
                 <BookmarkCheck size={13} />
                 <span>Modelos Salvos</span>
               </button>
+
+              <button
+                type="button"
+                onClick={handleDownloadIndividualPDF}
+                disabled={exportingPDF}
+                className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                title="Baixar PDF do aluno selecionado (Frente e Verso)"
+              >
+                {exportingPDF && !batchProgress ? (
+                  <Loader2 size={13} className="animate-spin" />
+                ) : (
+                  <Download size={13} />
+                )}
+                <span>Baixar PDF do Aluno Selecionado</span>
+              </button>
+
+              {selectedTurmaId && turmaStudents.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleDownloadBatchPDF}
+                  disabled={exportingPDF || batchSelectedIds.length === 0}
+                  className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-blue-800 hover:bg-blue-900 text-white shadow-2xs transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                  title="Baixar todos os certificados da turma selecionada em lote"
+                >
+                  {batchProgress ? (
+                    <>
+                      <Loader2 size={13} className="animate-spin" />
+                      <span>
+                        {batchProgress.current}/{batchProgress.total}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <Download size={13} />
+                      <span>
+                        Baixar Todos Certificados da Turma Selecionada ({batchSelectedIds.length})
+                      </span>
+                    </>
+                  )}
+                </button>
+              )}
             </div>
 
             <div className="flex items-center gap-3">
