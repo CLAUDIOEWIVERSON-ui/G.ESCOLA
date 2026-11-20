@@ -699,10 +699,13 @@ export function CertificateSheet({
       defaultItalic: baseBodyItalic,
     }
   );
-  const backTitleResolved = resolveSimplePlaceholders(
-    template.versoTituloCurso || '{{CURSO}}',
-    { ...replacements, CURSO: rawCourseName.toLocaleUpperCase('pt-BR') }
-  ).toLocaleUpperCase('pt-BR');
+  const isInteractiveEditor = Boolean(onSelectObject);
+  const backTitleResolved = template.versoTituloCurso?.trim()
+    ? resolveSimplePlaceholders(template.versoTituloCurso, {
+        ...replacements,
+        CURSO: rawCourseName.toLocaleUpperCase('pt-BR'),
+      }).toLocaleUpperCase('pt-BR')
+    : '';
 
   const bodyFontCss = resolveCertificateFontCss(template.fonteCorpo || 'garamond');
   const titleFontCss = resolveCertificateFontCss(
@@ -738,6 +741,7 @@ export function CertificateSheet({
   const showLeftLogo = template.mostrarLogoEsquerda !== false;
   const showCenterLogo = template.mostrarLogoCentro === true;
   const showRightLogo = template.mostrarLogoDireita !== false;
+  const allowDefaultMarinhaCrest = template.usarBrasaoPadraoDireita !== false;
 
   const leftLogoSize = template.tamanhoLogoEsquerda ?? 90;
   const leftLogoOpacity = template.opacidadeLogoEsquerda ?? 1;
@@ -752,12 +756,14 @@ export function CertificateSheet({
   const hasCustomRightLogo = Boolean(template.logoDireitaUrl && template.logoDireitaUrl.trim());
   const showRightCaption = hasCustomRightLogo
     ? template.mostrarLegendaLogoDireita === true
-    : template.mostrarLegendaLogoDireita !== false;
+    : allowDefaultMarinhaCrest && template.mostrarLegendaLogoDireita !== false;
   const rightCaptionText = showRightCaption
     ? (template.logoDireitaTexto ?? 'MARINHA DO BRASIL').trim()
     : '';
 
   const useOriginalFrame = template.usarMolduraOriginal !== false;
+  const frontFrameStyle =
+    template.estiloMolduraFrente ?? (useOriginalFrame ? 'original' : 'vetorial');
 
   const outerWrapperStyle: React.CSSProperties =
     scale !== 1
@@ -820,8 +826,8 @@ export function CertificateSheet({
           }}
           className="shadow-xl"
         >
-          {/* Original Ornate Frame (or optional vector tint frame) */}
-          {useOriginalFrame ? (
+          {/* Front Frame (original ornate PNG, nautical SVG, clean simple line, or none) */}
+          {frontFrameStyle === 'original' ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={resolveAssetCacheSrc(
@@ -840,9 +846,30 @@ export function CertificateSheet({
                 zIndex: 5,
               }}
             />
-          ) : (
+          ) : frontFrameStyle === 'vetorial' ? (
             <NauticalOrnateFrame borderColor={template.corBordaFrente || '#52525b'} />
-          )}
+          ) : frontFrameStyle === 'simples' ? (
+            <div
+              style={{
+                position: 'absolute',
+                inset: '22px',
+                border: `2px solid ${template.corBordaFrente || '#cbd5e1'}`,
+                padding: '4px',
+                pointerEvents: 'none',
+                zIndex: 5,
+                boxSizing: 'border-box',
+              }}
+            >
+              <div
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  border: `1px solid ${template.corBordaFrente || '#cbd5e1'}`,
+                  boxSizing: 'border-box',
+                }}
+              />
+            </div>
+          ) : null}
 
           {/* Center Watermark (expandable up to full sheet) */}
           {template.marcaDaguaFrenteUrl && (
@@ -916,6 +943,7 @@ export function CertificateSheet({
                 }}
               >
                 {showLeftLogo &&
+                  (template.logoEsquerdaUrl || isInteractiveEditor) &&
                   (() => {
                     const drag = getDragProps('logoEsquerda', 'Brasão Esquerdo');
                     return (
@@ -934,7 +962,7 @@ export function CertificateSheet({
                           ...drag.style,
                         }}
                       >
-                        {template.logoEsquerdaUrl && (
+                        {template.logoEsquerdaUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
                             src={resolveAssetCacheSrc(template.logoEsquerdaUrl)}
@@ -948,6 +976,31 @@ export function CertificateSheet({
                               opacity: leftLogoOpacity,
                             }}
                           />
+                        ) : (
+                          <div
+                            style={{
+                              width: '104px',
+                              height: '72px',
+                              border: '1.5px dashed #94a3b8',
+                              borderRadius: '8px',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              padding: '4px 6px',
+                              textAlign: 'center',
+                              color: '#64748b',
+                              fontSize: '10px',
+                              fontWeight: 600,
+                              lineHeight: 1.2,
+                              backgroundColor: 'rgba(248, 250, 252, 0.7)',
+                            }}
+                          >
+                            <span>Brasão Esquerdo</span>
+                            <span style={{ fontSize: '9px', fontWeight: 400 }}>
+                              Clique p/ inserir
+                            </span>
+                          </div>
                         )}
                       </div>
                     );
@@ -964,9 +1017,10 @@ export function CertificateSheet({
                 }}
               >
                 {showCenterLogo &&
-                  (template.logoCentroUrl || centerCaptionText) &&
+                  (template.logoCentroUrl || centerCaptionText || isInteractiveEditor) &&
                   (() => {
                     const drag = getDragProps('logoCentro', 'Brasão Central');
+                    const hasCenterContent = Boolean(template.logoCentroUrl || centerCaptionText);
                     return (
                       <div
                         {...drag}
@@ -983,6 +1037,32 @@ export function CertificateSheet({
                           ...drag.style,
                         }}
                       >
+                        {!hasCenterContent && isInteractiveEditor ? (
+                          <div
+                            style={{
+                              width: '104px',
+                              height: '72px',
+                              border: '1.5px dashed #94a3b8',
+                              borderRadius: '8px',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              padding: '4px 6px',
+                              textAlign: 'center',
+                              color: '#64748b',
+                              fontSize: '10px',
+                              fontWeight: 600,
+                              lineHeight: 1.2,
+                              backgroundColor: 'rgba(248, 250, 252, 0.7)',
+                            }}
+                          >
+                            <span>Brasão Central</span>
+                            <span style={{ fontSize: '9px', fontWeight: 400 }}>
+                              Clique p/ inserir
+                            </span>
+                          </div>
+                        ) : null}
                         {template.logoCentroUrl && (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
@@ -1034,8 +1114,12 @@ export function CertificateSheet({
                 }}
               >
                 {showRightLogo &&
+                  (template.logoDireitaUrl || allowDefaultMarinhaCrest || isInteractiveEditor) &&
                   (() => {
                     const drag = getDragProps('logoDireita', 'Brasão Direito');
+                    const showCrestGraphic = Boolean(
+                      template.logoDireitaUrl || allowDefaultMarinhaCrest
+                    );
                     return (
                       <div
                         {...drag}
@@ -1047,12 +1131,39 @@ export function CertificateSheet({
                           ...drag.style,
                         }}
                       >
-                        <MarinhaBrasilCrest
-                          customUrl={template.logoDireitaUrl}
-                          label={rightCaptionText}
-                          size={rightLogoSize}
-                          opacity={rightLogoOpacity}
-                        />
+                        {showCrestGraphic ? (
+                          <MarinhaBrasilCrest
+                            customUrl={template.logoDireitaUrl}
+                            label={rightCaptionText}
+                            size={rightLogoSize}
+                            opacity={rightLogoOpacity}
+                          />
+                        ) : (
+                          <div
+                            style={{
+                              width: '104px',
+                              height: '72px',
+                              border: '1.5px dashed #94a3b8',
+                              borderRadius: '8px',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              padding: '4px 6px',
+                              textAlign: 'center',
+                              color: '#64748b',
+                              fontSize: '10px',
+                              fontWeight: 600,
+                              lineHeight: 1.2,
+                              backgroundColor: 'rgba(248, 250, 252, 0.7)',
+                            }}
+                          >
+                            <span>Brasão Direito</span>
+                            <span style={{ fontSize: '9px', fontWeight: 400 }}>
+                              Clique p/ inserir
+                            </span>
+                          </div>
+                        )}
                       </div>
                     );
                   })()}
@@ -1071,6 +1182,7 @@ export function CertificateSheet({
             >
               {(() => {
                 const drag = getDragProps('titulo', 'Título do Certificado');
+                const hasTitle = Boolean(template.titulo?.trim());
                 return (
                   <h1
                     {...drag}
@@ -1080,27 +1192,35 @@ export function CertificateSheet({
                       left: `${template.tituloOffsetX ?? 0}px`,
                       top: `${template.tituloOffsetY ?? 0}px`,
                       zIndex: activeDrag === 'titulo' ? 20 : 12,
-                      fontSize: '42px',
-                      fontWeight: titleBold ? 700 : 400,
-                      fontStyle: titleItalic ? 'italic' : 'normal',
-                      letterSpacing: '0.16em',
-                      color: '#0f172a',
-                      fontFamily: titleFontCss,
+                      fontSize: hasTitle ? '42px' : '16px',
+                      fontWeight: hasTitle ? (titleBold ? 700 : 400) : 600,
+                      fontStyle: hasTitle && titleItalic ? 'italic' : 'normal',
+                      letterSpacing: hasTitle ? '0.16em' : '0.04em',
+                      color: hasTitle ? '#0f172a' : '#64748b',
+                      fontFamily: hasTitle ? titleFontCss : '"Segoe UI", system-ui, sans-serif',
                       textAlign: 'center',
-                      textTransform: 'uppercase',
-                      backgroundColor: 'transparent',
+                      textTransform: hasTitle ? 'uppercase' : 'none',
+                      backgroundColor: !hasTitle && isInteractiveEditor ? 'rgba(248,250,252,0.75)' : 'transparent',
+                      border: !hasTitle && isInteractiveEditor ? '1.5px dashed #94a3b8' : undefined,
+                      padding: !hasTitle && isInteractiveEditor ? '12px 32px' : undefined,
+                      minHeight: !hasTitle && !isInteractiveEditor ? '48px' : undefined,
                       textShadow: 'none',
                       boxShadow: 'none',
                       ...drag.style,
                     }}
                   >
-                    {template.titulo || 'CERTIFICADO DE CONCLUSÃO'}
+                    {hasTitle
+                      ? template.titulo
+                      : isInteractiveEditor
+                        ? 'Título do Certificado — clique para editar'
+                        : ''}
                   </h1>
                 );
               })()}
 
               {(() => {
                 const drag = getDragProps('texto', 'Texto Principal');
+                const hasBodyText = Boolean(normalizedBodyTemplate.trim());
                 return (
                   <p
                     {...drag}
@@ -1111,27 +1231,45 @@ export function CertificateSheet({
                       left: `${template.textoOffsetX ?? 0}px`,
                       top: `${template.textoOffsetY ?? 0}px`,
                       zIndex: activeDrag === 'texto' ? 20 : 12,
-                      fontSize: `${template.tamanhoFonteCorpo || 19}px`,
-                      lineHeight: 1.82,
-                      fontFamily: bodyFontCss,
-                      color: '#0f172a',
-                      textAlign: template.alinhamentoTexto || 'left',
-                      backgroundColor: 'transparent',
+                      fontSize: hasBodyText ? `${template.tamanhoFonteCorpo || 19}px` : '13px',
+                      lineHeight: hasBodyText ? 1.82 : 1.5,
+                      fontFamily: hasBodyText ? bodyFontCss : '"Segoe UI", system-ui, sans-serif',
+                      color: hasBodyText ? '#0f172a' : '#64748b',
+                      textAlign: hasBodyText ? template.alinhamentoTexto || 'left' : 'center',
+                      backgroundColor:
+                        !hasBodyText && isInteractiveEditor
+                          ? 'rgba(248, 250, 252, 0.75)'
+                          : 'transparent',
+                      border:
+                        !hasBodyText && isInteractiveEditor ? '1.5px dashed #94a3b8' : undefined,
+                      padding: !hasBodyText && isInteractiveEditor ? '26px 24px' : undefined,
+                      minHeight: !hasBodyText ? '110px' : undefined,
+                      display: !hasBodyText && isInteractiveEditor ? 'flex' : undefined,
+                      alignItems: !hasBodyText && isInteractiveEditor ? 'center' : undefined,
+                      justifyContent: !hasBodyText && isInteractiveEditor ? 'center' : undefined,
                       textShadow: 'none',
                       ...drag.style,
                     }}
                   >
-                    {bodySegments.map((seg, i) => (
-                      <span
-                        key={i}
-                        style={{
-                          fontWeight: seg.bold ? 700 : 400,
-                          fontStyle: seg.italic ? 'italic' : 'normal',
-                        }}
-                      >
-                        {seg.text}
+                    {hasBodyText ? (
+                      bodySegments.map((seg, i) => (
+                        <span
+                          key={i}
+                          style={{
+                            fontWeight: seg.bold ? 700 : 400,
+                            fontStyle: seg.italic ? 'italic' : 'normal',
+                          }}
+                        >
+                          {seg.text}
+                        </span>
+                      ))
+                    ) : isInteractiveEditor ? (
+                      <span>
+                        Texto Principal do Certificado — clique aqui para escrever ou inserir
+                        variáveis (&#123;&#123;ALUNO&#125;&#125;, &#123;&#123;CURSO&#125;&#125;,
+                        etc.)
                       </span>
-                    ))}
+                    ) : null}
                   </p>
                 );
               })()}
@@ -1145,6 +1283,16 @@ export function CertificateSheet({
                       ? 'flex-end'
                       : 'center';
                 const dateDrag = getDragProps('data', 'Data de Emissão');
+                const localTrim = (template.localEmissao || '').trim();
+                const dataTrim = (template.dataEmissaoExtenso || '').trim();
+                const hasDateContent = Boolean(localTrim || dataTrim);
+                const dateDisplay = localTrim && dataTrim
+                  ? `${localTrim}, ${dataTrim}.`
+                  : localTrim
+                    ? `${localTrim}, ${formatTodayFallback()}.`
+                    : dataTrim
+                      ? `${dataTrim}.`
+                      : '';
                 return (
                   <div
                     style={{
@@ -1161,17 +1309,34 @@ export function CertificateSheet({
                         left: `${template.dataOffsetX ?? 0}px`,
                         top: `${template.dataOffsetY ?? 0}px`,
                         zIndex: activeDrag === 'data' ? 20 : 12,
-                        fontSize: `${Math.max(16, (template.tamanhoFonteCorpo || 19) - 1)}px`,
-                        fontFamily: bodyFontCss,
-                        fontWeight: dateBold ? 700 : 400,
-                        fontStyle: dateItalic ? 'italic' : 'normal',
-                        color: '#0f172a',
+                        fontSize: hasDateContent
+                          ? `${Math.max(16, (template.tamanhoFonteCorpo || 19) - 1)}px`
+                          : '12px',
+                        fontFamily: hasDateContent
+                          ? bodyFontCss
+                          : '"Segoe UI", system-ui, sans-serif',
+                        fontWeight: hasDateContent ? (dateBold ? 700 : 400) : 600,
+                        fontStyle: hasDateContent && dateItalic ? 'italic' : 'normal',
+                        color: hasDateContent ? '#0f172a' : '#64748b',
                         textAlign: dateAlign,
+                        border:
+                          !hasDateContent && isInteractiveEditor
+                            ? '1.5px dashed #94a3b8'
+                            : undefined,
+                        backgroundColor:
+                          !hasDateContent && isInteractiveEditor
+                            ? 'rgba(248, 250, 252, 0.75)'
+                            : 'transparent',
+                        padding: !hasDateContent && isInteractiveEditor ? '6px 18px' : undefined,
+                        minHeight: !hasDateContent && !isInteractiveEditor ? '24px' : undefined,
                         ...dateDrag.style,
                       }}
                     >
-                      {template.localEmissao || 'São Tomé e Príncipe'},{' '}
-                      {template.dataEmissaoExtenso || formatTodayFallback()}.
+                      {hasDateContent
+                        ? dateDisplay
+                        : isInteractiveEditor
+                          ? 'Local e Data de Emissão — clique para editar'
+                          : ''}
                     </p>
                   </div>
                 );
@@ -1193,6 +1358,16 @@ export function CertificateSheet({
                     : 'flex-end';
               const primaryDrag = getDragProps('assinaturaPrincipal', 'Assinatura Principal');
               const secondaryDrag = getDragProps('segundaAssinatura', '2ª Assinatura');
+              const hasPrimarySigContent = Boolean(
+                template.assinaturaNome?.trim() ||
+                  template.assinaturaPosto?.trim() ||
+                  template.assinaturaCargo?.trim()
+              );
+              const hasSecondarySigContent = Boolean(
+                template.segundaAssinaturaNome?.trim() ||
+                  template.segundaAssinaturaPosto?.trim() ||
+                  template.segundaAssinaturaCargo?.trim()
+              );
 
               const primaryBlock = (
                 <div
@@ -1209,31 +1384,53 @@ export function CertificateSheet({
                     maxWidth: hasSecondSig ? '425px' : undefined,
                     marginLeft: !hasSecondSig && sigAlign === 'left' ? '16px' : '0',
                     marginRight: !hasSecondSig && sigAlign === 'right' ? '16px' : '0',
-                    fontFamily: signatureFontCss,
-                    fontStyle: sigItalic ? 'italic' : 'normal',
+                    fontFamily: hasPrimarySigContent
+                      ? signatureFontCss
+                      : '"Segoe UI", system-ui, sans-serif',
+                    fontStyle: hasPrimarySigContent && sigItalic ? 'italic' : 'normal',
                     color: '#0f172a',
                     lineHeight: 1.35,
                     ...primaryDrag.style,
                   }}
                 >
-                  <div
-                    style={{
-                      fontSize: '14.5px',
-                      fontWeight: sigBold ? 700 : 400,
-                      letterSpacing: '0.03em',
-                    }}
-                  >
-                    {template.assinaturaNome}
-                  </div>
-                  {template.assinaturaPosto && (
-                    <div style={{ fontSize: '14px', fontWeight: sigBold ? 700 : 400 }}>
-                      {template.assinaturaPosto}
+                  {hasPrimarySigContent ? (
+                    <>
+                      <div
+                        style={{
+                          fontSize: '14.5px',
+                          fontWeight: sigBold ? 700 : 400,
+                          letterSpacing: '0.03em',
+                        }}
+                      >
+                        {template.assinaturaNome}
+                      </div>
+                      {template.assinaturaPosto && (
+                        <div style={{ fontSize: '14px', fontWeight: sigBold ? 700 : 400 }}>
+                          {template.assinaturaPosto}
+                        </div>
+                      )}
+                      {template.assinaturaCargo && (
+                        <div style={{ fontSize: '13.5px', fontWeight: sigBold ? 700 : 400 }}>
+                          {template.assinaturaCargo}
+                        </div>
+                      )}
+                    </>
+                  ) : isInteractiveEditor ? (
+                    <div
+                      style={{
+                        border: '1.5px dashed #94a3b8',
+                        borderRadius: '8px',
+                        padding: '10px 16px',
+                        backgroundColor: 'rgba(248, 250, 252, 0.75)',
+                        color: '#64748b',
+                        fontSize: '11px',
+                        fontWeight: 600,
+                      }}
+                    >
+                      Assinatura Principal — clique para editar
                     </div>
-                  )}
-                  {template.assinaturaCargo && (
-                    <div style={{ fontSize: '13.5px', fontWeight: sigBold ? 700 : 400 }}>
-                      {template.assinaturaCargo}
-                    </div>
+                  ) : (
+                    <div style={{ minHeight: '42px' }} />
                   )}
                 </div>
               );
@@ -1251,31 +1448,53 @@ export function CertificateSheet({
                     flex: '0 1 420px',
                     minWidth: '310px',
                     maxWidth: '425px',
-                    fontFamily: signatureFontCss,
-                    fontStyle: sigItalic ? 'italic' : 'normal',
+                    fontFamily: hasSecondarySigContent
+                      ? signatureFontCss
+                      : '"Segoe UI", system-ui, sans-serif',
+                    fontStyle: hasSecondarySigContent && sigItalic ? 'italic' : 'normal',
                     color: '#0f172a',
                     lineHeight: 1.35,
                     ...secondaryDrag.style,
                   }}
                 >
-                  <div
-                    style={{
-                      fontSize: '14.5px',
-                      fontWeight: sigBold ? 700 : 400,
-                      letterSpacing: '0.03em',
-                    }}
-                  >
-                    {template.segundaAssinaturaNome || 'ASSINATURA'}
-                  </div>
-                  {template.segundaAssinaturaPosto && (
-                    <div style={{ fontSize: '14px', fontWeight: sigBold ? 700 : 400 }}>
-                      {template.segundaAssinaturaPosto}
+                  {hasSecondarySigContent ? (
+                    <>
+                      <div
+                        style={{
+                          fontSize: '14.5px',
+                          fontWeight: sigBold ? 700 : 400,
+                          letterSpacing: '0.03em',
+                        }}
+                      >
+                        {template.segundaAssinaturaNome || 'ASSINATURA'}
+                      </div>
+                      {template.segundaAssinaturaPosto && (
+                        <div style={{ fontSize: '14px', fontWeight: sigBold ? 700 : 400 }}>
+                          {template.segundaAssinaturaPosto}
+                        </div>
+                      )}
+                      {template.segundaAssinaturaCargo && (
+                        <div style={{ fontSize: '13.5px', fontWeight: sigBold ? 700 : 400 }}>
+                          {template.segundaAssinaturaCargo}
+                        </div>
+                      )}
+                    </>
+                  ) : isInteractiveEditor ? (
+                    <div
+                      style={{
+                        border: '1.5px dashed #94a3b8',
+                        borderRadius: '8px',
+                        padding: '10px 16px',
+                        backgroundColor: 'rgba(248, 250, 252, 0.75)',
+                        color: '#64748b',
+                        fontSize: '11px',
+                        fontWeight: 600,
+                      }}
+                    >
+                      2ª Assinatura — clique para editar
                     </div>
-                  )}
-                  {template.segundaAssinaturaCargo && (
-                    <div style={{ fontSize: '13.5px', fontWeight: sigBold ? 700 : 400 }}>
-                      {template.segundaAssinaturaCargo}
-                    </div>
+                  ) : (
+                    <div style={{ minHeight: '42px' }} />
                   )}
                 </div>
               ) : null;
@@ -1419,7 +1638,7 @@ export function CertificateSheet({
                       ...leftBackSelect.style,
                     }}
                   >
-                    {template.logoEsquerdaUrl && (
+                    {template.logoEsquerdaUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={resolveAssetCacheSrc(template.logoEsquerdaUrl)}
@@ -1432,13 +1651,32 @@ export function CertificateSheet({
                           opacity: leftLogoOpacity,
                         }}
                       />
-                    )}
+                    ) : isInteractiveEditor ? (
+                      <div
+                        style={{
+                          width: '66px',
+                          height: '58px',
+                          border: '1.5px dashed #94a3b8',
+                          borderRadius: '6px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '9px',
+                          fontWeight: 600,
+                          color: '#64748b',
+                          textAlign: 'center',
+                        }}
+                      >
+                        Brasão
+                      </div>
+                    ) : null}
                   </div>
                 );
               })()}
 
               {(() => {
                 const backTitleSelect = getSelectProps('versoTitulo', 'Título do Verso');
+                const hasBackTitle = Boolean(backTitleResolved.trim());
                 return (
                   <h2
                     {...backTitleSelect}
@@ -1446,43 +1684,82 @@ export function CertificateSheet({
                       margin: 0,
                       flex: 1,
                       textAlign: 'center',
-                      fontSize: '30px',
-                      fontWeight: 800,
-                      fontStyle: versoItalic ? 'italic' : 'normal',
-                      color: '#0f172a',
-                      fontFamily: versoFontCss,
+                      fontSize: hasBackTitle ? '30px' : '14px',
+                      fontWeight: hasBackTitle ? 800 : 600,
+                      fontStyle: hasBackTitle && versoItalic ? 'italic' : 'normal',
+                      color: hasBackTitle ? '#0f172a' : '#64748b',
+                      fontFamily: hasBackTitle
+                        ? versoFontCss
+                        : '"Segoe UI", system-ui, sans-serif',
                       letterSpacing: '0.02em',
-                      textTransform: 'uppercase',
+                      textTransform: hasBackTitle ? 'uppercase' : 'none',
                       lineHeight: 1.15,
-                      backgroundColor: 'transparent',
+                      backgroundColor:
+                        !hasBackTitle && isInteractiveEditor
+                          ? 'rgba(248, 250, 252, 0.75)'
+                          : 'transparent',
+                      border:
+                        !hasBackTitle && isInteractiveEditor ? '1.5px dashed #94a3b8' : undefined,
                       textShadow: 'none',
                       boxShadow: 'none',
-                      padding: '2px 10px',
+                      padding: hasBackTitle ? '2px 10px' : '12px 14px',
                       ...backTitleSelect.style,
                     }}
                   >
-                    {backTitleResolved}
+                    {hasBackTitle
+                      ? backTitleResolved
+                      : isInteractiveEditor
+                        ? 'Título do Verso — clique para editar'
+                        : ''}
                   </h2>
                 );
               })()}
 
               {(() => {
                 const rightBackSelect = getSelectProps('brasaoDireito', 'Brasão Direito');
+                const showRightCrestBack = Boolean(
+                  template.logoDireitaUrl || allowDefaultMarinhaCrest
+                );
                 return (
                   <div
                     {...rightBackSelect}
                     style={{
                       backgroundColor: 'transparent',
                       flexShrink: 0,
+                      minWidth: '70px',
+                      minHeight: '72px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
                       ...rightBackSelect.style,
                     }}
                   >
-                    <MarinhaBrasilCrest
-                      customUrl={template.logoDireitaUrl}
-                      label={rightCaptionText}
-                      compact={true}
-                      opacity={rightLogoOpacity}
-                    />
+                    {showRightCrestBack ? (
+                      <MarinhaBrasilCrest
+                        customUrl={template.logoDireitaUrl}
+                        label={rightCaptionText}
+                        compact={true}
+                        opacity={rightLogoOpacity}
+                      />
+                    ) : isInteractiveEditor ? (
+                      <div
+                        style={{
+                          width: '66px',
+                          height: '58px',
+                          border: '1.5px dashed #94a3b8',
+                          borderRadius: '6px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '9px',
+                          fontWeight: 600,
+                          color: '#64748b',
+                          textAlign: 'center',
+                        }}
+                      >
+                        Brasão
+                      </div>
+                    ) : null}
                   </div>
                 );
               })()}
@@ -1600,50 +1877,70 @@ export function CertificateSheet({
                   </tr>
                 </thead>
                 <tbody>
-                  {effectiveDisciplines.map((disc, idx) => (
-                    <tr key={disc.id || idx}>
+                  {effectiveDisciplines.length === 0 && isInteractiveEditor ? (
+                    <tr>
                       <td
+                        colSpan={3}
                         style={{
-                          padding: '8px 10px 8px 4px',
-                          fontSize: effectiveDisciplines.length > 6 ? '15px' : '19px',
-                          fontWeight: 500,
-                          lineHeight: 1.28,
-                          borderBottom: gridLine,
-                          borderRight: gridLine,
-                          verticalAlign: 'middle',
-                          textTransform: 'uppercase',
-                        }}
-                      >
-                        {disc.nome}
-                      </td>
-                      <td
-                        style={{
-                          padding: '8px 8px',
-                          fontSize: effectiveDisciplines.length > 6 ? '20px' : '27px',
-                          fontWeight: 500,
+                          padding: '44px 16px',
                           textAlign: 'center',
+                          fontSize: '14px',
+                          fontWeight: 600,
+                          color: '#64748b',
                           borderBottom: gridLine,
-                          borderRight: gridLine,
-                          verticalAlign: 'middle',
+                          fontFamily: '"Segoe UI", system-ui, sans-serif',
                         }}
                       >
-                        {disc.carga_horaria}
-                      </td>
-                      <td
-                        style={{
-                          padding: '8px 4px 8px 8px',
-                          fontSize: effectiveDisciplines.length > 6 ? '20px' : '24px',
-                          fontWeight: 700,
-                          textAlign: 'center',
-                          color: navyBorder,
-                          borderBottom: gridLine,
-                          verticalAlign: 'middle',
-                        }}
-                      >
-                        {disc.nota || '-'}
+                        Quadro de Disciplinas vazio — clique na tabela para adicionar linhas ou
+                        sincronizar com a turma
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    effectiveDisciplines.map((disc, idx) => (
+                      <tr key={disc.id || idx}>
+                        <td
+                          style={{
+                            padding: '8px 10px 8px 4px',
+                            fontSize: effectiveDisciplines.length > 6 ? '15px' : '19px',
+                            fontWeight: 500,
+                            lineHeight: 1.28,
+                            borderBottom: gridLine,
+                            borderRight: gridLine,
+                            verticalAlign: 'middle',
+                            textTransform: 'uppercase',
+                          }}
+                        >
+                          {disc.nome}
+                        </td>
+                        <td
+                          style={{
+                            padding: '8px 8px',
+                            fontSize: effectiveDisciplines.length > 6 ? '20px' : '27px',
+                            fontWeight: 500,
+                            textAlign: 'center',
+                            borderBottom: gridLine,
+                            borderRight: gridLine,
+                            verticalAlign: 'middle',
+                          }}
+                        >
+                          {disc.carga_horaria}
+                        </td>
+                        <td
+                          style={{
+                            padding: '8px 4px 8px 8px',
+                            fontSize: effectiveDisciplines.length > 6 ? '20px' : '24px',
+                            fontWeight: 700,
+                            textAlign: 'center',
+                            color: navyBorder,
+                            borderBottom: gridLine,
+                            verticalAlign: 'middle',
+                          }}
+                        >
+                          {disc.nota || '-'}
+                        </td>
+                      </tr>
+                    ))
+                  )}
 
                   {/* Total Hours Row (exact original: divider between Carga Horária and Nota stops above this row) */}
                   <tr>

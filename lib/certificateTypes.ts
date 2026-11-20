@@ -94,15 +94,17 @@ export interface CertificateTemplateConfig {
 
   // Visuals & Logos
   usarMolduraOriginal?: boolean;
+  estiloMolduraFrente?: 'original' | 'vetorial' | 'simples' | 'nenhuma';
   molduraFrenteUrl?: string;
   mostrarLogoEsquerda?: boolean;
   mostrarLogoCentro?: boolean;
   mostrarLogoDireita?: boolean;
+  usarBrasaoPadraoDireita?: boolean;
   logoEsquerdaUrl: string;
   logoCentroUrl?: string;
   logoCentroTexto?: string;
   mostrarLegendaLogoCentro?: boolean;
-  logoDireitaUrl: string; // '' uses built-in Marinha do Brasil crest
+  logoDireitaUrl: string; // '' uses built-in Marinha do Brasil crest unless usarBrasaoPadraoDireita === false
   logoDireitaTexto: string;
   mostrarLegendaLogoDireita?: boolean;
   tamanhoLogoEsquerda?: number;
@@ -394,15 +396,42 @@ export function createBlankTemplate(
     scope,
     turmaId: null,
     cursoId: null,
-    titulo: 'CERTIFICADO',
+    titulo: '',
     textoCorpo: '',
     textoCorpoPorAluno: {},
     textoPeriodoInicio: '',
     textoPeriodoFim: '',
+    localEmissao: '',
+    dataEmissaoExtenso: '',
+    assinaturaNome: '',
+    assinaturaPosto: '',
+    assinaturaCargo: '',
+    mostrarSegundaAssinatura: false,
+    segundaAssinaturaNome: '',
+    segundaAssinaturaPosto: '',
+    segundaAssinaturaCargo: '',
     versoTituloCurso: '',
     disciplinas: [],
     cargaHorariaTotalManual: '',
     mediaFinalManual: '',
+    usarMolduraOriginal: false,
+    estiloMolduraFrente: 'simples',
+    molduraFrenteUrl: '',
+    mostrarLogoEsquerda: true,
+    mostrarLogoCentro: true,
+    mostrarLogoDireita: true,
+    usarBrasaoPadraoDireita: false,
+    logoEsquerdaUrl: '',
+    logoCentroUrl: '',
+    logoCentroTexto: '',
+    mostrarLegendaLogoCentro: false,
+    logoDireitaUrl: '',
+    logoDireitaTexto: '',
+    mostrarLegendaLogoDireita: false,
+    marcaDaguaFrenteUrl: '',
+    marcaDaguaVersoUrl: '',
+    corBordaFrente: '#cbd5e1',
+    corBordaVerso: '#cbd5e1',
   };
 }
 

@@ -1481,8 +1481,8 @@ export default function CertificadosPage() {
       setNewModelName('');
       setNewModelStarter('blank');
       setEditorTab('frente');
-      setSelectedObject('titulo');
-      toast.success('Novo modelo criado! Já pode personalizar frente e verso.');
+      setSelectedObject(null);
+      toast.success('Novo modelo criado! Clique nos campos da folha para editar.');
     } finally {
       setCreatingNewModel(false);
     }
@@ -2691,30 +2691,51 @@ export default function CertificadosPage() {
                   </div>
                 ) : (
                   <div className="space-y-2.5">
-                    {savedTemplates.map((rec) => {
+                    {savedTemplates.map((rec, idx) => {
                       const td = rec.template_data;
                       const linkedTurmaId = rec.turma_id || td?.turmaId || null;
                       const linkedTurmaLabel = getTurmaDisplayLabel(linkedTurmaId);
+                      const isActiveModel = Boolean(
+                        (template.id && rec.id === template.id) ||
+                          (!template.id && td?.templateKey && td.templateKey === template.templateKey)
+                      );
                       return (
                         <div
                           key={rec.id}
-                          className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2"
+                          className={cn(
+                            'p-3 rounded-xl border space-y-2 transition-colors',
+                            isActiveModel
+                              ? 'bg-blue-50/70 border-blue-300'
+                              : 'bg-slate-50 border-slate-200'
+                          )}
                         >
                           <div className="flex items-center justify-between gap-2">
-                            <div className="min-w-0">
-                              <p className="text-xs font-bold text-slate-800 truncate">
-                                {td?.nomeModelo || 'Modelo de Certificado'}
-                              </p>
-                              <p className="text-[10px] text-slate-500">
-                                {td?.scope === 'expedito'
-                                  ? 'Cursos Expeditos'
-                                  : td?.scope === 'geral'
-                                    ? 'Modelo Personalizado'
-                                    : 'Formação de Marinheiros'}
-                                {rec.created_at
-                                  ? ` • ${new Date(rec.created_at).toLocaleDateString('pt-BR')}`
-                                  : ''}
-                              </p>
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span
+                                className={cn(
+                                  'w-6 h-6 rounded-lg text-[11px] font-black flex items-center justify-center shrink-0',
+                                  isActiveModel
+                                    ? 'bg-blue-900 text-white'
+                                    : 'bg-slate-200 text-slate-700'
+                                )}
+                              >
+                                {idx + 1}
+                              </span>
+                              <div className="min-w-0">
+                                <p className="text-xs font-bold text-slate-800 truncate">
+                                  {idx + 1}. {td?.nomeModelo || 'Modelo de Certificado'}
+                                </p>
+                                <p className="text-[10px] text-slate-500">
+                                  {td?.scope === 'expedito'
+                                    ? 'Cursos Expeditos'
+                                    : td?.scope === 'geral'
+                                      ? 'Modelo Personalizado'
+                                      : 'Formação de Marinheiros'}
+                                  {rec.created_at
+                                    ? ` • ${new Date(rec.created_at).toLocaleDateString('pt-BR')}`
+                                    : ''}
+                                </p>
+                              </div>
                             </div>
                             <div className="flex items-center gap-1.5 shrink-0">
                               <button
@@ -2739,13 +2760,16 @@ export default function CertificadosPage() {
                                     skipNextTurmaAutoLoadRef.current = true;
                                   }
                                   setTemplate(loaded);
-                                  setEditorTab('frente');
-                                  setSelectedObject(null);
-                                  toast.success('Modelo carregado no editor!');
+                                  toast.success('Modelo carregado na visualização ao lado!');
                                 }}
-                                className="px-2.5 py-1 rounded-lg bg-blue-900 hover:bg-blue-950 text-white text-[11px] font-bold cursor-pointer"
+                                className={cn(
+                                  'px-2.5 py-1 rounded-lg text-[11px] font-bold cursor-pointer transition-colors',
+                                  isActiveModel
+                                    ? 'bg-emerald-700 hover:bg-emerald-800 text-white'
+                                    : 'bg-blue-900 hover:bg-blue-950 text-white'
+                                )}
                               >
-                                Usar
+                                {isActiveModel ? 'Em uso' : 'Usar'}
                               </button>
                               {associateTurmaId && associateTurmaId !== linkedTurmaId && (
                                 <button

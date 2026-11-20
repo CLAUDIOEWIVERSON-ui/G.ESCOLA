@@ -461,7 +461,11 @@ export function CertificateInspectorPanel({
                 ? 'Imagem configurada'
                 : isCenter
                   ? 'Sem imagem no brasão central'
-                  : 'Brasão padrão do sistema'}
+                  : side === 'right' && template.usarBrasaoPadraoDireita === false
+                    ? 'Brasão vazio (clique em Inserir)'
+                    : side === 'left'
+                      ? 'Brasão vazio (clique em Inserir)'
+                      : 'Brasão padrão do sistema'}
             </span>
             <div className="flex items-center gap-1.5 shrink-0">
               <label className="px-2.5 py-1 rounded-lg bg-blue-900 hover:bg-blue-950 text-white text-[11px] font-bold cursor-pointer flex items-center gap-1">
@@ -492,25 +496,50 @@ export function CertificateInspectorPanel({
                   </button>
                 )
               ) : (
-                <button
-                  type="button"
-                  onClick={() =>
-                    setTemplate((prev) => ({
-                      ...prev,
-                      [uploadField]: defaultUrl,
-                      ...(uploadField === 'logoDireitaUrl'
-                        ? {
-                            mostrarLegendaLogoDireita: true,
-                            logoDireitaTexto: prev.logoDireitaTexto || 'MARINHA DO BRASIL',
-                          }
-                        : {}),
-                    }))
-                  }
-                  className="p-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-600 cursor-pointer"
-                  title="Restaurar imagem padrão"
-                >
-                  <RotateCcw size={12} />
-                </button>
+                <>
+                  {(currentUrl ||
+                    (side === 'right' && template.usarBrasaoPadraoDireita !== false)) && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setTemplate((prev) => ({
+                          ...prev,
+                          [uploadField]: '',
+                          ...(side === 'right'
+                            ? {
+                                usarBrasaoPadraoDireita: false,
+                                mostrarLegendaLogoDireita: false,
+                              }
+                            : {}),
+                        }))
+                      }
+                      className="p-1.5 rounded-lg bg-white border border-slate-200 hover:bg-rose-50 text-rose-600 cursor-pointer"
+                      title="Limpar brasão"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setTemplate((prev) => ({
+                        ...prev,
+                        [uploadField]: defaultUrl,
+                        ...(uploadField === 'logoDireitaUrl'
+                          ? {
+                              usarBrasaoPadraoDireita: true,
+                              mostrarLegendaLogoDireita: true,
+                              logoDireitaTexto: prev.logoDireitaTexto || 'MARINHA DO BRASIL',
+                            }
+                          : {}),
+                      }))
+                    }
+                    className="p-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-600 cursor-pointer"
+                    title="Restaurar brasão padrão"
+                  >
+                    <RotateCcw size={12} />
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -2228,71 +2257,91 @@ export function CertificateInspectorPanel({
         {selectedObject === 'molduraFrente' && (
           <div className="space-y-4">
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Tipo de Moldura (Frente)
-                </label>
-                <select
-                  value={template.usarMolduraOriginal !== false ? 'original' : 'vetorial'}
-                  onChange={(e) =>
-                    setTemplate((prev) => ({
-                      ...prev,
-                      usarMolduraOriginal: e.target.value === 'original',
-                    }))
-                  }
-                  className="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-xl text-xs"
-                >
-                  <option value="original">Moldura Original (Imagem Base)</option>
-                  <option value="vetorial">Moldura Vetorial Colorida</option>
-                </select>
-              </div>
+              {(() => {
+                const currentFrameStyle =
+                  template.estiloMolduraFrente ??
+                  (template.usarMolduraOriginal !== false ? 'original' : 'vetorial');
+                return (
+                  <>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Tipo de Moldura (Frente)
+                      </label>
+                      <select
+                        value={currentFrameStyle}
+                        onChange={(e) => {
+                          const nextStyle = e.target.value as
+                            | 'original'
+                            | 'vetorial'
+                            | 'simples'
+                            | 'nenhuma';
+                          setTemplate((prev) => ({
+                            ...prev,
+                            estiloMolduraFrente: nextStyle,
+                            usarMolduraOriginal: nextStyle === 'original',
+                          }));
+                        }}
+                        className="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-xl text-xs"
+                      >
+                        <option value="simples">Moldura Simples (Linha Limpa)</option>
+                        <option value="nenhuma">Sem Moldura (Folha em Branco)</option>
+                        <option value="original">Moldura Original (Imagem Base)</option>
+                        <option value="vetorial">Moldura Vetorial Náutica</option>
+                      </select>
+                    </div>
 
-              {template.usarMolduraOriginal === false ? (
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Cor da Moldura Vetorial (Frente)
-                  </label>
-                  <input
-                    type="color"
-                    value={template.corBordaFrente}
-                    onChange={(e) =>
-                      setTemplate((prev) => ({ ...prev, corBordaFrente: e.target.value }))
-                    }
-                    className="w-full h-10 rounded-lg border border-slate-200 cursor-pointer"
-                  />
-                </div>
-              ) : (
-                <div className="flex items-center justify-between gap-2 p-2.5 rounded-lg bg-white border border-slate-200">
-                  <span className="text-[11px] font-semibold text-slate-700">
-                    Imagem da Moldura (Frente)
-                  </span>
-                  <div className="flex items-center gap-1.5">
-                    <label className="px-2.5 py-1 rounded-lg bg-blue-900 hover:bg-blue-950 text-white text-[11px] font-bold cursor-pointer flex items-center gap-1">
-                      <Upload size={11} />
-                      <span>Trocar</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => handleImageUpload('molduraFrenteUrl', e)}
-                        className="hidden"
-                      />
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setTemplate((prev) => ({
-                          ...prev,
-                          molduraFrenteUrl: '/assets/certificado-moldura-frente.png',
-                        }))
-                      }
-                      className="p-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-600 cursor-pointer"
-                      title="Restaurar padrão"
-                    >
-                      <RotateCcw size={12} />
-                    </button>
-                  </div>
-                </div>
-              )}
+                    {currentFrameStyle === 'vetorial' || currentFrameStyle === 'simples' ? (
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Cor da Moldura (Frente)
+                        </label>
+                        <input
+                          type="color"
+                          value={template.corBordaFrente}
+                          onChange={(e) =>
+                            setTemplate((prev) => ({
+                              ...prev,
+                              corBordaFrente: e.target.value,
+                            }))
+                          }
+                          className="w-full h-10 rounded-lg border border-slate-200 cursor-pointer"
+                        />
+                      </div>
+                    ) : currentFrameStyle === 'original' ? (
+                      <div className="flex items-center justify-between gap-2 p-2.5 rounded-lg bg-white border border-slate-200">
+                        <span className="text-[11px] font-semibold text-slate-700">
+                          Imagem da Moldura (Frente)
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <label className="px-2.5 py-1 rounded-lg bg-blue-900 hover:bg-blue-950 text-white text-[11px] font-bold cursor-pointer flex items-center gap-1">
+                            <Upload size={11} />
+                            <span>Trocar</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handleImageUpload('molduraFrenteUrl', e)}
+                              className="hidden"
+                            />
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setTemplate((prev) => ({
+                                ...prev,
+                                molduraFrenteUrl: '/assets/certificado-moldura-frente.png',
+                              }))
+                            }
+                            className="p-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-600 cursor-pointer"
+                            title="Restaurar padrão"
+                          >
+                            <RotateCcw size={12} />
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
+                  </>
+                );
+              })()}
             </div>
           </div>
         )}
