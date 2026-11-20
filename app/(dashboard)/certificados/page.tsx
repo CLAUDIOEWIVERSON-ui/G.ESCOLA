@@ -161,6 +161,7 @@ export default function CertificadosPage() {
   const [saveAsNewName, setSaveAsNewName] = useState('');
   const [savingAsNewModel, setSavingAsNewModel] = useState(false);
   const [associateTurmaId, setAssociateTurmaId] = useState<string>('');
+  const [showAssociatePanel, setShowAssociatePanel] = useState<boolean>(false);
   const [associatingTurma, setAssociatingTurma] = useState(false);
   const [syncTurmaDatesOnAssociate, setSyncTurmaDatesOnAssociate] = useState(false);
   const [workspaceHydrated, setWorkspaceHydrated] = useState(false);
@@ -1719,6 +1720,7 @@ export default function CertificadosPage() {
       });
       setSelectedTurmaId(targetTurmaId);
       setAssociateTurmaId(targetTurmaId);
+      setShowAssociatePanel(false);
       setCustomCourseName(formatCourseTitleCasePT(courseDisplay));
 
       toast.success(
@@ -2163,179 +2165,227 @@ export default function CertificadosPage() {
         </div>
       )}
 
-      {/* Turma & Alunos Bar */}
-      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-          {/* Category Scope Filter */}
-          <div className="md:col-span-3 space-y-1.5">
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600">
-              Tipo de Curso / Turma
-            </label>
-            <select
-              value={turmaScopeFilter}
-              onChange={(e) => {
-                setTurmaScopeFilter(e.target.value as any);
-                setSelectedTurmaId('');
-              }}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-            >
-              <option value="all">Todas as Turmas</option>
-              <option value="expedito">Cursos Expeditos</option>
-              <option value="formacao">Formação de Marinheiros / Carreira</option>
-            </select>
+      {/* Turma & Alunos Bar (Resumo intuitivo: Filtro + Turma + Vínculo + Emissão) */}
+      <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 flex-1 min-w-0">
+            {/* Filtro de Curso */}
+            <div className="sm:col-span-3 space-y-1">
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                Categoria
+              </label>
+              <select
+                value={turmaScopeFilter}
+                onChange={(e) => {
+                  setTurmaScopeFilter(e.target.value as any);
+                  setSelectedTurmaId('');
+                }}
+                className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              >
+                <option value="all">Todas as Turmas</option>
+                <option value="expedito">Cursos Expeditos</option>
+                <option value="formacao">Formação de Marinheiros</option>
+              </select>
+            </div>
+
+            {/* Turma Principal */}
+            <div className="sm:col-span-5 space-y-1">
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                Turma / Alunos
+              </label>
+              <select
+                value={selectedTurmaId}
+                onChange={(e) => setSelectedTurmaId(e.target.value)}
+                className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              >
+                <option value="">-- Modo Livre (Sem turma) --</option>
+                {filteredTurmas.map((turma: any, idx: number) => (
+                  <option key={turma.id} value={turma.id}>
+                    {idx + 1}. {getCleanTurmaName(turma.nome)} —{' '}
+                    {turma.curso?.nome || 'Curso'} ({turma.ano || ''})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Vínculo Compacto do Modelo */}
+            <div className="sm:col-span-4 space-y-1">
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                Vínculo do Modelo
+              </label>
+              {template.turmaId ? (
+                <div className="h-[34px] px-2.5 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-between gap-1.5 text-emerald-800 text-xs font-bold">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <CheckCircle2 size={13} className="shrink-0 text-emerald-600" />
+                    <span className="truncate" title={getTurmaDisplayLabel(template.turmaId) || ''}>
+                      {getTurmaDisplayLabel(template.turmaId) || 'Vinculado'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setShowAssociatePanel((v) => !v)}
+                      className="px-1.5 py-0.5 rounded-md bg-white/80 hover:bg-white border border-emerald-200 text-[10px] font-bold text-emerald-800 cursor-pointer"
+                      title="Vincular este modelo a outra turma"
+                    >
+                      Trocar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleUnlinkTemplateTurma}
+                      className="p-1 rounded-md hover:bg-emerald-200/70 text-emerald-900 cursor-pointer"
+                      title="Desvincular turma deste modelo"
+                    >
+                      <Unlink size={12} />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="h-[34px] flex items-center gap-1.5">
+                  {selectedTurmaId ? (
+                    <button
+                      type="button"
+                      onClick={() => handleAssociateTemplateToTurma(selectedTurmaId)}
+                      disabled={associatingTurma}
+                      className="flex-1 h-full px-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-900 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 truncate"
+                      title="Salvar vínculo do modelo atual com a turma selecionada"
+                    >
+                      {associatingTurma ? (
+                        <Loader2 size={13} className="animate-spin shrink-0" />
+                      ) : (
+                        <Link2 size={13} className="shrink-0" />
+                      )}
+                      <span className="truncate">Vincular a esta turma</span>
+                    </button>
+                  ) : (
+                    <div className="flex-1 h-full px-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-xs font-semibold flex items-center truncate">
+                      Modelo livre
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setShowAssociatePanel((v) => !v)}
+                    className={cn(
+                      'h-full px-2.5 rounded-xl border text-xs font-bold flex items-center gap-1 cursor-pointer shrink-0 transition-colors',
+                      showAssociatePanel
+                        ? 'bg-slate-900 text-white border-slate-900'
+                        : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'
+                    )}
+                    title="Escolher turma e opções de sincronização"
+                  >
+                    <Link2 size={12} />
+                    <span>{selectedTurmaId ? 'Outra' : 'Vincular'}</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Turma Selector */}
-          <div className="md:col-span-5 space-y-1.5">
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600">
-              Turma Selecionada
-            </label>
-            <select
-              value={selectedTurmaId}
-              onChange={(e) => setSelectedTurmaId(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-            >
-              <option value="">-- Modo Livre / Modelo Base (Sem Turma Vinculada) --</option>
-              {filteredTurmas.map((turma: any, idx: number) => (
-                <option key={turma.id} value={turma.id}>
-                  {idx + 1}. {getCleanTurmaName(turma.nome)} —{' '}
-                  {turma.curso?.nome || 'Curso'} ({turma.ano || ''})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Quick Actions */}
-          <div className="md:col-span-4 flex flex-wrap items-center gap-2 justify-end">
-            <button
-              type="button"
-              onClick={() => {
-                setFullscreenZoom(100);
-                setFullscreenPreview(true);
-              }}
-              className="px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
-              title="Visualizar frente e verso em tela toda"
-            >
-              <Maximize2 size={14} />
-              <span>Tela Toda</span>
-            </button>
-
+          {/* Ação Principal de Emissão */}
+          <div className="flex items-center justify-end gap-2 shrink-0">
             <button
               type="button"
               onClick={handleDownloadIndividualPDF}
               disabled={exportingPDF}
-              className="px-3.5 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+              className="h-[34px] px-4 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+              title="Baixar certificado atual em PDF (Frente e Verso)"
             >
               {exportingPDF && !batchProgress ? (
                 <Loader2 size={14} className="animate-spin" />
               ) : (
                 <Download size={14} />
               )}
-              <span>Baixar PDF (Frente e Verso)</span>
+              <span>Baixar PDF</span>
             </button>
           </div>
         </div>
 
-        {/* Associate Working Model to Any Desired Turma */}
-        <div className="pt-3 border-t border-slate-200 flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-slate-50/80 p-3 rounded-xl border border-slate-200/80">
-          <div className="flex flex-wrap items-center gap-2 min-w-0">
-            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
-              <Link2 size={14} className="text-blue-700 shrink-0" />
-              <span>Associação do Modelo Atual:</span>
-            </div>
-            {template.turmaId ? (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-bold">
-                <CheckCircle2 size={12} className="shrink-0" />
-                <span className="truncate max-w-[320px]">
-                  Vinculado à: {getTurmaDisplayLabel(template.turmaId) || 'Turma selecionada'}
-                </span>
-                <button
-                  type="button"
-                  onClick={handleUnlinkTemplateTurma}
-                  className="ml-1 p-0.5 rounded hover:bg-emerald-200/70 text-emerald-900 cursor-pointer"
-                  title="Desvincular turma deste modelo"
-                >
-                  <Unlink size={11} />
-                </button>
-              </div>
-            ) : (
-              <span className="px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-slate-600 text-[11px] font-semibold">
-                Sem turma associada (modelo livre)
+        {/* Painel compacto sob demanda para escolher turma de associação */}
+        {showAssociatePanel && (
+          <div className="pt-2.5 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2.5 bg-slate-50/90 p-2.5 rounded-xl">
+            <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
+              <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1 shrink-0">
+                <Link2 size={13} className="text-blue-700" />
+                Associar modelo à:
               </span>
-            )}
+              <select
+                value={associateTurmaId}
+                onChange={(e) => setAssociateTurmaId(e.target.value)}
+                className="px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 min-w-[210px] max-w-xs flex-1 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              >
+                <option value="">-- Escolha a turma --</option>
+                {allActiveTurmas.map((turma: any, idx: number) => (
+                  <option key={turma.id} value={turma.id}>
+                    {idx + 1}. {getCleanTurmaName(turma.nome)} — {turma.curso?.nome || 'Curso'} (
+                    {turma.ano || ''})
+                  </option>
+                ))}
+              </select>
+
+              <label className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 cursor-pointer px-2 py-1 rounded-lg bg-white border border-slate-200">
+                <input
+                  type="checkbox"
+                  checked={syncTurmaDatesOnAssociate}
+                  onChange={(e) => setSyncTurmaDatesOnAssociate(e.target.checked)}
+                  className="rounded border-slate-300"
+                />
+                <span>Sincronizar datas e disciplinas</span>
+              </label>
+            </div>
+
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                type="button"
+                onClick={() => handleAssociateTemplateToTurma()}
+                disabled={associatingTurma || !associateTurmaId}
+                className="px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-800 hover:bg-blue-900 text-white shadow-2xs transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+              >
+                {associatingTurma ? (
+                  <Loader2 size={13} className="animate-spin" />
+                ) : (
+                  <CheckCircle2 size={13} />
+                )}
+                <span>Confirmar</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowAssociatePanel(false)}
+                className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-500 cursor-pointer"
+                title="Fechar opções de vínculo"
+              >
+                <X size={13} />
+              </button>
+            </div>
           </div>
+        )}
 
-          <div className="flex flex-wrap items-center gap-2">
-            <select
-              value={associateTurmaId}
-              onChange={(e) => setAssociateTurmaId(e.target.value)}
-              className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 min-w-[230px] max-w-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-            >
-              <option value="">-- Escolha a turma para associar --</option>
-              {allActiveTurmas.map((turma: any, idx: number) => (
-                <option key={turma.id} value={turma.id}>
-                  {idx + 1}. {getCleanTurmaName(turma.nome)} — {turma.curso?.nome || 'Curso'} (
-                  {turma.ano || ''})
-                </option>
-              ))}
-            </select>
-
-            <label className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 cursor-pointer px-2 py-1 rounded-lg bg-white border border-slate-200">
-              <input
-                type="checkbox"
-                checked={syncTurmaDatesOnAssociate}
-                onChange={(e) => setSyncTurmaDatesOnAssociate(e.target.checked)}
-                className="rounded border-slate-300"
-              />
-              <span>Atualizar datas/disciplinas pela turma</span>
-            </label>
-
-            <button
-              type="button"
-              onClick={() => handleAssociateTemplateToTurma()}
-              disabled={associatingTurma || !associateTurmaId}
-              className="px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-800 hover:bg-blue-900 text-white shadow-2xs transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
-            >
-              {associatingTurma ? (
-                <Loader2 size={13} className="animate-spin" />
-              ) : (
-                <Link2 size={13} />
-              )}
-              <span>Associar Modelo à Turma</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Selected Turma Students Strip */}
+        {/* Faixa de Alunos da Turma Selecionada */}
         {selectedTurmaId && (
-          <div className="pt-3 border-t border-slate-200 space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="pt-2.5 border-t border-slate-200 space-y-2.5">
+            <div className="flex flex-wrap items-center justify-between gap-2.5">
               <div className="flex flex-wrap items-center gap-2">
-                <Users size={15} className="text-blue-700" />
-                <span className="text-xs font-bold text-slate-800">
-                  Alunos da Turma ({turmaStudents.length})
-                </span>
+                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
+                  <Users size={14} className="text-blue-700" />
+                  <span>Alunos ({turmaStudents.length})</span>
+                </div>
                 {customBodyStudentsCount > 0 && (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-amber-800 text-[10px] font-bold">
                     <Pencil size={10} />
-                    <span>
-                      {customBodyStudentsCount}{' '}
-                      {customBodyStudentsCount === 1 ? 'com texto individual' : 'com texto individual'}
-                    </span>
+                    <span>{customBodyStudentsCount} texto individual</span>
                   </span>
                 )}
-                <label className="inline-flex items-center gap-1.5 ml-3 text-xs text-slate-600 cursor-pointer">
+                <label className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-600 cursor-pointer bg-slate-50 border border-slate-200 px-2 py-1 rounded-lg">
                   <input
                     type="checkbox"
                     checked={useTurmaStudentGrades}
                     onChange={(e) => setUseTurmaStudentGrades(e.target.checked)}
                     className="rounded border-slate-300"
                   />
-                  <span>Usar notas individuais do Boletim no Verso</span>
+                  <span>Notas do Boletim no Verso</span>
                 </label>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-1.5">
                 <div className="relative">
                   <Search
                     size={13}
@@ -2345,8 +2395,8 @@ export default function CertificadosPage() {
                     type="text"
                     value={studentSearch}
                     onChange={(e) => setStudentSearch(e.target.value)}
-                    placeholder="Filtrar aluno..."
-                    className="pl-7 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg w-44 focus:outline-none"
+                    placeholder="Buscar aluno..."
+                    className="pl-7 pr-2.5 py-1 text-xs bg-slate-50 border border-slate-200 rounded-lg w-36 sm:w-44 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                   />
                 </div>
 
@@ -2361,30 +2411,31 @@ export default function CertificadosPage() {
                           setBatchSelectedIds(turmaStudents.map((s) => s.id));
                         }
                       }}
-                      className="px-2.5 py-1.5 text-[11px] font-bold rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 cursor-pointer"
+                      className="px-2.5 py-1 text-[11px] font-bold rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 cursor-pointer"
                     >
                       {batchSelectedIds.length === turmaStudents.length
-                        ? 'Desmarcar Todos'
-                        : 'Selecionar Todos'}
+                        ? 'Desmarcar'
+                        : 'Marcar todos'}
                     </button>
 
                     <button
                       type="button"
                       onClick={handleDownloadBatchPDF}
                       disabled={exportingPDF || batchSelectedIds.length === 0}
-                      className="px-3 py-1.5 text-xs font-bold rounded-lg bg-blue-800 hover:bg-blue-900 text-white flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                      className="px-3 py-1 text-xs font-bold rounded-lg bg-blue-800 hover:bg-blue-900 text-white flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                      title="Gerar PDF em lote para os alunos marcados"
                     >
                       {batchProgress ? (
                         <>
                           <Loader2 size={13} className="animate-spin" />
                           <span>
-                            Lote {batchProgress.current}/{batchProgress.total}...
+                            {batchProgress.current}/{batchProgress.total}
                           </span>
                         </>
                       ) : (
                         <>
                           <Download size={13} />
-                          <span>Gerar Lote ({batchSelectedIds.length})</span>
+                          <span>Lote PDF ({batchSelectedIds.length})</span>
                         </>
                       )}
                     </button>
@@ -2394,16 +2445,16 @@ export default function CertificadosPage() {
             </div>
 
             {loadingTurmaData ? (
-              <div className="py-4 flex items-center justify-center gap-2 text-xs text-slate-500">
-                <Loader2 size={15} className="animate-spin" />
+              <div className="py-3 flex items-center justify-center gap-2 text-xs text-slate-500">
+                <Loader2 size={14} className="animate-spin" />
                 <span>Carregando alunos e notas...</span>
               </div>
             ) : turmaStudents.length === 0 ? (
-              <div className="py-3 px-4 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800">
+              <div className="py-2.5 px-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800">
                 Nenhum aluno matriculado nesta turma. Você ainda pode editar o modelo base normalmente.
               </div>
             ) : (
-              <div className="flex items-center gap-2 overflow-x-auto pb-1 custom-scrollbar">
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 custom-scrollbar">
                 {filteredTurmaStudents.map((st: any, idx: number) => {
                   const isActive = st.id === selectedStudentId;
                   const isBatchChecked = batchSelectedIds.includes(st.id);
@@ -2438,7 +2489,7 @@ export default function CertificadosPage() {
                       <button
                         type="button"
                         onClick={() => setSelectedStudentId(st.id)}
-                        className="font-semibold cursor-pointer text-left max-w-[210px] truncate flex items-center gap-1"
+                        className="font-semibold cursor-pointer text-left max-w-[200px] truncate flex items-center gap-1"
                       >
                         <span className="truncate">
                           {idx + 1}. {display}
