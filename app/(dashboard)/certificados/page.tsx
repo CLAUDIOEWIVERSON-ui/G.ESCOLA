@@ -12,6 +12,7 @@ import {
   Users,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Search,
   CheckCircle2,
   Loader2,
@@ -79,9 +80,17 @@ interface SavedTemplateRecord {
   data_emissao?: string;
 }
 
+type TurmaCategoryFilter =
+  | 'all'
+  | 'expedito'
+  | 'especial'
+  | 'formacao'
+  | 'ead'
+  | 'exterior';
+
 interface CertificateWorkspaceSnapshot {
   template: CertificateTemplateConfig;
-  turmaScopeFilter: 'all' | 'expedito' | 'formacao';
+  turmaScopeFilter: TurmaCategoryFilter;
   selectedTurmaId: string;
   selectedStudentId: string;
   associateTurmaId: string;
@@ -125,7 +134,7 @@ export default function CertificadosPage() {
   const bodyTextareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   // Class & Student Selection State
-  const [turmaScopeFilter, setTurmaScopeFilter] = useState<'all' | 'expedito' | 'formacao'>('all');
+  const [turmaScopeFilter, setTurmaScopeFilter] = useState<TurmaCategoryFilter>('all');
   const [selectedTurmaId, setSelectedTurmaId] = useState<string>('');
   const [turmaStudents, setTurmaStudents] = useState<any[]>([]);
   const [turmaGradesMap, setTurmaGradesMap] = useState<Record<string, any[]>>({});
@@ -135,6 +144,8 @@ export default function CertificadosPage() {
   const [selectedStudentId, setSelectedStudentId] = useState<string>('');
   const [studentSearch, setStudentSearch] = useState('');
   const [batchSelectedIds, setBatchSelectedIds] = useState<string[]>([]);
+  const [showStudentsWindow, setShowStudentsWindow] = useState<boolean>(false);
+  const studentsWindowRef = useRef<HTMLDivElement | null>(null);
 
   // Manual/standalone student override (used when no turma/student is selected, or edited directly)
   const [customStudentRank, setCustomStudentRank] = useState('1º Cabo');
@@ -194,6 +205,29 @@ export default function CertificadosPage() {
   const [batchRenderTarget, setBatchRenderTarget] = useState<{
     student: CertificateStudentContext;
   } | null>(null);
+
+  useEffect(() => {
+    if (!showStudentsWindow) return;
+    const handleMouseDown = (e: MouseEvent) => {
+      if (
+        studentsWindowRef.current &&
+        !studentsWindowRef.current.contains(e.target as Node)
+      ) {
+        setShowStudentsWindow(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowStudentsWindow(false);
+      }
+    };
+    document.addEventListener('mousedown', handleMouseDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleMouseDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showStudentsWindow]);
 
   // Auto-fit preview scale based on container width
   useEffect(() => {
@@ -319,7 +353,10 @@ export default function CertificadosPage() {
           if (
             parsed.turmaScopeFilter === 'all' ||
             parsed.turmaScopeFilter === 'expedito' ||
-            parsed.turmaScopeFilter === 'formacao'
+            parsed.turmaScopeFilter === 'especial' ||
+            parsed.turmaScopeFilter === 'formacao' ||
+            parsed.turmaScopeFilter === 'ead' ||
+            parsed.turmaScopeFilter === 'exterior'
           ) {
             setTurmaScopeFilter(parsed.turmaScopeFilter);
           }
@@ -451,46 +488,91 @@ export default function CertificadosPage() {
     syncTurmaDatesOnAssociate,
   ]);
 
-  // Filter Turmas for Expeditos and Formação de Marinheiros / All
-  const filteredTurmas = useMemo(() => {
-    const nonArchived = (turmas || []).filter((t: any) => {
-      const st = String(t.status || '').toLowerCase();
-      return !t.arquivada && st !== 'arquivada' && st !== 'cancelada';
-    });
-
-    if (turmaScopeFilter === 'expedito') {
-      return nonArchived.filter((t: any) => {
-        const tCat = String(t.categoria || '').toLowerCase();
-        const cCat = String(t.curso?.categoria || '').toLowerCase();
-        const cName = String(t.curso?.nome || t.nome || '').toLowerCase();
-        return tCat === 'expedito' || cCat === 'expedito' || cName.includes('expedito');
-      });
-    }
-
-    if (turmaScopeFilter === 'formacao') {
-      return nonArchived.filter((t: any) => {
-        const tCat = String(t.categoria || '').toLowerCase();
-        const cCat = String(t.curso?.categoria || '').toLowerCase();
-        const cName = String(t.curso?.nome || t.nome || '').toLowerCase();
-        return (
-          cName.includes('marinheiro') ||
-          cName.includes('formação') ||
-          cName.includes('formacao') ||
-          tCat === 'carreira' ||
-          cCat === 'carreira'
-        );
-      });
-    }
-
-    return nonArchived;
-  }, [turmas, turmaScopeFilter]);
+  const isActiveTurma = useCallback((t: any): boolean => {
+    const statusLower = String(t?.status || 'ativa').toLowerCase().trim();
+    const isArquivada =
+      Boolean(t?.arquivada) === true ||
+      statusLower === 'arquivada' ||
+      statusLower === 'arquivado';
+    const isConcluida =
+      statusLower === 'concluida' ||
+      statusLower === 'concluída' ||
+      statusLower === 'concluido' ||
+      statusLower === 'concluído' ||
+      statusLower === 'cancelada' ||
+      statusLower === 'cancelado';
+    const isPreInscrito =
+      statusLower.includes('pré-inscrit') || statusLower.includes('pre-inscrit');
+    return !isArquivada && !isConcluida && !isPreInscrito;
+  }, []);
 
   const allActiveTurmas = useMemo(() => {
-    return (turmas || []).filter((t: any) => {
-      const st = String(t.status || '').toLowerCase();
-      return !t.arquivada && st !== 'arquivada' && st !== 'cancelada';
+    return (turmas || []).filter((t: any) => isActiveTurma(t));
+  }, [turmas, isActiveTurma]);
+
+  // Filter strictly Active Turmas across all categories (Expedito, Especial, Carreira/Formação, EaD, Exterior)
+  const filteredTurmas = useMemo(() => {
+    if (turmaScopeFilter === 'all') {
+      return allActiveTurmas;
+    }
+
+    const cursoById = new Map((cursos || []).map((c: any) => [c.id, c]));
+
+    return allActiveTurmas.filter((t: any) => {
+      const courseObj = (t.curso_id ? cursoById.get(t.curso_id) : null) || t.curso;
+      const tCat = String(t.categoria || '').toLowerCase().trim();
+      const cCat = String(courseObj?.categoria || '').toLowerCase().trim();
+      const cName = String(courseObj?.nome || t.nome || '').toLowerCase();
+
+      if (turmaScopeFilter === 'expedito') {
+        return tCat === 'expedito' || cCat === 'expedito' || cName.includes('expedito');
+      }
+
+      if (turmaScopeFilter === 'especial') {
+        return (
+          tCat === 'especial' ||
+          tCat === 'especiais' ||
+          cCat === 'especial' ||
+          cCat === 'especiais'
+        );
+      }
+
+      if (turmaScopeFilter === 'formacao') {
+        return (
+          tCat === 'carreira' ||
+          tCat === 'carreiras' ||
+          cCat === 'carreira' ||
+          cCat === 'carreiras' ||
+          cName.includes('marinheiro') ||
+          cName.includes('formação') ||
+          cName.includes('formacao')
+        );
+      }
+
+      if (turmaScopeFilter === 'ead') {
+        return (
+          tCat === 'ead' ||
+          cCat === 'ead' ||
+          tCat.includes('distância') ||
+          tCat.includes('distancia') ||
+          cCat.includes('distância') ||
+          cCat.includes('distancia') ||
+          cName.includes('ead')
+        );
+      }
+
+      if (turmaScopeFilter === 'exterior') {
+        return (
+          t.internacional === true ||
+          courseObj?.internacional === true ||
+          tCat === 'exterior' ||
+          cCat === 'exterior'
+        );
+      }
+
+      return true;
     });
-  }, [turmas]);
+  }, [allActiveTurmas, cursos, turmaScopeFilter]);
 
   const getTurmaDisplayLabel = useCallback(
     (turmaId?: string | null) => {
@@ -2177,28 +2259,35 @@ export default function CertificadosPage() {
               <select
                 value={turmaScopeFilter}
                 onChange={(e) => {
-                  setTurmaScopeFilter(e.target.value as any);
+                  setTurmaScopeFilter(e.target.value as TurmaCategoryFilter);
                   setSelectedTurmaId('');
                 }}
                 className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
               >
-                <option value="all">Todas as Turmas</option>
-                <option value="expedito">Cursos Expeditos</option>
-                <option value="formacao">Formação de Marinheiros</option>
+                <option value="all">Todas (Ativas)</option>
+                <option value="expedito">Expedito</option>
+                <option value="especial">Especial</option>
+                <option value="formacao">Carreira / Formação</option>
+                <option value="ead">EaD</option>
+                <option value="exterior">Exterior</option>
               </select>
             </div>
 
             {/* Turma Principal */}
             <div className="sm:col-span-5 space-y-1">
               <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                Turma / Alunos
+                Turma Ativa / Alunos
               </label>
               <select
                 value={selectedTurmaId}
                 onChange={(e) => setSelectedTurmaId(e.target.value)}
                 className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
               >
-                <option value="">-- Modo Livre (Sem turma) --</option>
+                <option value="">
+                  {filteredTurmas.length === 0
+                    ? '-- Modo Livre (Nenhuma turma ativa nesta categoria) --'
+                    : '-- Modo Livre (Sem turma) --'}
+                </option>
                 {filteredTurmas.map((turma: any, idx: number) => (
                   <option key={turma.id} value={turma.id}>
                     {idx + 1}. {getCleanTurmaName(turma.nome)} —{' '}
@@ -2359,158 +2448,317 @@ export default function CertificadosPage() {
           </div>
         )}
 
-        {/* Faixa de Alunos da Turma Selecionada */}
+        {/* Seletor Compacto + Janela Empilhada de Alunos (quando acionada) */}
         {selectedTurmaId && (
-          <div className="pt-2.5 border-t border-slate-200 space-y-2.5">
-            <div className="flex flex-wrap items-center justify-between gap-2.5">
-              <div className="flex flex-wrap items-center gap-2">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
-                  <Users size={14} className="text-blue-700" />
+          <div className="pt-2.5 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2.5">
+            <div className="flex flex-wrap items-center gap-2 min-w-0">
+              {/* Trigger que abre a janela vertical empilhada de alunos */}
+              <div ref={studentsWindowRef} className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowStudentsWindow((v) => !v)}
+                  className={cn(
+                    'h-[34px] px-3 rounded-xl border text-xs font-bold flex items-center gap-2 cursor-pointer transition-all',
+                    showStudentsWindow
+                      ? 'bg-blue-900 text-white border-blue-950 shadow-xs'
+                      : 'bg-slate-50 hover:bg-slate-100 text-slate-800 border-slate-200'
+                  )}
+                  title="Abrir janela com a lista empilhada de alunos da turma"
+                >
+                  <Users
+                    size={14}
+                    className={showStudentsWindow ? 'text-blue-200 shrink-0' : 'text-blue-700 shrink-0'}
+                  />
                   <span>Alunos ({turmaStudents.length})</span>
-                </div>
-                {customBodyStudentsCount > 0 && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-amber-800 text-[10px] font-bold">
-                    <Pencil size={10} />
-                    <span>{customBodyStudentsCount} texto individual</span>
-                  </span>
-                )}
-                <label className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-600 cursor-pointer bg-slate-50 border border-slate-200 px-2 py-1 rounded-lg">
-                  <input
-                    type="checkbox"
-                    checked={useTurmaStudentGrades}
-                    onChange={(e) => setUseTurmaStudentGrades(e.target.checked)}
-                    className="rounded border-slate-300"
-                  />
-                  <span>Notas do Boletim no Verso</span>
-                </label>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-1.5">
-                <div className="relative">
-                  <Search
-                    size={13}
-                    className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"
-                  />
-                  <input
-                    type="text"
-                    value={studentSearch}
-                    onChange={(e) => setStudentSearch(e.target.value)}
-                    placeholder="Buscar aluno..."
-                    className="pl-7 pr-2.5 py-1 text-xs bg-slate-50 border border-slate-200 rounded-lg w-36 sm:w-44 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                  />
-                </div>
-
-                {turmaStudents.length > 0 && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (batchSelectedIds.length === turmaStudents.length) {
-                          setBatchSelectedIds([]);
-                        } else {
-                          setBatchSelectedIds(turmaStudents.map((s) => s.id));
-                        }
-                      }}
-                      className="px-2.5 py-1 text-[11px] font-bold rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 cursor-pointer"
-                    >
-                      {batchSelectedIds.length === turmaStudents.length
-                        ? 'Desmarcar'
-                        : 'Marcar todos'}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={handleDownloadBatchPDF}
-                      disabled={exportingPDF || batchSelectedIds.length === 0}
-                      className="px-3 py-1 text-xs font-bold rounded-lg bg-blue-800 hover:bg-blue-900 text-white flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                      title="Gerar PDF em lote para os alunos marcados"
-                    >
-                      {batchProgress ? (
-                        <>
-                          <Loader2 size={13} className="animate-spin" />
-                          <span>
-                            {batchProgress.current}/{batchProgress.total}
-                          </span>
-                        </>
-                      ) : (
-                        <>
-                          <Download size={13} />
-                          <span>Lote PDF ({batchSelectedIds.length})</span>
-                        </>
-                      )}
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {loadingTurmaData ? (
-              <div className="py-3 flex items-center justify-center gap-2 text-xs text-slate-500">
-                <Loader2 size={14} className="animate-spin" />
-                <span>Carregando alunos e notas...</span>
-              </div>
-            ) : turmaStudents.length === 0 ? (
-              <div className="py-2.5 px-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800">
-                Nenhum aluno matriculado nesta turma. Você ainda pode editar o modelo base normalmente.
-              </div>
-            ) : (
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 custom-scrollbar">
-                {filteredTurmaStudents.map((st: any, idx: number) => {
-                  const isActive = st.id === selectedStudentId;
-                  const isBatchChecked = batchSelectedIds.includes(st.id);
-                  const hasCustomText = hasCustomBodyForStudent(st.id);
-                  const display = st.posto_graduacao
-                    ? `${st.posto_graduacao} ${st.nome}`
-                    : st.nome;
-                  return (
-                    <div
-                      key={st.id}
+                  {selectedStudentObj && (
+                    <span
                       className={cn(
-                        'flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs shrink-0 transition-all',
-                        isActive
-                          ? 'bg-blue-900 text-white border-blue-950 shadow-xs'
-                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                        'hidden sm:inline-block max-w-[200px] truncate font-semibold pl-2 border-l',
+                        showStudentsWindow
+                          ? 'border-blue-700 text-blue-100'
+                          : 'border-slate-300 text-slate-600'
                       )}
                     >
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setBatchSelectedIds((prev) =>
-                            prev.includes(st.id)
-                              ? prev.filter((id) => id !== st.id)
-                              : [...prev, st.id]
-                          )
-                        }
-                        className="cursor-pointer opacity-85 hover:opacity-100"
-                        title="Incluir no lote de PDF"
-                      >
-                        {isBatchChecked ? <CheckSquare size={14} /> : <Square size={14} />}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedStudentId(st.id)}
-                        className="font-semibold cursor-pointer text-left max-w-[200px] truncate flex items-center gap-1"
-                      >
-                        <span className="truncate">
-                          {idx + 1}. {display}
+                      {currentStudentIndex >= 0 ? `${currentStudentIndex + 1}. ` : ''}
+                      {selectedStudentObj.posto_graduacao
+                        ? `${selectedStudentObj.posto_graduacao} ${selectedStudentObj.nome}`
+                        : selectedStudentObj.nome}
+                    </span>
+                  )}
+                  <ChevronDown
+                    size={14}
+                    className={cn(
+                      'shrink-0 transition-transform duration-150',
+                      showStudentsWindow && 'rotate-180'
+                    )}
+                  />
+                </button>
+
+                {/* Janela empilhada verticalmente acionada ao clicar */}
+                {showStudentsWindow && (
+                  <div className="absolute left-0 top-full mt-2 w-[340px] sm:w-[440px] max-w-[calc(100vw-2rem)] z-40 bg-white rounded-2xl border border-slate-200 shadow-2xl overflow-hidden">
+                    {/* Cabeçalho da Janela */}
+                    <div className="px-3.5 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <Users size={14} className="text-blue-800" />
+                        <span className="text-xs font-black uppercase tracking-wider text-slate-800">
+                          Alunos da Turma ({turmaStudents.length})
                         </span>
-                        {hasCustomText && (
-                          <span
-                            title="Este aluno possui texto individual personalizado"
-                            className={cn(
-                              'inline-flex items-center justify-center p-0.5 rounded shrink-0',
-                              isActive
-                                ? 'bg-amber-400 text-slate-950'
-                                : 'bg-amber-100 text-amber-800 border border-amber-200'
-                            )}
-                          >
-                            <Pencil size={10} />
-                          </span>
-                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowStudentsWindow(false)}
+                        className="p-1 rounded-lg hover:bg-slate-200/70 text-slate-500 cursor-pointer"
+                        title="Fechar janela de alunos"
+                      >
+                        <X size={14} />
                       </button>
                     </div>
-                  );
-                })}
+
+                    {/* Busca e Seleção em Lote */}
+                    <div className="p-2.5 border-b border-slate-100 flex flex-wrap items-center gap-2 bg-white">
+                      <div className="relative flex-1 min-w-[150px]">
+                        <Search
+                          size={13}
+                          className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"
+                        />
+                        <input
+                          type="text"
+                          value={studentSearch}
+                          onChange={(e) => setStudentSearch(e.target.value)}
+                          placeholder="Buscar aluno..."
+                          autoFocus
+                          className="w-full pl-7 pr-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                        />
+                      </div>
+
+                      {turmaStudents.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (batchSelectedIds.length === turmaStudents.length) {
+                              setBatchSelectedIds([]);
+                            } else {
+                              setBatchSelectedIds(turmaStudents.map((s) => s.id));
+                            }
+                          }}
+                          className="px-2.5 py-1.5 text-[11px] font-bold rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 cursor-pointer shrink-0"
+                        >
+                          {batchSelectedIds.length === turmaStudents.length
+                            ? 'Desmarcar'
+                            : 'Marcar todos'}
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Lista Vertical Empilhada de Alunos */}
+                    {loadingTurmaData ? (
+                      <div className="py-6 flex items-center justify-center gap-2 text-xs text-slate-500">
+                        <Loader2 size={14} className="animate-spin" />
+                        <span>Carregando alunos e notas...</span>
+                      </div>
+                    ) : turmaStudents.length === 0 ? (
+                      <div className="p-4 text-center text-xs text-amber-800 bg-amber-50/70">
+                        Nenhum aluno matriculado nesta turma. Você ainda pode editar o modelo base normalmente.
+                      </div>
+                    ) : filteredTurmaStudents.length === 0 ? (
+                      <div className="p-4 text-center text-xs text-slate-500">
+                        Nenhum aluno encontrado para &ldquo;{studentSearch}&rdquo;.
+                      </div>
+                    ) : (
+                      <div className="flex flex-col divide-y divide-slate-100 max-h-[320px] overflow-y-auto custom-scrollbar">
+                        {filteredTurmaStudents.map((st: any, idx: number) => {
+                          const isActive = st.id === selectedStudentId;
+                          const isBatchChecked = batchSelectedIds.includes(st.id);
+                          const hasCustomText = hasCustomBodyForStudent(st.id);
+                          const display = st.posto_graduacao
+                            ? `${st.posto_graduacao} ${st.nome}`
+                            : st.nome;
+                          return (
+                            <div
+                              key={st.id}
+                              className={cn(
+                                'flex items-center gap-2.5 px-3 py-2 text-xs transition-colors',
+                                isActive
+                                  ? 'bg-blue-50 text-blue-950'
+                                  : 'bg-white text-slate-700 hover:bg-slate-50'
+                              )}
+                            >
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setBatchSelectedIds((prev) =>
+                                    prev.includes(st.id)
+                                      ? prev.filter((id) => id !== st.id)
+                                      : [...prev, st.id]
+                                  );
+                                }}
+                                className={cn(
+                                  'cursor-pointer shrink-0 p-0.5 rounded transition-colors',
+                                  isBatchChecked
+                                    ? 'text-blue-700'
+                                    : 'text-slate-400 hover:text-slate-600'
+                                )}
+                                title="Marcar/desmarcar aluno para o Lote PDF"
+                              >
+                                {isBatchChecked ? (
+                                  <CheckSquare size={15} />
+                                ) : (
+                                  <Square size={15} />
+                                )}
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedStudentId(st.id);
+                                  setShowStudentsWindow(false);
+                                }}
+                                className="flex-1 min-w-0 flex items-center justify-between gap-2 text-left cursor-pointer"
+                              >
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <span
+                                    className={cn(
+                                      'w-5 h-5 rounded-md text-[10px] font-black flex items-center justify-center shrink-0',
+                                      isActive
+                                        ? 'bg-blue-900 text-white'
+                                        : 'bg-slate-100 text-slate-600'
+                                    )}
+                                  >
+                                    {idx + 1}
+                                  </span>
+                                  <span
+                                    className={cn(
+                                      'truncate',
+                                      isActive ? 'font-bold text-blue-950' : 'font-medium text-slate-800'
+                                    )}
+                                  >
+                                    {display}
+                                  </span>
+                                </div>
+
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  {hasCustomText && (
+                                    <span
+                                      title="Este aluno possui texto individual personalizado"
+                                      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200 text-[10px] font-bold"
+                                    >
+                                      <Pencil size={9} />
+                                      <span>Texto</span>
+                                    </span>
+                                  )}
+                                  {isActive && (
+                                    <span className="text-[10px] font-bold text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded">
+                                      Ativo
+                                    </span>
+                                  )}
+                                </div>
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Rodapé da Janela */}
+                    {turmaStudents.length > 0 && (
+                      <div className="px-3 py-2 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-2">
+                        <span className="text-[11px] font-semibold text-slate-600">
+                          {batchSelectedIds.length} marcado(s) para lote
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowStudentsWindow(false);
+                            void handleDownloadBatchPDF();
+                          }}
+                          disabled={exportingPDF || batchSelectedIds.length === 0}
+                          className="px-3 py-1 rounded-lg text-[11px] font-bold bg-blue-800 hover:bg-blue-900 text-white flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                        >
+                          <Download size={12} />
+                          <span>Gerar Lote ({batchSelectedIds.length})</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Navegação Rápida Anterior / Próximo */}
+              {turmaStudents.length > 1 && (
+                <div className="flex items-center gap-0.5 border border-slate-200 rounded-xl px-1 py-1 bg-slate-50 h-[34px]">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const prevIdx =
+                        (currentStudentIndex - 1 + turmaStudents.length) %
+                        turmaStudents.length;
+                      setSelectedStudentId(turmaStudents[prevIdx].id);
+                    }}
+                    className="p-1 hover:bg-slate-200 rounded-lg cursor-pointer text-slate-700"
+                    title="Aluno anterior"
+                  >
+                    <ChevronLeft size={14} />
+                  </button>
+                  <span className="text-[11px] font-bold text-slate-700 px-1.5">
+                    {currentStudentIndex >= 0 ? currentStudentIndex + 1 : 1}/{turmaStudents.length}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const nextIdx = (currentStudentIndex + 1) % turmaStudents.length;
+                      setSelectedStudentId(turmaStudents[nextIdx].id);
+                    }}
+                    className="p-1 hover:bg-slate-200 rounded-lg cursor-pointer text-slate-700"
+                    title="Próximo aluno"
+                  >
+                    <ChevronRight size={14} />
+                  </button>
+                </div>
+              )}
+
+              {customBodyStudentsCount > 0 && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-[10px] font-bold">
+                  <Pencil size={10} />
+                  <span>{customBodyStudentsCount} texto individual</span>
+                </span>
+              )}
+
+              <label className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-600 cursor-pointer bg-slate-50 border border-slate-200 px-2.5 py-1.5 rounded-xl h-[34px]">
+                <input
+                  type="checkbox"
+                  checked={useTurmaStudentGrades}
+                  onChange={(e) => setUseTurmaStudentGrades(e.target.checked)}
+                  className="rounded border-slate-300"
+                />
+                <span>Notas do Boletim no Verso</span>
+              </label>
+            </div>
+
+            {turmaStudents.length > 0 && (
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={handleDownloadBatchPDF}
+                  disabled={exportingPDF || batchSelectedIds.length === 0}
+                  className="h-[34px] px-3 rounded-xl text-xs font-bold bg-blue-800 hover:bg-blue-900 text-white flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  title="Gerar PDF em lote para os alunos marcados"
+                >
+                  {batchProgress ? (
+                    <>
+                      <Loader2 size={13} className="animate-spin" />
+                      <span>
+                        {batchProgress.current}/{batchProgress.total}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <Download size={13} />
+                      <span>Lote PDF ({batchSelectedIds.length})</span>
+                    </>
+                  )}
+                </button>
               </div>
             )}
           </div>
