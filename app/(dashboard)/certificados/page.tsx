@@ -2422,10 +2422,13 @@ export default function CertificadosPage() {
 
         {/* Seletor Compacto + Janela Empilhada de Alunos (quando acionada) */}
         {selectedTurmaId && (
-          <div className="pt-2.5 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2.5">
-            <div className="flex flex-wrap items-center gap-2 min-w-0">
+          <div className="pt-2.5 border-t border-slate-200 flex flex-wrap items-end justify-between gap-2.5">
+            <div className="flex flex-wrap items-end gap-2 min-w-0">
               {/* Trigger que abre a janela vertical empilhada de alunos */}
-              <div ref={studentsWindowRef} className="relative">
+              <div ref={studentsWindowRef} className="relative space-y-1">
+                <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                  Selecionar Aluno
+                </span>
                 <button
                   type="button"
                   onClick={() => setShowStudentsWindow((v) => !v)}
