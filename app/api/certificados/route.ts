@@ -4,6 +4,59 @@ import { ensureNotGuest, getAuthUserRole } from '@/lib/auth/serverAuth';
 
 export const dynamic = 'force-dynamic';
 
+async function fetchCertificadosRowsSafe(): Promise<{
+  rows: any[];
+  fallbackLocal: boolean;
+  errorSummary?: string;
+}> {
+  const attempts: Array<() => Promise<{ data: any[] | null; error: any }>> = [
+    async () =>
+      await supabaseAdmin
+        .from('certificados')
+        .select('id, aluno_id, turma_id, curso_id, tipo, template_data, data_emissao, created_at')
+        .is('deleted_at', null)
+        .order('data_emissao', { ascending: false })
+        .order('created_at', { ascending: false })
+        .limit(80),
+    async () =>
+      await supabaseAdmin
+        .from('certificados')
+        .select('id, aluno_id, turma_id, curso_id, tipo, template_data, created_at')
+        .is('deleted_at', null)
+        .order('created_at', { ascending: false })
+        .limit(40),
+    async () =>
+      await supabaseAdmin
+        .from('certificados')
+        .select('id, aluno_id, turma_id, curso_id, tipo, template_data, created_at')
+        .order('created_at', { ascending: false })
+        .limit(30),
+  ];
+
+  let lastError: any = null;
+  for (const runAttempt of attempts) {
+    try {
+      const { data, error } = await runAttempt();
+      if (!error) {
+        return { rows: data || [], fallbackLocal: false };
+      }
+      lastError = error;
+      const code = String(error?.code || '');
+      const msg = String(error?.message || '');
+      if (code === '42P01' || (msg.includes('relation') && msg.includes('does not exist'))) {
+        return { rows: [], fallbackLocal: true };
+      }
+    } catch (err) {
+      lastError = err;
+    }
+  }
+
+  const summary =
+    lastError?.message ||
+    (lastError && typeof lastError === 'object' ? JSON.stringify(lastError) : String(lastError || 'Erro desconhecido'));
+  return { rows: [], fallbackLocal: true, errorSummary: summary };
+}
+
 export async function GET(req: NextRequest) {
   try {
     const { user, role } = await getAuthUserRole(req);
@@ -17,65 +70,61 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const requestType = searchParams.get('type');
+    const includeLibrary = searchParams.get('includeLibrary') === '1';
 
     if (!isSupabaseAdminConfigured()) {
       return NextResponse.json(
         requestType === 'library'
           ? { success: true, assets: [], storageMode: 'local' }
-          : { success: true, templates: [], storageMode: 'local' }
+          : {
+              success: true,
+              templates: [],
+              ...(includeLibrary ? { assets: [] } : {}),
+              storageMode: 'local',
+            }
       );
     }
 
-    const { data, error } = await supabaseAdmin
-      .from('certificados')
-      .select('id, aluno_id, turma_id, curso_id, tipo, template_data, data_emissao, created_at')
-      .is('deleted_at', null)
-      .order('data_emissao', { ascending: false })
-      .order('created_at', { ascending: false })
-      .limit(200);
+    const { rows, fallbackLocal, errorSummary } = await fetchCertificadosRowsSafe();
 
-    if (error) {
-      const code = String(error.code || '');
-      const msg = String(error.message || '');
-      if (code === '42P01' || msg.includes('does not exist') || msg.includes('schema cache')) {
-        return NextResponse.json(
-          requestType === 'library'
-            ? { success: true, assets: [], storageMode: 'local' }
-            : { success: true, templates: [], storageMode: 'local' }
-        );
-      }
-      throw error;
+    if (fallbackLocal && errorSummary) {
+      console.warn('[GET /api/certificados] Usando fallback local:', errorSummary);
     }
 
-    const allRows = data || [];
+    const assets = rows
+      .filter((row: any) => Boolean(row?.template_data?.__isAssetLibrary))
+      .map((row: any) => ({
+        ...row.template_data,
+        id: row.id,
+        createdAt: row.created_at,
+      }));
+
     if (requestType === 'library') {
-      const assets = allRows
-        .filter((row: any) => Boolean(row?.template_data?.__isAssetLibrary))
-        .map((row: any) => ({
-          ...row.template_data,
-          id: row.id,
-          createdAt: row.created_at,
-        }));
       return NextResponse.json({
         success: true,
         assets,
-        storageMode: 'supabase',
+        storageMode: fallbackLocal ? 'local' : 'supabase',
       });
     }
 
-    const templates = allRows.filter((row: any) => !row?.template_data?.__isAssetLibrary);
+    const templates = rows.filter((row: any) => !row?.template_data?.__isAssetLibrary);
 
     return NextResponse.json({
       success: true,
       templates,
-      storageMode: 'supabase',
+      ...(includeLibrary ? { assets } : {}),
+      storageMode: fallbackLocal ? 'local' : 'supabase',
     });
   } catch (err: any) {
-    console.error('[GET /api/certificados error]:', err);
-    return NextResponse.json(
-      { error: err?.message || 'Erro ao carregar modelos de certificado.' },
-      { status: 500 }
-    );
+    const errText =
+      err?.message || (err && typeof err === 'object' ? JSON.stringify(err) : String(err || 'Erro desconhecido'));
+    console.warn('[GET /api/certificados] Falha tratada com fallback local:', errText);
+    return NextResponse.json({
+      success: true,
+      templates: [],
+      assets: [],
+      storageMode: 'local',
+    });
   }
 }
 

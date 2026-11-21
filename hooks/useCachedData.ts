@@ -4,6 +4,8 @@ import useSWR, { mutate } from 'swr';
 import { supabase } from '@/lib/supabase/client';
 import { useUser } from '@/lib/auth/UserContext';
 
+const EMPTY_ARRAY: any[] = [];
+
 // Standard SWR options to limit aggressive polling and focus revalidation, 
 // keeping network operations light and professional.
 const DEFAULT_SWR_OPTIONS = {
@@ -63,7 +65,7 @@ export function useCursos() {
   );
 
   return {
-    cursos: data || [],
+    cursos: data || EMPTY_ARRAY,
     loading: isLoading,
     error,
     mutate: swrMutate,
@@ -112,7 +114,7 @@ export function useTurmas() {
   );
 
   return {
-    turmas: data || [],
+    turmas: data || EMPTY_ARRAY,
     loading: isLoading,
     error,
     mutate: swrMutate,
@@ -139,7 +141,7 @@ export function useDisciplinas() {
   );
 
   return {
-    disciplinas: data || [],
+    disciplinas: data || EMPTY_ARRAY,
     loading: isLoading,
     error,
     mutate: swrMutate,
@@ -195,7 +197,7 @@ export function useAlunos() {
   );
 
   return {
-    alunos: data || [],
+    alunos: data || EMPTY_ARRAY,
     loading: isLoading,
     error,
     mutate: swrMutate,

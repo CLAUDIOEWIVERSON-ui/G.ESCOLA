@@ -253,7 +253,8 @@ export default function CertificadosPage() {
       for (const entry of entries) {
         const w = entry.contentRect.width;
         if (w > 200) {
-          setAutoFitWidth(w - 32);
+          const nextW = Math.round(w - 32);
+          setAutoFitWidth((prev) => (prev === nextW ? prev : nextW));
         }
       }
     });
@@ -312,31 +313,66 @@ export default function CertificadosPage() {
     Math.max(0.25, fullscreenBaseScale * (fullscreenZoom / 100))
   );
 
-  // Load saved templates on mount
+  // Load saved templates and library assets together in a single request on mount
   const loadSavedTemplates = useCallback(async () => {
     setLoadingTemplates(true);
-    let localItems: SavedTemplateRecord[] = [];
+    let localTemplates: SavedTemplateRecord[] = [];
+    let localLibrary: CertificateLibraryAsset[] = [];
+
     try {
       const raw = localStorage.getItem(LOCAL_TEMPLATES_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) localItems = parsed;
+        if (Array.isArray(parsed)) localTemplates = parsed;
       }
     } catch {
       // ignore storage errors
     }
 
     try {
-      const res = await fetchWithAuth('/api/certificados');
+      const rawLib = localStorage.getItem(LOCAL_LIBRARY_KEY);
+      if (rawLib) {
+        const parsedLib = JSON.parse(rawLib);
+        if (Array.isArray(parsedLib)) localLibrary = parsedLib;
+      }
+    } catch {
+      // ignore storage errors
+    }
+
+    try {
+      const res = await fetchWithAuth('/api/certificados?includeLibrary=1');
       if (res.ok) {
         const json = await res.json();
-        if (json.success && Array.isArray(json.templates) && json.templates.length > 0) {
-          setSavedTemplates(json.templates);
-          try {
-            localStorage.setItem(LOCAL_TEMPLATES_KEY, JSON.stringify(json.templates));
-          } catch {
-            // ignore storage quota errors
+        if (json.success) {
+          if (Array.isArray(json.templates) && json.templates.length > 0) {
+            setSavedTemplates(json.templates);
+            try {
+              localStorage.setItem(LOCAL_TEMPLATES_KEY, JSON.stringify(json.templates));
+            } catch {
+              // ignore storage quota errors
+            }
+          } else {
+            setSavedTemplates(localTemplates);
           }
+
+          if (Array.isArray(json.assets)) {
+            const mergedAssets = [...json.assets];
+            const seen = new Set(mergedAssets.map((a: any) => `${a.category}:${a.url}`));
+            localLibrary.forEach((loc) => {
+              if (!seen.has(`${loc.category}:${loc.url}`)) {
+                mergedAssets.push(loc);
+              }
+            });
+            setCustomLibraryAssets(mergedAssets);
+            try {
+              localStorage.setItem(LOCAL_LIBRARY_KEY, JSON.stringify(mergedAssets));
+            } catch {
+              // ignore storage quota errors
+            }
+          } else {
+            setCustomLibraryAssets(localLibrary);
+          }
+
           setLoadingTemplates(false);
           setTemplatesHydrated(true);
           return;
@@ -346,7 +382,8 @@ export default function CertificadosPage() {
       // fallback to local items
     }
 
-    setSavedTemplates(localItems);
+    setSavedTemplates(localTemplates);
+    setCustomLibraryAssets(localLibrary);
     setLoadingTemplates(false);
     setTemplatesHydrated(true);
   }, []);
@@ -437,50 +474,9 @@ export default function CertificadosPage() {
     }
   }, []);
 
-  const loadLibraryAssets = useCallback(async () => {
-    let localItems: CertificateLibraryAsset[] = [];
-    try {
-      const raw = localStorage.getItem(LOCAL_LIBRARY_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) localItems = parsed;
-      }
-    } catch {
-      // ignore storage errors
-    }
-
-    try {
-      const res = await fetchWithAuth('/api/certificados?type=library');
-      if (res.ok) {
-        const json = await res.json();
-        if (json.success && Array.isArray(json.assets)) {
-          const merged = [...json.assets];
-          const seen = new Set(merged.map((a: any) => `${a.category}:${a.url}`));
-          localItems.forEach((loc) => {
-            if (!seen.has(`${loc.category}:${loc.url}`)) {
-              merged.push(loc);
-            }
-          });
-          setCustomLibraryAssets(merged);
-          try {
-            localStorage.setItem(LOCAL_LIBRARY_KEY, JSON.stringify(merged));
-          } catch {
-            // ignore storage quota errors
-          }
-          return;
-        }
-      }
-    } catch {
-      // fallback to local items
-    }
-
-    setCustomLibraryAssets(localItems);
-  }, []);
-
   useEffect(() => {
     loadSavedTemplates();
-    loadLibraryAssets();
-  }, [loadSavedTemplates, loadLibraryAssets]);
+  }, [loadSavedTemplates]);
 
   const allLibraryAssets = useMemo(() => {
     const seenUrls = new Set<string>();
@@ -677,14 +673,23 @@ export default function CertificadosPage() {
     return Number.isFinite(parsed) && parsed > 0 ? Math.min(parsed, 20) : 4;
   }, [selectedCourseObj, selectedTurmaObj]);
 
+  const turmaCourseDiscKey = useMemo(
+    () =>
+      turmaCourseDisciplines
+        .map((d: any) => d.id)
+        .filter(Boolean)
+        .join(','),
+    [turmaCourseDisciplines]
+  );
+
   // Load materias_modulos topics for the selected course to resolve modulo_index when absent on disciplinas
   useEffect(() => {
-    if (turmaCourseDisciplines.length === 0) {
-      setTurmaCourseTopics([]);
+    if (!turmaCourseDiscKey) {
+      setTurmaCourseTopics((prev) => (prev.length === 0 ? prev : []));
       return;
     }
     let cancelled = false;
-    const discIds = turmaCourseDisciplines.map((d: any) => d.id).filter(Boolean);
+    const discIds = turmaCourseDiscKey.split(',').filter(Boolean);
     if (discIds.length === 0) return;
 
     supabase
@@ -702,7 +707,7 @@ export default function CertificadosPage() {
     return () => {
       cancelled = true;
     };
-  }, [turmaCourseDisciplines]);
+  }, [turmaCourseDiscKey]);
 
   // Build discipline/grade rows for any student in the selected turma faithfully matching Boletim Individual
   const buildStudentRowsFromGrades = useCallback(
@@ -788,10 +793,10 @@ export default function CertificadosPage() {
   // Load students and grades when a turma is selected
   useEffect(() => {
     if (!selectedTurmaId) {
-      setTurmaStudents([]);
-      setTurmaGradesMap({});
-      setSelectedStudentId('');
-      setBatchSelectedIds([]);
+      setTurmaStudents((prev) => (prev.length === 0 ? prev : []));
+      setTurmaGradesMap((prev) => (Object.keys(prev).length === 0 ? prev : {}));
+      setSelectedStudentId((prev) => (prev === '' ? prev : ''));
+      setBatchSelectedIds((prev) => (prev.length === 0 ? prev : []));
       return;
     }
 
@@ -944,7 +949,7 @@ export default function CertificadosPage() {
 
     if (skipNextTurmaAutoLoadRef.current) {
       skipNextTurmaAutoLoadRef.current = false;
-      setCustomCourseName(formattedCourseTitleCase);
+      setCustomCourseName((prev) => (prev === formattedCourseTitleCase ? prev : formattedCourseTitleCase));
       return;
     }
 
@@ -967,6 +972,9 @@ export default function CertificadosPage() {
     // Check if there is already a saved template specifically for this turma
     const matchingSaved = savedTemplates.find((st) => st.turma_id === selectedTurmaObj.id);
     if (matchingSaved?.template_data) {
+      if (!turmaChanged && template.id === matchingSaved.id) {
+        return;
+      }
       const loadedTurmaTemplate: CertificateTemplateConfig = {
         ...matchingSaved.template_data,
         id: matchingSaved.id,
@@ -979,13 +987,13 @@ export default function CertificadosPage() {
       lastSavedSignatureRef.current = getTemplateSaveSignature(loadedTurmaTemplate);
       initializedAutoSaveBaselineRef.current = true;
       setTemplate(loadedTurmaTemplate);
-      setCustomCourseName(formattedCourseTitleCase);
+      setCustomCourseName((prev) => (prev === formattedCourseTitleCase ? prev : formattedCourseTitleCase));
       return;
     }
 
     if (!turmaChanged) return;
 
-    setCustomCourseName(formattedCourseTitleCase);
+    setCustomCourseName((prev) => (prev === formattedCourseTitleCase ? prev : formattedCourseTitleCase));
     setTemplate((prev) => {
       const groupedOrFlat =
         turmaCourseDisciplines.length > 0
