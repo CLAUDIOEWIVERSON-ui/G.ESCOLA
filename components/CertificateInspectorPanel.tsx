@@ -723,10 +723,9 @@ export function CertificateInspectorPanel({
 
           {renderLibrarySwapStrip(
             'brasao',
-            isCenter ? 'brasaoCentro' : isRight ? 'brasaoDireito' : 'brasaoEsquerdo',
-            template[uploadField] ||
-              (isRight && template.usarBrasaoPadraoDireita !== false ? undefined : undefined),
-            title
+            isCenter ? 'brasaoCentro' : side === 'right' ? 'brasaoDireito' : 'brasaoEsquerdo',
+            currentUrl || undefined,
+            isCenter ? 'Brasão Central' : side === 'right' ? 'Brasão Direito' : 'Brasão Esquerdo'
           )}
 
           {isCenter && (
