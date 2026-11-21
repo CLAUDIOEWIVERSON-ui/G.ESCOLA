@@ -37,6 +37,7 @@ import { toast } from "sonner";
 import { useUser } from "@/lib/auth/UserContext";
 import { UserWorkspaceHeader } from "@/components/UserWorkspaceHeader";
 import { downloadElementAsPDF } from "@/lib/printDocumentUtils";
+import { fetchWithAuth } from "@/lib/api";
 
 // Helper to fetch Brazil holidays (Simplified for this version)
 const BRAZIL_HOLIDAYS = [
@@ -485,25 +486,46 @@ export default function HorarioPage() {
         .is("deleted_at", null)
         .order("nome");
       if (mm) setMaterias(mm);
-      const { data: i } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("role", "instrutor");
+      const [{ data: i }, apiInstrRes] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("*")
+          .eq("role", "instrutor"),
+        fetchWithAuth("/api/v1/instrutores")
+          .then((r) => (r.ok ? r.json() : null))
+          .catch(() => null),
+      ]);
 
       const combinedInstructors: any[] = [];
+      const seenIds = new Set<string>();
       const seenNames = new Set<string>();
 
+      const pushInstructor = (prof: any) => {
+        const id = String(prof?.id || "").trim();
+        const name = String(prof?.full_name || "").trim();
+        if (!name) return;
+        const nameKey = name.toLowerCase();
+        if ((id && seenIds.has(id)) || seenNames.has(nameKey)) return;
+        if (id) seenIds.add(id);
+        seenNames.add(nameKey);
+        combinedInstructors.push({
+          id: id || name,
+          full_name: name,
+          grupo_responsavel: prof?.grupo_responsavel || null,
+        });
+      };
+
       if (i) {
-        i.forEach((prof: any) => {
-          const name = (prof.full_name || "").trim();
-          if (name) {
-            seenNames.add(name.toLowerCase());
-            combinedInstructors.push({
-              id: prof.id,
-              full_name: prof.full_name,
-              grupo_responsavel: prof.grupo_responsavel,
-            });
-          }
+        i.forEach(pushInstructor);
+      }
+
+      if (Array.isArray(apiInstrRes?.instrutores)) {
+        apiInstrRes.instrutores.forEach(pushInstructor);
+      }
+
+      if (apiInstrRes?.profilesMap && typeof apiInstrRes.profilesMap === "object") {
+        Object.entries(apiInstrRes.profilesMap).forEach(([id, full_name]) => {
+          pushInstructor({ id, full_name });
         });
       }
 
@@ -2167,13 +2189,17 @@ export default function HorarioPage() {
                                                 className="shrink-0"
                                               />
                                               <span className="text-[10px] font-bold leading-none">
-                                                {cell.customInstructor ||
-                                                  instrutores.find(
-                                                    (i) =>
-                                                      i.id === cell.instructorId,
-                                                  )?.full_name ||
-                                                  cell.instructorId ||
-                                                  "Instrutor"}
+                                                {(() => {
+                                                  const custom = (cell.customInstructor || "").trim();
+                                                  if (custom) return custom;
+                                                  const found = instrutores.find(
+                                                    (i) => i.id === cell.instructorId,
+                                                  )?.full_name;
+                                                  if (found) return found;
+                                                  const rawId = String(cell.instructorId || "").trim();
+                                                  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawId);
+                                                  return (!isUuid && rawId) || (selectedTurma?.instrutor || "").trim() || "Instrutor";
+                                                })()}
                                               </span>
                                             </div>
                                           </div>

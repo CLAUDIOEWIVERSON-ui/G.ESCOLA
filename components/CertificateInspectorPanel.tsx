@@ -10,7 +10,9 @@ import {
   ArrowUp,
   Bold,
   Calendar,
+  Download,
   FileText,
+  FolderOpen,
   Frame,
   Image as ImageIcon,
   Italic,
@@ -40,6 +42,11 @@ import {
   extractModuleNumberFromRow,
   groupCertificateRowsByModule,
 } from '@/lib/certificateTypes';
+import {
+  CertificateAssetCategory,
+  CertificateAssetTarget,
+  CertificateLibraryAsset,
+} from '@/lib/certificateLibrary';
 
 interface CertificateInspectorPanelProps {
   selectedObject: CertificateSelectableObject;
@@ -91,6 +98,15 @@ interface CertificateInspectorPanelProps {
   ) => void;
   handleRemoveDisciplineRow: (idx: number) => void;
   handleMoveDisciplineRow: (idx: number, dir: -1 | 1) => void;
+  libraryAssets?: CertificateLibraryAsset[];
+  onApplyLibraryAsset?: (asset: CertificateLibraryAsset, target: CertificateAssetTarget) => void;
+  onDownloadLibraryAsset?: (asset: CertificateLibraryAsset) => void;
+  onSaveCurrentAssetToLibrary?: (
+    category: CertificateAssetCategory,
+    url: string,
+    suggestedName: string
+  ) => void;
+  onOpenLibrary?: (category: CertificateAssetCategory) => void;
 }
 
 const FONT_OPTIONS_FRONT: { value: CertificateFontKey; label: string }[] = [
@@ -267,12 +283,173 @@ export function CertificateInspectorPanel({
   handleUpdateDisciplineRow,
   handleRemoveDisciplineRow,
   handleMoveDisciplineRow,
+  libraryAssets = [],
+  onApplyLibraryAsset,
+  onDownloadLibraryAsset,
+  onSaveCurrentAssetToLibrary,
+  onOpenLibrary,
 }: CertificateInspectorPanelProps) {
   const meta = getObjectMeta(selectedObject);
   const HeaderIcon = meta.icon;
 
   const normalizeFrontFont = (font?: CertificateFontKey) =>
     !font || font === 'serif-italic' ? 'garamond' : font;
+
+  const isAssetSelectedForTarget = (
+    asset: CertificateLibraryAsset,
+    target: CertificateAssetTarget
+  ): boolean => {
+    if (target === 'brasaoEsquerdo') {
+      return Boolean(template.logoEsquerdaUrl) && template.logoEsquerdaUrl === asset.url;
+    }
+    if (target === 'brasaoCentro') {
+      return Boolean(template.logoCentroUrl) && template.logoCentroUrl === asset.url;
+    }
+    if (target === 'brasaoDireito') {
+      if (asset.isDefaultMarinhaCrest) {
+        return !template.logoDireitaUrl && template.usarBrasaoPadraoDireita !== false;
+      }
+      return Boolean(template.logoDireitaUrl) && template.logoDireitaUrl === asset.url;
+    }
+    if (target === 'marcaDaguaFrente') {
+      return Boolean(template.marcaDaguaFrenteUrl) && template.marcaDaguaFrenteUrl === asset.url;
+    }
+    if (target === 'marcaDaguaVerso') {
+      return Boolean(template.marcaDaguaVersoUrl) && template.marcaDaguaVersoUrl === asset.url;
+    }
+    if (target === 'molduraFrente') {
+      const currentStyle =
+        template.estiloMolduraFrente ??
+        (template.usarMolduraOriginal !== false ? 'original' : 'vetorial');
+      if (asset.frameStyle === 'vetorial' || asset.frameStyle === 'simples') {
+        return currentStyle === asset.frameStyle;
+      }
+      return currentStyle === 'original' && template.molduraFrenteUrl === asset.url;
+    }
+    return false;
+  };
+
+  const renderLibrarySwapStrip = (
+    category: CertificateAssetCategory,
+    target: CertificateAssetTarget,
+    currentUrl: string | undefined,
+    suggestedName: string
+  ) => {
+    const items = libraryAssets.filter((a) => a.category === category);
+    if (!items.length && !onOpenLibrary && !currentUrl) return null;
+
+    const currentAsset = items.find((a) => isAssetSelectedForTarget(a, target));
+    const effectiveCurrentUrl = currentUrl || currentAsset?.url;
+    const alreadyInLibrary = Boolean(
+      currentAsset || (effectiveCurrentUrl && items.some((a) => a.url === effectiveCurrentUrl))
+    );
+
+    return (
+      <div className="p-2.5 rounded-lg bg-white border border-slate-200 space-y-2">
+        <div className="flex flex-wrap items-center justify-between gap-1.5">
+          <span className="text-[10px] font-black uppercase tracking-wider text-slate-600">
+            Troca Rápida da Biblioteca
+          </span>
+          <div className="flex flex-wrap items-center gap-1">
+            {effectiveCurrentUrl && onDownloadLibraryAsset && (
+              <button
+                type="button"
+                onClick={() =>
+                  onDownloadLibraryAsset(
+                    currentAsset || {
+                      id: `current-${target}`,
+                      name: suggestedName,
+                      category,
+                      url: effectiveCurrentUrl,
+                      source: 'custom',
+                    }
+                  )
+                }
+                className="px-2 py-1 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-800 text-[10px] font-bold flex items-center gap-1 cursor-pointer"
+                title="Baixar imagem atual deste elemento"
+              >
+                <Download size={10} />
+                <span>Baixar</span>
+              </button>
+            )}
+            {effectiveCurrentUrl && !alreadyInLibrary && onSaveCurrentAssetToLibrary && (
+              <button
+                type="button"
+                onClick={() => onSaveCurrentAssetToLibrary(category, effectiveCurrentUrl, suggestedName)}
+                className="px-2 py-1 rounded-md bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-[10px] font-bold flex items-center gap-1 cursor-pointer"
+                title="Acrescentar imagem atual à biblioteca"
+              >
+                <Plus size={10} />
+                <span>Salvar na Biblioteca</span>
+              </button>
+            )}
+            {onOpenLibrary && (
+              <button
+                type="button"
+                onClick={() => onOpenLibrary(category)}
+                className="px-2 py-1 rounded-md bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 text-[10px] font-bold flex items-center gap-1 cursor-pointer"
+                title="Abrir biblioteca completa para gerenciar e baixar recursos"
+              >
+                <FolderOpen size={10} />
+                <span>Biblioteca</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {items.length > 0 && onApplyLibraryAsset && (
+          <div className="grid grid-cols-3 gap-1.5 max-h-40 overflow-y-auto pr-0.5 custom-scrollbar">
+            {items.map((asset) => {
+              const selected = isAssetSelectedForTarget(asset, target);
+              return (
+                <div
+                  key={asset.id}
+                  className={cn(
+                    'group relative rounded-lg border p-1.5 flex flex-col items-center gap-1 transition-all',
+                    selected
+                      ? 'border-blue-700 bg-blue-50/80 ring-1 ring-blue-700'
+                      : 'border-slate-200 bg-slate-50 hover:border-blue-300 hover:bg-white'
+                  )}
+                >
+                  <button
+                    type="button"
+                    onClick={() => onApplyLibraryAsset(asset, target)}
+                    className="w-full flex flex-col items-center gap-1 cursor-pointer"
+                    title={`Trocar mantendo tamanho e posição (${asset.name})`}
+                  >
+                    <div className="w-full h-10 flex items-center justify-center overflow-hidden">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={asset.url}
+                        alt={asset.name}
+                        className="max-w-full max-h-full object-contain"
+                      />
+                    </div>
+                    <span className="text-[9px] font-bold text-slate-700 truncate w-full text-center">
+                      {asset.name}
+                    </span>
+                  </button>
+                  {onDownloadLibraryAsset && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDownloadLibraryAsset(asset);
+                      }}
+                      className="absolute top-1 right-1 p-1 rounded bg-white/90 hover:bg-slate-100 border border-slate-200 text-slate-700 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                      title={`Baixar ${asset.name}`}
+                    >
+                      <Download size={9} />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const renderStandaloneStudentBox = () => {
     if (selectedStudentObj) return null;
@@ -543,6 +720,14 @@ export function CertificateInspectorPanel({
               )}
             </div>
           </div>
+
+          {renderLibrarySwapStrip(
+            'brasao',
+            isCenter ? 'brasaoCentro' : isRight ? 'brasaoDireito' : 'brasaoEsquerdo',
+            template[uploadField] ||
+              (isRight && template.usarBrasaoPadraoDireita !== false ? undefined : undefined),
+            title
+          )}
 
           {isCenter && (
             <div className="p-2.5 rounded-lg bg-white border border-slate-200 space-y-2">
@@ -2072,6 +2257,13 @@ export function CertificateInspectorPanel({
                 </div>
               </div>
 
+              {renderLibrarySwapStrip(
+                'marca_dagua',
+                'marcaDaguaFrente',
+                template.marcaDaguaFrenteUrl,
+                "Marca d'Água Frente"
+              )}
+
               <div>
                 <label className="flex items-center justify-between text-[11px] font-bold text-slate-700 mb-0.5">
                   <span>Tamanho Geral</span>
@@ -2345,6 +2537,12 @@ export function CertificateInspectorPanel({
                       <p className="text-[10px] text-slate-500 leading-snug">
                         O centro branco das molduras importadas fica transparente automaticamente para manter a marca d&apos;água visível.
                       </p>
+                      {renderLibrarySwapStrip(
+                        'moldura',
+                        'molduraFrente',
+                        template.molduraFrenteUrl,
+                        'Moldura da Frente'
+                      )}
                     </div>
                   </>
                 );
@@ -2813,6 +3011,13 @@ export function CertificateInspectorPanel({
                   </button>
                 </div>
               </div>
+
+              {renderLibrarySwapStrip(
+                'marca_dagua',
+                'marcaDaguaVerso',
+                template.marcaDaguaVersoUrl,
+                "Marca d'Água Verso"
+              )}
 
               <div>
                 <label className="flex items-center justify-between text-[11px] font-bold text-slate-700 mb-0.5">

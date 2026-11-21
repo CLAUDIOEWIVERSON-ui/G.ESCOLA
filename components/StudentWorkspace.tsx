@@ -21,10 +21,12 @@ import {
   AlertTriangle,
   MapPin,
   Compass,
+  User,
 } from 'lucide-react';
 import { useUser } from '@/lib/auth/UserContext';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { supabase } from '@/lib/supabase/client';
+import { fetchWithAuth } from '@/lib/api';
 import { UserWorkspaceHeader } from '@/components/UserWorkspaceHeader';
 import DashboardThoughtWidget from '@/components/DashboardThoughtWidget';
 import { cn } from '@/lib/utils';
@@ -40,6 +42,7 @@ interface ScheduledExamItem {
   topicName?: string;
   timeLabel?: string;
   room?: string;
+  instructorName?: string;
   source: 'horario' | 'evento';
   startTimeMinutes: number;
 }
@@ -160,6 +163,26 @@ function diffDaysLocal(targetDateStr: string, baseDateStr: string): number {
   return Math.round((target.getTime() - base.getTime()) / (1000 * 60 * 60 * 24));
 }
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function resolveSlotInstructorName(
+  cell: any,
+  instrMap: Map<string, string>,
+  fallbackTurmaInstructor?: string
+): string {
+  const custom = cell?.customInstructor ? String(cell.customInstructor).trim() : '';
+  if (custom) return custom;
+
+  const rawId = cell?.instructorId ? String(cell.instructorId).trim() : '';
+  if (rawId) {
+    const mapped = instrMap.get(rawId);
+    if (mapped) return mapped;
+    if (!UUID_PATTERN.test(rawId)) return rawId;
+  }
+
+  return (fallbackTurmaInstructor || '').trim();
+}
+
 export function StudentWorkspace() {
   const { profile } = useUser();
   const { language } = useI18n();
@@ -181,7 +204,7 @@ export function StudentWorkspace() {
       try {
         const localTodayStr = getLocalTodayDateStr();
 
-        const [evalRes, horarioRes, discRes, matRes, evtPrimaryRes, instrRes] = await Promise.all([
+        const [evalRes, horarioRes, discRes, matRes, evtPrimaryRes, instrRes, apiInstrRes, turmaRowRes] = await Promise.all([
           supabase
             .from('questionarios_conclusao')
             .select('id, created_at')
@@ -210,11 +233,45 @@ export function StudentWorkspace() {
             .from('profiles')
             .select('id, full_name')
             .in('role', ['instrutor', 'admin']),
+          fetchWithAuth('/api/v1/instrutores')
+            .then((r) => (r.ok ? r.json() : null))
+            .catch(() => null),
+          supabase
+            .from('turmas')
+            .select('id, instrutor')
+            .eq('id', profile.turma_id)
+            .maybeSingle(),
         ]);
 
         if (active && evalRes.data) {
           setHasSubmittedSurvey(true);
         }
+
+        const instrMap = new Map<string, string>();
+        (instrRes.data || []).forEach((p: any) => {
+          if (p.id && p.full_name) instrMap.set(String(p.id), String(p.full_name).trim());
+        });
+        if (apiInstrRes?.profilesMap && typeof apiInstrRes.profilesMap === 'object') {
+          Object.entries(apiInstrRes.profilesMap).forEach(([id, name]) => {
+            if (id && typeof name === 'string' && name.trim()) {
+              instrMap.set(String(id), name.trim());
+            }
+          });
+        }
+        if (Array.isArray(apiInstrRes?.instrutores)) {
+          apiInstrRes.instrutores.forEach((p: any) => {
+            if (p?.id && p?.full_name) {
+              instrMap.set(String(p.id), String(p.full_name).trim());
+            }
+          });
+        }
+
+        const fallbackTurmaInstructor =
+          String(
+            apiInstrRes?.turmaInstructors?.[profile.turma_id] ||
+              turmaRowRes?.data?.instrutor ||
+              ''
+          ).trim();
 
         // Fallback caso colunas data_fim / tipo_data / target_grupo ainda não existam no banco
         let rawEventos: any[] = evtPrimaryRes.data || [];
@@ -243,6 +300,12 @@ export function StudentWorkspace() {
             let parsedExibirAluno = evt.exibir_aluno !== false;
             let parsedDataFim = evt.data_fim ? String(evt.data_fim).split('T')[0] : null;
 
+            const creatorMatch = desc.match(/\[creator:([^\]]+)\]/);
+            const rawCreator = creatorMatch?.[1]?.trim() || '';
+            const resolvedEventInstructor = rawCreator
+              ? instrMap.get(rawCreator) || (!UUID_PATTERN.test(rawCreator) ? rawCreator : '')
+              : '';
+
             const alunoMatch = desc.match(/\[exibir_aluno:([^\]]+)\]/);
             if (alunoMatch) {
               parsedExibirAluno = alunoMatch[1] === 'true';
@@ -270,6 +333,7 @@ export function StudentWorkspace() {
               parsedExibirAluno,
               startDateStr,
               checkEndStr,
+              instructorName: resolvedEventInstructor || undefined,
             };
           })
           .filter((e: any) => {
@@ -296,17 +360,13 @@ export function StudentWorkspace() {
         const matMap = new Map<string, any>();
         (matRes.data || []).forEach((m: any) => matMap.set(m.id, m));
 
-        const instrMap = new Map<string, string>();
-        (instrRes.data || []).forEach((p: any) => {
-          if (p.id && p.full_name) instrMap.set(String(p.id), p.full_name);
-        });
-
         interface RawSlotExam {
           dateStr: string;
           moduleLabel: string;
           subjectName: string;
           topicName?: string;
           room?: string;
+          instructorName?: string;
           startMinutes: number;
           endMinutes: number;
         }
@@ -366,9 +426,11 @@ export function StudentWorkspace() {
                   : isPt
                     ? 'Atividade Extraclasse'
                     : 'Extra-Class Activity';
-              const resolvedInstructor =
-                (cell.customInstructor ? String(cell.customInstructor).trim() : '') ||
-                (cell.instructorId ? instrMap.get(String(cell.instructorId)) || '' : '');
+              const resolvedInstructor = resolveSlotInstructorName(
+                cell,
+                instrMap,
+                fallbackTurmaInstructor
+              );
               const modLabel = rawModulo
                 ? !isNaN(Number(rawModulo))
                   ? isPt
@@ -424,12 +486,19 @@ export function StudentWorkspace() {
               topicText ||
               (isPt ? 'Prova do Módulo' : 'Module Exam');
 
+            const resolvedExamInstructor = resolveSlotInstructorName(
+              cell,
+              instrMap,
+              fallbackTurmaInstructor
+            );
+
             rawSlotExams.push({
               dateStr: cellDateStr,
               moduleLabel,
               subjectName: resolvedSubject,
               topicName: subjectText && topicText ? topicText : undefined,
               room: cell.room ? String(cell.room).trim() : undefined,
+              instructorName: resolvedExamInstructor || undefined,
               startMinutes,
               endMinutes,
             });
@@ -457,6 +526,7 @@ export function StudentWorkspace() {
             prev.timeLabel = `${formatMinutesToHHMM(prev.startTimeMinutes)} - ${formatMinutesToHHMM(item.endMinutes)}`;
             if (!prev.room && item.room) prev.room = item.room;
             if (!prev.topicName && item.topicName) prev.topicName = item.topicName;
+            if (!prev.instructorName && item.instructorName) prev.instructorName = item.instructorName;
           } else {
             const newItem: ScheduledExamItem & { _endMinutes?: number } = {
               id: `horario-${item.dateStr}-${item.startMinutes}-${item.subjectName}`,
@@ -469,6 +539,7 @@ export function StudentWorkspace() {
               topicName: item.topicName,
               timeLabel: `${formatMinutesToHHMM(item.startMinutes)} - ${formatMinutesToHHMM(item.endMinutes)}`,
               room: item.room,
+              instructorName: item.instructorName,
               source: 'horario',
               startTimeMinutes: item.startMinutes,
               _endMinutes: item.endMinutes,
@@ -537,6 +608,7 @@ export function StudentWorkspace() {
               moduleLabel: modLabel,
               subjectName: e.titulo,
               topicName: e.cleanDescricao || undefined,
+              instructorName: e.instructorName || undefined,
               source: 'evento',
               startTimeMinutes: 0,
             };
@@ -729,19 +801,31 @@ export function StudentWorkspace() {
                     </div>
                   </div>
 
-                  {(exam.timeLabel || exam.room) && (
-                    <div className="pt-2 border-t border-black/20 flex flex-wrap items-center justify-between gap-2 text-[11px] font-bold text-black">
-                      {exam.timeLabel && (
-                        <span className="inline-flex items-center gap-1 font-mono font-black">
-                          <Clock size={12} className="text-black" />
-                          {exam.timeLabel}
-                        </span>
+                  {(exam.timeLabel || exam.room || exam.instructorName) && (
+                    <div className="pt-2 border-t border-black/20 space-y-1.5 text-[11px] font-bold text-black">
+                      {(exam.timeLabel || exam.room) && (
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          {exam.timeLabel && (
+                            <span className="inline-flex items-center gap-1 font-mono font-black">
+                              <Clock size={12} className="text-black" />
+                              {exam.timeLabel}
+                            </span>
+                          )}
+                          {exam.room && (
+                            <span className="inline-flex items-center gap-1 uppercase font-black">
+                              <MapPin size={12} className="text-black" />
+                              {exam.room}
+                            </span>
+                          )}
+                        </div>
                       )}
-                      {exam.room && (
-                        <span className="inline-flex items-center gap-1 uppercase font-black">
-                          <MapPin size={12} className="text-black" />
-                          {exam.room}
-                        </span>
+                      {exam.instructorName && (
+                        <div className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase text-black">
+                          <User size={11} className="text-black shrink-0" />
+                          <span className="truncate">
+                            {isPt ? 'Instrutor:' : 'Instructor:'} {exam.instructorName}
+                          </span>
+                        </div>
                       )}
                     </div>
                   )}
@@ -857,16 +941,30 @@ export function StudentWorkspace() {
                       )}
                     </div>
 
-                    {/* Campo de destaque do Local informado na grade */}
-                    <div className="rounded-xl border-2 border-black bg-white px-3 py-2.5 flex items-start gap-2.5">
-                      <MapPin size={16} className="text-black shrink-0 mt-0.5" />
-                      <div className="min-w-0">
-                        <span className="block text-[9px] font-black uppercase tracking-widest text-black">
-                          {isPt ? 'Local da Atividade' : 'Activity Location'}
-                        </span>
-                        <span className="block text-sm font-black uppercase tracking-tight text-black break-words">
-                          {act.location || (isPt ? 'A confirmar no Detalhe Semanal' : 'To be confirmed in Schedule')}
-                        </span>
+                    {/* Campo de destaque do Local e Instrutor Responsável informados na grade */}
+                    <div className="rounded-xl border-2 border-black bg-white px-3 py-2.5 space-y-2">
+                      <div className="flex items-start gap-2.5">
+                        <MapPin size={16} className="text-black shrink-0 mt-0.5" />
+                        <div className="min-w-0">
+                          <span className="block text-[9px] font-black uppercase tracking-widest text-black">
+                            {isPt ? 'Local da Atividade' : 'Activity Location'}
+                          </span>
+                          <span className="block text-sm font-black uppercase tracking-tight text-black break-words">
+                            {act.location || (isPt ? 'A confirmar no Detalhe Semanal' : 'To be confirmed in Schedule')}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="pt-2 border-t border-black/15 flex items-start gap-2.5">
+                        <User size={15} className="text-black shrink-0 mt-0.5" />
+                        <div className="min-w-0">
+                          <span className="block text-[9px] font-black uppercase tracking-widest text-black">
+                            {isPt ? 'Instrutor Responsável' : 'Responsible Instructor'}
+                          </span>
+                          <span className="block text-xs font-black uppercase tracking-tight text-black break-words">
+                            {act.instructorName || (isPt ? 'A confirmar no Detalhe Semanal' : 'To be confirmed')}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -876,11 +974,6 @@ export function StudentWorkspace() {
                       <Clock size={12} className="text-black" />
                       {act.timeLabel}
                     </span>
-                    {act.instructorName && (
-                      <span className="text-[10px] font-extrabold uppercase truncate max-w-[160px]">
-                        {act.instructorName}
-                      </span>
-                    )}
                   </div>
                 </div>
               );
@@ -1036,11 +1129,19 @@ export function StudentWorkspace() {
                   <div className="space-y-0.5">
                     <p className="text-xs font-bold text-black">{evt.titulo}</p>
                     {evt.descricao && <p className="text-[11px] text-black line-clamp-2">{evt.descricao}</p>}
-                    {evt.uniforme_dia && (
-                      <span className="inline-block text-[10px] font-bold text-black bg-white px-2 py-0.5 rounded border border-slate-300 mt-1">
-                        {isPt ? 'Uniforme:' : 'Uniform:'} {evt.uniforme_dia}
-                      </span>
-                    )}
+                    <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                      {evt.instructorName && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-black bg-white px-2 py-0.5 rounded border border-slate-300">
+                          <User size={10} className="text-black" />
+                          {isPt ? 'Instrutor Responsável:' : 'Instructor:'} {evt.instructorName}
+                        </span>
+                      )}
+                      {evt.uniforme_dia && (
+                        <span className="inline-block text-[10px] font-bold text-black bg-white px-2 py-0.5 rounded border border-slate-300">
+                          {isPt ? 'Uniforme:' : 'Uniform:'} {evt.uniforme_dia}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <span className="text-[11px] font-mono font-bold text-black shrink-0 flex items-center gap-1">
                     <Clock size={12} className="text-black" />

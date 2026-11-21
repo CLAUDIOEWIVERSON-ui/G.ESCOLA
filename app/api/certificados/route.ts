@@ -15,8 +15,15 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Acesso restrito.' }, { status: 403 });
     }
 
+    const { searchParams } = new URL(req.url);
+    const requestType = searchParams.get('type');
+
     if (!isSupabaseAdminConfigured()) {
-      return NextResponse.json({ success: true, templates: [], storageMode: 'local' });
+      return NextResponse.json(
+        requestType === 'library'
+          ? { success: true, assets: [], storageMode: 'local' }
+          : { success: true, templates: [], storageMode: 'local' }
+      );
     }
 
     const { data, error } = await supabaseAdmin
@@ -25,20 +32,42 @@ export async function GET(req: NextRequest) {
       .is('deleted_at', null)
       .order('data_emissao', { ascending: false })
       .order('created_at', { ascending: false })
-      .limit(100);
+      .limit(200);
 
     if (error) {
       const code = String(error.code || '');
       const msg = String(error.message || '');
       if (code === '42P01' || msg.includes('does not exist') || msg.includes('schema cache')) {
-        return NextResponse.json({ success: true, templates: [], storageMode: 'local' });
+        return NextResponse.json(
+          requestType === 'library'
+            ? { success: true, assets: [], storageMode: 'local' }
+            : { success: true, templates: [], storageMode: 'local' }
+        );
       }
       throw error;
     }
 
+    const allRows = data || [];
+    if (requestType === 'library') {
+      const assets = allRows
+        .filter((row: any) => Boolean(row?.template_data?.__isAssetLibrary))
+        .map((row: any) => ({
+          ...row.template_data,
+          id: row.id,
+          createdAt: row.created_at,
+        }));
+      return NextResponse.json({
+        success: true,
+        assets,
+        storageMode: 'supabase',
+      });
+    }
+
+    const templates = allRows.filter((row: any) => !row?.template_data?.__isAssetLibrary);
+
     return NextResponse.json({
       success: true,
-      templates: data || [],
+      templates,
       storageMode: 'supabase',
     });
   } catch (err: any) {
@@ -67,7 +96,66 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { id, turma_id, curso_id, aluno_id, template_data } = body || {};
+    const { id, turma_id, curso_id, aluno_id, template_data, isAssetLibrary, asset_data } =
+      body || {};
+
+    if (isAssetLibrary && asset_data && typeof asset_data === 'object') {
+      const libraryPayloadData = {
+        ...asset_data,
+        __isAssetLibrary: true,
+      };
+      if (!isSupabaseAdminConfigured()) {
+        return NextResponse.json({
+          success: true,
+          storageMode: 'local',
+          data: {
+            id: id || `local-asset-${Date.now()}`,
+            ...libraryPayloadData,
+          },
+        });
+      }
+
+      const payload = {
+        aluno_id: null,
+        turma_id: null,
+        curso_id: null,
+        tipo: 'certificado',
+        template_data: libraryPayloadData,
+        data_emissao: new Date().toISOString(),
+      };
+
+      const insertRes = await supabaseAdmin
+        .from('certificados')
+        .insert([payload])
+        .select('*')
+        .maybeSingle();
+
+      if (insertRes.error) {
+        const code = String(insertRes.error.code || '');
+        const msg = String(insertRes.error.message || '');
+        if (code === '42P01' || msg.includes('does not exist') || msg.includes('schema cache')) {
+          return NextResponse.json({
+            success: true,
+            storageMode: 'local',
+            data: {
+              id: id || `local-asset-${Date.now()}`,
+              ...libraryPayloadData,
+            },
+          });
+        }
+        throw insertRes.error;
+      }
+
+      return NextResponse.json({
+        success: true,
+        storageMode: 'supabase',
+        data: {
+          ...libraryPayloadData,
+          id: insertRes.data?.id || id || `asset-${Date.now()}`,
+          createdAt: insertRes.data?.created_at,
+        },
+      });
+    }
 
     if (!template_data || typeof template_data !== 'object') {
       return NextResponse.json({ error: 'Dados do modelo inválidos.' }, { status: 400 });

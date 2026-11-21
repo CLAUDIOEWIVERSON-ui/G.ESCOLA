@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
+import { fetchWithAuth } from '@/lib/api';
 import { useUser } from '@/lib/auth/UserContext';
 import { UserWorkspaceHeader } from '@/components/UserWorkspaceHeader';
 
@@ -275,26 +276,54 @@ function AvaliacaoAlunoForm() {
         .is('deleted_at', null);
       if (dData) setDisciplinas(dData);
 
-      const { data: iData } = await supabase
-        .from('profiles')
-        .select('id, full_name')
-        .eq('role', 'instrutor');
-      
+      const [{ data: iData }, apiInstrRes] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('id, full_name')
+          .eq('role', 'instrutor'),
+        fetchWithAuth('/api/v1/instrutores')
+          .then((r) => (r.ok ? r.json() : null))
+          .catch(() => null),
+      ]);
+
       const combinedInstructors: any[] = [];
+      const seenIds = new Set<string>();
       const seenNames = new Set<string>();
-      
+
+      const pushInstructor = (prof: any) => {
+        const id = String(prof?.id || '').trim();
+        const name = String(prof?.full_name || '').trim();
+        if (!name) return;
+        const nameKey = name.toLowerCase();
+        if ((id && seenIds.has(id)) || seenNames.has(nameKey)) return;
+        if (id) seenIds.add(id);
+        seenNames.add(nameKey);
+        combinedInstructors.push({
+          id: id || name,
+          full_name: name,
+        });
+      };
+
       if (iData) {
-        iData.forEach((prof: any) => {
-          const name = (prof.full_name || '').trim();
-          if (name) {
-            seenNames.add(name.toLowerCase());
-            combinedInstructors.push({
-              id: prof.id,
-              full_name: prof.full_name
-            });
-          }
+        iData.forEach(pushInstructor);
+      }
+      if (Array.isArray(apiInstrRes?.instrutores)) {
+        apiInstrRes.instrutores.forEach(pushInstructor);
+      }
+      if (apiInstrRes?.profilesMap && typeof apiInstrRes.profilesMap === 'object') {
+        Object.entries(apiInstrRes.profilesMap).forEach(([id, full_name]) => {
+          pushInstructor({ id, full_name });
         });
       }
+      const turmaInstrName = String(apiInstrRes?.turmaInstructors?.[tId] || '').trim();
+      if (turmaInstrName && !seenNames.has(turmaInstrName.toLowerCase())) {
+        seenNames.add(turmaInstrName.toLowerCase());
+        combinedInstructors.push({
+          id: turmaInstrName,
+          full_name: turmaInstrName,
+        });
+      }
+
       setInstrutores(combinedInstructors);
     } catch (err) {
       console.error('Error fetching schedule details:', err);
@@ -996,8 +1025,19 @@ function AvaliacaoAlunoForm() {
                           ) : (
                             <div className="space-y-2">
                               {filledSlots.map(({ slot, cell }) => {
-                                const subjectName = cell.customSubject || disciplinas.find(d => d.id === cell.subjectId)?.nome || cell.subjectId || "Disciplina";
-                                const instructorName = cell.customInstructor || instrutores.find(i => i.id === cell.instructorId)?.full_name || cell.instructorId || "Instrutor";
+                                const subjectName =
+                                  cell.customSubject ||
+                                  disciplinas.find(d => d.id === cell.subjectId)?.nome ||
+                                  (cell.subjectId === '__extraclasse__' ? 'EXTRA CLASSE' : cell.subjectId) ||
+                                  'Disciplina';
+                                const resolvedFound = instrutores.find(i => i.id === cell.instructorId)?.full_name;
+                                const rawInstrId = String(cell.instructorId || '').trim();
+                                const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawInstrId);
+                                const instructorName =
+                                  (cell.customInstructor || '').trim() ||
+                                  resolvedFound ||
+                                  (!isUuid && rawInstrId ? rawInstrId : '') ||
+                                  'Instrutor';
                                 return (
                                   <div key={slot.id} className="bg-white border border-slate-300 rounded-lg p-2 shadow-xs text-[10px] space-y-1">
                                     <div className="flex justify-between items-center gap-1.5 border-b pb-1 mb-1.5 border-slate-300">
@@ -1593,8 +1633,19 @@ function AvaliacaoAlunoForm() {
                                       ) : (
                                         <div className="space-y-2">
                                           {filledSlots.map(({ slot, cell }) => {
-                                            const subjectName = cell.customSubject || disciplinas.find(d => d.id === cell.subjectId)?.nome || cell.subjectId || "Disciplina";
-                                            const instructorName = cell.customInstructor || instrutores.find(i => i.id === cell.instructorId)?.full_name || cell.instructorId || "Instrutor";
+                                            const subjectName =
+                                              cell.customSubject ||
+                                              disciplinas.find(d => d.id === cell.subjectId)?.nome ||
+                                              (cell.subjectId === '__extraclasse__' ? 'EXTRA CLASSE' : cell.subjectId) ||
+                                              'Disciplina';
+                                            const resolvedFound = instrutores.find(i => i.id === cell.instructorId)?.full_name;
+                                            const rawInstrId = String(cell.instructorId || '').trim();
+                                            const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawInstrId);
+                                            const instructorName =
+                                              (cell.customInstructor || '').trim() ||
+                                              resolvedFound ||
+                                              (!isUuid && rawInstrId ? rawInstrId : '') ||
+                                              'Instrutor';
                                             return (
                                               <div key={slot.id} className="bg-white border border-slate-150 rounded-lg p-2 shadow-xs text-[10px] space-y-1">
                                                 <div className="flex justify-between items-center gap-1.5 border-b pb-1 mb-1.5 border-slate-100">

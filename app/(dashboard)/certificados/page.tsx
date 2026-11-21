@@ -30,6 +30,7 @@ import {
   Copy,
   MousePointerClick,
   Settings,
+  FolderOpen,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase/client';
@@ -58,10 +59,21 @@ import {
   groupCourseDisciplinesByModule,
   resolveBoletimDisciplineGrade,
 } from '@/lib/certificateTypes';
+import {
+  BUILTIN_CERTIFICATE_ASSETS,
+  CertificateAssetCategory,
+  CertificateAssetTarget,
+  CertificateLibraryAsset,
+  downloadCertificateAsset,
+  extractTemplateAssetsForLibrary,
+  prepareUploadedAssetDataUrl,
+} from '@/lib/certificateLibrary';
 import { CertificateSheet } from '@/components/CertificateSheet';
 import { CertificateInspectorPanel } from '@/components/CertificateInspectorPanel';
+import { CertificateLibraryPanel } from '@/components/CertificateLibraryPanel';
 
 const LOCAL_TEMPLATES_KEY = 'sge_saved_certificate_templates_v1';
+const LOCAL_LIBRARY_KEY = 'sge_certificate_asset_library_v1';
 const LAST_WORKSPACE_KEY = 'sge_certificate_last_workspace_v1';
 
 function getTemplateSaveSignature(t: CertificateTemplateConfig): string {
@@ -94,7 +106,7 @@ interface CertificateWorkspaceSnapshot {
   selectedTurmaId: string;
   selectedStudentId: string;
   associateTurmaId: string;
-  editorTab: 'frente' | 'verso' | 'visual' | 'modelos';
+  editorTab: 'frente' | 'verso' | 'visual' | 'modelos' | 'biblioteca';
   previewMode: 'both' | 'front' | 'back';
   manualZoom: number;
   customStudentRank: string;
@@ -117,7 +129,11 @@ export default function CertificadosPage() {
   const [template, setTemplate] = useState<CertificateTemplateConfig>(() =>
     createPresetTemplate('formacao_marinheiros')
   );
-  const [editorTab, setEditorTab] = useState<'frente' | 'verso' | 'visual' | 'modelos'>('frente');
+  const [editorTab, setEditorTab] = useState<
+    'frente' | 'verso' | 'visual' | 'modelos' | 'biblioteca'
+  >('frente');
+  const [libraryCategory, setLibraryCategory] = useState<CertificateAssetCategory>('brasao');
+  const [customLibraryAssets, setCustomLibraryAssets] = useState<CertificateLibraryAsset[]>([]);
   const [selectedObject, setSelectedObject] = useState<CertificateSelectableObject | null>(null);
   const [previewMode, setPreviewMode] = useState<'both' | 'front' | 'back'>('both');
   const [manualZoom, setManualZoom] = useState<number>(100);
@@ -263,7 +279,7 @@ export default function CertificadosPage() {
 
   useEffect(() => {
     if (fullscreenPreview || showSaveAsNewModal) return;
-    if (!selectedObject && editorTab !== 'modelos') return;
+    if (!selectedObject && editorTab !== 'modelos' && editorTab !== 'biblioteca') return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setSelectedObject(null);
@@ -275,7 +291,7 @@ export default function CertificadosPage() {
   }, [fullscreenPreview, showSaveAsNewModal, selectedObject, editorTab]);
 
   const handleSelectObjectOnSheet = useCallback((obj: CertificateSelectableObject) => {
-    setEditorTab((prev) => (prev === 'modelos' ? 'frente' : prev));
+    setEditorTab((prev) => (prev === 'modelos' || prev === 'biblioteca' ? 'frente' : prev));
     setSelectedObject(obj);
   }, []);
 
@@ -376,7 +392,8 @@ export default function CertificadosPage() {
             parsed.editorTab === 'frente' ||
             parsed.editorTab === 'verso' ||
             parsed.editorTab === 'visual' ||
-            parsed.editorTab === 'modelos'
+            parsed.editorTab === 'modelos' ||
+            parsed.editorTab === 'biblioteca'
           ) {
             setEditorTab(parsed.editorTab);
           }
@@ -420,9 +437,58 @@ export default function CertificadosPage() {
     }
   }, []);
 
+  const loadLibraryAssets = useCallback(async () => {
+    let localItems: CertificateLibraryAsset[] = [];
+    try {
+      const raw = localStorage.getItem(LOCAL_LIBRARY_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) localItems = parsed;
+      }
+    } catch {
+      // ignore storage errors
+    }
+
+    try {
+      const res = await fetchWithAuth('/api/certificados?type=library');
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && Array.isArray(json.assets)) {
+          const merged = [...json.assets];
+          const seen = new Set(merged.map((a: any) => `${a.category}:${a.url}`));
+          localItems.forEach((loc) => {
+            if (!seen.has(`${loc.category}:${loc.url}`)) {
+              merged.push(loc);
+            }
+          });
+          setCustomLibraryAssets(merged);
+          try {
+            localStorage.setItem(LOCAL_LIBRARY_KEY, JSON.stringify(merged));
+          } catch {
+            // ignore storage quota errors
+          }
+          return;
+        }
+      }
+    } catch {
+      // fallback to local items
+    }
+
+    setCustomLibraryAssets(localItems);
+  }, []);
+
   useEffect(() => {
     loadSavedTemplates();
-  }, [loadSavedTemplates]);
+    loadLibraryAssets();
+  }, [loadSavedTemplates, loadLibraryAssets]);
+
+  const allLibraryAssets = useMemo(() => {
+    const seenUrls = new Set<string>();
+    BUILTIN_CERTIFICATE_ASSETS.forEach((a) => seenUrls.add(a.url));
+    customLibraryAssets.forEach((a) => seenUrls.add(a.url));
+    const templateExtracted = extractTemplateAssetsForLibrary(savedTemplates, seenUrls);
+    return [...BUILTIN_CERTIFICATE_ASSETS, ...customLibraryAssets, ...templateExtracted];
+  }, [customLibraryAssets, savedTemplates]);
 
   // Continuously persist active model, selected turma, student and preferences so reopening restores exact state
   useEffect(() => {
@@ -1320,6 +1386,252 @@ export default function CertificadosPage() {
     reader.readAsDataURL(file);
     e.target.value = '';
   };
+
+  const persistLocalLibrary = useCallback((items: CertificateLibraryAsset[]) => {
+    try {
+      localStorage.setItem(LOCAL_LIBRARY_KEY, JSON.stringify(items));
+    } catch {
+      // ignore storage quota errors
+    }
+  }, []);
+
+  const handleSaveAssetRecord = useCallback(
+    async (assetPayload: Omit<CertificateLibraryAsset, 'id' | 'source'>) => {
+      const localRecord: CertificateLibraryAsset = {
+        ...assetPayload,
+        id: `local-asset-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        source: 'custom',
+        createdAt: new Date().toISOString(),
+      };
+
+      let savedRecord = localRecord;
+      try {
+        const res = await fetchWithAuth('/api/certificados', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            isAssetLibrary: true,
+            asset_data: {
+              ...assetPayload,
+              source: 'custom',
+            },
+          }),
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (json?.success && json?.data) {
+            savedRecord = {
+              ...localRecord,
+              ...json.data,
+              source: 'custom',
+            };
+          }
+        }
+      } catch {
+        // keep local record fallback
+      }
+
+      setCustomLibraryAssets((prev) => {
+        const next = [savedRecord, ...prev];
+        persistLocalLibrary(next);
+        return next;
+      });
+
+      return savedRecord;
+    },
+    [persistLocalLibrary]
+  );
+
+  const handleUploadToLibrary = useCallback(
+    async (category: CertificateAssetCategory, files: FileList | null, customName?: string) => {
+      if (!canEdit) {
+        toast.error('Usuário com acesso somente leitura.');
+        return;
+      }
+      if (!files || files.length === 0) return;
+
+      const fileArray = Array.from(files);
+      let addedCount = 0;
+
+      for (let i = 0; i < fileArray.length; i++) {
+        const file = fileArray[i];
+        try {
+          const finalUrl = await prepareUploadedAssetDataUrl(file, category);
+          if (!finalUrl) continue;
+
+          const baseFileName = file.name.replace(/\.[^/.]+$/, '');
+          const resolvedName =
+            customName && fileArray.length === 1
+              ? customName
+              : customName && fileArray.length > 1
+                ? `${customName} (${i + 1})`
+                : baseFileName || 'Recurso Importado';
+
+          await handleSaveAssetRecord({
+            name: resolvedName,
+            category,
+            url: finalUrl,
+            subtitle:
+              category === 'moldura'
+                ? 'Moldura adicionada (centro transparente)'
+                : category === 'marca_dagua'
+                  ? "Marca d'água personalizada"
+                  : 'Brasão personalizado',
+            ...(category === 'moldura' ? { frameStyle: 'original' as const } : {}),
+          });
+          addedCount += 1;
+        } catch {
+          toast.error(`Falha ao processar o arquivo "${file.name}".`);
+        }
+      }
+
+      if (addedCount > 0) {
+        toast.success(
+          addedCount === 1
+            ? 'Recurso adicionado à biblioteca!'
+            : `${addedCount} recursos adicionados à biblioteca!`
+        );
+      }
+    },
+    [canEdit, handleSaveAssetRecord]
+  );
+
+  const handleSaveCurrentAssetToLibrary = useCallback(
+    async (category: CertificateAssetCategory, url: string, suggestedName: string) => {
+      if (!canEdit) {
+        toast.error('Usuário com acesso somente leitura.');
+        return;
+      }
+      if (!url) return;
+      if (allLibraryAssets.some((a) => a.category === category && a.url === url)) {
+        toast.info('Este recurso já está salvo na biblioteca.');
+        return;
+      }
+      await handleSaveAssetRecord({
+        name: suggestedName,
+        category,
+        url,
+        subtitle: 'Salvo a partir do modelo atual',
+        ...(category === 'moldura' ? { frameStyle: 'original' as const } : {}),
+      });
+      toast.success('Recurso salvo na biblioteca!');
+    },
+    [allLibraryAssets, canEdit, handleSaveAssetRecord]
+  );
+
+  const handleDeleteLibraryAsset = useCallback(
+    async (assetId: string) => {
+      if (!canEdit) return;
+      try {
+        await fetchWithAuth(`/api/certificados?id=${encodeURIComponent(assetId)}`, {
+          method: 'DELETE',
+        });
+      } catch {
+        // continue removing from local state
+      }
+      setCustomLibraryAssets((prev) => {
+        const next = prev.filter((a) => a.id !== assetId);
+        persistLocalLibrary(next);
+        return next;
+      });
+      toast.success('Recurso removido da biblioteca.');
+    },
+    [canEdit, persistLocalLibrary]
+  );
+
+  const handleDownloadLibraryAsset = useCallback(async (asset: CertificateLibraryAsset) => {
+    try {
+      await downloadCertificateAsset(asset);
+      toast.success(`Download de "${asset.name}" iniciado!`);
+    } catch {
+      toast.error('Não foi possível baixar o recurso selecionado.');
+    }
+  }, []);
+
+  const handleApplyLibraryAssetToTarget = useCallback(
+    (asset: CertificateLibraryAsset, target: CertificateAssetTarget) => {
+      if (!canEdit) {
+        toast.error('Usuário com acesso somente leitura.');
+        return;
+      }
+
+      setTemplate((prev) => {
+        if (target === 'brasaoEsquerdo') {
+          return {
+            ...prev,
+            logoEsquerdaUrl: asset.url,
+            mostrarLogoEsquerda: true,
+          };
+        }
+        if (target === 'brasaoCentro') {
+          return {
+            ...prev,
+            logoCentroUrl: asset.url,
+            mostrarLogoCentro: true,
+          };
+        }
+        if (target === 'brasaoDireito') {
+          if (asset.isDefaultMarinhaCrest) {
+            return {
+              ...prev,
+              logoDireitaUrl: '',
+              usarBrasaoPadraoDireita: true,
+              mostrarLogoDireita: true,
+            };
+          }
+          return {
+            ...prev,
+            logoDireitaUrl: asset.url,
+            usarBrasaoPadraoDireita: false,
+            mostrarLogoDireita: true,
+          };
+        }
+        if (target === 'marcaDaguaFrente') {
+          return {
+            ...prev,
+            marcaDaguaFrenteUrl: asset.url,
+            mostrarMarcaDaguaFrente: true,
+          };
+        }
+        if (target === 'marcaDaguaVerso') {
+          return {
+            ...prev,
+            marcaDaguaVersoUrl: asset.url,
+            mostrarMarcaDaguaVerso: true,
+          };
+        }
+        if (target === 'marcaDaguaAmbas') {
+          return {
+            ...prev,
+            marcaDaguaFrenteUrl: asset.url,
+            marcaDaguaVersoUrl: asset.url,
+            mostrarMarcaDaguaFrente: true,
+            mostrarMarcaDaguaVerso: true,
+          };
+        }
+        if (target === 'molduraFrente') {
+          if (asset.frameStyle === 'vetorial' || asset.frameStyle === 'simples') {
+            return {
+              ...prev,
+              estiloMolduraFrente: asset.frameStyle,
+              usarMolduraOriginal: false,
+              corBorda: prev.corBorda || asset.defaultBorderColor || '#071b3b',
+            };
+          }
+          return {
+            ...prev,
+            estiloMolduraFrente: 'original',
+            usarMolduraOriginal: true,
+            molduraFrenteUrl: asset.url,
+          };
+        }
+        return prev;
+      });
+
+      toast.success(`"${asset.name}" aplicado preservando as propriedades do modelo!`);
+    },
+    [canEdit]
+  );
 
   // Persist template cleanly (used by debounced auto-save and manual save triggers)
   const persistTemplateRecord = useCallback(
@@ -2714,12 +3026,13 @@ export default function CertificadosPage() {
         )}
       </div>
 
-      {/* Main Split: Contextual Inspector (only when clicking an object or Modelos) + Live A4 Preview */}
+      {/* Main Split: Contextual Inspector (only when clicking an object, Modelos or Biblioteca) + Live A4 Preview */}
       {(() => {
-        const showSidePanel = editorTab === 'modelos' || selectedObject !== null;
+        const showSidePanel =
+          editorTab === 'modelos' || editorTab === 'biblioteca' || selectedObject !== null;
         return (
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
-            {/* LEFT COLUMN: Appears ONLY when user clicks an object on the sheet or opens Modelos Salvos */}
+            {/* LEFT COLUMN: Appears ONLY when user clicks an object on the sheet or opens Modelos/Biblioteca */}
             {showSidePanel && (
               <div className="xl:col-span-5 xl:sticky xl:top-4 bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
                 {editorTab === 'modelos' ? (
@@ -3079,6 +3392,19 @@ export default function CertificadosPage() {
                 )}
                     </div>
                   </div>
+            ) : editorTab === 'biblioteca' ? (
+              <CertificateLibraryPanel
+                assets={allLibraryAssets}
+                template={template}
+                activeCategory={libraryCategory}
+                onChangeCategory={setLibraryCategory}
+                onClose={() => setEditorTab('frente')}
+                onApplyAsset={handleApplyLibraryAssetToTarget}
+                onUploadToLibrary={handleUploadToLibrary}
+                onDownloadAsset={handleDownloadLibraryAsset}
+                onDeleteCustomAsset={handleDeleteLibraryAsset}
+                canEdit={canEdit}
+              />
             ) : selectedObject ? (
               <CertificateInspectorPanel
                 selectedObject={selectedObject}
@@ -3117,6 +3443,15 @@ export default function CertificadosPage() {
                 handleUpdateDisciplineRow={handleUpdateDisciplineRow}
                 handleRemoveDisciplineRow={handleRemoveDisciplineRow}
                 handleMoveDisciplineRow={handleMoveDisciplineRow}
+                libraryAssets={allLibraryAssets}
+                onApplyLibraryAsset={handleApplyLibraryAssetToTarget}
+                onDownloadLibraryAsset={handleDownloadLibraryAsset}
+                onSaveCurrentAssetToLibrary={handleSaveCurrentAssetToLibrary}
+                onOpenLibrary={(category) => {
+                  setLibraryCategory(category);
+                  setSelectedObject(null);
+                  setEditorTab('biblioteca');
+                }}
               />
             ) : null}
           </div>
@@ -3212,6 +3547,28 @@ export default function CertificadosPage() {
               >
                 <BookmarkCheck size={13} />
                 <span>Modelos Salvos</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (editorTab === 'biblioteca') {
+                    setEditorTab('frente');
+                  } else {
+                    setSelectedObject(null);
+                    setEditorTab('biblioteca');
+                  }
+                }}
+                className={cn(
+                  'px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border',
+                  editorTab === 'biblioteca'
+                    ? 'bg-blue-900 text-white border-blue-950'
+                    : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                )}
+                title="Abrir ou fechar Biblioteca de Brasões, Marcas d'Água e Molduras"
+              >
+                <FolderOpen size={13} />
+                <span>Biblioteca</span>
               </button>
 
               <button
