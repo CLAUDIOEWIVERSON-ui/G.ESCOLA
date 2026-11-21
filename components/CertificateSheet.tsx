@@ -2455,10 +2455,18 @@ export function CertificateSheet({
                       <tr key={disc.id || idx}>
                         <td
                           style={{
-                            padding: '8px 10px 8px 4px',
-                            fontSize: effectiveDisciplines.length > 6 ? '15px' : '19px',
+                            padding:
+                              effectiveDisciplines.length > 10
+                                ? '4px 10px 4px 4px'
+                                : '8px 10px 8px 4px',
+                            fontSize:
+                              effectiveDisciplines.length > 10
+                                ? '12.5px'
+                                : effectiveDisciplines.length > 6
+                                  ? '15px'
+                                  : '19px',
                             fontWeight: 500,
-                            lineHeight: 1.28,
+                            lineHeight: effectiveDisciplines.length > 10 ? 1.2 : 1.28,
                             borderBottom: gridLine,
                             borderRight: gridLine,
                             verticalAlign: 'middle',
@@ -2469,8 +2477,13 @@ export function CertificateSheet({
                         </td>
                         <td
                           style={{
-                            padding: '8px 8px',
-                            fontSize: effectiveDisciplines.length > 6 ? '20px' : '27px',
+                            padding: effectiveDisciplines.length > 10 ? '4px 8px' : '8px 8px',
+                            fontSize:
+                              effectiveDisciplines.length > 10
+                                ? '15px'
+                                : effectiveDisciplines.length > 6
+                                  ? '20px'
+                                  : '27px',
                             fontWeight: 500,
                             textAlign: 'center',
                             borderBottom: gridLine,
@@ -2482,8 +2495,16 @@ export function CertificateSheet({
                         </td>
                         <td
                           style={{
-                            padding: '8px 4px 8px 8px',
-                            fontSize: effectiveDisciplines.length > 6 ? '20px' : '24px',
+                            padding:
+                              effectiveDisciplines.length > 10
+                                ? '4px 4px 4px 8px'
+                                : '8px 4px 8px 8px',
+                            fontSize:
+                              effectiveDisciplines.length > 10
+                                ? '15px'
+                                : effectiveDisciplines.length > 6
+                                  ? '20px'
+                                  : '24px',
                             fontWeight: 700,
                             textAlign: 'center',
                             color: navyBorder,

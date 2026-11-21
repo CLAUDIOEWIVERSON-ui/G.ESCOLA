@@ -572,6 +572,21 @@ export function resolveBoletimDisciplineGrade(
     }
   }
 
+  if (directRows.length > 0) {
+    const hasAnyModularCol = directRows.some((g: any) => {
+      for (let m = 1; m <= 20; m++) {
+        if (isValidNum(g[`nota${m}`] ?? g[`nota_u${m}`])) return true;
+      }
+      return false;
+    });
+    if (!hasAnyModularCol) {
+      const directWithFinal = directRows.find((g: any) => isValidNum(g.nota_final));
+      if (directWithFinal) {
+        return toNum(directWithFinal.nota_final);
+      }
+    }
+  }
+
   return null;
 }
 
@@ -718,9 +733,15 @@ export function groupCourseDisciplinesByModule(
   courseTopics: any[] = [],
   totalModules?: number
 ): CertificateDisciplineRow[] {
-  if (!courseDisciplines || courseDisciplines.length === 0) return [];
+  const safeDisciplines = Array.isArray(courseDisciplines) ? courseDisciplines : [];
+  const requestedModules =
+    totalModules && Number.isFinite(Number(totalModules)) && Number(totalModules) > 0
+      ? Math.min(Number(totalModules), 20)
+      : 0;
 
-  const resolved = courseDisciplines.map((disc: any) => {
+  if (safeDisciplines.length === 0 && requestedModules === 0) return [];
+
+  const resolved = safeDisciplines.map((disc: any) => {
     let modIdx = Number(disc.modulo_index);
     if (!Number.isFinite(modIdx) || modIdx <= 0) {
       const discTopics = (courseTopics || []).filter(
@@ -750,10 +771,15 @@ export function groupCourseDisciplinesByModule(
     groups.get(modNum)!.push(disc);
   }
 
-  const sortedModNumbers = Array.from(groups.keys()).sort((a, b) => a - b);
+  const modNumSet = new Set<number>(groups.keys());
+  for (let m = 1; m <= requestedModules; m++) {
+    modNumSet.add(m);
+  }
+
+  const sortedModNumbers = Array.from(modNumSet).sort((a, b) => a - b);
   const effectiveTotalModules =
-    totalModules && totalModules > 0
-      ? totalModules
+    requestedModules > 0
+      ? requestedModules
       : Math.max(sortedModNumbers[sortedModNumbers.length - 1] || 1, 1);
 
   return sortedModNumbers.map((modNum) => {
@@ -786,11 +812,22 @@ export function groupCourseDisciplinesByModule(
     }
 
     // Resolve single grade for this module identically to Boletim Individual
-    const validGrades = discsInMod
-      .map((d: any) =>
-        resolveBoletimDisciplineGrade(d, modNum, studentGrades, effectiveTotalModules)
-      )
-      .filter((v): v is number => v !== null && !Number.isNaN(v));
+    const validGrades =
+      discsInMod.length > 0
+        ? discsInMod
+            .map((d: any) =>
+              resolveBoletimDisciplineGrade(d, modNum, studentGrades, effectiveTotalModules)
+            )
+            .filter((v): v is number => v !== null && !Number.isNaN(v))
+        : (() => {
+            const g = resolveBoletimDisciplineGrade(
+              null,
+              modNum,
+              studentGrades,
+              effectiveTotalModules
+            );
+            return g !== null && !Number.isNaN(g) ? [g] : [];
+          })();
 
     const moduleGrade: number | null =
       validGrades.length > 0 ? Math.max(...validGrades) : null;

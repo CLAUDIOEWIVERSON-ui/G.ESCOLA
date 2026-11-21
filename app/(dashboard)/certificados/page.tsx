@@ -737,40 +737,60 @@ export default function CertificadosPage() {
     };
   }, [turmaCourseDiscKey]);
 
+  const courseModuleStructureRows = useMemo(() => {
+    if (!selectedTurmaObj) return null;
+    return groupCourseDisciplinesByModule(
+      turmaCourseDisciplines,
+      [],
+      turmaCourseTopics,
+      courseTotalModules
+    );
+  }, [selectedTurmaObj, turmaCourseDisciplines, turmaCourseTopics, courseTotalModules]);
+
+  const courseModuleSyncSignature = useMemo(() => {
+    if (!courseModuleStructureRows) return '';
+    return JSON.stringify(
+      courseModuleStructureRows.map((r) => ({
+        id: r.id,
+        m: r.modulo ?? null,
+        n: r.nome,
+        ch: r.carga_horaria,
+      }))
+    );
+  }, [courseModuleStructureRows]);
+
+  // Keep template back modules/disciplines synchronized with the course of the selected turma
+  useEffect(() => {
+    if (!selectedTurmaObj || !useTurmaStudentGrades || !courseModuleStructureRows) {
+      return;
+    }
+    setTemplate((prev) => {
+      const currentSig = JSON.stringify(
+        (prev.disciplinas || []).map((r) => ({
+          id: r.id,
+          m: r.modulo ?? null,
+          n: r.nome,
+          ch: r.carga_horaria,
+        }))
+      );
+      if (currentSig === courseModuleSyncSignature && prev.agruparPorModulos !== false) {
+        return prev;
+      }
+      return {
+        ...prev,
+        agruparPorModulos: true,
+        disciplinas: courseModuleStructureRows.map((r) => ({ ...r })),
+      };
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTurmaObj?.id, useTurmaStudentGrades, courseModuleSyncSignature]);
+
   // Build discipline/grade rows for any student in the selected turma faithfully matching Boletim Individual
   const buildStudentRowsFromGrades = useCallback(
     (studentId: string, gradesOverride?: any[]): CertificateDisciplineRow[] => {
       const studentGrades = gradesOverride ?? turmaGradesMap[studentId] ?? [];
 
-      if (turmaCourseDisciplines.length === 0) {
-        const baseRows =
-          template.disciplinas && template.disciplinas.length > 0
-            ? template.disciplinas
-            : Array.from({ length: courseTotalModules }, (_, idx) => ({
-                id: `mod-${idx + 1}`,
-                modulo: idx + 1,
-                nome: `MÓDULO ${idx + 1}.`,
-                carga_horaria: '—',
-                nota: '-',
-              }));
-
-        return baseRows.map((row, idx) => {
-          const modNum = extractModuleNumberFromRow(row) ?? idx + 1;
-          const gradeVal = resolveBoletimDisciplineGrade(
-            null,
-            modNum,
-            studentGrades,
-            courseTotalModules
-          );
-          return {
-            ...row,
-            modulo: modNum,
-            nota: formatCertificateGradePT(gradeVal),
-          };
-        });
-      }
-
-      if (template.agruparPorModulos !== false) {
+      if (selectedTurmaObj || turmaCourseDisciplines.length > 0) {
         return groupCourseDisciplinesByModule(
           turmaCourseDisciplines,
           studentGrades,
@@ -779,42 +799,39 @@ export default function CertificadosPage() {
         );
       }
 
-      return turmaCourseDisciplines.map((disc: any, idx: number) => {
-        let modNum = Number(disc.modulo_index);
-        if (!Number.isFinite(modNum) || modNum <= 0) {
-          const discTopics = (turmaCourseTopics || []).filter(
-            (t: any) => t.disciplina_id === disc.id
-          );
-          const validMods = discTopics
-            .map((t: any) => Number(t.modulo_index))
-            .filter((m: number) => Number.isFinite(m) && m > 0);
-          modNum = validMods.length > 0 ? Math.min(...validMods) : 1;
-        }
+      const baseRows =
+        template.disciplinas && template.disciplinas.length > 0
+          ? template.disciplinas
+          : Array.from({ length: courseTotalModules }, (_, idx) => ({
+              id: `mod-${idx + 1}`,
+              modulo: idx + 1,
+              nome: `MÓDULO ${idx + 1}.`,
+              carga_horaria: '—',
+              nota: '-',
+            }));
 
+      return baseRows.map((row, idx) => {
+        const modNum = extractModuleNumberFromRow(row) ?? idx + 1;
         const gradeVal = resolveBoletimDisciplineGrade(
-          disc,
+          null,
           modNum,
           studentGrades,
           courseTotalModules
         );
-
-        const ch = disc.carga_horaria ? `${disc.carga_horaria}h` : '—';
         return {
-          id: disc.id || `disc-${idx}`,
+          ...row,
           modulo: modNum,
-          nome: String(disc.nome || `MÓDULO ${modNum}`).toUpperCase(),
-          carga_horaria: ch,
           nota: formatCertificateGradePT(gradeVal),
         };
       });
     },
     [
+      selectedTurmaObj,
       turmaCourseDisciplines,
       turmaGradesMap,
       turmaCourseTopics,
       courseTotalModules,
       template.disciplinas,
-      template.agruparPorModulos,
     ]
   );
 
@@ -1023,35 +1040,25 @@ export default function CertificadosPage() {
 
     setCustomCourseName((prev) => (prev === formattedCourseTitleCase ? prev : formattedCourseTitleCase));
     setTemplate((prev) => {
-      const groupedOrFlat =
-        turmaCourseDisciplines.length > 0
-          ? prev.agruparPorModulos !== false
-            ? groupCourseDisciplinesByModule(
-                turmaCourseDisciplines,
-                [],
-                turmaCourseTopics,
-                courseTotalModules
-              )
-            : turmaCourseDisciplines.map((d: any, idx: number) => ({
-                id: d.id || `disc-${idx}`,
-                modulo: d.modulo_index || 1,
-                nome: String(d.nome || `MÓDULO ${d.modulo_index || 1}`).toUpperCase(),
-                carga_horaria: d.carga_horaria ? `${d.carga_horaria}h` : '—',
-                nota: '-',
-              }))
-          : prev.disciplinas;
+      const groupedRows = groupCourseDisciplinesByModule(
+        turmaCourseDisciplines,
+        [],
+        turmaCourseTopics,
+        courseTotalModules
+      );
 
       return {
         ...prev,
         scope: targetScope,
         turmaId: selectedTurmaObj.id,
         cursoId: selectedTurmaObj.curso_id || null,
+        agruparPorModulos: true,
         textoCorpoPorAluno: {},
         textoPeriodoInicio: period.inicio,
         textoPeriodoFim: period.fim,
         dataEmissaoExtenso: period.fim || formatDateExtensoPT(new Date()),
         versoTituloCurso: courseDisplay.toUpperCase(),
-        disciplinas: groupedOrFlat,
+        disciplinas: groupedRows.length > 0 ? groupedRows : prev.disciplinas,
       };
     });
   }, [
@@ -1088,13 +1095,20 @@ export default function CertificadosPage() {
           nomeExibicao: display,
           genero: customStudentGenero,
           cursoNome: formatCourseTitleCasePT(
-            customCourseName || 'Curso de Formação de Marinheiros'
+            selectedCourseObj?.nome ||
+              customCourseName ||
+              'Curso de Formação de Marinheiros'
           ),
           turmaNome: selectedTurmaObj ? getCleanTurmaName(selectedTurmaObj.nome) : '',
           dataInicioExtenso: template.textoPeriodoInicio,
           dataFimExtenso: template.textoPeriodoFim,
           mediaFinalNumero: null,
-          disciplinas: template.disciplinas,
+          disciplinas:
+            useTurmaStudentGrades &&
+            courseModuleStructureRows &&
+            courseModuleStructureRows.length > 0
+              ? courseModuleStructureRows
+              : template.disciplinas,
         };
       }
 
@@ -1102,10 +1116,13 @@ export default function CertificadosPage() {
       const fullName = formatNameTitleCasePT(String(alunoObj.nome || '').trim());
       const display = rank ? `${rank} ${fullName}` : fullName;
 
-      const studentRows =
-        useTurmaStudentGrades && alunoObj?.id
+      const studentRows = useTurmaStudentGrades
+        ? alunoObj?.id
           ? buildStudentRowsFromGrades(alunoObj.id)
-          : template.disciplinas;
+          : courseModuleStructureRows && courseModuleStructureRows.length > 0
+            ? courseModuleStructureRows
+            : template.disciplinas
+        : template.disciplinas;
 
       const customBodyText =
         alunoObj?.id &&
@@ -1146,6 +1163,7 @@ export default function CertificadosPage() {
       template.textoCorpoPorAluno,
       useTurmaStudentGrades,
       buildStudentRowsFromGrades,
+      courseModuleStructureRows,
     ]
   );
 
@@ -1294,32 +1312,19 @@ export default function CertificadosPage() {
     const freshStudentGrades = selectedStudentObj ? freshGrouped[selectedStudentObj.id] || [] : [];
     const rows = selectedStudentObj
       ? buildStudentRowsFromGrades(selectedStudentObj.id, freshStudentGrades)
-      : turmaCourseDisciplines.length === 0
-        ? template.disciplinas
-        : template.agruparPorModulos !== false
-          ? groupCourseDisciplinesByModule(
-              turmaCourseDisciplines,
-              [],
-              turmaCourseTopics,
-              courseTotalModules
-            )
-          : turmaCourseDisciplines.map((d: any, idx: number) => ({
-              id: d.id || `disc-${idx}`,
-              modulo: d.modulo_index || 1,
-              nome: String(d.nome || `MÓDULO ${d.modulo_index || 1}`).toUpperCase(),
-              carga_horaria: d.carga_horaria ? `${d.carga_horaria}h` : '—',
-              nota: '-',
-            }));
+      : groupCourseDisciplinesByModule(
+          turmaCourseDisciplines,
+          [],
+          turmaCourseTopics,
+          courseTotalModules
+        );
 
     setTemplate((prev) => ({
       ...prev,
-      disciplinas: rows,
+      agruparPorModulos: true,
+      disciplinas: rows.length > 0 ? rows : prev.disciplinas,
     }));
-    toast.success(
-      template.agruparPorModulos !== false
-        ? 'Módulos, cargas horárias e notas do Boletim sincronizados!'
-        : 'Disciplinas, cargas horárias e notas do Boletim sincronizadas!'
-    );
+    toast.success('Módulos, disciplinas, cargas horárias e notas do Boletim sincronizados!');
   };
 
   // Discipline row actions
@@ -2081,24 +2086,29 @@ export default function CertificadosPage() {
           return String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR');
         });
 
+      const targetTotalModulesRaw = Number(
+        targetCourseObj?.qtd_modulos || targetTurmaObj?.curso?.qtd_modulos || 4
+      );
+      const targetTotalModules =
+        Number.isFinite(targetTotalModulesRaw) && targetTotalModulesRaw > 0
+          ? Math.min(targetTotalModulesRaw, 20)
+          : 4;
+      const targetModuleRows = groupCourseDisciplinesByModule(
+        targetDisciplines,
+        [],
+        [],
+        targetTotalModules
+      );
+
       associatedTemplate = {
         ...associatedTemplate,
+        agruparPorModulos: true,
         textoPeriodoInicio: period.inicio,
         textoPeriodoFim: period.fim,
         dataEmissaoExtenso: period.fim || associatedTemplate.dataEmissaoExtenso,
         versoTituloCurso: courseDisplay.toUpperCase(),
         disciplinas:
-          targetDisciplines.length > 0
-            ? associatedTemplate.agruparPorModulos !== false
-              ? groupCourseDisciplinesByModule(targetDisciplines, [], [])
-              : targetDisciplines.map((d: any, idx: number) => ({
-                  id: d.id || `disc-${idx}`,
-                  modulo: d.modulo_index || idx + 1,
-                  nome: String(d.nome || `MÓDULO ${d.modulo_index || idx + 1}`).toUpperCase(),
-                  carga_horaria: d.carga_horaria ? `${d.carga_horaria}h` : '—',
-                  nota: '-',
-                }))
-            : associatedTemplate.disciplinas,
+          targetModuleRows.length > 0 ? targetModuleRows : associatedTemplate.disciplinas,
       };
     }
 
