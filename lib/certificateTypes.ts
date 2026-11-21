@@ -65,6 +65,8 @@ export interface CertificateTemplateConfig {
   assinaturaPrincipalOffsetY?: number;
   segundaAssinaturaOffsetX?: number;
   segundaAssinaturaOffsetY?: number;
+  mostrarLinhaAssinatura?: boolean;
+  opacidadeLinhaAssinatura?: number;
   logoEsquerdaOffsetX?: number;
   logoEsquerdaOffsetY?: number;
   logoCentroOffsetX?: number;
@@ -305,6 +307,8 @@ export function createPresetTemplate(
     assinaturaPrincipalOffsetY: 0,
     segundaAssinaturaOffsetX: 0,
     segundaAssinaturaOffsetY: 0,
+    mostrarLinhaAssinatura: true,
+    opacidadeLinhaAssinatura: 0.16,
     logoEsquerdaOffsetX: 0,
     logoEsquerdaOffsetY: 0,
     logoCentroOffsetX: 0,

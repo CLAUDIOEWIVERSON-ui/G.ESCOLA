@@ -1797,6 +1797,47 @@ export function CertificateInspectorPanel({
                 </select>
               </div>
 
+              <div className="pt-2 border-t border-slate-200 space-y-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <label className="flex items-center gap-2 text-[11px] font-bold text-slate-700 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={template.mostrarLinhaAssinatura !== false}
+                      onChange={(e) =>
+                        setTemplate((prev) => ({
+                          ...prev,
+                          mostrarLinhaAssinatura: e.target.checked,
+                        }))
+                      }
+                      className="rounded border-slate-300"
+                    />
+                    <span>Linha suave sobre as assinaturas</span>
+                  </label>
+                  {template.mostrarLinhaAssinatura !== false && (
+                    <span className="text-[10px] font-mono text-blue-900">
+                      {Math.round((template.opacidadeLinhaAssinatura ?? 0.16) * 100)}%
+                    </span>
+                  )}
+                </div>
+                {template.mostrarLinhaAssinatura !== false && (
+                  <input
+                    type="range"
+                    min={0.04}
+                    max={0.6}
+                    step={0.02}
+                    value={template.opacidadeLinhaAssinatura ?? 0.16}
+                    onChange={(e) =>
+                      setTemplate((prev) => ({
+                        ...prev,
+                        opacidadeLinhaAssinatura: Number(e.target.value),
+                      }))
+                    }
+                    className="w-full accent-blue-800"
+                    title="Intensidade da linha suave sobre as assinaturas"
+                  />
+                )}
+              </div>
+
               <div className="pt-2 border-t border-slate-200 space-y-2.5">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-700 mb-1">
@@ -2130,6 +2171,47 @@ export function CertificateInspectorPanel({
                         </option>
                       ))}
                     </select>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-200 space-y-1.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <label className="flex items-center gap-2 text-[11px] font-bold text-slate-700 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={template.mostrarLinhaAssinatura !== false}
+                          onChange={(e) =>
+                            setTemplate((prev) => ({
+                              ...prev,
+                              mostrarLinhaAssinatura: e.target.checked,
+                            }))
+                          }
+                          className="rounded border-slate-300"
+                        />
+                        <span>Linha suave sobre as assinaturas</span>
+                      </label>
+                      {template.mostrarLinhaAssinatura !== false && (
+                        <span className="text-[10px] font-mono text-blue-900">
+                          {Math.round((template.opacidadeLinhaAssinatura ?? 0.16) * 100)}%
+                        </span>
+                      )}
+                    </div>
+                    {template.mostrarLinhaAssinatura !== false && (
+                      <input
+                        type="range"
+                        min={0.04}
+                        max={0.6}
+                        step={0.02}
+                        value={template.opacidadeLinhaAssinatura ?? 0.16}
+                        onChange={(e) =>
+                          setTemplate((prev) => ({
+                            ...prev,
+                            opacidadeLinhaAssinatura: Number(e.target.value),
+                          }))
+                        }
+                        className="w-full accent-blue-800"
+                        title="Intensidade da linha suave sobre as assinaturas"
+                      />
+                    )}
                   </div>
 
                   <div className="pt-2 border-t border-slate-200 space-y-2">

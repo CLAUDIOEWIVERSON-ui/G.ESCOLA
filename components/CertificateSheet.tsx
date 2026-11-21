@@ -1125,6 +1125,11 @@ export function CertificateSheet({
   const dateItalic = template.dataItalico ?? baseBodyItalic;
   const sigBold = template.assinaturaNegrito ?? true;
   const sigItalic = template.assinaturaItalico ?? false;
+  const showSignatureLine = template.mostrarLinhaAssinatura !== false;
+  const sigLineOpacity = Math.max(
+    0.04,
+    Math.min(0.85, template.opacidadeLinhaAssinatura ?? 0.16)
+  );
   const versoItalic = template.versoItalico ?? false;
 
   // Watermark sizes & expansion
@@ -1799,6 +1804,19 @@ export function CertificateSheet({
                 >
                   {hasPrimarySigContent ? (
                     <>
+                      {showSignatureLine && (
+                        <div
+                          aria-hidden="true"
+                          style={{
+                            width: hasSecondSig ? '76%' : '70%',
+                            maxWidth: '285px',
+                            minWidth: '200px',
+                            height: '1px',
+                            margin: '0 auto 6px auto',
+                            background: `linear-gradient(90deg, rgba(15, 23, 42, 0) 0%, rgba(15, 23, 42, ${sigLineOpacity}) 16%, rgba(15, 23, 42, ${sigLineOpacity}) 84%, rgba(15, 23, 42, 0) 100%)`,
+                          }}
+                        />
+                      )}
                       <div
                         style={{
                           fontSize: '14.5px',
@@ -1863,6 +1881,19 @@ export function CertificateSheet({
                 >
                   {hasSecondarySigContent ? (
                     <>
+                      {showSignatureLine && (
+                        <div
+                          aria-hidden="true"
+                          style={{
+                            width: '76%',
+                            maxWidth: '285px',
+                            minWidth: '200px',
+                            height: '1px',
+                            margin: '0 auto 6px auto',
+                            background: `linear-gradient(90deg, rgba(15, 23, 42, 0) 0%, rgba(15, 23, 42, ${sigLineOpacity}) 16%, rgba(15, 23, 42, ${sigLineOpacity}) 84%, rgba(15, 23, 42, 0) 100%)`,
+                          }}
+                        />
+                      )}
                       <div
                         style={{
                           fontSize: '14.5px',
