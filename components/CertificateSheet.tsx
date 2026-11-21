@@ -11,6 +11,7 @@ import {
   CertificateTemplateConfig,
   adaptPortugueseStudentArticle,
   computeBackTotals,
+  cmToPx,
   formatCourseTitleCasePT,
   formatNameTitleCasePT,
   groupCertificateRowsByModule,
@@ -18,6 +19,7 @@ import {
   resolveCertificateBodySegments,
   resolveCertificateFontCss,
   resolveSimplePlaceholders,
+  splitBodyAroundParticipantToken,
 } from '@/lib/certificateTypes';
 
 export type DraggableCertificateElement =
@@ -1207,6 +1209,44 @@ export function CertificateSheet({
       frontWmScaleW === 100 &&
       frontWmScaleH === 100;
 
+    const hasFormalOuterMargin = template.margemExternaMolduraCm !== undefined;
+    const hasFormalInnerMargin = template.margemInternaLateralCm !== undefined;
+    const hasFormalVertMargin = template.margemInternaVerticalCm !== undefined;
+    const outerFrameMarginPx = hasFormalOuterMargin
+      ? cmToPx(template.margemExternaMolduraCm!)
+      : 22;
+    const contentPadHorizPx =
+      hasFormalOuterMargin || hasFormalInnerMargin
+        ? (hasFormalOuterMargin
+            ? outerFrameMarginPx
+            : frontFrameStyle === 'nenhuma'
+              ? 0
+              : 22) +
+          (hasFormalInnerMargin ? cmToPx(template.margemInternaLateralCm!) : 82)
+        : 104;
+    const contentPadTopPx =
+      hasFormalOuterMargin || hasFormalVertMargin
+        ? (hasFormalOuterMargin
+            ? outerFrameMarginPx
+            : frontFrameStyle === 'nenhuma'
+              ? 0
+              : 22) +
+          (hasFormalVertMargin ? cmToPx(template.margemInternaVerticalCm!) : 56)
+        : 84;
+    const contentPadBottomPx =
+      hasFormalOuterMargin || hasFormalVertMargin
+        ? (hasFormalOuterMargin
+            ? outerFrameMarginPx
+            : frontFrameStyle === 'nenhuma'
+              ? 0
+              : 22) +
+          (hasFormalVertMargin ? cmToPx(template.margemInternaVerticalCm!) : 56)
+        : 86;
+    const frameHitThreshold = Math.max(62, outerFrameMarginPx + 18);
+    const vetorialInsetPx = hasFormalOuterMargin
+      ? Math.max(0, outerFrameMarginPx - 14)
+      : 0;
+
     return (
       <div style={outerWrapperStyle}>
         <div
@@ -1218,7 +1258,12 @@ export function CertificateSheet({
             const rect = e.currentTarget.getBoundingClientRect();
             const relX = (e.clientX - rect.left) / (scale || 1);
             const relY = (e.clientY - rect.top) / (scale || 1);
-            if (relX < 62 || relX > 1061 || relY < 62 || relY > 732) {
+            if (
+              relX < frameHitThreshold ||
+              relX > 1123 - frameHitThreshold ||
+              relY < frameHitThreshold ||
+              relY > 794 - frameHitThreshold
+            ) {
               onSelectObject('molduraFrente');
             } else {
               onSelectObject('marcaDaguaFrente');
@@ -1244,10 +1289,14 @@ export function CertificateSheet({
               crossOrigin="anonymous"
               style={{
                 position: 'absolute',
-                top: '18px',
-                left: '16px',
-                width: '1091px',
-                height: '758px',
+                top: hasFormalOuterMargin ? `${outerFrameMarginPx}px` : '18px',
+                left: hasFormalOuterMargin ? `${outerFrameMarginPx}px` : '16px',
+                width: hasFormalOuterMargin
+                  ? `${1123 - outerFrameMarginPx * 2}px`
+                  : '1091px',
+                height: hasFormalOuterMargin
+                  ? `${794 - outerFrameMarginPx * 2}px`
+                  : '758px',
                 objectFit: 'fill',
                 pointerEvents: 'none',
                 mixBlendMode: 'multiply',
@@ -1255,12 +1304,28 @@ export function CertificateSheet({
               }}
             />
           ) : frontFrameStyle === 'vetorial' ? (
-            <NauticalOrnateFrame borderColor={template.corBordaFrente || '#52525b'} />
+            hasFormalOuterMargin ? (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: `${vetorialInsetPx}px`,
+                  left: `${vetorialInsetPx}px`,
+                  width: `${1123 - vetorialInsetPx * 2}px`,
+                  height: `${794 - vetorialInsetPx * 2}px`,
+                  pointerEvents: 'none',
+                  zIndex: 5,
+                }}
+              >
+                <NauticalOrnateFrame borderColor={template.corBordaFrente || '#52525b'} />
+              </div>
+            ) : (
+              <NauticalOrnateFrame borderColor={template.corBordaFrente || '#52525b'} />
+            )
           ) : frontFrameStyle === 'simples' ? (
             <div
               style={{
                 position: 'absolute',
-                inset: '22px',
+                inset: `${outerFrameMarginPx}px`,
                 border: `2px solid ${template.corBordaFrente || '#cbd5e1'}`,
                 padding: '4px',
                 pointerEvents: 'none',
@@ -1324,7 +1389,7 @@ export function CertificateSheet({
               zIndex: 10,
               width: '100%',
               height: '100%',
-              padding: '84px 104px 86px 104px',
+              padding: `${contentPadTopPx}px ${contentPadHorizPx}px ${contentPadBottomPx}px ${contentPadHorizPx}px`,
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
@@ -1337,8 +1402,15 @@ export function CertificateSheet({
                 display: 'flex',
                 alignItems: 'flex-start',
                 justifyContent: 'space-between',
-                padding: '0 24px',
-                minHeight: showLeftLogo || showCenterLogo || showRightLogo ? '96px' : '28px',
+                padding: hasFormalInnerMargin ? '0px' : '0 24px',
+                minHeight:
+                  showLeftLogo || showCenterLogo || showRightLogo
+                    ? hasFormalVertMargin
+                      ? '74px'
+                      : '96px'
+                    : hasFormalVertMargin
+                      ? '8px'
+                      : '28px',
                 gap: '16px',
               }}
             >
@@ -1585,13 +1657,15 @@ export function CertificateSheet({
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                gap: '24px',
-                marginTop: '-10px',
+                gap: template.espacamentoDataTextoPx !== undefined ? '18px' : '24px',
+                marginTop: hasFormalOuterMargin || hasFormalInnerMargin ? '0px' : '-10px',
               }}
             >
               {(() => {
                 const drag = getDragProps('titulo', 'Título do Certificado');
                 const hasTitle = Boolean(template.titulo?.trim());
+                const titleSizePx = template.tamanhoFonteTitulo ?? 42;
+                const titleTrackingEm = template.espacamentoLetrasTitulo ?? 0.16;
                 return (
                   <h1
                     {...drag}
@@ -1601,15 +1675,17 @@ export function CertificateSheet({
                       left: `${template.tituloOffsetX ?? 0}px`,
                       top: `${template.tituloOffsetY ?? 0}px`,
                       zIndex: activeDrag === 'titulo' ? 20 : 12,
-                      fontSize: hasTitle ? '42px' : '16px',
+                      fontSize: hasTitle ? `${titleSizePx}px` : '16px',
                       fontWeight: hasTitle ? (titleBold ? 700 : 400) : 600,
                       fontStyle: hasTitle && titleItalic ? 'italic' : 'normal',
-                      letterSpacing: hasTitle ? '0.16em' : '0.04em',
+                      letterSpacing: hasTitle ? `${titleTrackingEm}em` : '0.04em',
+                      lineHeight: 1.15,
                       color: hasTitle ? '#0f172a' : '#64748b',
                       fontFamily: hasTitle ? titleFontCss : '"Segoe UI", system-ui, sans-serif',
                       textAlign: 'center',
                       textTransform: hasTitle ? 'uppercase' : 'none',
-                      backgroundColor: !hasTitle && isInteractiveEditor ? 'rgba(248,250,252,0.75)' : 'transparent',
+                      backgroundColor:
+                        !hasTitle && isInteractiveEditor ? 'rgba(248,250,252,0.75)' : 'transparent',
                       border: !hasTitle && isInteractiveEditor ? '1.5px dashed #94a3b8' : undefined,
                       padding: !hasTitle && isInteractiveEditor ? '12px 32px' : undefined,
                       minHeight: !hasTitle && !isInteractiveEditor ? '48px' : undefined,
@@ -1627,135 +1703,306 @@ export function CertificateSheet({
                 );
               })()}
 
-              {(() => {
-                const drag = getDragProps('texto', 'Texto Principal');
-                const hasBodyText = Boolean(normalizedBodyTemplate.trim());
-                return (
-                  <p
-                    {...drag}
-                    style={{
-                      margin: 0,
-                      width: '100%',
-                      position: 'relative',
-                      left: `${template.textoOffsetX ?? 0}px`,
-                      top: `${template.textoOffsetY ?? 0}px`,
-                      zIndex: activeDrag === 'texto' ? 20 : 12,
-                      fontSize: hasBodyText ? `${template.tamanhoFonteCorpo || 19}px` : '13px',
-                      lineHeight: hasBodyText ? 1.82 : 1.5,
-                      fontFamily: hasBodyText ? bodyFontCss : '"Segoe UI", system-ui, sans-serif',
-                      color: hasBodyText ? '#0f172a' : '#64748b',
-                      textAlign: hasBodyText ? template.alinhamentoTexto || 'left' : 'center',
-                      backgroundColor:
-                        !hasBodyText && isInteractiveEditor
-                          ? 'rgba(248, 250, 252, 0.75)'
-                          : 'transparent',
-                      border:
-                        !hasBodyText && isInteractiveEditor ? '1.5px dashed #94a3b8' : undefined,
-                      padding: !hasBodyText && isInteractiveEditor ? '26px 24px' : undefined,
-                      minHeight: !hasBodyText ? '110px' : undefined,
-                      display: !hasBodyText && isInteractiveEditor ? 'flex' : undefined,
-                      alignItems: !hasBodyText && isInteractiveEditor ? 'center' : undefined,
-                      justifyContent: !hasBodyText && isInteractiveEditor ? 'center' : undefined,
-                      textShadow: 'none',
-                      ...drag.style,
-                    }}
-                  >
-                    {hasBodyText ? (
-                      bodySegments.map((seg, i) => (
-                        <span
-                          key={i}
-                          style={{
-                            fontWeight: seg.bold ? 700 : 400,
-                            fontStyle: seg.italic ? 'italic' : 'normal',
-                          }}
-                        >
-                          {seg.text}
-                        </span>
-                      ))
-                    ) : isInteractiveEditor ? (
-                      <span>
-                        Texto Principal do Certificado — clique aqui para escrever ou inserir
-                        variáveis (&#123;&#123;ALUNO&#125;&#125;, &#123;&#123;CURSO&#125;&#125;,
-                        etc.)
-                      </span>
-                    ) : null}
-                  </p>
-                );
-              })()}
+              <div
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap:
+                    template.espacamentoDataTextoPx !== undefined
+                      ? `${template.espacamentoDataTextoPx}px`
+                      : '24px',
+                }}
+              >
+                {(() => {
+                  const drag = getDragProps('texto', 'Texto Principal');
+                  const hasBodyText = Boolean(normalizedBodyTemplate.trim());
+                  const bodySizePx = template.tamanhoFonteCorpo || 19;
+                  const bodyLineHeight = template.entrelinhaCorpo ?? 1.82;
+                  const textBlockWidthPct = template.larguraBlocoTextoPct ?? 100;
+                  const textBlockMaxWidthPx =
+                    textBlockWidthPct < 100
+                      ? `${Math.round(1123 * (textBlockWidthPct / 100))}px`
+                      : undefined;
+                  const highlightParticipant = Boolean(template.destacarNomeParticipante);
+                  const participantFontKey = template.fonteParticipante || 'script';
+                  const participantFontCss = resolveCertificateFontCss(participantFontKey);
+                  const participantSizePx =
+                    template.tamanhoFonteParticipante ?? Math.round(bodySizePx * 2.15);
+                  const participantBold =
+                    template.negritoParticipante ?? participantFontKey !== 'script';
+                  const participantItalic = template.italicoParticipante ?? false;
 
-              {(() => {
-                const dateAlign = template.dataAlinhamento || 'center';
-                const dateJustify =
-                  dateAlign === 'left'
-                    ? 'flex-start'
-                    : dateAlign === 'right'
-                      ? 'flex-end'
-                      : 'center';
-                const dateDrag = getDragProps('data', 'Data de Emissão');
-                const localTrim = (template.localEmissao || '').trim();
-                const dataTrim = (template.dataEmissaoExtenso || '').trim();
-                const hasDateContent = Boolean(localTrim || dataTrim);
-                const dateDisplay = localTrim && dataTrim
-                  ? `${localTrim}, ${dataTrim}.`
-                  : localTrim
-                    ? `${localTrim}, ${formatTodayFallback()}.`
-                    : dataTrim
-                      ? `${dataTrim}.`
-                      : '';
-                return (
-                  <div
-                    style={{
-                      width: '100%',
-                      display: 'flex',
-                      justifyContent: dateJustify,
-                    }}
-                  >
-                    <p
-                      {...dateDrag}
+                  const participantSplit = highlightParticipant
+                    ? splitBodyAroundParticipantToken(normalizedBodyTemplate)
+                    : { found: false, beforeText: '', tokenText: '', afterText: normalizedBodyTemplate };
+
+                  const highlightedNameText = participantSplit.found
+                    ? resolveSimplePlaceholders(participantSplit.tokenText, replacements)
+                    : formattedStudentDisplay;
+
+                  const beforeSegments =
+                    participantSplit.found && participantSplit.beforeText.trim()
+                      ? resolveCertificateBodySegments(
+                          participantSplit.beforeText,
+                          replacements,
+                          {
+                            defaultBold: baseBodyBold,
+                            defaultItalic: baseBodyItalic,
+                          }
+                        )
+                      : [];
+                  const afterSegments =
+                    participantSplit.found && participantSplit.afterText.trim()
+                      ? resolveCertificateBodySegments(
+                          participantSplit.afterText,
+                          replacements,
+                          {
+                            defaultBold: baseBodyBold,
+                            defaultItalic: baseBodyItalic,
+                          }
+                        )
+                      : [];
+
+                  return (
+                    <div
+                      {...drag}
                       style={{
-                        margin: '4px 0 0 0',
+                        margin: '0 auto',
+                        width: '100%',
+                        maxWidth: textBlockMaxWidthPx,
                         position: 'relative',
-                        left: `${template.dataOffsetX ?? 0}px`,
-                        top: `${template.dataOffsetY ?? 0}px`,
-                        zIndex: activeDrag === 'data' ? 20 : 12,
-                        fontSize: hasDateContent
-                          ? `${Math.max(16, (template.tamanhoFonteCorpo || 19) - 1)}px`
-                          : '12px',
-                        fontFamily: hasDateContent
+                        left: `${template.textoOffsetX ?? 0}px`,
+                        top: `${template.textoOffsetY ?? 0}px`,
+                        zIndex: activeDrag === 'texto' ? 20 : 12,
+                        fontSize: hasBodyText ? `${bodySizePx}px` : '13px',
+                        lineHeight: hasBodyText ? bodyLineHeight : 1.5,
+                        fontFamily: hasBodyText
                           ? bodyFontCss
                           : '"Segoe UI", system-ui, sans-serif',
-                        fontWeight: hasDateContent ? (dateBold ? 700 : 400) : 600,
-                        fontStyle: hasDateContent && dateItalic ? 'italic' : 'normal',
-                        color: hasDateContent ? '#0f172a' : '#64748b',
-                        textAlign: dateAlign,
-                        border:
-                          !hasDateContent && isInteractiveEditor
-                            ? '1.5px dashed #94a3b8'
-                            : undefined,
+                        color: hasBodyText ? '#0f172a' : '#64748b',
+                        textAlign: hasBodyText ? template.alinhamentoTexto || 'left' : 'center',
                         backgroundColor:
-                          !hasDateContent && isInteractiveEditor
+                          !hasBodyText && isInteractiveEditor
                             ? 'rgba(248, 250, 252, 0.75)'
                             : 'transparent',
-                        padding: !hasDateContent && isInteractiveEditor ? '6px 18px' : undefined,
-                        minHeight: !hasDateContent && !isInteractiveEditor ? '24px' : undefined,
-                        ...dateDrag.style,
+                        border:
+                          !hasBodyText && isInteractiveEditor
+                            ? '1.5px dashed #94a3b8'
+                            : undefined,
+                        padding: !hasBodyText && isInteractiveEditor ? '26px 24px' : undefined,
+                        minHeight: !hasBodyText ? '110px' : undefined,
+                        display: !hasBodyText && isInteractiveEditor ? 'flex' : undefined,
+                        alignItems: !hasBodyText && isInteractiveEditor ? 'center' : undefined,
+                        justifyContent: !hasBodyText && isInteractiveEditor ? 'center' : undefined,
+                        textShadow: 'none',
+                        ...drag.style,
                       }}
                     >
-                      {hasDateContent
-                        ? dateDisplay
-                        : isInteractiveEditor
-                          ? 'Local e Data de Emissão — clique para editar'
-                          : ''}
-                    </p>
-                  </div>
-                );
-              })()}
+                      {hasBodyText ? (
+                        highlightParticipant ? (
+                          <div
+                            style={{
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '6px',
+                            }}
+                          >
+                            {participantSplit.found ? (
+                              <>
+                                {beforeSegments.length > 0 && (
+                                  <p style={{ margin: 0 }}>
+                                    {beforeSegments.map((seg, i) => (
+                                      <span
+                                        key={i}
+                                        style={{
+                                          fontWeight: seg.bold ? 700 : 400,
+                                          fontStyle: seg.italic ? 'italic' : 'normal',
+                                        }}
+                                      >
+                                        {seg.text}
+                                      </span>
+                                    ))}
+                                  </p>
+                                )}
+                                <div
+                                  style={{
+                                    fontFamily: participantFontCss,
+                                    fontSize: `${participantSizePx}px`,
+                                    fontWeight: participantBold ? 700 : 400,
+                                    fontStyle: participantItalic ? 'italic' : 'normal',
+                                    lineHeight: 1.2,
+                                    textAlign: 'center',
+                                    color: '#0f172a',
+                                    margin: '4px 0 6px 0',
+                                  }}
+                                >
+                                  {highlightedNameText}
+                                </div>
+                                {afterSegments.length > 0 && (
+                                  <p style={{ margin: 0 }}>
+                                    {afterSegments.map((seg, i) => (
+                                      <span
+                                        key={i}
+                                        style={{
+                                          fontWeight: seg.bold ? 700 : 400,
+                                          fontStyle: seg.italic ? 'italic' : 'normal',
+                                        }}
+                                      >
+                                        {seg.text}
+                                      </span>
+                                    ))}
+                                  </p>
+                                )}
+                              </>
+                            ) : (
+                              <>
+                                <div
+                                  style={{
+                                    fontFamily: participantFontCss,
+                                    fontSize: `${participantSizePx}px`,
+                                    fontWeight: participantBold ? 700 : 400,
+                                    fontStyle: participantItalic ? 'italic' : 'normal',
+                                    lineHeight: 1.2,
+                                    textAlign: 'center',
+                                    color: '#0f172a',
+                                    margin: '2px 0 8px 0',
+                                  }}
+                                >
+                                  {highlightedNameText}
+                                </div>
+                                <p style={{ margin: 0 }}>
+                                  {bodySegments.map((seg, i) => (
+                                    <span
+                                      key={i}
+                                      style={{
+                                        fontWeight: seg.bold ? 700 : 400,
+                                        fontStyle: seg.italic ? 'italic' : 'normal',
+                                      }}
+                                    >
+                                      {seg.text}
+                                    </span>
+                                  ))}
+                                </p>
+                              </>
+                            )}
+                          </div>
+                        ) : (
+                          bodySegments.map((seg, i) => (
+                            <span
+                              key={i}
+                              style={{
+                                fontWeight: seg.bold ? 700 : 400,
+                                fontStyle: seg.italic ? 'italic' : 'normal',
+                              }}
+                            >
+                              {seg.text}
+                            </span>
+                          ))
+                        )
+                      ) : isInteractiveEditor ? (
+                        <span>
+                          Texto Principal do Certificado — clique aqui para escrever ou inserir
+                          variáveis (&#123;&#123;ALUNO&#125;&#125;, &#123;&#123;CURSO&#125;&#125;,
+                          etc.)
+                        </span>
+                      ) : null}
+                    </div>
+                  );
+                })()}
+
+                {(() => {
+                  const dateAlign = template.dataAlinhamento || 'center';
+                  const dateJustify =
+                    dateAlign === 'left'
+                      ? 'flex-start'
+                      : dateAlign === 'right'
+                        ? 'flex-end'
+                        : 'center';
+                  const dateDrag = getDragProps('data', 'Data de Emissão');
+                  const localTrim = (template.localEmissao || '').trim();
+                  const dataTrim = (template.dataEmissaoExtenso || '').trim();
+                  const hasDateContent = Boolean(localTrim || dataTrim);
+                  const dateSizePx =
+                    template.tamanhoFonteData ??
+                    Math.max(16, (template.tamanhoFonteCorpo || 19) - 1);
+                  const dateDisplay =
+                    localTrim && dataTrim
+                      ? `${localTrim}, ${dataTrim}.`
+                      : localTrim
+                        ? `${localTrim}, ${formatTodayFallback()}.`
+                        : dataTrim
+                          ? `${dataTrim}.`
+                          : '';
+                  return (
+                    <div
+                      style={{
+                        width: '100%',
+                        display: 'flex',
+                        justifyContent: dateJustify,
+                      }}
+                    >
+                      <p
+                        {...dateDrag}
+                        style={{
+                          margin:
+                            template.espacamentoDataTextoPx !== undefined
+                              ? 0
+                              : '4px 0 0 0',
+                          position: 'relative',
+                          left: `${template.dataOffsetX ?? 0}px`,
+                          top: `${template.dataOffsetY ?? 0}px`,
+                          zIndex: activeDrag === 'data' ? 20 : 12,
+                          fontSize: hasDateContent ? `${dateSizePx}px` : '12px',
+                          fontFamily: hasDateContent
+                            ? bodyFontCss
+                            : '"Segoe UI", system-ui, sans-serif',
+                          fontWeight: hasDateContent ? (dateBold ? 700 : 400) : 600,
+                          fontStyle: hasDateContent && dateItalic ? 'italic' : 'normal',
+                          color: hasDateContent ? '#0f172a' : '#64748b',
+                          textAlign: dateAlign,
+                          border:
+                            !hasDateContent && isInteractiveEditor
+                              ? '1.5px dashed #94a3b8'
+                              : undefined,
+                          backgroundColor:
+                            !hasDateContent && isInteractiveEditor
+                              ? 'rgba(248, 250, 252, 0.75)'
+                              : 'transparent',
+                          padding: !hasDateContent && isInteractiveEditor ? '6px 18px' : undefined,
+                          minHeight: !hasDateContent && !isInteractiveEditor ? '24px' : undefined,
+                          ...dateDrag.style,
+                        }}
+                      >
+                        {hasDateContent
+                          ? dateDisplay
+                          : isInteractiveEditor
+                            ? 'Local e Data de Emissão — clique para editar'
+                            : ''}
+                      </p>
+                    </div>
+                  );
+                })()}
+              </div>
             </div>
 
             {/* Signatures */}
             {(() => {
               const sigAlign = template.assinaturaAlinhamento || 'right';
               const sigHeightOffset = template.assinaturaAlturaOffset ?? 0;
+              const sigTopMarginPx =
+                template.espacamentoAssinaturasVerticalCm !== undefined
+                  ? cmToPx(template.espacamentoAssinaturasVerticalCm)
+                  : 0;
+              const customLineWidthPx =
+                template.larguraLinhaAssinaturaCm !== undefined
+                  ? cmToPx(template.larguraLinhaAssinaturaCm)
+                  : null;
+              const sigNameFontPx = template.tamanhoFonteAssinaturaNome ?? 14.5;
+              const sigPostoFontPx = template.tamanhoFonteAssinaturaCargo ?? 14;
+              const sigCargoFontPx = template.tamanhoFonteAssinaturaCargo ?? 13.5;
+              const sigCargoBold = template.assinaturaCargoNegrito ?? sigBold;
               const hasSecondSig = Boolean(template.mostrarSegundaAssinatura);
               const isPrimaryLeft = sigAlign === 'left';
               const sigJustify = hasSecondSig
@@ -1778,6 +2025,38 @@ export function CertificateSheet({
                   template.segundaAssinaturaCargo?.trim()
               );
 
+              const primaryLineStyle: React.CSSProperties = customLineWidthPx
+                ? {
+                    width: `${customLineWidthPx}px`,
+                    height: '1px',
+                    margin: '0 auto 6px auto',
+                    background: `linear-gradient(90deg, rgba(15, 23, 42, 0) 0%, rgba(15, 23, 42, ${sigLineOpacity}) 16%, rgba(15, 23, 42, ${sigLineOpacity}) 84%, rgba(15, 23, 42, 0) 100%)`,
+                  }
+                : {
+                    width: hasSecondSig ? '76%' : '70%',
+                    maxWidth: '285px',
+                    minWidth: '200px',
+                    height: '1px',
+                    margin: '0 auto 6px auto',
+                    background: `linear-gradient(90deg, rgba(15, 23, 42, 0) 0%, rgba(15, 23, 42, ${sigLineOpacity}) 16%, rgba(15, 23, 42, ${sigLineOpacity}) 84%, rgba(15, 23, 42, 0) 100%)`,
+                  };
+
+              const secondaryLineStyle: React.CSSProperties = customLineWidthPx
+                ? {
+                    width: `${customLineWidthPx}px`,
+                    height: '1px',
+                    margin: '0 auto 6px auto',
+                    background: `linear-gradient(90deg, rgba(15, 23, 42, 0) 0%, rgba(15, 23, 42, ${sigLineOpacity}) 16%, rgba(15, 23, 42, ${sigLineOpacity}) 84%, rgba(15, 23, 42, 0) 100%)`,
+                  }
+                : {
+                    width: '76%',
+                    maxWidth: '285px',
+                    minWidth: '200px',
+                    height: '1px',
+                    margin: '0 auto 6px auto',
+                    background: `linear-gradient(90deg, rgba(15, 23, 42, 0) 0%, rgba(15, 23, 42, ${sigLineOpacity}) 16%, rgba(15, 23, 42, ${sigLineOpacity}) 84%, rgba(15, 23, 42, 0) 100%)`,
+                  };
+
               const primaryBlock = (
                 <div
                   key="primary-signature"
@@ -1788,11 +2067,23 @@ export function CertificateSheet({
                     top: `${template.assinaturaPrincipalOffsetY ?? 0}px`,
                     zIndex: activeDrag === 'assinaturaPrincipal' ? 20 : 12,
                     textAlign: 'center',
-                    flex: hasSecondSig ? '0 1 420px' : undefined,
-                    minWidth: hasSecondSig ? '310px' : '390px',
+                    flex: hasSecondSig ? '0 1 380px' : undefined,
+                    minWidth: hasSecondSig
+                      ? hasFormalInnerMargin
+                        ? '240px'
+                        : '310px'
+                      : hasFormalInnerMargin
+                        ? '280px'
+                        : '390px',
                     maxWidth: hasSecondSig ? '425px' : undefined,
-                    marginLeft: !hasSecondSig && sigAlign === 'left' ? '16px' : '0',
-                    marginRight: !hasSecondSig && sigAlign === 'right' ? '16px' : '0',
+                    marginLeft:
+                      !hasSecondSig && sigAlign === 'left' && !hasFormalInnerMargin
+                        ? '16px'
+                        : '0',
+                    marginRight:
+                      !hasSecondSig && sigAlign === 'right' && !hasFormalInnerMargin
+                        ? '16px'
+                        : '0',
                     fontFamily: hasPrimarySigContent
                       ? signatureFontCss
                       : '"Segoe UI", system-ui, sans-serif',
@@ -1804,22 +2095,10 @@ export function CertificateSheet({
                 >
                   {hasPrimarySigContent ? (
                     <>
-                      {showSignatureLine && (
-                        <div
-                          aria-hidden="true"
-                          style={{
-                            width: hasSecondSig ? '76%' : '70%',
-                            maxWidth: '285px',
-                            minWidth: '200px',
-                            height: '1px',
-                            margin: '0 auto 6px auto',
-                            background: `linear-gradient(90deg, rgba(15, 23, 42, 0) 0%, rgba(15, 23, 42, ${sigLineOpacity}) 16%, rgba(15, 23, 42, ${sigLineOpacity}) 84%, rgba(15, 23, 42, 0) 100%)`,
-                          }}
-                        />
-                      )}
+                      {showSignatureLine && <div aria-hidden="true" style={primaryLineStyle} />}
                       <div
                         style={{
-                          fontSize: '14.5px',
+                          fontSize: `${sigNameFontPx}px`,
                           fontWeight: sigBold ? 700 : 400,
                           letterSpacing: '0.03em',
                         }}
@@ -1827,12 +2106,12 @@ export function CertificateSheet({
                         {template.assinaturaNome}
                       </div>
                       {template.assinaturaPosto && (
-                        <div style={{ fontSize: '14px', fontWeight: sigBold ? 700 : 400 }}>
+                        <div style={{ fontSize: `${sigPostoFontPx}px`, fontWeight: sigCargoBold ? 700 : 400 }}>
                           {template.assinaturaPosto}
                         </div>
                       )}
                       {template.assinaturaCargo && (
-                        <div style={{ fontSize: '13.5px', fontWeight: sigBold ? 700 : 400 }}>
+                        <div style={{ fontSize: `${sigCargoFontPx}px`, fontWeight: sigCargoBold ? 700 : 400 }}>
                           {template.assinaturaCargo}
                         </div>
                       )}
@@ -1867,8 +2146,8 @@ export function CertificateSheet({
                     top: `${template.segundaAssinaturaOffsetY ?? 0}px`,
                     zIndex: activeDrag === 'segundaAssinatura' ? 20 : 12,
                     textAlign: 'center',
-                    flex: '0 1 420px',
-                    minWidth: '310px',
+                    flex: '0 1 380px',
+                    minWidth: hasFormalInnerMargin ? '240px' : '310px',
                     maxWidth: '425px',
                     fontFamily: hasSecondarySigContent
                       ? signatureFontCss
@@ -1881,22 +2160,10 @@ export function CertificateSheet({
                 >
                   {hasSecondarySigContent ? (
                     <>
-                      {showSignatureLine && (
-                        <div
-                          aria-hidden="true"
-                          style={{
-                            width: '76%',
-                            maxWidth: '285px',
-                            minWidth: '200px',
-                            height: '1px',
-                            margin: '0 auto 6px auto',
-                            background: `linear-gradient(90deg, rgba(15, 23, 42, 0) 0%, rgba(15, 23, 42, ${sigLineOpacity}) 16%, rgba(15, 23, 42, ${sigLineOpacity}) 84%, rgba(15, 23, 42, 0) 100%)`,
-                          }}
-                        />
-                      )}
+                      {showSignatureLine && <div aria-hidden="true" style={secondaryLineStyle} />}
                       <div
                         style={{
-                          fontSize: '14.5px',
+                          fontSize: `${sigNameFontPx}px`,
                           fontWeight: sigBold ? 700 : 400,
                           letterSpacing: '0.03em',
                         }}
@@ -1904,12 +2171,12 @@ export function CertificateSheet({
                         {template.segundaAssinaturaNome || 'ASSINATURA'}
                       </div>
                       {template.segundaAssinaturaPosto && (
-                        <div style={{ fontSize: '14px', fontWeight: sigBold ? 700 : 400 }}>
+                        <div style={{ fontSize: `${sigPostoFontPx}px`, fontWeight: sigCargoBold ? 700 : 400 }}>
                           {template.segundaAssinaturaPosto}
                         </div>
                       )}
                       {template.segundaAssinaturaCargo && (
-                        <div style={{ fontSize: '13.5px', fontWeight: sigBold ? 700 : 400 }}>
+                        <div style={{ fontSize: `${sigCargoFontPx}px`, fontWeight: sigCargoBold ? 700 : 400 }}>
                           {template.segundaAssinaturaCargo}
                         </div>
                       )}
@@ -1939,6 +2206,7 @@ export function CertificateSheet({
                   style={{
                     position: 'relative',
                     top: `${sigHeightOffset}px`,
+                    marginTop: sigTopMarginPx > 0 ? `${sigTopMarginPx}px` : undefined,
                     zIndex:
                       activeDrag === 'assinaturaPrincipal' || activeDrag === 'segundaAssinatura'
                         ? 20
@@ -1946,7 +2214,11 @@ export function CertificateSheet({
                     display: 'flex',
                     alignItems: 'flex-end',
                     justifyContent: sigJustify,
-                    padding: hasSecondSig ? '0 14px 6px 14px' : '0 28px 6px 28px',
+                    padding: hasFormalInnerMargin
+                      ? '0 0 4px 0'
+                      : hasSecondSig
+                        ? '0 14px 6px 14px'
+                        : '0 28px 6px 28px',
                     gap: '32px',
                   }}
                 >

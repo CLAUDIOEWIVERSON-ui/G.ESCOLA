@@ -146,6 +146,27 @@ export interface CertificateTemplateConfig {
   versoItalico?: boolean;
   tamanhoFonteCorpo: number;
   alinhamentoTexto: 'left' | 'justify' | 'center';
+
+  // Formal A4 Layout, Margins & Typographic Hierarchy (optional; preserves legacy defaults when undefined)
+  margemExternaMolduraCm?: number;
+  margemInternaLateralCm?: number;
+  margemInternaVerticalCm?: number;
+  larguraBlocoTextoPct?: number;
+  tamanhoFonteTitulo?: number;
+  espacamentoLetrasTitulo?: number;
+  entrelinhaCorpo?: number;
+  destacarNomeParticipante?: boolean;
+  tamanhoFonteParticipante?: number;
+  fonteParticipante?: CertificateFontKey;
+  negritoParticipante?: boolean;
+  italicoParticipante?: boolean;
+  tamanhoFonteData?: number;
+  espacamentoDataTextoPx?: number;
+  espacamentoAssinaturasVerticalCm?: number;
+  larguraLinhaAssinaturaCm?: number;
+  tamanhoFonteAssinaturaNome?: number;
+  tamanhoFonteAssinaturaCargo?: number;
+  assinaturaCargoNegrito?: boolean;
 }
 
 export interface CertificateStudentContext {
@@ -436,6 +457,114 @@ export function createBlankTemplate(
     marcaDaguaVersoUrl: '',
     corBordaFrente: '#cbd5e1',
     corBordaVerso: '#cbd5e1',
+  };
+}
+
+export const CERTIFICATE_CM_TO_PX = 37.79527559;
+
+export function cmToPx(cm: number): number {
+  return Math.round(cm * CERTIFICATE_CM_TO_PX);
+}
+
+export function pxToPtNumber(px: number): number {
+  return Math.round((px / 1.3333333) * 10) / 10;
+}
+
+export function getFormalA4LayoutPatch(
+  hasSecondSignature = false
+): Partial<CertificateTemplateConfig> {
+  return {
+    estiloMolduraFrente: 'simples',
+    usarMolduraOriginal: false,
+    corBordaFrente: '#334155',
+    margemExternaMolduraCm: 1.7,
+    margemInternaLateralCm: 2.5,
+    margemInternaVerticalCm: 1.4,
+    larguraBlocoTextoPct: 70,
+    tamanhoFonteTitulo: 45,
+    espacamentoLetrasTitulo: 0.22,
+    fonteTitulo: 'cinzel',
+    tituloNegrito: true,
+    tituloItalico: false,
+    destacarNomeParticipante: true,
+    tamanhoFonteParticipante: 37,
+    fonteParticipante: 'script',
+    negritoParticipante: false,
+    italicoParticipante: false,
+    tamanhoFonteCorpo: 17,
+    entrelinhaCorpo: 1.4,
+    fonteCorpo: 'lora',
+    textoCorpoItalico: false,
+    textoCorpoNegrito: false,
+    alinhamentoTexto: 'center',
+    tamanhoFonteData: 15,
+    dataAlinhamento: 'center',
+    espacamentoDataTextoPx: 14,
+    dataItalico: false,
+    dataNegrito: false,
+    espacamentoAssinaturasVerticalCm: 2.4,
+    mostrarLinhaAssinatura: true,
+    opacidadeLinhaAssinatura: 0.45,
+    larguraLinhaAssinaturaCm: 6.0,
+    tamanhoFonteAssinaturaNome: 13.5,
+    tamanhoFonteAssinaturaCargo: 12,
+    fonteAssinatura: 'lora',
+    assinaturaNegrito: true,
+    assinaturaCargoNegrito: false,
+    assinaturaItalico: false,
+    assinaturaAlinhamento: hasSecondSignature ? 'left' : 'center',
+    assinaturaAlturaOffset: 0,
+    tituloOffsetX: 0,
+    tituloOffsetY: 0,
+    textoOffsetX: 0,
+    textoOffsetY: 0,
+    dataOffsetX: 0,
+    dataOffsetY: 0,
+    assinaturaPrincipalOffsetX: 0,
+    assinaturaPrincipalOffsetY: 0,
+    segundaAssinaturaOffsetX: 0,
+    segundaAssinaturaOffsetY: 0,
+  };
+}
+
+export function applyFormalA4LayoutToTemplate(
+  prev: CertificateTemplateConfig
+): CertificateTemplateConfig {
+  return {
+    ...prev,
+    ...getFormalA4LayoutPatch(Boolean(prev.mostrarSegundaAssinatura)),
+  };
+}
+
+export function createFormalA4Template(
+  nomeModelo = 'Certificado Formal A4 (Respiro Visual)',
+  scope: CertificateCourseScope = 'geral'
+): CertificateTemplateConfig {
+  const base = createPresetTemplate(
+    scope === 'expedito' ? 'expedito' : 'formacao_marinheiros'
+  );
+  return {
+    ...base,
+    id: undefined,
+    templateKey: `custom_${Date.now()}`,
+    nomeModelo: nomeModelo.trim() || 'Certificado Formal A4 (Respiro Visual)',
+    scope,
+    turmaId: null,
+    cursoId: null,
+    titulo: 'CERTIFICADO',
+    textoCorpo:
+      'Certificamos que {{ALUNO}} concluiu com êxito o {{CURSO}}, realizado no período de {{DATA_INICIO}} a {{DATA_FIM}}, com carga horária total de {{CARGA_HORARIA}}.',
+    textoCorpoPorAluno: {},
+    mostrarLogoEsquerda: false,
+    mostrarLogoCentro: true,
+    mostrarLogoDireita: false,
+    usarBrasaoPadraoDireita: false,
+    logoCentroUrl: '/assets/aistudio/imagem_01_2da3aec8.png',
+    tamanhoLogoCentro: 68,
+    mostrarLegendaLogoCentro: false,
+    marcaDaguaFrenteUrl: '',
+    opacidadeMarcaDaguaFrente: 0.1,
+    ...getFormalA4LayoutPatch(false),
   };
 }
 
@@ -991,6 +1120,37 @@ export function resolveCertificateBodySegments(
   }
 
   return segments;
+}
+
+export function splitBodyAroundParticipantToken(templateText: string): {
+  found: boolean;
+  beforeText: string;
+  tokenText: string;
+  afterText: string;
+} {
+  const raw = templateText || '';
+  const match = raw.match(
+    /(\*{0,3}(?:\{\{POSTO_GRADUACAO\}\}\s+)?\{\{(?:ALUNO|NOME_COMPLETO)\}\}\*{0,3})/
+  );
+  if (!match || match.index === undefined) {
+    return { found: false, beforeText: '', tokenText: '', afterText: raw };
+  }
+  const idx = match.index;
+  const matched = match[1];
+  const beforeText = raw.slice(0, idx).replace(/\s+$/, '');
+  let afterText = raw.slice(idx + matched.length);
+  // If split onto a dedicated centered line, clean up a dangling leading comma
+  if (/^\s*,\s*/.test(afterText)) {
+    afterText = afterText.replace(/^\s*,\s*/, '');
+  } else {
+    afterText = afterText.replace(/^\s+/, '');
+  }
+  return {
+    found: true,
+    beforeText,
+    tokenText: matched.replace(/\*/g, ''),
+    afterText,
+  };
 }
 
 export function resolveSimplePlaceholders(
