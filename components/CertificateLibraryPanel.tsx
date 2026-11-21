@@ -8,6 +8,7 @@ import {
   Frame,
   Image as ImageIcon,
   Plus,
+  RotateCcw,
   Search,
   Shield,
   Trash2,
@@ -35,7 +36,9 @@ interface CertificateLibraryPanelProps {
     customName?: string
   ) => void;
   onDownloadAsset: (asset: CertificateLibraryAsset) => void;
-  onDeleteCustomAsset: (assetId: string) => void;
+  onDeleteAsset: (asset: CertificateLibraryAsset) => void;
+  hiddenAssetsCount?: number;
+  onRestoreDefaultAssets?: () => void;
   canEdit: boolean;
 }
 
@@ -58,7 +61,9 @@ export function CertificateLibraryPanel({
   onApplyAsset,
   onUploadToLibrary,
   onDownloadAsset,
-  onDeleteCustomAsset,
+  onDeleteAsset,
+  hiddenAssetsCount = 0,
+  onRestoreDefaultAssets,
   canEdit,
 }: CertificateLibraryPanelProps) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -253,8 +258,21 @@ export function CertificateLibraryPanel({
           </div>
         )}
 
-        <div className="px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-[10px] text-slate-600 leading-snug">
-          Ao aplicar um recurso diretamente da biblioteca, tamanho, opacidade, legendas, cores, textos e alinhamentos configurados no modelo atual são preservados.
+        <div className="px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-[10px] text-slate-600 leading-snug flex flex-wrap items-center justify-between gap-2">
+          <span>
+            Ao aplicar um recurso diretamente da biblioteca, tamanho, opacidade, legendas, cores, textos e alinhamentos configurados no modelo atual são preservados.
+          </span>
+          {canEdit && hiddenAssetsCount > 0 && onRestoreDefaultAssets && (
+            <button
+              type="button"
+              onClick={onRestoreDefaultAssets}
+              className="px-2 py-1 rounded-md bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 text-[10px] font-bold inline-flex items-center gap-1 cursor-pointer shrink-0"
+              title="Restaurar itens removidos da biblioteca"
+            >
+              <RotateCcw size={10} />
+              <span>Restaurar removidos ({hiddenAssetsCount})</span>
+            </button>
+          )}
         </div>
 
         {filteredAssets.length === 0 ? (
@@ -329,15 +347,15 @@ export function CertificateLibraryPanel({
                           <span>Download</span>
                         </button>
 
-                        {asset.source === 'custom' && canEdit && (
+                        {canEdit && (
                           <button
                             type="button"
-                            onClick={() => onDeleteCustomAsset(asset.id)}
+                            onClick={() => onDeleteAsset(asset)}
                             className="px-2 py-1 rounded-lg bg-white border border-slate-200 hover:bg-rose-50 text-rose-600 text-[10px] font-bold flex items-center gap-1 cursor-pointer"
-                            title="Remover recurso da biblioteca"
+                            title={`Excluir "${asset.name}" da biblioteca`}
                           >
                             <Trash2 size={11} />
-                            <span>Remover</span>
+                            <span>Excluir</span>
                           </button>
                         )}
                       </div>

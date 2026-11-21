@@ -101,6 +101,7 @@ interface CertificateInspectorPanelProps {
   libraryAssets?: CertificateLibraryAsset[];
   onApplyLibraryAsset?: (asset: CertificateLibraryAsset, target: CertificateAssetTarget) => void;
   onDownloadLibraryAsset?: (asset: CertificateLibraryAsset) => void;
+  onDeleteLibraryAsset?: (asset: CertificateLibraryAsset) => void;
   onSaveCurrentAssetToLibrary?: (
     category: CertificateAssetCategory,
     url: string,
@@ -286,6 +287,7 @@ export function CertificateInspectorPanel({
   libraryAssets = [],
   onApplyLibraryAsset,
   onDownloadLibraryAsset,
+  onDeleteLibraryAsset,
   onSaveCurrentAssetToLibrary,
   onOpenLibrary,
 }: CertificateInspectorPanelProps) {
@@ -429,18 +431,35 @@ export function CertificateInspectorPanel({
                       {asset.name}
                     </span>
                   </button>
-                  {onDownloadLibraryAsset && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDownloadLibraryAsset(asset);
-                      }}
-                      className="absolute top-1 right-1 p-1 rounded bg-white/90 hover:bg-slate-100 border border-slate-200 text-slate-700 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                      title={`Baixar ${asset.name}`}
-                    >
-                      <Download size={9} />
-                    </button>
+                  {(onDownloadLibraryAsset || onDeleteLibraryAsset) && (
+                    <div className="absolute top-1 right-1 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {onDownloadLibraryAsset && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDownloadLibraryAsset(asset);
+                          }}
+                          className="p-1 rounded bg-white/95 hover:bg-slate-100 border border-slate-200 text-slate-700 cursor-pointer"
+                          title={`Baixar ${asset.name}`}
+                        >
+                          <Download size={9} />
+                        </button>
+                      )}
+                      {onDeleteLibraryAsset && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDeleteLibraryAsset(asset);
+                          }}
+                          className="p-1 rounded bg-white/95 hover:bg-rose-50 border border-slate-200 text-rose-600 cursor-pointer"
+                          title={`Excluir "${asset.name}" da biblioteca`}
+                        >
+                          <Trash2 size={9} />
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
               );

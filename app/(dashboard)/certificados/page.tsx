@@ -74,7 +74,17 @@ import { CertificateLibraryPanel } from '@/components/CertificateLibraryPanel';
 
 const LOCAL_TEMPLATES_KEY = 'sge_saved_certificate_templates_v1';
 const LOCAL_LIBRARY_KEY = 'sge_certificate_asset_library_v1';
+const LOCAL_LIBRARY_HIDDEN_KEY = 'sge_certificate_asset_library_hidden_v1';
 const LAST_WORKSPACE_KEY = 'sge_certificate_last_workspace_v1';
+
+function getAssetExclusionKey(
+  asset: Pick<CertificateLibraryAsset, 'id' | 'category' | 'url' | 'frameStyle'>
+): string {
+  if (asset.frameStyle === 'vetorial' || asset.frameStyle === 'simples') {
+    return asset.id;
+  }
+  return `${asset.category}:${asset.url}`;
+}
 
 function getTemplateSaveSignature(t: CertificateTemplateConfig): string {
   return JSON.stringify({
@@ -134,6 +144,7 @@ export default function CertificadosPage() {
   >('frente');
   const [libraryCategory, setLibraryCategory] = useState<CertificateAssetCategory>('brasao');
   const [customLibraryAssets, setCustomLibraryAssets] = useState<CertificateLibraryAsset[]>([]);
+  const [hiddenLibraryAssetKeys, setHiddenLibraryAssetKeys] = useState<string[]>([]);
   const [selectedObject, setSelectedObject] = useState<CertificateSelectableObject | null>(null);
   const [previewMode, setPreviewMode] = useState<'both' | 'front' | 'back'>('both');
   const [manualZoom, setManualZoom] = useState<number>(100);
@@ -470,6 +481,17 @@ export default function CertificadosPage() {
     } catch {
       // ignore corrupted storage
     } finally {
+      try {
+        const rawHidden = localStorage.getItem(LOCAL_LIBRARY_HIDDEN_KEY);
+        if (rawHidden) {
+          const parsedHidden = JSON.parse(rawHidden);
+          if (Array.isArray(parsedHidden)) {
+            setHiddenLibraryAssetKeys(parsedHidden.filter((k) => typeof k === 'string'));
+          }
+        }
+      } catch {
+        // ignore storage errors
+      }
       setWorkspaceHydrated(true);
     }
   }, []);
@@ -479,12 +501,18 @@ export default function CertificadosPage() {
   }, [loadSavedTemplates]);
 
   const allLibraryAssets = useMemo(() => {
+    const hiddenSet = new Set(hiddenLibraryAssetKeys);
     const seenUrls = new Set<string>();
-    BUILTIN_CERTIFICATE_ASSETS.forEach((a) => seenUrls.add(a.url));
+    const visibleBuiltins = BUILTIN_CERTIFICATE_ASSETS.filter(
+      (a) => !hiddenSet.has(getAssetExclusionKey(a))
+    );
+    visibleBuiltins.forEach((a) => seenUrls.add(a.url));
     customLibraryAssets.forEach((a) => seenUrls.add(a.url));
-    const templateExtracted = extractTemplateAssetsForLibrary(savedTemplates, seenUrls);
-    return [...BUILTIN_CERTIFICATE_ASSETS, ...customLibraryAssets, ...templateExtracted];
-  }, [customLibraryAssets, savedTemplates]);
+    const templateExtracted = extractTemplateAssetsForLibrary(savedTemplates, seenUrls).filter(
+      (a) => !hiddenSet.has(getAssetExclusionKey(a))
+    );
+    return [...visibleBuiltins, ...customLibraryAssets, ...templateExtracted];
+  }, [customLibraryAssets, savedTemplates, hiddenLibraryAssetKeys]);
 
   // Continuously persist active model, selected turma, student and preferences so reopening restores exact state
   useEffect(() => {
@@ -1403,6 +1431,14 @@ export default function CertificadosPage() {
     }
   }, []);
 
+  const persistHiddenLibraryKeys = useCallback((keys: string[]) => {
+    try {
+      localStorage.setItem(LOCAL_LIBRARY_HIDDEN_KEY, JSON.stringify(keys));
+    } catch {
+      // ignore storage quota errors
+    }
+  }, []);
+
   const handleSaveAssetRecord = useCallback(
     async (assetPayload: Omit<CertificateLibraryAsset, 'id' | 'source'>) => {
       const localRecord: CertificateLibraryAsset = {
@@ -1439,6 +1475,14 @@ export default function CertificadosPage() {
         // keep local record fallback
       }
 
+      const exclusionKey = getAssetExclusionKey(savedRecord);
+      setHiddenLibraryAssetKeys((prev) => {
+        if (!prev.includes(exclusionKey)) return prev;
+        const next = prev.filter((k) => k !== exclusionKey);
+        persistHiddenLibraryKeys(next);
+        return next;
+      });
+
       setCustomLibraryAssets((prev) => {
         const next = [savedRecord, ...prev];
         persistLocalLibrary(next);
@@ -1447,7 +1491,7 @@ export default function CertificadosPage() {
 
       return savedRecord;
     },
-    [persistLocalLibrary]
+    [persistHiddenLibraryKeys, persistLocalLibrary]
   );
 
   const handleUploadToLibrary = useCallback(
@@ -1528,24 +1572,46 @@ export default function CertificadosPage() {
   );
 
   const handleDeleteLibraryAsset = useCallback(
-    async (assetId: string) => {
-      if (!canEdit) return;
-      try {
-        await fetchWithAuth(`/api/certificados?id=${encodeURIComponent(assetId)}`, {
-          method: 'DELETE',
-        });
-      } catch {
-        // continue removing from local state
+    async (asset: CertificateLibraryAsset) => {
+      if (!canEdit) {
+        toast.error('Usuário com acesso somente leitura.');
+        return;
       }
-      setCustomLibraryAssets((prev) => {
-        const next = prev.filter((a) => a.id !== assetId);
-        persistLocalLibrary(next);
-        return next;
-      });
-      toast.success('Recurso removido da biblioteca.');
+
+      if (asset.source === 'custom') {
+        try {
+          await fetchWithAuth(`/api/certificados?id=${encodeURIComponent(asset.id)}`, {
+            method: 'DELETE',
+          });
+        } catch {
+          // continue removing from local state
+        }
+        setCustomLibraryAssets((prev) => {
+          const next = prev.filter((a) => a.id !== asset.id);
+          persistLocalLibrary(next);
+          return next;
+        });
+      } else {
+        const key = getAssetExclusionKey(asset);
+        setHiddenLibraryAssetKeys((prev) => {
+          if (prev.includes(key)) return prev;
+          const next = [...prev, key];
+          persistHiddenLibraryKeys(next);
+          return next;
+        });
+      }
+
+      toast.success(`"${asset.name}" excluído da biblioteca.`);
     },
-    [canEdit, persistLocalLibrary]
+    [canEdit, persistHiddenLibraryKeys, persistLocalLibrary]
   );
+
+  const handleRestoreDefaultLibraryAssets = useCallback(() => {
+    if (!canEdit) return;
+    setHiddenLibraryAssetKeys([]);
+    persistHiddenLibraryKeys([]);
+    toast.success('Recursos padrão e de modelos restaurados na biblioteca.');
+  }, [canEdit, persistHiddenLibraryKeys]);
 
   const handleDownloadLibraryAsset = useCallback(async (asset: CertificateLibraryAsset) => {
     try {
@@ -3410,7 +3476,9 @@ export default function CertificadosPage() {
                 onApplyAsset={handleApplyLibraryAssetToTarget}
                 onUploadToLibrary={handleUploadToLibrary}
                 onDownloadAsset={handleDownloadLibraryAsset}
-                onDeleteCustomAsset={handleDeleteLibraryAsset}
+                onDeleteAsset={handleDeleteLibraryAsset}
+                hiddenAssetsCount={hiddenLibraryAssetKeys.length}
+                onRestoreDefaultAssets={handleRestoreDefaultLibraryAssets}
                 canEdit={canEdit}
               />
             ) : selectedObject ? (
@@ -3454,6 +3522,7 @@ export default function CertificadosPage() {
                 libraryAssets={allLibraryAssets}
                 onApplyLibraryAsset={handleApplyLibraryAssetToTarget}
                 onDownloadLibraryAsset={handleDownloadLibraryAsset}
+                onDeleteLibraryAsset={canEdit ? handleDeleteLibraryAsset : undefined}
                 onSaveCurrentAssetToLibrary={handleSaveCurrentAssetToLibrary}
                 onOpenLibrary={(category) => {
                   setLibraryCategory(category);
