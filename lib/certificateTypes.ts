@@ -23,6 +23,9 @@ export type CertificateSelectableObject =
   | 'brasaoEsquerdo'
   | 'brasaoCentro'
   | 'brasaoDireito'
+  | 'brasaoEsquerdoVerso'
+  | 'brasaoCentroVerso'
+  | 'brasaoDireitoVerso'
   | 'titulo'
   | 'texto'
   | 'data'
@@ -40,6 +43,9 @@ export type CertificateLayerKey =
   | 'brasaoEsquerdo'
   | 'brasaoCentro'
   | 'brasaoDireito'
+  | 'brasaoEsquerdoVerso'
+  | 'brasaoCentroVerso'
+  | 'brasaoDireitoVerso'
   | 'titulo'
   | 'texto'
   | 'data'
@@ -49,7 +55,8 @@ export type CertificateLayerKey =
   | 'molduraFrente'
   | 'versoTitulo'
   | 'versoTabela'
-  | 'marcaDaguaVerso';
+  | 'marcaDaguaVerso'
+  | 'versoMoldura';
 
 export interface CertificateTemplateConfig {
   id?: string;
@@ -98,6 +105,11 @@ export interface CertificateTemplateConfig {
 
   // Back (Verso)
   versoTituloCurso: string;
+  versoTituloNegrito?: boolean;
+  versoTituloItalico?: boolean;
+  versoTituloEspacamentoLetras?: number;
+  versoTituloOffsetX?: number;
+  versoTituloOffsetY?: number;
   versoColunaDisciplina: string;
   versoColunaCargaHoraria: string;
   versoColunaNota: string;
@@ -113,6 +125,11 @@ export interface CertificateTemplateConfig {
   usarMolduraOriginal?: boolean;
   estiloMolduraFrente?: 'original' | 'vetorial' | 'simples' | 'nenhuma';
   molduraFrenteUrl?: string;
+  estiloMolduraVerso?: 'classica' | 'original' | 'vetorial' | 'simples' | 'nenhuma';
+  molduraVersoUrl?: string;
+  margemExternaMolduraVersoCm?: number;
+  margemInternaLateralVersoCm?: number;
+  margemInternaVerticalVersoCm?: number;
   mostrarLogoEsquerda?: boolean;
   mostrarLogoCentro?: boolean;
   mostrarLogoDireita?: boolean;
@@ -132,6 +149,30 @@ export interface CertificateTemplateConfig {
   tamanhoLogoDireita?: number;
   tamanhoLogoDireitaVerso?: number;
   opacidadeLogoDireita?: number;
+
+  // Back (Verso) Crest Overrides (inherit Front defaults when undefined)
+  mostrarLogoEsquerdaVerso?: boolean;
+  mostrarLogoCentroVerso?: boolean;
+  mostrarLogoDireitaVerso?: boolean;
+  usarBrasaoPadraoDireitaVerso?: boolean;
+  logoEsquerdaVersoUrl?: string;
+  logoCentroVersoUrl?: string;
+  logoCentroVersoTexto?: string;
+  mostrarLegendaLogoCentroVerso?: boolean;
+  logoDireitaVersoUrl?: string;
+  logoDireitaVersoTexto?: string;
+  mostrarLegendaLogoDireitaVerso?: boolean;
+  tamanhoLogoCentroVerso?: number;
+  opacidadeLogoEsquerdaVerso?: number;
+  opacidadeLogoCentroVerso?: number;
+  opacidadeLogoDireitaVerso?: number;
+  logoEsquerdaVersoOffsetX?: number;
+  logoEsquerdaVersoOffsetY?: number;
+  logoCentroVersoOffsetX?: number;
+  logoCentroVersoOffsetY?: number;
+  logoDireitaVersoOffsetX?: number;
+  logoDireitaVersoOffsetY?: number;
+
   marcaDaguaFrenteUrl: string;
   marcaDaguaVersoUrl: string;
   opacidadeMarcaDaguaFrente: number;
@@ -139,10 +180,12 @@ export interface CertificateTemplateConfig {
   tamanhoMarcaDaguaFrente?: number;
   escalaLarguraMarcaDaguaFrente?: number;
   escalaAlturaMarcaDaguaFrente?: number;
+  marcaDaguaFrenteOffsetX?: number;
   marcaDaguaFrenteOffsetY?: number;
   tamanhoMarcaDaguaVerso?: number;
   escalaLarguraMarcaDaguaVerso?: number;
   escalaAlturaMarcaDaguaVerso?: number;
+  marcaDaguaVersoOffsetX?: number;
   marcaDaguaVersoOffsetY?: number;
   corBordaFrente: string;
   corBordaVerso: string;
@@ -521,9 +564,11 @@ export const FRONT_LAYER_KEYS: CertificateLayerKey[] = [
 
 export const BACK_LAYER_KEYS: CertificateLayerKey[] = [
   'marcaDaguaVerso',
+  'versoMoldura',
   'versoTabela',
-  'brasaoEsquerdo',
-  'brasaoDireito',
+  'brasaoEsquerdoVerso',
+  'brasaoCentroVerso',
+  'brasaoDireitoVerso',
   'versoTitulo',
 ];
 
@@ -539,7 +584,11 @@ export const DEFAULT_CERTIFICATE_Z_INDEX: Record<CertificateLayerKey, number> = 
   assinaturaPrincipal: 12,
   segundaAssinatura: 12,
   marcaDaguaVerso: 2,
+  versoMoldura: 5,
   versoTabela: 6,
+  brasaoEsquerdoVerso: 12,
+  brasaoCentroVerso: 12,
+  brasaoDireitoVerso: 12,
   versoTitulo: 12,
 };
 
@@ -565,19 +614,7 @@ export function updateCertificateLayerOrder(
     return next;
   }
 
-  const sideKeys =
-    BACK_LAYER_KEYS.includes(key) && key !== 'brasaoEsquerdo' && key !== 'brasaoDireito'
-      ? BACK_LAYER_KEYS
-      : key === 'marcaDaguaFrente' ||
-          key === 'molduraFrente' ||
-          key === 'brasaoCentro' ||
-          key === 'titulo' ||
-          key === 'texto' ||
-          key === 'data' ||
-          key === 'assinaturaPrincipal' ||
-          key === 'segundaAssinatura'
-        ? FRONT_LAYER_KEYS
-        : Array.from(new Set([...FRONT_LAYER_KEYS, ...BACK_LAYER_KEYS]));
+  const sideKeys = BACK_LAYER_KEYS.includes(key) ? BACK_LAYER_KEYS : FRONT_LAYER_KEYS;
 
   const valOf = (k: CertificateLayerKey): number =>
     typeof next[k] === 'number' && Number.isFinite(next[k])

@@ -109,6 +109,34 @@ export function CertificateLibraryPanel({
       }
       return Boolean(template.logoDireitaUrl) && template.logoDireitaUrl === asset.url;
     }
+    if (target === 'brasaoEsquerdoVerso') {
+      const effectiveUrl =
+        template.logoEsquerdaVersoUrl !== undefined
+          ? template.logoEsquerdaVersoUrl
+          : template.logoEsquerdaUrl;
+      return Boolean(effectiveUrl) && effectiveUrl === asset.url;
+    }
+    if (target === 'brasaoCentroVerso') {
+      const effectiveUrl =
+        template.logoCentroVersoUrl !== undefined
+          ? template.logoCentroVersoUrl
+          : template.logoCentroUrl;
+      return Boolean(effectiveUrl) && effectiveUrl === asset.url;
+    }
+    if (target === 'brasaoDireitoVerso') {
+      const effectiveUrl =
+        template.logoDireitaVersoUrl !== undefined
+          ? template.logoDireitaVersoUrl
+          : template.logoDireitaUrl;
+      const allowDefault =
+        template.usarBrasaoPadraoDireitaVerso !== undefined
+          ? template.usarBrasaoPadraoDireitaVerso
+          : template.usarBrasaoPadraoDireita !== false;
+      if (asset.isDefaultMarinhaCrest) {
+        return !effectiveUrl && allowDefault;
+      }
+      return Boolean(effectiveUrl) && effectiveUrl === asset.url;
+    }
     if (target === 'marcaDaguaFrente') {
       return Boolean(template.marcaDaguaFrenteUrl) && template.marcaDaguaFrenteUrl === asset.url;
     }
@@ -129,6 +157,16 @@ export function CertificateLibraryPanel({
         return currentStyle === asset.frameStyle;
       }
       return currentStyle === 'original' && template.molduraFrenteUrl === asset.url;
+    }
+    if (target === 'molduraVerso') {
+      const currentStyle = template.estiloMolduraVerso ?? 'classica';
+      if (asset.frameStyle === 'vetorial' || asset.frameStyle === 'simples') {
+        return currentStyle === asset.frameStyle;
+      }
+      return (
+        currentStyle === 'original' &&
+        (template.molduraVersoUrl || template.molduraFrenteUrl) === asset.url
+      );
     }
     return false;
   };
@@ -370,9 +408,12 @@ export function CertificateLibraryPanel({
                       <>
                         {(
                           [
-                            { target: 'brasaoEsquerdo' as const, label: 'Brasão Esquerdo' },
-                            { target: 'brasaoCentro' as const, label: 'Central' },
-                            { target: 'brasaoDireito' as const, label: 'Direito' },
+                            { target: 'brasaoEsquerdo' as const, label: 'Frente Esq.' },
+                            { target: 'brasaoCentro' as const, label: 'Frente Central' },
+                            { target: 'brasaoDireito' as const, label: 'Frente Dir.' },
+                            { target: 'brasaoEsquerdoVerso' as const, label: 'Verso Esq.' },
+                            { target: 'brasaoCentroVerso' as const, label: 'Verso Central' },
+                            { target: 'brasaoDireitoVerso' as const, label: 'Verso Dir.' },
                           ] as const
                         ).map((btn) => {
                           const applied = isAssetAppliedToTarget(asset, btn.target);
@@ -427,21 +468,38 @@ export function CertificateLibraryPanel({
                     )}
 
                     {activeCategory === 'moldura' && (
-                      <button
-                        type="button"
-                        onClick={() => onApplyAsset(asset, 'molduraFrente')}
-                        className={cn(
-                          'px-3 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-all border',
-                          isAssetAppliedToTarget(asset, 'molduraFrente')
-                            ? 'bg-emerald-700 text-white border-emerald-800'
-                            : 'bg-blue-50 hover:bg-blue-900 text-blue-900 hover:text-white border-blue-200'
-                        )}
-                      >
-                        {isAssetAppliedToTarget(asset, 'molduraFrente') && (
-                          <CheckCircle2 size={10} />
-                        )}
-                        <span>Aplicar na Frente</span>
-                      </button>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => onApplyAsset(asset, 'molduraFrente')}
+                          className={cn(
+                            'px-3 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-all border',
+                            isAssetAppliedToTarget(asset, 'molduraFrente')
+                              ? 'bg-emerald-700 text-white border-emerald-800'
+                              : 'bg-blue-50 hover:bg-blue-900 text-blue-900 hover:text-white border-blue-200'
+                          )}
+                        >
+                          {isAssetAppliedToTarget(asset, 'molduraFrente') && (
+                            <CheckCircle2 size={10} />
+                          )}
+                          <span>Aplicar na Frente</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onApplyAsset(asset, 'molduraVerso')}
+                          className={cn(
+                            'px-3 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-all border',
+                            isAssetAppliedToTarget(asset, 'molduraVerso')
+                              ? 'bg-emerald-700 text-white border-emerald-800'
+                              : 'bg-blue-50 hover:bg-blue-900 text-blue-900 hover:text-white border-blue-200'
+                          )}
+                        >
+                          {isAssetAppliedToTarget(asset, 'molduraVerso') && (
+                            <CheckCircle2 size={10} />
+                          )}
+                          <span>Aplicar no Verso</span>
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>

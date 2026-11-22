@@ -9,10 +9,14 @@ export type CertificateAssetTarget =
   | 'brasaoEsquerdo'
   | 'brasaoCentro'
   | 'brasaoDireito'
+  | 'brasaoEsquerdoVerso'
+  | 'brasaoCentroVerso'
+  | 'brasaoDireitoVerso'
   | 'marcaDaguaFrente'
   | 'marcaDaguaVerso'
   | 'marcaDaguaAmbas'
-  | 'molduraFrente';
+  | 'molduraFrente'
+  | 'molduraVerso';
 
 export interface CertificateLibraryAsset {
   id: string;

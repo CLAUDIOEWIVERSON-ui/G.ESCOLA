@@ -413,25 +413,40 @@ export function CertificateSheet({
     (template.usarMolduraOriginal !== false ? 'original' : 'vetorial');
   const shouldProcessFrontFrame = side === 'front' && resolvedFrontFrameStyle === 'original';
 
+  const rawBackFrameSrc = resolveAssetCacheSrc(
+    template.molduraVersoUrl || template.molduraFrenteUrl || '/assets/certificado-moldura-frente.png'
+  );
+  const resolvedBackFrameStyle = template.estiloMolduraVerso ?? 'classica';
+  const shouldProcessBackFrame = side === 'back' && resolvedBackFrameStyle === 'original';
+
   useEffect(() => {
-    if (!shouldProcessFrontFrame || !rawFrontFrameSrc) return;
-    if (getCachedTransparentFrameSrc(rawFrontFrameSrc)) return;
+    const srcToProcess = shouldProcessFrontFrame
+      ? rawFrontFrameSrc
+      : shouldProcessBackFrame
+        ? rawBackFrameSrc
+        : '';
+    if (!srcToProcess) return;
+    if (getCachedTransparentFrameSrc(srcToProcess)) return;
     let active = true;
-    void makeFrameCenterTransparent(rawFrontFrameSrc).then((processed) => {
-      if (!active || !processed || processed === rawFrontFrameSrc) return;
+    void makeFrameCenterTransparent(srcToProcess).then((processed) => {
+      if (!active || !processed || processed === srcToProcess) return;
       setTransparentFrameMap((prev) =>
-        prev[rawFrontFrameSrc] === processed ? prev : { ...prev, [rawFrontFrameSrc]: processed }
+        prev[srcToProcess] === processed ? prev : { ...prev, [srcToProcess]: processed }
       );
     });
     return () => {
       active = false;
     };
-  }, [shouldProcessFrontFrame, rawFrontFrameSrc]);
+  }, [shouldProcessFrontFrame, rawFrontFrameSrc, shouldProcessBackFrame, rawBackFrameSrc]);
 
   const effectiveFrontFrameSrc =
     getCachedTransparentFrameSrc(rawFrontFrameSrc) ||
     transparentFrameMap[rawFrontFrameSrc] ||
     rawFrontFrameSrc;
+  const effectiveBackFrameSrc =
+    getCachedTransparentFrameSrc(rawBackFrameSrc) ||
+    transparentFrameMap[rawBackFrameSrc] ||
+    rawBackFrameSrc;
 
   const dragToSelectMap: Record<DraggableCertificateElement, CertificateSelectableObject> = {
     logoEsquerda: 'brasaoEsquerdo',
@@ -1431,6 +1446,7 @@ export function CertificateSheet({
                     draggable={false}
                     style={{
                       position: 'relative',
+                      left: `${template.marcaDaguaFrenteOffsetX ?? 0}px`,
                       top: `${template.marcaDaguaFrenteOffsetY ?? 0}px`,
                       width: `${frontWmWidth}px`,
                       height: `${frontWmHeight}px`,
@@ -2508,6 +2524,104 @@ export function CertificateSheet({
   // BACK (VERSO)
   const navyBorder = template.corBordaVerso || '#071b3b';
   const gridLine = '1px solid #1e293b';
+  const backFrameStyle = template.estiloMolduraVerso ?? 'classica';
+  const hasBackOuterMargin = template.margemExternaMolduraVersoCm !== undefined;
+  const hasBackInnerLat = template.margemInternaLateralVersoCm !== undefined;
+  const hasBackInnerVert = template.margemInternaVerticalVersoCm !== undefined;
+  const backOuterMarginPx = hasBackOuterMargin
+    ? cmToPx(template.margemExternaMolduraVersoCm!)
+    : 18;
+  const backFrameThickness =
+    backFrameStyle === 'classica' ? 18 : backFrameStyle === 'simples' ? 8 : 0;
+  const backPadLeftRight =
+    backOuterMarginPx +
+    backFrameThickness +
+    (hasBackInnerLat
+      ? cmToPx(template.margemInternaLateralVersoCm!)
+      : backFrameStyle === 'classica'
+        ? 16
+        : backFrameStyle === 'nenhuma'
+          ? 28
+          : 44);
+  const backPadTop =
+    backOuterMarginPx +
+    backFrameThickness +
+    (hasBackInnerVert
+      ? cmToPx(template.margemInternaVerticalVersoCm!)
+      : backFrameStyle === 'classica'
+        ? 9
+        : backFrameStyle === 'nenhuma'
+          ? 24
+          : 40);
+  const backPadBottom =
+    backOuterMarginPx +
+    backFrameThickness +
+    (hasBackInnerVert
+      ? cmToPx(template.margemInternaVerticalVersoCm!)
+      : backFrameStyle === 'classica'
+        ? 12
+        : backFrameStyle === 'nenhuma'
+          ? 24
+          : 40);
+  const backFrameHitThreshold = Math.max(42, backOuterMarginPx + 20);
+  const backVetorialInsetPx = hasBackOuterMargin
+    ? Math.max(0, backOuterMarginPx - 14)
+    : 0;
+
+  // Back Crests (inherit Front defaults when Verso override is undefined)
+  const showLeftLogoBack =
+    template.mostrarLogoEsquerdaVerso !== undefined
+      ? template.mostrarLogoEsquerdaVerso
+      : showLeftLogo;
+  const leftLogoBackUrl =
+    template.logoEsquerdaVersoUrl !== undefined
+      ? template.logoEsquerdaVersoUrl
+      : template.logoEsquerdaUrl;
+  const leftLogoBackOpacity = template.opacidadeLogoEsquerdaVerso ?? leftLogoOpacity;
+
+  const showCenterLogoBack = template.mostrarLogoCentroVerso === true;
+  const centerLogoBackUrl =
+    template.logoCentroVersoUrl !== undefined
+      ? template.logoCentroVersoUrl
+      : template.logoCentroUrl;
+  const centerLogoBackSize = template.tamanhoLogoCentroVerso ?? 54;
+  const centerLogoBackOpacity = template.opacidadeLogoCentroVerso ?? centerLogoOpacity;
+  const showCenterCaptionBack =
+    template.mostrarLegendaLogoCentroVerso !== undefined
+      ? template.mostrarLegendaLogoCentroVerso
+      : template.mostrarLegendaLogoCentro === true;
+  const centerCaptionBackText =
+    showCenterCaptionBack && (template.logoCentroVersoTexto ?? template.logoCentroTexto)
+      ? (template.logoCentroVersoTexto ?? template.logoCentroTexto)!.trim()
+      : '';
+
+  const showRightLogoBack =
+    template.mostrarLogoDireitaVerso !== undefined
+      ? template.mostrarLogoDireitaVerso
+      : showRightLogo;
+  const rightLogoBackUrl =
+    template.logoDireitaVersoUrl !== undefined
+      ? template.logoDireitaVersoUrl
+      : template.logoDireitaUrl;
+  const allowDefaultMarinhaBack =
+    template.usarBrasaoPadraoDireitaVerso !== undefined
+      ? template.usarBrasaoPadraoDireitaVerso
+      : allowDefaultMarinhaCrest;
+  const rightLogoBackOpacity = template.opacidadeLogoDireitaVerso ?? rightLogoOpacity;
+  const hasCustomRightLogoBack = Boolean(rightLogoBackUrl && rightLogoBackUrl.trim());
+  const showRightCaptionBack =
+    template.mostrarLegendaLogoDireitaVerso !== undefined
+      ? template.mostrarLegendaLogoDireitaVerso
+      : hasCustomRightLogoBack
+        ? template.mostrarLegendaLogoDireita === true
+        : allowDefaultMarinhaBack && template.mostrarLegendaLogoDireita !== false;
+  const rightCaptionBackText = showRightCaptionBack
+    ? (template.logoDireitaVersoTexto ?? template.logoDireitaTexto ?? 'MARINHA DO BRASIL').trim()
+    : '';
+
+  const backTitleBold = template.versoTituloNegrito ?? true;
+  const backTitleItalic = template.versoTituloItalico ?? versoItalic;
+  const backTitleTrackingEm = template.versoTituloEspacamentoLetras ?? 0.02;
 
   return (
     <div style={outerWrapperStyle}>
@@ -2519,7 +2633,12 @@ export function CertificateSheet({
           const rect = e.currentTarget.getBoundingClientRect();
           const relX = (e.clientX - rect.left) / (scale || 1);
           const relY = (e.clientY - rect.top) / (scale || 1);
-          if (relX < 42 || relX > 1081 || relY < 42 || relY > 752) {
+          if (
+            relX < backFrameHitThreshold ||
+            relX > 1123 - backFrameHitThreshold ||
+            relY < backFrameHitThreshold ||
+            relY > 794 - backFrameHitThreshold
+          ) {
             onSelectObject('versoMoldura');
           } else {
             onSelectObject('marcaDaguaVerso');
@@ -2527,7 +2646,6 @@ export function CertificateSheet({
         }}
         style={{
           ...sheetBaseStyle,
-          padding: '18px',
           outline:
             onSelectObject &&
             (selectedObject === 'versoMoldura' ||
@@ -2538,44 +2656,116 @@ export function CertificateSheet({
         }}
         className="shadow-xl"
       >
-        {/* Line 1: Outer Thick Navy Frame */}
-        <div
-          style={{
-            width: '100%',
-            height: '100%',
-            border: `6px solid ${navyBorder}`,
-            padding: '4px',
-            boxSizing: 'border-box',
-            position: 'relative',
-          }}
-        >
-          {/* Line 2: Middle Navy Frame */}
+        {/* Back Frame Overlay (classica triple navy, original PNG, vetorial, simples, or none) */}
+        {backFrameStyle === 'classica' ? (
           <div
             style={{
-              width: '100%',
-              height: '100%',
-              border: `2.5px solid ${navyBorder}`,
+              position: 'absolute',
+              inset: `${backOuterMarginPx}px`,
+              border: `6px solid ${navyBorder}`,
               padding: '4px',
               boxSizing: 'border-box',
-              position: 'relative',
+              pointerEvents: 'none',
+              zIndex: getLayerZ('versoMoldura'),
             }}
           >
-            {/* Line 3: Inner Fine Navy Frame */}
             <div
               style={{
                 width: '100%',
                 height: '100%',
-                border: `1.5px solid ${navyBorder}`,
-                padding: '9px 16px 12px 16px',
+                border: `2.5px solid ${navyBorder}`,
+                padding: '4px',
                 boxSizing: 'border-box',
-                position: 'relative',
-                isolation: 'isolate',
-                overflow: 'hidden',
-                display: 'flex',
-                flexDirection: 'column',
-                backgroundColor: '#ffffff',
               }}
             >
+              <div
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  border: `1.5px solid ${navyBorder}`,
+                  boxSizing: 'border-box',
+                }}
+              />
+            </div>
+          </div>
+        ) : backFrameStyle === 'original' ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={effectiveBackFrameSrc}
+            alt=""
+            crossOrigin="anonymous"
+            style={{
+              position: 'absolute',
+              top: `${backOuterMarginPx}px`,
+              left: `${backOuterMarginPx}px`,
+              width: `${1123 - backOuterMarginPx * 2}px`,
+              height: `${794 - backOuterMarginPx * 2}px`,
+              objectFit: 'fill',
+              pointerEvents: 'none',
+              mixBlendMode: 'multiply',
+              zIndex: getLayerZ('versoMoldura'),
+            }}
+          />
+        ) : backFrameStyle === 'vetorial' ? (
+          hasBackOuterMargin ? (
+            <div
+              style={{
+                position: 'absolute',
+                top: `${backVetorialInsetPx}px`,
+                left: `${backVetorialInsetPx}px`,
+                width: `${1123 - backVetorialInsetPx * 2}px`,
+                height: `${794 - backVetorialInsetPx * 2}px`,
+                pointerEvents: 'none',
+                zIndex: getLayerZ('versoMoldura'),
+              }}
+            >
+              <NauticalOrnateFrame
+                borderColor={navyBorder}
+                zIndex={getLayerZ('versoMoldura')}
+              />
+            </div>
+          ) : (
+            <NauticalOrnateFrame
+              borderColor={navyBorder}
+              zIndex={getLayerZ('versoMoldura')}
+            />
+          )
+        ) : backFrameStyle === 'simples' ? (
+          <div
+            style={{
+              position: 'absolute',
+              inset: `${backOuterMarginPx}px`,
+              border: `2px solid ${navyBorder}`,
+              padding: '4px',
+              pointerEvents: 'none',
+              zIndex: getLayerZ('versoMoldura'),
+              boxSizing: 'border-box',
+            }}
+          >
+            <div
+              style={{
+                width: '100%',
+                height: '100%',
+                border: `1px solid ${navyBorder}`,
+                boxSizing: 'border-box',
+              }}
+            />
+          </div>
+        ) : null}
+
+        {/* Back Content Wrapper */}
+        <div
+          style={{
+            width: '100%',
+            height: '100%',
+            padding: `${backPadTop}px ${backPadLeftRight}px ${backPadBottom}px ${backPadLeftRight}px`,
+            boxSizing: 'border-box',
+            position: 'relative',
+            display: 'flex',
+            flexDirection: 'column',
+            backgroundColor: 'transparent',
+          }}
+        >
             {/* Back Header (transparent background so entire watermark remains visible without shadows) */}
             <div
               style={{
@@ -2589,170 +2779,284 @@ export function CertificateSheet({
                 backgroundColor: 'transparent',
               }}
             >
-              {(() => {
-                const leftBackSelect = getSelectProps('brasaoEsquerdo', 'Brasão Esquerdo');
-                const backLeftSize = template.tamanhoLogoEsquerdaVerso;
-                return (
-                  <div
-                    {...leftBackSelect}
-                    style={{
-                      position: 'relative',
-                      zIndex: getLayerZ('brasaoEsquerdo'),
-                      width: backLeftSize === undefined ? '70px' : undefined,
-                      height: backLeftSize === undefined ? '72px' : undefined,
-                      minWidth:
-                        backLeftSize !== undefined
-                          ? `${Math.max(54, backLeftSize + 4)}px`
-                          : undefined,
-                      minHeight:
-                        backLeftSize !== undefined
-                          ? `${Math.max(54, backLeftSize + 4)}px`
-                          : undefined,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                      backgroundColor: 'transparent',
-                      ...leftBackSelect.style,
-                    }}
-                  >
-                    {template.logoEsquerdaUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={resolveAssetCacheSrc(template.logoEsquerdaUrl)}
-                        alt="Brasão Guarda Costeira"
-                        crossOrigin="anonymous"
-                        style={{
-                          width: backLeftSize !== undefined ? `${backLeftSize}px` : '66px',
-                          height: backLeftSize !== undefined ? `${backLeftSize}px` : '70px',
-                          objectFit: 'contain',
-                          opacity: leftLogoOpacity,
-                        }}
-                      />
-                    ) : isInteractiveEditor ? (
+              {showLeftLogoBack && (leftLogoBackUrl || isInteractiveEditor) ? (
+                (() => {
+                  const leftBackSelect = getSelectProps(
+                    'brasaoEsquerdoVerso',
+                    'Brasão Esquerdo (Verso)'
+                  );
+                  const backLeftSize = template.tamanhoLogoEsquerdaVerso;
+                  return (
+                    <div
+                      {...leftBackSelect}
+                      style={{
+                        position: 'relative',
+                        left: `${template.logoEsquerdaVersoOffsetX ?? 0}px`,
+                        top: `${template.logoEsquerdaVersoOffsetY ?? 0}px`,
+                        zIndex: getLayerZ('brasaoEsquerdoVerso'),
+                        width: backLeftSize === undefined ? '70px' : undefined,
+                        height: backLeftSize === undefined ? '72px' : undefined,
+                        minWidth:
+                          backLeftSize !== undefined
+                            ? `${Math.max(54, backLeftSize + 4)}px`
+                            : undefined,
+                        minHeight:
+                          backLeftSize !== undefined
+                            ? `${Math.max(54, backLeftSize + 4)}px`
+                            : undefined,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                        backgroundColor: 'transparent',
+                        ...leftBackSelect.style,
+                      }}
+                    >
+                      {leftLogoBackUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={resolveAssetCacheSrc(leftLogoBackUrl)}
+                          alt="Brasão Guarda Costeira"
+                          crossOrigin="anonymous"
+                          style={{
+                            width: backLeftSize !== undefined ? `${backLeftSize}px` : '66px',
+                            height: backLeftSize !== undefined ? `${backLeftSize}px` : '70px',
+                            objectFit: 'contain',
+                            opacity: leftLogoBackOpacity,
+                          }}
+                        />
+                      ) : (
+                        <div
+                          style={{
+                            width: '66px',
+                            height: '58px',
+                            border: '1.5px dashed #94a3b8',
+                            borderRadius: '6px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '9px',
+                            fontWeight: 600,
+                            color: '#64748b',
+                            textAlign: 'center',
+                          }}
+                        >
+                          Brasão
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()
+              ) : null}
+
+              <div
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '4px',
+                }}
+              >
+                {showCenterLogoBack &&
+                  (centerLogoBackUrl || centerCaptionBackText || isInteractiveEditor) &&
+                  (() => {
+                    const centerBackSelect = getSelectProps(
+                      'brasaoCentroVerso',
+                      'Brasão Central (Verso)'
+                    );
+                    const hasCenterBackContent = Boolean(
+                      centerLogoBackUrl || centerCaptionBackText
+                    );
+                    return (
                       <div
+                        {...centerBackSelect}
                         style={{
-                          width: '66px',
-                          height: '58px',
-                          border: '1.5px dashed #94a3b8',
-                          borderRadius: '6px',
+                          position: 'relative',
+                          left: `${template.logoCentroVersoOffsetX ?? 0}px`,
+                          top: `${template.logoCentroVersoOffsetY ?? 0}px`,
+                          zIndex: getLayerZ('brasaoCentroVerso'),
                           display: 'flex',
+                          flexDirection: 'column',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          fontSize: '9px',
-                          fontWeight: 600,
-                          color: '#64748b',
-                          textAlign: 'center',
+                          gap: '3px',
+                          backgroundColor: 'transparent',
+                          ...centerBackSelect.style,
                         }}
                       >
-                        Brasão
+                        {!hasCenterBackContent && isInteractiveEditor ? (
+                          <div
+                            style={{
+                              width: '88px',
+                              height: '44px',
+                              border: '1.5px dashed #94a3b8',
+                              borderRadius: '6px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '9px',
+                              fontWeight: 600,
+                              color: '#64748b',
+                              textAlign: 'center',
+                              backgroundColor: 'rgba(248, 250, 252, 0.7)',
+                            }}
+                          >
+                            Brasão Central
+                          </div>
+                        ) : null}
+                        {centerLogoBackUrl && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={resolveAssetCacheSrc(centerLogoBackUrl)}
+                            alt={centerCaptionBackText || 'Brasão Central (Verso)'}
+                            crossOrigin="anonymous"
+                            style={{
+                              width: `${centerLogoBackSize}px`,
+                              height: `${centerLogoBackSize}px`,
+                              objectFit: 'contain',
+                              opacity: centerLogoBackOpacity,
+                            }}
+                          />
+                        )}
+                        {centerCaptionBackText && (
+                          <div
+                            style={{
+                              fontSize: `${Math.max(
+                                8,
+                                Math.min(13, Math.round(centerLogoBackSize * 0.15))
+                              )}px`,
+                              fontWeight: 500,
+                              letterSpacing: '0.04em',
+                              color: '#162d4c',
+                              fontFamily:
+                                '"Segoe UI", system-ui, -apple-system, Arial, sans-serif',
+                              textAlign: 'center',
+                              lineHeight: 1.15,
+                              maxWidth: `${Math.max(110, Math.round(centerLogoBackSize * 1.8))}px`,
+                              opacity: centerLogoBackOpacity,
+                            }}
+                          >
+                            {centerCaptionBackText}
+                          </div>
+                        )}
                       </div>
-                    ) : null}
-                  </div>
-                );
-              })()}
+                    );
+                  })()}
 
-              {(() => {
-                const backTitleSelect = getSelectProps('versoTitulo', 'Título do Verso');
-                const hasBackTitle = Boolean(backTitleResolved.trim());
-                return (
-                  <h2
-                    {...backTitleSelect}
-                    style={{
-                      margin: 0,
-                      position: 'relative',
-                      zIndex: getLayerZ('versoTitulo'),
-                      flex: 1,
-                      textAlign: 'center',
-                      fontSize: hasBackTitle ? `${template.versoTamanhoFonteTitulo ?? 30}px` : '14px',
-                      fontWeight: hasBackTitle ? 800 : 600,
-                      fontStyle: hasBackTitle && versoItalic ? 'italic' : 'normal',
-                      color: hasBackTitle ? '#0f172a' : '#64748b',
-                      fontFamily: hasBackTitle
-                        ? backTitleFontCss
-                        : '"Segoe UI", system-ui, sans-serif',
-                      letterSpacing: '0.02em',
-                      textTransform: hasBackTitle ? 'uppercase' : 'none',
-                      lineHeight: 1.15,
-                      backgroundColor:
-                        !hasBackTitle && isInteractiveEditor
-                          ? 'rgba(248, 250, 252, 0.75)'
-                          : 'transparent',
-                      border:
-                        !hasBackTitle && isInteractiveEditor ? '1.5px dashed #94a3b8' : undefined,
-                      textShadow: 'none',
-                      boxShadow: 'none',
-                      padding: hasBackTitle ? '2px 10px' : '12px 14px',
-                      ...backTitleSelect.style,
-                    }}
-                  >
-                    {hasBackTitle
-                      ? backTitleResolved
-                      : isInteractiveEditor
-                        ? 'Título do Verso — clique para editar'
-                        : ''}
-                  </h2>
-                );
-              })()}
+                {(() => {
+                  const backTitleSelect = getSelectProps('versoTitulo', 'Título do Verso');
+                  const hasBackTitle = Boolean(backTitleResolved.trim());
+                  return (
+                    <h2
+                      {...backTitleSelect}
+                      style={{
+                        margin: 0,
+                        position: 'relative',
+                        left: `${template.versoTituloOffsetX ?? 0}px`,
+                        top: `${template.versoTituloOffsetY ?? 0}px`,
+                        zIndex: getLayerZ('versoTitulo'),
+                        width: '100%',
+                        textAlign: 'center',
+                        fontSize: hasBackTitle ? `${template.versoTamanhoFonteTitulo ?? 30}px` : '14px',
+                        fontWeight: hasBackTitle ? (backTitleBold ? 800 : 400) : 600,
+                        fontStyle: hasBackTitle && backTitleItalic ? 'italic' : 'normal',
+                        color: hasBackTitle ? '#0f172a' : '#64748b',
+                        fontFamily: hasBackTitle
+                          ? backTitleFontCss
+                          : '"Segoe UI", system-ui, sans-serif',
+                        letterSpacing: `${backTitleTrackingEm}em`,
+                        textTransform: hasBackTitle ? 'uppercase' : 'none',
+                        lineHeight: 1.15,
+                        backgroundColor:
+                          !hasBackTitle && isInteractiveEditor
+                            ? 'rgba(248, 250, 252, 0.75)'
+                            : 'transparent',
+                        border:
+                          !hasBackTitle && isInteractiveEditor ? '1.5px dashed #94a3b8' : undefined,
+                        textShadow: 'none',
+                        boxShadow: 'none',
+                        padding: hasBackTitle ? '2px 10px' : '12px 14px',
+                        ...backTitleSelect.style,
+                      }}
+                    >
+                      {hasBackTitle
+                        ? backTitleResolved
+                        : isInteractiveEditor
+                          ? 'Título do Verso — clique para editar'
+                          : ''}
+                    </h2>
+                  );
+                })()}
+              </div>
 
-              {(() => {
-                const rightBackSelect = getSelectProps('brasaoDireito', 'Brasão Direito');
-                const showRightCrestBack = Boolean(
-                  template.logoDireitaUrl || allowDefaultMarinhaCrest
-                );
-                const backRightSize = template.tamanhoLogoDireitaVerso;
-                return (
-                  <div
-                    {...rightBackSelect}
-                    style={{
-                      position: 'relative',
-                      zIndex: getLayerZ('brasaoDireito'),
-                      backgroundColor: 'transparent',
-                      flexShrink: 0,
-                      minWidth:
-                        backRightSize !== undefined
-                          ? `${Math.max(54, backRightSize + 12)}px`
-                          : '70px',
-                      minHeight:
-                        backRightSize !== undefined
-                          ? `${Math.max(54, backRightSize + 12)}px`
-                          : '72px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      ...rightBackSelect.style,
-                    }}
-                  >
-                    {showRightCrestBack ? (
-                      <MarinhaBrasilCrest
-                        customUrl={template.logoDireitaUrl}
-                        label={rightCaptionText}
-                        compact={true}
-                        size={backRightSize}
-                        opacity={rightLogoOpacity}
-                      />
-                    ) : isInteractiveEditor ? (
-                      <div
-                        style={{
-                          width: '66px',
-                          height: '58px',
-                          border: '1.5px dashed #94a3b8',
-                          borderRadius: '6px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '9px',
-                          fontWeight: 600,
-                          color: '#64748b',
-                          textAlign: 'center',
-                        }}
-                      >
-                        Brasão
-                      </div>
-                    ) : null}
-                  </div>
-                );
-              })()}
+              {showRightLogoBack &&
+              (rightLogoBackUrl || allowDefaultMarinhaBack || isInteractiveEditor) ? (
+                (() => {
+                  const rightBackSelect = getSelectProps(
+                    'brasaoDireitoVerso',
+                    'Brasão Direito (Verso)'
+                  );
+                  const showRightCrestBack = Boolean(
+                    rightLogoBackUrl || allowDefaultMarinhaBack
+                  );
+                  const backRightSize = template.tamanhoLogoDireitaVerso;
+                  return (
+                    <div
+                      {...rightBackSelect}
+                      style={{
+                        position: 'relative',
+                        left: `${template.logoDireitaVersoOffsetX ?? 0}px`,
+                        top: `${template.logoDireitaVersoOffsetY ?? 0}px`,
+                        zIndex: getLayerZ('brasaoDireitoVerso'),
+                        backgroundColor: 'transparent',
+                        flexShrink: 0,
+                        minWidth:
+                          backRightSize !== undefined
+                            ? `${Math.max(54, backRightSize + 12)}px`
+                            : '70px',
+                        minHeight:
+                          backRightSize !== undefined
+                            ? `${Math.max(54, backRightSize + 12)}px`
+                            : '72px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        ...rightBackSelect.style,
+                      }}
+                    >
+                      {showRightCrestBack ? (
+                        <MarinhaBrasilCrest
+                          customUrl={rightLogoBackUrl}
+                          label={rightCaptionBackText}
+                          compact={true}
+                          size={backRightSize}
+                          opacity={rightLogoBackOpacity}
+                        />
+                      ) : (
+                        <div
+                          style={{
+                            width: '66px',
+                            height: '58px',
+                            border: '1.5px dashed #94a3b8',
+                            borderRadius: '6px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '9px',
+                            fontWeight: 600,
+                            color: '#64748b',
+                            textAlign: 'center',
+                          }}
+                        >
+                          Brasão
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()
+              ) : null}
             </div>
 
             {/* Disciplines Table Wrapper (watermark allowed to extend behind transparent header/title cleanly) */}
@@ -2777,8 +3081,9 @@ export function CertificateSheet({
                   const backMinContentZ = Math.min(
                     getLayerZ('versoTabela'),
                     getLayerZ('versoTitulo'),
-                    getLayerZ('brasaoEsquerdo'),
-                    getLayerZ('brasaoDireito')
+                    getLayerZ('brasaoEsquerdoVerso'),
+                    getLayerZ('brasaoCentroVerso'),
+                    getLayerZ('brasaoDireitoVerso')
                   );
                   const isBackWmAboveContent = backWmZ > backMinContentZ;
 
@@ -2807,6 +3112,7 @@ export function CertificateSheet({
                         draggable={false}
                         style={{
                           position: 'relative',
+                          left: `${template.marcaDaguaVersoOffsetX ?? 0}px`,
                           top: `${template.marcaDaguaVersoOffsetY ?? 0}px`,
                           width: `${backWmWidth}px`,
                           height: `${backWmHeight}px`,
@@ -3112,8 +3418,6 @@ export function CertificateSheet({
                 );
               })()}
             </div>
-          </div>
-          </div>
         </div>
       </div>
     </div>

@@ -85,9 +85,13 @@ interface CertificateInspectorPanelProps {
   handleImageUpload: (
     field:
       | 'molduraFrenteUrl'
+      | 'molduraVersoUrl'
       | 'logoEsquerdaUrl'
       | 'logoCentroUrl'
       | 'logoDireitaUrl'
+      | 'logoEsquerdaVersoUrl'
+      | 'logoCentroVersoUrl'
+      | 'logoDireitaVersoUrl'
       | 'marcaDaguaFrenteUrl'
       | 'marcaDaguaVersoUrl',
     e: React.ChangeEvent<HTMLInputElement>
@@ -149,23 +153,44 @@ function getObjectMeta(obj: CertificateSelectableObject): {
   switch (obj) {
     case 'brasaoEsquerdo':
       return {
-        title: 'Brasão Esquerdo',
-        subtitle: 'Exibir/inibir, tamanho, opacidade, imagem e posição',
-        sideLabel: 'Frente / Verso',
+        title: 'Brasão Esquerdo (Frente)',
+        subtitle: 'Exibir/inibir, tamanho, opacidade, imagem, posição e camada',
+        sideLabel: 'Frente',
         icon: Shield,
       };
     case 'brasaoCentro':
       return {
-        title: 'Brasão Central',
-        subtitle: 'Inserir imagem, legenda, tamanho, opacidade e posição',
+        title: 'Brasão Central (Frente)',
+        subtitle: 'Inserir imagem, legenda, tamanho, opacidade, posição e camada',
         sideLabel: 'Frente',
         icon: Shield,
       };
     case 'brasaoDireito':
       return {
-        title: 'Brasão Direito',
-        subtitle: 'Exibir/inibir, legenda, imagem, tamanho, opacidade e posição',
-        sideLabel: 'Frente / Verso',
+        title: 'Brasão Direito (Frente)',
+        subtitle: 'Exibir/inibir, legenda, imagem, tamanho, opacidade, posição e camada',
+        sideLabel: 'Frente',
+        icon: Shield,
+      };
+    case 'brasaoEsquerdoVerso':
+      return {
+        title: 'Brasão Esquerdo (Verso)',
+        subtitle: 'Exibir/inibir, imagem, tamanho, opacidade, posição e camada no verso',
+        sideLabel: 'Verso',
+        icon: Shield,
+      };
+    case 'brasaoCentroVerso':
+      return {
+        title: 'Brasão Central (Verso)',
+        subtitle: 'Exibir/inibir, imagem, legenda, tamanho, opacidade, posição e camada',
+        sideLabel: 'Verso',
+        icon: Shield,
+      };
+    case 'brasaoDireitoVerso':
+      return {
+        title: 'Brasão Direito (Verso)',
+        subtitle: 'Exibir/inibir, legenda, imagem, tamanho, opacidade, posição e camada',
+        sideLabel: 'Verso',
         icon: Shield,
       };
     case 'titulo':
@@ -213,14 +238,14 @@ function getObjectMeta(obj: CertificateSelectableObject): {
     case 'molduraFrente':
       return {
         title: 'Moldura da Frente',
-        subtitle: 'Moldura original/vetorial, cor e imagem personalizada',
+        subtitle: 'Moldura original/vetorial, cor, margens, camada e imagem',
         sideLabel: 'Frente',
         icon: Frame,
       };
     case 'versoTitulo':
       return {
         title: 'Título do Curso (Verso)',
-        subtitle: 'Título do verso, fonte, tamanho e camada',
+        subtitle: 'Texto, fonte, negrito/itálico, espaçamento, posição e camada',
         sideLabel: 'Verso',
         icon: Type,
       };
@@ -241,15 +266,15 @@ function getObjectMeta(obj: CertificateSelectableObject): {
     case 'versoMoldura':
       return {
         title: 'Moldura do Verso',
-        subtitle: 'Cor da borda institucional do verso',
+        subtitle: 'Moldura clássica/original/vetorial, cor, margens, camada e imagem',
         sideLabel: 'Verso',
         icon: Frame,
       };
     case 'modeloGeral':
     default:
       return {
-        title: 'Configurações do Modelo',
-        subtitle: 'Nome do modelo, emissão avulsa, fontes globais e atalhos',
+        title: 'Configurações e Elementos',
+        subtitle: 'Acesso rápido frente/verso, layout formal A4 e emissão avulsa',
         sideLabel: 'Geral',
         icon: Settings,
       };
@@ -300,6 +325,8 @@ export function CertificateInspectorPanel({
   onSaveCurrentAssetToLibrary,
   onOpenLibrary,
 }: CertificateInspectorPanelProps) {
+  const [showQuickElements, setShowQuickElements] = React.useState(false);
+
   const meta = getObjectMeta(selectedObject);
   const HeaderIcon = meta.icon;
 
@@ -322,6 +349,34 @@ export function CertificateInspectorPanel({
       }
       return Boolean(template.logoDireitaUrl) && template.logoDireitaUrl === asset.url;
     }
+    if (target === 'brasaoEsquerdoVerso') {
+      const effectiveUrl =
+        template.logoEsquerdaVersoUrl !== undefined
+          ? template.logoEsquerdaVersoUrl
+          : template.logoEsquerdaUrl;
+      return Boolean(effectiveUrl) && effectiveUrl === asset.url;
+    }
+    if (target === 'brasaoCentroVerso') {
+      const effectiveUrl =
+        template.logoCentroVersoUrl !== undefined
+          ? template.logoCentroVersoUrl
+          : template.logoCentroUrl;
+      return Boolean(effectiveUrl) && effectiveUrl === asset.url;
+    }
+    if (target === 'brasaoDireitoVerso') {
+      const effectiveUrl =
+        template.logoDireitaVersoUrl !== undefined
+          ? template.logoDireitaVersoUrl
+          : template.logoDireitaUrl;
+      const allowDefault =
+        template.usarBrasaoPadraoDireitaVerso !== undefined
+          ? template.usarBrasaoPadraoDireitaVerso
+          : template.usarBrasaoPadraoDireita !== false;
+      if (asset.isDefaultMarinhaCrest) {
+        return !effectiveUrl && allowDefault;
+      }
+      return Boolean(effectiveUrl) && effectiveUrl === asset.url;
+    }
     if (target === 'marcaDaguaFrente') {
       return Boolean(template.marcaDaguaFrenteUrl) && template.marcaDaguaFrenteUrl === asset.url;
     }
@@ -337,7 +392,168 @@ export function CertificateInspectorPanel({
       }
       return currentStyle === 'original' && template.molduraFrenteUrl === asset.url;
     }
+    if (target === 'molduraVerso') {
+      const currentStyle = template.estiloMolduraVerso ?? 'classica';
+      if (asset.frameStyle === 'vetorial' || asset.frameStyle === 'simples') {
+        return currentStyle === asset.frameStyle;
+      }
+      const effectiveUrl = template.molduraVersoUrl || template.molduraFrenteUrl;
+      return currentStyle === 'original' && effectiveUrl === asset.url;
+    }
     return false;
+  };
+
+  const renderQuickElementsGrid = (compact = false) => {
+    const frontStyle =
+      template.estiloMolduraFrente ??
+      (template.usarMolduraOriginal !== false ? 'original' : 'vetorial');
+    const backStyle = template.estiloMolduraVerso ?? 'classica';
+
+    const frontItems: {
+      id: CertificateSelectableObject;
+      label: string;
+      isHidden?: boolean;
+    }[] = [
+      {
+        id: 'brasaoEsquerdo',
+        label: 'Brasão Esq.',
+        isHidden: template.mostrarLogoEsquerda === false,
+      },
+      {
+        id: 'brasaoCentro',
+        label: 'Brasão Centro',
+        isHidden: template.mostrarLogoCentro !== true,
+      },
+      {
+        id: 'brasaoDireito',
+        label: 'Brasão Dir.',
+        isHidden: template.mostrarLogoDireita === false,
+      },
+      { id: 'titulo', label: 'Título Principal' },
+      { id: 'texto', label: 'Texto Principal' },
+      { id: 'data', label: 'Local e Data' },
+      { id: 'assinaturaPrincipal', label: 'Assinatura 1' },
+      {
+        id: 'segundaAssinatura',
+        label: '2ª Assinatura',
+        isHidden: !template.mostrarSegundaAssinatura,
+      },
+      {
+        id: 'marcaDaguaFrente',
+        label: "Marca d'Água",
+        isHidden: !template.marcaDaguaFrenteUrl,
+      },
+      {
+        id: 'molduraFrente',
+        label: 'Moldura',
+        isHidden: frontStyle === 'nenhuma',
+      },
+    ];
+
+    const backItems: {
+      id: CertificateSelectableObject;
+      label: string;
+      isHidden?: boolean;
+    }[] = [
+      {
+        id: 'brasaoEsquerdoVerso',
+        label: 'Brasão Esq.',
+        isHidden:
+          (template.mostrarLogoEsquerdaVerso ?? template.mostrarLogoEsquerda) === false,
+      },
+      {
+        id: 'brasaoCentroVerso',
+        label: 'Brasão Centro',
+        isHidden: template.mostrarLogoCentroVerso !== true,
+      },
+      {
+        id: 'brasaoDireitoVerso',
+        label: 'Brasão Dir.',
+        isHidden:
+          (template.mostrarLogoDireitaVerso ?? template.mostrarLogoDireita) === false,
+      },
+      { id: 'versoTitulo', label: 'Título do Curso' },
+      { id: 'versoTabela', label: 'Disciplinas / Notas' },
+      {
+        id: 'marcaDaguaVerso',
+        label: "Marca d'Água",
+        isHidden: !template.marcaDaguaVersoUrl,
+      },
+      {
+        id: 'versoMoldura',
+        label: 'Moldura',
+        isHidden: backStyle === 'nenhuma',
+      },
+    ];
+
+    const renderGroup = (
+      heading: string,
+      badgeClass: string,
+      items: { id: CertificateSelectableObject; label: string; isHidden?: boolean }[]
+    ) => (
+      <div className="space-y-1.5">
+        <div className="flex items-center gap-1.5">
+          <span
+            className={cn(
+              'px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider',
+              badgeClass
+            )}
+          >
+            {heading}
+          </span>
+        </div>
+        <div className="flex flex-wrap gap-1">
+          {items.map((item) => {
+            const isSelected = selectedObject === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => {
+                  onSelectObject(item.id);
+                  setShowQuickElements(true);
+                }}
+                className={cn(
+                  'rounded-lg border font-bold transition-all cursor-pointer flex items-center gap-1',
+                  compact ? 'px-2 py-1 text-[10px]' : 'px-2.5 py-1 text-[11px]',
+                  isSelected
+                    ? 'bg-blue-900 text-white border-blue-950 shadow-2xs'
+                    : item.isHidden
+                      ? 'bg-slate-100 hover:bg-blue-50 border-dashed border-slate-300 text-slate-600 hover:text-blue-900'
+                      : 'bg-white hover:bg-blue-50 border-slate-200 hover:border-blue-300 text-slate-700 hover:text-blue-900'
+                )}
+                title={
+                  item.isHidden
+                    ? `${item.label} (atualmente oculto — clique para abrir os controles)`
+                    : `Abrir controles de ${item.label}`
+                }
+              >
+                <span>{item.label}</span>
+                {item.isHidden && (
+                  <span
+                    className={cn(
+                      'text-[8px] font-black uppercase px-1 rounded',
+                      isSelected
+                        ? 'bg-white/20 text-white'
+                        : 'bg-slate-200 text-slate-600'
+                    )}
+                  >
+                    Oculto
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+
+    return (
+      <div className="space-y-2.5">
+        {renderGroup('Frente (Página 1)', 'bg-blue-100 text-blue-900', frontItems)}
+        {renderGroup('Verso (Página 2)', 'bg-emerald-100 text-emerald-900', backItems)}
+      </div>
+    );
   };
 
   const renderLibrarySwapStrip = (
@@ -636,52 +852,126 @@ export function CertificateInspectorPanel({
     );
   };
 
-  const renderCrestEditor = (side: 'left' | 'center' | 'right') => {
-    const isLeft = side === 'left';
-    const isCenter = side === 'center';
+  const renderCrestEditor = (
+    side: 'left' | 'center' | 'right' | 'leftBack' | 'centerBack' | 'rightBack'
+  ) => {
+    const isBack = side === 'leftBack' || side === 'centerBack' || side === 'rightBack';
+    const isLeft = side === 'left' || side === 'leftBack';
+    const isCenter = side === 'center' || side === 'centerBack';
+    const isRight = side === 'right' || side === 'rightBack';
 
-    const showKey = isLeft
-      ? ('mostrarLogoEsquerda' as const)
-      : isCenter
-        ? ('mostrarLogoCentro' as const)
-        : ('mostrarLogoDireita' as const);
-    const defaultShown = !isCenter;
-    const isShown = defaultShown ? template[showKey] !== false : template[showKey] === true;
+    const defaultLeftUrl = '/assets/aistudio/imagem_01_2da3aec8.png';
 
-    const uploadField = isLeft
-      ? ('logoEsquerdaUrl' as const)
-      : isCenter
-        ? ('logoCentroUrl' as const)
-        : ('logoDireitaUrl' as const);
-    const defaultUrl = isLeft ? '/assets/aistudio/imagem_01_2da3aec8.png' : '';
+    const showKey = isBack
+      ? isLeft
+        ? ('mostrarLogoEsquerdaVerso' as const)
+        : isCenter
+          ? ('mostrarLogoCentroVerso' as const)
+          : ('mostrarLogoDireitaVerso' as const)
+      : isLeft
+        ? ('mostrarLogoEsquerda' as const)
+        : isCenter
+          ? ('mostrarLogoCentro' as const)
+          : ('mostrarLogoDireita' as const);
 
-    const xKey = isLeft
-      ? ('logoEsquerdaOffsetX' as const)
+    const frontIsShown = isLeft
+      ? template.mostrarLogoEsquerda !== false
       : isCenter
-        ? ('logoCentroOffsetX' as const)
-        : ('logoDireitaOffsetX' as const);
-    const yKey = isLeft
-      ? ('logoEsquerdaOffsetY' as const)
-      : isCenter
-        ? ('logoCentroOffsetY' as const)
-        : ('logoDireitaOffsetY' as const);
-    const sizeKey = isLeft
-      ? ('tamanhoLogoEsquerda' as const)
-      : isCenter
-        ? ('tamanhoLogoCentro' as const)
-        : ('tamanhoLogoDireita' as const);
-    const backSizeKey = isLeft
-      ? ('tamanhoLogoEsquerdaVerso' as const)
-      : isCenter
-        ? null
-        : ('tamanhoLogoDireitaVerso' as const);
-    const opacityKey = isLeft
-      ? ('opacidadeLogoEsquerda' as const)
-      : isCenter
-        ? ('opacidadeLogoCentro' as const)
-        : ('opacidadeLogoDireita' as const);
+        ? template.mostrarLogoCentro === true
+        : template.mostrarLogoDireita !== false;
 
-    const defaultSize = isLeft ? 90 : isCenter ? 84 : 74;
+    const isShown = isBack
+      ? isCenter
+        ? template.mostrarLogoCentroVerso === true
+        : template[showKey] !== undefined
+          ? template[showKey] === true
+          : frontIsShown
+      : frontIsShown;
+
+    const uploadField = isBack
+      ? isLeft
+        ? ('logoEsquerdaVersoUrl' as const)
+        : isCenter
+          ? ('logoCentroVersoUrl' as const)
+          : ('logoDireitaVersoUrl' as const)
+      : isLeft
+        ? ('logoEsquerdaUrl' as const)
+        : isCenter
+          ? ('logoCentroUrl' as const)
+          : ('logoDireitaUrl' as const);
+
+    const xKey = isBack
+      ? isLeft
+        ? ('logoEsquerdaVersoOffsetX' as const)
+        : isCenter
+          ? ('logoCentroVersoOffsetX' as const)
+          : ('logoDireitaVersoOffsetX' as const)
+      : isLeft
+        ? ('logoEsquerdaOffsetX' as const)
+        : isCenter
+          ? ('logoCentroOffsetX' as const)
+          : ('logoDireitaOffsetX' as const);
+
+    const yKey = isBack
+      ? isLeft
+        ? ('logoEsquerdaVersoOffsetY' as const)
+        : isCenter
+          ? ('logoCentroVersoOffsetY' as const)
+          : ('logoDireitaVersoOffsetY' as const)
+      : isLeft
+        ? ('logoEsquerdaOffsetY' as const)
+        : isCenter
+          ? ('logoCentroOffsetY' as const)
+          : ('logoDireitaOffsetY' as const);
+
+    const sizeKey = isBack
+      ? isLeft
+        ? ('tamanhoLogoEsquerdaVerso' as const)
+        : isCenter
+          ? ('tamanhoLogoCentroVerso' as const)
+          : ('tamanhoLogoDireitaVerso' as const)
+      : isLeft
+        ? ('tamanhoLogoEsquerda' as const)
+        : isCenter
+          ? ('tamanhoLogoCentro' as const)
+          : ('tamanhoLogoDireita' as const);
+
+    const backSizeKey =
+      !isBack && (isLeft || isRight)
+        ? isLeft
+          ? ('tamanhoLogoEsquerdaVerso' as const)
+          : ('tamanhoLogoDireitaVerso' as const)
+        : null;
+
+    const opacityKey = isBack
+      ? isLeft
+        ? ('opacidadeLogoEsquerdaVerso' as const)
+        : isCenter
+          ? ('opacidadeLogoCentroVerso' as const)
+          : ('opacidadeLogoDireitaVerso' as const)
+      : isLeft
+        ? ('opacidadeLogoEsquerda' as const)
+        : isCenter
+          ? ('opacidadeLogoCentro' as const)
+          : ('opacidadeLogoDireita' as const);
+
+    const frontOpacity = isLeft
+      ? template.opacidadeLogoEsquerda ?? 1
+      : isCenter
+        ? template.opacidadeLogoCentro ?? 1
+        : template.opacidadeLogoDireita ?? 1;
+
+    const defaultSize = isBack
+      ? isLeft
+        ? 66
+        : isCenter
+          ? 54
+          : 54
+      : isLeft
+        ? 90
+        : isCenter
+          ? 84
+          : 74;
     const backDefaultSize = isLeft ? 68 : 54;
     const minX = isLeft ? -90 : isCenter ? -420 : -760;
     const maxX = isLeft ? 760 : isCenter ? 420 : 90;
@@ -692,32 +982,172 @@ export function CertificateInspectorPanel({
     const valY = template[yKey] ?? 0;
     const valSize = template[sizeKey] ?? defaultSize;
     const valBackSize = backSizeKey ? template[backSizeKey] : undefined;
-    const valOpacity = template[opacityKey] ?? 1;
-    const currentUrl = template[uploadField] || '';
+    const valOpacity = isBack ? template[opacityKey] ?? frontOpacity : template[opacityKey] ?? 1;
+
+    const frontUrl = isLeft
+      ? template.logoEsquerdaUrl || ''
+      : isCenter
+        ? template.logoCentroUrl || ''
+        : template.logoDireitaUrl || '';
+
+    const rawUrl = template[uploadField];
+    const isInheritingBackUrl = isBack && rawUrl === undefined;
+    const effectiveUrl = isBack ? (rawUrl !== undefined ? rawUrl : frontUrl) : frontUrl;
+
+    const allowDefaultRight = isBack
+      ? template.usarBrasaoPadraoDireitaVerso !== undefined
+        ? template.usarBrasaoPadraoDireitaVerso
+        : template.usarBrasaoPadraoDireita !== false
+      : template.usarBrasaoPadraoDireita !== false;
+
+    const libraryTarget: CertificateAssetTarget = isBack
+      ? isLeft
+        ? 'brasaoEsquerdoVerso'
+        : isCenter
+          ? 'brasaoCentroVerso'
+          : 'brasaoDireitoVerso'
+      : isLeft
+        ? 'brasaoEsquerdo'
+        : isCenter
+          ? 'brasaoCentro'
+          : 'brasaoDireito';
+
+    const layerKey: CertificateLayerKey = isBack
+      ? isLeft
+        ? 'brasaoEsquerdoVerso'
+        : isCenter
+          ? 'brasaoCentroVerso'
+          : 'brasaoDireitoVerso'
+      : isLeft
+        ? 'brasaoEsquerdo'
+        : isCenter
+          ? 'brasaoCentro'
+          : 'brasaoDireito';
+
+    const layerLabel = isBack
+      ? isLeft
+        ? 'Brasão Esquerdo (Verso)'
+        : isCenter
+          ? 'Brasão Central (Verso)'
+          : 'Brasão Direito (Verso)'
+      : isLeft
+        ? 'Brasão Esquerdo'
+        : isCenter
+          ? 'Brasão Central'
+          : 'Brasão Direito';
+
+    const showCaptionKey = isBack
+      ? isCenter
+        ? ('mostrarLegendaLogoCentroVerso' as const)
+        : ('mostrarLegendaLogoDireitaVerso' as const)
+      : isCenter
+        ? ('mostrarLegendaLogoCentro' as const)
+        : ('mostrarLegendaLogoDireita' as const);
+
+    const captionTextKey = isBack
+      ? isCenter
+        ? ('logoCentroVersoTexto' as const)
+        : ('logoDireitaVersoTexto' as const)
+      : isCenter
+        ? ('logoCentroTexto' as const)
+        : ('logoDireitaTexto' as const);
+
+    const effectiveCaptionShown = isBack
+      ? isCenter
+        ? template.mostrarLegendaLogoCentroVerso !== undefined
+          ? template.mostrarLegendaLogoCentroVerso
+          : template.mostrarLegendaLogoCentro === true
+        : template.mostrarLegendaLogoDireitaVerso !== undefined
+          ? template.mostrarLegendaLogoDireitaVerso
+          : effectiveUrl
+            ? template.mostrarLegendaLogoDireita === true
+            : allowDefaultRight && template.mostrarLegendaLogoDireita !== false
+      : isCenter
+        ? template.mostrarLegendaLogoCentro === true
+        : template.logoDireitaUrl
+          ? template.mostrarLegendaLogoDireita === true
+          : template.mostrarLegendaLogoDireita !== false;
+
+    const effectiveCaptionValue = isBack
+      ? isCenter
+        ? template.logoCentroVersoTexto ?? template.logoCentroTexto ?? ''
+        : template.logoDireitaVersoTexto ?? template.logoDireitaTexto ?? ''
+      : isCenter
+        ? template.logoCentroTexto ?? ''
+        : template.logoDireitaTexto ?? '';
+
+    const hasCustomBackOverrides =
+      isBack &&
+      (template[showKey] !== undefined ||
+        template[uploadField] !== undefined ||
+        template[sizeKey] !== undefined ||
+        template[opacityKey] !== undefined ||
+        valX !== 0 ||
+        valY !== 0 ||
+        (isRight &&
+          (template.usarBrasaoPadraoDireitaVerso !== undefined ||
+            template.mostrarLegendaLogoDireitaVerso !== undefined ||
+            template.logoDireitaVersoTexto !== undefined)) ||
+        (isCenter &&
+          (template.mostrarLegendaLogoCentroVerso !== undefined ||
+            template.logoCentroVersoTexto !== undefined)));
 
     return (
       <div className="space-y-4">
-        {/* Mini 3-tab switcher between crests */}
-        <div className="grid grid-cols-3 gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200">
-          {[
-            { id: 'brasaoEsquerdo' as const, label: 'Esquerdo' },
-            { id: 'brasaoCentro' as const, label: 'Central' },
-            { id: 'brasaoDireito' as const, label: 'Direito' },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => onSelectObject(tab.id)}
-              className={cn(
-                'py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all cursor-pointer',
-                selectedObject === tab.id
-                  ? 'bg-white text-blue-900 shadow-2xs border border-slate-200'
-                  : 'text-slate-600 hover:text-slate-900'
-              )}
-            >
-              {tab.label}
-            </button>
-          ))}
+        {/* 2-Row Switcher: Front & Back Crests */}
+        <div className="space-y-1.5 bg-slate-100 p-1.5 rounded-xl border border-slate-200">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[9px] font-black uppercase text-blue-900 px-1.5 w-11 shrink-0">
+              Frente
+            </span>
+            <div className="grid grid-cols-3 gap-1 flex-1">
+              {[
+                { id: 'brasaoEsquerdo' as const, label: 'Esquerdo' },
+                { id: 'brasaoCentro' as const, label: 'Central' },
+                { id: 'brasaoDireito' as const, label: 'Direito' },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => onSelectObject(tab.id)}
+                  className={cn(
+                    'py-1 px-2 rounded-lg text-[10px] font-bold transition-all cursor-pointer',
+                    selectedObject === tab.id
+                      ? 'bg-white text-blue-900 shadow-2xs border border-slate-200'
+                      : 'text-slate-600 hover:text-slate-900'
+                  )}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[9px] font-black uppercase text-emerald-800 px-1.5 w-11 shrink-0">
+              Verso
+            </span>
+            <div className="grid grid-cols-3 gap-1 flex-1">
+              {[
+                { id: 'brasaoEsquerdoVerso' as const, label: 'Esquerdo' },
+                { id: 'brasaoCentroVerso' as const, label: 'Central' },
+                { id: 'brasaoDireitoVerso' as const, label: 'Direito' },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => onSelectObject(tab.id)}
+                  className={cn(
+                    'py-1 px-2 rounded-lg text-[10px] font-bold transition-all cursor-pointer',
+                    selectedObject === tab.id
+                      ? 'bg-white text-emerald-900 shadow-2xs border border-emerald-200'
+                      : 'text-slate-600 hover:text-slate-900'
+                  )}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         <div
@@ -726,6 +1156,50 @@ export function CertificateInspectorPanel({
             isShown ? 'bg-slate-50 border-slate-200' : 'bg-slate-100/80 border-slate-200'
           )}
         >
+          {isBack && (
+            <div className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg bg-emerald-50/80 border border-emerald-200 text-[10px]">
+              <span className="font-semibold text-emerald-900">
+                {hasCustomBackOverrides
+                  ? 'Configuração independente ativa no Verso'
+                  : isCenter
+                    ? 'Opcional independente no Verso'
+                    : 'Espelhando imagem e visibilidade da Frente'}
+              </span>
+              {hasCustomBackOverrides && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setTemplate((prev) => ({
+                      ...prev,
+                      [showKey]: undefined,
+                      [uploadField]: undefined,
+                      [sizeKey]: undefined,
+                      [opacityKey]: undefined,
+                      [xKey]: 0,
+                      [yKey]: 0,
+                      ...(isRight
+                        ? {
+                            usarBrasaoPadraoDireitaVerso: undefined,
+                            mostrarLegendaLogoDireitaVerso: undefined,
+                            logoDireitaVersoTexto: undefined,
+                          }
+                        : {}),
+                      ...(isCenter
+                        ? {
+                            mostrarLegendaLogoCentroVerso: undefined,
+                            logoCentroVersoTexto: undefined,
+                          }
+                        : {}),
+                    }))
+                  }
+                  className="font-bold text-emerald-800 hover:text-emerald-950 underline cursor-pointer shrink-0"
+                >
+                  Igual à Frente
+                </button>
+              )}
+            </div>
+          )}
+
           <div className="flex items-center justify-between gap-2">
             <label className="flex items-center gap-2 text-xs font-bold text-slate-800 cursor-pointer">
               <input
@@ -739,27 +1213,35 @@ export function CertificateInspectorPanel({
                 }
                 className="rounded border-slate-300"
               />
-              <span>{isShown ? 'Exibir este Brasão' : 'Brasão Inibido (Oculto)'}</span>
+              <span>
+                {isShown
+                  ? isBack
+                    ? 'Exibir este Brasão no Verso'
+                    : 'Exibir este Brasão'
+                  : 'Brasão Inibido (Oculto)'}
+              </span>
             </label>
             {renderMoveOnSheetButton()}
           </div>
 
           <div className="flex items-center justify-between gap-2 p-2.5 rounded-lg bg-white border border-slate-200">
             <span className="text-[11px] font-semibold text-slate-700 truncate">
-              {currentUrl
-                ? 'Imagem configurada'
+              {effectiveUrl
+                ? isInheritingBackUrl
+                  ? 'Imagem herdada da Frente'
+                  : 'Imagem configurada'
                 : isCenter
                   ? 'Sem imagem no brasão central'
-                  : side === 'right' && template.usarBrasaoPadraoDireita === false
+                  : isRight && !allowDefaultRight
                     ? 'Brasão vazio (clique em Inserir)'
-                    : side === 'left'
+                    : isLeft
                       ? 'Brasão vazio (clique em Inserir)'
                       : 'Brasão padrão do sistema'}
             </span>
             <div className="flex items-center gap-1.5 shrink-0">
               <label className="px-2.5 py-1 rounded-lg bg-blue-900 hover:bg-blue-950 text-white text-[11px] font-bold cursor-pointer flex items-center gap-1">
                 <Upload size={11} />
-                <span>{currentUrl ? 'Trocar' : 'Inserir'}</span>
+                <span>{effectiveUrl ? 'Trocar' : 'Inserir'}</span>
                 <input
                   type="file"
                   accept="image/*"
@@ -768,14 +1250,14 @@ export function CertificateInspectorPanel({
                 />
               </label>
               {isCenter ? (
-                currentUrl && (
+                effectiveUrl && (
                   <button
                     type="button"
                     onClick={() =>
                       setTemplate((prev) => ({
                         ...prev,
-                        logoCentroUrl: '',
-                        mostrarLogoCentro: false,
+                        [uploadField]: '',
+                        [showKey]: false,
                       }))
                     }
                     className="p-1.5 rounded-lg bg-white border border-slate-200 hover:bg-rose-50 text-rose-600 cursor-pointer"
@@ -786,19 +1268,23 @@ export function CertificateInspectorPanel({
                 )
               ) : (
                 <>
-                  {(currentUrl ||
-                    (side === 'right' && template.usarBrasaoPadraoDireita !== false)) && (
+                  {(effectiveUrl || (isRight && allowDefaultRight)) && (
                     <button
                       type="button"
                       onClick={() =>
                         setTemplate((prev) => ({
                           ...prev,
                           [uploadField]: '',
-                          ...(side === 'right'
-                            ? {
-                                usarBrasaoPadraoDireita: false,
-                                mostrarLegendaLogoDireita: false,
-                              }
+                          ...(isRight
+                            ? isBack
+                              ? {
+                                  usarBrasaoPadraoDireitaVerso: false,
+                                  mostrarLegendaLogoDireitaVerso: false,
+                                }
+                              : {
+                                  usarBrasaoPadraoDireita: false,
+                                  mostrarLegendaLogoDireita: false,
+                                }
                             : {}),
                         }))
                       }
@@ -813,18 +1299,24 @@ export function CertificateInspectorPanel({
                     onClick={() =>
                       setTemplate((prev) => ({
                         ...prev,
-                        [uploadField]: defaultUrl,
-                        ...(uploadField === 'logoDireitaUrl'
-                          ? {
-                              usarBrasaoPadraoDireita: true,
-                              mostrarLegendaLogoDireita: true,
-                              logoDireitaTexto: prev.logoDireitaTexto || 'MARINHA DO BRASIL',
-                            }
+                        [uploadField]: isBack ? undefined : isLeft ? defaultLeftUrl : '',
+                        ...(isRight
+                          ? isBack
+                            ? {
+                                usarBrasaoPadraoDireitaVerso: undefined,
+                                mostrarLegendaLogoDireitaVerso: undefined,
+                              }
+                            : {
+                                usarBrasaoPadraoDireita: true,
+                                mostrarLegendaLogoDireita: true,
+                                logoDireitaTexto:
+                                  prev.logoDireitaTexto || 'MARINHA DO BRASIL',
+                              }
                           : {}),
                       }))
                     }
                     className="p-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-600 cursor-pointer"
-                    title="Restaurar brasão padrão"
+                    title={isBack ? 'Usar padrão da Frente' : 'Restaurar brasão padrão'}
                   >
                     <RotateCcw size={12} />
                   </button>
@@ -835,72 +1327,43 @@ export function CertificateInspectorPanel({
 
           {renderLibrarySwapStrip(
             'brasao',
-            isCenter ? 'brasaoCentro' : side === 'right' ? 'brasaoDireito' : 'brasaoEsquerdo',
-            currentUrl || undefined,
-            isCenter ? 'Brasão Central' : side === 'right' ? 'Brasão Direito' : 'Brasão Esquerdo'
+            libraryTarget,
+            effectiveUrl || undefined,
+            layerLabel
           )}
 
-          {isCenter && (
+          {(isCenter || isRight) && (
             <div className="p-2.5 rounded-lg bg-white border border-slate-200 space-y-2">
               <label className="flex items-center gap-2 text-[11px] font-bold text-slate-700 cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={template.mostrarLegendaLogoCentro === true}
+                  checked={effectiveCaptionShown}
                   onChange={(e) =>
                     setTemplate((prev) => ({
                       ...prev,
-                      mostrarLegendaLogoCentro: e.target.checked,
+                      [showCaptionKey]: e.target.checked,
                     }))
                   }
                   className="rounded border-slate-300"
                 />
-                <span>Exibir legenda de texto abaixo do Brasão Central</span>
+                <span>
+                  Exibir legenda abaixo do {isCenter ? 'Brasão Central' : 'Brasão Direito'}
+                </span>
               </label>
               <input
                 type="text"
-                value={template.logoCentroTexto || ''}
+                value={effectiveCaptionValue}
                 onChange={(e) =>
                   setTemplate((prev) => ({
                     ...prev,
-                    logoCentroTexto: e.target.value,
+                    [captionTextKey]: e.target.value,
                   }))
                 }
-                placeholder="Legenda opcional do Brasão Central"
-                className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs"
-              />
-            </div>
-          )}
-
-          {side === 'right' && (
-            <div className="p-2.5 rounded-lg bg-white border border-slate-200 space-y-2">
-              <label className="flex items-center gap-2 text-[11px] font-bold text-slate-700 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={
-                    template.logoDireitaUrl
-                      ? template.mostrarLegendaLogoDireita === true
-                      : template.mostrarLegendaLogoDireita !== false
-                  }
-                  onChange={(e) =>
-                    setTemplate((prev) => ({
-                      ...prev,
-                      mostrarLegendaLogoDireita: e.target.checked,
-                    }))
-                  }
-                  className="rounded border-slate-300"
-                />
-                <span>Exibir legenda de texto abaixo do Brasão Direito</span>
-              </label>
-              <input
-                type="text"
-                value={template.logoDireitaTexto}
-                onChange={(e) =>
-                  setTemplate((prev) => ({
-                    ...prev,
-                    logoDireitaTexto: e.target.value,
-                  }))
+                placeholder={
+                  isCenter
+                    ? 'Legenda opcional do Brasão Central'
+                    : 'Ex: MARINHA DO BRASIL (ou deixe vazio)'
                 }
-                placeholder="Ex: MARINHA DO BRASIL (ou deixe vazio)"
                 className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs"
               />
             </div>
@@ -908,15 +1371,17 @@ export function CertificateInspectorPanel({
 
           <div className="space-y-2.5 pt-1 border-t border-slate-200">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold text-slate-700">Tamanho e Opacidade</span>
+              <span className="text-[11px] font-bold text-slate-700">
+                Tamanho e Opacidade
+              </span>
               <button
                 type="button"
                 onClick={() =>
                   setTemplate((prev) => ({
                     ...prev,
-                    [sizeKey]: defaultSize,
+                    [sizeKey]: isBack ? undefined : defaultSize,
                     ...(backSizeKey ? { [backSizeKey]: undefined } : {}),
-                    [opacityKey]: 1,
+                    [opacityKey]: isBack ? undefined : 1,
                   }))
                 }
                 className="text-[10px] font-bold text-blue-700 hover:text-blue-900 underline cursor-pointer"
@@ -926,13 +1391,19 @@ export function CertificateInspectorPanel({
             </div>
             <div>
               <div className="flex justify-between text-[10px] font-semibold text-slate-600">
-                <span>{backSizeKey ? 'Tamanho na Frente' : 'Tamanho do Brasão'}</span>
+                <span>
+                  {isBack
+                    ? 'Tamanho no Verso'
+                    : backSizeKey
+                      ? 'Tamanho na Frente'
+                      : 'Tamanho do Brasão'}
+                </span>
                 <span className="font-mono text-slate-800">{valSize}px</span>
               </div>
               <input
                 type="range"
-                min={36}
-                max={220}
+                min={isBack ? 28 : 36}
+                max={isBack ? 150 : 220}
                 step={2}
                 value={valSize}
                 onChange={(e) =>
@@ -950,7 +1421,9 @@ export function CertificateInspectorPanel({
                   <span>Tamanho no Verso</span>
                   <div className="flex items-center gap-1.5">
                     <span className="font-mono text-slate-800">
-                      {valBackSize !== undefined ? `${valBackSize}px` : `Padrão (${backDefaultSize}px)`}
+                      {valBackSize !== undefined
+                        ? `${valBackSize}px`
+                        : `Padrão (${backDefaultSize}px)`}
                     </span>
                     {valBackSize !== undefined && (
                       <button
@@ -1075,10 +1548,7 @@ export function CertificateInspectorPanel({
             </div>
           </div>
 
-          {renderLayerOrderControls(
-            isLeft ? 'brasaoEsquerdo' : isCenter ? 'brasaoCentro' : 'brasaoDireito',
-            isLeft ? 'Brasão Esquerdo' : isCenter ? 'Brasão Central' : 'Brasão Direito'
-          )}
+          {renderLayerOrderControls(layerKey, layerLabel)}
         </div>
       </div>
     );
@@ -1106,6 +1576,20 @@ export function CertificateInspectorPanel({
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={() => setShowQuickElements((v) => !v)}
+            className={cn(
+              'px-2 py-1.5 rounded-lg border text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-colors',
+              showQuickElements
+                ? 'bg-blue-900 text-white border-blue-950'
+                : 'bg-white hover:bg-blue-50 text-blue-900 border-slate-200'
+            )}
+            title="Abrir acesso rápido de todos os elementos (Frente e Verso) ao lado"
+          >
+            <Layers size={12} />
+            <span>Elementos</span>
+          </button>
           {selectedObject !== 'modeloGeral' && (
             <button
               type="button"
@@ -1127,6 +1611,24 @@ export function CertificateInspectorPanel({
           </button>
         </div>
       </div>
+
+      {showQuickElements && selectedObject !== 'modeloGeral' && (
+        <div className="px-4 py-3 border-b border-slate-200 bg-slate-50/90 space-y-2 shrink-0">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] font-black uppercase tracking-wider text-slate-600">
+              Elementos Rápidos / Ocultos (Frente e Verso)
+            </span>
+            <button
+              type="button"
+              onClick={() => setShowQuickElements(false)}
+              className="text-[10px] font-bold text-slate-500 hover:text-slate-800 cursor-pointer"
+            >
+              Recolher
+            </button>
+          </div>
+          {renderQuickElementsGrid(true)}
+        </div>
+      )}
 
       {/* Contextual Body */}
       <div className="p-4 sm:p-5 space-y-4 overflow-y-auto custom-scrollbar">
@@ -3150,10 +3652,13 @@ export function CertificateInspectorPanel({
           </div>
         )}
 
-        {/* BRASÕES */}
+        {/* BRASÕES (FRENTE E VERSO) */}
         {selectedObject === 'brasaoEsquerdo' && renderCrestEditor('left')}
         {selectedObject === 'brasaoCentro' && renderCrestEditor('center')}
         {selectedObject === 'brasaoDireito' && renderCrestEditor('right')}
+        {selectedObject === 'brasaoEsquerdoVerso' && renderCrestEditor('leftBack')}
+        {selectedObject === 'brasaoCentroVerso' && renderCrestEditor('centerBack')}
+        {selectedObject === 'brasaoDireitoVerso' && renderCrestEditor('rightBack')}
 
         {/* MARCA D'ÁGUA (FRENTE) */}
         {selectedObject === 'marcaDaguaFrente' && (
@@ -3315,43 +3820,80 @@ export function CertificateInspectorPanel({
                 />
               </div>
 
-              <div>
-                <div className="flex items-center justify-between text-[10px] font-bold text-slate-600 mb-0.5">
-                  <span>Posição Vertical (Altura)</span>
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-mono text-slate-800">
-                      {(template.marcaDaguaFrenteOffsetY ?? 0) > 0
-                        ? `+${template.marcaDaguaFrenteOffsetY}`
-                        : (template.marcaDaguaFrenteOffsetY ?? 0)}
-                      px
-                    </span>
-                    {(template.marcaDaguaFrenteOffsetY ?? 0) !== 0 && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setTemplate((prev) => ({ ...prev, marcaDaguaFrenteOffsetY: 0 }))
-                        }
-                        className="text-[10px] text-blue-700 hover:text-blue-900 underline cursor-pointer"
-                      >
-                        Zerar
-                      </button>
-                    )}
+              <div className="space-y-2 pt-1 border-t border-slate-200">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-slate-700">
+                    Posição na Folha (Frente)
+                  </span>
+                  {((template.marcaDaguaFrenteOffsetX ?? 0) !== 0 ||
+                    (template.marcaDaguaFrenteOffsetY ?? 0) !== 0) && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setTemplate((prev) => ({
+                          ...prev,
+                          marcaDaguaFrenteOffsetX: 0,
+                          marcaDaguaFrenteOffsetY: 0,
+                        }))
+                      }
+                      className="text-[10px] text-blue-700 hover:text-blue-900 underline cursor-pointer font-semibold"
+                    >
+                      Zerar
+                    </button>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <div className="flex items-center justify-between text-[10px] font-bold text-slate-600 mb-0.5">
+                      <span>Horizontal (X)</span>
+                      <span className="font-mono text-slate-800">
+                        {(template.marcaDaguaFrenteOffsetX ?? 0) > 0
+                          ? `+${template.marcaDaguaFrenteOffsetX}`
+                          : (template.marcaDaguaFrenteOffsetX ?? 0)}
+                        px
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={-480}
+                      max={480}
+                      step={4}
+                      value={template.marcaDaguaFrenteOffsetX ?? 0}
+                      onChange={(e) =>
+                        setTemplate((prev) => ({
+                          ...prev,
+                          marcaDaguaFrenteOffsetX: Number(e.target.value),
+                        }))
+                      }
+                      className="w-full accent-blue-800"
+                    />
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between text-[10px] font-bold text-slate-600 mb-0.5">
+                      <span>Vertical (Y)</span>
+                      <span className="font-mono text-slate-800">
+                        {(template.marcaDaguaFrenteOffsetY ?? 0) > 0
+                          ? `+${template.marcaDaguaFrenteOffsetY}`
+                          : (template.marcaDaguaFrenteOffsetY ?? 0)}
+                        px
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={-380}
+                      max={380}
+                      step={4}
+                      value={template.marcaDaguaFrenteOffsetY ?? 0}
+                      onChange={(e) =>
+                        setTemplate((prev) => ({
+                          ...prev,
+                          marcaDaguaFrenteOffsetY: Number(e.target.value),
+                        }))
+                      }
+                      className="w-full accent-blue-800"
+                    />
                   </div>
                 </div>
-                <input
-                  type="range"
-                  min={-380}
-                  max={380}
-                  step={4}
-                  value={template.marcaDaguaFrenteOffsetY ?? 0}
-                  onChange={(e) =>
-                    setTemplate((prev) => ({
-                      ...prev,
-                      marcaDaguaFrenteOffsetY: Number(e.target.value),
-                    }))
-                  }
-                  className="w-full accent-blue-800"
-                />
               </div>
 
               <div className="flex flex-wrap gap-1.5 pt-1">
@@ -3363,6 +3905,7 @@ export function CertificateInspectorPanel({
                       tamanhoMarcaDaguaFrente: 545,
                       escalaLarguraMarcaDaguaFrente: 100,
                       escalaAlturaMarcaDaguaFrente: 100,
+                      marcaDaguaFrenteOffsetX: 0,
                       marcaDaguaFrenteOffsetY: 0,
                     }))
                   }
@@ -3625,104 +4168,230 @@ export function CertificateInspectorPanel({
           </div>
         )}
 
-        {/* VERSO — TÍTULO DO CURSO */}
+        {/* VERSO — TÍTULO DO CURSO (ESPELHADO DA FRENTE) */}
         {selectedObject === 'versoTitulo' && (
           <div className="space-y-4">
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
+              <div className="flex items-center justify-between gap-2">
+                <label className="text-xs font-bold text-slate-700">
                   Título do Curso no Verso (aceita {`{{CURSO}}`})
                 </label>
-                <input
-                  type="text"
-                  value={template.versoTituloCurso}
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setTemplate((prev) => ({
+                        ...prev,
+                        versoTituloNegrito: !(prev.versoTituloNegrito ?? true),
+                      }))
+                    }
+                    className={cn(
+                      'px-2 py-0.5 rounded border text-[10px] font-bold cursor-pointer',
+                      (template.versoTituloNegrito ?? true)
+                        ? 'bg-slate-900 text-white border-slate-900'
+                        : 'bg-white text-slate-600 border-slate-200'
+                    )}
+                    title="Negrito no título do verso"
+                  >
+                    N
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setTemplate((prev) => ({
+                        ...prev,
+                        versoTituloItalico: !(
+                          prev.versoTituloItalico ?? prev.versoItalico ?? false
+                        ),
+                      }))
+                    }
+                    className={cn(
+                      'px-2 py-0.5 rounded border text-[10px] italic font-serif cursor-pointer',
+                      (template.versoTituloItalico ?? template.versoItalico ?? false)
+                        ? 'bg-slate-900 text-white border-slate-900'
+                        : 'bg-white text-slate-600 border-slate-200'
+                    )}
+                    title="Itálico no título do verso"
+                  >
+                    I
+                  </button>
+                </div>
+              </div>
+
+              <input
+                type="text"
+                value={template.versoTituloCurso}
+                onChange={(e) =>
+                  setTemplate((prev) => ({
+                    ...prev,
+                    versoTituloCurso: e.target.value,
+                  }))
+                }
+                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold uppercase"
+              />
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Fonte do Título (Verso)
+                </label>
+                <select
+                  value={template.fonteVersoTitulo || template.fonteVerso || 'sans'}
                   onChange={(e) =>
                     setTemplate((prev) => ({
                       ...prev,
-                      versoTituloCurso: e.target.value,
+                      fonteVersoTitulo: e.target.value as CertificateFontKey,
                     }))
                   }
-                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold uppercase"
-                />
+                  className="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-xl text-xs"
+                >
+                  {FONT_OPTIONS_BACK.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-200">
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Fonte do Título (Verso)
-                  </label>
-                  <select
-                    value={template.fonteVersoTitulo || template.fonteVerso || 'sans'}
+                  <div className="flex items-center justify-between text-[11px] font-bold text-slate-700 mb-1">
+                    <span>Tamanho do Título</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-mono text-blue-900">
+                        {template.versoTamanhoFonteTitulo ?? 30}px (
+                        {pxToPtNumber(template.versoTamanhoFonteTitulo ?? 30)}pt)
+                      </span>
+                      {template.versoTamanhoFonteTitulo !== undefined && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setTemplate((prev) => ({
+                              ...prev,
+                              versoTamanhoFonteTitulo: undefined,
+                            }))
+                          }
+                          className="text-[10px] text-blue-700 hover:text-blue-900 underline cursor-pointer font-semibold"
+                        >
+                          Padrão
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <input
+                    type="range"
+                    min={18}
+                    max={44}
+                    step={1}
+                    value={template.versoTamanhoFonteTitulo ?? 30}
                     onChange={(e) =>
                       setTemplate((prev) => ({
                         ...prev,
-                        fonteVersoTitulo: e.target.value as CertificateFontKey,
+                        versoTamanhoFonteTitulo: Number(e.target.value),
                       }))
                     }
-                    className="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-xl text-xs"
-                  >
-                    {FONT_OPTIONS_BACK.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer bg-white px-3 py-2 rounded-xl border border-slate-200">
-                  <input
-                    type="checkbox"
-                    checked={template.versoItalico ?? false}
-                    onChange={(e) =>
-                      setTemplate((prev) => ({ ...prev, versoItalico: e.target.checked }))
-                    }
-                    className="rounded border-slate-300"
+                    className="w-full accent-blue-800"
                   />
-                  <span>Verso em Itálico</span>
-                </label>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between text-[11px] font-bold text-slate-700 mb-0.5">
-                  <span>Tamanho do Título (Verso)</span>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-blue-900">
-                      {template.versoTamanhoFonteTitulo ?? 30}px ({pxToPtNumber(template.versoTamanhoFonteTitulo ?? 30)}pt)
-                    </span>
-                    {template.versoTamanhoFonteTitulo !== undefined && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setTemplate((prev) => ({
-                            ...prev,
-                            versoTamanhoFonteTitulo: undefined,
-                          }))
-                        }
-                        className="text-[10px] text-blue-700 hover:text-blue-900 underline cursor-pointer font-semibold"
-                      >
-                        Padrão
-                      </button>
-                    )}
-                  </div>
                 </div>
-                <input
-                  type="range"
-                  min={18}
-                  max={44}
-                  step={1}
-                  value={template.versoTamanhoFonteTitulo ?? 30}
-                  onChange={(e) =>
-                    setTemplate((prev) => ({
-                      ...prev,
-                      versoTamanhoFonteTitulo: Number(e.target.value),
-                    }))
-                  }
-                  className="w-full accent-blue-800"
-                />
+                <div>
+                  <div className="flex items-center justify-between text-[11px] font-bold text-slate-700 mb-1">
+                    <span>Espaço entre Letras</span>
+                    <span className="font-mono text-blue-900">
+                      {(template.versoTituloEspacamentoLetras ?? 0.02).toFixed(2)}em
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={0.3}
+                    step={0.01}
+                    value={template.versoTituloEspacamentoLetras ?? 0.02}
+                    onChange={(e) =>
+                      setTemplate((prev) => ({
+                        ...prev,
+                        versoTituloEspacamentoLetras: Number(e.target.value),
+                      }))
+                    }
+                    className="w-full accent-blue-800"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] font-bold text-slate-700">
+                  Posição do Título no Verso
+                </span>
+                <div className="flex items-center gap-2">
+                  {((template.versoTituloOffsetX ?? 0) !== 0 ||
+                    (template.versoTituloOffsetY ?? 0) !== 0) && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setTemplate((prev) => ({
+                          ...prev,
+                          versoTituloOffsetX: 0,
+                          versoTituloOffsetY: 0,
+                        }))
+                      }
+                      className="text-[10px] font-semibold text-blue-700 hover:text-blue-900 underline cursor-pointer"
+                    >
+                      Zerar
+                    </button>
+                  )}
+                  {renderMoveOnSheetButton()}
+                </div>
               </div>
 
-              {renderLayerOrderControls('versoTitulo', 'Título do Verso')}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <div className="flex justify-between text-[10px] font-semibold text-slate-600">
+                    <span>Horizontal (X)</span>
+                    <span className="font-mono text-slate-800">
+                      {template.versoTituloOffsetX ?? 0}px
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={-350}
+                    max={350}
+                    step={2}
+                    value={template.versoTituloOffsetX ?? 0}
+                    onChange={(e) =>
+                      setTemplate((prev) => ({
+                        ...prev,
+                        versoTituloOffsetX: Number(e.target.value),
+                      }))
+                    }
+                    className="w-full accent-blue-800"
+                  />
+                </div>
+                <div>
+                  <div className="flex justify-between text-[10px] font-semibold text-slate-600">
+                    <span>Vertical (Y)</span>
+                    <span className="font-mono text-slate-800">
+                      {template.versoTituloOffsetY ?? 0}px
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={-150}
+                    max={260}
+                    step={2}
+                    value={template.versoTituloOffsetY ?? 0}
+                    onChange={(e) =>
+                      setTemplate((prev) => ({
+                        ...prev,
+                        versoTituloOffsetY: Number(e.target.value),
+                      }))
+                    }
+                    className="w-full accent-blue-800"
+                  />
+                </div>
+              </div>
             </div>
+
+            {renderLayerOrderControls('versoTitulo', 'Título do Verso')}
           </div>
         )}
 
@@ -4395,19 +5064,35 @@ export function CertificateInspectorPanel({
             <div className="flex flex-wrap items-center gap-2 pt-1">
               <button
                 type="button"
-                onClick={() => onSelectObject('brasaoEsquerdo')}
+                onClick={() => onSelectObject('versoTitulo')}
                 className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold cursor-pointer flex items-center gap-1"
               >
-                <Shield size={12} />
-                <span>Brasão Esquerdo</span>
+                <Type size={12} />
+                <span>Título (Verso)</span>
               </button>
               <button
                 type="button"
-                onClick={() => onSelectObject('brasaoDireito')}
+                onClick={() => onSelectObject('brasaoEsquerdoVerso')}
                 className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold cursor-pointer flex items-center gap-1"
               >
                 <Shield size={12} />
-                <span>Brasão Direito</span>
+                <span>Brasão Esq. (Verso)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onSelectObject('brasaoCentroVerso')}
+                className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold cursor-pointer flex items-center gap-1"
+              >
+                <Shield size={12} />
+                <span>Brasão Centro (Verso)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onSelectObject('brasaoDireitoVerso')}
+                className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold cursor-pointer flex items-center gap-1"
+              >
+                <Shield size={12} />
+                <span>Brasão Dir. (Verso)</span>
               </button>
               <button
                 type="button"
@@ -4423,7 +5108,7 @@ export function CertificateInspectorPanel({
                 className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold cursor-pointer flex items-center gap-1"
               >
                 <Frame size={12} />
-                <span>Cor da Moldura (Verso)</span>
+                <span>Moldura (Verso)</span>
               </button>
             </div>
           </div>
@@ -4588,43 +5273,80 @@ export function CertificateInspectorPanel({
                 />
               </div>
 
-              <div>
-                <div className="flex items-center justify-between text-[10px] font-bold text-slate-600 mb-0.5">
-                  <span>Posição Vertical (Altura)</span>
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-mono text-slate-800">
-                      {(template.marcaDaguaVersoOffsetY ?? 0) > 0
-                        ? `+${template.marcaDaguaVersoOffsetY}`
-                        : (template.marcaDaguaVersoOffsetY ?? 0)}
-                      px
-                    </span>
-                    {(template.marcaDaguaVersoOffsetY ?? 0) !== 0 && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setTemplate((prev) => ({ ...prev, marcaDaguaVersoOffsetY: 0 }))
-                        }
-                        className="text-[10px] text-blue-700 hover:text-blue-900 underline cursor-pointer"
-                      >
-                        Zerar
-                      </button>
-                    )}
+              <div className="space-y-2 pt-1 border-t border-slate-200">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-slate-700">
+                    Posição na Folha (Verso)
+                  </span>
+                  {((template.marcaDaguaVersoOffsetX ?? 0) !== 0 ||
+                    (template.marcaDaguaVersoOffsetY ?? 0) !== 0) && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setTemplate((prev) => ({
+                          ...prev,
+                          marcaDaguaVersoOffsetX: 0,
+                          marcaDaguaVersoOffsetY: 0,
+                        }))
+                      }
+                      className="text-[10px] text-blue-700 hover:text-blue-900 underline cursor-pointer font-semibold"
+                    >
+                      Zerar
+                    </button>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <div className="flex items-center justify-between text-[10px] font-bold text-slate-600 mb-0.5">
+                      <span>Horizontal (X)</span>
+                      <span className="font-mono text-slate-800">
+                        {(template.marcaDaguaVersoOffsetX ?? 0) > 0
+                          ? `+${template.marcaDaguaVersoOffsetX}`
+                          : (template.marcaDaguaVersoOffsetX ?? 0)}
+                        px
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={-480}
+                      max={480}
+                      step={4}
+                      value={template.marcaDaguaVersoOffsetX ?? 0}
+                      onChange={(e) =>
+                        setTemplate((prev) => ({
+                          ...prev,
+                          marcaDaguaVersoOffsetX: Number(e.target.value),
+                        }))
+                      }
+                      className="w-full accent-blue-800"
+                    />
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between text-[10px] font-bold text-slate-600 mb-0.5">
+                      <span>Vertical (Y)</span>
+                      <span className="font-mono text-slate-800">
+                        {(template.marcaDaguaVersoOffsetY ?? 0) > 0
+                          ? `+${template.marcaDaguaVersoOffsetY}`
+                          : (template.marcaDaguaVersoOffsetY ?? 0)}
+                        px
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={-380}
+                      max={380}
+                      step={4}
+                      value={template.marcaDaguaVersoOffsetY ?? 0}
+                      onChange={(e) =>
+                        setTemplate((prev) => ({
+                          ...prev,
+                          marcaDaguaVersoOffsetY: Number(e.target.value),
+                        }))
+                      }
+                      className="w-full accent-blue-800"
+                    />
                   </div>
                 </div>
-                <input
-                  type="range"
-                  min={-380}
-                  max={380}
-                  step={4}
-                  value={template.marcaDaguaVersoOffsetY ?? 0}
-                  onChange={(e) =>
-                    setTemplate((prev) => ({
-                      ...prev,
-                      marcaDaguaVersoOffsetY: Number(e.target.value),
-                    }))
-                  }
-                  className="w-full accent-blue-800"
-                />
               </div>
 
               <div className="flex flex-wrap gap-1.5 pt-1">
@@ -4636,6 +5358,7 @@ export function CertificateInspectorPanel({
                       tamanhoMarcaDaguaVerso: 580,
                       escalaLarguraMarcaDaguaVerso: 100,
                       escalaAlturaMarcaDaguaVerso: 100,
+                      marcaDaguaVersoOffsetX: 0,
                       marcaDaguaVersoOffsetY: 0,
                     }))
                   }
@@ -4676,23 +5399,227 @@ export function CertificateInspectorPanel({
           </div>
         )}
 
-        {/* MOLDURA DO VERSO */}
+        {/* MOLDURA DO VERSO (ESPELHADA DA FRENTE) */}
         {selectedObject === 'versoMoldura' && (
           <div className="space-y-4">
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Cor da Moldura do Verso
-                </label>
-                <input
-                  type="color"
-                  value={template.corBordaVerso}
-                  onChange={(e) =>
-                    setTemplate((prev) => ({ ...prev, corBordaVerso: e.target.value }))
-                  }
-                  className="w-full h-10 rounded-lg border border-slate-200 cursor-pointer"
-                />
-              </div>
+              {(() => {
+                const currentBackFrameStyle = template.estiloMolduraVerso ?? 'classica';
+                const currentBackFrameUrl =
+                  template.molduraVersoUrl ||
+                  (currentBackFrameStyle === 'original' ? template.molduraFrenteUrl : undefined);
+                return (
+                  <>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Tipo de Moldura (Verso)
+                      </label>
+                      <select
+                        value={currentBackFrameStyle}
+                        onChange={(e) => {
+                          const nextStyle = e.target.value as
+                            | 'classica'
+                            | 'original'
+                            | 'vetorial'
+                            | 'simples'
+                            | 'nenhuma';
+                          setTemplate((prev) => ({
+                            ...prev,
+                            estiloMolduraVerso: nextStyle,
+                          }));
+                        }}
+                        className="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-xl text-xs"
+                      >
+                        <option value="classica">Moldura Clássica (Tripla Institucional)</option>
+                        <option value="simples">Moldura Simples (Linha Limpa)</option>
+                        <option value="nenhuma">Sem Moldura (Folha em Branco)</option>
+                        <option value="original">Moldura com Imagem (Base / Importada)</option>
+                        <option value="vetorial">Moldura Vetorial Náutica</option>
+                      </select>
+                    </div>
+
+                    {(currentBackFrameStyle === 'classica' ||
+                      currentBackFrameStyle === 'vetorial' ||
+                      currentBackFrameStyle === 'simples') && (
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Cor da Moldura (Verso)
+                        </label>
+                        <input
+                          type="color"
+                          value={template.corBordaVerso}
+                          onChange={(e) =>
+                            setTemplate((prev) => ({
+                              ...prev,
+                              corBordaVerso: e.target.value,
+                            }))
+                          }
+                          className="w-full h-10 rounded-lg border border-slate-200 cursor-pointer"
+                        />
+                      </div>
+                    )}
+
+                    <div className="p-2.5 rounded-lg bg-white border border-slate-200 space-y-1.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[11px] font-semibold text-slate-700">
+                          Imagem da Moldura (Verso)
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <label className="px-2.5 py-1 rounded-lg bg-blue-900 hover:bg-blue-950 text-white text-[11px] font-bold cursor-pointer flex items-center gap-1">
+                            <Upload size={11} />
+                            <span>{template.molduraVersoUrl ? 'Trocar' : 'Importar'}</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handleImageUpload('molduraVersoUrl', e)}
+                              className="hidden"
+                            />
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setTemplate((prev) => ({
+                                ...prev,
+                                estiloMolduraVerso: 'classica',
+                                molduraVersoUrl: undefined,
+                              }))
+                            }
+                            className="p-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-600 cursor-pointer"
+                            title="Restaurar moldura clássica do verso"
+                          >
+                            <RotateCcw size={12} />
+                          </button>
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-slate-500 leading-snug">
+                        O centro branco das molduras importadas fica transparente automaticamente para manter a marca d&apos;água do verso visível.
+                      </p>
+                      {renderLibrarySwapStrip(
+                        'moldura',
+                        'molduraVerso',
+                        currentBackFrameUrl,
+                        'Moldura do Verso'
+                      )}
+                    </div>
+
+                    {/* Margens da Folha A4 Paisagem (Verso) */}
+                    <div className="p-3 rounded-lg bg-white border border-slate-200 space-y-2.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[11px] font-bold text-slate-800">
+                          Margens da Folha e Moldura (Verso — A4)
+                        </span>
+                        {(template.margemExternaMolduraVersoCm !== undefined ||
+                          template.margemInternaLateralVersoCm !== undefined ||
+                          template.margemInternaVerticalVersoCm !== undefined) && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setTemplate((prev) => ({
+                                ...prev,
+                                margemExternaMolduraVersoCm: undefined,
+                                margemInternaLateralVersoCm: undefined,
+                                margemInternaVerticalVersoCm: undefined,
+                              }))
+                            }
+                            className="text-[10px] text-blue-700 hover:text-blue-900 underline cursor-pointer font-semibold"
+                          >
+                            Restaurar padrão
+                          </button>
+                        )}
+                      </div>
+
+                      <div>
+                        <div className="flex justify-between text-[10px] font-bold text-slate-600 mb-0.5">
+                          <span>Margem Externa (borda até moldura)</span>
+                          <span className="font-mono text-blue-900">
+                            {template.margemExternaMolduraVersoCm !== undefined
+                              ? `${template.margemExternaMolduraVersoCm.toFixed(1)} cm`
+                              : 'Padrão (0,5 cm)'}
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min={0.4}
+                          max={2.5}
+                          step={0.1}
+                          value={template.margemExternaMolduraVersoCm ?? 0.5}
+                          onChange={(e) =>
+                            setTemplate((prev) => ({
+                              ...prev,
+                              margemExternaMolduraVersoCm: Number(e.target.value),
+                            }))
+                          }
+                          className="w-full accent-blue-800"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div>
+                          <div className="flex justify-between text-[10px] font-bold text-slate-600 mb-0.5">
+                            <span>Interna Lateral</span>
+                            <span className="font-mono text-blue-900">
+                              {template.margemInternaLateralVersoCm !== undefined
+                                ? `${template.margemInternaLateralVersoCm.toFixed(1)} cm`
+                                : 'Padrão'}
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min={0.4}
+                            max={4.0}
+                            step={0.1}
+                            value={template.margemInternaLateralVersoCm ?? 0.8}
+                            onChange={(e) =>
+                              setTemplate((prev) => ({
+                                ...prev,
+                                margemInternaLateralVersoCm: Number(e.target.value),
+                              }))
+                            }
+                            className="w-full accent-blue-800"
+                          />
+                        </div>
+                        <div>
+                          <div className="flex justify-between text-[10px] font-bold text-slate-600 mb-0.5">
+                            <span>Interna Vertical</span>
+                            <span className="font-mono text-blue-900">
+                              {template.margemInternaVerticalVersoCm !== undefined
+                                ? `${template.margemInternaVerticalVersoCm.toFixed(1)} cm`
+                                : 'Padrão'}
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min={0.2}
+                            max={3.0}
+                            step={0.1}
+                            value={template.margemInternaVerticalVersoCm ?? 0.5}
+                            onChange={(e) =>
+                              setTemplate((prev) => ({
+                                ...prev,
+                                margemInternaVerticalVersoCm: Number(e.target.value),
+                              }))
+                            }
+                            className="w-full accent-blue-800"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {renderLayerOrderControls('versoMoldura', 'Moldura do Verso')}
+
+                    <div className="pt-2 border-t border-slate-200">
+                      <button
+                        type="button"
+                        onClick={() => onSelectObject('marcaDaguaVerso')}
+                        className="w-full py-2 px-3 rounded-lg bg-white border border-slate-200 hover:bg-blue-50 hover:border-blue-300 text-xs font-bold text-slate-700 hover:text-blue-900 flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <ImageIcon size={13} />
+                        <span>Editar / Trocar Marca d&apos;Água Central (Verso)</span>
+                      </button>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           </div>
         )}
@@ -4700,6 +5627,18 @@ export function CertificateInspectorPanel({
         {/* CONFIGURAÇÕES GERAIS DO MODELO */}
         {selectedObject === 'modeloGeral' && (
           <div className="space-y-4">
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5">
+              <div>
+                <span className="block text-[11px] font-black uppercase tracking-wider text-slate-800">
+                  Acessar Elementos Rápidos / Ocultos
+                </span>
+                <p className="text-[10px] text-slate-500">
+                  Clique em qualquer item da Frente ou do Verso para abrir seus controles concentrados ao lado da folha.
+                </p>
+              </div>
+              {renderQuickElementsGrid(false)}
+            </div>
+
             {renderStandaloneStudentBox()}
 
             <div>
@@ -4791,7 +5730,7 @@ export function CertificateInspectorPanel({
 
               <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
                 <span className="text-[11px] text-slate-600">
-                  Redefinir todos os deslocamentos (X/Y) de brasões, textos, data e assinaturas:
+                  Redefinir todos os deslocamentos (X/Y) de brasões, textos, data e assinaturas (Frente e Verso):
                 </span>
                 <button
                   type="button"
@@ -4804,13 +5743,23 @@ export function CertificateInspectorPanel({
                       logoCentroOffsetY: 0,
                       logoDireitaOffsetX: 0,
                       logoDireitaOffsetY: 0,
+                      logoEsquerdaVersoOffsetX: 0,
+                      logoEsquerdaVersoOffsetY: 0,
+                      logoCentroVersoOffsetX: 0,
+                      logoCentroVersoOffsetY: 0,
+                      logoDireitaVersoOffsetX: 0,
+                      logoDireitaVersoOffsetY: 0,
                       tituloOffsetX: 0,
                       tituloOffsetY: 0,
+                      versoTituloOffsetX: 0,
+                      versoTituloOffsetY: 0,
                       textoOffsetX: 0,
                       textoOffsetY: 0,
                       dataOffsetX: 0,
                       dataOffsetY: 0,
+                      marcaDaguaFrenteOffsetX: 0,
                       marcaDaguaFrenteOffsetY: 0,
+                      marcaDaguaVersoOffsetX: 0,
                       marcaDaguaVersoOffsetY: 0,
                       assinaturaPrincipalOffsetX: 0,
                       assinaturaPrincipalOffsetY: 0,
@@ -4822,34 +5771,6 @@ export function CertificateInspectorPanel({
                 >
                   Zerar Tudo
                 </button>
-              </div>
-            </div>
-
-            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-              <span className="block text-[11px] font-black uppercase tracking-wider text-slate-700">
-                Acessar Elementos Rápidos / Ocultos
-              </span>
-              <div className="flex flex-wrap gap-1.5">
-                {[
-                  { id: 'brasaoEsquerdo' as const, label: 'Brasão Esquerdo' },
-                  { id: 'brasaoCentro' as const, label: 'Brasão Central' },
-                  { id: 'brasaoDireito' as const, label: 'Brasão Direito' },
-                  { id: 'marcaDaguaFrente' as const, label: "Marca d'Água Frente" },
-                  { id: 'molduraFrente' as const, label: 'Moldura Frente' },
-                  { id: 'assinaturaPrincipal' as const, label: 'Assinatura Principal' },
-                  { id: 'segundaAssinatura' as const, label: '2ª Assinatura' },
-                  { id: 'marcaDaguaVerso' as const, label: "Marca d'Água Verso" },
-                  { id: 'versoMoldura' as const, label: 'Moldura Verso' },
-                ].map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => onSelectObject(item.id)}
-                    className="px-2.5 py-1 rounded-lg bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-200 text-[11px] font-bold text-slate-700 hover:text-blue-900 cursor-pointer"
-                  >
-                    {item.label}
-                  </button>
-                ))}
               </div>
             </div>
           </div>

@@ -547,9 +547,13 @@ export default function CertificadosPage() {
         const compactTemplate: CertificateTemplateConfig = {
           ...template,
           molduraFrenteUrl: shrink(template.molduraFrenteUrl),
+          molduraVersoUrl: shrink(template.molduraVersoUrl),
           logoEsquerdaUrl: shrink(template.logoEsquerdaUrl) || '',
           logoCentroUrl: shrink(template.logoCentroUrl) || '',
           logoDireitaUrl: shrink(template.logoDireitaUrl) || '',
+          logoEsquerdaVersoUrl: shrink(template.logoEsquerdaVersoUrl),
+          logoCentroVersoUrl: shrink(template.logoCentroVersoUrl),
+          logoDireitaVersoUrl: shrink(template.logoDireitaVersoUrl),
           marcaDaguaFrenteUrl: shrink(template.marcaDaguaFrenteUrl) || '',
           marcaDaguaVersoUrl: shrink(template.marcaDaguaVersoUrl) || '',
         };
@@ -1389,9 +1393,13 @@ export default function CertificadosPage() {
   const handleImageUpload = (
     field:
       | 'molduraFrenteUrl'
+      | 'molduraVersoUrl'
       | 'logoEsquerdaUrl'
       | 'logoCentroUrl'
       | 'logoDireitaUrl'
+      | 'logoEsquerdaVersoUrl'
+      | 'logoCentroVersoUrl'
+      | 'logoDireitaVersoUrl'
       | 'marcaDaguaFrenteUrl'
       | 'marcaDaguaVersoUrl',
     e: React.ChangeEvent<HTMLInputElement>
@@ -1403,7 +1411,7 @@ export default function CertificadosPage() {
       const dataUrl = String(ev.target?.result || '');
       if (dataUrl) {
         const finalUrl =
-          field === 'molduraFrenteUrl'
+          field === 'molduraFrenteUrl' || field === 'molduraVersoUrl'
             ? await makeFrameCenterTransparent(dataUrl)
             : dataUrl;
         setTemplate((prev) => ({
@@ -1412,14 +1420,24 @@ export default function CertificadosPage() {
           ...(field === 'molduraFrenteUrl'
             ? { estiloMolduraFrente: 'original', usarMolduraOriginal: true }
             : {}),
+          ...(field === 'molduraVersoUrl' ? { estiloMolduraVerso: 'original' } : {}),
           ...(field === 'logoEsquerdaUrl' ? { mostrarLogoEsquerda: true } : {}),
           ...(field === 'logoCentroUrl' ? { mostrarLogoCentro: true } : {}),
           ...(field === 'logoDireitaUrl'
             ? { mostrarLogoDireita: true, mostrarLegendaLogoDireita: false }
             : {}),
+          ...(field === 'logoEsquerdaVersoUrl' ? { mostrarLogoEsquerdaVerso: true } : {}),
+          ...(field === 'logoCentroVersoUrl' ? { mostrarLogoCentroVerso: true } : {}),
+          ...(field === 'logoDireitaVersoUrl'
+            ? {
+                mostrarLogoDireitaVerso: true,
+                usarBrasaoPadraoDireitaVerso: false,
+                mostrarLegendaLogoDireitaVerso: false,
+              }
+            : {}),
         }));
         toast.success(
-          field === 'molduraFrenteUrl'
+          field === 'molduraFrenteUrl' || field === 'molduraVersoUrl'
             ? 'Moldura aplicada com centro transparente para exibir a marca d\'água!'
             : 'Imagem aplicada ao modelo do certificado!'
         );
@@ -1666,6 +1684,36 @@ export default function CertificadosPage() {
             mostrarLogoDireita: true,
           };
         }
+        if (target === 'brasaoEsquerdoVerso') {
+          return {
+            ...prev,
+            logoEsquerdaVersoUrl: asset.url,
+            mostrarLogoEsquerdaVerso: true,
+          };
+        }
+        if (target === 'brasaoCentroVerso') {
+          return {
+            ...prev,
+            logoCentroVersoUrl: asset.url,
+            mostrarLogoCentroVerso: true,
+          };
+        }
+        if (target === 'brasaoDireitoVerso') {
+          if (asset.isDefaultMarinhaCrest) {
+            return {
+              ...prev,
+              logoDireitaVersoUrl: '',
+              usarBrasaoPadraoDireitaVerso: true,
+              mostrarLogoDireitaVerso: true,
+            };
+          }
+          return {
+            ...prev,
+            logoDireitaVersoUrl: asset.url,
+            usarBrasaoPadraoDireitaVerso: false,
+            mostrarLogoDireitaVerso: true,
+          };
+        }
         if (target === 'marcaDaguaFrente') {
           return {
             ...prev,
@@ -1703,6 +1751,20 @@ export default function CertificadosPage() {
             estiloMolduraFrente: 'original',
             usarMolduraOriginal: true,
             molduraFrenteUrl: asset.url,
+          };
+        }
+        if (target === 'molduraVerso') {
+          if (asset.frameStyle === 'vetorial' || asset.frameStyle === 'simples') {
+            return {
+              ...prev,
+              estiloMolduraVerso: asset.frameStyle,
+              corBordaVerso: prev.corBordaVerso || asset.defaultBorderColor || '#071b3b',
+            };
+          }
+          return {
+            ...prev,
+            estiloMolduraVerso: 'original',
+            molduraVersoUrl: asset.url,
           };
         }
         return prev;
@@ -3812,6 +3874,14 @@ export default function CertificadosPage() {
                 </span>
               </div>
               <div className="flex flex-wrap items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => handleSelectObjectOnSheet('modeloGeral')}
+                  className="px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 border border-blue-200 text-[11px] font-bold text-blue-900 cursor-pointer flex items-center gap-1"
+                >
+                  <Settings size={12} />
+                  <span>Elementos Rápidos (Frente / Verso)</span>
+                </button>
                 {!template.mostrarLogoCentro && (
                   <button
                     type="button"
