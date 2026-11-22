@@ -91,9 +91,15 @@ function MarinhaBrasilCrest({
 }) {
   const resolvedSize = size ?? (compact ? 54 : 74);
   const labelFontSize = compact
-    ? '9px'
+    ? size !== undefined
+      ? `${Math.max(8, Math.min(13, Math.round(resolvedSize * 0.145)))}px`
+      : '9px'
     : `${Math.max(9, Math.min(16, Math.round(resolvedSize * 0.148)))}px`;
-  const maxLabelWidth = compact ? '95px' : `${Math.max(110, Math.round(resolvedSize * 1.48))}px`;
+  const maxLabelWidth = compact
+    ? size !== undefined
+      ? `${Math.max(90, Math.round(resolvedSize * 1.55))}px`
+      : '95px'
+    : `${Math.max(110, Math.round(resolvedSize * 1.48))}px`;
 
   return (
     <div
@@ -1299,7 +1305,8 @@ export function CertificateSheet({
             ...sheetBaseStyle,
             outline:
               onSelectObject &&
-              (selectedObject === 'molduraFrente' || selectedObject === 'marcaDaguaFrente')
+              (selectedObject === 'molduraFrente' ||
+                (!template.marcaDaguaFrenteUrl && selectedObject === 'marcaDaguaFrente'))
                 ? '3px solid #2563eb'
                 : undefined,
             outlineOffset: '2px',
@@ -1376,43 +1383,108 @@ export function CertificateSheet({
             </div>
           ) : null}
 
-          {/* Center Watermark (expandable up to full sheet) */}
-          {template.marcaDaguaFrenteUrl && (
-            <div
-              style={{
-                position: 'absolute',
-                top: '20px',
-                bottom: '20px',
-                left: '20px',
-                right: '20px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                overflow: 'hidden',
-                pointerEvents: 'none',
-                zIndex: getLayerZ('marcaDaguaFrente'),
-              }}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={resolveAssetCacheSrc(template.marcaDaguaFrenteUrl)}
-                alt="Marca d'água"
-                crossOrigin="anonymous"
-                style={{
-                  position: 'relative',
-                  top: `${template.marcaDaguaFrenteOffsetY ?? 0}px`,
-                  width: `${frontWmWidth}px`,
-                  height: `${frontWmHeight}px`,
-                  maxWidth: 'none',
-                  maxHeight: 'none',
-                  objectFit: frontWmScaleW === frontWmScaleH ? 'contain' : 'fill',
-                  opacity: template.opacidadeMarcaDaguaFrente ?? 0.24,
-                  mixBlendMode: 'multiply',
-                  borderRadius: isCircularDefaultFrontWm ? '9999px' : '0px',
-                }}
-              />
-            </div>
-          )}
+          {/* Center Watermark (expandable up to full sheet, directly clickable & layer-orderable) */}
+          {template.marcaDaguaFrenteUrl ? (
+            (() => {
+              const frontWmSelect = getSelectProps(
+                'marcaDaguaFrente',
+                "Marca d'Água Central (Frente) — clique para trocar ou enviar p/ frente/trás"
+              );
+              const frontWmZ = getLayerZ('marcaDaguaFrente');
+              const frontMinContentZ = Math.min(
+                getLayerZ('brasaoEsquerdo', 'logoEsquerda'),
+                getLayerZ('brasaoCentro', 'logoCentro'),
+                getLayerZ('brasaoDireito', 'logoDireita'),
+                getLayerZ('titulo', 'titulo'),
+                getLayerZ('texto', 'texto'),
+                getLayerZ('data', 'data'),
+                getLayerZ('assinaturaPrincipal', 'assinaturaPrincipal'),
+                getLayerZ('segundaAssinatura', 'segundaAssinatura')
+              );
+              const isFrontWmAboveContent = frontWmZ > frontMinContentZ;
+              const frontWmShapeRadius = isCircularDefaultFrontWm
+                ? '9999px'
+                : (frontWmSelect.style?.borderRadius ?? '6px');
+
+              return (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '20px',
+                    bottom: '20px',
+                    left: '20px',
+                    right: '20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    overflow: 'hidden',
+                    pointerEvents: 'none',
+                    zIndex: frontWmZ,
+                  }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    {...frontWmSelect}
+                    src={resolveAssetCacheSrc(template.marcaDaguaFrenteUrl)}
+                    alt="Marca d'água"
+                    crossOrigin="anonymous"
+                    draggable={false}
+                    style={{
+                      position: 'relative',
+                      top: `${template.marcaDaguaFrenteOffsetY ?? 0}px`,
+                      width: `${frontWmWidth}px`,
+                      height: `${frontWmHeight}px`,
+                      maxWidth: 'none',
+                      maxHeight: 'none',
+                      objectFit: frontWmScaleW === frontWmScaleH ? 'contain' : 'fill',
+                      opacity: template.opacidadeMarcaDaguaFrente ?? 0.24,
+                      mixBlendMode: isFrontWmAboveContent ? 'normal' : 'multiply',
+                      pointerEvents: isInteractiveEditor ? 'auto' : 'none',
+                      ...frontWmSelect.style,
+                      borderRadius: frontWmShapeRadius,
+                    }}
+                  />
+                </div>
+              );
+            })()
+          ) : isInteractiveEditor && selectedObject === 'marcaDaguaFrente' ? (
+            (() => {
+              const frontWmSelect = getSelectProps(
+                'marcaDaguaFrente',
+                "Marca d'Água Central (Frente) — clique para escolher ou trocar"
+              );
+              return (
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: '20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    pointerEvents: 'none',
+                    zIndex: getLayerZ('marcaDaguaFrente'),
+                  }}
+                >
+                  <div
+                    {...frontWmSelect}
+                    style={{
+                      padding: '18px 28px',
+                      border: '2px dashed #2563eb',
+                      backgroundColor: 'rgba(239, 246, 255, 0.75)',
+                      color: '#1e3a8a',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      textAlign: 'center',
+                      pointerEvents: 'auto',
+                      ...frontWmSelect.style,
+                    }}
+                  >
+                    Marca d&apos;Água Central removida — escolha outra imagem no painel ao lado
+                  </div>
+                </div>
+              );
+            })()
+          ) : null}
 
           {/* Front Content */}
           <div
@@ -2458,7 +2530,8 @@ export function CertificateSheet({
           padding: '18px',
           outline:
             onSelectObject &&
-            (selectedObject === 'versoMoldura' || selectedObject === 'marcaDaguaVerso')
+            (selectedObject === 'versoMoldura' ||
+              (!template.marcaDaguaVersoUrl && selectedObject === 'marcaDaguaVerso'))
               ? '3px solid #2563eb'
               : undefined,
           outlineOffset: '2px',
@@ -2518,14 +2591,23 @@ export function CertificateSheet({
             >
               {(() => {
                 const leftBackSelect = getSelectProps('brasaoEsquerdo', 'Brasão Esquerdo');
+                const backLeftSize = template.tamanhoLogoEsquerdaVerso;
                 return (
                   <div
                     {...leftBackSelect}
                     style={{
                       position: 'relative',
                       zIndex: getLayerZ('brasaoEsquerdo'),
-                      width: '70px',
-                      height: '72px',
+                      width: backLeftSize === undefined ? '70px' : undefined,
+                      height: backLeftSize === undefined ? '72px' : undefined,
+                      minWidth:
+                        backLeftSize !== undefined
+                          ? `${Math.max(54, backLeftSize + 4)}px`
+                          : undefined,
+                      minHeight:
+                        backLeftSize !== undefined
+                          ? `${Math.max(54, backLeftSize + 4)}px`
+                          : undefined,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -2541,8 +2623,8 @@ export function CertificateSheet({
                         alt="Brasão Guarda Costeira"
                         crossOrigin="anonymous"
                         style={{
-                          width: '66px',
-                          height: '70px',
+                          width: backLeftSize !== undefined ? `${backLeftSize}px` : '66px',
+                          height: backLeftSize !== undefined ? `${backLeftSize}px` : '70px',
                           objectFit: 'contain',
                           opacity: leftLogoOpacity,
                         }}
@@ -2618,6 +2700,7 @@ export function CertificateSheet({
                 const showRightCrestBack = Boolean(
                   template.logoDireitaUrl || allowDefaultMarinhaCrest
                 );
+                const backRightSize = template.tamanhoLogoDireitaVerso;
                 return (
                   <div
                     {...rightBackSelect}
@@ -2626,8 +2709,14 @@ export function CertificateSheet({
                       zIndex: getLayerZ('brasaoDireito'),
                       backgroundColor: 'transparent',
                       flexShrink: 0,
-                      minWidth: '70px',
-                      minHeight: '72px',
+                      minWidth:
+                        backRightSize !== undefined
+                          ? `${Math.max(54, backRightSize + 12)}px`
+                          : '70px',
+                      minHeight:
+                        backRightSize !== undefined
+                          ? `${Math.max(54, backRightSize + 12)}px`
+                          : '72px',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -2639,6 +2728,7 @@ export function CertificateSheet({
                         customUrl={template.logoDireitaUrl}
                         label={rightCaptionText}
                         compact={true}
+                        size={backRightSize}
                         opacity={rightLogoOpacity}
                       />
                     ) : isInteractiveEditor ? (
@@ -2676,42 +2766,103 @@ export function CertificateSheet({
                 backgroundColor: 'transparent',
               }}
             >
-              {/* Watermark distributed across table area and visible behind transparent title */}
-              {template.marcaDaguaVersoUrl && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: '4px',
-                    bottom: '4px',
-                    left: 0,
-                    right: 0,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    overflow: 'visible',
-                    pointerEvents: 'none',
-                    zIndex: getLayerZ('marcaDaguaVerso'),
-                  }}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={resolveAssetCacheSrc(template.marcaDaguaVersoUrl)}
-                    alt="Marca d'água Verso"
-                    crossOrigin="anonymous"
-                    style={{
-                      position: 'relative',
-                      top: `${template.marcaDaguaVersoOffsetY ?? 0}px`,
-                      width: `${backWmWidth}px`,
-                      height: `${backWmHeight}px`,
-                      maxWidth: 'none',
-                      maxHeight: 'none',
-                      objectFit: backWmScaleW === backWmScaleH ? 'contain' : 'fill',
-                      opacity: template.opacidadeMarcaDaguaVerso ?? 0.25,
-                      mixBlendMode: 'multiply',
-                    }}
-                  />
-                </div>
-              )}
+              {/* Watermark distributed across table area, directly clickable & layer-orderable */}
+              {template.marcaDaguaVersoUrl ? (
+                (() => {
+                  const backWmSelect = getSelectProps(
+                    'marcaDaguaVerso',
+                    "Marca d'Água Central (Verso) — clique para trocar ou enviar p/ frente/trás"
+                  );
+                  const backWmZ = getLayerZ('marcaDaguaVerso');
+                  const backMinContentZ = Math.min(
+                    getLayerZ('versoTabela'),
+                    getLayerZ('versoTitulo'),
+                    getLayerZ('brasaoEsquerdo'),
+                    getLayerZ('brasaoDireito')
+                  );
+                  const isBackWmAboveContent = backWmZ > backMinContentZ;
+
+                  return (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: '4px',
+                        bottom: '4px',
+                        left: 0,
+                        right: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        overflow: 'visible',
+                        pointerEvents: 'none',
+                        zIndex: backWmZ,
+                      }}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        {...backWmSelect}
+                        src={resolveAssetCacheSrc(template.marcaDaguaVersoUrl)}
+                        alt="Marca d'água Verso"
+                        crossOrigin="anonymous"
+                        draggable={false}
+                        style={{
+                          position: 'relative',
+                          top: `${template.marcaDaguaVersoOffsetY ?? 0}px`,
+                          width: `${backWmWidth}px`,
+                          height: `${backWmHeight}px`,
+                          maxWidth: 'none',
+                          maxHeight: 'none',
+                          objectFit: backWmScaleW === backWmScaleH ? 'contain' : 'fill',
+                          opacity: template.opacidadeMarcaDaguaVerso ?? 0.25,
+                          mixBlendMode: isBackWmAboveContent ? 'normal' : 'multiply',
+                          pointerEvents: isInteractiveEditor ? 'auto' : 'none',
+                          ...backWmSelect.style,
+                        }}
+                      />
+                    </div>
+                  );
+                })()
+              ) : isInteractiveEditor && selectedObject === 'marcaDaguaVerso' ? (
+                (() => {
+                  const backWmSelect = getSelectProps(
+                    'marcaDaguaVerso',
+                    "Marca d'Água Central (Verso) — clique para escolher ou trocar"
+                  );
+                  return (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: '4px',
+                        bottom: '4px',
+                        left: 0,
+                        right: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        pointerEvents: 'none',
+                        zIndex: getLayerZ('marcaDaguaVerso'),
+                      }}
+                    >
+                      <div
+                        {...backWmSelect}
+                        style={{
+                          padding: '18px 28px',
+                          border: '2px dashed #2563eb',
+                          backgroundColor: 'rgba(239, 246, 255, 0.78)',
+                          color: '#1e3a8a',
+                          fontSize: '12px',
+                          fontWeight: 700,
+                          textAlign: 'center',
+                          pointerEvents: 'auto',
+                          ...backWmSelect.style,
+                        }}
+                      >
+                        Marca d&apos;Água do Verso removida — escolha outra imagem no painel ao lado
+                      </div>
+                    </div>
+                  );
+                })()
+              ) : null}
 
               {(() => {
                 const backTableSelect = getSelectProps(

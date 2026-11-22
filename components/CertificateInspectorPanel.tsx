@@ -205,8 +205,8 @@ function getObjectMeta(obj: CertificateSelectableObject): {
       };
     case 'marcaDaguaFrente':
       return {
-        title: "Marca d'Água (Frente)",
-        subtitle: 'Imagem, tamanho, largura, altura, opacidade e altura vertical',
+        title: "Marca d'Água Central (Frente)",
+        subtitle: 'Trocar imagem, enviar p/ trás/frente, tamanho, opacidade e posição',
         sideLabel: 'Frente',
         icon: ImageIcon,
       };
@@ -233,8 +233,8 @@ function getObjectMeta(obj: CertificateSelectableObject): {
       };
     case 'marcaDaguaVerso':
       return {
-        title: "Marca d'Água (Verso)",
-        subtitle: 'Imagem, tamanho, escala, opacidade e altura vertical',
+        title: "Marca d'Água Central (Verso)",
+        subtitle: 'Trocar imagem, enviar p/ trás/frente, tamanho, escala e posição',
         sideLabel: 'Verso',
         icon: ImageIcon,
       };
@@ -670,6 +670,11 @@ export function CertificateInspectorPanel({
       : isCenter
         ? ('tamanhoLogoCentro' as const)
         : ('tamanhoLogoDireita' as const);
+    const backSizeKey = isLeft
+      ? ('tamanhoLogoEsquerdaVerso' as const)
+      : isCenter
+        ? null
+        : ('tamanhoLogoDireitaVerso' as const);
     const opacityKey = isLeft
       ? ('opacidadeLogoEsquerda' as const)
       : isCenter
@@ -677,6 +682,7 @@ export function CertificateInspectorPanel({
         : ('opacidadeLogoDireita' as const);
 
     const defaultSize = isLeft ? 90 : isCenter ? 84 : 74;
+    const backDefaultSize = isLeft ? 68 : 54;
     const minX = isLeft ? -90 : isCenter ? -420 : -760;
     const maxX = isLeft ? 760 : isCenter ? 420 : 90;
     const minY = isCenter ? -110 : -60;
@@ -685,6 +691,7 @@ export function CertificateInspectorPanel({
     const valX = template[xKey] ?? 0;
     const valY = template[yKey] ?? 0;
     const valSize = template[sizeKey] ?? defaultSize;
+    const valBackSize = backSizeKey ? template[backSizeKey] : undefined;
     const valOpacity = template[opacityKey] ?? 1;
     const currentUrl = template[uploadField] || '';
 
@@ -908,6 +915,7 @@ export function CertificateInspectorPanel({
                   setTemplate((prev) => ({
                     ...prev,
                     [sizeKey]: defaultSize,
+                    ...(backSizeKey ? { [backSizeKey]: undefined } : {}),
                     [opacityKey]: 1,
                   }))
                 }
@@ -918,7 +926,7 @@ export function CertificateInspectorPanel({
             </div>
             <div>
               <div className="flex justify-between text-[10px] font-semibold text-slate-600">
-                <span>Tamanho do Brasão</span>
+                <span>{backSizeKey ? 'Tamanho na Frente' : 'Tamanho do Brasão'}</span>
                 <span className="font-mono text-slate-800">{valSize}px</span>
               </div>
               <input
@@ -936,6 +944,46 @@ export function CertificateInspectorPanel({
                 className="w-full accent-blue-800"
               />
             </div>
+            {backSizeKey && (
+              <div>
+                <div className="flex justify-between text-[10px] font-semibold text-slate-600">
+                  <span>Tamanho no Verso</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-mono text-slate-800">
+                      {valBackSize !== undefined ? `${valBackSize}px` : `Padrão (${backDefaultSize}px)`}
+                    </span>
+                    {valBackSize !== undefined && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setTemplate((prev) => ({
+                            ...prev,
+                            [backSizeKey]: undefined,
+                          }))
+                        }
+                        className="text-[10px] text-blue-700 hover:text-blue-900 underline cursor-pointer"
+                      >
+                        Padrão
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <input
+                  type="range"
+                  min={28}
+                  max={150}
+                  step={2}
+                  value={valBackSize ?? backDefaultSize}
+                  onChange={(e) =>
+                    setTemplate((prev) => ({
+                      ...prev,
+                      [backSizeKey]: Number(e.target.value),
+                    }))
+                  }
+                  className="w-full accent-blue-800"
+                />
+              </div>
+            )}
             <div>
               <div className="flex justify-between text-[10px] font-semibold text-slate-600">
                 <span>Opacidade</span>
@@ -3133,6 +3181,21 @@ export function CertificateInspectorPanel({
                       className="hidden"
                     />
                   </label>
+                  {template.marcaDaguaFrenteUrl && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setTemplate((prev) => ({
+                          ...prev,
+                          marcaDaguaFrenteUrl: '',
+                        }))
+                      }
+                      className="p-1.5 rounded-lg bg-white border border-slate-200 hover:bg-rose-50 text-rose-600 cursor-pointer"
+                      title="Remover marca d'água da frente"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() =>
@@ -3156,6 +3219,8 @@ export function CertificateInspectorPanel({
                 template.marcaDaguaFrenteUrl,
                 "Marca d'Água Frente"
               )}
+
+              {renderLayerOrderControls('marcaDaguaFrente', "Marca d'Água Frente")}
 
               <div>
                 <label className="flex items-center justify-between text-[11px] font-bold text-slate-700 mb-0.5">
@@ -3334,8 +3399,6 @@ export function CertificateInspectorPanel({
                   Expandir Folha
                 </button>
               </div>
-
-              {renderLayerOrderControls('marcaDaguaFrente', "Marca d'Água Frente")}
             </div>
           </div>
         )}
@@ -3544,6 +3607,17 @@ export function CertificateInspectorPanel({
                     </div>
 
                     {renderLayerOrderControls('molduraFrente', 'Moldura da Frente')}
+
+                    <div className="pt-2 border-t border-slate-200">
+                      <button
+                        type="button"
+                        onClick={() => onSelectObject('marcaDaguaFrente')}
+                        className="w-full py-2 px-3 rounded-lg bg-white border border-slate-200 hover:bg-blue-50 hover:border-blue-300 text-xs font-bold text-slate-700 hover:text-blue-900 flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <ImageIcon size={13} />
+                        <span>Editar / Trocar Marca d&apos;Água Central (Frente)</span>
+                      </button>
+                    </div>
                   </>
                 );
               })()}
@@ -4317,8 +4391,24 @@ export function CertificateInspectorPanel({
               {renderLayerOrderControls('versoTabela', 'Quadro do Verso')}
             </div>
 
-            {/* Quick shortcuts to back background / border */}
+            {/* Quick shortcuts to back background / border / crests */}
             <div className="flex flex-wrap items-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => onSelectObject('brasaoEsquerdo')}
+                className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold cursor-pointer flex items-center gap-1"
+              >
+                <Shield size={12} />
+                <span>Brasão Esquerdo</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onSelectObject('brasaoDireito')}
+                className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold cursor-pointer flex items-center gap-1"
+              >
+                <Shield size={12} />
+                <span>Brasão Direito</span>
+              </button>
               <button
                 type="button"
                 onClick={() => onSelectObject('marcaDaguaVerso')}
@@ -4365,6 +4455,21 @@ export function CertificateInspectorPanel({
                       className="hidden"
                     />
                   </label>
+                  {template.marcaDaguaVersoUrl && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setTemplate((prev) => ({
+                          ...prev,
+                          marcaDaguaVersoUrl: '',
+                        }))
+                      }
+                      className="p-1.5 rounded-lg bg-white border border-slate-200 hover:bg-rose-50 text-rose-600 cursor-pointer"
+                      title="Remover marca d'água do verso"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() =>
@@ -4387,6 +4492,8 @@ export function CertificateInspectorPanel({
                 template.marcaDaguaVersoUrl,
                 "Marca d'Água Verso"
               )}
+
+              {renderLayerOrderControls('marcaDaguaVerso', "Marca d'Água Verso")}
 
               <div>
                 <label className="flex items-center justify-between text-[11px] font-bold text-slate-700 mb-0.5">
@@ -4565,8 +4672,6 @@ export function CertificateInspectorPanel({
                   Expandir Folha
                 </button>
               </div>
-
-              {renderLayerOrderControls('marcaDaguaVerso', "Marca d'Água Verso")}
             </div>
           </div>
         )}

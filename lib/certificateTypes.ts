@@ -125,10 +125,12 @@ export interface CertificateTemplateConfig {
   logoDireitaTexto: string;
   mostrarLegendaLogoDireita?: boolean;
   tamanhoLogoEsquerda?: number;
+  tamanhoLogoEsquerdaVerso?: number;
   opacidadeLogoEsquerda?: number;
   tamanhoLogoCentro?: number;
   opacidadeLogoCentro?: number;
   tamanhoLogoDireita?: number;
+  tamanhoLogoDireitaVerso?: number;
   opacidadeLogoDireita?: number;
   marcaDaguaFrenteUrl: string;
   marcaDaguaVersoUrl: string;
@@ -563,53 +565,89 @@ export function updateCertificateLayerOrder(
     return next;
   }
 
-  const sideKeys = BACK_LAYER_KEYS.includes(key) && key !== 'brasaoEsquerdo' && key !== 'brasaoDireito'
-    ? BACK_LAYER_KEYS
-    : key === 'marcaDaguaFrente' || key === 'molduraFrente' || key === 'brasaoCentro' || key === 'titulo' || key === 'texto' || key === 'data' || key === 'assinaturaPrincipal' || key === 'segundaAssinatura'
-      ? FRONT_LAYER_KEYS
-      : Array.from(new Set([...FRONT_LAYER_KEYS, ...BACK_LAYER_KEYS]));
+  const sideKeys =
+    BACK_LAYER_KEYS.includes(key) && key !== 'brasaoEsquerdo' && key !== 'brasaoDireito'
+      ? BACK_LAYER_KEYS
+      : key === 'marcaDaguaFrente' ||
+          key === 'molduraFrente' ||
+          key === 'brasaoCentro' ||
+          key === 'titulo' ||
+          key === 'texto' ||
+          key === 'data' ||
+          key === 'assinaturaPrincipal' ||
+          key === 'segundaAssinatura'
+        ? FRONT_LAYER_KEYS
+        : Array.from(new Set([...FRONT_LAYER_KEYS, ...BACK_LAYER_KEYS]));
 
-  const currentVal =
-    typeof next[key] === 'number' && Number.isFinite(next[key])
-      ? (next[key] as number)
-      : DEFAULT_CERTIFICATE_Z_INDEX[key];
-
-  const allVals = sideKeys.map((k) =>
+  const valOf = (k: CertificateLayerKey): number =>
     typeof next[k] === 'number' && Number.isFinite(next[k])
       ? (next[k] as number)
-      : DEFAULT_CERTIFICATE_Z_INDEX[k]
-  );
-  const maxVal = Math.max(...allVals);
-  const minVal = Math.min(...allVals);
+      : DEFAULT_CERTIFICATE_Z_INDEX[k];
 
-  let targetVal = currentVal;
+  const currentVal = valOf(key);
+  const otherKeys = sideKeys.filter((k) => k !== key);
+  const otherVals = otherKeys.map(valOf);
+  const maxVal = Math.max(currentVal, ...otherVals);
+  const minVal = Math.min(currentVal, ...otherVals);
+
   if (action === 'front') {
-    targetVal = maxVal + 1;
+    next[key] = maxVal + 1;
   } else if (action === 'back') {
-    targetVal = minVal - 1;
+    next[key] = minVal - 1;
   } else if (action === 'forward') {
-    targetVal = currentVal + 1;
+    const hasTie = otherVals.some((v) => v === currentVal);
+    const strictlyHigher = otherVals.filter((v) => v > currentVal);
+    if (hasTie) {
+      const targetVal = currentVal + 1;
+      for (const ok of otherKeys) {
+        const okVal = valOf(ok);
+        if (okVal >= targetVal) {
+          next[ok] = okVal + 1;
+        }
+      }
+      next[key] = targetVal;
+    } else if (strictlyHigher.length > 0) {
+      const nextHigher = Math.min(...strictlyHigher);
+      const targetVal = nextHigher + 1;
+      for (const ok of otherKeys) {
+        const okVal = valOf(ok);
+        if (okVal >= targetVal) {
+          next[ok] = okVal + 1;
+        }
+      }
+      next[key] = targetVal;
+    }
   } else if (action === 'backward') {
-    targetVal = currentVal - 1;
+    const hasTie = otherVals.some((v) => v === currentVal);
+    const strictlyLower = otherVals.filter((v) => v < currentVal);
+    if (hasTie) {
+      const targetVal = currentVal - 1;
+      for (const ok of otherKeys) {
+        const okVal = valOf(ok);
+        if (okVal <= targetVal) {
+          next[ok] = okVal - 1;
+        }
+      }
+      next[key] = targetVal;
+    } else if (strictlyLower.length > 0) {
+      const nextLower = Math.max(...strictlyLower);
+      const targetVal = nextLower - 1;
+      for (const ok of otherKeys) {
+        const okVal = valOf(ok);
+        if (okVal <= targetVal) {
+          next[ok] = okVal - 1;
+        }
+      }
+      next[key] = targetVal;
+    }
   }
 
-  next[key] = targetVal;
-
   // Keep all z-index values >= 1 so nothing ever drops behind the white sheet background
-  const updatedVals = sideKeys.map((k) =>
-    typeof next[k] === 'number' && Number.isFinite(next[k])
-      ? (next[k] as number)
-      : DEFAULT_CERTIFICATE_Z_INDEX[k]
-  );
-  const updatedMin = Math.min(...updatedVals);
+  const updatedMin = Math.min(...sideKeys.map(valOf));
   if (updatedMin < 1) {
     const shift = 1 - updatedMin;
     for (const k of sideKeys) {
-      const val =
-        typeof next[k] === 'number' && Number.isFinite(next[k])
-          ? (next[k] as number)
-          : DEFAULT_CERTIFICATE_Z_INDEX[k];
-      next[k] = val + shift;
+      next[k] = valOf(k) + shift;
     }
   }
 
