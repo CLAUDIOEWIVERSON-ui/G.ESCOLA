@@ -83,7 +83,7 @@ function HeaderSearchBar() {
   );
 }
 
-// Cores exclusivas e personalizadas para cada atalho na régua inferior mobile
+// Cores exclusivas, vibrantes e personalizadas para cada atalho na barra inferior mobile
 const MOBILE_NAV_COLORS: Record<string, {
   text: string;
   activeText: string;
@@ -95,131 +95,131 @@ const MOBILE_NAV_COLORS: Record<string, {
   '/dashboard': {
     text: 'text-blue-600 dark:text-blue-400',
     activeText: 'text-blue-700 dark:text-blue-300',
-    bg: 'bg-blue-50 text-blue-600 border border-blue-200/80 dark:bg-blue-950/60 dark:text-blue-400 dark:border-blue-800/50',
-    activeBg: 'bg-blue-600 text-white shadow-xs shadow-blue-500/30 border border-blue-700',
+    bg: 'bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-xs shadow-blue-500/25 border border-blue-600/80',
+    activeBg: 'bg-gradient-to-br from-blue-600 to-blue-700 text-white shadow-md shadow-blue-500/40 border border-blue-700 ring-2 ring-blue-300 dark:ring-blue-500/60 ring-offset-1 dark:ring-offset-slate-900',
     border: 'border-blue-200 dark:border-blue-800',
     indicator: 'bg-blue-600',
   },
   '/cursos': {
     text: 'text-amber-600 dark:text-amber-400',
     activeText: 'text-amber-700 dark:text-amber-300',
-    bg: 'bg-amber-50 text-amber-600 border border-amber-200/80 dark:bg-amber-950/60 dark:text-amber-400 dark:border-amber-800/50',
-    activeBg: 'bg-amber-500 text-white shadow-xs shadow-amber-500/30 border border-amber-600',
+    bg: 'bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-xs shadow-amber-500/25 border border-amber-500/80',
+    activeBg: 'bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-md shadow-amber-500/40 border border-amber-600 ring-2 ring-amber-300 dark:ring-amber-500/60 ring-offset-1 dark:ring-offset-slate-900',
     border: 'border-amber-200 dark:border-amber-800',
     indicator: 'bg-amber-500',
   },
   '/turmas': {
     text: 'text-emerald-600 dark:text-emerald-400',
     activeText: 'text-emerald-700 dark:text-emerald-300',
-    bg: 'bg-emerald-50 text-emerald-600 border border-emerald-200/80 dark:bg-emerald-950/60 dark:text-emerald-400 dark:border-emerald-800/50',
-    activeBg: 'bg-emerald-600 text-white shadow-xs shadow-emerald-500/30 border border-emerald-700',
+    bg: 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-xs shadow-emerald-500/25 border border-emerald-600/80',
+    activeBg: 'bg-gradient-to-br from-emerald-600 to-teal-700 text-white shadow-md shadow-emerald-500/40 border border-emerald-700 ring-2 ring-emerald-300 dark:ring-emerald-500/60 ring-offset-1 dark:ring-offset-slate-900',
     border: 'border-emerald-200 dark:border-emerald-800',
     indicator: 'bg-emerald-600',
   },
   '/frequencia': {
     text: 'text-purple-600 dark:text-purple-400',
     activeText: 'text-purple-700 dark:text-purple-300',
-    bg: 'bg-purple-50 text-purple-600 border border-purple-200/80 dark:bg-purple-950/60 dark:text-purple-400 dark:border-purple-800/50',
-    activeBg: 'bg-purple-600 text-white shadow-xs shadow-purple-500/30 border border-purple-700',
+    bg: 'bg-gradient-to-br from-purple-500 to-violet-600 text-white shadow-xs shadow-purple-500/25 border border-purple-600/80',
+    activeBg: 'bg-gradient-to-br from-purple-600 to-violet-700 text-white shadow-md shadow-purple-500/40 border border-purple-700 ring-2 ring-purple-300 dark:ring-purple-500/60 ring-offset-1 dark:ring-offset-slate-900',
     border: 'border-purple-200 dark:border-purple-800',
     indicator: 'bg-purple-600',
   },
   '/horario': {
     text: 'text-cyan-600 dark:text-cyan-400',
     activeText: 'text-cyan-700 dark:text-cyan-300',
-    bg: 'bg-cyan-50 text-cyan-600 border border-cyan-200/80 dark:bg-cyan-950/60 dark:text-cyan-400 dark:border-cyan-800/50',
-    activeBg: 'bg-cyan-600 text-white shadow-xs shadow-cyan-500/30 border border-cyan-700',
+    bg: 'bg-gradient-to-br from-cyan-500 to-sky-600 text-white shadow-xs shadow-cyan-500/25 border border-cyan-600/80',
+    activeBg: 'bg-gradient-to-br from-cyan-600 to-sky-700 text-white shadow-md shadow-cyan-500/40 border border-cyan-700 ring-2 ring-cyan-300 dark:ring-cyan-500/60 ring-offset-1 dark:ring-offset-slate-900',
     border: 'border-cyan-200 dark:border-cyan-800',
     indicator: 'bg-cyan-600',
   },
   '/calendario': {
     text: 'text-rose-600 dark:text-rose-400',
     activeText: 'text-rose-700 dark:text-rose-300',
-    bg: 'bg-rose-50 text-rose-600 border border-rose-200/80 dark:bg-rose-950/60 dark:text-rose-400 dark:border-rose-800/50',
-    activeBg: 'bg-rose-600 text-white shadow-xs shadow-rose-500/30 border border-rose-700',
+    bg: 'bg-gradient-to-br from-rose-500 to-pink-600 text-white shadow-xs shadow-rose-500/25 border border-rose-600/80',
+    activeBg: 'bg-gradient-to-br from-rose-600 to-pink-700 text-white shadow-md shadow-rose-500/40 border border-rose-700 ring-2 ring-rose-300 dark:ring-rose-500/60 ring-offset-1 dark:ring-offset-slate-900',
     border: 'border-rose-200 dark:border-rose-800',
     indicator: 'bg-rose-600',
   },
   '/boletim': {
     text: 'text-sky-600 dark:text-sky-400',
     activeText: 'text-sky-700 dark:text-sky-300',
-    bg: 'bg-sky-50 text-sky-600 border border-sky-200/80 dark:bg-sky-950/60 dark:text-sky-400 dark:border-sky-800/50',
-    activeBg: 'bg-sky-600 text-white shadow-xs shadow-sky-500/30 border border-sky-700',
+    bg: 'bg-gradient-to-br from-sky-500 to-blue-600 text-white shadow-xs shadow-sky-500/25 border border-sky-600/80',
+    activeBg: 'bg-gradient-to-br from-sky-600 to-blue-700 text-white shadow-md shadow-sky-500/40 border border-sky-700 ring-2 ring-sky-300 dark:ring-sky-500/60 ring-offset-1 dark:ring-offset-slate-900',
     border: 'border-sky-200 dark:border-sky-800',
     indicator: 'bg-sky-600',
   },
   '/configuracoes': {
     text: 'text-indigo-600 dark:text-indigo-400',
     activeText: 'text-indigo-700 dark:text-indigo-300',
-    bg: 'bg-indigo-50 text-indigo-600 border border-indigo-200/80 dark:bg-indigo-950/60 dark:text-indigo-400 dark:border-indigo-800/50',
-    activeBg: 'bg-indigo-600 text-white shadow-xs shadow-indigo-500/30 border border-indigo-700',
+    bg: 'bg-gradient-to-br from-indigo-500 to-blue-700 text-white shadow-xs shadow-indigo-500/25 border border-indigo-600/80',
+    activeBg: 'bg-gradient-to-br from-indigo-600 to-blue-800 text-white shadow-md shadow-indigo-500/40 border border-indigo-700 ring-2 ring-indigo-300 dark:ring-indigo-500/60 ring-offset-1 dark:ring-offset-slate-900',
     border: 'border-indigo-200 dark:border-indigo-800',
     indicator: 'bg-indigo-600',
   },
   '/usuarios': {
     text: 'text-fuchsia-600 dark:text-fuchsia-400',
     activeText: 'text-fuchsia-700 dark:text-fuchsia-300',
-    bg: 'bg-fuchsia-50 text-fuchsia-600 border border-fuchsia-200/80 dark:bg-fuchsia-950/60 dark:text-fuchsia-400 dark:border-fuchsia-800/50',
-    activeBg: 'bg-fuchsia-600 text-white shadow-xs shadow-fuchsia-500/30 border border-fuchsia-700',
+    bg: 'bg-gradient-to-br from-fuchsia-500 to-pink-600 text-white shadow-xs shadow-fuchsia-500/25 border border-fuchsia-600/80',
+    activeBg: 'bg-gradient-to-br from-fuchsia-600 to-pink-700 text-white shadow-md shadow-fuchsia-500/40 border border-fuchsia-700 ring-2 ring-fuchsia-300 dark:ring-fuchsia-500/60 ring-offset-1 dark:ring-offset-slate-900',
     border: 'border-fuchsia-200 dark:border-fuchsia-800',
     indicator: 'bg-fuchsia-600',
   },
   '/relatorio-avaliacao': {
     text: 'text-violet-600 dark:text-violet-400',
     activeText: 'text-violet-700 dark:text-violet-300',
-    bg: 'bg-violet-50 text-violet-600 border border-violet-200/80 dark:bg-violet-950/60 dark:text-violet-400 dark:border-violet-800/50',
-    activeBg: 'bg-violet-600 text-white shadow-xs shadow-violet-500/30 border border-violet-700',
+    bg: 'bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-xs shadow-violet-500/25 border border-violet-600/80',
+    activeBg: 'bg-gradient-to-br from-violet-600 to-purple-700 text-white shadow-md shadow-violet-500/40 border border-violet-700 ring-2 ring-violet-300 dark:ring-violet-500/60 ring-offset-1 dark:ring-offset-slate-900',
     border: 'border-violet-200 dark:border-violet-800',
     indicator: 'bg-violet-600',
   },
   '/links': {
     text: 'text-teal-600 dark:text-teal-400',
     activeText: 'text-teal-700 dark:text-teal-300',
-    bg: 'bg-teal-50 text-teal-600 border border-teal-200/80 dark:bg-teal-950/60 dark:text-teal-400 dark:border-teal-800/50',
-    activeBg: 'bg-teal-600 text-white shadow-xs shadow-teal-500/30 border border-teal-700',
+    bg: 'bg-gradient-to-br from-teal-500 to-emerald-600 text-white shadow-xs shadow-teal-500/25 border border-teal-600/80',
+    activeBg: 'bg-gradient-to-br from-teal-600 to-emerald-700 text-white shadow-md shadow-teal-500/40 border border-teal-700 ring-2 ring-teal-300 dark:ring-teal-500/60 ring-offset-1 dark:ring-offset-slate-900',
     border: 'border-teal-200 dark:border-teal-800',
     indicator: 'bg-teal-600',
   },
   '/avaliacao': {
     text: 'text-emerald-600 dark:text-emerald-400',
     activeText: 'text-emerald-700 dark:text-emerald-300',
-    bg: 'bg-emerald-50 text-emerald-600 border border-emerald-200/80 dark:bg-emerald-950/60 dark:text-emerald-400 dark:border-emerald-800/50',
-    activeBg: 'bg-emerald-600 text-white shadow-xs shadow-emerald-500/30 border border-emerald-700',
+    bg: 'bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-xs shadow-emerald-500/25 border border-emerald-600/80',
+    activeBg: 'bg-gradient-to-br from-emerald-600 to-green-700 text-white shadow-md shadow-emerald-500/40 border border-emerald-700 ring-2 ring-emerald-300 dark:ring-emerald-500/60 ring-offset-1 dark:ring-offset-slate-900',
     border: 'border-emerald-200 dark:border-emerald-800',
     indicator: 'bg-emerald-600',
   },
   '/manual': {
     text: 'text-amber-600 dark:text-amber-400',
     activeText: 'text-amber-700 dark:text-amber-300',
-    bg: 'bg-amber-50 text-amber-600 border border-amber-200/80 dark:bg-amber-950/60 dark:text-amber-400 dark:border-amber-800/50',
-    activeBg: 'bg-amber-600 text-white shadow-xs shadow-amber-500/30 border border-amber-700',
+    bg: 'bg-gradient-to-br from-amber-500 to-yellow-600 text-white shadow-xs shadow-amber-500/25 border border-amber-600/80',
+    activeBg: 'bg-gradient-to-br from-amber-600 to-yellow-700 text-white shadow-md shadow-amber-500/40 border border-amber-700 ring-2 ring-amber-300 dark:ring-amber-500/60 ring-offset-1 dark:ring-offset-slate-900',
     border: 'border-amber-200 dark:border-amber-800',
     indicator: 'bg-amber-600',
   },
   '/pensamento-do-dia': {
     text: 'text-amber-600 dark:text-amber-400',
     activeText: 'text-amber-700 dark:text-amber-300',
-    bg: 'bg-amber-50 text-amber-600 border border-amber-200/80 dark:bg-amber-950/60 dark:text-amber-400 dark:border-amber-800/50',
-    activeBg: 'bg-amber-500 text-white shadow-xs shadow-amber-500/30 border border-amber-600',
+    bg: 'bg-gradient-to-br from-orange-400 to-amber-600 text-white shadow-xs shadow-orange-500/25 border border-orange-500/80',
+    activeBg: 'bg-gradient-to-br from-orange-500 to-amber-700 text-white shadow-md shadow-orange-500/40 border border-orange-600 ring-2 ring-orange-300 dark:ring-orange-500/60 ring-offset-1 dark:ring-offset-slate-900',
     border: 'border-amber-200 dark:border-amber-800',
     indicator: 'bg-amber-500',
   },
   '/certificados': {
     text: 'text-indigo-700 dark:text-indigo-400',
     activeText: 'text-indigo-800 dark:text-indigo-300',
-    bg: 'bg-indigo-50 text-indigo-700 border border-indigo-200/80 dark:bg-indigo-950/60 dark:text-indigo-400 dark:border-indigo-800/50',
-    activeBg: 'bg-indigo-700 text-white shadow-xs shadow-indigo-500/30 border border-indigo-800',
+    bg: 'bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-xs shadow-indigo-500/25 border border-indigo-600/80',
+    activeBg: 'bg-gradient-to-br from-indigo-600 to-violet-700 text-white shadow-md shadow-indigo-500/40 border border-indigo-700 ring-2 ring-indigo-300 dark:ring-indigo-500/60 ring-offset-1 dark:ring-offset-slate-900',
     border: 'border-indigo-200 dark:border-indigo-800',
     indicator: 'bg-indigo-700',
   },
 };
 
 const MENU_BUTTON_COLOR = {
-  text: 'text-slate-600 dark:text-slate-400',
-  activeText: 'text-slate-900 dark:text-white',
-  bg: 'bg-slate-100 text-slate-700 border border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700',
-  activeBg: 'bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900 shadow-xs border border-slate-900 dark:border-white',
-  indicator: 'bg-slate-800 dark:bg-slate-200',
+  text: 'text-fuchsia-600 dark:text-fuchsia-400',
+  activeText: 'text-fuchsia-700 dark:text-fuchsia-300',
+  bg: 'bg-gradient-to-br from-fuchsia-500 to-purple-600 text-white shadow-xs shadow-fuchsia-500/25 border border-fuchsia-600/80',
+  activeBg: 'bg-gradient-to-br from-fuchsia-600 to-purple-700 text-white shadow-md shadow-fuchsia-500/40 border border-fuchsia-700 ring-2 ring-fuchsia-300 dark:ring-fuchsia-500/60 ring-offset-1 dark:ring-offset-slate-900',
+  indicator: 'bg-fuchsia-600',
 };
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -1113,17 +1113,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               )}
             >
               <div className={cn(
-                "w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200 shrink-0",
-                isStudentUser
-                  ? isActive
-                    ? "bg-white text-black border-2 border-black"
-                    : "bg-white text-black border border-slate-300"
-                  : isActive ? colorConfig.activeBg : colorConfig.bg,
+                "mobile-bottom-nav-icon w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200 shrink-0",
+                isActive ? colorConfig.activeBg : colorConfig.bg,
+                isStudentUser && isActive && "ring-2 ring-black ring-offset-1",
                 !isStudentUser && needsPasswordChange && "ring-2 ring-amber-500 animate-pulse"
               )}>
                 <item.icon size={17} className={cn(
-                  isStudentUser ? "text-black" : isActive ? "text-white" : "",
-                  !isStudentUser && needsPasswordChange && "text-amber-500"
+                  "mobile-bottom-nav-svg text-white",
+                  !isStudentUser && needsPasswordChange && "animate-pulse"
                 )} />
               </div>
               <span className={cn(
@@ -1155,8 +1152,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             title={language === 'pt' ? 'Sair do Sistema' : 'Sign Out'}
             className="flex flex-col items-center gap-0.5 p-0.5 transition-all min-w-0 flex-1 max-w-[58px] shrink-0 relative group cursor-pointer text-black"
           >
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200 shrink-0 bg-white text-black border border-slate-300 hover:border-black">
-              <LogOut size={16} className="text-black" />
+            <div className="mobile-bottom-nav-icon w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200 shrink-0 bg-gradient-to-br from-red-500 to-rose-600 text-white shadow-xs shadow-red-500/25 border border-red-600/80">
+              <LogOut size={16} className="mobile-bottom-nav-svg text-white" />
             </div>
             <span className="text-[8px] uppercase tracking-wider truncate w-full text-center font-bold text-black">
               {language === 'pt' ? 'SAIR' : 'EXIT'}
@@ -1172,14 +1169,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           )}
         >
           <div className={cn(
-            "w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200 shrink-0",
-            isStudentUser
-              ? sidebarOpen
-                ? "bg-white text-black border-2 border-black"
-                : "bg-white text-black border border-slate-300"
-              : sidebarOpen ? MENU_BUTTON_COLOR.activeBg : MENU_BUTTON_COLOR.bg
+            "mobile-bottom-nav-icon w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200 shrink-0",
+            sidebarOpen ? MENU_BUTTON_COLOR.activeBg : MENU_BUTTON_COLOR.bg,
+            isStudentUser && sidebarOpen && "ring-2 ring-black ring-offset-1"
           )}>
-            {sidebarOpen ? <X size={17} /> : <Menu size={17} />}
+            {sidebarOpen ? <X size={17} className="mobile-bottom-nav-svg text-white" /> : <Menu size={17} className="mobile-bottom-nav-svg text-white" />}
           </div>
           <span className={cn(
             "text-[8px] uppercase tracking-wider truncate w-full text-center transition-colors",

@@ -105,27 +105,29 @@ body {
   color: #000000 !important;
 }
 
-.student-white-theme :not(.student-photo-overlay):not(.student-photo-overlay *):not(img):not(svg):not(path):not(circle):not(rect):not(line):not(polygon):not(polyline) {
+.student-white-theme :not(.student-photo-overlay):not(.student-photo-overlay *):not(.mobile-bottom-nav-icon):not(.mobile-bottom-nav-icon *):not(img):not(svg):not(path):not(circle):not(rect):not(line):not(polygon):not(polyline) {
   color: #000000 !important;
   -webkit-text-fill-color: #000000 !important;
 }
 
-.student-white-theme :is([class*="bg-blue"], [class*="bg-slate-9"], [class*="bg-slate-8"], [class*="bg-slate-50"], [class*="bg-slate-100"], [class*="bg-indigo"], [class*="bg-cyan"], [class*="bg-emerald"], [class*="bg-amber"], [class*="bg-rose"], [class*="bg-purple"], [class*="bg-sky"], [class*="bg-violet"], [class*="bg-teal"], [class*="bg-gradient"]):not(.student-photo-overlay) {
+.student-white-theme :is([class*="bg-blue"], [class*="bg-slate-9"], [class*="bg-slate-8"], [class*="bg-slate-50"], [class*="bg-slate-100"], [class*="bg-indigo"], [class*="bg-cyan"], [class*="bg-emerald"], [class*="bg-amber"], [class*="bg-rose"], [class*="bg-purple"], [class*="bg-sky"], [class*="bg-violet"], [class*="bg-teal"], [class*="bg-gradient"]):not(.student-photo-overlay):not(.mobile-bottom-nav-icon) {
   background-color: #ffffff !important;
   background-image: none !important;
   color: #000000 !important;
 }
 
-.student-white-theme svg {
+.student-white-theme svg:not(.mobile-bottom-nav-svg) {
   color: #000000 !important;
 }
 
-.student-white-theme :is([class*="border-slate"], [class*="border-blue"], [class*="border-white"], [class*="border-indigo"], [class*="border-cyan"], [class*="border-emerald"], [class*="border-amber"], [class*="border-rose"]):not(.border-black):not(.border-2) {
+.student-white-theme :is([class*="border-slate"], [class*="border-blue"], [class*="border-white"], [class*="border-indigo"], [class*="border-cyan"], [class*="border-emerald"], [class*="border-amber"], [class*="border-rose"]):not(.border-black):not(.border-2):not(.mobile-bottom-nav-icon) {
   border-color: #d4d4d8 !important;
 }
 
 .student-white-theme .student-photo-overlay,
-.student-white-theme .student-photo-overlay * {
+.student-white-theme .student-photo-overlay *,
+.student-white-theme .mobile-bottom-nav-icon,
+.student-white-theme .mobile-bottom-nav-icon * {
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
 }
