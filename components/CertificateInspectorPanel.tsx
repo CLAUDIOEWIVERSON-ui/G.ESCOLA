@@ -10,6 +10,7 @@ import {
   ArrowUp,
   Bold,
   Calendar,
+  Check,
   ChevronsDown,
   ChevronsUp,
   Download,
@@ -113,6 +114,7 @@ interface CertificateInspectorPanelProps {
   libraryAssets?: CertificateLibraryAsset[];
   onApplyLibraryAsset?: (asset: CertificateLibraryAsset, target: CertificateAssetTarget) => void;
   onDownloadLibraryAsset?: (asset: CertificateLibraryAsset) => void;
+  onRenameLibraryAsset?: (asset: CertificateLibraryAsset, newName: string) => void;
   onDeleteLibraryAsset?: (asset: CertificateLibraryAsset) => void;
   onSaveCurrentAssetToLibrary?: (
     category: CertificateAssetCategory,
@@ -321,11 +323,16 @@ export function CertificateInspectorPanel({
   libraryAssets = [],
   onApplyLibraryAsset,
   onDownloadLibraryAsset,
+  onRenameLibraryAsset,
   onDeleteLibraryAsset,
   onSaveCurrentAssetToLibrary,
   onOpenLibrary,
 }: CertificateInspectorPanelProps) {
   const [showQuickElements, setShowQuickElements] = React.useState(false);
+  const [renamingStripAsset, setRenamingStripAsset] = React.useState<{
+    id: string;
+    value: string;
+  } | null>(null);
 
   const meta = getObjectMeta(selectedObject);
   const HeaderIcon = meta.icon;
@@ -624,6 +631,62 @@ export function CertificateInspectorPanel({
           </div>
         </div>
 
+        {renamingStripAsset &&
+          onRenameLibraryAsset &&
+          items.some((a) => a.id === renamingStripAsset.id) && (
+            <div className="p-2 rounded-lg bg-blue-50/80 border border-blue-200 flex items-center gap-1.5">
+              <input
+                type="text"
+                value={renamingStripAsset.value}
+                onChange={(e) =>
+                  setRenamingStripAsset((prev) =>
+                    prev ? { ...prev, value: e.target.value } : null
+                  )
+                }
+                onKeyDown={(e) => {
+                  const targetAsset = items.find((a) => a.id === renamingStripAsset.id);
+                  if (e.key === 'Enter' && targetAsset) {
+                    e.preventDefault();
+                    const trimmed = renamingStripAsset.value.trim();
+                    if (trimmed && trimmed !== targetAsset.name) {
+                      onRenameLibraryAsset(targetAsset, trimmed);
+                    }
+                    setRenamingStripAsset(null);
+                  } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    setRenamingStripAsset(null);
+                  }
+                }}
+                autoFocus
+                placeholder="Novo nome do item"
+                className="flex-1 min-w-0 px-2 py-1 bg-white border border-blue-300 rounded text-[11px] font-bold text-slate-900 focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  const targetAsset = items.find((a) => a.id === renamingStripAsset.id);
+                  const trimmed = renamingStripAsset.value.trim();
+                  if (targetAsset && trimmed && trimmed !== targetAsset.name) {
+                    onRenameLibraryAsset(targetAsset, trimmed);
+                  }
+                  setRenamingStripAsset(null);
+                }}
+                className="p-1 rounded bg-emerald-700 hover:bg-emerald-800 text-white cursor-pointer"
+                title="Salvar novo nome"
+              >
+                <Check size={11} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setRenamingStripAsset(null)}
+                className="p-1 rounded bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 cursor-pointer"
+                title="Cancelar"
+              >
+                <X size={11} />
+              </button>
+            </div>
+          )}
+
         {items.length > 0 && onApplyLibraryAsset && (
           <div className="grid grid-cols-3 gap-1.5 max-h-40 overflow-y-auto pr-0.5 custom-scrollbar">
             {items.map((asset) => {
@@ -656,8 +719,21 @@ export function CertificateInspectorPanel({
                       {asset.name}
                     </span>
                   </button>
-                  {(onDownloadLibraryAsset || onDeleteLibraryAsset) && (
+                  {(onDownloadLibraryAsset || onRenameLibraryAsset || onDeleteLibraryAsset) && (
                     <div className="absolute top-1 right-1 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {onRenameLibraryAsset && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setRenamingStripAsset({ id: asset.id, value: asset.name });
+                          }}
+                          className="p-1 rounded bg-white/95 hover:bg-blue-50 border border-slate-200 text-blue-900 cursor-pointer"
+                          title={`Renomear ${asset.name}`}
+                        >
+                          <Pencil size={9} />
+                        </button>
+                      )}
                       {onDownloadLibraryAsset && (
                         <button
                           type="button"

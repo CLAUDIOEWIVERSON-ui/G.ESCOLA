@@ -76,6 +76,7 @@ import { CertificateLibraryPanel } from '@/components/CertificateLibraryPanel';
 const LOCAL_TEMPLATES_KEY = 'sge_saved_certificate_templates_v1';
 const LOCAL_LIBRARY_KEY = 'sge_certificate_asset_library_v1';
 const LOCAL_LIBRARY_HIDDEN_KEY = 'sge_certificate_asset_library_hidden_v1';
+const LOCAL_LIBRARY_RENAMED_KEY = 'sge_certificate_asset_library_names_v1';
 const LAST_WORKSPACE_KEY = 'sge_certificate_last_workspace_v1';
 
 function getAssetExclusionKey(
@@ -146,6 +147,9 @@ export default function CertificadosPage() {
   const [libraryCategory, setLibraryCategory] = useState<CertificateAssetCategory>('brasao');
   const [customLibraryAssets, setCustomLibraryAssets] = useState<CertificateLibraryAsset[]>([]);
   const [hiddenLibraryAssetKeys, setHiddenLibraryAssetKeys] = useState<string[]>([]);
+  const [renamedLibraryAssetNames, setRenamedLibraryAssetNames] = useState<Record<string, string>>(
+    {}
+  );
   const [selectedObject, setSelectedObject] = useState<CertificateSelectableObject | null>(null);
   const [previewMode, setPreviewMode] = useState<'both' | 'front' | 'back'>('both');
   const [manualZoom, setManualZoom] = useState<number>(100);
@@ -490,6 +494,19 @@ export default function CertificadosPage() {
             setHiddenLibraryAssetKeys(parsedHidden.filter((k) => typeof k === 'string'));
           }
         }
+        const rawRenamed = localStorage.getItem(LOCAL_LIBRARY_RENAMED_KEY);
+        if (rawRenamed) {
+          const parsedRenamed = JSON.parse(rawRenamed);
+          if (parsedRenamed && typeof parsedRenamed === 'object' && !Array.isArray(parsedRenamed)) {
+            const cleanMap: Record<string, string> = {};
+            Object.entries(parsedRenamed).forEach(([k, v]) => {
+              if (typeof k === 'string' && typeof v === 'string' && v.trim()) {
+                cleanMap[k] = v.trim();
+              }
+            });
+            setRenamedLibraryAssetNames(cleanMap);
+          }
+        }
       } catch {
         // ignore storage errors
       }
@@ -504,16 +521,21 @@ export default function CertificadosPage() {
   const allLibraryAssets = useMemo(() => {
     const hiddenSet = new Set(hiddenLibraryAssetKeys);
     const seenUrls = new Set<string>();
+    const applyRename = (asset: CertificateLibraryAsset): CertificateLibraryAsset => {
+      const override = renamedLibraryAssetNames[getAssetExclusionKey(asset)];
+      return override && override.trim() ? { ...asset, name: override.trim() } : asset;
+    };
     const visibleBuiltins = BUILTIN_CERTIFICATE_ASSETS.filter(
       (a) => !hiddenSet.has(getAssetExclusionKey(a))
-    );
+    ).map(applyRename);
     visibleBuiltins.forEach((a) => seenUrls.add(a.url));
-    customLibraryAssets.forEach((a) => seenUrls.add(a.url));
-    const templateExtracted = extractTemplateAssetsForLibrary(savedTemplates, seenUrls).filter(
-      (a) => !hiddenSet.has(getAssetExclusionKey(a))
-    );
-    return [...visibleBuiltins, ...customLibraryAssets, ...templateExtracted];
-  }, [customLibraryAssets, savedTemplates, hiddenLibraryAssetKeys]);
+    const renamedCustom = customLibraryAssets.map(applyRename);
+    renamedCustom.forEach((a) => seenUrls.add(a.url));
+    const templateExtracted = extractTemplateAssetsForLibrary(savedTemplates, seenUrls)
+      .filter((a) => !hiddenSet.has(getAssetExclusionKey(a)))
+      .map(applyRename);
+    return [...visibleBuiltins, ...renamedCustom, ...templateExtracted];
+  }, [customLibraryAssets, savedTemplates, hiddenLibraryAssetKeys, renamedLibraryAssetNames]);
 
   // Continuously persist active model, selected turma, student and preferences so reopening restores exact state
   useEffect(() => {
@@ -1463,6 +1485,14 @@ export default function CertificadosPage() {
     }
   }, []);
 
+  const persistRenamedLibraryNames = useCallback((map: Record<string, string>) => {
+    try {
+      localStorage.setItem(LOCAL_LIBRARY_RENAMED_KEY, JSON.stringify(map));
+    } catch {
+      // ignore storage quota errors
+    }
+  }, []);
+
   const handleSaveAssetRecord = useCallback(
     async (assetPayload: Omit<CertificateLibraryAsset, 'id' | 'source'>) => {
       const localRecord: CertificateLibraryAsset = {
@@ -1636,6 +1666,59 @@ export default function CertificadosPage() {
     persistHiddenLibraryKeys([]);
     toast.success('Recursos padrão e de modelos restaurados na biblioteca.');
   }, [canEdit, persistHiddenLibraryKeys]);
+
+  const handleRenameLibraryAsset = useCallback(
+    async (asset: CertificateLibraryAsset, newName: string) => {
+      if (!canEdit) {
+        toast.error('Usuário com acesso somente leitura.');
+        return;
+      }
+      const trimmed = newName.trim();
+      if (!trimmed || trimmed === asset.name) return;
+
+      const key = getAssetExclusionKey(asset);
+      setRenamedLibraryAssetNames((prev) => {
+        const next = { ...prev, [key]: trimmed };
+        persistRenamedLibraryNames(next);
+        return next;
+      });
+
+      if (asset.source === 'custom') {
+        const updatedAsset: CertificateLibraryAsset = { ...asset, name: trimmed };
+        setCustomLibraryAssets((prev) => {
+          const next = prev.map((a) => (a.id === asset.id ? updatedAsset : a));
+          persistLocalLibrary(next);
+          return next;
+        });
+
+        try {
+          await fetchWithAuth('/api/certificados', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: asset.id,
+              isAssetLibrary: true,
+              asset_data: {
+                name: trimmed,
+                category: asset.category,
+                url: asset.url,
+                subtitle: asset.subtitle,
+                source: 'custom',
+                ...(asset.frameStyle ? { frameStyle: asset.frameStyle } : {}),
+                ...(asset.defaultBorderColor ? { defaultBorderColor: asset.defaultBorderColor } : {}),
+                ...(asset.defaultCaption ? { defaultCaption: asset.defaultCaption } : {}),
+              },
+            }),
+          });
+        } catch {
+          // local rename already applied
+        }
+      }
+
+      toast.success(`Recurso renomeado para "${trimmed}".`);
+    },
+    [canEdit, persistLocalLibrary, persistRenamedLibraryNames]
+  );
 
   const handleDownloadLibraryAsset = useCallback(async (asset: CertificateLibraryAsset) => {
     try {
@@ -3560,6 +3643,7 @@ export default function CertificadosPage() {
                 onApplyAsset={handleApplyLibraryAssetToTarget}
                 onUploadToLibrary={handleUploadToLibrary}
                 onDownloadAsset={handleDownloadLibraryAsset}
+                onRenameAsset={handleRenameLibraryAsset}
                 onDeleteAsset={handleDeleteLibraryAsset}
                 hiddenAssetsCount={hiddenLibraryAssetKeys.length}
                 onRestoreDefaultAssets={handleRestoreDefaultLibraryAssets}
@@ -3606,6 +3690,7 @@ export default function CertificadosPage() {
                 libraryAssets={allLibraryAssets}
                 onApplyLibraryAsset={handleApplyLibraryAssetToTarget}
                 onDownloadLibraryAsset={handleDownloadLibraryAsset}
+                onRenameLibraryAsset={canEdit ? handleRenameLibraryAsset : undefined}
                 onDeleteLibraryAsset={canEdit ? handleDeleteLibraryAsset : undefined}
                 onSaveCurrentAssetToLibrary={handleSaveCurrentAssetToLibrary}
                 onOpenLibrary={(category) => {

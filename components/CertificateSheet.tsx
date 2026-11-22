@@ -1293,6 +1293,13 @@ export function CertificateSheet({
     const vetorialInsetPx = hasFormalOuterMargin
       ? Math.max(0, outerFrameMarginPx - 14)
       : 0;
+    const maxFrontImageZ = Math.max(
+      getLayerZ('marcaDaguaFrente'),
+      getLayerZ('molduraFrente'),
+      getLayerZ('brasaoEsquerdo', 'logoEsquerda'),
+      getLayerZ('brasaoCentro', 'logoCentro'),
+      getLayerZ('brasaoDireito', 'logoDireita')
+    );
 
     return (
       <div style={outerWrapperStyle}>
@@ -1406,17 +1413,13 @@ export function CertificateSheet({
                 "Marca d'Água Central (Frente) — clique para trocar ou enviar p/ frente/trás"
               );
               const frontWmZ = getLayerZ('marcaDaguaFrente');
-              const frontMinContentZ = Math.min(
+              const frontMinImageZ = Math.min(
+                getLayerZ('molduraFrente'),
                 getLayerZ('brasaoEsquerdo', 'logoEsquerda'),
                 getLayerZ('brasaoCentro', 'logoCentro'),
-                getLayerZ('brasaoDireito', 'logoDireita'),
-                getLayerZ('titulo', 'titulo'),
-                getLayerZ('texto', 'texto'),
-                getLayerZ('data', 'data'),
-                getLayerZ('assinaturaPrincipal', 'assinaturaPrincipal'),
-                getLayerZ('segundaAssinatura', 'segundaAssinatura')
+                getLayerZ('brasaoDireito', 'logoDireita')
               );
-              const isFrontWmAboveContent = frontWmZ > frontMinContentZ;
+              const isFrontWmAboveContent = frontWmZ > frontMinImageZ;
               const frontWmShapeRadius = isCircularDefaultFrontWm
                 ? '9999px'
                 : (frontWmSelect.style?.borderRadius ?? '6px');
@@ -1793,7 +1796,10 @@ export function CertificateSheet({
                       position: 'relative',
                       left: `${template.tituloOffsetX ?? 0}px`,
                       top: `${template.tituloOffsetY ?? 0}px`,
-                      zIndex: getLayerZ('titulo', 'titulo'),
+                      zIndex: Math.max(
+                        getLayerZ('titulo', 'titulo'),
+                        maxFrontImageZ + 2
+                      ),
                       fontSize: hasTitle ? `${titleSizePx}px` : '16px',
                       fontWeight: hasTitle ? (titleBold ? 700 : 400) : 600,
                       fontStyle: hasTitle && titleItalic ? 'italic' : 'normal',
@@ -1899,7 +1905,10 @@ export function CertificateSheet({
                         position: 'relative',
                         left: `${template.textoOffsetX ?? 0}px`,
                         top: `${template.textoOffsetY ?? 0}px`,
-                        zIndex: getLayerZ('texto', 'texto'),
+                        zIndex: Math.max(
+                          getLayerZ('texto', 'texto'),
+                          maxFrontImageZ + 4
+                        ),
                         fontSize: hasBodyText ? `${bodySizePx}px` : '13px',
                         lineHeight: hasBodyText ? bodyLineHeight : 1.5,
                         fontFamily: hasBodyText
@@ -2090,7 +2099,10 @@ export function CertificateSheet({
                           position: 'relative',
                           left: `${template.dataOffsetX ?? 0}px`,
                           top: `${template.dataOffsetY ?? 0}px`,
-                          zIndex: getLayerZ('data', 'data'),
+                          zIndex: Math.max(
+                            getLayerZ('data', 'data'),
+                            maxFrontImageZ + 2
+                          ),
                           fontSize: hasDateContent ? `${dateSizePx}px` : '12px',
                           fontFamily: hasDateContent
                             ? bodyFontCss
@@ -2200,7 +2212,10 @@ export function CertificateSheet({
                     position: 'relative',
                     left: `${template.assinaturaPrincipalOffsetX ?? 0}px`,
                     top: `${template.assinaturaPrincipalOffsetY ?? 0}px`,
-                    zIndex: getLayerZ('assinaturaPrincipal', 'assinaturaPrincipal'),
+                    zIndex: Math.max(
+                      getLayerZ('assinaturaPrincipal', 'assinaturaPrincipal'),
+                      maxFrontImageZ + 2
+                    ),
                     textAlign: 'center',
                     flex: '0 0 auto',
                     width: 'max-content',
@@ -2288,7 +2303,10 @@ export function CertificateSheet({
                     position: 'relative',
                     left: `${template.segundaAssinaturaOffsetX ?? 0}px`,
                     top: `${template.segundaAssinaturaOffsetY ?? 0}px`,
-                    zIndex: getLayerZ('segundaAssinatura', 'segundaAssinatura'),
+                    zIndex: Math.max(
+                      getLayerZ('segundaAssinatura', 'segundaAssinatura'),
+                      maxFrontImageZ + 2
+                    ),
                     textAlign: 'center',
                     flex: '0 0 auto',
                     width: 'max-content',
@@ -2406,7 +2424,7 @@ export function CertificateSheet({
                   position: 'absolute',
                   inset: 0,
                   pointerEvents: 'none',
-                  zIndex: 40,
+                  zIndex: Math.max(40, maxFrontImageZ + 20),
                 }}
               >
                 {alignmentGuides.horizontal.map((g) => {
@@ -2622,6 +2640,13 @@ export function CertificateSheet({
   const backTitleBold = template.versoTituloNegrito ?? true;
   const backTitleItalic = template.versoTituloItalico ?? versoItalic;
   const backTitleTrackingEm = template.versoTituloEspacamentoLetras ?? 0.02;
+  const maxBackImageZ = Math.max(
+    getLayerZ('marcaDaguaVerso'),
+    getLayerZ('versoMoldura'),
+    getLayerZ('brasaoEsquerdoVerso'),
+    getLayerZ('brasaoCentroVerso'),
+    getLayerZ('brasaoDireitoVerso')
+  );
 
   return (
     <div style={outerWrapperStyle}>
@@ -2956,7 +2981,10 @@ export function CertificateSheet({
                         position: 'relative',
                         left: `${template.versoTituloOffsetX ?? 0}px`,
                         top: `${template.versoTituloOffsetY ?? 0}px`,
-                        zIndex: getLayerZ('versoTitulo'),
+                        zIndex: Math.max(
+                          getLayerZ('versoTitulo'),
+                          maxBackImageZ + 4
+                        ),
                         width: '100%',
                         textAlign: 'center',
                         fontSize: hasBackTitle ? `${template.versoTamanhoFonteTitulo ?? 30}px` : '14px',
@@ -3078,14 +3106,13 @@ export function CertificateSheet({
                     "Marca d'Água Central (Verso) — clique para trocar ou enviar p/ frente/trás"
                   );
                   const backWmZ = getLayerZ('marcaDaguaVerso');
-                  const backMinContentZ = Math.min(
-                    getLayerZ('versoTabela'),
-                    getLayerZ('versoTitulo'),
+                  const backMinImageZ = Math.min(
+                    getLayerZ('versoMoldura'),
                     getLayerZ('brasaoEsquerdoVerso'),
                     getLayerZ('brasaoCentroVerso'),
                     getLayerZ('brasaoDireitoVerso')
                   );
-                  const isBackWmAboveContent = backWmZ > backMinContentZ;
+                  const isBackWmAboveContent = backWmZ > backMinImageZ;
 
                   return (
                     <div
@@ -3228,7 +3255,10 @@ export function CertificateSheet({
                     {...backTableSelect}
                     style={{
                       position: 'relative',
-                      zIndex: getLayerZ('versoTabela'),
+                      zIndex: Math.max(
+                        getLayerZ('versoTabela'),
+                        maxBackImageZ + 2
+                      ),
                       width: '100%',
                       height: hasCustomRowSpacing ? 'auto' : '100%',
                       borderCollapse: 'collapse',

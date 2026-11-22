@@ -173,11 +173,25 @@ export async function POST(req: NextRequest) {
         data_emissao: new Date().toISOString(),
       };
 
-      const insertRes = await supabaseAdmin
-        .from('certificados')
-        .insert([payload])
-        .select('*')
-        .maybeSingle();
+      const isExistingPersistedAssetId =
+        Boolean(id) &&
+        !String(id).startsWith('local-') &&
+        !String(id).startsWith('builtin-') &&
+        !String(id).startsWith('tpl-');
+
+      const insertRes = isExistingPersistedAssetId
+        ? await supabaseAdmin
+            .from('certificados')
+            .update(payload)
+            .eq('id', id)
+            .is('deleted_at', null)
+            .select('*')
+            .maybeSingle()
+        : await supabaseAdmin
+            .from('certificados')
+            .insert([payload])
+            .select('*')
+            .maybeSingle();
 
       if (insertRes.error) {
         const code = String(insertRes.error.code || '');

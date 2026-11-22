@@ -2,11 +2,13 @@
 
 import React, { useMemo, useState } from 'react';
 import {
+  Check,
   CheckCircle2,
   Download,
   FolderOpen,
   Frame,
   Image as ImageIcon,
+  Pencil,
   Plus,
   RotateCcw,
   Search,
@@ -36,6 +38,7 @@ interface CertificateLibraryPanelProps {
     customName?: string
   ) => void;
   onDownloadAsset: (asset: CertificateLibraryAsset) => void;
+  onRenameAsset?: (asset: CertificateLibraryAsset, newName: string) => void;
   onDeleteAsset: (asset: CertificateLibraryAsset) => void;
   hiddenAssetsCount?: number;
   onRestoreDefaultAssets?: () => void;
@@ -61,6 +64,7 @@ export function CertificateLibraryPanel({
   onApplyAsset,
   onUploadToLibrary,
   onDownloadAsset,
+  onRenameAsset,
   onDeleteAsset,
   hiddenAssetsCount = 0,
   onRestoreDefaultAssets,
@@ -68,6 +72,27 @@ export function CertificateLibraryPanel({
 }: CertificateLibraryPanelProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [newAssetName, setNewAssetName] = useState('');
+  const [editingAssetId, setEditingAssetId] = useState<string | null>(null);
+  const [editingNameValue, setEditingNameValue] = useState('');
+
+  const handleStartRename = (asset: CertificateLibraryAsset) => {
+    setEditingAssetId(asset.id);
+    setEditingNameValue(asset.name);
+  };
+
+  const handleCommitRename = (asset: CertificateLibraryAsset) => {
+    const trimmed = editingNameValue.trim();
+    if (trimmed && trimmed !== asset.name && onRenameAsset) {
+      onRenameAsset(asset, trimmed);
+    }
+    setEditingAssetId(null);
+    setEditingNameValue('');
+  };
+
+  const handleCancelRename = () => {
+    setEditingAssetId(null);
+    setEditingNameValue('');
+  };
 
   const counts = useMemo(() => {
     const map: Record<CertificateAssetCategory, number> = {
@@ -350,14 +375,54 @@ export function CertificateLibraryPanel({
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <h3 className="text-xs font-bold text-slate-900 truncate">
-                            {asset.name}
-                          </h3>
-                          {asset.subtitle && (
-                            <p className="text-[10px] text-slate-500 truncate mt-0.5">
-                              {asset.subtitle}
-                            </p>
+                        <div className="min-w-0 flex-1">
+                          {editingAssetId === asset.id ? (
+                            <div className="flex items-center gap-1">
+                              <input
+                                type="text"
+                                value={editingNameValue}
+                                onChange={(e) => setEditingNameValue(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    handleCommitRename(asset);
+                                  } else if (e.key === 'Escape') {
+                                    e.preventDefault();
+                                    handleCancelRename();
+                                  }
+                                }}
+                                autoFocus
+                                className="flex-1 min-w-0 px-2 py-0.5 bg-slate-50 border border-blue-400 rounded-md text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                                placeholder="Novo nome do recurso"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleCommitRename(asset)}
+                                className="p-1 rounded-md bg-emerald-700 hover:bg-emerald-800 text-white cursor-pointer shrink-0"
+                                title="Salvar novo nome (Enter)"
+                              >
+                                <Check size={11} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handleCancelRename}
+                                className="p-1 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer shrink-0"
+                                title="Cancelar (ESC)"
+                              >
+                                <X size={11} />
+                              </button>
+                            </div>
+                          ) : (
+                            <>
+                              <h3 className="text-xs font-bold text-slate-900 truncate">
+                                {asset.name}
+                              </h3>
+                              {asset.subtitle && (
+                                <p className="text-[10px] text-slate-500 truncate mt-0.5">
+                                  {asset.subtitle}
+                                </p>
+                              )}
+                            </>
                           )}
                         </div>
                         <span
@@ -384,6 +449,18 @@ export function CertificateLibraryPanel({
                           <Download size={11} />
                           <span>Download</span>
                         </button>
+
+                        {canEdit && onRenameAsset && editingAssetId !== asset.id && (
+                          <button
+                            type="button"
+                            onClick={() => handleStartRename(asset)}
+                            className="px-2 py-1 rounded-lg bg-white border border-slate-200 hover:bg-blue-50 hover:border-blue-300 text-blue-900 text-[10px] font-bold flex items-center gap-1 cursor-pointer"
+                            title={`Renomear "${asset.name}"`}
+                          >
+                            <Pencil size={11} />
+                            <span>Renomear</span>
+                          </button>
+                        )}
 
                         {canEdit && (
                           <button
