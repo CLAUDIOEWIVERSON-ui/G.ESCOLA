@@ -36,6 +36,21 @@ export type CertificateSelectableObject =
   | 'versoMoldura'
   | 'modeloGeral';
 
+export type CertificateLayerKey =
+  | 'brasaoEsquerdo'
+  | 'brasaoCentro'
+  | 'brasaoDireito'
+  | 'titulo'
+  | 'texto'
+  | 'data'
+  | 'assinaturaPrincipal'
+  | 'segundaAssinatura'
+  | 'marcaDaguaFrente'
+  | 'molduraFrente'
+  | 'versoTitulo'
+  | 'versoTabela'
+  | 'marcaDaguaVerso';
+
 export interface CertificateTemplateConfig {
   id?: string;
   templateKey: string;
@@ -171,6 +186,21 @@ export interface CertificateTemplateConfig {
   tamanhoFonteAssinaturaNome?: number;
   tamanhoFonteAssinaturaCargo?: number;
   assinaturaCargoNegrito?: boolean;
+
+  // Layer order (Trazer para frente / Enviar para trás)
+  camadasZIndex?: Partial<Record<CertificateLayerKey, number>>;
+
+  // Back (Verso) Vertical Spacing, Fonts & Sizes
+  versoEspacamentoLinhasPx?: number;
+  versoEntrelinha?: number;
+  fonteVersoTitulo?: CertificateFontKey;
+  fonteVersoNumeros?: CertificateFontKey;
+  versoTamanhoFonteTitulo?: number;
+  versoTamanhoFonteCabecalho?: number;
+  versoTamanhoFonteDisciplinas?: number;
+  versoTamanhoFonteNumeros?: number;
+  versoTamanhoFonteTotaisLabel?: number;
+  versoTamanhoFonteTotaisNumeros?: number;
 }
 
 export interface CertificateStudentContext {
@@ -472,6 +502,118 @@ export function cmToPx(cm: number): number {
 
 export function pxToPtNumber(px: number): number {
   return Math.round((px / 1.3333333) * 10) / 10;
+}
+
+export const FRONT_LAYER_KEYS: CertificateLayerKey[] = [
+  'marcaDaguaFrente',
+  'molduraFrente',
+  'brasaoEsquerdo',
+  'brasaoCentro',
+  'brasaoDireito',
+  'titulo',
+  'texto',
+  'data',
+  'assinaturaPrincipal',
+  'segundaAssinatura',
+];
+
+export const BACK_LAYER_KEYS: CertificateLayerKey[] = [
+  'marcaDaguaVerso',
+  'versoTabela',
+  'brasaoEsquerdo',
+  'brasaoDireito',
+  'versoTitulo',
+];
+
+export const DEFAULT_CERTIFICATE_Z_INDEX: Record<CertificateLayerKey, number> = {
+  marcaDaguaFrente: 2,
+  molduraFrente: 5,
+  brasaoEsquerdo: 12,
+  brasaoCentro: 12,
+  brasaoDireito: 12,
+  titulo: 12,
+  texto: 12,
+  data: 12,
+  assinaturaPrincipal: 12,
+  segundaAssinatura: 12,
+  marcaDaguaVerso: 2,
+  versoTabela: 6,
+  versoTitulo: 12,
+};
+
+export function getCertificateElementZIndex(
+  template: Pick<CertificateTemplateConfig, 'camadasZIndex'>,
+  key: CertificateLayerKey
+): number {
+  const custom = template.camadasZIndex?.[key];
+  if (typeof custom === 'number' && Number.isFinite(custom)) {
+    return custom;
+  }
+  return DEFAULT_CERTIFICATE_Z_INDEX[key] ?? 10;
+}
+
+export function updateCertificateLayerOrder(
+  currentMap: Partial<Record<CertificateLayerKey, number>> | undefined,
+  key: CertificateLayerKey,
+  action: 'front' | 'back' | 'forward' | 'backward' | 'reset'
+): Partial<Record<CertificateLayerKey, number>> {
+  const next: Partial<Record<CertificateLayerKey, number>> = { ...(currentMap || {}) };
+  if (action === 'reset') {
+    delete next[key];
+    return next;
+  }
+
+  const sideKeys = BACK_LAYER_KEYS.includes(key) && key !== 'brasaoEsquerdo' && key !== 'brasaoDireito'
+    ? BACK_LAYER_KEYS
+    : key === 'marcaDaguaFrente' || key === 'molduraFrente' || key === 'brasaoCentro' || key === 'titulo' || key === 'texto' || key === 'data' || key === 'assinaturaPrincipal' || key === 'segundaAssinatura'
+      ? FRONT_LAYER_KEYS
+      : Array.from(new Set([...FRONT_LAYER_KEYS, ...BACK_LAYER_KEYS]));
+
+  const currentVal =
+    typeof next[key] === 'number' && Number.isFinite(next[key])
+      ? (next[key] as number)
+      : DEFAULT_CERTIFICATE_Z_INDEX[key];
+
+  const allVals = sideKeys.map((k) =>
+    typeof next[k] === 'number' && Number.isFinite(next[k])
+      ? (next[k] as number)
+      : DEFAULT_CERTIFICATE_Z_INDEX[k]
+  );
+  const maxVal = Math.max(...allVals);
+  const minVal = Math.min(...allVals);
+
+  let targetVal = currentVal;
+  if (action === 'front') {
+    targetVal = maxVal + 1;
+  } else if (action === 'back') {
+    targetVal = minVal - 1;
+  } else if (action === 'forward') {
+    targetVal = currentVal + 1;
+  } else if (action === 'backward') {
+    targetVal = currentVal - 1;
+  }
+
+  next[key] = targetVal;
+
+  // Keep all z-index values >= 1 so nothing ever drops behind the white sheet background
+  const updatedVals = sideKeys.map((k) =>
+    typeof next[k] === 'number' && Number.isFinite(next[k])
+      ? (next[k] as number)
+      : DEFAULT_CERTIFICATE_Z_INDEX[k]
+  );
+  const updatedMin = Math.min(...updatedVals);
+  if (updatedMin < 1) {
+    const shift = 1 - updatedMin;
+    for (const k of sideKeys) {
+      const val =
+        typeof next[k] === 'number' && Number.isFinite(next[k])
+          ? (next[k] as number)
+          : DEFAULT_CERTIFICATE_Z_INDEX[k];
+      next[k] = val + shift;
+    }
+  }
+
+  return next;
 }
 
 export function getFormalA4LayoutPatch(

@@ -10,6 +10,8 @@ import {
   ArrowUp,
   Bold,
   Calendar,
+  ChevronsDown,
+  ChevronsUp,
   Download,
   FileText,
   FolderOpen,
@@ -36,13 +38,17 @@ import { cn } from '@/lib/utils';
 import {
   CertificateDisciplineRow,
   CertificateFontKey,
+  CertificateLayerKey,
   CertificateSelectableObject,
   CertificateStudentContext,
   CertificateTemplateConfig,
+  DEFAULT_CERTIFICATE_Z_INDEX,
   applyFormalA4LayoutToTemplate,
   extractModuleNumberFromRow,
+  getCertificateElementZIndex,
   groupCertificateRowsByModule,
   pxToPtNumber,
+  updateCertificateLayerOrder,
 } from '@/lib/certificateTypes';
 import {
   CertificateAssetCategory,
@@ -131,6 +137,7 @@ const FONT_OPTIONS_BACK: { value: CertificateFontKey; label: string }[] = [
   { value: 'palatino', label: 'Palatino' },
   { value: 'lora', label: 'Lora' },
   { value: 'cinzel', label: 'Cinzel' },
+  { value: 'script', label: 'Caligráfica Formal' },
 ];
 
 function getObjectMeta(obj: CertificateSelectableObject): {
@@ -213,14 +220,14 @@ function getObjectMeta(obj: CertificateSelectableObject): {
     case 'versoTitulo':
       return {
         title: 'Título do Curso (Verso)',
-        subtitle: 'Título do verso, fonte e itálico',
+        subtitle: 'Título do verso, fonte, tamanho e camada',
         sideLabel: 'Verso',
         icon: Type,
       };
     case 'versoTabela':
       return {
         title: 'Disciplinas e Notas (Verso)',
-        subtitle: 'Módulos, notas do Boletim, carga horária, média e totais',
+        subtitle: 'Módulos, notas, espaçamento entre linhas, fontes e tamanhos',
         sideLabel: 'Verso',
         icon: Layers,
       };
@@ -551,6 +558,83 @@ export function CertificateInspectorPanel({
       <span>{dragMoveEnabled ? 'Arraste Ativo' : 'Mover na Folha'}</span>
     </button>
   );
+
+  const renderLayerOrderControls = (layerKey: CertificateLayerKey, label: string) => {
+    const currentZ = getCertificateElementZIndex(template, layerKey);
+    const hasCustomOrder = template.camadasZIndex?.[layerKey] !== undefined;
+    const handleLayerAction = (
+      action: 'front' | 'back' | 'forward' | 'backward' | 'reset'
+    ) => {
+      setTemplate((prev) => ({
+        ...prev,
+        camadasZIndex: updateCertificateLayerOrder(prev.camadasZIndex, layerKey, action),
+      }));
+    };
+
+    return (
+      <div className="p-2.5 rounded-xl bg-white border border-slate-200 space-y-2">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+            <Layers size={12} className="text-blue-800 shrink-0" />
+            <span>Ordem de Camada ({label})</span>
+          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-mono font-bold text-blue-900 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
+              Camada {currentZ}
+            </span>
+            {hasCustomOrder && (
+              <button
+                type="button"
+                onClick={() => handleLayerAction('reset')}
+                className="text-[10px] font-semibold text-blue-700 hover:text-blue-900 underline cursor-pointer"
+                title={`Restaurar camada padrão (${DEFAULT_CERTIFICATE_Z_INDEX[layerKey]})`}
+              >
+                Padrão
+              </button>
+            )}
+          </div>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+          <button
+            type="button"
+            onClick={() => handleLayerAction('front')}
+            className="px-2 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-300 text-slate-700 hover:text-blue-900 text-[10px] font-bold flex items-center justify-center gap-1 cursor-pointer transition-colors"
+            title="Trazer este item para a frente de todos os outros"
+          >
+            <ChevronsUp size={12} />
+            <span>P/ Frente</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleLayerAction('forward')}
+            className="px-2 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-300 text-slate-700 hover:text-blue-900 text-[10px] font-bold flex items-center justify-center gap-1 cursor-pointer transition-colors"
+            title="Avançar uma camada (+1)"
+          >
+            <ArrowUp size={11} />
+            <span>Avançar</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleLayerAction('backward')}
+            className="px-2 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-300 text-slate-700 hover:text-blue-900 text-[10px] font-bold flex items-center justify-center gap-1 cursor-pointer transition-colors"
+            title="Recuar uma camada (-1)"
+          >
+            <ArrowDown size={11} />
+            <span>Recuar</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleLayerAction('back')}
+            className="px-2 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-300 text-slate-700 hover:text-blue-900 text-[10px] font-bold flex items-center justify-center gap-1 cursor-pointer transition-colors"
+            title="Enviar este item para trás dos outros"
+          >
+            <ChevronsDown size={12} />
+            <span>P/ Trás</span>
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   const renderCrestEditor = (side: 'left' | 'center' | 'right') => {
     const isLeft = side === 'left';
@@ -942,6 +1026,11 @@ export function CertificateInspectorPanel({
               </div>
             </div>
           </div>
+
+          {renderLayerOrderControls(
+            isLeft ? 'brasaoEsquerdo' : isCenter ? 'brasaoCentro' : 'brasaoDireito',
+            isLeft ? 'Brasão Esquerdo' : isCenter ? 'Brasão Central' : 'Brasão Direito'
+          )}
         </div>
       </div>
     );
@@ -1193,6 +1282,8 @@ export function CertificateInspectorPanel({
                 </div>
               </div>
             </div>
+
+            {renderLayerOrderControls('titulo', 'Título Principal')}
           </div>
         )}
 
@@ -1882,6 +1973,8 @@ export function CertificateInspectorPanel({
                   </div>
                 </div>
               </div>
+
+              {renderLayerOrderControls('texto', 'Texto Principal')}
             </div>
           </div>
         )}
@@ -2128,6 +2221,8 @@ export function CertificateInspectorPanel({
                   </div>
                 </div>
               </div>
+
+              {renderLayerOrderControls('data', 'Local e Data')}
             </div>
           </div>
         )}
@@ -2579,6 +2674,8 @@ export function CertificateInspectorPanel({
                   </div>
                 </div>
               </div>
+
+              {renderLayerOrderControls('assinaturaPrincipal', 'Assinatura Principal')}
             </div>
 
             <div className="flex items-center justify-between p-2.5 rounded-xl bg-blue-50/70 border border-blue-200">
@@ -2984,6 +3081,8 @@ export function CertificateInspectorPanel({
                       </div>
                     </div>
                   </div>
+
+                  {renderLayerOrderControls('segundaAssinatura', '2ª Assinatura')}
                 </div>
               )}
             </div>
@@ -3235,6 +3334,8 @@ export function CertificateInspectorPanel({
                   Expandir Folha
                 </button>
               </div>
+
+              {renderLayerOrderControls('marcaDaguaFrente', "Marca d'Água Frente")}
             </div>
           </div>
         )}
@@ -3441,6 +3542,8 @@ export function CertificateInspectorPanel({
                         </div>
                       </div>
                     </div>
+
+                    {renderLayerOrderControls('molduraFrente', 'Moldura da Frente')}
                   </>
                 );
               })()}
@@ -3472,14 +3575,14 @@ export function CertificateInspectorPanel({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Fonte do Verso
+                    Fonte do Título (Verso)
                   </label>
                   <select
-                    value={template.fonteVerso || 'sans'}
+                    value={template.fonteVersoTitulo || template.fonteVerso || 'sans'}
                     onChange={(e) =>
                       setTemplate((prev) => ({
                         ...prev,
-                        fonteVerso: e.target.value as CertificateFontKey,
+                        fonteVersoTitulo: e.target.value as CertificateFontKey,
                       }))
                     }
                     className="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-xl text-xs"
@@ -3504,6 +3607,47 @@ export function CertificateInspectorPanel({
                   <span>Verso em Itálico</span>
                 </label>
               </div>
+
+              <div>
+                <div className="flex items-center justify-between text-[11px] font-bold text-slate-700 mb-0.5">
+                  <span>Tamanho do Título (Verso)</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-blue-900">
+                      {template.versoTamanhoFonteTitulo ?? 30}px ({pxToPtNumber(template.versoTamanhoFonteTitulo ?? 30)}pt)
+                    </span>
+                    {template.versoTamanhoFonteTitulo !== undefined && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setTemplate((prev) => ({
+                            ...prev,
+                            versoTamanhoFonteTitulo: undefined,
+                          }))
+                        }
+                        className="text-[10px] text-blue-700 hover:text-blue-900 underline cursor-pointer font-semibold"
+                      >
+                        Padrão
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <input
+                  type="range"
+                  min={18}
+                  max={44}
+                  step={1}
+                  value={template.versoTamanhoFonteTitulo ?? 30}
+                  onChange={(e) =>
+                    setTemplate((prev) => ({
+                      ...prev,
+                      versoTamanhoFonteTitulo: Number(e.target.value),
+                    }))
+                  }
+                  className="w-full accent-blue-800"
+                />
+              </div>
+
+              {renderLayerOrderControls('versoTitulo', 'Título do Verso')}
             </div>
           </div>
         )}
@@ -3814,24 +3958,176 @@ export function CertificateInspectorPanel({
                 </div>
               )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-slate-200 items-center">
-                <select
-                  value={template.fonteVerso || 'sans'}
-                  onChange={(e) =>
-                    setTemplate((prev) => ({
-                      ...prev,
-                      fonteVerso: e.target.value as CertificateFontKey,
-                    }))
-                  }
-                  className="px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs"
-                >
-                  {FONT_OPTIONS_BACK.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-                <label className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-700 cursor-pointer bg-white px-2.5 py-1.5 rounded-lg border border-slate-200">
+              <div className="p-3 rounded-xl bg-white border border-slate-200 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] font-black uppercase tracking-wider text-slate-700">
+                    Espaçamento Vertical, Fontes e Tamanhos (Verso)
+                  </span>
+                  {(template.versoEspacamentoLinhasPx !== undefined ||
+                    template.versoEntrelinha !== undefined ||
+                    template.fonteVersoNumeros !== undefined ||
+                    template.versoTamanhoFonteCabecalho !== undefined ||
+                    template.versoTamanhoFonteDisciplinas !== undefined ||
+                    template.versoTamanhoFonteNumeros !== undefined ||
+                    template.versoTamanhoFonteTotaisLabel !== undefined ||
+                    template.versoTamanhoFonteTotaisNumeros !== undefined) && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setTemplate((prev) => ({
+                          ...prev,
+                          versoEspacamentoLinhasPx: undefined,
+                          versoEntrelinha: undefined,
+                          fonteVersoNumeros: undefined,
+                          versoTamanhoFonteCabecalho: undefined,
+                          versoTamanhoFonteDisciplinas: undefined,
+                          versoTamanhoFonteNumeros: undefined,
+                          versoTamanhoFonteTotaisLabel: undefined,
+                          versoTamanhoFonteTotaisNumeros: undefined,
+                        }))
+                      }
+                      className="text-[10px] font-semibold text-blue-700 hover:text-blue-900 underline cursor-pointer"
+                    >
+                      Restaurar padrão
+                    </button>
+                  )}
+                </div>
+
+                {/* Espaçamento Vertical das Linhas + Entrelinha */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <div className="flex items-center justify-between text-[10px] font-bold text-slate-600 mb-0.5">
+                      <span>Espaço Vertical (Linhas)</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-mono text-blue-900">
+                          {template.versoEspacamentoLinhasPx !== undefined
+                            ? `${template.versoEspacamentoLinhasPx}px`
+                            : 'Auto'}
+                        </span>
+                        {template.versoEspacamentoLinhasPx !== undefined && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setTemplate((prev) => ({
+                                ...prev,
+                                versoEspacamentoLinhasPx: undefined,
+                              }))
+                            }
+                            className="text-[10px] text-blue-700 hover:text-blue-900 underline cursor-pointer"
+                          >
+                            Auto
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <input
+                      type="range"
+                      min={2}
+                      max={44}
+                      step={1}
+                      value={template.versoEspacamentoLinhasPx ?? 8}
+                      onChange={(e) =>
+                        setTemplate((prev) => ({
+                          ...prev,
+                          versoEspacamentoLinhasPx: Number(e.target.value),
+                        }))
+                      }
+                      className="w-full accent-blue-800"
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between text-[10px] font-bold text-slate-600 mb-0.5">
+                      <span>Entrelinha das Disciplinas</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-mono text-blue-900">
+                          {template.versoEntrelinha !== undefined
+                            ? template.versoEntrelinha.toFixed(2)
+                            : 'Auto'}
+                        </span>
+                        {template.versoEntrelinha !== undefined && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setTemplate((prev) => ({
+                                ...prev,
+                                versoEntrelinha: undefined,
+                              }))
+                            }
+                            className="text-[10px] text-blue-700 hover:text-blue-900 underline cursor-pointer"
+                          >
+                            Auto
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <input
+                      type="range"
+                      min={1.05}
+                      max={1.8}
+                      step={0.05}
+                      value={template.versoEntrelinha ?? 1.25}
+                      onChange={(e) =>
+                        setTemplate((prev) => ({
+                          ...prev,
+                          versoEntrelinha: Number(e.target.value),
+                        }))
+                      }
+                      className="w-full accent-blue-800"
+                    />
+                  </div>
+                </div>
+
+                {/* Fontes de Textos e Números */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-slate-100">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 mb-1">
+                      Fonte dos Textos (Tabela)
+                    </label>
+                    <select
+                      value={template.fonteVerso || 'sans'}
+                      onChange={(e) =>
+                        setTemplate((prev) => ({
+                          ...prev,
+                          fonteVerso: e.target.value as CertificateFontKey,
+                        }))
+                      }
+                      className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                    >
+                      {FONT_OPTIONS_BACK.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 mb-1">
+                      Fonte dos Números (Notas / Horas / Média)
+                    </label>
+                    <select
+                      value={template.fonteVersoNumeros || ''}
+                      onChange={(e) =>
+                        setTemplate((prev) => ({
+                          ...prev,
+                          fonteVersoNumeros: e.target.value
+                            ? (e.target.value as CertificateFontKey)
+                            : undefined,
+                        }))
+                      }
+                      className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                    >
+                      <option value="">Mesma dos Textos</option>
+                      {FONT_OPTIONS_BACK.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <label className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-700 cursor-pointer bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200">
                   <input
                     type="checkbox"
                     checked={template.versoItalico ?? false}
@@ -3842,7 +4138,183 @@ export function CertificateInspectorPanel({
                   />
                   <span>Verso em Itálico</span>
                 </label>
+
+                {/* Tamanhos de Fonte (Cabeçalho, Disciplinas, Números, Totais) */}
+                <div className="space-y-2.5 pt-2 border-t border-slate-100">
+                  <div>
+                    <div className="flex items-center justify-between text-[10px] font-bold text-slate-600 mb-0.5">
+                      <span>Tamanho do Cabeçalho (Colunas)</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-mono text-blue-900">
+                          {template.versoTamanhoFonteCabecalho ?? 21}px ({pxToPtNumber(template.versoTamanhoFonteCabecalho ?? 21)}pt)
+                        </span>
+                        {template.versoTamanhoFonteCabecalho !== undefined && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setTemplate((prev) => ({
+                                ...prev,
+                                versoTamanhoFonteCabecalho: undefined,
+                              }))
+                            }
+                            className="text-[10px] text-blue-700 hover:text-blue-900 underline cursor-pointer"
+                          >
+                            Auto
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <input
+                      type="range"
+                      min={12}
+                      max={28}
+                      step={0.5}
+                      value={template.versoTamanhoFonteCabecalho ?? 21}
+                      onChange={(e) =>
+                        setTemplate((prev) => ({
+                          ...prev,
+                          versoTamanhoFonteCabecalho: Number(e.target.value),
+                        }))
+                      }
+                      className="w-full accent-blue-800"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <div className="flex items-center justify-between text-[10px] font-bold text-slate-600 mb-0.5">
+                        <span>Texto (Disciplinas)</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono text-blue-900">
+                            {template.versoTamanhoFonteDisciplinas !== undefined
+                              ? `${template.versoTamanhoFonteDisciplinas}px`
+                              : 'Auto'}
+                          </span>
+                          {template.versoTamanhoFonteDisciplinas !== undefined && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setTemplate((prev) => ({
+                                  ...prev,
+                                  versoTamanhoFonteDisciplinas: undefined,
+                                }))
+                              }
+                              className="text-[10px] text-blue-700 hover:text-blue-900 underline cursor-pointer"
+                            >
+                              Auto
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <input
+                        type="range"
+                        min={10}
+                        max={26}
+                        step={0.5}
+                        value={template.versoTamanhoFonteDisciplinas ?? 17}
+                        onChange={(e) =>
+                          setTemplate((prev) => ({
+                            ...prev,
+                            versoTamanhoFonteDisciplinas: Number(e.target.value),
+                          }))
+                        }
+                        className="w-full accent-blue-800"
+                      />
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between text-[10px] font-bold text-slate-600 mb-0.5">
+                        <span>Números (Notas / Horas)</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono text-blue-900">
+                            {template.versoTamanhoFonteNumeros !== undefined
+                              ? `${template.versoTamanhoFonteNumeros}px`
+                              : 'Auto'}
+                          </span>
+                          {template.versoTamanhoFonteNumeros !== undefined && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setTemplate((prev) => ({
+                                  ...prev,
+                                  versoTamanhoFonteNumeros: undefined,
+                                }))
+                              }
+                              className="text-[10px] text-blue-700 hover:text-blue-900 underline cursor-pointer"
+                            >
+                              Auto
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <input
+                        type="range"
+                        min={12}
+                        max={34}
+                        step={0.5}
+                        value={template.versoTamanhoFonteNumeros ?? 22}
+                        onChange={(e) =>
+                          setTemplate((prev) => ({
+                            ...prev,
+                            versoTamanhoFonteNumeros: Number(e.target.value),
+                          }))
+                        }
+                        className="w-full accent-blue-800"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <div className="flex items-center justify-between text-[10px] font-bold text-slate-600 mb-0.5">
+                        <span>Texto Totais (Total / Média)</span>
+                        <span className="font-mono text-blue-900">
+                          {template.versoTamanhoFonteTotaisLabel ?? 22}px
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min={13}
+                        max={30}
+                        step={0.5}
+                        value={template.versoTamanhoFonteTotaisLabel ?? 22}
+                        onChange={(e) =>
+                          setTemplate((prev) => ({
+                            ...prev,
+                            versoTamanhoFonteTotaisLabel: Number(e.target.value),
+                          }))
+                        }
+                        className="w-full accent-blue-800"
+                      />
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between text-[10px] font-bold text-slate-600 mb-0.5">
+                        <span>Números Totais (Horas / Média)</span>
+                        <span className="font-mono text-blue-900">
+                          {template.versoTamanhoFonteTotaisNumeros ?? 28}px
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min={14}
+                        max={38}
+                        step={0.5}
+                        value={template.versoTamanhoFonteTotaisNumeros ?? 28}
+                        onChange={(e) =>
+                          setTemplate((prev) => ({
+                            ...prev,
+                            versoTamanhoFonteTotaisNumeros: Number(e.target.value),
+                          }))
+                        }
+                        className="w-full accent-blue-800"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
+
+              {renderLayerOrderControls('versoTabela', 'Quadro do Verso')}
             </div>
 
             {/* Quick shortcuts to back background / border */}
@@ -4093,6 +4565,8 @@ export function CertificateInspectorPanel({
                   Expandir Folha
                 </button>
               </div>
+
+              {renderLayerOrderControls('marcaDaguaVerso', "Marca d'Água Verso")}
             </div>
           </div>
         )}

@@ -6,6 +6,7 @@ import {
   makeFrameCenterTransparent,
 } from '@/lib/certificateImageUtils';
 import {
+  CertificateLayerKey,
   CertificateSelectableObject,
   CertificateStudentContext,
   CertificateTemplateConfig,
@@ -14,6 +15,7 @@ import {
   cmToPx,
   formatCourseTitleCasePT,
   formatNameTitleCasePT,
+  getCertificateElementZIndex,
   groupCertificateRowsByModule,
   isFemaleStudentGenero,
   resolveCertificateBodySegments,
@@ -187,7 +189,13 @@ function MarinhaBrasilCrest({
   );
 }
 
-function NauticalOrnateFrame({ borderColor = '#52525b' }: { borderColor?: string }) {
+function NauticalOrnateFrame({
+  borderColor = '#52525b',
+  zIndex = 5,
+}: {
+  borderColor?: string;
+  zIndex?: number;
+}) {
   return (
     <svg
       viewBox="0 0 1123 794"
@@ -198,7 +206,7 @@ function NauticalOrnateFrame({ borderColor = '#52525b' }: { borderColor?: string
         width: '100%',
         height: '100%',
         pointerEvents: 'none',
-        zIndex: 5,
+        zIndex,
       }}
     >
       <defs>
@@ -1119,7 +1127,24 @@ export function CertificateSheet({
   const signatureFontCss = resolveCertificateFontCss(
     template.fonteAssinatura || template.fonteCorpo || 'garamond'
   );
+  const backTitleFontCss = resolveCertificateFontCss(
+    template.fonteVersoTitulo || template.fonteVerso || 'sans'
+  );
   const versoFontCss = resolveCertificateFontCss(template.fonteVerso || 'sans');
+  const backNumbersFontCss = resolveCertificateFontCss(
+    template.fonteVersoNumeros || template.fonteVerso || 'sans'
+  );
+
+  const getLayerZ = (
+    key: CertificateLayerKey,
+    dragKey?: DraggableCertificateElement
+  ): number => {
+    const baseZ = getCertificateElementZIndex(template, key);
+    if (dragKey && activeDrag === dragKey) {
+      return Math.max(30, baseZ + 20);
+    }
+    return baseZ;
+  };
 
   const titleBold = template.tituloNegrito ?? true;
   const titleItalic = template.tituloItalico ?? true;
@@ -1197,6 +1222,7 @@ export function CertificateSheet({
     backgroundColor: '#ffffff',
     color: '#0f172a',
     position: 'relative',
+    isolation: 'isolate',
     overflow: 'hidden',
     boxSizing: 'border-box',
     transform: scale !== 1 ? `scale(${scale})` : undefined,
@@ -1300,7 +1326,7 @@ export function CertificateSheet({
                 objectFit: 'fill',
                 pointerEvents: 'none',
                 mixBlendMode: 'multiply',
-                zIndex: 5,
+                zIndex: getLayerZ('molduraFrente'),
               }}
             />
           ) : frontFrameStyle === 'vetorial' ? (
@@ -1313,13 +1339,19 @@ export function CertificateSheet({
                   width: `${1123 - vetorialInsetPx * 2}px`,
                   height: `${794 - vetorialInsetPx * 2}px`,
                   pointerEvents: 'none',
-                  zIndex: 5,
+                  zIndex: getLayerZ('molduraFrente'),
                 }}
               >
-                <NauticalOrnateFrame borderColor={template.corBordaFrente || '#52525b'} />
+                <NauticalOrnateFrame
+                  borderColor={template.corBordaFrente || '#52525b'}
+                  zIndex={getLayerZ('molduraFrente')}
+                />
               </div>
             ) : (
-              <NauticalOrnateFrame borderColor={template.corBordaFrente || '#52525b'} />
+              <NauticalOrnateFrame
+                borderColor={template.corBordaFrente || '#52525b'}
+                zIndex={getLayerZ('molduraFrente')}
+              />
             )
           ) : frontFrameStyle === 'simples' ? (
             <div
@@ -1329,7 +1361,7 @@ export function CertificateSheet({
                 border: `2px solid ${template.corBordaFrente || '#cbd5e1'}`,
                 padding: '4px',
                 pointerEvents: 'none',
-                zIndex: 5,
+                zIndex: getLayerZ('molduraFrente'),
                 boxSizing: 'border-box',
               }}
             >
@@ -1358,7 +1390,7 @@ export function CertificateSheet({
                 justifyContent: 'center',
                 overflow: 'hidden',
                 pointerEvents: 'none',
-                zIndex: 1,
+                zIndex: getLayerZ('marcaDaguaFrente'),
               }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1386,7 +1418,6 @@ export function CertificateSheet({
           <div
             style={{
               position: 'relative',
-              zIndex: 10,
               width: '100%',
               height: '100%',
               padding: `${contentPadTopPx}px ${contentPadHorizPx}px ${contentPadBottomPx}px ${contentPadHorizPx}px`,
@@ -1434,7 +1465,7 @@ export function CertificateSheet({
                           position: 'relative',
                           left: `${template.logoEsquerdaOffsetX ?? 0}px`,
                           top: `${template.logoEsquerdaOffsetY ?? 0}px`,
-                          zIndex: activeDrag === 'logoEsquerda' ? 20 : 12,
+                          zIndex: getLayerZ('brasaoEsquerdo', 'logoEsquerda'),
                           minWidth: '48px',
                           minHeight: '48px',
                           display: 'flex',
@@ -1509,7 +1540,7 @@ export function CertificateSheet({
                           position: 'relative',
                           left: `${template.logoCentroOffsetX ?? 0}px`,
                           top: `${template.logoCentroOffsetY ?? 0}px`,
-                          zIndex: activeDrag === 'logoCentro' ? 20 : 12,
+                          zIndex: getLayerZ('brasaoCentro', 'logoCentro'),
                           display: 'flex',
                           flexDirection: 'column',
                           alignItems: 'center',
@@ -1608,7 +1639,7 @@ export function CertificateSheet({
                           position: 'relative',
                           left: `${template.logoDireitaOffsetX ?? 0}px`,
                           top: `${template.logoDireitaOffsetY ?? 0}px`,
-                          zIndex: activeDrag === 'logoDireita' ? 20 : 12,
+                          zIndex: getLayerZ('brasaoDireito', 'logoDireita'),
                           ...drag.style,
                         }}
                       >
@@ -1674,7 +1705,7 @@ export function CertificateSheet({
                       position: 'relative',
                       left: `${template.tituloOffsetX ?? 0}px`,
                       top: `${template.tituloOffsetY ?? 0}px`,
-                      zIndex: activeDrag === 'titulo' ? 20 : 12,
+                      zIndex: getLayerZ('titulo', 'titulo'),
                       fontSize: hasTitle ? `${titleSizePx}px` : '16px',
                       fontWeight: hasTitle ? (titleBold ? 700 : 400) : 600,
                       fontStyle: hasTitle && titleItalic ? 'italic' : 'normal',
@@ -1780,7 +1811,7 @@ export function CertificateSheet({
                         position: 'relative',
                         left: `${template.textoOffsetX ?? 0}px`,
                         top: `${template.textoOffsetY ?? 0}px`,
-                        zIndex: activeDrag === 'texto' ? 20 : 12,
+                        zIndex: getLayerZ('texto', 'texto'),
                         fontSize: hasBodyText ? `${bodySizePx}px` : '13px',
                         lineHeight: hasBodyText ? bodyLineHeight : 1.5,
                         fontFamily: hasBodyText
@@ -1971,7 +2002,7 @@ export function CertificateSheet({
                           position: 'relative',
                           left: `${template.dataOffsetX ?? 0}px`,
                           top: `${template.dataOffsetY ?? 0}px`,
-                          zIndex: activeDrag === 'data' ? 20 : 12,
+                          zIndex: getLayerZ('data', 'data'),
                           fontSize: hasDateContent ? `${dateSizePx}px` : '12px',
                           fontFamily: hasDateContent
                             ? bodyFontCss
@@ -2081,7 +2112,7 @@ export function CertificateSheet({
                     position: 'relative',
                     left: `${template.assinaturaPrincipalOffsetX ?? 0}px`,
                     top: `${template.assinaturaPrincipalOffsetY ?? 0}px`,
-                    zIndex: activeDrag === 'assinaturaPrincipal' ? 20 : 12,
+                    zIndex: getLayerZ('assinaturaPrincipal', 'assinaturaPrincipal'),
                     textAlign: 'center',
                     flex: '0 0 auto',
                     width: 'max-content',
@@ -2169,7 +2200,7 @@ export function CertificateSheet({
                     position: 'relative',
                     left: `${template.segundaAssinaturaOffsetX ?? 0}px`,
                     top: `${template.segundaAssinaturaOffsetY ?? 0}px`,
-                    zIndex: activeDrag === 'segundaAssinatura' ? 20 : 12,
+                    zIndex: getLayerZ('segundaAssinatura', 'segundaAssinatura'),
                     textAlign: 'center',
                     flex: '0 0 auto',
                     width: 'max-content',
@@ -2247,10 +2278,6 @@ export function CertificateSheet({
                     position: 'relative',
                     top: `${sigHeightOffset}px`,
                     marginTop: sigTopMarginPx > 0 ? `${sigTopMarginPx}px` : undefined,
-                    zIndex:
-                      activeDrag === 'assinaturaPrincipal' || activeDrag === 'segundaAssinatura'
-                        ? 20
-                        : 12,
                     display: 'flex',
                     alignItems: 'flex-end',
                     justifyContent: sigJustify,
@@ -2469,6 +2496,7 @@ export function CertificateSheet({
                 padding: '9px 16px 12px 16px',
                 boxSizing: 'border-box',
                 position: 'relative',
+                isolation: 'isolate',
                 overflow: 'hidden',
                 display: 'flex',
                 flexDirection: 'column',
@@ -2479,7 +2507,6 @@ export function CertificateSheet({
             <div
               style={{
                 position: 'relative',
-                zIndex: 20,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
@@ -2495,6 +2522,8 @@ export function CertificateSheet({
                   <div
                     {...leftBackSelect}
                     style={{
+                      position: 'relative',
+                      zIndex: getLayerZ('brasaoEsquerdo'),
                       width: '70px',
                       height: '72px',
                       display: 'flex',
@@ -2549,14 +2578,16 @@ export function CertificateSheet({
                     {...backTitleSelect}
                     style={{
                       margin: 0,
+                      position: 'relative',
+                      zIndex: getLayerZ('versoTitulo'),
                       flex: 1,
                       textAlign: 'center',
-                      fontSize: hasBackTitle ? '30px' : '14px',
+                      fontSize: hasBackTitle ? `${template.versoTamanhoFonteTitulo ?? 30}px` : '14px',
                       fontWeight: hasBackTitle ? 800 : 600,
                       fontStyle: hasBackTitle && versoItalic ? 'italic' : 'normal',
                       color: hasBackTitle ? '#0f172a' : '#64748b',
                       fontFamily: hasBackTitle
-                        ? versoFontCss
+                        ? backTitleFontCss
                         : '"Segoe UI", system-ui, sans-serif',
                       letterSpacing: '0.02em',
                       textTransform: hasBackTitle ? 'uppercase' : 'none',
@@ -2591,6 +2622,8 @@ export function CertificateSheet({
                   <div
                     {...rightBackSelect}
                     style={{
+                      position: 'relative',
+                      zIndex: getLayerZ('brasaoDireito'),
                       backgroundColor: 'transparent',
                       flexShrink: 0,
                       minWidth: '70px',
@@ -2636,7 +2669,6 @@ export function CertificateSheet({
             <div
               style={{
                 position: 'relative',
-                zIndex: 10,
                 flex: 1,
                 display: 'flex',
                 flexDirection: 'column',
@@ -2658,7 +2690,7 @@ export function CertificateSheet({
                     justifyContent: 'center',
                     overflow: 'visible',
                     pointerEvents: 'none',
-                    zIndex: 0,
+                    zIndex: getLayerZ('marcaDaguaVerso'),
                   }}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -2686,14 +2718,62 @@ export function CertificateSheet({
                   'versoTabela',
                   'Quadro de Disciplinas e Notas (Verso)'
                 );
+                const customRowPadY = template.versoEspacamentoLinhasPx;
+                const hasCustomRowSpacing = customRowPadY !== undefined;
+                const headerPadYTop = hasCustomRowSpacing
+                  ? Math.max(4, Math.min(18, Math.round(customRowPadY! * 0.7)))
+                  : 4;
+                const headerPadYBottom = hasCustomRowSpacing
+                  ? Math.max(4, Math.min(18, Math.round(customRowPadY! * 0.7)))
+                  : 5;
+                const headerFontPx = template.versoTamanhoFonteCabecalho ?? 21;
+                const discRowPadY = hasCustomRowSpacing
+                  ? customRowPadY!
+                  : effectiveDisciplines.length > 10
+                    ? 4
+                    : 8;
+                const discLineHeight =
+                  template.versoEntrelinha ?? (effectiveDisciplines.length > 10 ? 1.2 : 1.28);
+                const discFontPx =
+                  template.versoTamanhoFonteDisciplinas !== undefined
+                    ? template.versoTamanhoFonteDisciplinas
+                    : effectiveDisciplines.length > 10
+                      ? 12.5
+                      : effectiveDisciplines.length > 6
+                        ? 15
+                        : 19;
+                const chFontPx =
+                  template.versoTamanhoFonteNumeros !== undefined
+                    ? template.versoTamanhoFonteNumeros
+                    : effectiveDisciplines.length > 10
+                      ? 15
+                      : effectiveDisciplines.length > 6
+                        ? 20
+                        : 27;
+                const notaFontPx =
+                  template.versoTamanhoFonteNumeros !== undefined
+                    ? template.versoTamanhoFonteNumeros
+                    : effectiveDisciplines.length > 10
+                      ? 15
+                      : effectiveDisciplines.length > 6
+                        ? 20
+                        : 24;
+                const totalRowPadY = hasCustomRowSpacing ? customRowPadY! : 8;
+                const finalRowPadTop = hasCustomRowSpacing ? customRowPadY! : 10;
+                const finalRowPadBottom = hasCustomRowSpacing
+                  ? Math.max(6, Math.round(customRowPadY! * 0.8))
+                  : 6;
+                const totalLabelFontPx = template.versoTamanhoFonteTotaisLabel ?? 22;
+                const totalNumbersFontPx = template.versoTamanhoFonteTotaisNumeros ?? 28;
+
                 return (
                   <table
                     {...backTableSelect}
                     style={{
                       position: 'relative',
-                      zIndex: 2,
+                      zIndex: getLayerZ('versoTabela'),
                       width: '100%',
-                      height: '100%',
+                      height: hasCustomRowSpacing ? 'auto' : '100%',
                       borderCollapse: 'collapse',
                       fontFamily: versoFontCss,
                       fontStyle: versoItalic ? 'italic' : 'normal',
@@ -2708,9 +2788,9 @@ export function CertificateSheet({
                       style={{
                         width: '70.5%',
                         textAlign: 'left',
-                        fontSize: '21px',
+                        fontSize: `${headerFontPx}px`,
                         fontWeight: 500,
-                        padding: '4px 10px 5px 4px',
+                        padding: `${headerPadYTop}px 10px ${headerPadYBottom}px 4px`,
                         borderBottom: gridLine,
                         borderRight: gridLine,
                       }}
@@ -2721,9 +2801,9 @@ export function CertificateSheet({
                       style={{
                         width: '18.5%',
                         textAlign: 'center',
-                        fontSize: '21px',
+                        fontSize: `${headerFontPx}px`,
                         fontWeight: 500,
-                        padding: '4px 8px 5px 8px',
+                        padding: `${headerPadYTop}px 8px ${headerPadYBottom}px 8px`,
                         borderBottom: gridLine,
                         borderRight: gridLine,
                       }}
@@ -2734,9 +2814,9 @@ export function CertificateSheet({
                       style={{
                         width: '11%',
                         textAlign: 'center',
-                        fontSize: '21px',
+                        fontSize: `${headerFontPx}px`,
                         fontWeight: 500,
-                        padding: '4px 4px 5px 8px',
+                        padding: `${headerPadYTop}px 4px ${headerPadYBottom}px 8px`,
                         borderBottom: gridLine,
                       }}
                     >
@@ -2768,18 +2848,10 @@ export function CertificateSheet({
                       <tr key={disc.id || idx}>
                         <td
                           style={{
-                            padding:
-                              effectiveDisciplines.length > 10
-                                ? '4px 10px 4px 4px'
-                                : '8px 10px 8px 4px',
-                            fontSize:
-                              effectiveDisciplines.length > 10
-                                ? '12.5px'
-                                : effectiveDisciplines.length > 6
-                                  ? '15px'
-                                  : '19px',
+                            padding: `${discRowPadY}px 10px ${discRowPadY}px 4px`,
+                            fontSize: `${discFontPx}px`,
                             fontWeight: 500,
-                            lineHeight: effectiveDisciplines.length > 10 ? 1.2 : 1.28,
+                            lineHeight: discLineHeight,
                             borderBottom: gridLine,
                             borderRight: gridLine,
                             verticalAlign: 'middle',
@@ -2790,13 +2862,9 @@ export function CertificateSheet({
                         </td>
                         <td
                           style={{
-                            padding: effectiveDisciplines.length > 10 ? '4px 8px' : '8px 8px',
-                            fontSize:
-                              effectiveDisciplines.length > 10
-                                ? '15px'
-                                : effectiveDisciplines.length > 6
-                                  ? '20px'
-                                  : '27px',
+                            padding: `${discRowPadY}px 8px`,
+                            fontFamily: backNumbersFontCss,
+                            fontSize: `${chFontPx}px`,
                             fontWeight: 500,
                             textAlign: 'center',
                             borderBottom: gridLine,
@@ -2808,16 +2876,9 @@ export function CertificateSheet({
                         </td>
                         <td
                           style={{
-                            padding:
-                              effectiveDisciplines.length > 10
-                                ? '4px 4px 4px 8px'
-                                : '8px 4px 8px 8px',
-                            fontSize:
-                              effectiveDisciplines.length > 10
-                                ? '15px'
-                                : effectiveDisciplines.length > 6
-                                  ? '20px'
-                                  : '24px',
+                            padding: `${discRowPadY}px 4px ${discRowPadY}px 8px`,
+                            fontFamily: backNumbersFontCss,
+                            fontSize: `${notaFontPx}px`,
                             fontWeight: 700,
                             textAlign: 'center',
                             color: navyBorder,
@@ -2835,8 +2896,8 @@ export function CertificateSheet({
                   <tr>
                     <td
                       style={{
-                        padding: '8px 10px 8px 4px',
-                        fontSize: '22px',
+                        padding: `${totalRowPadY}px 10px ${totalRowPadY}px 4px`,
+                        fontSize: `${totalLabelFontPx}px`,
                         fontWeight: 500,
                         borderBottom: gridLine,
                         borderRight: gridLine,
@@ -2848,8 +2909,9 @@ export function CertificateSheet({
                     </td>
                     <td
                       style={{
-                        padding: '8px 8px',
-                        fontSize: '28px',
+                        padding: `${totalRowPadY}px 8px`,
+                        fontFamily: backNumbersFontCss,
+                        fontSize: `${totalNumbersFontPx}px`,
                         fontWeight: 500,
                         textAlign: 'center',
                         borderBottom: gridLine,
@@ -2869,8 +2931,8 @@ export function CertificateSheet({
                   <tr>
                     <td
                       style={{
-                        padding: '10px 10px 6px 4px',
-                        fontSize: '22px',
+                        padding: `${finalRowPadTop}px 10px ${finalRowPadBottom}px 4px`,
+                        fontSize: `${totalLabelFontPx}px`,
                         fontWeight: 500,
                         borderRight: gridLine,
                         verticalAlign: 'middle',
@@ -2882,8 +2944,9 @@ export function CertificateSheet({
                     <td
                       colSpan={2}
                       style={{
-                        padding: '10px 8px 6px 8px',
-                        fontSize: '28px',
+                        padding: `${finalRowPadTop}px 8px ${finalRowPadBottom}px 8px`,
+                        fontFamily: backNumbersFontCss,
+                        fontSize: `${totalNumbersFontPx}px`,
                         fontWeight: 700,
                         textAlign: 'center',
                         color: navyBorder,
