@@ -1725,6 +1725,10 @@ export function CertificateSheet({
                     textBlockWidthPct < 100
                       ? `${Math.round(1123 * (textBlockWidthPct / 100))}px`
                       : undefined;
+                  const textMarginLeft = Math.max(0, template.margemTextoEsquerdaPx ?? 0);
+                  const textMarginRight = Math.max(0, template.margemTextoDireitaPx ?? 0);
+                  const textMarginTop = template.margemTextoSuperiorPx ?? 0;
+                  const textMarginBottom = template.margemTextoInferiorPx ?? 0;
                   const highlightParticipant = Boolean(template.destacarNomeParticipante);
                   const participantFontKey = template.fonteParticipante || 'script';
                   const participantFontCss = resolveCertificateFontCss(participantFontKey);
@@ -1769,9 +1773,10 @@ export function CertificateSheet({
                     <div
                       {...drag}
                       style={{
-                        margin: '0 auto',
+                        margin: `${textMarginTop}px auto ${textMarginBottom}px auto`,
                         width: '100%',
                         maxWidth: textBlockMaxWidthPx,
+                        boxSizing: 'border-box',
                         position: 'relative',
                         left: `${template.textoOffsetX ?? 0}px`,
                         top: `${template.textoOffsetY ?? 0}px`,
@@ -1791,7 +1796,20 @@ export function CertificateSheet({
                           !hasBodyText && isInteractiveEditor
                             ? '1.5px dashed #94a3b8'
                             : undefined,
-                        padding: !hasBodyText && isInteractiveEditor ? '26px 24px' : undefined,
+                        paddingLeft:
+                          !hasBodyText && isInteractiveEditor
+                            ? '24px'
+                            : textMarginLeft > 0
+                              ? `${textMarginLeft}px`
+                              : undefined,
+                        paddingRight:
+                          !hasBodyText && isInteractiveEditor
+                            ? '24px'
+                            : textMarginRight > 0
+                              ? `${textMarginRight}px`
+                              : undefined,
+                        paddingTop: !hasBodyText && isInteractiveEditor ? '26px' : undefined,
+                        paddingBottom: !hasBodyText && isInteractiveEditor ? '26px' : undefined,
                         minHeight: !hasBodyText ? '110px' : undefined,
                         display: !hasBodyText && isInteractiveEditor ? 'flex' : undefined,
                         alignItems: !hasBodyText && isInteractiveEditor ? 'center' : undefined,
@@ -2033,8 +2051,7 @@ export function CertificateSheet({
                     background: `linear-gradient(90deg, rgba(15, 23, 42, 0) 0%, rgba(15, 23, 42, ${sigLineOpacity}) 16%, rgba(15, 23, 42, ${sigLineOpacity}) 84%, rgba(15, 23, 42, 0) 100%)`,
                   }
                 : {
-                    width: hasSecondSig ? '76%' : '70%',
-                    maxWidth: '285px',
+                    width: '92%',
                     minWidth: '200px',
                     height: '1px',
                     margin: '0 auto 6px auto',
@@ -2049,8 +2066,7 @@ export function CertificateSheet({
                     background: `linear-gradient(90deg, rgba(15, 23, 42, 0) 0%, rgba(15, 23, 42, ${sigLineOpacity}) 16%, rgba(15, 23, 42, ${sigLineOpacity}) 84%, rgba(15, 23, 42, 0) 100%)`,
                   }
                 : {
-                    width: '76%',
-                    maxWidth: '285px',
+                    width: '92%',
                     minWidth: '200px',
                     height: '1px',
                     margin: '0 auto 6px auto',
@@ -2067,15 +2083,11 @@ export function CertificateSheet({
                     top: `${template.assinaturaPrincipalOffsetY ?? 0}px`,
                     zIndex: activeDrag === 'assinaturaPrincipal' ? 20 : 12,
                     textAlign: 'center',
-                    flex: hasSecondSig ? '0 1 380px' : undefined,
-                    minWidth: hasSecondSig
-                      ? hasFormalInnerMargin
-                        ? '240px'
-                        : '310px'
-                      : hasFormalInnerMargin
-                        ? '280px'
-                        : '390px',
-                    maxWidth: hasSecondSig ? '425px' : undefined,
+                    flex: '0 0 auto',
+                    width: 'max-content',
+                    minWidth: hasSecondSig ? '220px' : '240px',
+                    maxWidth: 'none',
+                    whiteSpace: 'nowrap',
                     marginLeft:
                       !hasSecondSig && sigAlign === 'left' && !hasFormalInnerMargin
                         ? '16px'
@@ -2101,17 +2113,30 @@ export function CertificateSheet({
                           fontSize: `${sigNameFontPx}px`,
                           fontWeight: sigBold ? 700 : 400,
                           letterSpacing: '0.03em',
+                          whiteSpace: 'nowrap',
                         }}
                       >
                         {template.assinaturaNome}
                       </div>
                       {template.assinaturaPosto && (
-                        <div style={{ fontSize: `${sigPostoFontPx}px`, fontWeight: sigCargoBold ? 700 : 400 }}>
+                        <div
+                          style={{
+                            fontSize: `${sigPostoFontPx}px`,
+                            fontWeight: sigCargoBold ? 700 : 400,
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
                           {template.assinaturaPosto}
                         </div>
                       )}
                       {template.assinaturaCargo && (
-                        <div style={{ fontSize: `${sigCargoFontPx}px`, fontWeight: sigCargoBold ? 700 : 400 }}>
+                        <div
+                          style={{
+                            fontSize: `${sigCargoFontPx}px`,
+                            fontWeight: sigCargoBold ? 700 : 400,
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
                           {template.assinaturaCargo}
                         </div>
                       )}
@@ -2146,9 +2171,11 @@ export function CertificateSheet({
                     top: `${template.segundaAssinaturaOffsetY ?? 0}px`,
                     zIndex: activeDrag === 'segundaAssinatura' ? 20 : 12,
                     textAlign: 'center',
-                    flex: '0 1 380px',
-                    minWidth: hasFormalInnerMargin ? '240px' : '310px',
-                    maxWidth: '425px',
+                    flex: '0 0 auto',
+                    width: 'max-content',
+                    minWidth: '220px',
+                    maxWidth: 'none',
+                    whiteSpace: 'nowrap',
                     fontFamily: hasSecondarySigContent
                       ? signatureFontCss
                       : '"Segoe UI", system-ui, sans-serif',
@@ -2166,17 +2193,30 @@ export function CertificateSheet({
                           fontSize: `${sigNameFontPx}px`,
                           fontWeight: sigBold ? 700 : 400,
                           letterSpacing: '0.03em',
+                          whiteSpace: 'nowrap',
                         }}
                       >
                         {template.segundaAssinaturaNome || 'ASSINATURA'}
                       </div>
                       {template.segundaAssinaturaPosto && (
-                        <div style={{ fontSize: `${sigPostoFontPx}px`, fontWeight: sigCargoBold ? 700 : 400 }}>
+                        <div
+                          style={{
+                            fontSize: `${sigPostoFontPx}px`,
+                            fontWeight: sigCargoBold ? 700 : 400,
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
                           {template.segundaAssinaturaPosto}
                         </div>
                       )}
                       {template.segundaAssinaturaCargo && (
-                        <div style={{ fontSize: `${sigCargoFontPx}px`, fontWeight: sigCargoBold ? 700 : 400 }}>
+                        <div
+                          style={{
+                            fontSize: `${sigCargoFontPx}px`,
+                            fontWeight: sigCargoBold ? 700 : 400,
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
                           {template.segundaAssinaturaCargo}
                         </div>
                       )}
@@ -2214,12 +2254,13 @@ export function CertificateSheet({
                     display: 'flex',
                     alignItems: 'flex-end',
                     justifyContent: sigJustify,
+                    flexWrap: 'nowrap',
                     padding: hasFormalInnerMargin
                       ? '0 0 4px 0'
                       : hasSecondSig
                         ? '0 14px 6px 14px'
-                        : '0 28px 6px 28px',
-                    gap: '32px',
+                        : '0 20px 6px 20px',
+                    gap: '24px',
                   }}
                 >
                   {hasSecondSig ? (

@@ -152,6 +152,10 @@ export interface CertificateTemplateConfig {
   margemInternaLateralCm?: number;
   margemInternaVerticalCm?: number;
   larguraBlocoTextoPct?: number;
+  margemTextoEsquerdaPx?: number;
+  margemTextoDireitaPx?: number;
+  margemTextoSuperiorPx?: number;
+  margemTextoInferiorPx?: number;
   tamanhoFonteTitulo?: number;
   espacamentoLetrasTitulo?: number;
   entrelinhaCorpo?: number;
@@ -481,6 +485,10 @@ export function getFormalA4LayoutPatch(
     margemInternaLateralCm: 2.5,
     margemInternaVerticalCm: 1.4,
     larguraBlocoTextoPct: 70,
+    margemTextoEsquerdaPx: 0,
+    margemTextoDireitaPx: 0,
+    margemTextoSuperiorPx: 0,
+    margemTextoInferiorPx: 0,
     tamanhoFonteTitulo: 45,
     espacamentoLetrasTitulo: 0.22,
     fonteTitulo: 'cinzel',

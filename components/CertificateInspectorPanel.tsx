@@ -39,8 +39,10 @@ import {
   CertificateSelectableObject,
   CertificateStudentContext,
   CertificateTemplateConfig,
+  applyFormalA4LayoutToTemplate,
   extractModuleNumberFromRow,
   groupCertificateRowsByModule,
+  pxToPtNumber,
 } from '@/lib/certificateTypes';
 import {
   CertificateAssetCategory,
@@ -1069,6 +1071,53 @@ export function CertificateInspectorPanel({
                   ))}
                 </select>
               </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-200">
+                <div>
+                  <div className="flex items-center justify-between text-[11px] font-bold text-slate-700 mb-1">
+                    <span>Tamanho do Título</span>
+                    <span className="font-mono text-blue-900">
+                      {template.tamanhoFonteTitulo ?? 42}px ({pxToPtNumber(template.tamanhoFonteTitulo ?? 42)}pt)
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={28}
+                    max={60}
+                    step={1}
+                    value={template.tamanhoFonteTitulo ?? 42}
+                    onChange={(e) =>
+                      setTemplate((prev) => ({
+                        ...prev,
+                        tamanhoFonteTitulo: Number(e.target.value),
+                      }))
+                    }
+                    className="w-full accent-blue-800"
+                  />
+                </div>
+                <div>
+                  <div className="flex items-center justify-between text-[11px] font-bold text-slate-700 mb-1">
+                    <span>Espaço entre Letras</span>
+                    <span className="font-mono text-blue-900">
+                      {(template.espacamentoLetrasTitulo ?? 0.16).toFixed(2)}em
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0.02}
+                    max={0.34}
+                    step={0.01}
+                    value={template.espacamentoLetrasTitulo ?? 0.16}
+                    onChange={(e) =>
+                      setTemplate((prev) => ({
+                        ...prev,
+                        espacamentoLetrasTitulo: Number(e.target.value),
+                      }))
+                    }
+                    className="w-full accent-blue-800"
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5">
@@ -1414,7 +1463,7 @@ export function CertificateInspectorPanel({
                 <label className="flex items-center justify-between text-xs font-bold text-slate-700 mb-1">
                   <span>Tamanho da Fonte do Texto</span>
                   <span className="font-mono text-blue-800">
-                    {template.tamanhoFonteCorpo}px
+                    {template.tamanhoFonteCorpo}px ({pxToPtNumber(template.tamanhoFonteCorpo)}pt)
                   </span>
                 </label>
                 <input
@@ -1431,6 +1480,334 @@ export function CertificateInspectorPanel({
                   }
                   className="w-full accent-blue-800"
                 />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-200">
+                <div>
+                  <div className="flex items-center justify-between text-[11px] font-bold text-slate-700 mb-1">
+                    <span>Entrelinha do Texto</span>
+                    <span className="font-mono text-blue-900">
+                      {(template.entrelinhaCorpo ?? 1.82).toFixed(2)}
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={1.15}
+                    max={2.2}
+                    step={0.05}
+                    value={template.entrelinhaCorpo ?? 1.82}
+                    onChange={(e) =>
+                      setTemplate((prev) => ({
+                        ...prev,
+                        entrelinhaCorpo: Number(e.target.value),
+                      }))
+                    }
+                    className="w-full accent-blue-800"
+                  />
+                  <div className="flex gap-1 mt-1">
+                    <button
+                      type="button"
+                      onClick={() => setTemplate((prev) => ({ ...prev, entrelinhaCorpo: 1.4 }))}
+                      className="px-1.5 py-0.5 rounded bg-white border border-slate-200 hover:bg-blue-50 text-[10px] font-bold text-slate-700 cursor-pointer"
+                    >
+                      1,4 (Formal)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTemplate((prev) => ({ ...prev, entrelinhaCorpo: 1.82 }))}
+                      className="px-1.5 py-0.5 rounded bg-white border border-slate-200 hover:bg-slate-100 text-[10px] font-bold text-slate-700 cursor-pointer"
+                    >
+                      1,82 (Padrão)
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between text-[11px] font-bold text-slate-700 mb-1">
+                    <span>Largura do Bloco</span>
+                    <span className="font-mono text-blue-900">
+                      {template.larguraBlocoTextoPct ?? 100}%
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={55}
+                    max={100}
+                    step={1}
+                    value={template.larguraBlocoTextoPct ?? 100}
+                    onChange={(e) =>
+                      setTemplate((prev) => ({
+                        ...prev,
+                        larguraBlocoTextoPct: Number(e.target.value),
+                      }))
+                    }
+                    className="w-full accent-blue-800"
+                  />
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {[65, 70, 75, 100].map((pct) => (
+                      <button
+                        key={pct}
+                        type="button"
+                        onClick={() =>
+                          setTemplate((prev) => ({ ...prev, larguraBlocoTextoPct: pct }))
+                        }
+                        className={cn(
+                          'px-1.5 py-0.5 rounded border text-[10px] font-bold cursor-pointer',
+                          (template.larguraBlocoTextoPct ?? 100) === pct
+                            ? 'bg-blue-900 text-white border-blue-900'
+                            : 'bg-white text-slate-700 border-slate-200 hover:bg-blue-50'
+                        )}
+                      >
+                        {pct}%
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Margens do Texto Principal */}
+              <div className="pt-2 border-t border-slate-200 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] font-bold text-slate-700">
+                    Margens do Texto Principal
+                  </span>
+                  {((template.margemTextoEsquerdaPx ?? 0) !== 0 ||
+                    (template.margemTextoDireitaPx ?? 0) !== 0 ||
+                    (template.margemTextoSuperiorPx ?? 0) !== 0 ||
+                    (template.margemTextoInferiorPx ?? 0) !== 0) && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setTemplate((prev) => ({
+                          ...prev,
+                          margemTextoEsquerdaPx: 0,
+                          margemTextoDireitaPx: 0,
+                          margemTextoSuperiorPx: 0,
+                          margemTextoInferiorPx: 0,
+                        }))
+                      }
+                      className="text-[10px] font-semibold text-blue-700 hover:text-blue-900 underline cursor-pointer"
+                    >
+                      Zerar margens
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <div className="flex justify-between text-[10px] font-semibold text-slate-600">
+                      <span>Margem Esquerda</span>
+                      <span className="font-mono text-blue-900">
+                        {template.margemTextoEsquerdaPx ?? 0}px
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={0}
+                      max={180}
+                      step={2}
+                      value={template.margemTextoEsquerdaPx ?? 0}
+                      onChange={(e) =>
+                        setTemplate((prev) => ({
+                          ...prev,
+                          margemTextoEsquerdaPx: Number(e.target.value),
+                        }))
+                      }
+                      className="w-full accent-blue-800"
+                    />
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-[10px] font-semibold text-slate-600">
+                      <span>Margem Direita</span>
+                      <span className="font-mono text-blue-900">
+                        {template.margemTextoDireitaPx ?? 0}px
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={0}
+                      max={180}
+                      step={2}
+                      value={template.margemTextoDireitaPx ?? 0}
+                      onChange={(e) =>
+                        setTemplate((prev) => ({
+                          ...prev,
+                          margemTextoDireitaPx: Number(e.target.value),
+                        }))
+                      }
+                      className="w-full accent-blue-800"
+                    />
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-[10px] font-semibold text-slate-600">
+                      <span>Margem Superior</span>
+                      <span className="font-mono text-blue-900">
+                        {template.margemTextoSuperiorPx ?? 0}px
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={-20}
+                      max={120}
+                      step={2}
+                      value={template.margemTextoSuperiorPx ?? 0}
+                      onChange={(e) =>
+                        setTemplate((prev) => ({
+                          ...prev,
+                          margemTextoSuperiorPx: Number(e.target.value),
+                        }))
+                      }
+                      className="w-full accent-blue-800"
+                    />
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-[10px] font-semibold text-slate-600">
+                      <span>Margem Inferior</span>
+                      <span className="font-mono text-blue-900">
+                        {template.margemTextoInferiorPx ?? 0}px
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={0}
+                      max={140}
+                      step={2}
+                      value={template.margemTextoInferiorPx ?? 0}
+                      onChange={(e) =>
+                        setTemplate((prev) => ({
+                          ...prev,
+                          margemTextoInferiorPx: Number(e.target.value),
+                        }))
+                      }
+                      className="w-full accent-blue-800"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Destaque Central do Nome do Participante */}
+              <div className="pt-2 border-t border-slate-200 space-y-2.5">
+                <label className="flex items-center gap-2 text-[11px] font-bold text-slate-800 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(template.destacarNomeParticipante)}
+                    onChange={(e) =>
+                      setTemplate((prev) => ({
+                        ...prev,
+                        destacarNomeParticipante: e.target.checked,
+                        fonteParticipante: prev.fonteParticipante || 'script',
+                        tamanhoFonteParticipante:
+                          prev.tamanhoFonteParticipante ??
+                          Math.round((prev.tamanhoFonteCorpo || 17) * 2.2),
+                      }))
+                    }
+                    className="rounded border-slate-300"
+                  />
+                  <span>Destacar Nome do Participante centralizado (2x–2,5x)</span>
+                </label>
+
+                {template.destacarNomeParticipante && (
+                  <div className="p-2.5 rounded-lg bg-white border border-slate-200 space-y-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 items-end">
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-600 mb-1">
+                          Fonte do Nome
+                        </label>
+                        <select
+                          value={normalizeFrontFont(template.fonteParticipante || 'script')}
+                          onChange={(e) => {
+                            const nextFont = e.target.value as CertificateFontKey;
+                            setTemplate((prev) => ({
+                              ...prev,
+                              fonteParticipante: nextFont,
+                              negritoParticipante: nextFont !== 'script',
+                            }));
+                          }}
+                          className="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-[11px]"
+                        >
+                          {FONT_OPTIONS_FRONT.map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="flex items-center gap-1.5 justify-end">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setTemplate((prev) => ({
+                              ...prev,
+                              negritoParticipante: !(
+                                prev.negritoParticipante ??
+                                ((prev.fonteParticipante || 'script') !== 'script')
+                              ),
+                            }))
+                          }
+                          className={cn(
+                            'px-2 py-1 rounded border text-[10px] font-bold cursor-pointer',
+                            (template.negritoParticipante ??
+                              ((template.fonteParticipante || 'script') !== 'script'))
+                              ? 'bg-slate-900 text-white border-slate-900'
+                              : 'bg-white text-slate-600 border-slate-200'
+                          )}
+                        >
+                          Negrito
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setTemplate((prev) => ({
+                              ...prev,
+                              italicoParticipante: !(prev.italicoParticipante ?? false),
+                            }))
+                          }
+                          className={cn(
+                            'px-2 py-1 rounded border text-[10px] italic font-serif cursor-pointer',
+                            (template.italicoParticipante ?? false)
+                              ? 'bg-slate-900 text-white border-slate-900'
+                              : 'bg-white text-slate-600 border-slate-200'
+                          )}
+                        >
+                          Itálico
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between text-[10px] font-bold text-slate-600 mb-0.5">
+                        <span>Tamanho do Nome (aprox. 26pt–30pt)</span>
+                        <span className="font-mono text-blue-900">
+                          {template.tamanhoFonteParticipante ??
+                            Math.round((template.tamanhoFonteCorpo || 17) * 2.15)}
+                          px (
+                          {pxToPtNumber(
+                            template.tamanhoFonteParticipante ??
+                              Math.round((template.tamanhoFonteCorpo || 17) * 2.15)
+                          )}
+                          pt)
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min={24}
+                        max={54}
+                        step={1}
+                        value={
+                          template.tamanhoFonteParticipante ??
+                          Math.round((template.tamanhoFonteCorpo || 17) * 2.15)
+                        }
+                        onChange={(e) =>
+                          setTemplate((prev) => ({
+                            ...prev,
+                            tamanhoFonteParticipante: Number(e.target.value),
+                          }))
+                        }
+                        className="w-full accent-blue-800"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="pt-2 border-t border-slate-200 space-y-2">
@@ -1584,6 +1961,63 @@ export function CertificateInspectorPanel({
                   >
                     Itálico
                   </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-200">
+                <div>
+                  <div className="flex justify-between text-[11px] font-bold text-slate-700 mb-0.5">
+                    <span>Tamanho (11pt–12pt)</span>
+                    <span className="font-mono text-blue-900">
+                      {template.tamanhoFonteData ??
+                        Math.max(16, (template.tamanhoFonteCorpo || 19) - 1)}
+                      px (
+                      {pxToPtNumber(
+                        template.tamanhoFonteData ??
+                          Math.max(16, (template.tamanhoFonteCorpo || 19) - 1)
+                      )}
+                      pt)
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={12}
+                    max={22}
+                    step={1}
+                    value={
+                      template.tamanhoFonteData ??
+                      Math.max(16, (template.tamanhoFonteCorpo || 19) - 1)
+                    }
+                    onChange={(e) =>
+                      setTemplate((prev) => ({
+                        ...prev,
+                        tamanhoFonteData: Number(e.target.value),
+                      }))
+                    }
+                    className="w-full accent-blue-800"
+                  />
+                </div>
+                <div>
+                  <div className="flex justify-between text-[11px] font-bold text-slate-700 mb-0.5">
+                    <span>Distância do Parágrafo</span>
+                    <span className="font-mono text-blue-900">
+                      {template.espacamentoDataTextoPx ?? 24}px
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={4}
+                    max={60}
+                    step={2}
+                    value={template.espacamentoDataTextoPx ?? 24}
+                    onChange={(e) =>
+                      setTemplate((prev) => ({
+                        ...prev,
+                        espacamentoDataTextoPx: Number(e.target.value),
+                      }))
+                    }
+                    className="w-full accent-blue-800"
+                  />
                 </div>
               </div>
 
@@ -1797,7 +2231,7 @@ export function CertificateInspectorPanel({
                 </select>
               </div>
 
-              <div className="pt-2 border-t border-slate-200 space-y-1.5">
+              <div className="pt-2 border-t border-slate-200 space-y-2">
                 <div className="flex items-center justify-between gap-2">
                   <label className="flex items-center gap-2 text-[11px] font-bold text-slate-700 cursor-pointer">
                     <input
@@ -1820,22 +2254,172 @@ export function CertificateInspectorPanel({
                   )}
                 </div>
                 {template.mostrarLinhaAssinatura !== false && (
+                  <>
+                    <input
+                      type="range"
+                      min={0.04}
+                      max={0.6}
+                      step={0.02}
+                      value={template.opacidadeLinhaAssinatura ?? 0.16}
+                      onChange={(e) =>
+                        setTemplate((prev) => ({
+                          ...prev,
+                          opacidadeLinhaAssinatura: Number(e.target.value),
+                        }))
+                      }
+                      className="w-full accent-blue-800"
+                      title="Intensidade da linha suave sobre as assinaturas"
+                    />
+                    <div className="pt-1 space-y-1">
+                      <div className="flex items-center justify-between gap-2 text-[10px] font-bold text-slate-600">
+                        <span>Largura da Linha</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-blue-900">
+                            {template.larguraLinhaAssinaturaCm !== undefined
+                              ? `${template.larguraLinhaAssinaturaCm.toFixed(1)} cm`
+                              : 'Automática (texto)'}
+                          </span>
+                          {template.larguraLinhaAssinaturaCm !== undefined && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setTemplate((prev) => ({
+                                  ...prev,
+                                  larguraLinhaAssinaturaCm: undefined,
+                                }))
+                              }
+                              className="text-[10px] text-blue-700 hover:text-blue-900 underline cursor-pointer"
+                            >
+                              Auto
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <input
+                        type="range"
+                        min={4.0}
+                        max={8.5}
+                        step={0.1}
+                        value={template.larguraLinhaAssinaturaCm ?? 6.0}
+                        onChange={(e) =>
+                          setTemplate((prev) => ({
+                            ...prev,
+                            larguraLinhaAssinaturaCm: Number(e.target.value),
+                          }))
+                        }
+                        className="w-full accent-blue-800"
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <div className="pt-2 border-t border-slate-200 space-y-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <div className="flex justify-between text-[10px] font-bold text-slate-600 mb-0.5">
+                      <span>Fonte do Nome (10pt)</span>
+                      <span className="font-mono text-blue-900">
+                        {template.tamanhoFonteAssinaturaNome ?? 14.5}px ({pxToPtNumber(template.tamanhoFonteAssinaturaNome ?? 14.5)}pt)
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={11}
+                      max={20}
+                      step={0.5}
+                      value={template.tamanhoFonteAssinaturaNome ?? 14.5}
+                      onChange={(e) =>
+                        setTemplate((prev) => ({
+                          ...prev,
+                          tamanhoFonteAssinaturaNome: Number(e.target.value),
+                        }))
+                      }
+                      className="w-full accent-blue-800"
+                    />
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-[10px] font-bold text-slate-600 mb-0.5">
+                      <span>Fonte Posto/Cargo (9pt)</span>
+                      <span className="font-mono text-blue-900">
+                        {template.tamanhoFonteAssinaturaCargo ?? 13.5}px ({pxToPtNumber(template.tamanhoFonteAssinaturaCargo ?? 13.5)}pt)
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={10}
+                      max={18}
+                      step={0.5}
+                      value={template.tamanhoFonteAssinaturaCargo ?? 13.5}
+                      onChange={(e) =>
+                        setTemplate((prev) => ({
+                          ...prev,
+                          tamanhoFonteAssinaturaCargo: Number(e.target.value),
+                        }))
+                      }
+                      className="w-full accent-blue-800"
+                    />
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <label className="flex items-center gap-1.5 text-[10px] font-bold text-slate-700 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={template.assinaturaCargoNegrito ?? (template.assinaturaNegrito ?? true)}
+                      onChange={(e) =>
+                        setTemplate((prev) => ({
+                          ...prev,
+                          assinaturaCargoNegrito: e.target.checked,
+                        }))
+                      }
+                      className="rounded border-slate-300"
+                    />
+                    <span>Posto e Cargo em Negrito</span>
+                  </label>
+                  <span className="text-[10px] text-slate-500">
+                    Linhas ajustam ao texto sem quebra automática
+                  </span>
+                </div>
+                <div>
+                  <div className="flex items-center justify-between text-[10px] font-bold text-slate-600 mb-0.5">
+                    <span>Distância Vertical abaixo do Texto (2–3 cm)</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-blue-900">
+                        {template.espacamentoAssinaturasVerticalCm !== undefined
+                          ? `${template.espacamentoAssinaturasVerticalCm.toFixed(1)} cm`
+                          : 'Automático'}
+                      </span>
+                      {template.espacamentoAssinaturasVerticalCm !== undefined && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setTemplate((prev) => ({
+                              ...prev,
+                              espacamentoAssinaturasVerticalCm: undefined,
+                            }))
+                          }
+                          className="text-[10px] text-blue-700 hover:text-blue-900 underline cursor-pointer"
+                        >
+                          Auto
+                        </button>
+                      )}
+                    </div>
+                  </div>
                   <input
                     type="range"
-                    min={0.04}
-                    max={0.6}
-                    step={0.02}
-                    value={template.opacidadeLinhaAssinatura ?? 0.16}
+                    min={0}
+                    max={4.0}
+                    step={0.1}
+                    value={template.espacamentoAssinaturasVerticalCm ?? 0}
                     onChange={(e) =>
                       setTemplate((prev) => ({
                         ...prev,
-                        opacidadeLinhaAssinatura: Number(e.target.value),
+                        espacamentoAssinaturasVerticalCm: Number(e.target.value),
                       }))
                     }
                     className="w-full accent-blue-800"
-                    title="Intensidade da linha suave sobre as assinaturas"
                   />
-                )}
+                </div>
               </div>
 
               <div className="pt-2 border-t border-slate-200 space-y-2.5">
@@ -2173,7 +2757,7 @@ export function CertificateInspectorPanel({
                     </select>
                   </div>
 
-                  <div className="pt-2 border-t border-slate-200 space-y-1.5">
+                  <div className="pt-2 border-t border-slate-200 space-y-2">
                     <div className="flex items-center justify-between gap-2">
                       <label className="flex items-center gap-2 text-[11px] font-bold text-slate-700 cursor-pointer">
                         <input
@@ -2196,22 +2780,132 @@ export function CertificateInspectorPanel({
                       )}
                     </div>
                     {template.mostrarLinhaAssinatura !== false && (
-                      <input
-                        type="range"
-                        min={0.04}
-                        max={0.6}
-                        step={0.02}
-                        value={template.opacidadeLinhaAssinatura ?? 0.16}
-                        onChange={(e) =>
-                          setTemplate((prev) => ({
-                            ...prev,
-                            opacidadeLinhaAssinatura: Number(e.target.value),
-                          }))
-                        }
-                        className="w-full accent-blue-800"
-                        title="Intensidade da linha suave sobre as assinaturas"
-                      />
+                      <>
+                        <input
+                          type="range"
+                          min={0.04}
+                          max={0.6}
+                          step={0.02}
+                          value={template.opacidadeLinhaAssinatura ?? 0.16}
+                          onChange={(e) =>
+                            setTemplate((prev) => ({
+                              ...prev,
+                              opacidadeLinhaAssinatura: Number(e.target.value),
+                            }))
+                          }
+                          className="w-full accent-blue-800"
+                          title="Intensidade da linha suave sobre as assinaturas"
+                        />
+                        <div className="pt-1 space-y-1">
+                          <div className="flex items-center justify-between gap-2 text-[10px] font-bold text-slate-600">
+                            <span>Largura da Linha</span>
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-blue-900">
+                                {template.larguraLinhaAssinaturaCm !== undefined
+                                  ? `${template.larguraLinhaAssinaturaCm.toFixed(1)} cm`
+                                  : 'Automática (texto)'}
+                              </span>
+                              {template.larguraLinhaAssinaturaCm !== undefined && (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setTemplate((prev) => ({
+                                      ...prev,
+                                      larguraLinhaAssinaturaCm: undefined,
+                                    }))
+                                  }
+                                  className="text-[10px] text-blue-700 hover:text-blue-900 underline cursor-pointer"
+                                >
+                                  Auto
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          <input
+                            type="range"
+                            min={4.0}
+                            max={8.5}
+                            step={0.1}
+                            value={template.larguraLinhaAssinaturaCm ?? 6.0}
+                            onChange={(e) =>
+                              setTemplate((prev) => ({
+                                ...prev,
+                                larguraLinhaAssinaturaCm: Number(e.target.value),
+                              }))
+                            }
+                            className="w-full accent-blue-800"
+                          />
+                        </div>
+                      </>
                     )}
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-200 space-y-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <div>
+                        <div className="flex justify-between text-[10px] font-bold text-slate-600 mb-0.5">
+                          <span>Fonte do Nome (10pt)</span>
+                          <span className="font-mono text-blue-900">
+                            {template.tamanhoFonteAssinaturaNome ?? 14.5}px ({pxToPtNumber(template.tamanhoFonteAssinaturaNome ?? 14.5)}pt)
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min={11}
+                          max={20}
+                          step={0.5}
+                          value={template.tamanhoFonteAssinaturaNome ?? 14.5}
+                          onChange={(e) =>
+                            setTemplate((prev) => ({
+                              ...prev,
+                              tamanhoFonteAssinaturaNome: Number(e.target.value),
+                            }))
+                          }
+                          className="w-full accent-blue-800"
+                        />
+                      </div>
+                      <div>
+                        <div className="flex justify-between text-[10px] font-bold text-slate-600 mb-0.5">
+                          <span>Fonte Posto/Cargo (9pt)</span>
+                          <span className="font-mono text-blue-900">
+                            {template.tamanhoFonteAssinaturaCargo ?? 13.5}px ({pxToPtNumber(template.tamanhoFonteAssinaturaCargo ?? 13.5)}pt)
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min={10}
+                          max={18}
+                          step={0.5}
+                          value={template.tamanhoFonteAssinaturaCargo ?? 13.5}
+                          onChange={(e) =>
+                            setTemplate((prev) => ({
+                              ...prev,
+                              tamanhoFonteAssinaturaCargo: Number(e.target.value),
+                            }))
+                          }
+                          className="w-full accent-blue-800"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <label className="flex items-center gap-1.5 text-[10px] font-bold text-slate-700 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={template.assinaturaCargoNegrito ?? (template.assinaturaNegrito ?? true)}
+                          onChange={(e) =>
+                            setTemplate((prev) => ({
+                              ...prev,
+                              assinaturaCargoNegrito: e.target.checked,
+                            }))
+                          }
+                          className="rounded border-slate-300"
+                        />
+                        <span>Posto e Cargo em Negrito</span>
+                      </label>
+                      <span className="text-[10px] text-slate-500">
+                        Linhas ajustam ao texto sem quebra automática
+                      </span>
+                    </div>
                   </div>
 
                   <div className="pt-2 border-t border-slate-200 space-y-2">
@@ -2643,6 +3337,109 @@ export function CertificateInspectorPanel({
                         template.molduraFrenteUrl,
                         'Moldura da Frente'
                       )}
+                    </div>
+
+                    {/* Margens da Folha A4 Paisagem */}
+                    <div className="p-3 rounded-lg bg-white border border-slate-200 space-y-2.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[11px] font-bold text-slate-800">
+                          Margens da Folha e Moldura (A4 Paisagem)
+                        </span>
+                        {(template.margemExternaMolduraCm !== undefined ||
+                          template.margemInternaLateralCm !== undefined ||
+                          template.margemInternaVerticalCm !== undefined) && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setTemplate((prev) => ({
+                                ...prev,
+                                margemExternaMolduraCm: undefined,
+                                margemInternaLateralCm: undefined,
+                                margemInternaVerticalCm: undefined,
+                              }))
+                            }
+                            className="text-[10px] text-blue-700 hover:text-blue-900 underline cursor-pointer font-semibold"
+                          >
+                            Restaurar padrão
+                          </button>
+                        )}
+                      </div>
+
+                      <div>
+                        <div className="flex justify-between text-[10px] font-bold text-slate-600 mb-0.5">
+                          <span>Margem Externa (borda até moldura: 1,5–2 cm)</span>
+                          <span className="font-mono text-blue-900">
+                            {template.margemExternaMolduraCm !== undefined
+                              ? `${template.margemExternaMolduraCm.toFixed(1)} cm`
+                              : 'Padrão (0,6 cm)'}
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min={0.4}
+                          max={2.5}
+                          step={0.1}
+                          value={template.margemExternaMolduraCm ?? 0.6}
+                          onChange={(e) =>
+                            setTemplate((prev) => ({
+                              ...prev,
+                              margemExternaMolduraCm: Number(e.target.value),
+                            }))
+                          }
+                          className="w-full accent-blue-800"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div>
+                          <div className="flex justify-between text-[10px] font-bold text-slate-600 mb-0.5">
+                            <span>Interna Lateral (2–3 cm)</span>
+                            <span className="font-mono text-blue-900">
+                              {template.margemInternaLateralCm !== undefined
+                                ? `${template.margemInternaLateralCm.toFixed(1)} cm`
+                                : '2,2 cm'}
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min={1.0}
+                            max={4.0}
+                            step={0.1}
+                            value={template.margemInternaLateralCm ?? 2.2}
+                            onChange={(e) =>
+                              setTemplate((prev) => ({
+                                ...prev,
+                                margemInternaLateralCm: Number(e.target.value),
+                              }))
+                            }
+                            className="w-full accent-blue-800"
+                          />
+                        </div>
+                        <div>
+                          <div className="flex justify-between text-[10px] font-bold text-slate-600 mb-0.5">
+                            <span>Interna Vertical</span>
+                            <span className="font-mono text-blue-900">
+                              {template.margemInternaVerticalCm !== undefined
+                                ? `${template.margemInternaVerticalCm.toFixed(1)} cm`
+                                : '1,5 cm'}
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min={0.6}
+                            max={3.0}
+                            step={0.1}
+                            value={template.margemInternaVerticalCm ?? 1.5}
+                            onChange={(e) =>
+                              setTemplate((prev) => ({
+                                ...prev,
+                                margemInternaVerticalCm: Number(e.target.value),
+                              }))
+                            }
+                            className="w-full accent-blue-800"
+                          />
+                        </div>
+                      </div>
                     </div>
                   </>
                 );
@@ -3338,6 +4135,58 @@ export function CertificateInspectorPanel({
                 }
                 className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium"
               />
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-blue-50/70 border border-blue-200 space-y-2.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] font-black uppercase tracking-wider text-blue-950 flex items-center gap-1.5">
+                  <Sparkles size={13} />
+                  <span>Layout Formal (A4 Paisagem — Respiro Visual)</span>
+                </span>
+              </div>
+              <p className="text-[10px] text-slate-600 leading-snug">
+                Aplica margens amplas (1,7 cm externa / 2,5 cm interna), bloco de texto centralizado em 70%, hierarquia tipográfica (título 34pt, nome em destaque 28pt, corpo 13pt entrelinha 1,4) e assinaturas simétricas (10pt/9pt).
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setTemplate((prev) => applyFormalA4LayoutToTemplate(prev))}
+                  className="px-3 py-1.5 rounded-lg bg-blue-900 hover:bg-blue-950 text-white text-[11px] font-bold cursor-pointer flex items-center gap-1.5"
+                >
+                  <Sparkles size={12} />
+                  <span>Aplicar Layout Formal A4</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setTemplate((prev) => ({
+                      ...prev,
+                      margemExternaMolduraCm: undefined,
+                      margemInternaLateralCm: undefined,
+                      margemInternaVerticalCm: undefined,
+                      larguraBlocoTextoPct: undefined,
+                      margemTextoEsquerdaPx: 0,
+                      margemTextoDireitaPx: 0,
+                      margemTextoSuperiorPx: 0,
+                      margemTextoInferiorPx: 0,
+                      tamanhoFonteTitulo: undefined,
+                      espacamentoLetrasTitulo: undefined,
+                      entrelinhaCorpo: undefined,
+                      destacarNomeParticipante: false,
+                      tamanhoFonteData: undefined,
+                      espacamentoDataTextoPx: undefined,
+                      espacamentoAssinaturasVerticalCm: undefined,
+                      larguraLinhaAssinaturaCm: undefined,
+                      tamanhoFonteAssinaturaNome: undefined,
+                      tamanhoFonteAssinaturaCargo: undefined,
+                      assinaturaCargoNegrito: undefined,
+                    }))
+                  }
+                  className="px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-[11px] font-bold text-slate-700 cursor-pointer"
+                >
+                  Restaurar Padrão Clássico
+                </button>
+              </div>
             </div>
 
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5">

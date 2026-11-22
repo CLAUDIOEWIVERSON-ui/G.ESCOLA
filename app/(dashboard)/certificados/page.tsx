@@ -48,6 +48,7 @@ import {
   CertificateTemplateConfig,
   computeBackTotals,
   createBlankTemplate,
+  createFormalA4Template,
   createPresetTemplate,
   extractModuleNumberFromRow,
   formatCertificateGradePT,
@@ -192,7 +193,7 @@ export default function CertificadosPage() {
   const [showNewModelForm, setShowNewModelForm] = useState(false);
   const [newModelName, setNewModelName] = useState('');
   const [newModelStarter, setNewModelStarter] = useState<
-    'blank' | 'formacao_marinheiros' | 'expedito'
+    'blank' | 'formal_a4' | 'formacao_marinheiros' | 'expedito'
   >('blank');
   const [creatingNewModel, setCreatingNewModel] = useState(false);
   const [showSaveAsNewModal, setShowSaveAsNewModal] = useState(false);
@@ -1907,25 +1908,29 @@ export default function CertificadosPage() {
   const handleCreateNewModelFromScratch = async () => {
     const trimmedName = newModelName.trim();
     const fallbackName =
-      newModelStarter === 'expedito'
-        ? 'Novo Modelo — Cursos Expeditos'
-        : newModelStarter === 'formacao_marinheiros'
-          ? 'Novo Modelo — Formação de Marinheiros'
-          : 'Novo Modelo de Certificado';
+      newModelStarter === 'formal_a4'
+        ? 'Certificado Formal A4 (Respiro Visual)'
+        : newModelStarter === 'expedito'
+          ? 'Novo Modelo — Cursos Expeditos'
+          : newModelStarter === 'formacao_marinheiros'
+            ? 'Novo Modelo — Formação de Marinheiros'
+            : 'Novo Modelo de Certificado';
     const resolvedName = trimmedName || fallbackName;
 
     const newTemplate: CertificateTemplateConfig =
       newModelStarter === 'blank'
         ? createBlankTemplate(resolvedName, 'geral')
-        : {
-            ...createPresetTemplate(newModelStarter),
-            id: undefined,
-            templateKey: `custom_${Date.now()}`,
-            nomeModelo: resolvedName,
-            turmaId: null,
-            cursoId: null,
-            textoCorpoPorAluno: {},
-          };
+        : newModelStarter === 'formal_a4'
+          ? createFormalA4Template(resolvedName, 'geral')
+          : {
+              ...createPresetTemplate(newModelStarter),
+              id: undefined,
+              templateKey: `custom_${Date.now()}`,
+              nomeModelo: resolvedName,
+              turmaId: null,
+              cursoId: null,
+              textoCorpoPorAluno: {},
+            };
 
     if (autoSaveTimerRef.current) {
       clearTimeout(autoSaveTimerRef.current);
@@ -3224,12 +3229,19 @@ export default function CertificadosPage() {
                           value={newModelStarter}
                           onChange={(e) =>
                             setNewModelStarter(
-                              e.target.value as 'blank' | 'formacao_marinheiros' | 'expedito'
+                              e.target.value as
+                                | 'blank'
+                                | 'formal_a4'
+                                | 'formacao_marinheiros'
+                                | 'expedito'
                             )
                           }
                           className="w-full px-2.5 py-1.5 bg-white border border-emerald-200 rounded-lg text-xs font-semibold text-slate-800"
                         >
                           <option value="blank">Em Branco (totalmente do zero)</option>
+                          <option value="formal_a4">
+                            Layout Formal (A4 Paisagem — Respiro Visual)
+                          </option>
                           <option value="formacao_marinheiros">
                             Base Formação de Marinheiros
                           </option>
