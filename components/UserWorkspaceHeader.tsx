@@ -336,13 +336,13 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
                 {isAluno && (
                   <div
                     aria-hidden="true"
-                    className="relative w-32 h-32 sm:w-36 sm:h-36 shrink-0 flex items-center justify-center pointer-events-none select-none opacity-20 mix-blend-multiply"
+                    className="relative w-40 h-40 sm:w-44 sm:h-44 shrink-0 flex items-center justify-center pointer-events-none select-none opacity-20 mix-blend-multiply"
                   >
                     <Image
                       src="/assets/aistudio/imagem_01_2da3aec8.png"
                       alt="Guarda Costeira de São Tomé e Príncipe"
                       fill
-                      sizes="(max-width: 640px) 128px, 144px"
+                      sizes="(max-width: 640px) 160px, 176px"
                       className="object-contain object-center"
                       referrerPolicy="no-referrer"
                     />

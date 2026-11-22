@@ -342,7 +342,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           checkClassStatus();
         }
 
-        if (isStudentUser && !['/dashboard', '/boletim', '/horario', '/calendario', '/avaliacao', '/configuracoes', '/manual', '/pensamento-do-dia'].includes(pathname || '')) {
+        if (isStudentUser && !['/dashboard', '/boletim', '/horario', '/calendario', '/avaliacao', '/configuracoes', '/pensamento-do-dia'].includes(pathname || '')) {
           // Force students logged in to only access allowed sections
           router.push('/dashboard');
         }

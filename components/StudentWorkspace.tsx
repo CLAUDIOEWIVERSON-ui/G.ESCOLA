@@ -15,7 +15,6 @@ import {
   Lock,
   Bell,
   CalendarDays,
-  BookMarked,
   Quote,
   Sparkles,
   AlertTriangle,
@@ -1169,16 +1168,6 @@ export function StudentWorkspace() {
               </span>
               <ArrowRight size={13} className="text-black" />
             </Link>
-            <Link
-              href="/manual"
-              className="flex items-center justify-between p-3 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 transition-colors group"
-            >
-              <span className="flex items-center gap-2.5 text-xs font-bold text-black">
-                <BookMarked size={15} className="text-black" />
-                {isPt ? 'Manual do Usuário' : 'User Manual'}
-              </span>
-              <ArrowRight size={13} className="text-black" />
-            </Link>
           </div>
         </div>
       </div>
@@ -1187,12 +1176,12 @@ export function StudentWorkspace() {
         aria-hidden="true"
         className="pt-4 pb-6 flex items-center justify-center pointer-events-none select-none"
       >
-        <div className="relative w-44 h-44 sm:w-56 sm:h-56 opacity-20 mix-blend-multiply">
+        <div className="relative w-56 h-56 sm:w-72 sm:h-72 opacity-20 mix-blend-multiply">
           <Image
             src="/assets/aistudio/imagem_01_2da3aec8.png"
             alt="Guarda Costeira de São Tomé e Príncipe"
             fill
-            sizes="(max-width: 640px) 176px, 224px"
+            sizes="(max-width: 640px) 224px, 288px"
             className="object-contain"
             referrerPolicy="no-referrer"
           />
