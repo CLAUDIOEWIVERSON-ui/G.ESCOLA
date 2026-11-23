@@ -6,6 +6,7 @@ import { Quote, Sparkles, ArrowRight, Volume2, VolumeX, Copy, Check } from 'luci
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { fetchWithAuth } from '@/lib/api';
 import { formatThoughtForCopy, copyTextToClipboard } from '@/lib/thoughtFormat';
 
 export default function DashboardThoughtWidget({ studentTheme = false }: { studentTheme?: boolean } = {}) {
@@ -26,7 +27,7 @@ export default function DashboardThoughtWidget({ studentTheme = false }: { stude
     let isMounted = true;
     const fetchThought = async () => {
       try {
-        const res = await fetch('/api/v1/pensamento-dia');
+        const res = await fetchWithAuth('/api/v1/pensamento-dia');
         if (res.ok) {
           const data = await res.json();
           if (isMounted && data.success && data.data) {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { getAuthUserRole } from '@/lib/auth/serverAuth';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { GoogleGenAI } from '@google/genai';
 
@@ -248,12 +248,31 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const force = searchParams.get('force') === 'true';
+    const preview = searchParams.get('preview') === 'true';
     const category = searchParams.get('category') || ''; // Theme categories
     const history = searchParams.get('history') === 'true' || searchParams.get('list') === 'true';
     const todayStr = new Date().toISOString().split('T')[0];
 
-    // Return history of previous thoughts & catalog if requested
+    const { role } = await getAuthUserRole(req);
+    const isStaff = role === 'admin' || role === 'instrutor';
+
+    // Students, monitors, guests, and unauthenticated users cannot trigger AI generation
+    if ((force || category) && !isStaff) {
+      return NextResponse.json(
+        { error: 'Acesso negado: somente administradores ou instrutores podem gerar pensamentos.' },
+        { status: 403 }
+      );
+    }
+
+    // Return history of previous thoughts & catalog ONLY for authorized staff
     if (history) {
+      if (!isStaff) {
+        return NextResponse.json(
+          { error: 'Acesso negado: biblioteca disponível apenas para administradores e instrutores.' },
+          { status: 403 }
+        );
+      }
+
       let dbThoughts: any[] = [];
       try {
         const { data, error } = await supabaseAdmin
@@ -274,38 +293,56 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // We query the database on every GET request instead of using an in-memory thoughtCache bypass.
-    // This ensures any manual admin thoughts are immediately synchronized for all sessions and devices.
-    // Concurrent first-loads are still coalesced safely via activeRequestPromise.
-
     // Resolve action encapsulating the core logic
     const resolveAction = async () => {
-      const supabase = await createClient();
-
-      // 2. Attempt to query today's thought from the database if not forced to regenerate
+      // 1. Read today's thought or latest admin-posted thought when not explicitly forcing AI generation
       if (!force) {
         try {
-          const { data, error } = await supabaseAdmin
+          const { data: todayData, error: todayError } = await supabaseAdmin
             .from('pensamento_dia')
             .select('*')
             .eq('data_exibicao', todayStr)
             .maybeSingle();
 
-          if (data && !error) {
+          if (todayData && !todayError) {
             thoughtCache = {
               data_exibicao: todayStr,
-              data
+              data: todayData
             };
-            return data;
+            return todayData;
           }
         } catch (dbReadErr) {
-          console.warn('[DB Read Warning] Failed reading pensée from DB:', dbReadErr);
+          console.warn('[DB Read Warning] Failed reading today pensée from DB:', dbReadErr);
         }
 
-        // FIRST FIX: Prevent Gemini spam by reusing memory cache if DB insert failed previously (e.g. RLS blocked anonymous insert)
+        // In-memory cache hit for today (covers offline-DB admin post)
         if (thoughtCache && thoughtCache.data_exibicao === todayStr && thoughtCache.data) {
           return thoughtCache.data;
         }
+
+        // Fall back to the most recent thought posted by the administrator (never auto-generate on passive reads)
+        try {
+          const { data: latestData, error: latestError } = await supabaseAdmin
+            .from('pensamento_dia')
+            .select('*')
+            .order('data_exibicao', { ascending: false })
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (latestData && !latestError) {
+            return latestData;
+          }
+        } catch (dbLatestErr) {
+          console.warn('[DB Read Warning] Failed reading latest pensée from DB:', dbLatestErr);
+        }
+
+        if (thoughtCache?.data) {
+          return thoughtCache.data;
+        }
+
+        // No admin-posted thought exists anywhere
+        return null;
       }
 
       // Checking table existence or another check by executing a select query
@@ -512,6 +549,18 @@ export async function GET(req: NextRequest) {
         generatedQuote.reflexao = `${generatedQuote.texto} — Este ensinamento nos convida a cultivar serenidade, perseverança e clareza de propósito para vencer os desafios de hoje.`;
       }
 
+      // If preview mode (AI Studio preview before publishing), return generated result without overwriting today's official post
+      if (preview) {
+        return {
+          id: 'preview-id',
+          texto: generatedQuote.texto,
+          autor: generatedQuote.autor,
+          reflexao: generatedQuote.reflexao,
+          categoria: category || undefined,
+          data_exibicao: todayStr,
+        };
+      }
+
       // Try to insert the quote into Supabase for today's persistent retrieval
       if (!isTableMissing) {
         try {
@@ -602,15 +651,22 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = await createClient();
-    
-    // Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
+    const { user, role } = await getAuthUserRole(req);
+    if (!user) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
 
-    const { texto, autor, reflexao } = await req.json();
+    if (role !== 'admin' && role !== 'instrutor') {
+      return NextResponse.json(
+        { error: 'Acesso negado: somente administradores ou instrutores podem publicar pensamentos.' },
+        { status: 403 }
+      );
+    }
+
+    const body = await req.json();
+    const texto = String(body?.texto || '').trim();
+    const autor = String(body?.autor || '').trim();
+    const reflexao = String(body?.reflexao || '').trim();
     if (!texto || !autor) {
       return NextResponse.json({ error: 'Texto e autor são obrigatórios.' }, { status: 400 });
     }
@@ -688,6 +744,18 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
+    const { user, role } = await getAuthUserRole(req);
+    if (!user) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
+    }
+
+    if (role !== 'admin') {
+      return NextResponse.json(
+        { error: 'Acesso negado: somente administradores podem excluir pensamentos.' },
+        { status: 403 }
+      );
+    }
+
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
     const data_exibicao = searchParams.get('data_exibicao');

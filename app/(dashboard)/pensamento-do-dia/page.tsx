@@ -64,9 +64,10 @@ const CATEGORIES = [
 
 export default function PensamentoDoDiaPage() {
   const { t, language } = useI18n();
-  const { profile, isAdmin, isInstrutor } = useUser();
+  const { profile, isAdmin, isInstrutor, loading: authLoading } = useUser();
   const isPt = language === 'pt';
-  const canManage = isAdmin || isInstrutor;
+  const canManage = !authLoading && (isAdmin || isInstrutor);
+  const isMessageOnlyView = !canManage;
 
   // States
   const [todayThought, setTodayThought] = useState<ThoughtItem | null>(null);
@@ -140,6 +141,7 @@ export default function PensamentoDoDiaPage() {
 
   // Fetch today's thought
   const fetchTodayThought = async (force: boolean = false) => {
+    if (force && !canManage) return;
     try {
       if (force) {
         setRegeneratingToday(true);
@@ -147,10 +149,10 @@ export default function PensamentoDoDiaPage() {
         setLoadingToday(true);
       }
       const url = `/api/v1/pensamento-dia${force ? '?force=true' : ''}`;
-      const res = await fetch(url);
+      const res = await fetchWithAuth(url);
       const json = await res.json();
-      if (json && json.data) {
-        setTodayThought(json.data);
+      if (json) {
+        setTodayThought(json.data || null);
       }
     } catch (error) {
       console.error('Error fetching today thought:', error);
@@ -161,11 +163,12 @@ export default function PensamentoDoDiaPage() {
     }
   };
 
-  // Fetch history list
+  // Fetch history list (only for admin/instructor)
   const fetchHistoryAndCatalog = async () => {
+    if (!canManage) return;
     try {
       setLoadingHistory(true);
-      const res = await fetch('/api/v1/pensamento-dia?history=true');
+      const res = await fetchWithAuth('/api/v1/pensamento-dia?history=true');
       const json = await res.json();
       if (json && json.success) {
         setHistoryList(json.data || []);
@@ -180,9 +183,17 @@ export default function PensamentoDoDiaPage() {
 
   useEffect(() => {
     fetchTodayThought();
-    fetchHistoryAndCatalog();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!authLoading && canManage) {
+      fetchHistoryAndCatalog();
+    } else if (!authLoading && !canManage && activeTab !== 'today') {
+      setActiveTab('today');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, canManage]);
 
   // Cleanup speech synthesis on unmount
   useEffect(() => {
@@ -318,21 +329,23 @@ export default function PensamentoDoDiaPage() {
     }
   };
 
-  // Generate with custom category via AI Studio
+  // Generate with custom category via AI Studio (Admin/Instructor only)
   const handleGenerateAiThought = async () => {
+    if (!canManage) return;
     try {
       setGeneratingCustomAi(true);
       const queryParams = new URLSearchParams();
       queryParams.set('force', 'true');
+      queryParams.set('preview', 'true');
       queryParams.set('category', aiTheme);
       
-      const res = await fetch(`/api/v1/pensamento-dia?${queryParams.toString()}`);
+      const res = await fetchWithAuth(`/api/v1/pensamento-dia?${queryParams.toString()}`);
       const json = await res.json();
       if (json && json.data) {
         setGeneratedAiQuote(json.data);
         toast.success(isPt ? 'Nova reflexão elaborada com sucesso!' : 'New reflection generated!');
       } else {
-        toast.error(isPt ? 'Erro ao gerar reflexão.' : 'Generation failed.');
+        toast.error(json?.error || (isPt ? 'Erro ao gerar reflexão.' : 'Generation failed.'));
       }
     } catch (error) {
       console.error('AI generation error:', error);
@@ -420,8 +433,8 @@ export default function PensamentoDoDiaPage() {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-2 flex-wrap">
-          {canManage && (
+        {canManage && (
+          <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={handleOpenEditToday}
               className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer active:scale-95"
@@ -429,92 +442,94 @@ export default function PensamentoDoDiaPage() {
               <Edit3 size={14} />
               <span>{isPt ? 'Editar Oficial' : 'Edit Official'}</span>
             </button>
-          )}
 
+            <button
+              onClick={() => fetchTodayThought(true)}
+              disabled={regeneratingToday || loadingToday}
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-amber-50 hover:bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-200 dark:hover:bg-amber-900/50 border border-amber-300/80 dark:border-amber-700/60 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95 disabled:opacity-50"
+              title={isPt ? 'Gerar nova sugestão de reflexão com IA' : 'Generate new reflection with AI'}
+            >
+              <RefreshCw size={14} className={cn(regeneratingToday && 'animate-spin text-amber-600')} />
+              <span>{isPt ? 'Atualizar com IA' : 'Refresh with AI'}</span>
+            </button>
+
+            <button
+              onClick={handlePrintCard}
+              className="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold transition-all cursor-pointer shadow-2xs"
+              title={isPt ? 'Imprimir ou exportar cartão' : 'Print or export card'}
+            >
+              <Printer size={14} />
+              <span className="hidden sm:inline">{isPt ? 'Imprimir' : 'Print'}</span>
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Tabs Navigation (Admin / Instructor only; Students & Monitors see only the message) */}
+      {canManage && (
+        <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 overflow-x-auto custom-scrollbar pb-1">
           <button
-            onClick={() => fetchTodayThought(true)}
-            disabled={regeneratingToday || loadingToday}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-amber-50 hover:bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-200 dark:hover:bg-amber-900/50 border border-amber-300/80 dark:border-amber-700/60 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95 disabled:opacity-50"
-            title={isPt ? 'Gerar nova sugestão de reflexão com IA' : 'Generate new reflection with AI'}
+            onClick={() => setActiveTab('today')}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 border",
+              activeTab === 'today'
+                ? "bg-amber-500 text-white border-amber-600 shadow-xs shadow-amber-500/20"
+                : "bg-transparent text-slate-600 dark:text-slate-400 border-transparent hover:bg-slate-100 dark:hover:bg-slate-800"
+            )}
           >
-            <RefreshCw size={14} className={cn(regeneratingToday && 'animate-spin text-amber-600')} />
-            <span>{isPt ? 'Atualizar com IA' : 'Refresh with AI'}</span>
+            <Quote size={14} />
+            <span>{isPt ? 'Reflexão de Hoje' : 'Today\'s Reflection'}</span>
           </button>
 
           <button
-            onClick={handlePrintCard}
-            className="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold transition-all cursor-pointer shadow-2xs"
-            title={isPt ? 'Imprimir ou exportar cartão' : 'Print or export card'}
+            onClick={() => setActiveTab('ai_studio')}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 border",
+              activeTab === 'ai_studio'
+                ? "bg-indigo-600 text-white border-indigo-700 shadow-xs shadow-indigo-600/20"
+                : "bg-transparent text-slate-600 dark:text-slate-400 border-transparent hover:bg-slate-100 dark:hover:bg-slate-800"
+            )}
           >
-            <Printer size={14} />
-            <span className="hidden sm:inline">{isPt ? 'Imprimir' : 'Print'}</span>
+            <Sparkles size={14} />
+            <span>{isPt ? 'Gerador Temático IA' : 'AI Theme Explorer'}</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('archive')}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 border",
+              activeTab === 'archive'
+                ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 border-slate-900 dark:border-white shadow-xs"
+                : "bg-transparent text-slate-600 dark:text-slate-400 border-transparent hover:bg-slate-100 dark:hover:bg-slate-800"
+            )}
+          >
+            <BookOpen size={14} />
+            <span>{isPt ? 'Biblioteca de Sabedoria' : 'Wisdom Archive'}</span>
+            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-200 dark:bg-slate-700 font-mono">
+              {uniqueItems.length}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('favorites')}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 border",
+              activeTab === 'favorites'
+                ? "bg-rose-500 text-white border-rose-600 shadow-xs shadow-rose-500/20"
+                : "bg-transparent text-slate-600 dark:text-slate-400 border-transparent hover:bg-slate-100 dark:hover:bg-slate-800"
+            )}
+          >
+            <Heart size={14} className={favorites.length > 0 ? "fill-white" : ""} />
+            <span>{isPt ? 'Meus Favoritos' : 'My Favorites'}</span>
+            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-200 dark:bg-slate-700 font-mono">
+              {favorites.length}
+            </span>
           </button>
         </div>
-      </div>
-
-      {/* Tabs Navigation */}
-      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 overflow-x-auto custom-scrollbar pb-1">
-        <button
-          onClick={() => setActiveTab('today')}
-          className={cn(
-            "flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 border",
-            activeTab === 'today'
-              ? "bg-amber-500 text-white border-amber-600 shadow-xs shadow-amber-500/20"
-              : "bg-transparent text-slate-600 dark:text-slate-400 border-transparent hover:bg-slate-100 dark:hover:bg-slate-800"
-          )}
-        >
-          <Quote size={14} />
-          <span>{isPt ? 'Reflexão de Hoje' : 'Today\'s Reflection'}</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('ai_studio')}
-          className={cn(
-            "flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 border",
-            activeTab === 'ai_studio'
-              ? "bg-indigo-600 text-white border-indigo-700 shadow-xs shadow-indigo-600/20"
-              : "bg-transparent text-slate-600 dark:text-slate-400 border-transparent hover:bg-slate-100 dark:hover:bg-slate-800"
-          )}
-        >
-          <Sparkles size={14} />
-          <span>{isPt ? 'Gerador Temático IA' : 'AI Theme Explorer'}</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('archive')}
-          className={cn(
-            "flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 border",
-            activeTab === 'archive'
-              ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 border-slate-900 dark:border-white shadow-xs"
-              : "bg-transparent text-slate-600 dark:text-slate-400 border-transparent hover:bg-slate-100 dark:hover:bg-slate-800"
-          )}
-        >
-          <BookOpen size={14} />
-          <span>{isPt ? 'Biblioteca de Sabedoria' : 'Wisdom Archive'}</span>
-          <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-200 dark:bg-slate-700 font-mono">
-            {uniqueItems.length}
-          </span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('favorites')}
-          className={cn(
-            "flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 border",
-            activeTab === 'favorites'
-              ? "bg-rose-500 text-white border-rose-600 shadow-xs shadow-rose-500/20"
-              : "bg-transparent text-slate-600 dark:text-slate-400 border-transparent hover:bg-slate-100 dark:hover:bg-slate-800"
-          )}
-        >
-          <Heart size={14} className={favorites.length > 0 ? "fill-white" : ""} />
-          <span>{isPt ? 'Meus Favoritos' : 'My Favorites'}</span>
-          <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-200 dark:bg-slate-700 font-mono">
-            {favorites.length}
-          </span>
-        </button>
-      </div>
+      )}
 
       {/* TAB 1: TODAY'S THOUGHT HERO CARD */}
-      {activeTab === 'today' && (
+      {(activeTab === 'today' || isMessageOnlyView) && (
         <div className="space-y-6">
           {loadingToday ? (
             <div className="p-16 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col items-center justify-center gap-4 text-center">
@@ -539,8 +554,10 @@ export default function PensamentoDoDiaPage() {
                   <div className="flex items-center justify-between flex-wrap gap-3 border-b border-amber-200/60 dark:border-slate-800 pb-4">
                     <div className="flex items-center gap-2.5">
                       <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300 border border-amber-300/80 dark:border-amber-800">
-                        <Sparkles size={12} className="text-amber-600 dark:text-amber-400" />
-                        {isPt ? 'Pensamento Oficial de Hoje' : 'Official Thought for Today'}
+                        <Quote size={12} className="rotate-180 text-amber-600 dark:text-amber-400" />
+                        {isMessageOnlyView
+                          ? (isPt ? 'Mensagem da Administração' : 'Administration Message')
+                          : (isPt ? 'Pensamento Oficial de Hoje' : 'Official Thought for Today')}
                       </span>
                       {todayThought.data_exibicao && (
                         <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1">
@@ -567,19 +584,21 @@ export default function PensamentoDoDiaPage() {
                         <span>{isPlayingAudio ? (isPt ? 'Pausar' : 'Stop') : (isPt ? 'Ouvir' : 'Listen')}</span>
                       </button>
 
-                      {/* Favorite Button */}
-                      <button
-                        onClick={() => toggleFavorite(todayThought)}
-                        className={cn(
-                          "p-2 rounded-xl text-xs transition-all cursor-pointer border shadow-2xs",
-                          favorites.some(f => f.texto === todayThought.texto)
-                            ? "bg-rose-50 text-rose-600 border-rose-200 dark:bg-rose-950/60 dark:border-rose-900"
-                            : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:text-rose-500"
-                        )}
-                        title={isPt ? 'Favoritar pensamento' : 'Save to favorites'}
-                      >
-                        <Heart size={14} className={favorites.some(f => f.texto === todayThought.texto) ? "fill-rose-500" : ""} />
-                      </button>
+                      {/* Favorite Button (Admin/Instructor only) */}
+                      {canManage && (
+                        <button
+                          onClick={() => toggleFavorite(todayThought)}
+                          className={cn(
+                            "p-2 rounded-xl text-xs transition-all cursor-pointer border shadow-2xs",
+                            favorites.some(f => f.texto === todayThought.texto)
+                              ? "bg-rose-50 text-rose-600 border-rose-200 dark:bg-rose-950/60 dark:border-rose-900"
+                              : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:text-rose-500"
+                          )}
+                          title={isPt ? 'Favoritar pensamento' : 'Save to favorites'}
+                        >
+                          <Heart size={14} className={favorites.some(f => f.texto === todayThought.texto) ? "fill-rose-500" : ""} />
+                        </button>
+                      )}
 
                       {/* Copy Button */}
                       <button
@@ -632,7 +651,7 @@ export default function PensamentoDoDiaPage() {
                   <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 pt-2 border-t border-amber-200/50 dark:border-slate-800">
                     <span className="flex items-center gap-1.5">
                       <Clock size={13} className="text-amber-500" />
-                      {isPt ? 'Atualizado automaticamente todos os dias às 00:00' : 'Updated automatically every day at 00:00'}
+                      {isPt ? 'Mensagem oficial publicada pela administração' : 'Official message published by administration'}
                     </span>
                     {canManage && (
                       <button
@@ -646,70 +665,84 @@ export default function PensamentoDoDiaPage() {
                 </div>
               </div>
 
-              {/* Three Quick Pillars under the Hero */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs flex flex-col gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold">
-                    <ShieldCheck size={18} />
+              {/* Three Quick Pillars under the Hero (Admin / Instructor view only) */}
+              {canManage && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs flex flex-col gap-2">
+                    <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold">
+                      <ShieldCheck size={18} />
+                    </div>
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                      {isPt ? 'Disciplina & Foco' : 'Discipline & Focus'}
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-normal">
+                      {isPt 
+                        ? 'Incorpore a mensagem de hoje no cumprimento rigoroso da rotina de estudos e deveres militares.' 
+                        : 'Apply today\'s insight to maintain steadfast dedication in study routines and duties.'}
+                    </p>
                   </div>
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                    {isPt ? 'Disciplina & Foco' : 'Discipline & Focus'}
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-normal">
-                    {isPt 
-                      ? 'Incorpore a mensagem de hoje no cumprimento rigoroso da rotina de estudos e deveres militares.' 
-                      : 'Apply today\'s insight to maintain steadfast dedication in study routines and duties.'}
-                  </p>
-                </div>
 
-                <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs flex flex-col gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold">
-                    <Compass size={18} />
+                  <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs flex flex-col gap-2">
+                    <div className="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold">
+                      <Compass size={18} />
+                    </div>
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                      {isPt ? 'Espírito de Corpo' : 'Comradery & Trust'}
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-normal">
+                      {isPt 
+                        ? 'Compartilhe o ensinamento com seus colegas de turma para fortalecer o companheirismo e a união.' 
+                        : 'Share the reflection with classmates to bolster morale, teamwork, and collective resilience.'}
+                    </p>
                   </div>
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                    {isPt ? 'Espírito de Corpo' : 'Comradery & Trust'}
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-normal">
-                    {isPt 
-                      ? 'Compartilhe o ensinamento com seus colegas de turma para fortalecer o companheirismo e a união.' 
-                      : 'Share the reflection with classmates to bolster morale, teamwork, and collective resilience.'}
-                  </p>
-                </div>
 
-                <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs flex flex-col gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
-                    <Award size={18} />
+                  <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs flex flex-col gap-2">
+                    <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
+                      <Award size={18} />
+                    </div>
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                      {isPt ? 'Superação & Vitória' : 'Growth & Excellence'}
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-normal">
+                      {isPt 
+                        ? 'Cada dia é uma oportunidade de vencer desafios acadêmicos e avançar com firmeza na carreira.' 
+                        : 'Every sunrise offers an opportunity to overcome hurdles and excel in academic progression.'}
+                    </p>
                   </div>
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                    {isPt ? 'Superação & Vitória' : 'Growth & Excellence'}
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-normal">
-                    {isPt 
-                      ? 'Cada dia é uma oportunidade de vencer desafios acadêmicos e avançar com firmeza na carreira.' 
-                      : 'Every sunrise offers an opportunity to overcome hurdles and excel in academic progression.'}
-                  </p>
                 </div>
-              </div>
+              )}
             </div>
           ) : (
             <div className="p-12 text-center rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
               <Quote size={32} className="mx-auto text-slate-300 mb-3" />
               <p className="text-sm text-slate-600 dark:text-slate-400">
-                {isPt ? 'Nenhuma reflexão disponível para hoje.' : 'No reflection available for today.'}
+                {isMessageOnlyView
+                  ? (isPt ? 'Nenhuma mensagem publicada pela administração no momento.' : 'No message published by administration at the moment.')
+                  : (isPt ? 'Nenhuma reflexão disponível para hoje.' : 'No reflection available for today.')}
               </p>
-              <button
-                onClick={() => fetchTodayThought(true)}
-                className="mt-4 px-4 py-2 bg-amber-500 text-white text-xs font-bold rounded-xl"
-              >
-                {isPt ? 'Gerar com IA' : 'Generate with AI'}
-              </button>
+              {canManage && (
+                <div className="mt-4 flex items-center justify-center gap-2 flex-wrap">
+                  <button
+                    onClick={handleOpenEditToday}
+                    className="px-4 py-2 bg-slate-900 text-white text-xs font-bold rounded-xl cursor-pointer"
+                  >
+                    {isPt ? 'Escrever Mensagem' : 'Write Message'}
+                  </button>
+                  <button
+                    onClick={() => fetchTodayThought(true)}
+                    className="px-4 py-2 bg-amber-500 text-white text-xs font-bold rounded-xl cursor-pointer"
+                  >
+                    {isPt ? 'Gerar com IA' : 'Generate with AI'}
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
       )}
 
       {/* TAB 2: AI THEMATIC GENERATOR STUDIO */}
-      {activeTab === 'ai_studio' && (
+      {canManage && activeTab === 'ai_studio' && (
         <div className="space-y-6">
           <div className="p-6 sm:p-8 rounded-3xl border border-indigo-200 dark:border-indigo-900/60 bg-gradient-to-br from-indigo-50/60 via-white to-indigo-50/30 dark:from-slate-900 dark:via-slate-900/90 dark:to-slate-950 shadow-sm">
             <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-400 font-bold text-xs uppercase tracking-wider mb-2">
@@ -841,7 +874,7 @@ export default function PensamentoDoDiaPage() {
       )}
 
       {/* TAB 3: WISDOM ARCHIVE & LIBRARY */}
-      {activeTab === 'archive' && (
+      {canManage && activeTab === 'archive' && (
         <div className="space-y-6">
           {/* Filter Bar */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs">
@@ -981,7 +1014,7 @@ export default function PensamentoDoDiaPage() {
       )}
 
       {/* TAB 4: FAVORITES */}
-      {activeTab === 'favorites' && (
+      {canManage && activeTab === 'favorites' && (
         <div className="space-y-6">
           {favorites.length === 0 ? (
             <div className="p-16 text-center rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-3">
