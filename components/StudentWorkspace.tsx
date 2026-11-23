@@ -21,7 +21,9 @@ import {
   MapPin,
   Compass,
   User,
+  MessageSquare,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { useUser } from '@/lib/auth/UserContext';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { supabase } from '@/lib/supabase/client';
@@ -191,6 +193,8 @@ export function StudentWorkspace() {
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [scheduledExams, setScheduledExams] = useState<ScheduledExamItem[]>([]);
   const [extraClassActivities, setExtraClassActivities] = useState<ExtraClassActivityItem[]>([]);
+  const [recados, setRecados] = useState<any[]>([]);
+  const [markingReadId, setMarkingReadId] = useState<string | null>(null);
   const [loadingExtras, setLoadingExtras] = useState(true);
 
   useEffect(() => {
@@ -203,7 +207,7 @@ export function StudentWorkspace() {
       try {
         const localTodayStr = getLocalTodayDateStr();
 
-        const [evalRes, horarioRes, discRes, matRes, evtPrimaryRes, instrRes, apiInstrRes, turmaRowRes] = await Promise.all([
+        const [evalRes, horarioRes, discRes, matRes, evtPrimaryRes, instrRes, apiInstrRes, turmaRowRes, recadosRes] = await Promise.all([
           supabase
             .from('questionarios_conclusao')
             .select('id, created_at')
@@ -240,7 +244,14 @@ export function StudentWorkspace() {
             .select('id, instrutor')
             .eq('id', profile.turma_id)
             .maybeSingle(),
+          fetchWithAuth('/api/recados')
+            .then((r) => (r.ok ? r.json() : null))
+            .catch(() => null),
         ]);
+
+        if (active && Array.isArray(recadosRes?.recados)) {
+          setRecados(recadosRes.recados);
+        }
 
         if (active && evalRes.data) {
           setHasSubmittedSurvey(true);
@@ -637,6 +648,31 @@ export function StudentWorkspace() {
 
   if (!profile) return null;
 
+  const handleMarkRecadoAsRead = async (recadoId: string) => {
+    setMarkingReadId(recadoId);
+    try {
+      const res = await fetchWithAuth('/api/recados', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: recadoId }),
+      });
+      const json = await res.json();
+      if (!res.ok || json.error) {
+        throw new Error(json.error || 'Erro ao marcar como lido.');
+      }
+      setRecados((prev) =>
+        prev.map((r) => (r.id === recadoId ? { ...r, lido: true, lido_em: json.recado?.lido_em || new Date().toISOString() } : r))
+      );
+      toast.success(isPt ? 'Recado marcado como lido!' : 'Message marked as read!');
+    } catch (err: any) {
+      toast.error(err.message || (isPt ? 'Falha ao confirmar leitura.' : 'Failed to mark as read.'));
+    } finally {
+      setMarkingReadId(null);
+    }
+  };
+
+  const unreadRecadosCount = recados.filter((r) => !r.lido).length;
+
   const isSurveyReleased = profile.liberar_formularios === true;
   const todayStr = getLocalTodayDateStr();
   const effectiveEndDate = profile.data_postergacao || profile.data_fim;
@@ -700,6 +736,103 @@ export function StudentWorkspace() {
     <div className="space-y-6 bg-white text-black">
       {/* Cartão de Identificação do Aluno */}
       <UserWorkspaceHeader />
+
+      {/* RECADOS INDIVIDUAIS DO ACOMPANHANTE DA TURMA */}
+      {recados.length > 0 && (
+        <motion.section
+          initial={{ opacity: 0, y: -6, scale: 0.99 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.25 }}
+          aria-label={isPt ? 'Recados do Acompanhante da Turma' : 'Messages from Class Companion'}
+          className="bg-white border-2 border-black rounded-2xl p-5 sm:p-6 shadow-[4px_4px_0px_0px_#000000] text-black space-y-4"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b-2 border-black pb-3.5">
+            <div className="flex items-center gap-3">
+              <div className="relative w-11 h-11 rounded-xl border-2 border-black bg-white flex items-center justify-center shrink-0">
+                <MessageSquare size={22} className="text-black" />
+                {unreadRecadosCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 flex h-3.5 w-3.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-black opacity-40" />
+                    <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-black border border-white" />
+                  </span>
+                )}
+              </div>
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 border border-black rounded bg-white text-black">
+                    {isPt ? 'Recado Individual' : 'Individual Message'}
+                  </span>
+                  {unreadRecadosCount > 0 && (
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-black text-white">
+                      {unreadRecadosCount} {unreadRecadosCount === 1 ? (isPt ? 'novo' : 'new') : (isPt ? 'novos' : 'new')}
+                    </span>
+                  )}
+                </div>
+                <h2 className="text-lg sm:text-xl font-black tracking-tight uppercase text-black mt-0.5">
+                  {isPt ? 'Recados do Acompanhante da Turma' : 'Messages from Class Companion'}
+                </h2>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {recados.map((rec) => (
+              <div
+                key={rec.id}
+                className={cn(
+                  'rounded-xl border-2 border-black bg-white p-4 flex flex-col gap-2.5',
+                  !rec.lido && 'shadow-[3px_3px_0px_0px_#000000]'
+                )}
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-black/15 pb-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-black uppercase tracking-tight text-black">
+                      {rec.titulo || (isPt ? 'Recado do Acompanhante' : 'Class Companion Message')}
+                    </span>
+                    {!rec.lido ? (
+                      <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-black text-white">
+                        {isPt ? 'Não lido' : 'Unread'}
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border border-black bg-white text-black">
+                        <CheckCircle2 size={10} className="text-black" />
+                        {isPt ? 'Lido' : 'Read'}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 text-[11px] font-mono font-bold text-black">
+                    <Clock size={12} className="text-black" />
+                    <span>{rec.created_at ? new Date(rec.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '—'}</span>
+                  </div>
+                </div>
+
+                <p className="text-xs sm:text-sm font-medium text-black whitespace-pre-wrap leading-relaxed">
+                  {rec.mensagem}
+                </p>
+
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                  <span className="inline-flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wider text-black">
+                    <User size={11} className="text-black" />
+                    {isPt ? 'Enviado por:' : 'Sent by:'} {rec.sender_name || (isPt ? 'Acompanhante da Turma' : 'Class Companion')}
+                  </span>
+
+                  {!rec.lido && (
+                    <button
+                      type="button"
+                      disabled={markingReadId === rec.id}
+                      onClick={() => handleMarkRecadoAsRead(rec.id)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-slate-100 text-black border-2 border-black text-[11px] font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 disabled:opacity-50"
+                    >
+                      <CheckCircle2 size={12} className="text-black" />
+                      <span>{markingReadId === rec.id ? (isPt ? 'Salvando...' : 'Saving...') : (isPt ? 'Marcar como lido' : 'Mark as read')}</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.section>
+      )}
 
       {/* DESTAQUE DE PROVAS DOS MÓDULOS (exibido somente quando houver data marcada) */}
       {scheduledExams.length > 0 && (

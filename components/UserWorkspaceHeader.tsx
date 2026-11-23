@@ -51,6 +51,7 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
   const userRole = profile?.role || 'aluno';
   const isAdmin = userRole === 'admin';
   const isAluno = userRole === 'aluno';
+  const isAcompanhante = userRole === 'acompanhante';
   const canUploadPhoto = !isAdmin && !isAluno;
 
   // Sincroniza sempre que profile.foto_url mudar externamente
@@ -127,6 +128,8 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
     ? (isPt ? 'Administrador do Sistema' : 'System Administrator')
     : userRole === 'instrutor'
     ? (isPt ? 'Instrutor Militar' : 'Military Instructor')
+    : userRole === 'acompanhante'
+    ? (isPt ? 'Acompanhante de Turma' : 'Class Companion')
     : userRole === 'convidado'
     ? (isPt ? 'Convidado / Visualizador' : 'Guest / Viewer')
     : (isPt ? 'Aluno / Estudante' : 'Student');
@@ -137,6 +140,8 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
     ? 'bg-blue-50 text-blue-700 border-blue-200'
     : userRole === 'instrutor'
     ? 'bg-purple-50 text-purple-700 border-purple-200'
+    : userRole === 'acompanhante'
+    ? 'bg-teal-50 text-teal-700 border-teal-200'
     : 'bg-amber-50 text-amber-700 border-amber-200';
 
   const displayName = profile.posto_graduacao || profile.nome_guerra
@@ -404,15 +409,21 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
                     {isPt ? 'Nome Completo:' : 'Full Name:'} {profile.full_name}
                   </p>
                 )}
-                {isAluno && (profile.curso_nome || profile.turma_nome) && (
+                {(isAluno || isAcompanhante) && (profile.curso_nome || profile.turma_nome) && (
                   <div className="flex flex-wrap items-center gap-2 mt-2">
                     {profile.curso_nome && (
-                      <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-md bg-white text-black border border-slate-300">
+                      <span className={cn(
+                        "text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-md border",
+                        isAluno ? "bg-white text-black border-slate-300" : "bg-teal-50 text-teal-800 border-teal-200"
+                      )}>
                         {profile.curso_nome}
                       </span>
                     )}
                     {profile.turma_nome && (
-                      <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-md bg-white text-black border border-slate-300">
+                      <span className={cn(
+                        "text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-md border",
+                        isAluno ? "bg-white text-black border-slate-300" : "bg-slate-100 text-slate-800 border-slate-200"
+                      )}>
                         {isPt ? 'Turma:' : 'Class:'} {profile.turma_nome}
                       </span>
                     )}

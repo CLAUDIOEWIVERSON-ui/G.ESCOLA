@@ -58,6 +58,8 @@ export default function HorarioPage() {
   const { t, language } = useI18n();
   const { profile } = useUser();
   const isNifStudent = profile?.role === "aluno" && profile?.isNifStudent;
+  const isAcompanhanteUser = profile?.role === "acompanhante";
+  const isLockedSingleTurma = isNifStudent || isAcompanhanteUser;
 
   const [cursos, setCursos] = useState<any[]>([]);
   const [turmas, setTurmas] = useState<any[]>([]);
@@ -68,16 +70,16 @@ export default function HorarioPage() {
   const [selectedTurmaId, setSelectedTurmaId] = useState("");
 
   useEffect(() => {
-    if (isNifStudent && profile?.turma_id) {
+    if (isLockedSingleTurma && profile?.turma_id) {
       setSelectedTurmaId(profile.turma_id);
       if (turmas.length > 0) {
-        const studentTurma = turmas.find((tu) => tu.id === profile.turma_id);
-        if (studentTurma?.curso_id) {
-          setSelectedCursoId(studentTurma.curso_id);
+        const assignedTurma = turmas.find((tu) => tu.id === profile.turma_id);
+        if (assignedTurma?.curso_id) {
+          setSelectedCursoId(assignedTurma.curso_id);
         }
       }
     }
-  }, [isNifStudent, profile, turmas]);
+  }, [isLockedSingleTurma, profile, turmas]);
   const [isEditMode, setIsEditMode] = useState(false);
   const [printOrientation, setPrintOrientation] = useState<
     "portrait" | "landscape"
@@ -1082,7 +1084,7 @@ export default function HorarioPage() {
 
         {profile?.role !== "aluno" && profile?.role !== "convidado" && (
           <div className="flex items-center gap-3">
-            {!isNifStudent && (
+            {!isLockedSingleTurma && (
               <div className="flex items-center gap-2">
                 {isEditMode && (
                   <button
@@ -1152,7 +1154,7 @@ export default function HorarioPage() {
               </div>
             )}
 
-            {selectedTurmaId && !isEditMode && (
+            {selectedTurmaId && !isEditMode && !isAcompanhanteUser && (
               <button
                 type="button"
                 onClick={() => setShowSignatureSettings(!showSignatureSettings)}
@@ -1183,7 +1185,7 @@ export default function HorarioPage() {
       </div>
 
       {/* Coordinator Signature Configuration Panel (Screen only) */}
-      {showSignatureSettings && profile?.role !== "aluno" && profile?.role !== "convidado" && (
+      {showSignatureSettings && profile?.role !== "aluno" && profile?.role !== "convidado" && profile?.role !== "acompanhante" && (
         <div className="bg-white p-5 rounded-[2rem] border border-blue-100 shadow-lg shadow-blue-500/5 print:hidden space-y-4 animate-fade-in">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div className="flex items-center gap-2.5">
@@ -1257,12 +1259,12 @@ export default function HorarioPage() {
 
       {/* Selectors */}
       <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 print:hidden">
-        {isNifStudent ? (
+        {isLockedSingleTurma ? (
           <div className="space-y-2 col-span-1 md:col-span-2 flex flex-col justify-center bg-white text-black">
             <span className="text-[10px] font-black text-black uppercase tracking-widest px-1">
-              {language === "pt"
-                ? "Sua Matrícula e Turma"
-                : "Your Registration & Class"}
+              {isAcompanhanteUser
+                ? (language === "pt" ? "Turma Acompanhada" : "Assigned Class")
+                : (language === "pt" ? "Sua Matrícula e Turma" : "Your Registration & Class")}
             </span>
             <div className="flex flex-wrap gap-3 items-center mt-1">
               <span className="px-4 py-2 bg-white text-black font-extrabold text-xs md:text-sm rounded-2xl border border-black uppercase tracking-wider">

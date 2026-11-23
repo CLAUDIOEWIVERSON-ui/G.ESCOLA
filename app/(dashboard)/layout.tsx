@@ -227,7 +227,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const { t, language, setLanguage } = useI18n();
   const { isDark, toggleTheme } = useTheme();
-  const { profile, isAdmin, isAluno, isInstrutor, isConvidado, loading: authLoading, logout } = useUser();
+  const { profile, isAdmin, isAluno, isInstrutor, isConvidado, isAcompanhante, loading: authLoading, logout } = useUser();
   const isReadOnly = !isAdmin;
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
@@ -300,6 +300,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [pathname]);
 
   const isStudentUser = isAluno || profile?.role === 'aluno' || !!(profile as any)?.isNifStudent;
+  const isAcompanhanteUser = isAcompanhante || profile?.role === 'acompanhante';
 
   useEffect(() => {
     if (!authLoading) {
@@ -346,9 +347,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           // Force students logged in to only access allowed sections
           router.push('/dashboard');
         }
+
+        if (isAcompanhanteUser && !['/dashboard', '/frequencia', '/horario', '/calendario', '/configuracoes', '/pensamento-do-dia', '/feriados'].includes(pathname || '')) {
+          router.push('/dashboard');
+        }
       }
     }
-  }, [authLoading, profile, isStudentUser, pathname, router]);
+  }, [authLoading, profile, isStudentUser, isAcompanhanteUser, pathname, router]);
 
   const handleLogout = async () => {
     await logout();
@@ -367,6 +372,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: language === 'pt' ? 'Boletim Individual' : 'Individual Report', icon: FileText, path: '/boletim' },
     { name: language === 'pt' ? 'Questionário de Final de Curso' : 'End-of-Course Survey', icon: FileCheck, path: '/avaliacao' },
     { name: language === 'pt' ? 'Detalhe Semanal de Aulas' : 'Weekly Class Details', icon: Calendar, path: '/horario' },
+  ] : isAcompanhanteUser ? [
+    { name: language === 'pt' ? 'Painel da Turma' : 'Class Hub', icon: LayoutDashboard, path: '/dashboard' },
+    { name: t.nav.attendance, icon: CalendarDays, path: '/frequencia' },
+    { name: t.schedule.title, icon: Calendar, path: '/horario' },
+    { name: t.calendar.title, icon: CalendarDays, path: '/calendario' },
+    { name: (t.nav as any).pensamento || 'Pensamento do Dia', icon: Quote, path: '/pensamento-do-dia' },
+    { name: t.nav.settings, icon: Settings, path: '/configuracoes' },
   ] : [
     { name: t.nav.dashboard, icon: LayoutDashboard, path: '/dashboard' },
     { name: t.nav.courses, icon: BookOpen, path: '/cursos' },
@@ -391,7 +403,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // 4. Módulos intermediários em ordem alfabética
   // 5. Configurações (/configuracoes) no final, imediatamente acima do botão de Sair do Sistema
   let navItems: any[];
-  if (!isStudentUser) {
+  if (!isStudentUser && !isAcompanhanteUser) {
     const dashboardItem = rawNavItems.find(item => item.path === '/dashboard');
     const coursesItem = rawNavItems.find(item => item.path === '/cursos');
     const classesItem = rawNavItems.find(item => item.path === '/turmas');
@@ -419,11 +431,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     ? t.users.admin 
     : profile?.role === 'instrutor' 
       ? t.users.instrutor 
-      : profile?.role === 'aluno' 
-        ? t.users.aluno 
-        : profile?.role === 'convidado'
-          ? (language === 'pt' ? 'Convidado' : 'Guest')
-          : '';
+      : profile?.role === 'acompanhante'
+        ? (language === 'pt' ? 'Acompanhante de Turma' : 'Class Companion')
+        : profile?.role === 'aluno' 
+          ? t.users.aluno 
+          : profile?.role === 'convidado'
+            ? (language === 'pt' ? 'Convidado' : 'Guest')
+            : '';
 
   // Definir navegação dinâmica (Voltar/Próximo) baseada na ordem dos módulos
   const transitionItems = isStudentUser
@@ -1068,6 +1082,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {navItems.filter(item => {
           if (isStudentUser) {
             return ['/boletim', '/avaliacao', '/horario'].includes(item.path);
+          }
+          if (isAcompanhanteUser) {
+            return ['/dashboard', '/frequencia', '/horario', '/calendario', '/configuracoes'].includes(item.path);
           }
           return ['/dashboard', '/cursos', '/turmas', '/frequencia', '/horario', '/calendario', '/configuracoes'].includes(item.path);
         }).map((item, idx) => {

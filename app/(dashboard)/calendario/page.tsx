@@ -44,8 +44,8 @@ interface Evento {
 
 export default function CalendarPage() {
   const { t } = useI18n();
-  const { profile, isAdmin, isAluno, isConvidado } = useUser();
-  const isReadOnly = isConvidado || !isAdmin;
+  const { profile, isAdmin, isAluno, isConvidado, isAcompanhante } = useUser();
+  const isReadOnly = isConvidado || isAcompanhante || !isAdmin;
   
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,7 +57,7 @@ export default function CalendarPage() {
   const [studentClassGroup, setStudentClassGroup] = useState<string | null>(null);
 
   useEffect(() => {
-    if (profile?.role === 'aluno' && profile?.turma_id) {
+    if ((profile?.role === 'aluno' || profile?.role === 'acompanhante') && profile?.turma_id) {
       const fetchStudentGroup = async () => {
         try {
           const { data } = await supabase
@@ -518,7 +518,7 @@ export default function CalendarPage() {
             <CalendarRange size={16} className="text-amber-600" />
             <span>Feriados Oficiais</span>
           </Link>
-          {profile && (
+          {profile && !isAcompanhante && profile.role !== 'convidado' && (
             <button 
               onClick={() => {
                 setEditingEvent(null);

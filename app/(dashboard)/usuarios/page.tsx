@@ -17,6 +17,7 @@ export default function UsuariosPage() {
   const { t, language } = useI18n();
   const { isAdmin, isConvidado } = useUser();
   const [users, setUsers] = useState<any[]>([]);
+  const [turmas, setTurmas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isConfigured, setIsConfigured] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -89,14 +90,35 @@ export default function UsuariosPage() {
     }
   }, [isAdmin]);
 
+  const fetchTurmas = useCallback(async () => {
+    try {
+      const { data } = await supabase
+        .from('turmas')
+        .select('id, nome, status, arquivada, curso:cursos(nome)')
+        .is('deleted_at', null)
+        .order('nome');
+      if (data) {
+        setTurmas(
+          data.filter((tu: any) => {
+            const st = (tu.status || '').toString().toLowerCase().trim();
+            return !tu.arquivada && st !== 'arquivada' && st !== 'arquivado' && st !== 'cancelada';
+          })
+        );
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
   useEffect(() => {
     if (isAdmin) {
       fetchUsers();
+      fetchTurmas();
       fetchOnlineStatus();
       const interval = setInterval(fetchOnlineStatus, 10000);
       return () => clearInterval(interval);
     }
-  }, [isAdmin, fetchUsers, fetchOnlineStatus]);
+  }, [isAdmin, fetchUsers, fetchTurmas, fetchOnlineStatus]);
 
   const handleSync = async () => {
     if (!confirm(language === 'pt' ? 'Deseja sincronizar as contas de alunos com o módulo de turmas?' : 'Do you want to sync student accounts with the classes module?')) return;
@@ -127,12 +149,17 @@ export default function UsuariosPage() {
       password: '',
       role: 'aluno', 
       grupo_responsavel: null,
+      turma_id: null,
     });
     setIsModalOpen(true);
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (currentUser?.role === 'acompanhante' && !currentUser?.turma_id) {
+      toast.error(language === 'pt' ? 'Selecione a turma que este acompanhante irá acompanhar.' : 'Select the assigned class for this companion.');
+      return;
+    }
     setSaving(true);
     try {
       const method = currentUser.id ? 'PUT' : 'POST';
@@ -144,7 +171,8 @@ export default function UsuariosPage() {
         password: currentUser.password && currentUser.password.trim() ? currentUser.password.trim() : undefined,
         full_name: currentUser.full_name ? currentUser.full_name.trim() : '',
         role: currentUser.role || 'aluno',
-        grupo_responsavel: currentUser.role === 'instrutor' ? (currentUser.grupo_responsavel || null) : null
+        grupo_responsavel: currentUser.role === 'instrutor' ? (currentUser.grupo_responsavel || null) : null,
+        turma_id: currentUser.role === 'acompanhante' ? (currentUser.turma_id || null) : null
       };
 
       try {
@@ -344,6 +372,7 @@ export default function UsuariosPage() {
               { id: 'all', label: language === 'pt' ? 'Todos' : 'All' },
               { id: 'online', label: language === 'pt' ? `● Online (${Object.keys(onlineUsersMap).length})` : `● Online (${Object.keys(onlineUsersMap).length})` },
               { id: 'aluno', label: language === 'pt' ? 'Alunos' : 'Students' },
+              { id: 'acompanhante', label: language === 'pt' ? 'Acompanhantes' : 'Companions' },
               { id: 'instrutor', label: language === 'pt' ? 'Instrutores' : 'Instructors' },
               { id: 'admin', label: language === 'pt' ? 'Administradores' : 'Administrators' }
             ].map(tab => (
@@ -443,15 +472,21 @@ export default function UsuariosPage() {
                           "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider w-fit",
                           user.role === 'admin' ? "bg-purple-50 text-purple-700 border border-purple-100" : 
                           user.role === 'instrutor' ? "bg-amber-50 text-amber-700 border border-amber-100" :
+                          user.role === 'acompanhante' ? "bg-teal-50 text-teal-700 border border-teal-200" :
                           user.role === 'convidado' ? "bg-slate-50 text-slate-700 border border-slate-100" :
                           "bg-blue-50 text-blue-700 border border-blue-100"
                         )}>
                           {user.role === 'admin' ? <Shield size={12} /> : <User size={12} />}
-                          {user.role === 'admin' ? t.users.admin : user.role === 'instrutor' ? t.users.instrutor : user.role === 'convidado' ? (language === 'pt' ? 'Convidado' : 'Guest') : t.users.aluno}
+                          {user.role === 'admin' ? t.users.admin : user.role === 'instrutor' ? t.users.instrutor : user.role === 'acompanhante' ? (language === 'pt' ? 'Acompanhante de Turma' : 'Class Companion') : user.role === 'convidado' ? (language === 'pt' ? 'Convidado' : 'Guest') : t.users.aluno}
                         </span>
                         {user.grupo_responsavel && (
                           <span className="inline-flex items-center justify-center font-mono text-[9px] font-black text-indigo-600 bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 rounded w-fit uppercase">
                             Grupo: {user.grupo_responsavel}
+                          </span>
+                        )}
+                        {user.role === 'acompanhante' && user.turma_nome && (
+                          <span className="inline-flex items-center justify-center font-mono text-[9px] font-black text-teal-700 bg-teal-50 border border-teal-200 px-1.5 py-0.5 rounded w-fit uppercase">
+                            Turma: {user.turma_nome}
                           </span>
                         )}
                       </div>
@@ -620,11 +655,16 @@ export default function UsuariosPage() {
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">{t.users.role}</label>
             <select
               value={currentUser?.role || 'aluno'}
-              onChange={(e) => setCurrentUser({ ...currentUser, role: e.target.value })}
+              onChange={(e) => setCurrentUser({
+                ...currentUser,
+                role: e.target.value,
+                turma_id: e.target.value === 'acompanhante' ? currentUser?.turma_id || '' : null,
+              })}
               className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm transition-all"
             >
               <option value="admin">{t.users.admin}</option>
               <option value="instrutor">{t.users.instrutor}</option>
+              <option value="acompanhante">{language === 'pt' ? 'Acompanhante de Turma' : 'Class Companion'}</option>
               <option value="aluno">{t.users.aluno}</option>
               <option value="convidado">{language === 'pt' ? 'Convidado (Somente Leitura)' : 'Guest (Read Only)'}</option>
             </select>
@@ -648,6 +688,35 @@ export default function UsuariosPage() {
                 <option value="GAT" />
                 <option value="AMBOS" />
               </datalist>
+            </div>
+          )}
+
+          {currentUser?.role === 'acompanhante' && (
+            <div className="space-y-2 animate-in fade-in slide-in-from-top-1 duration-200 p-3.5 bg-teal-50/70 border border-teal-200 rounded-xl">
+              <label className="text-[10px] font-bold text-teal-800 uppercase tracking-wider ml-1 block">
+                {language === 'pt' ? 'Turma Acompanhada *' : 'Assigned Class *'}
+              </label>
+              <select
+                required
+                value={currentUser?.turma_id || ''}
+                onChange={(e) => setCurrentUser({ ...currentUser, turma_id: e.target.value || null })}
+                className="w-full px-4 py-2.5 bg-white border border-teal-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 text-sm font-semibold text-slate-800"
+              >
+                <option value="">{language === 'pt' ? 'Selecione a turma...' : 'Select class...'}</option>
+                {turmas.map((tu: any) => {
+                  const cursoNome = Array.isArray(tu.curso) ? tu.curso[0]?.nome : tu.curso?.nome;
+                  return (
+                    <option key={tu.id} value={tu.id}>
+                      {cursoNome ? `${tu.nome} — ${cursoNome}` : tu.nome}
+                    </option>
+                  );
+                })}
+              </select>
+              <p className="text-[10px] text-teal-700 font-medium leading-relaxed">
+                {language === 'pt'
+                  ? 'Este perfil visualiza frequência, horário semanal, atividades extraclasse, provas e formatura da turma selecionada e envia recados individuais apenas via dispositivo móvel.'
+                  : 'This profile can view class attendance, weekly schedule, extra-class activities, exams, and graduation dates, and send individual student messages on mobile devices.'}
+              </p>
             </div>
           )}
 

@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
           upsertPayload.grupo_responsavel = meta.grupo_responsavel;
         }
 
-        const { data: synced } = await supabaseAdmin
+        const { data: synced, error: syncErr } = await supabaseAdmin
           .from('profiles')
           .upsert(upsertPayload, { onConflict: 'id' })
           .select('*')
@@ -71,13 +71,24 @@ export async function GET(request: NextRequest) {
 
         if (synced) {
           profileRow = synced;
+        } else if (syncErr && targetRole === 'acompanhante') {
+          const { data: retrySynced } = await supabaseAdmin
+            .from('profiles')
+            .upsert({ ...upsertPayload, role: 'convidado' }, { onConflict: 'id' })
+            .select('*')
+            .maybeSingle();
+          if (retrySynced) {
+            profileRow = retrySynced;
+          }
         }
       }
     }
 
     const resolvedRole = isSuperAdminEmail
       ? 'admin'
-      : (profileRow?.role || meta.role || 'aluno');
+      : meta.role === 'acompanhante'
+        ? 'acompanhante'
+        : (profileRow?.role || meta.role || 'aluno');
 
     const isShadowStudentEmail = userEmail.startsWith('aluno_nif_') || userEmail.endsWith('@aluno.escola.digital');
     const isNifStudent = Boolean(
@@ -132,7 +143,7 @@ export async function GET(request: NextRequest) {
         if (alunoRow.turma_id) {
           const { data: tData } = await supabaseAdmin
             .from('turmas')
-            .select('id, nome, status, periodo, data_inicio, data_fim, data_postergacao, liberar_formularios, localizacao, grupo_responsavel, curso:cursos(id, nome, codigo, sigla, grupo_responsavel)')
+            .select('id, nome, status, periodo, data_inicio, data_fim, data_postergacao, liberar_formularios, localizacao, grupo_responsavel, curso_id, curso:cursos(id, nome, codigo, sigla, grupo_responsavel)')
             .eq('id', alunoRow.turma_id)
             .maybeSingle();
           turmaRow = tData;
@@ -145,6 +156,17 @@ export async function GET(request: NextRequest) {
           .maybeSingle();
         accessCodeRow = codeData;
       }
+    }
+
+    const assignedTurmaId = alunoRow?.turma_id || profileRow?.turma_id || meta.turma_id || undefined;
+    if (resolvedRole === 'acompanhante' && assignedTurmaId && !turmaRow && isSupabaseAdminConfigured()) {
+      const { data: tData } = await supabaseAdmin
+        .from('turmas')
+        .select('id, nome, status, periodo, data_inicio, data_fim, data_postergacao, liberar_formularios, localizacao, grupo_responsavel, curso_id, curso:cursos(id, nome, codigo, sigla, grupo_responsavel)')
+        .eq('id', assignedTurmaId)
+        .is('deleted_at', null)
+        .maybeSingle();
+      turmaRow = tData;
     }
 
     const fullName =
@@ -174,13 +196,15 @@ export async function GET(request: NextRequest) {
       om: alunoRow?.om || profileRow?.om || meta.om || undefined,
       nip: alunoRow?.nip || alunoRow?.nif || profileRow?.nip || meta.nip || undefined,
       matricula: alunoRow?.matricula || undefined,
-      turma_id: alunoRow?.turma_id || profileRow?.turma_id || meta.turma_id || undefined,
+      turma_id: assignedTurmaId,
       turma_nome: turmaRow?.nome || undefined,
       turma_status: turmaRow?.status || undefined,
       turma_periodo: turmaRow?.periodo || undefined,
       turma_grupo: turmaRow?.grupo_responsavel || turmaRow?.curso?.grupo_responsavel || undefined,
+      curso_id: turmaRow?.curso_id || turmaRow?.curso?.id || undefined,
       curso_nome: turmaRow?.curso?.nome || undefined,
       liberar_formularios: turmaRow?.liberar_formularios ?? false,
+      data_inicio: turmaRow?.data_inicio || undefined,
       data_fim: turmaRow?.data_fim || undefined,
       data_postergacao: turmaRow?.data_postergacao || undefined,
       student_id: studentId || undefined,

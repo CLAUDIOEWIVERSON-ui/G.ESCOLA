@@ -55,6 +55,7 @@ import HolidaysWidget from '@/components/HolidaysWidget';
 import DashboardThoughtWidget from '@/components/DashboardThoughtWidget';
 import { UserWorkspaceHeader } from '@/components/UserWorkspaceHeader';
 import { StudentWorkspace } from '@/components/StudentWorkspace';
+import { AcompanhanteWorkspace } from '@/components/AcompanhanteWorkspace';
 import StudentDetailEditModal from '@/components/StudentDetailEditModal';
 import Image from 'next/image';
 import navalMissionLogo from '@/src/assets/images/regenerated_image_1782409801823.png';
@@ -66,8 +67,9 @@ import militaryMaleAvatar from '@/src/assets/images/avatar_military_male_1779964
 import militaryFemaleAvatar from '@/src/assets/images/avatar_military_female_1779964903107.png';
 
 export default function DashboardPage() {
-  const { profile, authLoading } = useUser();
+  const { profile, authLoading, isAcompanhante } = useUser();
   const isStudentUser = profile?.role === 'aluno' || Boolean(profile?.isNifStudent);
+  const isAcompanhanteUser = isAcompanhante || profile?.role === 'acompanhante';
 
   if (authLoading) {
     return (
@@ -79,6 +81,10 @@ export default function DashboardPage() {
 
   if (isStudentUser) {
     return <StudentWorkspace />;
+  }
+
+  if (isAcompanhanteUser) {
+    return <AcompanhanteWorkspace />;
   }
 
   return <StaffDashboardContent />;

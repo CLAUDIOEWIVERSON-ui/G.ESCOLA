@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { supabaseAdmin, isSupabaseAdminConfigured } from '@/lib/supabase/admin';
 
-export type UserRole = 'admin' | 'instrutor' | 'aluno' | 'convidado';
+export type UserRole = 'admin' | 'instrutor' | 'aluno' | 'convidado' | 'acompanhante';
 
 export interface AuthCheckResult {
   allowed: boolean;
@@ -12,6 +12,7 @@ export interface AuthCheckResult {
   isAdmin: boolean;
   isInstrutor: boolean;
   isAluno: boolean;
+  isAcompanhante: boolean;
   errorResponse?: NextResponse;
 }
 
@@ -51,6 +52,11 @@ export async function getAuthUserRole(request?: Request): Promise<{ user: any | 
       return { user, role: 'admin' };
     }
 
+    // Prioritize acompanhante role from user_metadata so it works immediately even before DB enum migration
+    if (user.user_metadata?.role === 'acompanhante') {
+      return { user, role: 'acompanhante' };
+    }
+
     // Check profiles table for the actual role
     if (isSupabaseAdminConfigured()) {
       const { data: profile } = await supabaseAdmin
@@ -84,6 +90,7 @@ export async function ensureNotGuest(request?: Request): Promise<AuthCheckResult
   const isAdmin = role === 'admin';
   const isInstrutor = role === 'instrutor';
   const isAluno = role === 'aluno';
+  const isAcompanhante = role === 'acompanhante';
 
   if (isConvidado) {
     return {
@@ -94,6 +101,7 @@ export async function ensureNotGuest(request?: Request): Promise<AuthCheckResult
       isAdmin: false,
       isInstrutor: false,
       isAluno: false,
+      isAcompanhante: false,
       errorResponse: NextResponse.json(
         {
           error: 'Acesso negado: Usuários com perfil de convidado possuem permissão exclusivamente de leitura. Não é permitido criar, alterar ou apagar dados.',
@@ -111,7 +119,8 @@ export async function ensureNotGuest(request?: Request): Promise<AuthCheckResult
     isConvidado: false,
     isAdmin,
     isInstrutor,
-    isAluno
+    isAluno,
+    isAcompanhante
   };
 }
 
@@ -125,6 +134,7 @@ export async function ensureAdmin(request?: Request): Promise<AuthCheckResult> {
   const isAdmin = role === 'admin';
   const isInstrutor = role === 'instrutor';
   const isAluno = role === 'aluno';
+  const isAcompanhante = role === 'acompanhante';
 
   if (!user) {
     return {
@@ -135,6 +145,7 @@ export async function ensureAdmin(request?: Request): Promise<AuthCheckResult> {
       isAdmin: false,
       isInstrutor: false,
       isAluno: false,
+      isAcompanhante: false,
       errorResponse: NextResponse.json(
         { error: 'Não autenticado. Faça login para continuar.', code: 'UNAUTHORIZED' },
         { status: 401 }
@@ -151,6 +162,7 @@ export async function ensureAdmin(request?: Request): Promise<AuthCheckResult> {
       isAdmin: false,
       isInstrutor: false,
       isAluno: false,
+      isAcompanhante: false,
       errorResponse: NextResponse.json(
         {
           error: 'Acesso negado: Usuários com perfil de convidado possuem permissão exclusivamente de leitura. Não é permitido criar, alterar ou apagar dados.',
@@ -170,6 +182,7 @@ export async function ensureAdmin(request?: Request): Promise<AuthCheckResult> {
       isAdmin: false,
       isInstrutor,
       isAluno,
+      isAcompanhante,
       errorResponse: NextResponse.json(
         { error: 'Acesso restrito a administradores.', code: 'FORBIDDEN' },
         { status: 403 }
@@ -184,6 +197,7 @@ export async function ensureAdmin(request?: Request): Promise<AuthCheckResult> {
     isConvidado: false,
     isAdmin: true,
     isInstrutor: false,
-    isAluno: false
+    isAluno: false,
+    isAcompanhante: false
   };
 }

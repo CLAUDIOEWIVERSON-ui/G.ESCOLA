@@ -12,7 +12,7 @@ export interface UserProfile {
   nome?: string;
   nome_guerra?: string;
   posto_graduacao?: string;
-  role: 'admin' | 'instrutor' | 'aluno' | 'convidado';
+  role: 'admin' | 'instrutor' | 'aluno' | 'convidado' | 'acompanhante';
   foto_url?: string;
   avatar_url?: string;
   om?: string;
@@ -23,8 +23,10 @@ export interface UserProfile {
   turma_status?: string;
   turma_periodo?: string;
   turma_grupo?: string;
+  curso_id?: string;
   curso_nome?: string;
   liberar_formularios?: boolean;
+  data_inicio?: string;
   data_fim?: string;
   data_postergacao?: string;
   student_id?: string;
@@ -43,6 +45,7 @@ interface UserContextType {
   isInstrutor: boolean;
   isAluno: boolean;
   isConvidado: boolean;
+  isAcompanhante: boolean;
   refreshProfile: () => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -55,6 +58,7 @@ const UserContext = createContext<UserContextType>({
   isInstrutor: false,
   isAluno: false,
   isConvidado: false,
+  isAcompanhante: false,
   refreshProfile: async () => {},
   logout: async () => {},
 });
@@ -66,7 +70,9 @@ function buildFallbackProfileFromUser(user: any, profRow?: any): UserProfile {
   const isShadowStudent = email.startsWith('aluno_nif_') || email.endsWith('@aluno.escola.digital');
   const role: UserProfile['role'] = isSuperAdmin
     ? 'admin'
-    : (profRow?.role || meta.role || 'aluno');
+    : meta.role === 'acompanhante'
+      ? 'acompanhante'
+      : (profRow?.role || meta.role || 'aluno');
 
   const studentId =
     profRow?.student_id ||
@@ -284,6 +290,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const isInstrutor = role === 'instrutor';
   const isAluno = role === 'aluno';
   const isConvidado = role === 'convidado';
+  const isAcompanhante = role === 'acompanhante';
 
   return (
     <UserContext.Provider
@@ -295,6 +302,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         isInstrutor,
         isAluno,
         isConvidado,
+        isAcompanhante,
         refreshProfile,
         logout,
       }}

@@ -152,8 +152,9 @@ function getWeeksOfMonth(
 
 export default function FrequenciaPage() {
   const { t, language } = useI18n();
-  const { profile, isAdmin, isInstrutor, isConvidado } = useUser();
-  const isReadOnly = isConvidado || (!isAdmin && !isInstrutor);
+  const { profile, isAdmin, isInstrutor, isConvidado, isAcompanhante } = useUser();
+  const isAcompanhanteUser = isAcompanhante || profile?.role === 'acompanhante';
+  const isReadOnly = isConvidado || isAcompanhanteUser || (!isAdmin && !isInstrutor);
   const dateLocale = language === 'pt' ? ptBR : enUS;
 
   const [loading, setLoading] = useState(false);
@@ -844,13 +845,23 @@ export default function FrequenciaPage() {
         }
       }
       if (turmasData) {
-        setTurmas(
-          filteredCls.filter((t: any) => {
-            const statusLower = (t.status || '').toString().toLowerCase().trim();
-            const isArquivada = Boolean(t.arquivada) === true || statusLower === 'arquivada' || statusLower === 'arquivado';
-            return !t.internacional && !isArquivada;
-          })
-        );
+        let activeList = filteredCls.filter((t: any) => {
+          const statusLower = (t.status || '').toString().toLowerCase().trim();
+          const isArquivada = Boolean(t.arquivada) === true || statusLower === 'arquivada' || statusLower === 'arquivado';
+          return !t.internacional && !isArquivada;
+        });
+
+        if (profile?.role === 'acompanhante' && profile?.turma_id) {
+          activeList = activeList.filter((t: any) => t.id === profile.turma_id);
+          if (activeList.length > 0) {
+            setSelectedTurma(activeList[0].id);
+            if (activeList[0].curso_id) {
+              setSelectedCurso(activeList[0].curso_id);
+            }
+          }
+        }
+
+        setTurmas(activeList);
       }
 
       const { data: disciplinasData } = await supabase.from('disciplinas').select('id, nome, curso_id').is('deleted_at', null).order('nome');
@@ -961,7 +972,11 @@ export default function FrequenciaPage() {
             <select
               value={selectedTurma}
               onChange={(e) => setSelectedTurma(e.target.value)}
-              className="w-full px-5 py-3.5 bg-slate-50/50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 outline-none text-base font-semibold appearance-none transition-all cursor-pointer group-hover:bg-slate-50 text-slate-700"
+              disabled={isAcompanhanteUser}
+              className={cn(
+                "w-full px-5 py-3.5 bg-slate-50/50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 outline-none text-base font-semibold appearance-none transition-all text-slate-700",
+                isAcompanhanteUser ? "cursor-not-allowed opacity-80 bg-slate-100" : "cursor-pointer group-hover:bg-slate-50"
+              )}
             >
               <option value="">{t.attendance.selectClass}</option>
               {turmas.map((turma, idx) => (
