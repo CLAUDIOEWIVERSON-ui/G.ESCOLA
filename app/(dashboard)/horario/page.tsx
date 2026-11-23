@@ -26,6 +26,7 @@ import {
   RotateCcw,
   Smartphone,
   RotateCw,
+  CalendarOff,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { cn, getCleanTurmaName } from "@/lib/utils";
@@ -593,6 +594,23 @@ export default function HorarioPage() {
     }));
   };
 
+  const patchCell = (
+    slotId: string,
+    dayKey: string,
+    patch: Record<string, string>,
+  ) => {
+    const weekKey = format(weekStart, "yyyy-MM-dd");
+    setScheduleData((prev) => ({
+      ...prev,
+      [`${weekKey}_${slotId}-${dayKey}`]: {
+        ...(prev[`${weekKey}_${slotId}-${dayKey}`] ||
+          prev[`${slotId}-${dayKey}`] ||
+          {}),
+        ...patch,
+      },
+    }));
+  };
+
   const getCellData = (slotId: string, dayKey: string) => {
     const weekKey = format(weekStart, "yyyy-MM-dd");
     return (
@@ -1041,6 +1059,14 @@ export default function HorarioPage() {
           .print-header, .print-header * {
             background-color: #ffffff !important;
             color: #000000 !important;
+          }
+          .print-content .holiday-extra-cell {
+            background-color: #ede9fe !important;
+            border: 1.5px solid #7c3aed !important;
+            color: #4c1d95 !important;
+          }
+          .print-content .holiday-extra-cell * {
+            color: #4c1d95 !important;
           }
           .print-header span, .print-header p, .print-header h2 {
             color: #000000 !important;
@@ -1546,7 +1572,8 @@ export default function HorarioPage() {
                               cell.topicId ||
                               cell.topic ||
                               cell.modulo === "PROVAS" ||
-                              cell.modulo === "PROVA"
+                              cell.modulo === "PROVA" ||
+                              cell.modulo === "FERIADO_EXTRAORDINARIO"
                             );
                           });
                         };
@@ -1766,11 +1793,16 @@ export default function HorarioPage() {
                                   className="px-2 py-2 md:px-2.5 md:py-2.5 border-r border-slate-100 last:border-r-0"
                                 >
                                   {(() => {
+                                    const isExtraordinaryHolidayCell =
+                                      cell.subjectId === "__feriado_extraordinario__" ||
+                                      cell.modulo === "FERIADO_EXTRAORDINARIO";
                                     const isExtraClassCell =
-                                      cell.subjectId === "__extraclasse__" ||
-                                      /extra[\s-]*classe/i.test(cell.customSubject || "") ||
-                                      /extra[\s-]*classe/i.test(cell.modulo || "");
+                                      !isExtraordinaryHolidayCell &&
+                                      (cell.subjectId === "__extraclasse__" ||
+                                        /extra[\s-]*classe/i.test(cell.customSubject || "") ||
+                                        /extra[\s-]*classe/i.test(cell.modulo || ""));
                                     const isExamCell =
+                                      !isExtraordinaryHolidayCell &&
                                       !isExtraClassCell &&
                                       (cell.modulo === "PROVAS" ||
                                         cell.modulo === "PROVA" ||
@@ -1780,19 +1812,21 @@ export default function HorarioPage() {
                                   <div
                                     className={cn(
                                       "rounded-xl p-3 h-full flex flex-col transition-all min-h-[105px]",
-                                      isEditMode
-                                        ? "bg-white border-2 border-dashed border-neutral-300"
-                                        : isExamCell
-                                          ? isNifStudent
-                                            ? "bg-white border-2 border-black shadow-[3px_3px_0px_0px_#000000]"
-                                            : "bg-rose-50/80 border-2 border-rose-500 shadow-sm"
-                                          : isExtraClassCell
+                                      isExtraordinaryHolidayCell
+                                        ? "holiday-extra-cell bg-violet-100/90 border-2 border-violet-500 shadow-sm text-violet-950"
+                                        : isEditMode
+                                          ? "bg-white border-2 border-dashed border-neutral-300"
+                                          : isExamCell
                                             ? isNifStudent
                                               ? "bg-white border-2 border-black shadow-[3px_3px_0px_0px_#000000]"
-                                              : "bg-amber-50/80 border-2 border-amber-500 shadow-sm"
-                                            : (cell.subjectId || cell.customSubject)
-                                              ? "bg-slate-50 border border-slate-200/80 shadow-sm"
-                                              : "hover:bg-slate-50/40 border border-transparent",
+                                              : "bg-rose-50/80 border-2 border-rose-500 shadow-sm"
+                                            : isExtraClassCell
+                                              ? isNifStudent
+                                                ? "bg-white border-2 border-black shadow-[3px_3px_0px_0px_#000000]"
+                                                : "bg-amber-50/80 border-2 border-amber-500 shadow-sm"
+                                              : (cell.subjectId || cell.customSubject)
+                                                ? "bg-slate-50 border border-slate-200/80 shadow-sm"
+                                                : "hover:bg-slate-50/40 border border-transparent",
                                     )}
                                   >
                                     {(() => {
@@ -1825,6 +1859,55 @@ export default function HorarioPage() {
                                                 : `Module ${currentModulo}`;
 
                                       return isEditMode ? (
+                                        isExtraordinaryHolidayCell ? (
+                                          <div className="space-y-2 flex flex-col h-full justify-between">
+                                            <div className="flex items-start justify-between gap-1">
+                                              <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-violet-900 bg-violet-200/80 border border-violet-400 px-1.5 py-0.5 rounded">
+                                                <CalendarOff size={10} className="shrink-0" />
+                                                {language === "pt" ? "Feriado Extraordinário" : "Extraordinary Holiday"}
+                                              </span>
+                                              <button
+                                                type="button"
+                                                onClick={() =>
+                                                  patchCell(slot.id, day.key, {
+                                                    subjectId: "",
+                                                    modulo: "",
+                                                    topic: "",
+                                                  })
+                                                }
+                                                className="text-violet-700 hover:text-violet-950 hover:bg-violet-200/60 rounded px-1 py-0.5 text-[10px] font-black transition cursor-pointer"
+                                                title={language === "pt" ? "Remover Feriado Extraordinário" : "Remove Extraordinary Holiday"}
+                                              >
+                                                ✕
+                                              </button>
+                                            </div>
+
+                                            <input
+                                              type="text"
+                                              value={cell.topic || ""}
+                                              onChange={(e) =>
+                                                updateCell(
+                                                  slot.id,
+                                                  day.key,
+                                                  "topic",
+                                                  e.target.value,
+                                                )
+                                              }
+                                              placeholder={
+                                                language === "pt"
+                                                  ? "Motivo / nome (opcional)"
+                                                  : "Reason / name (optional)"
+                                              }
+                                              className="w-full text-[9px] font-bold text-violet-950 bg-white/80 border border-violet-300 rounded-md px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-violet-500 placeholder:text-violet-400"
+                                            />
+
+                                            <span className="text-[8px] font-bold text-violet-700 uppercase tracking-wide leading-tight">
+                                              {language === "pt"
+                                                ? "Sem preenchimento de aula"
+                                                : "No class fields required"}
+                                            </span>
+                                          </div>
+                                        ) : (
                                         <div className="space-y-1.5 flex flex-col h-full justify-between">
                                           <div className="space-y-1.5">
                                             {/* 1. MÓDULO SELECT */}
@@ -1869,6 +1952,19 @@ export default function HorarioPage() {
                                                     if (e.target.value === "__custom__") {
                                                       updateCell(slot.id, day.key, "moduloIsCustom", "true");
                                                       updateCell(slot.id, day.key, "modulo", "");
+                                                    } else if (e.target.value === "FERIADO_EXTRAORDINARIO") {
+                                                      patchCell(slot.id, day.key, {
+                                                        subjectId: "__feriado_extraordinario__",
+                                                        modulo: "FERIADO_EXTRAORDINARIO",
+                                                        moduloIsCustom: "",
+                                                        subjectIsCustom: "",
+                                                        customSubject: "",
+                                                        topicId: "",
+                                                        instructorId: "",
+                                                        instructorIsCustom: "",
+                                                        customInstructor: "",
+                                                        room: "",
+                                                      });
                                                     } else {
                                                       updateCell(
                                                         slot.id,
@@ -1904,6 +2000,11 @@ export default function HorarioPage() {
                                                     {language === "pt"
                                                       ? "PROVAS"
                                                       : "EXAMS"}
+                                                  </option>
+                                                  <option value="FERIADO_EXTRAORDINARIO">
+                                                    {language === "pt"
+                                                      ? "FERIADO EXTRAORDINÁRIO"
+                                                      : "EXTRAORDINARY HOLIDAY"}
                                                   </option>
                                                   <option value="__custom__">
                                                     {language === "pt"
@@ -1958,6 +2059,19 @@ export default function HorarioPage() {
                                                       updateCell(slot.id, day.key, "subjectIsCustom", "true");
                                                       updateCell(slot.id, day.key, "subjectId", "");
                                                       updateCell(slot.id, day.key, "customSubject", "");
+                                                    } else if (e.target.value === "__feriado_extraordinario__") {
+                                                      patchCell(slot.id, day.key, {
+                                                        subjectId: "__feriado_extraordinario__",
+                                                        modulo: "FERIADO_EXTRAORDINARIO",
+                                                        moduloIsCustom: "",
+                                                        subjectIsCustom: "",
+                                                        customSubject: "",
+                                                        topicId: "",
+                                                        instructorId: "",
+                                                        instructorIsCustom: "",
+                                                        customInstructor: "",
+                                                        room: "",
+                                                      });
                                                     } else if (e.target.value === "__extraclasse__") {
                                                       updateCell(slot.id, day.key, "subjectId", "__extraclasse__");
                                                       updateCell(slot.id, day.key, "topicId", "");
@@ -1996,6 +2110,11 @@ export default function HorarioPage() {
                                                 >
                                                   <option value="">
                                                     {t.schedule.subject}
+                                                  </option>
+                                                  <option value="__feriado_extraordinario__">
+                                                    {language === "pt"
+                                                      ? "FERIADO EXTRAORDINÁRIO"
+                                                      : "EXTRAORDINARY HOLIDAY"}
                                                   </option>
                                                   <option value="__extraclasse__">
                                                     {language === "pt"
@@ -2158,6 +2277,23 @@ export default function HorarioPage() {
                                               )}
                                             />
                                           </div>
+                                        </div>
+                                        )
+                                      ) : isExtraordinaryHolidayCell ? (
+                                        <div className="flex-1 flex flex-col items-center justify-center text-center gap-1.5 py-1">
+                                          <div className="w-7 h-7 rounded-full bg-violet-200/80 border border-violet-400 flex items-center justify-center text-violet-800">
+                                            <CalendarOff size={14} />
+                                          </div>
+                                          <span className="text-[10px] font-black uppercase tracking-wider text-violet-950 leading-tight">
+                                            {language === "pt"
+                                              ? "Feriado Extraordinário"
+                                              : "Extraordinary Holiday"}
+                                          </span>
+                                          {cell.topic && (
+                                            <span className="text-[9px] font-bold uppercase tracking-tight text-violet-800 line-clamp-2 leading-tight">
+                                              {cell.topic}
+                                            </span>
+                                          )}
                                         </div>
                                       ) : (cell.subjectId || cell.customSubject || cell.modulo === "PROVAS" || cell.modulo === "PROVA") ? (
                                         <div className="space-y-1.5 flex-1 flex flex-col justify-between">

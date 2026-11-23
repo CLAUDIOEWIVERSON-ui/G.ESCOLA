@@ -1013,7 +1013,7 @@ function AvaliacaoAlunoForm() {
                       const filledSlots = slots.map(slot => {
                         const cell = getCellData(slot.id, day.key);
                         return { slot, cell };
-                      }).filter(item => item.cell.subjectId || item.cell.customSubject || item.cell.instructorId || item.cell.customInstructor || item.cell.room);
+                      }).filter(item => item.cell.subjectId || item.cell.customSubject || item.cell.instructorId || item.cell.customInstructor || item.cell.room || item.cell.modulo === 'FERIADO_EXTRAORDINARIO');
 
                       return (
                         <div key={day.key} className="border border-slate-300 rounded-lg p-3 bg-white flex flex-col justify-start">
@@ -1025,6 +1025,20 @@ function AvaliacaoAlunoForm() {
                           ) : (
                             <div className="space-y-2">
                               {filledSlots.map(({ slot, cell }) => {
+                                const isHolidayExtra =
+                                  cell.subjectId === '__feriado_extraordinario__' ||
+                                  cell.modulo === 'FERIADO_EXTRAORDINARIO';
+                                if (isHolidayExtra) {
+                                  return (
+                                    <div key={slot.id} className="bg-violet-100 border-2 border-violet-500 rounded-lg p-2 shadow-xs text-[10px] space-y-1 text-violet-950">
+                                      <div className="flex justify-between items-center gap-1.5 border-b pb-1 mb-1 border-violet-300">
+                                        <span className="bg-violet-200 border border-violet-400 text-violet-950 text-[8.5px] font-bold px-1 py-0.5 rounded font-mono">{slot.time}</span>
+                                      </div>
+                                      <p className="font-extrabold text-violet-950 leading-tight block uppercase">FERIADO EXTRAORDINÁRIO</p>
+                                      {cell.topic && <p className="text-[8.5px] text-violet-800 font-bold uppercase">{cell.topic}</p>}
+                                    </div>
+                                  );
+                                }
                                 const subjectName =
                                   cell.customSubject ||
                                   disciplinas.find(d => d.id === cell.subjectId)?.nome ||
@@ -1621,7 +1635,7 @@ function AvaliacaoAlunoForm() {
                                   const filledSlots = slots.map(slot => {
                                     const cell = getCellData(slot.id, day.key);
                                     return { slot, cell };
-                                  }).filter(item => item.cell.subjectId || item.cell.customSubject || item.cell.instructorId || item.cell.customInstructor || item.cell.room);
+                                  }).filter(item => item.cell.subjectId || item.cell.customSubject || item.cell.instructorId || item.cell.customInstructor || item.cell.room || item.cell.modulo === 'FERIADO_EXTRAORDINARIO');
 
                                   return (
                                     <div key={day.key} className="border border-slate-150 rounded-lg p-3 bg-slate-50/50 hover:bg-slate-100/35 transition flex flex-col justify-start">
@@ -1633,6 +1647,20 @@ function AvaliacaoAlunoForm() {
                                       ) : (
                                         <div className="space-y-2">
                                           {filledSlots.map(({ slot, cell }) => {
+                                            const isHolidayExtra =
+                                              cell.subjectId === '__feriado_extraordinario__' ||
+                                              cell.modulo === 'FERIADO_EXTRAORDINARIO';
+                                            if (isHolidayExtra) {
+                                              return (
+                                                <div key={slot.id} className="bg-violet-100 border-2 border-violet-500 rounded-lg p-2 shadow-xs text-[10px] space-y-1 text-violet-950">
+                                                  <div className="flex justify-between items-center gap-1.5 border-b pb-1 mb-1 border-violet-300">
+                                                    <span className="bg-violet-200 border border-violet-400 text-violet-950 text-[8.5px] font-bold px-1 py-0.5 rounded font-mono">{slot.time}</span>
+                                                  </div>
+                                                  <p className="font-extrabold text-violet-950 leading-tight block uppercase">FERIADO EXTRAORDINÁRIO</p>
+                                                  {cell.topic && <p className="text-[8.5px] text-violet-800 font-bold uppercase">{cell.topic}</p>}
+                                                </div>
+                                              );
+                                            }
                                             const subjectName =
                                               cell.customSubject ||
                                               disciplinas.find(d => d.id === cell.subjectId)?.nome ||
