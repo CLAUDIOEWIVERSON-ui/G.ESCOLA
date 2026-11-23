@@ -24,6 +24,8 @@ import {
   Layers,
   PenTool,
   RotateCcw,
+  Smartphone,
+  RotateCw,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { cn, getCleanTurmaName } from "@/lib/utils";
@@ -1182,6 +1184,29 @@ export default function HorarioPage() {
             </button>
           </div>
         )}
+      </div>
+
+      {/* Mobile Portrait Orientation Hint (Visible to all users on mobile portrait, hidden in landscape & desktop & print) */}
+      <div
+        role="status"
+        className="flex lg:hidden landscape:hidden items-center gap-3.5 p-4 rounded-2xl bg-amber-50 border-2 border-amber-300 text-amber-950 shadow-sm print:hidden"
+      >
+        <div className="w-11 h-11 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-sm relative">
+          <Smartphone size={20} className="-rotate-12" />
+          <RotateCw size={13} className="absolute -bottom-1 -right-1 bg-amber-900 text-white rounded-full p-0.5" />
+        </div>
+        <div className="min-w-0 flex-1 space-y-0.5">
+          <p className="text-xs font-black uppercase tracking-wider text-amber-950">
+            {language === "pt"
+              ? "Vire o celular na horizontal (paisagem)"
+              : "Rotate your phone horizontally (landscape)"}
+          </p>
+          <p className="text-[11px] font-semibold text-amber-900 leading-snug">
+            {language === "pt"
+              ? "Deite ou vire o seu aparelho celular para visualizar e ler melhor o Detalhe Semanal de Aulas na tela."
+              : "Turn your mobile device sideways to better view and read the Weekly Class Schedule on screen."}
+          </p>
+        </div>
       </div>
 
       {/* Coordinator Signature Configuration Panel (Screen only) */}
