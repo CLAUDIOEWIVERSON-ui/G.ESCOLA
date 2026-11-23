@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin, isSupabaseAdminConfigured } from '@/lib/supabase/admin';
 import { recordAccessLog } from '@/lib/auth/accessLogs';
+import {
+  findAcompanhanteByAccessCode,
+  recordAcompanhanteQrLogin,
+} from '@/lib/auth/acompanhanteQrStore';
 import * as crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
@@ -32,6 +36,78 @@ export async function POST(req: NextRequest) {
     }
     const cleanedAccessCode = decodeURIComponent(rawCode).trim().toUpperCase();
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanedAccessCode);
+
+    // 0. Verifica primeiro se o QR Code / Código pertence a um Acompanhante (Monitor da Turma)
+    const monitorMatch = await findAcompanhanteByAccessCode(cleanedAccessCode);
+    if (monitorMatch) {
+      const { data: turma, error: turmaErr } = await supabaseAdmin
+        .from('turmas')
+        .select('id, nome, status, deleted_at')
+        .eq('id', monitorMatch.turma_id)
+        .maybeSingle();
+
+      if (turmaErr) {
+        return NextResponse.json({ error: 'Erro ao verificar turma vinculada ao monitor.' }, { status: 500 });
+      }
+      if (!turma || turma.deleted_at) {
+        return NextResponse.json({ error: 'Acesso negado: A turma vinculada a este QR Code não existe ou foi removida.' }, { status: 403 });
+      }
+      if (String(turma.status || '').toLowerCase() === 'cancelada') {
+        return NextResponse.json({ error: 'Seu acesso foi encerrado porque a turma foi cancelada.' }, { status: 403 });
+      }
+
+      const { data: authRes, error: userErr } = await supabaseAdmin.auth.admin.getUserById(monitorMatch.user_id);
+      const authUser = authRes?.user;
+      if (userErr || !authUser?.email) {
+        return NextResponse.json({ error: 'Conta do monitor de turma não localizada.' }, { status: 404 });
+      }
+
+      const meta = authUser.user_metadata || {};
+      if (meta.role !== 'acompanhante' || meta.turma_id !== monitorMatch.turma_id) {
+        return NextResponse.json({ error: 'QR Code revogado ou inválido para esta turma.' }, { status: 403 });
+      }
+
+      const { data: linkData, error: linkErr } = await supabaseAdmin.auth.admin.generateLink({
+        type: 'magiclink',
+        email: authUser.email,
+      });
+
+      const hashedToken = linkData?.properties?.hashed_token;
+      if (linkErr || !hashedToken) {
+        return NextResponse.json(
+          { error: linkErr?.message || 'Não foi possível gerar sessão segura via QR Code.' },
+          { status: 500 }
+        );
+      }
+
+      await recordAcompanhanteQrLogin(monitorMatch.turma_id).catch(() => {});
+
+      const ip = req.headers.get('x-forwarded-for')?.split(',')[0] || req.headers.get('x-real-ip') || undefined;
+      const ua = req.headers.get('user-agent') || undefined;
+      recordAccessLog({
+        userId: authUser.id,
+        userName: monitorMatch.full_name,
+        email: authUser.email,
+        role: 'acompanhante',
+        path: '/dashboard',
+        accessType: 'Login Monitor de Turma (QR Code)',
+        ipAddress: ip,
+        userAgent: ua,
+      }).catch(() => {});
+
+      return NextResponse.json({
+        success: true,
+        authType: 'magiclink',
+        tokenHash: hashedToken,
+        role: 'acompanhante',
+        monitor: {
+          user_id: authUser.id,
+          full_name: monitorMatch.full_name,
+          turma_id: monitorMatch.turma_id,
+          turma_nome: turma.nome,
+        },
+      });
+    }
 
     // 1. Busca do registro de código de acesso no banco
     let accessRecord: any = null;

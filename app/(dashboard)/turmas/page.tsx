@@ -6,13 +6,15 @@ import { supabase } from '@/lib/supabase/client';
 import { useTurmas, useCursos, useDisciplinas } from '@/hooks/useCachedData';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
-import { Plus, Search, Layers as LayersIcon, Library, Calendar, Clock, MapPin, Pencil, Trash2, Loader2, CheckCircle2, RefreshCcw, Users, Mail, Phone, Building, Camera, MessageCircle, XCircle, FileText, X, GraduationCap, School, ChevronLeft, ChevronRight, Monitor, Globe, Anchor, Swords, Download, Archive, Printer } from 'lucide-react';
+import { Plus, Search, Layers as LayersIcon, Library, Calendar, Clock, MapPin, Pencil, Trash2, Loader2, CheckCircle2, RefreshCcw, Users, Mail, Phone, Building, Camera, MessageCircle, XCircle, FileText, X, GraduationCap, School, ChevronLeft, ChevronRight, Monitor, Globe, Anchor, Swords, Download, Archive, Printer, QrCode, ShieldCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn, getCleanTurmaName, calculateStudentCoursePercentage } from '@/lib/utils';
+import { fetchWithAuth } from '@/lib/api';
 import { downloadElementAsPDF } from '@/lib/printDocumentUtils';
 import Modal from '@/components/Modal';
 import StudentDetailEditModal from '@/components/StudentDetailEditModal';
 import BatchTurmaFichasModal from '@/components/BatchTurmaFichasModal';
+import TurmaMonitorQrModal, { TurmaMonitorInfo } from '@/components/TurmaMonitorQrModal';
 import { getCardStyleForItem, getCardColorSettings, CardColorSettings } from '@/lib/cardColors';
 import Image from 'next/image';
 import maleAvatar from '@/src/assets/images/avatar_male_1778977230783.png';
@@ -87,10 +89,44 @@ function TurmasContent() {
   const [expandedPhoto, setExpandedPhoto] = useState<{url: string, name: string} | null>(null);
   const [studentAccess, setStudentAccess] = useState<any>(null);
   const [allInstructors, setAllInstructors] = useState<any[]>([]);
+  const [monitorsByTurma, setMonitorsByTurma] = useState<Record<string, TurmaMonitorInfo>>({});
+  const [monitorModalTurma, setMonitorModalTurma] = useState<any | null>(null);
+  const [modalMonitorName, setModalMonitorName] = useState('');
+  const [modalMonitorEmail, setModalMonitorEmail] = useState('');
 
   const canEditViewingTurma = viewingTurma ? (isAdmin || canEditTurma(viewingTurma)) : false;
 
+  const loadMonitors = useCallback(async () => {
+    try {
+      const res = await fetchWithAuth('/api/turmas/acompanhante');
+      if (!res.ok) return;
+      const data = await res.json();
+      if (Array.isArray(data?.monitors)) {
+        const nextMap: Record<string, TurmaMonitorInfo> = {};
+        data.monitors.forEach((m: TurmaMonitorInfo) => {
+          if (m.turma_id) nextMap[m.turma_id] = m;
+        });
+        setMonitorsByTurma(nextMap);
+      }
+    } catch (err) {
+      console.error('Error loading class monitors:', err);
+    }
+  }, []);
+
+  const handleMonitorChanged = useCallback((turmaId: string, monitor: TurmaMonitorInfo | null) => {
+    setMonitorsByTurma((prev) => {
+      const next = { ...prev };
+      if (monitor) {
+        next[turmaId] = monitor;
+      } else {
+        delete next[turmaId];
+      }
+      return next;
+    });
+  }, []);
+
   useEffect(() => {
+    loadMonitors();
     async function loadInstructors() {
       try {
         const { data, error } = await supabase
@@ -105,7 +141,7 @@ function TurmasContent() {
       }
     }
     loadInstructors();
-  }, []);
+  }, [loadMonitors]);
   
   const isCiabaOrCiaga = viewingTurma?.nome ? (viewingTurma.nome.toUpperCase().includes('CIABA') || viewingTurma.nome.toUpperCase().includes('CIAGA') || viewingTurma.internacional) : false;
   
@@ -722,6 +758,9 @@ function TurmasContent() {
       grupo_responsavel: activeGroup,
       liberar_formularios: false
     });
+    const existingMonitor = turma?.id ? monitorsByTurma[turma.id] : null;
+    setModalMonitorName(existingMonitor?.full_name || turma?.acompanhante_nome || '');
+    setModalMonitorEmail(existingMonitor?.email || '');
     setIsModalOpen(true);
   };
 
@@ -1241,6 +1280,8 @@ function TurmasContent() {
         liberar_formularios: !!currentTurma.liberar_formularios
       };
 
+      let savedTurmaId: string | null = currentTurma.id || null;
+
       if (currentTurma.id) {
         const { error } = await supabase
           .from('turmas')
@@ -1248,13 +1289,40 @@ function TurmasContent() {
           .eq('id', currentTurma.id);
         if (error) throw new Error(error.message + (error.details ? ` (${error.details})` : ''));
       } else {
-        const { error } = await supabase
+        const { data: insertedTurma, error } = await supabase
           .from('turmas')
-          .insert([payload]);
+          .insert([payload])
+          .select('id')
+          .single();
         if (error) throw new Error(error.message + (error.details ? ` (${error.details})` : ''));
+        savedTurmaId = insertedTurma?.id || null;
+      }
+
+      if (savedTurmaId && modalMonitorName.trim()) {
+        const monitorRes = await fetchWithAuth('/api/turmas/acompanhante', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            turma_id: savedTurmaId,
+            full_name: modalMonitorName.trim(),
+            email: modalMonitorEmail.trim() || undefined,
+          }),
+        });
+        const monitorJson = await monitorRes.json().catch(() => null);
+        if (!monitorRes.ok) {
+          toast.error(
+            monitorJson?.error ||
+              (language === 'pt'
+                ? 'Turma salva, mas houve erro ao vincular o monitor.'
+                : 'Class saved, but failed to assign class monitor.')
+          );
+        } else if (monitorJson?.monitor) {
+          handleMonitorChanged(savedTurmaId, monitorJson.monitor);
+        }
       }
 
       await refreshData();
+      await loadMonitors();
       setIsModalOpen(false);
       toast.success(language === 'pt' ? 'Turma salva com sucesso!' : 'Class saved successfully!');
     } catch (err: any) {
@@ -1608,6 +1676,14 @@ function TurmasContent() {
                     <Users size={14} className={turma.status?.toLowerCase() === 'pré-inscrito' ? 'text-red-400' : 'text-slate-300'} />
                     <span className="text-[10px] font-bold uppercase tracking-wider">{turma.instrutor || "S/ Instrutor"}</span>
                   </div>
+                  {(monitorsByTurma[turma.id]?.full_name || turma.acompanhante_nome) && (
+                    <div className="flex items-center gap-2 col-span-2 text-teal-700">
+                      <ShieldCheck size={14} className="text-teal-600 shrink-0" />
+                      <span className="text-[10px] font-black uppercase tracking-wider truncate">
+                        Monitor: {monitorsByTurma[turma.id]?.full_name || turma.acompanhante_nome}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1625,6 +1701,28 @@ function TurmasContent() {
                   </div>
                   <ChevronRight size={13} className="text-slate-300 group-hover/btn:text-white transition-colors" />
                 </button>
+
+                {(isAdmin || canEditTurma(turma)) && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setMonitorModalTurma(turma);
+                    }}
+                    className="w-full flex items-center justify-between p-2.5 rounded-xl bg-teal-50 text-teal-800 hover:bg-teal-600 hover:text-white group/mon transition-all cursor-pointer border border-teal-200/80 shadow-2xs"
+                    title={language === 'pt' ? 'Adicionar / Gerenciar Monitor da Turma e QR Code Exclusivo' : 'Assign / Manage Class Monitor & Exclusive QR Code'}
+                  >
+                    <div className="flex items-center gap-2 truncate">
+                      <QrCode size={14} className="shrink-0" />
+                      <span className="text-[9px] font-black uppercase tracking-widest truncate">
+                        {(monitorsByTurma[turma.id]?.full_name || turma.acompanhante_nome)
+                          ? (language === 'pt' ? 'QR Code do Monitor' : 'Monitor QR Code')
+                          : (language === 'pt' ? '+ Adicionar Monitor (QR Code)' : '+ Assign Monitor (QR Code)')}
+                      </span>
+                    </div>
+                    <ChevronRight size={13} className="text-teal-500 group-hover/mon:text-white transition-colors shrink-0" />
+                  </button>
+                )}
 
                 <div className="grid grid-cols-2 gap-2">
                   <button 
@@ -1944,6 +2042,62 @@ function TurmasContent() {
               })()}
             </div>
 
+            <div className="md:col-span-2 bg-teal-50/70 border border-teal-200/80 rounded-2xl p-4 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck size={16} className="text-teal-700" />
+                  <span className="text-[11px] font-black text-teal-900 uppercase tracking-wider">
+                    {language === 'pt'
+                      ? 'Monitor da Turma (Opcional)'
+                      : 'Class Monitor (Optional)'}
+                  </span>
+                </div>
+                {currentTurma?.id && monitorsByTurma[currentTurma.id]?.access_code && (
+                  <button
+                    type="button"
+                    onClick={() => setMonitorModalTurma(currentTurma)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-[10px] font-black uppercase tracking-wider cursor-pointer transition"
+                  >
+                    <QrCode size={13} />
+                    <span>{language === 'pt' ? 'Ver / Imprimir QR Code' : 'View / Print QR Code'}</span>
+                  </button>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] font-bold text-teal-800 uppercase tracking-wider mb-1">
+                    {language === 'pt' ? 'Nome do Monitor' : 'Monitor Name'}
+                  </label>
+                  <input
+                    type="text"
+                    value={modalMonitorName}
+                    onChange={(e) => setModalMonitorName(e.target.value)}
+                    placeholder={language === 'pt' ? 'Ex: SO-FN João Silva' : 'Ex: John Smith'}
+                    className="w-full px-4 py-3 bg-white border border-teal-200 rounded-xl text-sm font-bold text-slate-800 outline-none focus:border-teal-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-teal-800 uppercase tracking-wider mb-1">
+                    {language === 'pt' ? 'E-mail (Opcional)' : 'Email (Optional)'}
+                  </label>
+                  <input
+                    type="email"
+                    value={modalMonitorEmail}
+                    onChange={(e) => setModalMonitorEmail(e.target.value)}
+                    placeholder={language === 'pt' ? 'Vazio = acesso direto via QR Code' : 'Empty = direct QR Code access'}
+                    className="w-full px-4 py-3 bg-white border border-teal-200 rounded-xl text-sm font-medium text-slate-800 outline-none focus:border-teal-500"
+                  />
+                </div>
+              </div>
+
+              <p className="text-[11px] text-teal-800 leading-relaxed">
+                {language === 'pt'
+                  ? 'Ao salvar com um nome preenchido, será criado automaticamente um QR Code exclusivo de acesso. Na Relação da Turma, o monitor aparecerá somente como indicação de quem é o monitor da turma.'
+                  : 'Saving with a name automatically creates an exclusive QR Code. In the class roster, the monitor appears strictly to indicate who the class monitor is.'}
+              </p>
+            </div>
+
             <div className="md:col-span-2">
               <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{t.nav.courses}</label>
               <select
@@ -2205,10 +2359,17 @@ function TurmasContent() {
         title={`${t.nav.students} - ${viewingTurma?.nome}`}
       >
         <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-100">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs font-black text-indigo-800 bg-indigo-50 border border-indigo-200 px-3 py-1 rounded-lg uppercase tracking-wide">
               {language === 'pt' ? `Total para Contagem: ${alunosInTurma.length} alunos` : `Total Count: ${alunosInTurma.length} students`}
             </span>
+            {(viewingTurma?.id && (monitorsByTurma[viewingTurma.id]?.full_name || viewingTurma?.acompanhante_nome)) && (
+              <span className="inline-flex items-center gap-1.5 text-xs font-black text-teal-800 bg-teal-50 border border-teal-200 px-3 py-1 rounded-lg uppercase tracking-wide">
+                <ShieldCheck size={13} className="text-teal-600 shrink-0" />
+                {language === 'pt' ? 'Monitor da Turma:' : 'Class Monitor:'}{' '}
+                {monitorsByTurma[viewingTurma.id]?.full_name || viewingTurma?.acompanhante_nome}
+              </span>
+            )}
             {viewingTurma?.internacional && (
               <span className="bg-amber-100 text-amber-800 border border-amber-300 text-[10px] font-black uppercase px-2.5 py-1 rounded-lg">
                 {language === 'pt' ? 'Exterior' : 'International'}
@@ -2216,6 +2377,17 @@ function TurmasContent() {
             )}
           </div>
           <div className="flex flex-wrap gap-2">
+            {canEditViewingTurma && viewingTurma && (
+              <button
+                type="button"
+                onClick={() => setMonitorModalTurma(viewingTurma)}
+                className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider bg-teal-50 text-teal-800 border border-teal-200 px-3 py-1.5 rounded-lg hover:bg-teal-100 transition-all cursor-pointer shadow-sm"
+                title={language === 'pt' ? 'Definir Monitor da Turma e Gerar QR Code Exclusivo' : 'Assign Class Monitor & Exclusive QR Code'}
+              >
+                <QrCode size={13} strokeWidth={2.5} />
+                <span>{language === 'pt' ? 'Monitor / QR Code' : 'Monitor / QR Code'}</span>
+              </button>
+            )}
             <button
               onClick={() => handleOpenPrintRoster(viewingTurma)}
               className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-100 px-3 py-1.5 rounded-lg hover:bg-indigo-100 hover:text-indigo-800 transition-all cursor-pointer shadow-sm shadow-indigo-100"
@@ -3487,6 +3659,12 @@ function TurmasContent() {
                       <span className="font-extrabold text-slate-900 text-xs">{rosterProfessorName || rosterTurma?.instrutor || '—'}</span>
                     </div>
                     <div className="flex flex-col mt-1">
+                      <span className="text-slate-500 font-bold">{language === 'pt' ? 'Monitor da Turma:' : 'Class Monitor:'}</span>
+                      <span className="font-extrabold text-teal-900 text-xs">
+                        {(rosterTurma?.id && monitorsByTurma[rosterTurma.id]?.full_name) || rosterTurma?.acompanhante_nome || '—'}
+                      </span>
+                    </div>
+                    <div className="flex flex-col mt-1">
                       <span className="text-slate-500 font-bold">{language === 'pt' ? 'Ano / Período:' : 'Year / Shift:'}</span>
                       <span className="font-bold text-slate-800">{rosterTurma?.ano || '—'} • {rosterTurma?.periodo || '—'}</span>
                     </div>
@@ -3496,7 +3674,7 @@ function TurmasContent() {
                         {rosterAlunos.length} {language === 'pt' ? 'ALUNOS' : 'STUDENTS'}
                       </span>
                     </div>
-                    <div className="flex flex-col mt-1 col-span-2">
+                    <div className="flex flex-col mt-1">
                       <span className="text-slate-500 font-bold">{language === 'pt' ? 'Data de Emissão:' : 'Issue Date:'}</span>
                       <span className="font-bold text-slate-800">{new Date().toLocaleDateString(language === 'pt' ? 'pt-BR' : 'en-US')}</span>
                     </div>
@@ -3621,6 +3799,16 @@ function TurmasContent() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <TurmaMonitorQrModal
+        isOpen={Boolean(monitorModalTurma)}
+        onClose={() => setMonitorModalTurma(null)}
+        turma={monitorModalTurma}
+        initialMonitor={monitorModalTurma?.id ? monitorsByTurma[monitorModalTurma.id] || null : null}
+        canManage={Boolean(monitorModalTurma && (isAdmin || canEditTurma(monitorModalTurma)))}
+        language={language}
+        onMonitorChanged={handleMonitorChanged}
+      />
     </div>
   );
 }

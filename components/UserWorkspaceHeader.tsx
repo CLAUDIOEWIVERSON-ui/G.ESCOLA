@@ -129,7 +129,7 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
     : userRole === 'instrutor'
     ? (isPt ? 'Instrutor Militar' : 'Military Instructor')
     : userRole === 'acompanhante'
-    ? (isPt ? 'Acompanhante de Turma' : 'Class Companion')
+    ? (isPt ? 'Monitor de Turma' : 'Class Monitor')
     : userRole === 'convidado'
     ? (isPt ? 'Convidado / Visualizador' : 'Guest / Viewer')
     : (isPt ? 'Aluno / Estudante' : 'Student');

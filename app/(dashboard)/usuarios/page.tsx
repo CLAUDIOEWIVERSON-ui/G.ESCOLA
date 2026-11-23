@@ -157,7 +157,7 @@ export default function UsuariosPage() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (currentUser?.role === 'acompanhante' && !currentUser?.turma_id) {
-      toast.error(language === 'pt' ? 'Selecione a turma que este acompanhante irá acompanhar.' : 'Select the assigned class for this companion.');
+      toast.error(language === 'pt' ? 'Selecione a turma que este monitor irá acompanhar.' : 'Select the assigned class for this monitor.');
       return;
     }
     setSaving(true);
@@ -372,7 +372,7 @@ export default function UsuariosPage() {
               { id: 'all', label: language === 'pt' ? 'Todos' : 'All' },
               { id: 'online', label: language === 'pt' ? `● Online (${Object.keys(onlineUsersMap).length})` : `● Online (${Object.keys(onlineUsersMap).length})` },
               { id: 'aluno', label: language === 'pt' ? 'Alunos' : 'Students' },
-              { id: 'acompanhante', label: language === 'pt' ? 'Acompanhantes' : 'Companions' },
+              { id: 'acompanhante', label: language === 'pt' ? 'Monitores de Turma' : 'Class Monitors' },
               { id: 'instrutor', label: language === 'pt' ? 'Instrutores' : 'Instructors' },
               { id: 'admin', label: language === 'pt' ? 'Administradores' : 'Administrators' }
             ].map(tab => (
@@ -477,7 +477,7 @@ export default function UsuariosPage() {
                           "bg-blue-50 text-blue-700 border border-blue-100"
                         )}>
                           {user.role === 'admin' ? <Shield size={12} /> : <User size={12} />}
-                          {user.role === 'admin' ? t.users.admin : user.role === 'instrutor' ? t.users.instrutor : user.role === 'acompanhante' ? (language === 'pt' ? 'Acompanhante de Turma' : 'Class Companion') : user.role === 'convidado' ? (language === 'pt' ? 'Convidado' : 'Guest') : t.users.aluno}
+                          {user.role === 'admin' ? t.users.admin : user.role === 'instrutor' ? t.users.instrutor : user.role === 'acompanhante' ? (language === 'pt' ? 'Monitor de Turma' : 'Class Monitor') : user.role === 'convidado' ? (language === 'pt' ? 'Convidado' : 'Guest') : t.users.aluno}
                         </span>
                         {user.grupo_responsavel && (
                           <span className="inline-flex items-center justify-center font-mono text-[9px] font-black text-indigo-600 bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 rounded w-fit uppercase">
@@ -664,7 +664,7 @@ export default function UsuariosPage() {
             >
               <option value="admin">{t.users.admin}</option>
               <option value="instrutor">{t.users.instrutor}</option>
-              <option value="acompanhante">{language === 'pt' ? 'Acompanhante de Turma' : 'Class Companion'}</option>
+              <option value="acompanhante">{language === 'pt' ? 'Monitor de Turma' : 'Class Monitor'}</option>
               <option value="aluno">{t.users.aluno}</option>
               <option value="convidado">{language === 'pt' ? 'Convidado (Somente Leitura)' : 'Guest (Read Only)'}</option>
             </select>
@@ -694,7 +694,7 @@ export default function UsuariosPage() {
           {currentUser?.role === 'acompanhante' && (
             <div className="space-y-2 animate-in fade-in slide-in-from-top-1 duration-200 p-3.5 bg-teal-50/70 border border-teal-200 rounded-xl">
               <label className="text-[10px] font-bold text-teal-800 uppercase tracking-wider ml-1 block">
-                {language === 'pt' ? 'Turma Acompanhada *' : 'Assigned Class *'}
+                {language === 'pt' ? 'Turma do Monitor *' : 'Monitor Class *'}
               </label>
               <select
                 required

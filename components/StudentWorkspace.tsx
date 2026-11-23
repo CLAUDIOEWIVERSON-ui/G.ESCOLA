@@ -743,7 +743,7 @@ export function StudentWorkspace() {
           initial={{ opacity: 0, y: -6, scale: 0.99 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.25 }}
-          aria-label={isPt ? 'Recados do Acompanhante da Turma' : 'Messages from Class Companion'}
+          aria-label={isPt ? 'Recados do Monitor da Turma' : 'Messages from Class Monitor'}
           className="bg-white border-2 border-black rounded-2xl p-5 sm:p-6 shadow-[4px_4px_0px_0px_#000000] text-black space-y-4"
         >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b-2 border-black pb-3.5">
@@ -769,7 +769,7 @@ export function StudentWorkspace() {
                   )}
                 </div>
                 <h2 className="text-lg sm:text-xl font-black tracking-tight uppercase text-black mt-0.5">
-                  {isPt ? 'Recados do Acompanhante da Turma' : 'Messages from Class Companion'}
+                  {isPt ? 'Recados do Monitor da Turma' : 'Messages from Class Monitor'}
                 </h2>
               </div>
             </div>
@@ -787,7 +787,7 @@ export function StudentWorkspace() {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-black/15 pb-2">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-sm font-black uppercase tracking-tight text-black">
-                      {rec.titulo || (isPt ? 'Recado do Acompanhante' : 'Class Companion Message')}
+                      {rec.titulo || (isPt ? 'Recado do Monitor da Turma' : 'Class Monitor Message')}
                     </span>
                     {!rec.lido ? (
                       <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-black text-white">
@@ -813,7 +813,7 @@ export function StudentWorkspace() {
                 <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
                   <span className="inline-flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wider text-black">
                     <User size={11} className="text-black" />
-                    {isPt ? 'Enviado por:' : 'Sent by:'} {rec.sender_name || (isPt ? 'Acompanhante da Turma' : 'Class Companion')}
+                    {isPt ? 'Enviado por:' : 'Sent by:'} {rec.sender_name || (isPt ? 'Monitor da Turma' : 'Class Monitor')}
                   </span>
 
                   {!rec.lido && (

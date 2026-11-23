@@ -726,7 +726,7 @@ export function AcompanhanteWorkspace() {
   const handleSendRecado = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isAcompanhante) {
-      toast.error(isPt ? 'Apenas acompanhantes de turma podem enviar recados individuais.' : 'Only class companions can send individual messages.');
+      toast.error(isPt ? 'Apenas monitores de turma podem enviar recados individuais.' : 'Only class monitors can send individual messages.');
       return;
     }
     if (!isMobileDevice) {
@@ -753,7 +753,7 @@ export function AcompanhanteWorkspace() {
         },
         body: JSON.stringify({
           aluno_id: selectedAlunoId,
-          titulo: recadoTitulo.trim() || (isPt ? 'Recado do Acompanhante da Turma' : 'Message from Class Companion'),
+          titulo: recadoTitulo.trim() || (isPt ? 'Recado do Monitor da Turma' : 'Message from Class Monitor'),
           mensagem: recadoMensagem.trim(),
         }),
       });
@@ -776,7 +776,7 @@ export function AcompanhanteWorkspace() {
 
   const handleDeleteRecado = async (id: string) => {
     if (!isAcompanhante || !isMobileDevice) {
-      toast.error(isPt ? 'Exclusão disponível apenas para acompanhantes em dispositivo móvel.' : 'Deletion restricted to companions on mobile.');
+      toast.error(isPt ? 'Exclusão disponível apenas para monitores de turma em dispositivo móvel.' : 'Deletion restricted to class monitors on mobile.');
       return;
     }
     setDeletingRecadoId(id);
@@ -839,7 +839,7 @@ export function AcompanhanteWorkspace() {
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-[10px] font-black uppercase tracking-widest">
               <Users size={13} className="text-teal-600" />
-              <span>{isPt ? 'Painel do Acompanhante de Turma' : 'Class Companion Workspace'}</span>
+              <span>{isPt ? 'Painel do Monitor de Turma' : 'Class Monitor Workspace'}</span>
             </div>
             <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
               {turmaDisplayName}
@@ -1328,8 +1328,8 @@ export function AcompanhanteWorkspace() {
                 </div>
                 <p className="text-xs text-amber-900 leading-relaxed font-medium">
                   {isPt
-                    ? 'Por determinação de segurança do sistema, somente o Acompanhante de Turma acessando por um dispositivo móvel (smartphone ou tablet) pode enviar ou excluir recados individuais para os alunos. No computador, você pode consultar o histórico de recados já enviados ao lado.'
-                    : 'Only Class Companions using a mobile device (smartphone or tablet) are permitted to send or delete individual student messages.'}
+                    ? 'Por determinação de segurança do sistema, somente o Monitor de Turma acessando por um dispositivo móvel (smartphone ou tablet) pode enviar ou excluir recados individuais para os alunos. No computador, você pode consultar o histórico de recados já enviados ao lado.'
+                    : 'Only Class Monitors using a mobile device (smartphone or tablet) are permitted to send or delete individual student messages.'}
                 </p>
               </div>
             )}

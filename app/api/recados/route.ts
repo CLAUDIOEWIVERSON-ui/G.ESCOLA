@@ -279,11 +279,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Não autenticado.' }, { status: 401 });
     }
 
-    // Strict role enforcement: ONLY acompanhante can send individual student messages
+    // Strict role enforcement: ONLY acompanhante (Monitor de Turma) can send individual student messages
     if (role !== 'acompanhante') {
       return NextResponse.json(
         {
-          error: 'Acesso negado: Somente o Acompanhante de Turma pode enviar recados individuais aos alunos.',
+          error: 'Acesso negado: Somente o Monitor de Turma pode enviar recados individuais aos alunos.',
           code: 'FORBIDDEN_ROLE',
         },
         { status: 403 }
@@ -294,7 +294,7 @@ export async function POST(req: NextRequest) {
     if (!isMobileRequest(req)) {
       return NextResponse.json(
         {
-          error: 'Ação bloqueada: O Acompanhante de Turma só pode enviar recados individuais através de um dispositivo móvel (celular ou tablet).',
+          error: 'Ação bloqueada: O Monitor de Turma só pode enviar recados individuais através de um dispositivo móvel (celular ou tablet).',
           code: 'FORBIDDEN_DESKTOP_DEVICE',
         },
         { status: 403 }
@@ -304,14 +304,14 @@ export async function POST(req: NextRequest) {
     const assignedTurmaId = await resolveAssignedTurmaId(user);
     if (!assignedTurmaId) {
       return NextResponse.json(
-        { error: 'Nenhuma turma vinculada ao seu perfil de acompanhante.' },
+        { error: 'Nenhuma turma vinculada ao seu perfil de monitor de turma.' },
         { status: 400 }
       );
     }
 
     const body = await req.json();
     const alunoId = String(body?.aluno_id || '').trim();
-    const titulo = String(body?.titulo || 'Recado do Acompanhante da Turma').trim().slice(0, 120);
+    const titulo = String(body?.titulo || 'Recado do Monitor da Turma').trim().slice(0, 120);
     const mensagem = String(body?.mensagem || '').trim().slice(0, 2000);
 
     if (!alunoId || !mensagem) {
@@ -350,7 +350,7 @@ export async function POST(req: NextRequest) {
       profSender?.full_name ||
       user.user_metadata?.full_name ||
       user.email?.split('@')[0] ||
-      'Acompanhante de Turma';
+      'Monitor de Turma';
 
     const newRecord: RecadoRecord = {
       id: crypto.randomUUID(),
@@ -358,7 +358,7 @@ export async function POST(req: NextRequest) {
       aluno_id: aluno.id,
       sender_id: user.id,
       sender_name: senderName,
-      titulo: titulo || 'Recado do Acompanhante da Turma',
+      titulo: titulo || 'Recado do Monitor da Turma',
       mensagem,
       lido: false,
       lido_em: null,
@@ -462,7 +462,7 @@ export async function DELETE(req: NextRequest) {
 
     if (role !== 'acompanhante') {
       return NextResponse.json(
-        { error: 'Somente o Acompanhante de Turma pode remover recados individuais enviados.' },
+        { error: 'Somente o Monitor de Turma pode remover recados individuais enviados.' },
         { status: 403 }
       );
     }

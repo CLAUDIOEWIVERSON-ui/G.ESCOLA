@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin, isSupabaseAdminConfigured } from '@/lib/supabase/admin';
 import { ensureAdmin } from '@/lib/auth/serverAuth';
+import {
+  generateMonitorAccessCode,
+  removeMonitorForTurma,
+  saveMonitorAccessRecord,
+} from '@/lib/auth/acompanhanteQrStore';
 
 export const dynamic = 'force-dynamic';
 
@@ -99,13 +104,14 @@ export async function POST(request: Request) {
 
     if (role === 'acompanhante' && !turma_id) {
       return NextResponse.json(
-        { error: 'Selecione uma turma para vincular ao Acompanhante de Turma.' },
+        { error: 'Selecione uma turma para vincular ao Monitor de Turma.' },
         { status: 400 }
       );
     }
 
     const effectiveTurmaId = role === 'acompanhante' ? (turma_id || null) : null;
     const effectiveGrupo = role === 'instrutor' ? (grupo_responsavel || null) : null;
+    const monitorCode = role === 'acompanhante' ? generateMonitorAccessCode() : undefined;
 
     let authUser: any = null;
     let authError: any = null;
@@ -120,6 +126,7 @@ export async function POST(request: Request) {
           role,
           grupo_responsavel: effectiveGrupo,
           turma_id: effectiveTurmaId,
+          ...(monitorCode ? { acompanhante_access_code: monitorCode, is_turma_monitor: true } : {}),
         },
       });
       authUser = result.data;
@@ -197,6 +204,21 @@ export async function POST(request: Request) {
       console.error('Profile creation error:', profileError);
     }
 
+    if (role === 'acompanhante' && effectiveTurmaId && authUser?.user?.id) {
+      const resolvedCode = authUser.user.user_metadata?.acompanhante_access_code || monitorCode || generateMonitorAccessCode();
+      const nowIso = new Date().toISOString();
+      await saveMonitorAccessRecord({
+        turma_id: effectiveTurmaId,
+        user_id: authUser.user.id,
+        full_name: full_name || email.split('@')[0],
+        email,
+        access_code: resolvedCode,
+        access_status: 'active',
+        created_at: nowIso,
+        updated_at: nowIso,
+      }).catch((err) => console.warn('[admin/users POST] sync monitor QR warning:', err));
+    }
+
     return NextResponse.json({ user: authUser.user });
   } catch (error: any) {
     console.error('Admin API POST error:', error);
@@ -222,7 +244,7 @@ export async function PUT(request: Request) {
 
     if (role === 'acompanhante' && !turma_id) {
       return NextResponse.json(
-        { error: 'Selecione uma turma para vincular ao Acompanhante de Turma.' },
+        { error: 'Selecione uma turma para vincular ao Monitor de Turma.' },
         { status: 400 }
       );
     }
@@ -241,12 +263,20 @@ export async function PUT(request: Request) {
       updateData.password = password.trim();
     }
 
+    const nextMonitorCode =
+      role === 'acompanhante'
+        ? existingMeta.acompanhante_access_code || generateMonitorAccessCode()
+        : undefined;
+
     updateData.user_metadata = {
       ...existingMeta,
       full_name: full_name || '',
       role: role || 'aluno',
       grupo_responsavel: effectiveGrupo,
       turma_id: effectiveTurmaId,
+      ...(role === 'acompanhante'
+        ? { acompanhante_access_code: nextMonitorCode, is_turma_monitor: true }
+        : { acompanhante_access_code: null, is_turma_monitor: false }),
     };
 
     const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(id, updateData);
@@ -270,6 +300,25 @@ export async function PUT(request: Request) {
 
     const profileError = await upsertProfileSafe(profileUpdateData);
     if (profileError) throw profileError;
+
+    const prevTurmaId = existingMeta?.turma_id;
+    if (prevTurmaId && (role !== 'acompanhante' || prevTurmaId !== effectiveTurmaId)) {
+      await removeMonitorForTurma(prevTurmaId).catch(() => {});
+    }
+
+    if (role === 'acompanhante' && effectiveTurmaId && nextMonitorCode) {
+      const nowIso = new Date().toISOString();
+      await saveMonitorAccessRecord({
+        turma_id: effectiveTurmaId,
+        user_id: id,
+        full_name: full_name || existingAuthData?.user?.email?.split('@')[0] || 'Monitor de Turma',
+        email: (email && typeof email === 'string' ? email.trim() : existingAuthData?.user?.email) || undefined,
+        access_code: nextMonitorCode,
+        access_status: 'active',
+        created_at: nowIso,
+        updated_at: nowIso,
+      }).catch((err) => console.warn('[admin/users PUT] sync monitor QR warning:', err));
+    }
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
@@ -296,8 +345,15 @@ export async function DELETE(request: Request) {
 
     if (!id) return NextResponse.json({ error: 'Missing ID' }, { status: 400 });
 
+    const { data: existingAuthData } = await supabaseAdmin.auth.admin.getUserById(id);
+    const existingMeta = existingAuthData?.user?.user_metadata || {};
+
     const { error } = await supabaseAdmin.auth.admin.deleteUser(id);
     if (error) throw error;
+
+    if (existingMeta?.role === 'acompanhante' && existingMeta?.turma_id) {
+      await removeMonitorForTurma(existingMeta.turma_id).catch(() => {});
+    }
 
     return NextResponse.json({ success: true });
   } catch (error: any) {

@@ -47,7 +47,8 @@ import {
   Monitor,
   Archive,
   Download,
-  Printer
+  Printer,
+  ShieldCheck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ExchangeRateTicker from '@/components/ExchangeRateTicker';
@@ -1285,6 +1286,27 @@ function TurmasListTable({
   const [expandedTurmaIds, setExpandedTurmaIds] = useState<Set<string>>(new Set());
   const [loadedStudentsByTurma, setLoadedStudentsByTurma] = useState<Record<string, any[]>>({});
   const [loadingTurmaStudents, setLoadingTurmaStudents] = useState<Record<string, boolean>>({});
+  const [monitorsByTurma, setMonitorsByTurma] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    let mounted = true;
+    fetchWithAuth('/api/turmas/acompanhante')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!mounted || !Array.isArray(data?.monitors)) return;
+        const map: Record<string, string> = {};
+        data.monitors.forEach((m: any) => {
+          if (m.turma_id && m.full_name) {
+            map[String(m.turma_id)] = m.full_name;
+          }
+        });
+        setMonitorsByTurma(map);
+      })
+      .catch(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   // Helper to extract course name safely from any turma object structure
   const getCursoNome = useCallback((t: any): string => {
@@ -2053,6 +2075,12 @@ function TurmasListTable({
                       </td>
                       <td className="px-6 py-4">
                         <div className={cn("font-medium", isArquivada ? "text-slate-600" : isPreInscrito ? "text-red-600" : "text-slate-650")}>{turma.instrutor || '-'}</div>
+                        {(monitorsByTurma[String(turma.id)] || turma.acompanhante_nome) && (
+                          <div className="inline-flex items-center gap-1 text-[10px] font-bold text-teal-700 mt-0.5">
+                            <ShieldCheck size={11} className="shrink-0 text-teal-600" />
+                            <span>{isPt ? 'Monitor:' : 'Monitor:'} {monitorsByTurma[String(turma.id)] || turma.acompanhante_nome}</span>
+                          </div>
+                        )}
                         <div className={cn(
                           "text-[10px] font-bold uppercase flex items-center gap-1 mt-0.5", 
                           isArquivada ? "text-slate-500" : isPreInscrito ? "text-red-600" : "text-green-600"
@@ -2106,13 +2134,20 @@ function TurmasListTable({
                                   <Users size={16} />
                                 </div>
                                 <div>
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex flex-wrap items-center gap-2">
                                     <h4 className="font-bold text-slate-800 text-sm">
                                       {isPt ? `Relação Nominal de Alunos — ${cleanName}` : `Nominal Student Roster — ${cleanName}`}
                                     </h4>
                                     <span className="px-2.5 py-0.5 bg-indigo-50 text-indigo-700 font-bold text-xs rounded-full border border-indigo-200/60 shadow-2xs">
                                       {sortedAlunos.length} {sortedAlunos.length === 1 ? (isPt ? 'aluno' : 'student') : (isPt ? 'alunos' : 'students')}
                                     </span>
+                                    {(monitorsByTurma[String(turma.id)] || turma.acompanhante_nome) && (
+                                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-teal-50 text-teal-800 font-bold text-xs rounded-full border border-teal-200/80 shadow-2xs">
+                                        <ShieldCheck size={12} className="text-teal-600 shrink-0" />
+                                        {isPt ? 'Monitor da Turma:' : 'Class Monitor:'}{' '}
+                                        {monitorsByTurma[String(turma.id)] || turma.acompanhante_nome}
+                                      </span>
+                                    )}
                                   </div>
                                   <p className="text-[11px] text-slate-400 font-medium">
                                     {cursoNome ? `Curso: ${cursoNome}` : ''} {turma.localizacao ? `• Localização: ${turma.localizacao}` : ''}

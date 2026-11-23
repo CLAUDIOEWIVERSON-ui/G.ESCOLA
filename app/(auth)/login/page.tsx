@@ -71,12 +71,19 @@ function LoginContent() {
               // Garante que nenhuma sessão anterior colida
               await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
 
-              const { error: signInError } = await supabase.auth.signInWithPassword({
-                email: data.email,
-                password: data.password
-              });
-              
-              if (signInError) throw signInError;
+              if (data.authType === 'magiclink' && data.tokenHash) {
+                const { error: otpError } = await supabase.auth.verifyOtp({
+                  token_hash: data.tokenHash,
+                  type: 'magiclink',
+                });
+                if (otpError) throw otpError;
+              } else {
+                const { error: signInError } = await supabase.auth.signInWithPassword({
+                  email: data.email,
+                  password: data.password
+                });
+                if (signInError) throw signInError;
+              }
 
               await refreshProfile();
               window.location.href = '/dashboard';
@@ -330,13 +337,19 @@ function LoginContent() {
       // Limpa qualquer sessão anterior local para não colidir
       await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
 
-      // Autentica o aluno no cliente Supabase
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: data.email,
-        password: data.password
-      });
-      
-      if (signInError) throw signInError;
+      if (data.authType === 'magiclink' && data.tokenHash) {
+        const { error: otpError } = await supabase.auth.verifyOtp({
+          token_hash: data.tokenHash,
+          type: 'magiclink',
+        });
+        if (otpError) throw otpError;
+      } else {
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: data.email,
+          password: data.password
+        });
+        if (signInError) throw signInError;
+      }
 
       await refreshProfile();
       window.location.href = '/dashboard';
@@ -388,13 +401,19 @@ function LoginContent() {
 
         await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
 
-        // Authenticate client-side to Supabase with shadow account
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email: data.email,
-          password: data.password
-        });
-        
-        if (signInError) throw signInError;
+        if (data.authType === 'magiclink' && data.tokenHash) {
+          const { error: otpError } = await supabase.auth.verifyOtp({
+            token_hash: data.tokenHash,
+            type: 'magiclink',
+          });
+          if (otpError) throw otpError;
+        } else {
+          const { error: signInError } = await supabase.auth.signInWithPassword({
+            email: data.email,
+            password: data.password
+          });
+          if (signInError) throw signInError;
+        }
 
         // Force reload context profile information in a blocking await
         await refreshProfile();
@@ -618,7 +637,7 @@ function LoginContent() {
                       : "text-slate-500 hover:text-slate-800"
                   )}
                 >
-                  {language === 'pt' ? 'Área do Aluno' : 'Student Area'}
+                  {language === 'pt' ? 'Aluno / QR Code' : 'Student / QR Code'}
                 </button>
               </div>
 
@@ -742,7 +761,7 @@ function LoginContent() {
                     {/* Manual Access Code Input */}
                     <div className="space-y-1.5">
                       <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wide ml-1">
-                        {language === 'pt' ? 'Código Individual do Aluno' : 'Student Access Code'}
+                        {language === 'pt' ? 'Código de Acesso (Aluno ou Monitor)' : 'Access Code (Student or Monitor)'}
                       </label>
                       <div className="relative">
                         <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
@@ -752,7 +771,7 @@ function LoginContent() {
                           value={accessCode}
                           onChange={(e) => setAccessCode(e.target.value.toUpperCase())}
                           className="w-full pl-10 pr-4 py-2 bg-white text-slate-900 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 text-sm font-mono uppercase transition-all"
-                          placeholder="STU-XXXX-XXXX"
+                          placeholder="STU-XXXX-XXXX ou MON-XXXX"
                         />
                       </div>
                     </div>
@@ -767,15 +786,15 @@ function LoginContent() {
                       ) : (
                         <>
                           <LogIn size={15} />
-                          {language === 'pt' ? 'Entrar na Área do Aluno' : 'Enter Student Area'}
+                          {language === 'pt' ? 'Entrar via Código / QR' : 'Enter via Code / QR'}
                         </>
                       )}
                     </button>
                     
                     <p className="text-[10px] leading-relaxed text-slate-600 text-center font-medium bg-white border border-slate-200 rounded-lg p-2.5">
                       {language === 'pt' 
-                        ? 'O QR CODE É FORNECIDO PELA ADMINISTRAÇÃO DO CURSO. AO ENTRAR, VOCÊ TERÁ ACESSO AO DETALHE SEMANAL DE AULAS, BOLETIM INDIVIDUAL E QUESTIONÁRIO DE FINAL DE CURSO.' 
-                        : 'THE QR CODE IS PROVIDED BY THE COURSE ADMINISTRATION, GIVING ACCESS TO THE WEEKLY CLASS SCHEDULE, INDIVIDUAL REPORT CARD, AND END-OF-COURSE SURVEY.'
+                        ? 'O QR CODE É FORNECIDO PELA ADMINISTRAÇÃO DO CURSO PARA ALUNOS E MONITORES DE TURMA.' 
+                        : 'THE QR CODE IS PROVIDED BY THE COURSE ADMINISTRATION FOR STUDENTS AND CLASS MONITORS.'
                       }
                     </p>
                   </div>

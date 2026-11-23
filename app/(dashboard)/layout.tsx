@@ -432,7 +432,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     : profile?.role === 'instrutor' 
       ? t.users.instrutor 
       : profile?.role === 'acompanhante'
-        ? (language === 'pt' ? 'Acompanhante de Turma' : 'Class Companion')
+        ? (language === 'pt' ? 'Monitor de Turma' : 'Class Monitor')
         : profile?.role === 'aluno' 
           ? t.users.aluno 
           : profile?.role === 'convidado'
