@@ -16,6 +16,7 @@ interface Evento {
   cor: string;
   exibir_aluno?: boolean;
   exibir_instrutor?: boolean;
+  exibir_monitor?: boolean;
   uniforme_dia?: string;
   creator_id?: string;
   is_exclusive?: boolean;
@@ -115,7 +116,7 @@ export function EventMarquee({ thought }: EventMarqueeProps = {}) {
         let data: any[] | null = null;
         const { data: primaryData, error } = await supabase
           .from('eventos')
-          .select('id, titulo, descricao, data, data_fim, tipo_data, cor, exibir_aluno, exibir_instrutor, uniforme_dia, creator_id, is_exclusive')
+          .select('id, titulo, descricao, data, data_fim, tipo_data, cor, exibir_aluno, exibir_instrutor, exibir_monitor, uniforme_dia, creator_id, is_exclusive')
           .order('data', { ascending: true })
           .limit(25);
         
@@ -123,30 +124,40 @@ export function EventMarquee({ thought }: EventMarqueeProps = {}) {
 
         // Dynamic fallback with multi-column grace handling if columns don't exist yet
         if (error) {
-          const { data: fallbackData, error: fallbackError } = await supabase
+          const { data: secondaryData, error: secondaryError } = await supabase
             .from('eventos')
-            .select('id, titulo, descricao, data, cor, exibir_aluno, exibir_instrutor, uniforme_dia, creator_id, is_exclusive')
+            .select('id, titulo, descricao, data, data_fim, tipo_data, cor, exibir_aluno, exibir_instrutor, uniforme_dia, creator_id, is_exclusive')
             .order('data', { ascending: true })
             .limit(25);
-          
-          if (fallbackError) {
-            const { data: minData, error: minError } = await supabase
+
+          if (!secondaryError) {
+            data = secondaryData;
+          } else {
+            const { data: fallbackData, error: fallbackError } = await supabase
               .from('eventos')
-              .select('id, titulo, descricao, data, cor')
+              .select('id, titulo, descricao, data, cor, exibir_aluno, exibir_instrutor, uniforme_dia, creator_id, is_exclusive')
               .order('data', { ascending: true })
               .limit(25);
-            if (minError) {
-              if (minError.code === '42P01') {
+            
+            if (fallbackError) {
+              const { data: minData, error: minError } = await supabase
+                .from('eventos')
+                .select('id, titulo, descricao, data, cor')
+                .order('data', { ascending: true })
+                .limit(25);
+              if (minError) {
+                if (minError.code === '42P01') {
+                  setEventos([]);
+                  return;
+                }
+                console.warn('Marquee fetch failed:', minError.message || minError);
                 setEventos([]);
                 return;
               }
-              console.warn('Marquee fetch failed:', minError.message || minError);
-              setEventos([]);
-              return;
+              data = minData;
+            } else {
+              data = fallbackData;
             }
-            data = minData;
-          } else {
-            data = fallbackData;
           }
         }
 
@@ -169,6 +180,7 @@ export function EventMarquee({ thought }: EventMarqueeProps = {}) {
     let parsedIsExclusive = evt.is_exclusive === true;
     let parsedExibirInstrutor = evt.exibir_instrutor !== false;
     let parsedExibirAluno = evt.exibir_aluno !== false;
+    let parsedExibirMonitor = evt.exibir_monitor !== false;
     let parsedDataFim = (evt as any).data_fim ? (evt as any).data_fim.split('T')[0] : null;
     let parsedTipoData = ((evt as any).tipo_data as 'fixa' | 'periodo') || (parsedDataFim ? 'periodo' : 'fixa');
 
@@ -203,6 +215,12 @@ export function EventMarquee({ thought }: EventMarqueeProps = {}) {
       desc = desc.replace(/\[exibir_aluno:[^\]]+\]/, '');
     }
 
+    const monitorMatch = desc.match(/\[exibir_monitor:([^\]]+)\]/);
+    if (monitorMatch) {
+      parsedExibirMonitor = monitorMatch[1] === 'true';
+      desc = desc.replace(/\[exibir_monitor:[^\]]+\]/, '');
+    }
+
     const dataFimMatch = desc.match(/\[data_fim:([^\]]+)\]/);
     if (dataFimMatch) {
       parsedDataFim = dataFimMatch[1];
@@ -224,12 +242,14 @@ export function EventMarquee({ thought }: EventMarqueeProps = {}) {
       creator_id: parsedCreatorId || undefined,
       is_exclusive: parsedIsExclusive,
       exibir_instrutor: parsedExibirInstrutor,
-      exibir_aluno: parsedExibirAluno
+      exibir_aluno: parsedExibirAluno,
+      exibir_monitor: parsedExibirMonitor
     };
   }).filter(evt => {
     const currentUserId = profile?.id;
     const isOwner = currentUserId && evt.creator_id === currentUserId;
     const isInstrutor = profile?.role === 'instrutor';
+    const isMonitor = profile?.role === 'acompanhante';
 
     // Date expiry check
     const today = new Date();
@@ -259,6 +279,9 @@ export function EventMarquee({ thought }: EventMarqueeProps = {}) {
       }
       if (isInstrutor && !isOwner) {
         if (evt.exibir_instrutor === false) return false;
+      }
+      if (isMonitor && !isOwner) {
+        if (evt.exibir_monitor === false) return false;
       }
       if (isOwner) return true;
       if (!evt.is_exclusive) return true;

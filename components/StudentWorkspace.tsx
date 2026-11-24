@@ -330,6 +330,8 @@ export function StudentWorkspace() {
               .replace(/\[exclusive:[^\]]+\]/g, '')
               .replace(/\[exibir_instrutor:[^\]]+\]/g, '')
               .replace(/\[exibir_aluno:[^\]]+\]/g, '')
+              .replace(/\[exibir_monitor:[^\]]+\]/g, '')
+              .replace(/\[target_grupo:[^\]]+\]/g, '')
               .replace(/\[data_fim:[^\]]+\]/g, '')
               .replace(/\[tipo_data:[^\]]+\]/g, '')
               .trim();

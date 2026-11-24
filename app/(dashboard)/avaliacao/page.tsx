@@ -132,14 +132,28 @@ function AvaliacaoAlunoForm() {
       if (error) throw error;
 
       if (data) {
-        // Filter by group (GAT, MAN, AMBOS)
-        const filtered = data.filter((evt: any) => {
-          const targetGrp = (evt.target_grupo || 'AMBOS').toUpperCase();
-          const targetGroupInput = (group || 'AMBOS').toUpperCase();
-          if (targetGrp === 'AMBOS') return true;
-          if (targetGroupInput === 'AMBOS') return true;
-          return targetGrp === targetGroupInput;
-        });
+        // Filter by group (GAT, MAN, AMBOS) and strip embedded visibility tags
+        const filtered = data
+          .filter((evt: any) => {
+            const targetGrp = (evt.target_grupo || 'AMBOS').toUpperCase();
+            const targetGroupInput = (group || 'AMBOS').toUpperCase();
+            if (targetGrp === 'AMBOS') return true;
+            if (targetGroupInput === 'AMBOS') return true;
+            return targetGrp === targetGroupInput;
+          })
+          .map((evt: any) => ({
+            ...evt,
+            descricao: String(evt.descricao || '')
+              .replace(/\[creator:[^\]]+\]/g, '')
+              .replace(/\[exclusive:[^\]]+\]/g, '')
+              .replace(/\[exibir_instrutor:[^\]]+\]/g, '')
+              .replace(/\[exibir_aluno:[^\]]+\]/g, '')
+              .replace(/\[exibir_monitor:[^\]]+\]/g, '')
+              .replace(/\[target_grupo:[^\]]+\]/g, '')
+              .replace(/\[data_fim:[^\]]+\]/g, '')
+              .replace(/\[tipo_data:[^\]]+\]/g, '')
+              .trim(),
+          }));
         setClassMessages(filtered);
       }
     } catch (err) {

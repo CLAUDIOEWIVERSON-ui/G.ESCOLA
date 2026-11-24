@@ -89,25 +89,48 @@ export default function HorarioPage() {
   >("landscape");
   const printRef = useRef<HTMLDivElement>(null);
 
+  const isBlockedLegacySignature = (val?: string | null) =>
+    Boolean(val && /munaretto|heitor\s+marco/i.test(val));
+
   // Coordinator Signature state
   const [signatureName, setSignatureName] = useState<string>(() => {
     if (typeof window !== "undefined") {
-      return localStorage.getItem("horario_signature_name") || "";
+      const storedName = localStorage.getItem("horario_signature_name") || "";
+      if (isBlockedLegacySignature(storedName)) {
+        localStorage.removeItem("horario_signature_name");
+        localStorage.removeItem("horario_signature_rank");
+        const storedRole = localStorage.getItem("horario_signature_role") || "";
+        if (/munaretto|comandante/i.test(storedRole)) {
+          localStorage.removeItem("horario_signature_role");
+        }
+        return "";
+      }
+      return storedName;
     }
     return "";
   });
 
   const [signatureRank, setSignatureRank] = useState<string>(() => {
     if (typeof window !== "undefined") {
-      return localStorage.getItem("horario_signature_rank") || "";
+      const storedRank = localStorage.getItem("horario_signature_rank") || "";
+      if (isBlockedLegacySignature(storedRank)) {
+        localStorage.removeItem("horario_signature_rank");
+        return "";
+      }
+      return storedRank;
     }
     return "";
   });
 
   const [signatureRole, setSignatureRole] = useState<string>(() => {
     if (typeof window !== "undefined") {
+      const storedRole = localStorage.getItem("horario_signature_role") || "";
+      if (isBlockedLegacySignature(storedRole)) {
+        localStorage.removeItem("horario_signature_role");
+        return language === "pt" ? "Coordenador de Cursos" : "Course Coordinator";
+      }
       return (
-        localStorage.getItem("horario_signature_role") ||
+        storedRole ||
         (language === "pt" ? "Coordenador de Cursos" : "Course Coordinator")
       );
     }
@@ -115,6 +138,29 @@ export default function HorarioPage() {
   });
 
   const [showSignatureSettings, setShowSignatureSettings] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const storedName = localStorage.getItem("horario_signature_name") || "";
+    const storedRank = localStorage.getItem("horario_signature_rank") || "";
+    const storedRole = localStorage.getItem("horario_signature_role") || "";
+    if (
+      isBlockedLegacySignature(storedName) ||
+      isBlockedLegacySignature(storedRank) ||
+      isBlockedLegacySignature(storedRole)
+    ) {
+      localStorage.removeItem("horario_signature_name");
+      localStorage.removeItem("horario_signature_rank");
+      if (/munaretto|comandante/i.test(storedRole)) {
+        localStorage.removeItem("horario_signature_role");
+        setSignatureRole(
+          language === "pt" ? "Coordenador de Cursos" : "Course Coordinator",
+        );
+      }
+      setSignatureName("");
+      setSignatureRank("");
+    }
+  }, [language]);
 
   const handleSignatureNameChange = (val: string) => {
     setSignatureName(val);
@@ -2406,20 +2452,22 @@ export default function HorarioPage() {
                     {/* Linha de Assinatura */}
                     <div className="w-full min-w-[240px] md:min-w-[280px] border-b-2 border-slate-800 h-5 mb-1 signature-line print:border-black"></div>
 
-                    {signatureName.trim() ? (
+                    {signatureName.trim() && !isBlockedLegacySignature(signatureName) ? (
                       <span className="text-xs md:text-sm font-bold text-slate-900 leading-tight text-center w-full whitespace-nowrap">
                         {signatureName.trim()}
                       </span>
                     ) : null}
 
-                    {signatureRank.trim() ? (
+                    {signatureRank.trim() && !isBlockedLegacySignature(signatureRank) ? (
                       <span className="text-[10px] md:text-xs font-bold text-slate-900 leading-tight text-center mt-0.5 w-full whitespace-nowrap">
                         {signatureRank.trim()}
                       </span>
                     ) : null}
 
                     <span className="text-[10px] md:text-xs font-bold text-slate-900 leading-tight text-center mt-0.5 w-full whitespace-nowrap">
-                      {signatureRole.trim() ||
+                      {(signatureRole.trim() && !isBlockedLegacySignature(signatureRole)
+                        ? signatureRole.trim()
+                        : "") ||
                         (language === "pt"
                           ? "Coordenador de Cursos"
                           : "Course Coordinator")}

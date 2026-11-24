@@ -333,7 +333,7 @@ export function AcompanhanteWorkspace() {
             .is('deleted_at', null),
           supabase
             .from('eventos')
-            .select('id, titulo, descricao, data, data_fim, tipo_data, cor, exibir_aluno, target_grupo, uniforme_dia')
+            .select('id, titulo, descricao, data, data_fim, tipo_data, cor, exibir_aluno, exibir_monitor, target_grupo, uniforme_dia')
             .order('data', { ascending: true })
             .limit(80),
           supabase
@@ -377,12 +377,21 @@ export function AcompanhanteWorkspace() {
 
         let rawEventos: any[] = evtPrimaryRes.data || [];
         if (evtPrimaryRes.error) {
-          const fallbackEvtRes = await supabase
+          const secondaryEvtRes = await supabase
             .from('eventos')
-            .select('id, titulo, descricao, data, cor, exibir_aluno, uniforme_dia')
+            .select('id, titulo, descricao, data, data_fim, tipo_data, cor, exibir_aluno, target_grupo, uniforme_dia')
             .order('data', { ascending: true })
             .limit(80);
-          rawEventos = fallbackEvtRes.data || [];
+          if (!secondaryEvtRes.error && secondaryEvtRes.data) {
+            rawEventos = secondaryEvtRes.data;
+          } else {
+            const fallbackEvtRes = await supabase
+              .from('eventos')
+              .select('id, titulo, descricao, data, cor, exibir_aluno, uniforme_dia')
+              .order('data', { ascending: true })
+              .limit(80);
+            rawEventos = fallbackEvtRes.data || [];
+          }
         }
 
         const turmaGrp = (turmaRow?.grupo_responsavel || profile.turma_grupo || 'AMBOS').toUpperCase();
@@ -391,6 +400,7 @@ export function AcompanhanteWorkspace() {
             let desc = evt.descricao || '';
             let parsedDataFim = evt.data_fim ? String(evt.data_fim).split('T')[0] : null;
             let parsedTargetGrupo = evt.target_grupo || 'AMBOS';
+            let parsedExibirMonitor = evt.exibir_monitor !== false;
             let isExclusive = false;
 
             const creatorMatch = desc.match(/\[creator:([^\]]+)\]/);
@@ -402,6 +412,10 @@ export function AcompanhanteWorkspace() {
             const exclusiveMatch = desc.match(/\[exclusive:([^\]]+)\]/);
             if (exclusiveMatch) {
               isExclusive = exclusiveMatch[1] === 'true';
+            }
+            const monitorMatch = desc.match(/\[exibir_monitor:([^\]]+)\]/);
+            if (monitorMatch) {
+              parsedExibirMonitor = monitorMatch[1] === 'true';
             }
             const targetMatch = desc.match(/\[target_grupo:([^\]]+)\]/);
             if (targetMatch) {
@@ -417,6 +431,7 @@ export function AcompanhanteWorkspace() {
               .replace(/\[exclusive:[^\]]+\]/g, '')
               .replace(/\[exibir_instrutor:[^\]]+\]/g, '')
               .replace(/\[exibir_aluno:[^\]]+\]/g, '')
+              .replace(/\[exibir_monitor:[^\]]+\]/g, '')
               .replace(/\[target_grupo:[^\]]+\]/g, '')
               .replace(/\[data_fim:[^\]]+\]/g, '')
               .replace(/\[tipo_data:[^\]]+\]/g, '')
@@ -428,6 +443,7 @@ export function AcompanhanteWorkspace() {
             return {
               ...evt,
               cleanDescricao: desc,
+              parsedExibirMonitor,
               targetGrupo: parsedTargetGrupo.toUpperCase(),
               isExclusive,
               startDateStr,
@@ -437,7 +453,7 @@ export function AcompanhanteWorkspace() {
             };
           })
           .filter((e: any) => {
-            if (e.isExclusive) return false;
+            if (e.isExclusive || !e.parsedExibirMonitor) return false;
             if (e.targetGrupo !== 'AMBOS' && turmaGrp !== 'AMBOS' && e.targetGrupo !== turmaGrp) {
               return false;
             }

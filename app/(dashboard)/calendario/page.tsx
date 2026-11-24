@@ -35,6 +35,7 @@ interface Evento {
   cor: string;
   exibir_aluno?: boolean;
   exibir_instrutor?: boolean;
+  exibir_monitor?: boolean;
   uniforme_dia?: string;
   created_at: string;
   creator_id?: string;
@@ -87,6 +88,7 @@ export default function CalendarPage() {
     cor: 'bg-blue-600',
     exibir_aluno: true,
     exibir_instrutor: true,
+    exibir_monitor: true,
     uniforme_dia: '',
     target_grupo: 'AMBOS'
   });
@@ -100,6 +102,7 @@ export default function CalendarPage() {
       let parsedIsExclusive = evt.is_exclusive === true;
       let parsedExibirInstrutor = evt.exibir_instrutor !== false;
       let parsedExibirAluno = evt.exibir_aluno !== false;
+      let parsedExibirMonitor = evt.exibir_monitor !== false;
       let parsedTargetGrupo = evt.target_grupo || 'AMBOS';
       let parsedDataFim = evt.data_fim ? evt.data_fim.split('T')[0] : null;
       let parsedTipoData = (evt.tipo_data as 'fixa' | 'periodo') || (parsedDataFim ? 'periodo' : 'fixa');
@@ -135,6 +138,12 @@ export default function CalendarPage() {
         desc = desc.replace(/\[exibir_aluno:[^\]]+\]/, '');
       }
 
+      const monitorMatch = desc.match(/\[exibir_monitor:([^\]]+)\]/);
+      if (monitorMatch) {
+        parsedExibirMonitor = monitorMatch[1] === 'true';
+        desc = desc.replace(/\[exibir_monitor:[^\]]+\]/, '');
+      }
+
       const targetGrupoMatch = desc.match(/\[target_grupo:([^\]]+)\]/);
       if (targetGrupoMatch) {
         parsedTargetGrupo = targetGrupoMatch[1];
@@ -165,6 +174,7 @@ export default function CalendarPage() {
         is_exclusive: parsedIsExclusive,
         exibir_instrutor: parsedExibirInstrutor,
         exibir_aluno: parsedExibirAluno,
+        exibir_monitor: parsedExibirMonitor,
         target_grupo: parsedTargetGrupo
       };
     });
@@ -192,6 +202,9 @@ export default function CalendarPage() {
         if (isInstrutor && !isOwner) {
           if (evt.exibir_instrutor === false) return false;
         }
+        if (isAcompanhante && !isOwner) {
+          if (evt.exibir_monitor === false) return false;
+        }
 
         // Group Visibilidade Check (GAT, MAN, AMBOS)
         const eventGroup = evt.target_grupo || 'AMBOS';
@@ -208,7 +221,7 @@ export default function CalendarPage() {
         return false;
       }
     });
-  }, [profile, isAdmin, isAluno, userGroup]);
+  }, [profile, isAdmin, isAluno, isAcompanhante, userGroup]);
 
   const fetchEventos = async () => {
     try {
@@ -290,7 +303,7 @@ export default function CalendarPage() {
     // Add hidden markers at the end of the description to ensure perfect compatibility
     // with any state of the remote database schema.
     const cleanDesc = formData.descricao;
-    let tagSuffix = `\n\n[creator:${currentUserId}][exclusive:${isExclusiveRoutine}][exibir_instrutor:${formData.exibir_instrutor}][exibir_aluno:${formData.exibir_aluno}][target_grupo:${formData.target_grupo}]`;
+    let tagSuffix = `\n\n[creator:${currentUserId}][exclusive:${isExclusiveRoutine}][exibir_instrutor:${formData.exibir_instrutor}][exibir_aluno:${formData.exibir_aluno}][exibir_monitor:${formData.exibir_monitor}][target_grupo:${formData.target_grupo}]`;
     if (isPeriod && formData.data_fim) {
       tagSuffix += `[tipo_data:periodo][data_fim:${formData.data_fim}]`;
     } else {
@@ -307,6 +320,7 @@ export default function CalendarPage() {
       cor: formData.cor,
       exibir_aluno: isAdmin ? formData.exibir_aluno : false,
       exibir_instrutor: isAdmin ? formData.exibir_instrutor : true,
+      exibir_monitor: isAdmin ? formData.exibir_monitor : false,
       uniforme_dia: isAdmin ? (formData.uniforme_dia || null) : null,
       creator_id: currentUserId,
       is_exclusive: isExclusiveRoutine,
@@ -413,6 +427,7 @@ export default function CalendarPage() {
         cor: 'bg-blue-600',
         exibir_aluno: true,
         exibir_instrutor: true,
+        exibir_monitor: true,
         uniforme_dia: '',
         target_grupo: 'AMBOS'
       });
@@ -468,6 +483,7 @@ export default function CalendarPage() {
       cor: evento.cor,
       exibir_aluno: evento.exibir_aluno !== false,
       exibir_instrutor: evento.exibir_instrutor !== false,
+      exibir_monitor: evento.exibir_monitor !== false,
       uniforme_dia: evento.uniforme_dia || '',
       target_grupo: evento.target_grupo || 'AMBOS'
     });
@@ -480,6 +496,9 @@ export default function CalendarPage() {
 
   const filteredEventos = eventos.filter(e => {
     if (isAluno && e.exibir_aluno === false) {
+      return false;
+    }
+    if (isAcompanhante && e.exibir_monitor === false) {
       return false;
     }
     return e.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -531,6 +550,7 @@ export default function CalendarPage() {
                   cor: 'bg-blue-600',
                   exibir_aluno: true,
                   exibir_instrutor: true,
+                  exibir_monitor: true,
                   uniforme_dia: '',
                   target_grupo: 'AMBOS'
                 });
@@ -695,20 +715,25 @@ export default function CalendarPage() {
                             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-slate-600 text-[9px] font-bold uppercase tracking-wider leading-none">
                               👤 Privada (Autor)
                             </span>
-                          ) : !evento.exibir_aluno && !evento.exibir_instrutor ? (
+                          ) : !evento.exibir_aluno && !evento.exibir_instrutor && !evento.exibir_monitor ? (
                             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-amber-700 text-[9px] font-bold uppercase tracking-wider leading-none">
                               🔒 Privada
                             </span>
                           ) : (
                             <>
+                              {evento.exibir_instrutor !== false && (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-purple-50 border border-purple-100 text-purple-600 text-[9px] font-bold uppercase tracking-wider leading-none">
+                                  💼 Instrutores
+                                </span>
+                              )}
                               {evento.exibir_aluno !== false && (
                                 <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-blue-50 border border-blue-100 text-blue-600 text-[9px] font-bold uppercase tracking-wider leading-none">
                                   🎓 Alunos
                                 </span>
                               )}
-                              {evento.exibir_instrutor !== false && (
-                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-purple-50 border border-purple-100 text-purple-600 text-[9px] font-bold uppercase tracking-wider leading-none">
-                                  💼 Instrutores
+                              {evento.exibir_monitor !== false && (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-teal-50 border border-teal-100 text-teal-700 text-[9px] font-bold uppercase tracking-wider leading-none">
+                                  🛡️ Monitores
                                 </span>
                               )}
                             </>
@@ -881,22 +906,27 @@ export default function CalendarPage() {
                           <div className="flex items-center gap-1.5 text-slate-500 text-xs font-bold uppercase tracking-wider">
                             <span>👤 Rotina Exclusiva (Pessoal)</span>
                           </div>
-                        ) : !viewingEvent.exibir_aluno && !viewingEvent.exibir_instrutor ? (
+                        ) : !viewingEvent.exibir_aluno && !viewingEvent.exibir_instrutor && !viewingEvent.exibir_monitor ? (
                           <div className="flex items-center gap-1.5 text-amber-600 text-xs font-bold uppercase tracking-wider">
                             <span>🔒 Somente Administradores (Privado)</span>
                           </div>
                         ) : (
-                          <div className="flex items-center gap-3">
+                          <div className="flex flex-wrap items-center gap-3">
                             <span className="text-xs text-slate-400 font-medium">Exibida para:</span>
-                            <div className="flex gap-2">
+                            <div className="flex flex-wrap gap-2">
+                              {viewingEvent.exibir_instrutor !== false && (
+                                <span className="px-2 py-0.5 rounded-md bg-purple-50 border border-purple-100 text-purple-700 text-[10px] font-bold uppercase tracking-wide">
+                                  Instrutores
+                                </span>
+                              )}
                               {viewingEvent.exibir_aluno !== false && (
                                 <span className="px-2 py-0.5 rounded-md bg-blue-50 border border-blue-100 text-blue-700 text-[10px] font-bold uppercase tracking-wide">
                                   Alunos
                                 </span>
                               )}
-                              {viewingEvent.exibir_instrutor !== false && (
-                                <span className="px-2 py-0.5 rounded-md bg-purple-50 border border-purple-100 text-purple-700 text-[10px] font-bold uppercase tracking-wide">
-                                  Instrutores
+                              {viewingEvent.exibir_monitor !== false && (
+                                <span className="px-2 py-0.5 rounded-md bg-teal-50 border border-teal-100 text-teal-700 text-[10px] font-bold uppercase tracking-wide">
+                                  Monitores
                                 </span>
                               )}
                             </div>
@@ -1156,20 +1186,6 @@ export default function CalendarPage() {
                       </div>
 
                       <div className="space-y-3">
-                        {/* Option: Alunos */}
-                        <label className="flex items-start gap-2.5 cursor-pointer group">
-                          <input 
-                            type="checkbox"
-                            checked={formData.exibir_aluno}
-                            onChange={(e) => setFormData(prev => ({ ...prev, exibir_aluno: e.target.checked }))}
-                            className="mt-0.5 w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500/20 cursor-pointer transition-all"
-                          />
-                          <div className="flex flex-col select-none">
-                            <span className="text-xs font-bold text-slate-700 group-hover:text-blue-600 transition-colors">Exibir para Alunos</span>
-                            <span className="text-[10px] text-slate-400 leading-tight">Alunos visualizam a rotina no calendário e na barra de avisos animada.</span>
-                          </div>
-                        </label>
-
                         {/* Option: Instrutores */}
                         <label className="flex items-start gap-2.5 cursor-pointer group">
                           <input 
@@ -1180,12 +1196,40 @@ export default function CalendarPage() {
                           />
                           <div className="flex flex-col select-none">
                             <span className="text-xs font-bold text-slate-700 group-hover:text-purple-600 transition-colors">Exibir para Instrutores</span>
-                            <span className="text-[10px] text-slate-400 leading-tight">Instrutores visualizam a rotina na agenda administrativa de eventos.</span>
+                            <span className="text-[10px] text-slate-400 leading-tight">Instrutores visualizam a rotina na agenda administrativa e na barra de avisos.</span>
+                          </div>
+                        </label>
+
+                        {/* Option: Alunos */}
+                        <label className="flex items-start gap-2.5 cursor-pointer group">
+                          <input 
+                            type="checkbox"
+                            checked={formData.exibir_aluno}
+                            onChange={(e) => setFormData(prev => ({ ...prev, exibir_aluno: e.target.checked }))}
+                            className="mt-0.5 w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500/20 cursor-pointer transition-all"
+                          />
+                          <div className="flex flex-col select-none">
+                            <span className="text-xs font-bold text-slate-700 group-hover:text-blue-600 transition-colors">Exibir para Alunos</span>
+                            <span className="text-[10px] text-slate-400 leading-tight">Alunos visualizam a rotina no calendário, no painel e na barra de avisos.</span>
+                          </div>
+                        </label>
+
+                        {/* Option: Monitores */}
+                        <label className="flex items-start gap-2.5 cursor-pointer group">
+                          <input 
+                            type="checkbox"
+                            checked={formData.exibir_monitor}
+                            onChange={(e) => setFormData(prev => ({ ...prev, exibir_monitor: e.target.checked }))}
+                            className="mt-0.5 w-4 h-4 text-teal-600 border-slate-300 rounded focus:ring-teal-500/20 cursor-pointer transition-all"
+                          />
+                          <div className="flex flex-col select-none">
+                            <span className="text-xs font-bold text-slate-700 group-hover:text-teal-600 transition-colors">Exibir para Monitores</span>
+                            <span className="text-[10px] text-slate-400 leading-tight">Monitores de turma visualizam a rotina na agenda, na barra de avisos e no painel da turma.</span>
                           </div>
                         </label>
 
                         {/* Informative Note if private */}
-                        {!formData.exibir_aluno && !formData.exibir_instrutor && (
+                        {!formData.exibir_aluno && !formData.exibir_instrutor && !formData.exibir_monitor && (
                           <div className="flex items-center gap-2 p-2.5 bg-amber-50 border border-amber-100 text-amber-800 rounded-xl animate-fade-in">
                             <span className="text-xs">🔒</span>
                             <span className="text-[10px] font-bold leading-tight">
