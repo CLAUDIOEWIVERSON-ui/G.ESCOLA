@@ -405,6 +405,17 @@ export default function FrequenciaPage() {
     }
   };
 
+  const isBlockedLegacySignature = (val?: string | null) =>
+    Boolean(val && /munaretto|heitor\s+marco/i.test(val));
+
+  const resolveSafeInstructorName = (turma?: any) => {
+    const raw =
+      typeof turma?.instrutor === 'string'
+        ? turma.instrutor.trim()
+        : (turma?.instrutor?.nome || '').trim();
+    return isBlockedLegacySignature(raw) ? '' : raw;
+  };
+
   const handleOpenPrintAttendanceModal = async () => {
     if (!selectedTurma) {
       toast.error(language === 'pt' ? 'Por favor, selecione uma turma primeiro.' : 'Please select a class first.');
@@ -425,14 +436,13 @@ export default function FrequenciaPage() {
     setPrintSheetType(mapGranularity === 'week' ? 'semanal' : 'mensal');
     setActiveWeekIndex(0);
 
-    // Look for instructor profile name or active turma instrutor
-    if (activeTurma?.instrutor?.nome) {
-      setPrintProfessorName(activeTurma.instrutor.nome);
-    } else if (profile?.nome) {
-      setPrintProfessorName(profile.nome);
-    } else {
-      setPrintProfessorName('');
-    }
+    // Use the class instructor (never admin/Munaretto profile as fallback)
+    const turmaInstructor = resolveSafeInstructorName(activeTurma);
+    const safeProfileName =
+      profile?.role === 'instrutor' && profile?.nome && !isBlockedLegacySignature(profile.nome)
+        ? profile.nome
+        : '';
+    setPrintProfessorName(turmaInstructor || safeProfileName || '');
 
     setPrintDocumento(activeTurma?.documento_criacao || activeCurso?.documento_criacao || 'ORDEM INTERNA');
 
@@ -820,7 +830,7 @@ export default function FrequenciaPage() {
 
   useEffect(() => {
     const fetchFilters = async () => {
-      const { data: cursosData } = await supabase.from('cursos').select('id, nome, internacional, grupo_responsavel, data_inicio, data_fim').is('deleted_at', null).order('nome');
+      const { data: cursosData } = await supabase.from('cursos').select('id, nome, documento_criacao, internacional, grupo_responsavel, data_inicio, data_fim').is('deleted_at', null).order('nome');
       let filteredCuts = cursosData || [];
       if (profile?.role === 'instrutor' && profile?.grupo_responsavel) {
         if (profile.grupo_responsavel === 'MAN') {
@@ -833,7 +843,7 @@ export default function FrequenciaPage() {
       }
       if (cursosData) setCursos(filteredCuts.filter((c: any) => !c.internacional));
 
-      const { data: turmasData } = await supabase.from('turmas').select('id, nome, curso_id, internacional, data_inicio, data_fim, data_postergacao, grupo_responsavel, arquivada, status').is('deleted_at', null).order('nome');
+      const { data: turmasData } = await supabase.from('turmas').select('id, nome, curso_id, instrutor, documento_criacao, internacional, data_inicio, data_fim, data_postergacao, grupo_responsavel, arquivada, status').is('deleted_at', null).order('nome');
       let filteredCls = turmasData || [];
       if (profile?.role === 'instrutor' && profile?.grupo_responsavel) {
         if (profile.grupo_responsavel === 'MAN') {
@@ -2078,9 +2088,12 @@ export default function FrequenciaPage() {
                         const newTurmaId = e.target.value;
                         setPrintTurmaId(newTurmaId);
                         const foundTurma = turmas.find(t => t.id === newTurmaId);
-                        if (foundTurma?.instrutor?.nome) {
-                          setPrintProfessorName(foundTurma.instrutor.nome);
-                        }
+                        const nextInstructor = resolveSafeInstructorName(foundTurma);
+                        const safeProfileName =
+                          profile?.role === 'instrutor' && profile?.nome && !isBlockedLegacySignature(profile.nome)
+                            ? profile.nome
+                            : '';
+                        setPrintProfessorName(nextInstructor || safeProfileName || '');
                         if (foundTurma?.documento_criacao) {
                           setPrintDocumento(foundTurma.documento_criacao);
                         }
@@ -2433,7 +2446,7 @@ export default function FrequenciaPage() {
                           {language === 'pt' ? 'PROFESSOR(A):' : 'INSTRUCTOR:'}
                         </span>
                         <div className="border-b border-black min-h-[26px] flex items-end pb-0.5 text-[12.5px] font-black px-1 text-black uppercase truncate">
-                          {printProfessorName || activePrintTurma?.instrutor?.nome || profile?.nome || '—'}
+                          {(printProfessorName && !isBlockedLegacySignature(printProfessorName) ? printProfessorName : '') || resolveSafeInstructorName(activePrintTurma) || '—'}
                         </div>
                       </div>
                       <div className="flex flex-col">
@@ -2683,7 +2696,7 @@ export default function FrequenciaPage() {
                     <div className="mt-6 print:mt-3 grid grid-cols-2 gap-12 text-center text-[10.5px] uppercase font-bold text-black print-avoid-break">
                       <div className="flex flex-col items-center">
                         <div className="w-full max-w-[260px] border-b border-black mb-1.5 h-6"></div>
-                        <span className="text-black font-extrabold text-[11px]">{printProfessorName || (language === 'pt' ? 'Assinatura do Instrutor' : 'Instructor Signature')}</span>
+                        <span className="text-black font-extrabold text-[11px]">{(printProfessorName && !isBlockedLegacySignature(printProfessorName) ? printProfessorName : '') || (language === 'pt' ? 'Assinatura do Instrutor' : 'Instructor Signature')}</span>
                         <span className="text-[8.5px] text-slate-700 font-semibold tracking-wider">{language === 'pt' ? 'Instrutor / Professor Responsável' : 'Responsible Instructor'}</span>
                       </div>
                       <div className="flex flex-col items-center">

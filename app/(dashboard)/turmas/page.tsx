@@ -183,10 +183,17 @@ function TurmasContent() {
     setIsPrintAllFichasOpen(true);
   };
 
+  const isBlockedLegacySignature = (val?: string | null) =>
+    Boolean(val && /munaretto|heitor\s+marco/i.test(val));
+
   const loadTurmaForAttendancePrint = async (turma: any, type?: 'mensal' | 'semanal') => {
     if (!turma) return;
     setPrintTurma(turma);
-    setPrintProfessorName(turma.instrutor || '');
+    const rawInstrutor =
+      typeof turma.instrutor === 'string'
+        ? turma.instrutor.trim()
+        : (turma.instrutor?.nome || '').trim();
+    setPrintProfessorName(isBlockedLegacySignature(rawInstrutor) ? '' : rawInstrutor);
     setPrintClassName(turma.nome || '');
     if (type) {
       setPrintSheetType(type);
@@ -3170,7 +3177,7 @@ function TurmasContent() {
                         {language === 'pt' ? 'PROFESSOR(A):' : 'INSTRUCTOR:'}
                       </span>
                       <div className="border-b border-black min-h-[26px] flex items-end pb-0.5 text-[12.5px] font-black px-1 text-black uppercase truncate">
-                        {printProfessorName || '—'}
+                        {printProfessorName && !isBlockedLegacySignature(printProfessorName) ? printProfessorName : '—'}
                       </div>
                     </div>
                     <div className="flex flex-col">
@@ -3420,7 +3427,7 @@ function TurmasContent() {
                   <div className="mt-6 print:mt-3 grid grid-cols-2 gap-12 text-center text-[10.5px] uppercase font-bold text-black print-avoid-break">
                     <div className="flex flex-col items-center">
                       <div className="w-full max-w-[260px] border-b border-black mb-1.5 h-6"></div>
-                      <span className="text-black font-extrabold text-[11px]">{printProfessorName || (language === 'pt' ? 'Assinatura do Instrutor' : 'Instructor Signature')}</span>
+                      <span className="text-black font-extrabold text-[11px]">{(printProfessorName && !isBlockedLegacySignature(printProfessorName) ? printProfessorName : '') || (language === 'pt' ? 'Assinatura do Instrutor' : 'Instructor Signature')}</span>
                       <span className="text-[8.5px] text-slate-700 font-semibold tracking-wider">{language === 'pt' ? 'Instrutor / Professor Responsável' : 'Responsible Instructor'}</span>
                     </div>
                     <div className="flex flex-col items-center">
