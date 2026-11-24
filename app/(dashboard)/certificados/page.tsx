@@ -3712,222 +3712,260 @@ export default function CertificadosPage() {
           )}
         >
           {/* Preview Controls Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-xl border border-slate-200 shadow-2xs">
-            <div className="flex flex-wrap items-center gap-1.5">
-              {[
-                { id: 'both', label: 'Frente e Verso' },
-                { id: 'front', label: 'Somente Frente' },
-                { id: 'back', label: 'Somente Verso' },
-              ].map((m) => (
-                <button
-                  key={m.id}
-                  type="button"
-                  onClick={() => setPreviewMode(m.id as any)}
-                  className={cn(
-                    'px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer',
-                    previewMode === m.id
-                      ? 'bg-slate-900 text-white'
-                      : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
-                  )}
-                >
-                  {m.label}
-                </button>
-              ))}
-
-              {previewMode !== 'back' && (
-                <button
-                  type="button"
-                  onClick={() => setDragMoveEnabled((v) => !v)}
-                  className={cn(
-                    'px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border',
-                    dragMoveEnabled
-                      ? 'bg-blue-700 text-white border-blue-800 shadow-xs'
-                      : 'bg-blue-50 text-blue-800 border-blue-200 hover:bg-blue-100'
-                  )}
-                  title="Permite clicar e arrastar os brasões, título, texto principal, data e cada assinatura (esquerda e direita) de forma independente diretamente na folha"
-                >
-                  <Move size={13} />
-                  <span>{dragMoveEnabled ? 'Arrastar Ativo' : 'Mover na Folha'}</span>
-                </button>
-              )}
-
-              <button
-                type="button"
-                onClick={() => {
-                  if (selectedObject === 'modeloGeral' && editorTab !== 'modelos') {
-                    setSelectedObject(null);
-                  } else {
-                    setEditorTab('frente');
-                    setSelectedObject('modeloGeral');
-                  }
-                }}
-                className={cn(
-                  'px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border',
-                  selectedObject === 'modeloGeral' && editorTab !== 'modelos'
-                    ? 'bg-slate-800 text-white border-slate-900'
-                    : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                )}
-                title="Abrir ou fechar configurações gerais do modelo"
-              >
-                <Settings size={13} />
-                <span>Config. Modelo</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  if (editorTab === 'modelos') {
-                    setEditorTab('frente');
-                  } else {
-                    setSelectedObject(null);
-                    setEditorTab('modelos');
-                  }
-                }}
-                className={cn(
-                  'px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border',
-                  editorTab === 'modelos'
-                    ? 'bg-blue-900 text-white border-blue-950'
-                    : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                )}
-                title="Abrir ou fechar Modelos Salvos"
-              >
-                <BookmarkCheck size={13} />
-                <span>Modelos Salvos</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  if (editorTab === 'biblioteca') {
-                    setEditorTab('frente');
-                  } else {
-                    setSelectedObject(null);
-                    setEditorTab('biblioteca');
-                  }
-                }}
-                className={cn(
-                  'px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border',
-                  editorTab === 'biblioteca'
-                    ? 'bg-blue-900 text-white border-blue-950'
-                    : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                )}
-                title="Abrir ou fechar Biblioteca de Brasões, Marcas d'Água e Molduras"
-              >
-                <FolderOpen size={13} />
-                <span>Biblioteca</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleDownloadIndividualPDF}
-                disabled={exportingPDF}
-                className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
-                title="Baixar PDF do aluno selecionado (Frente e Verso)"
-              >
-                {exportingPDF && !batchProgress ? (
-                  <Loader2 size={13} className="animate-spin" />
-                ) : (
-                  <Download size={13} />
-                )}
-                <span>Baixar PDF do Aluno Selecionado</span>
-              </button>
-
-              {selectedTurmaId && turmaStudents.length > 0 && (
-                <button
-                  type="button"
-                  onClick={handleDownloadBatchPDF}
-                  disabled={exportingPDF || batchSelectedIds.length === 0}
-                  className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-blue-800 hover:bg-blue-900 text-white shadow-2xs transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
-                  title="Baixar todos os certificados da turma selecionada em lote"
-                >
-                  {batchProgress ? (
-                    <>
-                      <Loader2 size={13} className="animate-spin" />
-                      <span>
-                        {batchProgress.current}/{batchProgress.total}
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <Download size={13} />
-                      <span>
-                        Baixar Todos Certificados da Turma Selecionada ({batchSelectedIds.length})
-                      </span>
-                    </>
-                  )}
-                </button>
-              )}
-
-              <button
-                type="button"
-                onClick={openSaveAsNewModal}
-                className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-blue-900 hover:bg-blue-950 text-white shadow-2xs transition-all cursor-pointer flex items-center gap-1.5"
-                title="Salvar uma cópia do modelo atual como um novo modelo independente"
-              >
-                <Copy size={13} />
-                <span>Salvar como Novo Modelo</span>
-              </button>
-            </div>
-
-            <div className="flex items-center gap-3">
-              {turmaStudents.length > 1 && (
-                <div className="flex items-center gap-1 border border-slate-200 rounded-lg px-1.5 py-1 bg-slate-50">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const prevIdx =
-                        (currentStudentIndex - 1 + turmaStudents.length) %
-                        turmaStudents.length;
-                      setSelectedStudentId(turmaStudents[prevIdx].id);
-                    }}
-                    className="p-0.5 hover:bg-slate-200 rounded cursor-pointer"
-                    title="Aluno anterior"
-                  >
-                    <ChevronLeft size={14} />
-                  </button>
-                  <span className="text-[11px] font-bold text-slate-700 px-1">
-                    {currentStudentIndex >= 0 ? currentStudentIndex + 1 : 1}/{turmaStudents.length}
+          <div className="bg-white p-2.5 sm:p-3 rounded-xl border border-slate-200 shadow-2xs">
+            <div className="flex flex-wrap items-stretch gap-2.5">
+              {/* Categoria 1: Visualização & Navegação */}
+              <div className="flex flex-col justify-between gap-1.5 bg-slate-50/80 border border-slate-200/80 rounded-xl px-2.5 py-2 flex-1 min-w-[260px]">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+                    Visualização
                   </span>
+                  {turmaStudents.length > 1 && (
+                    <div className="inline-flex items-center gap-1 border border-slate-200 rounded-md px-1 py-0.5 bg-white">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const prevIdx =
+                            (currentStudentIndex - 1 + turmaStudents.length) %
+                            turmaStudents.length;
+                          setSelectedStudentId(turmaStudents[prevIdx].id);
+                        }}
+                        className="p-0.5 hover:bg-slate-100 rounded cursor-pointer text-slate-600"
+                        title="Aluno anterior"
+                      >
+                        <ChevronLeft size={13} />
+                      </button>
+                      <span className="text-[10px] font-bold text-slate-700 px-1 tabular-nums">
+                        Aluno {currentStudentIndex >= 0 ? currentStudentIndex + 1 : 1}/{turmaStudents.length}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const nextIdx = (currentStudentIndex + 1) % turmaStudents.length;
+                          setSelectedStudentId(turmaStudents[nextIdx].id);
+                        }}
+                        className="p-0.5 hover:bg-slate-100 rounded cursor-pointer text-slate-600"
+                        title="Próximo aluno"
+                      >
+                        <ChevronRight size={13} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <div
+                    className="inline-flex items-center bg-slate-200/70 p-0.5 rounded-lg border border-slate-200/80"
+                    role="group"
+                    aria-label="Modo de visualização da folha"
+                  >
+                    {[
+                      { id: 'both', label: 'Frente e Verso', tip: 'Exibir frente e verso juntos' },
+                      { id: 'front', label: 'Somente Frente', tip: 'Exibir apenas a frente do certificado' },
+                      { id: 'back', label: 'Somente Verso', tip: 'Exibir apenas o verso do certificado' },
+                    ].map((m) => (
+                      <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => setPreviewMode(m.id as any)}
+                        title={m.tip}
+                        className={cn(
+                          'px-2.5 py-1 rounded-md text-xs font-bold transition-all cursor-pointer whitespace-nowrap',
+                          previewMode === m.id
+                            ? 'bg-slate-900 text-white shadow-2xs'
+                            : 'text-slate-600 hover:text-slate-900 hover:bg-white/70'
+                        )}
+                      >
+                        {m.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div
+                    className="inline-flex items-center gap-1.5 text-xs text-slate-600 bg-white border border-slate-200 rounded-lg px-2 py-1"
+                    title="Ajustar zoom da pré-visualização"
+                  >
+                    <Eye size={13} className="text-slate-500 shrink-0" />
+                    <input
+                      type="range"
+                      min={60}
+                      max={115}
+                      step={5}
+                      value={manualZoom}
+                      onChange={(e) => setManualZoom(Number(e.target.value))}
+                      className="w-16 sm:w-20 accent-slate-800 cursor-pointer"
+                    />
+                    <span className="font-mono text-[11px] font-bold w-8 text-right tabular-nums">
+                      {manualZoom}%
+                    </span>
+                  </div>
+
                   <button
                     type="button"
                     onClick={() => {
-                      const nextIdx = (currentStudentIndex + 1) % turmaStudents.length;
-                      setSelectedStudentId(turmaStudents[nextIdx].id);
+                      setFullscreenZoom(100);
+                      setFullscreenPreview(true);
                     }}
-                    className="p-0.5 hover:bg-slate-200 rounded cursor-pointer"
-                    title="Próximo aluno"
+                    className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-white hover:bg-slate-900 text-slate-800 hover:text-white border border-slate-200 hover:border-slate-900 transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs whitespace-nowrap"
+                    title="Abrir visualização do certificado em tela toda (Frente e Verso)"
                   >
-                    <ChevronRight size={14} />
+                    <Maximize2 size={13} />
+                    <span>Tela Toda</span>
                   </button>
                 </div>
-              )}
-
-              <div className="flex items-center gap-1.5 text-xs text-slate-600">
-                <Eye size={14} />
-                <input
-                  type="range"
-                  min={60}
-                  max={115}
-                  step={5}
-                  value={manualZoom}
-                  onChange={(e) => setManualZoom(Number(e.target.value))}
-                  className="w-20 accent-slate-800"
-                />
-                <span className="font-mono text-[11px] font-bold w-9">{manualZoom}%</span>
               </div>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setFullscreenZoom(100);
-                  setFullscreenPreview(true);
-                }}
-                className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs"
-                title="Abrir visualização do certificado em tela toda (Frente e Verso)"
-              >
-                <Maximize2 size={13} />
-                <span>Tela Toda</span>
-              </button>
+              {/* Categoria 2: Edição & Modelos */}
+              <div className="flex flex-col justify-between gap-1.5 bg-slate-50/80 border border-slate-200/80 rounded-xl px-2.5 py-2 flex-1 min-w-[280px]">
+                <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+                  Edição &amp; Modelos
+                </span>
+
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {previewMode !== 'back' && (
+                    <button
+                      type="button"
+                      onClick={() => setDragMoveEnabled((v) => !v)}
+                      className={cn(
+                        'px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border whitespace-nowrap',
+                        dragMoveEnabled
+                          ? 'bg-blue-700 text-white border-blue-800 shadow-xs'
+                          : 'bg-white text-blue-800 border-blue-200 hover:bg-blue-50'
+                      )}
+                      title="Permite clicar e arrastar os brasões, título, texto principal, data e cada assinatura (esquerda e direita) de forma independente diretamente na folha"
+                    >
+                      <Move size={13} />
+                      <span>{dragMoveEnabled ? 'Arrastar Ativo' : 'Mover na Folha'}</span>
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (selectedObject === 'modeloGeral' && editorTab !== 'modelos') {
+                        setSelectedObject(null);
+                      } else {
+                        setEditorTab('frente');
+                        setSelectedObject('modeloGeral');
+                      }
+                    }}
+                    className={cn(
+                      'px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border whitespace-nowrap',
+                      selectedObject === 'modeloGeral' && editorTab !== 'modelos'
+                        ? 'bg-slate-800 text-white border-slate-900 shadow-2xs'
+                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                    )}
+                    title="Abrir ou fechar configurações gerais do modelo"
+                  >
+                    <Settings size={13} />
+                    <span>Config. Modelo</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (editorTab === 'modelos') {
+                        setEditorTab('frente');
+                      } else {
+                        setSelectedObject(null);
+                        setEditorTab('modelos');
+                      }
+                    }}
+                    className={cn(
+                      'px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border whitespace-nowrap',
+                      editorTab === 'modelos'
+                        ? 'bg-blue-900 text-white border-blue-950 shadow-2xs'
+                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                    )}
+                    title="Abrir ou fechar Modelos Salvos"
+                  >
+                    <BookmarkCheck size={13} />
+                    <span>Modelos Salvos</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (editorTab === 'biblioteca') {
+                        setEditorTab('frente');
+                      } else {
+                        setSelectedObject(null);
+                        setEditorTab('biblioteca');
+                      }
+                    }}
+                    className={cn(
+                      'px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border whitespace-nowrap',
+                      editorTab === 'biblioteca'
+                        ? 'bg-blue-900 text-white border-blue-950 shadow-2xs'
+                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                    )}
+                    title="Abrir ou fechar Biblioteca de Brasões, Marcas d'Água e Molduras"
+                  >
+                    <FolderOpen size={13} />
+                    <span>Biblioteca</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={openSaveAsNewModal}
+                    className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-50 hover:bg-emerald-600 text-emerald-800 hover:text-white border border-emerald-200 hover:border-emerald-700 shadow-2xs transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap"
+                    title="Salvar uma cópia do modelo atual como um novo modelo independente"
+                  >
+                    <Copy size={13} />
+                    <span>Salvar como Novo</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Categoria 3: Exportação em PDF */}
+              <div className="flex flex-col justify-between gap-1.5 bg-indigo-50/50 border border-indigo-200/75 rounded-xl px-2.5 py-2 shrink-0">
+                <span className="text-[10px] font-black uppercase tracking-wider text-indigo-800/80">
+                  Exportar PDF
+                </span>
+
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={handleDownloadIndividualPDF}
+                    disabled={exportingPDF}
+                    className="px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50 whitespace-nowrap"
+                    title="Baixar PDF do aluno selecionado (Frente e Verso)"
+                  >
+                    {exportingPDF && !batchProgress ? (
+                      <Loader2 size={13} className="animate-spin" />
+                    ) : (
+                      <Download size={13} />
+                    )}
+                    <span>PDF do Aluno</span>
+                  </button>
+
+                  {selectedTurmaId && turmaStudents.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleDownloadBatchPDF}
+                      disabled={exportingPDF || batchSelectedIds.length === 0}
+                      className="px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-800 hover:bg-blue-900 text-white shadow-2xs transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50 whitespace-nowrap"
+                      title="Baixar todos os certificados da turma selecionada em lote"
+                    >
+                      {batchProgress ? (
+                        <>
+                          <Loader2 size={13} className="animate-spin" />
+                          <span>
+                            {batchProgress.current}/{batchProgress.total}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <Download size={13} />
+                          <span>
+                            Toda a Turma ({batchSelectedIds.length})
+                          </span>
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
