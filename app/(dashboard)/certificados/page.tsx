@@ -31,6 +31,7 @@ import {
   MousePointerClick,
   Settings,
   FolderOpen,
+  FilePlus,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase/client';
@@ -310,6 +311,11 @@ export default function CertificadosPage() {
 
   const handleSelectObjectOnSheet = useCallback((obj: CertificateSelectableObject) => {
     setEditorTab((prev) => (prev === 'modelos' || prev === 'biblioteca' ? 'frente' : prev));
+    if (obj === 'versoTabela') {
+      setTemplate((prev) =>
+        prev.ocultarTabelaVerso ? { ...prev, ocultarTabelaVerso: false } : prev
+      );
+    }
     setSelectedObject(obj);
   }, []);
 
@@ -2077,14 +2083,15 @@ export default function CertificadosPage() {
 
     const newTemplate: CertificateTemplateConfig =
       newModelStarter === 'blank'
-        ? createBlankTemplate(resolvedName, 'geral')
+        ? createBlankTemplate(resolvedName, 'geral', sheetOrientation)
         : newModelStarter === 'formal_a4'
-          ? createFormalA4Template(resolvedName, 'geral')
+          ? createFormalA4Template(resolvedName, 'geral', sheetOrientation)
           : {
               ...createPresetTemplate(newModelStarter),
               id: undefined,
               templateKey: `custom_${Date.now()}`,
               nomeModelo: resolvedName,
+              orientacao: sheetOrientation,
               turmaId: null,
               cursoId: null,
               textoCorpoPorAluno: {},
@@ -2135,6 +2142,33 @@ export default function CertificadosPage() {
     } finally {
       setCreatingNewModel(false);
     }
+  };
+
+  // Start a clean blank A4 sheet immediately for a brand-new edition without altering saved models
+  const handleStartBlankSheet = () => {
+    const blankTemplate = createBlankTemplate(
+      `Folha em Branco (${isPortraitSheet ? 'Retrato' : 'Paisagem'})`,
+      'geral',
+      sheetOrientation
+    );
+
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = null;
+    }
+
+    if (selectedTurmaIdRef.current) {
+      skipNextTurmaAutoLoadRef.current = true;
+    }
+
+    lastSavedSignatureRef.current = getTemplateSaveSignature(blankTemplate);
+    initializedAutoSaveBaselineRef.current = true;
+    setTemplate(blankTemplate);
+    setEditorTab('frente');
+    setSelectedObject(null);
+    toast.success(
+      'Folha em branco pronta! Clique nos espaços da folha ou nos atalhos acima para montar sua nova edição.'
+    );
   };
 
   // Clone and save the current working certificate configuration as a brand-new standalone model
@@ -3396,7 +3430,7 @@ export default function CertificadosPage() {
                           }
                           className="w-full px-2.5 py-1.5 bg-white border border-emerald-200 rounded-lg text-xs font-semibold text-slate-800"
                         >
-                          <option value="blank">Em Branco (totalmente do zero)</option>
+                          <option value="blank">Folha em Branco (totalmente limpa do zero)</option>
                           <option value="formal_a4">
                             Layout Formal (A4 Paisagem — Respiro Visual)
                           </option>
@@ -3959,6 +3993,16 @@ export default function CertificadosPage() {
 
                   <button
                     type="button"
+                    onClick={handleStartBlankSheet}
+                    className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 shadow-2xs transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap"
+                    title="Abrir uma folha A4 totalmente em branco para iniciar uma nova edição sem alterar modelos salvos"
+                  >
+                    <FilePlus size={13} />
+                    <span>Folha em Branco</span>
+                  </button>
+
+                  <button
+                    type="button"
                     onClick={openSaveAsNewModal}
                     className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-50 hover:bg-emerald-600 text-emerald-800 hover:text-white border border-emerald-200 hover:border-emerald-700 shadow-2xs transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap"
                     title="Salvar uma cópia do modelo atual como um novo modelo independente"
@@ -4037,15 +4081,25 @@ export default function CertificadosPage() {
             </div>
           )}
 
-          {/* Slim contextual helper bar when all controls are hidden */}
-          {!showSidePanel && (
+          {/* Slim contextual helper & quick-insert bar when side panel is closed or editing a blank sheet */}
+          {(!showSidePanel ||
+            (!template.titulo?.trim() && !template.textoCorpo?.trim()) ||
+            Boolean(template.ocultarTabelaVerso)) && (
             <div className="px-3.5 py-2.5 rounded-xl bg-white border border-blue-200/80 shadow-2xs flex flex-wrap items-center justify-between gap-2.5">
               <div className="flex items-center gap-2 text-xs text-slate-700">
                 <MousePointerClick size={15} className="text-blue-700 shrink-0" />
                 <span>
-                  <strong>Edição Contextual:</strong> clique diretamente em qualquer objeto na{' '}
-                  <strong>Frente</strong> ou no <strong>Verso</strong> (título, texto, data, brasão,
-                  assinatura ou tabela) para abrir os controles ao lado.
+                  {!template.titulo?.trim() && !template.textoCorpo?.trim() ? (
+                    <>
+                      <strong>Folha em Branco:</strong> clique diretamente nos campos da folha ou
+                      use os atalhos ao lado para inserir brasões, moldura, marca d&apos;água e textos.
+                    </>
+                  ) : (
+                    <>
+                      <strong>Edição Contextual:</strong> clique diretamente em qualquer objeto na{' '}
+                      <strong>Frente</strong> ou no <strong>Verso</strong> para editar ao lado.
+                    </>
+                  )}
                 </span>
               </div>
               <div className="flex flex-wrap items-center gap-1.5">
@@ -4055,26 +4109,89 @@ export default function CertificadosPage() {
                   className="px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 border border-blue-200 text-[11px] font-bold text-blue-900 cursor-pointer flex items-center gap-1"
                 >
                   <Settings size={12} />
-                  <span>Elementos Rápidos (Frente / Verso)</span>
+                  <span>Elementos Rápidos</span>
                 </button>
+                {template.mostrarLogoEsquerda === false && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTemplate((prev) => ({ ...prev, mostrarLogoEsquerda: true }));
+                      handleSelectObjectOnSheet('brasaoEsquerdo');
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 text-[11px] font-bold text-slate-700 hover:text-blue-900 cursor-pointer flex items-center gap-1"
+                  >
+                    <Plus size={12} />
+                    <span>Brasão Esquerdo</span>
+                  </button>
+                )}
                 {!template.mostrarLogoCentro && (
                   <button
                     type="button"
-                    onClick={() => handleSelectObjectOnSheet('brasaoCentro')}
+                    onClick={() => {
+                      setTemplate((prev) => ({ ...prev, mostrarLogoCentro: true }));
+                      handleSelectObjectOnSheet('brasaoCentro');
+                    }}
                     className="px-2.5 py-1 rounded-lg bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 text-[11px] font-bold text-slate-700 hover:text-blue-900 cursor-pointer flex items-center gap-1"
                   >
                     <Plus size={12} />
                     <span>Brasão Central</span>
                   </button>
                 )}
+                {template.mostrarLogoDireita === false && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTemplate((prev) => ({ ...prev, mostrarLogoDireita: true }));
+                      handleSelectObjectOnSheet('brasaoDireito');
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 text-[11px] font-bold text-slate-700 hover:text-blue-900 cursor-pointer flex items-center gap-1"
+                  >
+                    <Plus size={12} />
+                    <span>Brasão Direito</span>
+                  </button>
+                )}
+                {(template.estiloMolduraFrente === 'nenhuma' ||
+                  (!template.estiloMolduraFrente && template.usarMolduraOriginal === false)) && (
+                  <button
+                    type="button"
+                    onClick={() => handleSelectObjectOnSheet('molduraFrente')}
+                    className="px-2.5 py-1 rounded-lg bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 text-[11px] font-bold text-slate-700 hover:text-blue-900 cursor-pointer flex items-center gap-1"
+                  >
+                    <Plus size={12} />
+                    <span>Moldura</span>
+                  </button>
+                )}
+                {!template.marcaDaguaFrenteUrl && (
+                  <button
+                    type="button"
+                    onClick={() => handleSelectObjectOnSheet('marcaDaguaFrente')}
+                    className="px-2.5 py-1 rounded-lg bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 text-[11px] font-bold text-slate-700 hover:text-blue-900 cursor-pointer flex items-center gap-1"
+                  >
+                    <Plus size={12} />
+                    <span>Marca d&apos;Água</span>
+                  </button>
+                )}
                 {!template.mostrarSegundaAssinatura && (
                   <button
                     type="button"
-                    onClick={() => handleSelectObjectOnSheet('segundaAssinatura')}
+                    onClick={() => {
+                      setTemplate((prev) => ({ ...prev, mostrarSegundaAssinatura: true }));
+                      handleSelectObjectOnSheet('segundaAssinatura');
+                    }}
                     className="px-2.5 py-1 rounded-lg bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 text-[11px] font-bold text-slate-700 hover:text-blue-900 cursor-pointer flex items-center gap-1"
                   >
                     <Plus size={12} />
                     <span>2ª Assinatura</span>
+                  </button>
+                )}
+                {template.ocultarTabelaVerso && previewMode !== 'front' && (
+                  <button
+                    type="button"
+                    onClick={() => handleSelectObjectOnSheet('versoTabela')}
+                    className="px-2.5 py-1 rounded-lg bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 text-[11px] font-bold text-slate-700 hover:text-blue-900 cursor-pointer flex items-center gap-1"
+                  >
+                    <Plus size={12} />
+                    <span>Quadro de Disciplinas (Verso)</span>
                   </button>
                 )}
               </div>

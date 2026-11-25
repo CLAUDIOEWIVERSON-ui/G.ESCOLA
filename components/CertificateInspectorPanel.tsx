@@ -4493,6 +4493,21 @@ export function CertificateInspectorPanel({
               </button>
             </div>
 
+            <label className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 cursor-pointer">
+              <span>Exibir Quadro de Disciplinas e Notas no Verso</span>
+              <input
+                type="checkbox"
+                checked={!template.ocultarTabelaVerso}
+                onChange={(e) =>
+                  setTemplate((prev) => ({
+                    ...prev,
+                    ocultarTabelaVerso: !e.target.checked,
+                  }))
+                }
+                className="rounded border-slate-300"
+              />
+            </label>
+
             <div className="p-3 rounded-xl bg-blue-50/70 border border-blue-200 space-y-2">
               <label className="flex items-start gap-2 text-xs font-bold text-blue-950 cursor-pointer">
                 <input

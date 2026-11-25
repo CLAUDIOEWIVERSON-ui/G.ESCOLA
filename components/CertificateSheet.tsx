@@ -3331,6 +3331,45 @@ export function CertificateSheet({
                 const totalLabelFontPx = template.versoTamanhoFonteTotaisLabel ?? 22;
                 const totalNumbersFontPx = template.versoTamanhoFonteTotaisNumeros ?? 28;
 
+                if (template.ocultarTabelaVerso) {
+                  if (!isInteractiveEditor) {
+                    return null;
+                  }
+                  return (
+                    <div
+                      {...backTableSelect}
+                      style={{
+                        position: 'relative',
+                        zIndex: Math.max(
+                          getLayerZ('versoTabela'),
+                          maxBackImageZ + 2
+                        ),
+                        flex: 1,
+                        marginTop: '12px',
+                        border: '1.5px dashed #94a3b8',
+                        borderRadius: '10px',
+                        backgroundColor: 'rgba(248, 250, 252, 0.72)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '32px 20px',
+                        textAlign: 'center',
+                        color: '#64748b',
+                        fontFamily: '"Segoe UI", system-ui, sans-serif',
+                        ...backTableSelect.style,
+                      }}
+                    >
+                      <span style={{ fontSize: '13px', fontWeight: 700, color: '#334155' }}>
+                        Verso em branco — Quadro de Disciplinas desativado
+                      </span>
+                      <span style={{ fontSize: '11px', marginTop: '4px' }}>
+                        Clique aqui se desejar ativar o quadro de disciplinas e notas no verso
+                      </span>
+                    </div>
+                  );
+                }
+
                 return (
                   <table
                     {...backTableSelect}

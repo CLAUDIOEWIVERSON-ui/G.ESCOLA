@@ -141,6 +141,7 @@ export interface CertificateTemplateConfig {
   cargaHorariaTotalManual: string;
   mediaFinalManual: string;
   usarCalculoAutomaticoVerso: boolean;
+  ocultarTabelaVerso?: boolean;
 
   // Visuals & Logos
   usarMolduraOriginal?: boolean;
@@ -508,8 +509,9 @@ export function createPresetTemplate(
 }
 
 export function createBlankTemplate(
-  nomeModelo = 'Novo Modelo de Certificado',
-  scope: CertificateCourseScope = 'geral'
+  nomeModelo = 'Folha em Branco',
+  scope: CertificateCourseScope = 'geral',
+  orientacao: CertificatePageOrientation = 'landscape'
 ): CertificateTemplateConfig {
   const base = createPresetTemplate(
     scope === 'expedito' ? 'expedito' : 'formacao_marinheiros'
@@ -518,8 +520,9 @@ export function createBlankTemplate(
     ...base,
     id: undefined,
     templateKey: `custom_${Date.now()}`,
-    nomeModelo: nomeModelo.trim() || 'Novo Modelo de Certificado',
+    nomeModelo: nomeModelo.trim() || 'Folha em Branco',
     scope,
+    orientacao,
     turmaId: null,
     cursoId: null,
     titulo: '',
@@ -540,13 +543,21 @@ export function createBlankTemplate(
     disciplinas: [],
     cargaHorariaTotalManual: '',
     mediaFinalManual: '',
+    usarCalculoAutomaticoVerso: false,
+    ocultarTabelaVerso: true,
     usarMolduraOriginal: false,
-    estiloMolduraFrente: 'simples',
+    estiloMolduraFrente: 'nenhuma',
     molduraFrenteUrl: '',
-    mostrarLogoEsquerda: true,
-    mostrarLogoCentro: true,
-    mostrarLogoDireita: true,
+    estiloMolduraVerso: 'nenhuma',
+    molduraVersoUrl: '',
+    mostrarLogoEsquerda: false,
+    mostrarLogoCentro: false,
+    mostrarLogoDireita: false,
+    mostrarLogoEsquerdaVerso: false,
+    mostrarLogoCentroVerso: false,
+    mostrarLogoDireitaVerso: false,
     usarBrasaoPadraoDireita: false,
+    usarBrasaoPadraoDireitaVerso: false,
     logoEsquerdaUrl: '',
     logoCentroUrl: '',
     logoCentroTexto: '',
