@@ -56,6 +56,7 @@ import {
   formatDateExtensoPT,
   formatNameTitleCasePT,
   formatPeriodStartEndPT,
+  getCertificateSheetDimensions,
   groupCertificateRowsByModule,
   groupCourseDisciplinesByModule,
   resolveBoletimDisciplineGrade,
@@ -312,17 +313,29 @@ export default function CertificadosPage() {
     setSelectedObject(obj);
   }, []);
 
-  const baseScale = Math.min(1, Math.max(0.28, autoFitWidth / 1123));
+  const {
+    orientacao: sheetOrientation,
+    isPortrait: isPortraitSheet,
+    width: sheetW,
+    height: sheetH,
+    mmWidth: sheetMmW,
+    mmHeight: sheetMmH,
+  } = getCertificateSheetDimensions(template.orientacao);
+
+  const baseScale = Math.min(1, Math.max(0.28, autoFitWidth / sheetW));
   const effectiveScale = Math.min(1.15, Math.max(0.25, baseScale * (manualZoom / 100)));
   const fullscreenBaseScale =
     previewMode === 'both' && fullscreenLayout === 'sideBySide'
       ? Math.min(
           1.0,
-          Math.max(0.28, Math.min((viewportSize.w - 88) / (1123 * 2 + 24), (viewportSize.h - 170) / 794))
+          Math.max(
+            0.28,
+            Math.min((viewportSize.w - 88) / (sheetW * 2 + 24), (viewportSize.h - 170) / sheetH)
+          )
         )
       : Math.min(
           1.25,
-          Math.max(0.35, Math.min((viewportSize.w - 64) / 1123, (viewportSize.h - 155) / 794))
+          Math.max(0.35, Math.min((viewportSize.w - 64) / sheetW, (viewportSize.h - 155) / sheetH))
         );
   const fullscreenEffectiveScale = Math.min(
     1.35,
@@ -2469,17 +2482,17 @@ export default function CertificadosPage() {
       allowTaint: false,
       backgroundColor: '#ffffff',
       logging: false,
-      width: 1123,
-      height: 794,
-      windowWidth: 1123,
-      windowHeight: 794,
+      width: sheetW,
+      height: sheetH,
+      windowWidth: sheetW,
+      windowHeight: sheetH,
     });
 
     const imgData = canvas.toDataURL('image/jpeg', 0.96);
     if (addPageBefore) {
-      pdf.addPage('a4', 'landscape');
+      pdf.addPage('a4', sheetOrientation);
     }
-    pdf.addImage(imgData, 'JPEG', 0, 0, 297, 210, undefined, 'FAST');
+    pdf.addImage(imgData, 'JPEG', 0, 0, sheetMmW, sheetMmH, undefined, 'FAST');
   };
 
   // Download Single PDF (Frente + Verso)
@@ -2492,7 +2505,7 @@ export default function CertificadosPage() {
       const html2canvas = await getHtml2Canvas();
       const { jsPDF } = await import('jspdf');
       const pdf = new jsPDF({
-        orientation: 'landscape',
+        orientation: sheetOrientation,
         unit: 'mm',
         format: 'a4',
         compress: true,
@@ -2536,7 +2549,7 @@ export default function CertificadosPage() {
       const html2canvas = await getHtml2Canvas();
       const { jsPDF } = await import('jspdf');
       const pdf = new jsPDF({
-        orientation: 'landscape',
+        orientation: sheetOrientation,
         unit: 'mm',
         format: 'a4',
         compress: true,
@@ -2627,7 +2640,7 @@ export default function CertificadosPage() {
         <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;800&family=EB+Garamond:ital,wght@0,400..800;1,400..800&family=Great+Vibes&family=Lora:ital,wght@0,400..700;1,400..700&display=swap" />
         <style>
           @page {
-            size: A4 landscape;
+            size: A4 ${sheetOrientation};
             margin: 0;
           }
           * {
@@ -2641,8 +2654,8 @@ export default function CertificadosPage() {
             background: #ffffff;
           }
           .cert-page {
-            width: 297mm;
-            height: 210mm;
+            width: ${sheetMmW}mm;
+            height: ${sheetMmH}mm;
             overflow: hidden;
             page-break-after: always;
             break-after: page;
@@ -2655,8 +2668,8 @@ export default function CertificadosPage() {
             break-after: auto;
           }
           .cert-page > div {
-            width: 1123px !important;
-            height: 794px !important;
+            width: ${sheetW}px !important;
+            height: ${sheetH}px !important;
             box-shadow: none !important;
             transform: scale(1) !important;
           }
@@ -3782,6 +3795,45 @@ export default function CertificadosPage() {
                   </div>
 
                   <div
+                    className="inline-flex items-center bg-slate-200/70 p-0.5 rounded-lg border border-slate-200/80"
+                    role="group"
+                    aria-label="Orientação da folha A4"
+                  >
+                    {[
+                      { id: 'landscape' as const, label: 'Paisagem', tip: 'Folha A4 na horizontal (29,7 × 21 cm)' },
+                      { id: 'portrait' as const, label: 'Retrato', tip: 'Folha A4 na vertical (21 × 29,7 cm)' },
+                    ].map((ori) => (
+                      <button
+                        key={ori.id}
+                        type="button"
+                        onClick={() =>
+                          setTemplate((prev) => ({
+                            ...prev,
+                            orientacao: ori.id,
+                          }))
+                        }
+                        title={ori.tip}
+                        className={cn(
+                          'px-2 py-1 rounded-md text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5',
+                          sheetOrientation === ori.id
+                            ? 'bg-blue-900 text-white shadow-2xs'
+                            : 'text-slate-600 hover:text-slate-900 hover:bg-white/70'
+                        )}
+                      >
+                        <span
+                          aria-hidden="true"
+                          className={cn(
+                            'border-[1.5px] rounded-[2px] shrink-0',
+                            ori.id === 'landscape' ? 'w-3.5 h-2.5' : 'w-2.5 h-3.5',
+                            sheetOrientation === ori.id ? 'border-white' : 'border-slate-500'
+                          )}
+                        />
+                        <span>{ori.label}</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  <div
                     className="inline-flex items-center gap-1.5 text-xs text-slate-600 bg-white border border-slate-200 rounded-lg px-2 py-1"
                     title="Ajustar zoom da pré-visualização"
                   >
@@ -4034,7 +4086,7 @@ export default function CertificadosPage() {
             {(previewMode === 'both' || previewMode === 'front') && (
               <div className="space-y-1.5 flex flex-col items-center">
                 <span className="text-[11px] font-black uppercase tracking-wider text-slate-500">
-                  Página 1 — Frente do Certificado (A4 Paisagem)
+                  Página 1 — Frente do Certificado (A4 {isPortraitSheet ? 'Retrato' : 'Paisagem'})
                 </span>
                 <CertificateSheet
                   template={template}
@@ -4052,7 +4104,7 @@ export default function CertificadosPage() {
             {(previewMode === 'both' || previewMode === 'back') && (
               <div className="space-y-1.5 flex flex-col items-center">
                 <span className="text-[11px] font-black uppercase tracking-wider text-slate-500">
-                  Página 2 — Verso do Certificado (Disciplinas e Notas)
+                  Página 2 — Verso do Certificado (A4 {isPortraitSheet ? 'Retrato' : 'Paisagem'} • Disciplinas e Notas)
                 </span>
                 <CertificateSheet
                   template={template}
@@ -4246,7 +4298,7 @@ export default function CertificadosPage() {
               {(previewMode === 'both' || previewMode === 'front') && (
                 <div className="flex flex-col items-center gap-2">
                   <span className="text-[11px] font-black uppercase tracking-wider text-slate-300">
-                    Página 1 — Frente do Certificado
+                    Página 1 — Frente do Certificado (A4 {isPortraitSheet ? 'Retrato' : 'Paisagem'})
                   </span>
                   <CertificateSheet
                     template={template}
@@ -4261,7 +4313,7 @@ export default function CertificadosPage() {
               {(previewMode === 'both' || previewMode === 'back') && (
                 <div className="flex flex-col items-center gap-2">
                   <span className="text-[11px] font-black uppercase tracking-wider text-slate-300">
-                    Página 2 — Verso do Certificado
+                    Página 2 — Verso do Certificado (A4 {isPortraitSheet ? 'Retrato' : 'Paisagem'})
                   </span>
                   <CertificateSheet
                     template={template}
@@ -4353,14 +4405,14 @@ export default function CertificadosPage() {
         </div>
       )}
 
-      {/* Off-screen Full-Resolution 1123x794 Export Targets (1:1 pixel accuracy for PDF & Print) */}
+      {/* Off-screen Full-Resolution Export Targets (1:1 pixel accuracy for PDF & Print) */}
       <div
         aria-hidden="true"
         style={{
           position: 'fixed',
           left: '-99999px',
           top: '0px',
-          width: '1123px',
+          width: `${sheetW}px`,
           pointerEvents: 'none',
           opacity: 1,
           zIndex: -9999,

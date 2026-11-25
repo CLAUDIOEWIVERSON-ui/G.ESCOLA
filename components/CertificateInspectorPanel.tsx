@@ -4126,7 +4126,7 @@ export function CertificateInspectorPanel({
                     <div className="p-3 rounded-lg bg-white border border-slate-200 space-y-2.5">
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-[11px] font-bold text-slate-800">
-                          Margens da Folha e Moldura (A4 Paisagem)
+                          Margens da Folha e Moldura (A4 {template.orientacao === 'portrait' ? 'Retrato' : 'Paisagem'})
                         </span>
                         {(template.margemExternaMolduraCm !== undefined ||
                           template.margemInternaLateralCm !== undefined ||
@@ -5582,7 +5582,7 @@ export function CertificateInspectorPanel({
                     <div className="p-3 rounded-lg bg-white border border-slate-200 space-y-2.5">
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-[11px] font-bold text-slate-800">
-                          Margens da Folha e Moldura (Verso — A4)
+                          Margens da Folha e Moldura (Verso — A4 {template.orientacao === 'portrait' ? 'Retrato' : 'Paisagem'})
                         </span>
                         {(template.margemExternaMolduraVersoCm !== undefined ||
                           template.margemInternaLateralVersoCm !== undefined ||
@@ -5731,15 +5731,82 @@ export function CertificateInspectorPanel({
               />
             </div>
 
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                Orientação da Folha A4
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  {
+                    id: 'landscape' as const,
+                    label: 'Paisagem (Horizontal)',
+                    dims: '29,7 × 21 cm',
+                  },
+                  {
+                    id: 'portrait' as const,
+                    label: 'Retrato (Vertical)',
+                    dims: '21 × 29,7 cm',
+                  },
+                ].map((opt) => {
+                  const isActive = (template.orientacao || 'landscape') === opt.id;
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() =>
+                        setTemplate((prev) => ({
+                          ...prev,
+                          orientacao: opt.id,
+                        }))
+                      }
+                      className={cn(
+                        'p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center gap-2.5',
+                        isActive
+                          ? 'bg-blue-900 text-white border-blue-950 shadow-xs'
+                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                      )}
+                    >
+                      <span
+                        aria-hidden="true"
+                        className={cn(
+                          'shrink-0 border-2 rounded-[3px]',
+                          opt.id === 'landscape' ? 'w-5 h-3.5' : 'w-3.5 h-5',
+                          isActive ? 'border-white bg-white/15' : 'border-slate-500 bg-white'
+                        )}
+                      />
+                      <span className="min-w-0">
+                        <span className="block text-[11px] font-bold leading-tight">
+                          {opt.label}
+                        </span>
+                        <span
+                          className={cn(
+                            'block text-[10px] leading-tight mt-0.5',
+                            isActive ? 'text-blue-200' : 'text-slate-500'
+                          )}
+                        >
+                          {opt.dims}
+                        </span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <div className="p-3.5 rounded-xl bg-blue-50/70 border border-blue-200 space-y-2.5">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[11px] font-black uppercase tracking-wider text-blue-950 flex items-center gap-1.5">
                   <Sparkles size={13} />
-                  <span>Layout Formal (A4 Paisagem — Respiro Visual)</span>
+                  <span>
+                    Layout Formal (A4{' '}
+                    {template.orientacao === 'portrait' ? 'Retrato' : 'Paisagem'} — Respiro Visual)
+                  </span>
                 </span>
               </div>
               <p className="text-[10px] text-slate-600 leading-snug">
-                Aplica margens amplas (1,7 cm externa / 2,5 cm interna), bloco de texto centralizado em 70%, hierarquia tipográfica (título 34pt, nome em destaque 28pt, corpo 13pt entrelinha 1,4) e assinaturas simétricas (10pt/9pt).
+                {template.orientacao === 'portrait'
+                  ? 'Aplica margens proporcionais ao modo Retrato (1,5 cm externa / 1,8 cm lateral), bloco de texto centralizado em 84%, hierarquia tipográfica equilibrada e assinaturas simétricas.'
+                  : 'Aplica margens amplas (1,7 cm externa / 2,5 cm interna), bloco de texto centralizado em 70%, hierarquia tipográfica (título 34pt, nome em destaque 28pt, corpo 13pt entrelinha 1,4) e assinaturas simétricas (10pt/9pt).'}
               </p>
               <div className="flex flex-wrap gap-2">
                 <button

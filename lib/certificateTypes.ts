@@ -1,5 +1,25 @@
 export type CertificateCourseScope = 'formacao_marinheiros' | 'expedito' | 'geral';
 
+export type CertificatePageOrientation = 'landscape' | 'portrait';
+
+export function getCertificateSheetDimensions(
+  orientacao?: CertificatePageOrientation
+) {
+  const isPortrait = orientacao === 'portrait';
+  const width = isPortrait ? 794 : 1123;
+  const height = isPortrait ? 1123 : 794;
+  return {
+    orientacao: (isPortrait ? 'portrait' : 'landscape') as CertificatePageOrientation,
+    isPortrait,
+    width,
+    height,
+    mmWidth: isPortrait ? 210 : 297,
+    mmHeight: isPortrait ? 297 : 210,
+    centerX: width / 2,
+    centerY: height / 2,
+  };
+}
+
 export interface CertificateDisciplineRow {
   id: string;
   nome: string;
@@ -65,6 +85,7 @@ export interface CertificateTemplateConfig {
   scope: CertificateCourseScope;
   turmaId?: string | null;
   cursoId?: string | null;
+  orientacao?: CertificatePageOrientation;
 
   // Front (Frente)
   titulo: string;
@@ -385,6 +406,7 @@ export function createPresetTemplate(
     scope,
     turmaId: null,
     cursoId: null,
+    orientacao: 'landscape',
     titulo: 'CERTIFICADO DE CONCLUSÃO',
     textoCorpo: isExpedito
       ? 'É outorgado o presente certificado ao {{ALUNO}}, por haver concluído com aproveitamento o {{CURSO}} (Curso Expedito), realizado no âmbito da cooperação entre a Guarda Costeira de São Tomé e Príncipe e a Missão de Assessoria Naval do Brasil, no período de {{DATA_INICIO}} a {{DATA_FIM}}.'
@@ -692,27 +714,29 @@ export function updateCertificateLayerOrder(
 }
 
 export function getFormalA4LayoutPatch(
-  hasSecondSignature = false
+  hasSecondSignature = false,
+  orientacao: CertificatePageOrientation = 'landscape'
 ): Partial<CertificateTemplateConfig> {
+  const isPortrait = orientacao === 'portrait';
   return {
     estiloMolduraFrente: 'simples',
     usarMolduraOriginal: false,
     corBordaFrente: '#334155',
-    margemExternaMolduraCm: 1.7,
-    margemInternaLateralCm: 2.5,
-    margemInternaVerticalCm: 1.4,
-    larguraBlocoTextoPct: 70,
+    margemExternaMolduraCm: isPortrait ? 1.5 : 1.7,
+    margemInternaLateralCm: isPortrait ? 1.8 : 2.5,
+    margemInternaVerticalCm: isPortrait ? 2.0 : 1.4,
+    larguraBlocoTextoPct: isPortrait ? 84 : 70,
     margemTextoEsquerdaPx: 0,
     margemTextoDireitaPx: 0,
     margemTextoSuperiorPx: 0,
     margemTextoInferiorPx: 0,
-    tamanhoFonteTitulo: 45,
+    tamanhoFonteTitulo: isPortrait ? 40 : 45,
     espacamentoLetrasTitulo: 0.22,
     fonteTitulo: 'cinzel',
     tituloNegrito: true,
     tituloItalico: false,
     destacarNomeParticipante: true,
-    tamanhoFonteParticipante: 37,
+    tamanhoFonteParticipante: isPortrait ? 34 : 37,
     fonteParticipante: 'script',
     negritoParticipante: false,
     italicoParticipante: false,
@@ -727,10 +751,10 @@ export function getFormalA4LayoutPatch(
     espacamentoDataTextoPx: 14,
     dataItalico: false,
     dataNegrito: false,
-    espacamentoAssinaturasVerticalCm: 2.4,
+    espacamentoAssinaturasVerticalCm: isPortrait ? 3.0 : 2.4,
     mostrarLinhaAssinatura: true,
     opacidadeLinhaAssinatura: 0.45,
-    larguraLinhaAssinaturaCm: 6.0,
+    larguraLinhaAssinaturaCm: isPortrait && hasSecondSignature ? 5.2 : 6.0,
     tamanhoFonteAssinaturaNome: 13.5,
     tamanhoFonteAssinaturaCargo: 12,
     fonteAssinatura: 'lora',
@@ -757,13 +781,17 @@ export function applyFormalA4LayoutToTemplate(
 ): CertificateTemplateConfig {
   return {
     ...prev,
-    ...getFormalA4LayoutPatch(Boolean(prev.mostrarSegundaAssinatura)),
+    ...getFormalA4LayoutPatch(
+      Boolean(prev.mostrarSegundaAssinatura),
+      prev.orientacao || 'landscape'
+    ),
   };
 }
 
 export function createFormalA4Template(
   nomeModelo = 'Certificado Formal A4 (Respiro Visual)',
-  scope: CertificateCourseScope = 'geral'
+  scope: CertificateCourseScope = 'geral',
+  orientacao: CertificatePageOrientation = 'landscape'
 ): CertificateTemplateConfig {
   const base = createPresetTemplate(
     scope === 'expedito' ? 'expedito' : 'formacao_marinheiros'
@@ -774,6 +802,7 @@ export function createFormalA4Template(
     templateKey: `custom_${Date.now()}`,
     nomeModelo: nomeModelo.trim() || 'Certificado Formal A4 (Respiro Visual)',
     scope,
+    orientacao,
     turmaId: null,
     cursoId: null,
     titulo: 'CERTIFICADO',
@@ -789,7 +818,7 @@ export function createFormalA4Template(
     mostrarLegendaLogoCentro: false,
     marcaDaguaFrenteUrl: '',
     opacidadeMarcaDaguaFrente: 0.1,
-    ...getFormalA4LayoutPatch(false),
+    ...getFormalA4LayoutPatch(false, orientacao),
   };
 }
 

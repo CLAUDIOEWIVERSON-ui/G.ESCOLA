@@ -16,6 +16,7 @@ import {
   formatCourseTitleCasePT,
   formatNameTitleCasePT,
   getCertificateElementZIndex,
+  getCertificateSheetDimensions,
   groupCertificateRowsByModule,
   isFemaleStudentGenero,
   resolveCertificateBodySegments,
@@ -198,13 +199,17 @@ function MarinhaBrasilCrest({
 function NauticalOrnateFrame({
   borderColor = '#52525b',
   zIndex = 5,
+  sheetWidth = 1123,
+  sheetHeight = 794,
 }: {
   borderColor?: string;
   zIndex?: number;
+  sheetWidth?: number;
+  sheetHeight?: number;
 }) {
   return (
     <svg
-      viewBox="0 0 1123 794"
+      viewBox={`0 0 ${sheetWidth} ${sheetHeight}`}
       xmlns="http://www.w3.org/2000/svg"
       style={{
         position: 'absolute',
@@ -288,8 +293,8 @@ function NauticalOrnateFrame({
       <rect
         x="14"
         y="14"
-        width="1095"
-        height="766"
+        width={sheetWidth - 28}
+        height={sheetHeight - 28}
         fill="none"
         stroke={borderColor}
         strokeWidth="4"
@@ -297,25 +302,25 @@ function NauticalOrnateFrame({
       <rect
         x="22"
         y="22"
-        width="1079"
-        height="750"
+        width={sheetWidth - 44}
+        height={sheetHeight - 44}
         fill="none"
         stroke="#94a3b8"
         strokeWidth="1.5"
       />
 
       {/* Braided rope bands */}
-      <rect x="40" y="28" width="1043" height="14" fill="url(#nautical-rope-h)" />
-      <rect x="40" y="752" width="1043" height="14" fill="url(#nautical-rope-h)" />
-      <rect x="28" y="40" width="14" height="714" fill="url(#nautical-rope-v)" />
-      <rect x="1081" y="40" width="14" height="714" fill="url(#nautical-rope-v)" />
+      <rect x="40" y="28" width={sheetWidth - 80} height="14" fill="url(#nautical-rope-h)" />
+      <rect x="40" y={sheetHeight - 42} width={sheetWidth - 80} height="14" fill="url(#nautical-rope-h)" />
+      <rect x="28" y="40" width="14" height={sheetHeight - 80} fill="url(#nautical-rope-v)" />
+      <rect x={sheetWidth - 42} y="40" width="14" height={sheetHeight - 80} fill="url(#nautical-rope-v)" />
 
       {/* Inner hairline border */}
       <rect
         x="48"
         y="48"
-        width="1027"
-        height="698"
+        width={sheetWidth - 96}
+        height={sheetHeight - 96}
         fill="none"
         stroke={borderColor}
         strokeWidth="2"
@@ -323,8 +328,8 @@ function NauticalOrnateFrame({
       <rect
         x="54"
         y="54"
-        width="1015"
-        height="686"
+        width={sheetWidth - 108}
+        height={sheetHeight - 108}
         fill="none"
         stroke="#cbd5e1"
         strokeWidth="1"
@@ -332,12 +337,12 @@ function NauticalOrnateFrame({
 
       {/* Four ornate corners */}
       <use href="#corner-ornament" x="0" y="0" />
-      <use href="#corner-ornament" x="0" y="0" transform="translate(1123, 0) scale(-1, 1)" />
-      <use href="#corner-ornament" x="0" y="0" transform="translate(0, 794) scale(1, -1)" />
-      <use href="#corner-ornament" x="0" y="0" transform="translate(1123, 794) scale(-1, -1)" />
+      <use href="#corner-ornament" x="0" y="0" transform={`translate(${sheetWidth}, 0) scale(-1, 1)`} />
+      <use href="#corner-ornament" x="0" y="0" transform={`translate(0, ${sheetHeight}) scale(1, -1)`} />
+      <use href="#corner-ornament" x="0" y="0" transform={`translate(${sheetWidth}, ${sheetHeight}) scale(-1, -1)`} />
 
       {/* Classic Bottom Center Nautical Knot */}
-      <g transform="translate(561.5, 756)">
+      <g transform={`translate(${sheetWidth / 2}, ${sheetHeight - 38})`}>
         <ellipse cx="0" cy="0" rx="52" ry="20" fill="#f8fafc" stroke={borderColor} strokeWidth="2.5" />
         <path
           d="M-38 0 C-26 -16, -6 -16, 0 0 C6 16, 26 16, 38 0 C26 -16, 6 -16, 0 0 C-6 16, -26 16, -38 0 Z"
@@ -404,6 +409,13 @@ export function CertificateSheet({
     horizontal: HorizontalAlignmentGuide[];
     vertical: VerticalAlignmentGuide[];
   }>({ horizontal: [], vertical: [] });
+
+  const {
+    isPortrait,
+    width: sheetWidth,
+    height: sheetHeight,
+    centerX: sheetCenterX,
+  } = getCertificateSheetDimensions(template.orientacao);
 
   const rawFrontFrameSrc = resolveAssetCacheSrc(
     template.molduraFrenteUrl || '/assets/certificado-moldura-frente.png'
@@ -485,14 +497,54 @@ export function CertificateSheet({
     DraggableCertificateElement,
     { minX: number; maxX: number; minY: number; maxY: number }
   > = {
-    logoEsquerda: { minX: -90, maxX: 760, minY: -60, maxY: 520 },
-    logoCentro: { minX: -420, maxX: 420, minY: -110, maxY: 640 },
-    logoDireita: { minX: -760, maxX: 90, minY: -60, maxY: 520 },
-    titulo: { minX: -350, maxX: 350, minY: -200, maxY: 260 },
-    texto: { minX: -150, maxX: 150, minY: -180, maxY: 200 },
-    data: { minX: -380, maxX: 380, minY: -220, maxY: 240 },
-    assinaturaPrincipal: { minX: -380, maxX: 380, minY: -220, maxY: 60 },
-    segundaAssinatura: { minX: -380, maxX: 380, minY: -220, maxY: 60 },
+    logoEsquerda: {
+      minX: -90,
+      maxX: isPortrait ? 520 : 760,
+      minY: -60,
+      maxY: isPortrait ? 820 : 520,
+    },
+    logoCentro: {
+      minX: isPortrait ? -280 : -420,
+      maxX: isPortrait ? 280 : 420,
+      minY: -110,
+      maxY: isPortrait ? 920 : 640,
+    },
+    logoDireita: {
+      minX: isPortrait ? -520 : -760,
+      maxX: 90,
+      minY: -60,
+      maxY: isPortrait ? 820 : 520,
+    },
+    titulo: {
+      minX: isPortrait ? -240 : -350,
+      maxX: isPortrait ? 240 : 350,
+      minY: -200,
+      maxY: isPortrait ? 380 : 260,
+    },
+    texto: {
+      minX: isPortrait ? -120 : -150,
+      maxX: isPortrait ? 120 : 150,
+      minY: -220,
+      maxY: isPortrait ? 320 : 200,
+    },
+    data: {
+      minX: isPortrait ? -260 : -380,
+      maxX: isPortrait ? 260 : 380,
+      minY: -260,
+      maxY: isPortrait ? 320 : 240,
+    },
+    assinaturaPrincipal: {
+      minX: isPortrait ? -260 : -380,
+      maxX: isPortrait ? 260 : 380,
+      minY: -320,
+      maxY: 120,
+    },
+    segundaAssinatura: {
+      minX: isPortrait ? -260 : -380,
+      maxX: isPortrait ? 260 : 380,
+      minY: -320,
+      maxY: 120,
+    },
   };
 
   const clamp = (val: number, min: number, max: number) => Math.max(min, Math.min(max, val));
@@ -501,7 +553,7 @@ export function CertificateSheet({
     const sheetEl = frontSheetRef.current;
     if (!sheetEl) return {};
     const sheetRect = sheetEl.getBoundingClientRect();
-    const actualScale = sheetRect.width > 0 ? sheetRect.width / 1123 : scale || 1;
+    const actualScale = sheetRect.width > 0 ? sheetRect.width / sheetWidth : scale || 1;
     const out: Partial<Record<DraggableCertificateElement, SheetBox>> = {};
     (Object.keys(elementLabels) as DraggableCertificateElement[]).forEach((key) => {
       const el = elementRefs.current[key];
@@ -556,7 +608,7 @@ export function CertificateSheet({
       }
 
       const spanX1 = Math.max(20, Math.min(activeBox.left, sib.left) - 20);
-      const spanX2 = Math.min(1103, Math.max(activeBox.right, sib.right) + 20);
+      const spanX2 = Math.min(sheetWidth - 20, Math.max(activeBox.right, sib.right) + 20);
 
       if (matchedAxisY !== null) {
         hasAnyAlignedHoriz = true;
@@ -583,7 +635,7 @@ export function CertificateSheet({
           id: `curr-${sib.element}`,
           y: activeBox.centerY,
           x1: Math.max(20, activeBox.left - 14),
-          x2: Math.min(1103, activeBox.right + 14),
+          x2: Math.min(sheetWidth - 20, activeBox.right + 14),
           variant: 'current',
           label: `Desalinhado ${dirArrow} ${diffPx}px`,
         });
@@ -594,7 +646,7 @@ export function CertificateSheet({
       const dxLeft = Math.abs(activeBox.left - sib.left);
       const dxRight = Math.abs(activeBox.right - sib.right);
       const spanY1 = Math.max(20, Math.min(activeBox.top, sib.top) - 16);
-      const spanY2 = Math.min(774, Math.max(activeBox.bottom, sib.bottom) + 16);
+      const spanY2 = Math.min(sheetHeight - 20, Math.max(activeBox.bottom, sib.bottom) + 16);
 
       if (dxCenter <= ALIGN_TOL) {
         vertical.push({
@@ -622,12 +674,12 @@ export function CertificateSheet({
     }
 
     // Sheet horizontal center guide
-    if (Math.abs(activeBox.centerX - 561.5) <= ALIGN_TOL) {
+    if (Math.abs(activeBox.centerX - sheetCenterX) <= ALIGN_TOL) {
       vertical.push({
         id: 'v-sheet-center',
-        x: 561.5,
+        x: sheetCenterX,
         y1: 24,
-        y2: 770,
+        y2: sheetHeight - 24,
         label: 'Centro da folha',
       });
     }
@@ -817,7 +869,7 @@ export function CertificateSheet({
         }
       }
 
-      const sheetCenterDx = 561.5 - predCenterX;
+      const sheetCenterDx = sheetCenterX - predCenterX;
       if (Math.abs(sheetCenterDx) < bestAbsX) {
         bestAbsX = Math.abs(sheetCenterDx);
         bestDeltaX = sheetCenterDx;
@@ -1224,22 +1276,22 @@ export function CertificateSheet({
   const outerWrapperStyle: React.CSSProperties =
     scale !== 1
       ? {
-          width: `${Math.round(1123 * scale)}px`,
-          height: `${Math.round(794 * scale)}px`,
+          width: `${Math.round(sheetWidth * scale)}px`,
+          height: `${Math.round(sheetHeight * scale)}px`,
           overflow: 'hidden',
           position: 'relative',
           flexShrink: 0,
         }
       : {
-          width: '1123px',
-          height: '794px',
+          width: `${sheetWidth}px`,
+          height: `${sheetHeight}px`,
           position: 'relative',
           flexShrink: 0,
         };
 
   const sheetBaseStyle: React.CSSProperties = {
-    width: '1123px',
-    height: '794px',
+    width: `${sheetWidth}px`,
+    height: `${sheetHeight}px`,
     backgroundColor: '#ffffff',
     color: '#0f172a',
     position: 'relative',
@@ -1269,8 +1321,14 @@ export function CertificateSheet({
             : frontFrameStyle === 'nenhuma'
               ? 0
               : 22) +
-          (hasFormalInnerMargin ? cmToPx(template.margemInternaLateralCm!) : 82)
-        : 104;
+          (hasFormalInnerMargin
+            ? cmToPx(template.margemInternaLateralCm!)
+            : isPortrait
+              ? 52
+              : 82)
+        : isPortrait
+          ? 70
+          : 104;
     const contentPadTopPx =
       hasFormalOuterMargin || hasFormalVertMargin
         ? (hasFormalOuterMargin
@@ -1278,8 +1336,10 @@ export function CertificateSheet({
             : frontFrameStyle === 'nenhuma'
               ? 0
               : 22) +
-          (hasFormalVertMargin ? cmToPx(template.margemInternaVerticalCm!) : 56)
-        : 84;
+          (hasFormalVertMargin ? cmToPx(template.margemInternaVerticalCm!) : isPortrait ? 72 : 56)
+        : isPortrait
+          ? 92
+          : 84;
     const contentPadBottomPx =
       hasFormalOuterMargin || hasFormalVertMargin
         ? (hasFormalOuterMargin
@@ -1287,8 +1347,10 @@ export function CertificateSheet({
             : frontFrameStyle === 'nenhuma'
               ? 0
               : 22) +
-          (hasFormalVertMargin ? cmToPx(template.margemInternaVerticalCm!) : 56)
-        : 86;
+          (hasFormalVertMargin ? cmToPx(template.margemInternaVerticalCm!) : isPortrait ? 72 : 56)
+        : isPortrait
+          ? 92
+          : 86;
     const frameHitThreshold = Math.max(62, outerFrameMarginPx + 18);
     const vetorialInsetPx = hasFormalOuterMargin
       ? Math.max(0, outerFrameMarginPx - 14)
@@ -1314,9 +1376,9 @@ export function CertificateSheet({
             const relY = (e.clientY - rect.top) / (scale || 1);
             if (
               relX < frameHitThreshold ||
-              relX > 1123 - frameHitThreshold ||
+              relX > sheetWidth - frameHitThreshold ||
               relY < frameHitThreshold ||
-              relY > 794 - frameHitThreshold
+              relY > sheetHeight - frameHitThreshold
             ) {
               onSelectObject('molduraFrente');
             } else {
@@ -1347,11 +1409,11 @@ export function CertificateSheet({
                 top: hasFormalOuterMargin ? `${outerFrameMarginPx}px` : '18px',
                 left: hasFormalOuterMargin ? `${outerFrameMarginPx}px` : '16px',
                 width: hasFormalOuterMargin
-                  ? `${1123 - outerFrameMarginPx * 2}px`
-                  : '1091px',
+                  ? `${sheetWidth - outerFrameMarginPx * 2}px`
+                  : `${sheetWidth - 32}px`,
                 height: hasFormalOuterMargin
-                  ? `${794 - outerFrameMarginPx * 2}px`
-                  : '758px',
+                  ? `${sheetHeight - outerFrameMarginPx * 2}px`
+                  : `${sheetHeight - 36}px`,
                 objectFit: 'fill',
                 pointerEvents: 'none',
                 mixBlendMode: 'multiply',
@@ -1365,8 +1427,8 @@ export function CertificateSheet({
                   position: 'absolute',
                   top: `${vetorialInsetPx}px`,
                   left: `${vetorialInsetPx}px`,
-                  width: `${1123 - vetorialInsetPx * 2}px`,
-                  height: `${794 - vetorialInsetPx * 2}px`,
+                  width: `${sheetWidth - vetorialInsetPx * 2}px`,
+                  height: `${sheetHeight - vetorialInsetPx * 2}px`,
                   pointerEvents: 'none',
                   zIndex: getLayerZ('molduraFrente'),
                 }}
@@ -1374,12 +1436,16 @@ export function CertificateSheet({
                 <NauticalOrnateFrame
                   borderColor={template.corBordaFrente || '#52525b'}
                   zIndex={getLayerZ('molduraFrente')}
+                  sheetWidth={sheetWidth}
+                  sheetHeight={sheetHeight}
                 />
               </div>
             ) : (
               <NauticalOrnateFrame
                 borderColor={template.corBordaFrente || '#52525b'}
                 zIndex={getLayerZ('molduraFrente')}
+                sheetWidth={sheetWidth}
+                sheetHeight={sheetHeight}
               />
             )
           ) : frontFrameStyle === 'simples' ? (
@@ -1848,7 +1914,7 @@ export function CertificateSheet({
                   const textBlockWidthPct = template.larguraBlocoTextoPct ?? 100;
                   const textBlockMaxWidthPx =
                     textBlockWidthPct < 100
-                      ? `${Math.round(1123 * (textBlockWidthPct / 100))}px`
+                      ? `${Math.round(sheetWidth * (textBlockWidthPct / 100))}px`
                       : undefined;
                   const textMarginLeft = Math.max(0, template.margemTextoEsquerdaPx ?? 0);
                   const textMarginRight = Math.max(0, template.margemTextoDireitaPx ?? 0);
@@ -2177,13 +2243,15 @@ export function CertificateSheet({
               const primaryLineStyle: React.CSSProperties = customLineWidthPx
                 ? {
                     width: `${customLineWidthPx}px`,
+                    maxWidth: isPortrait ? '100%' : undefined,
                     height: '1px',
                     margin: '0 auto 6px auto',
                     background: `linear-gradient(90deg, rgba(15, 23, 42, 0) 0%, rgba(15, 23, 42, ${sigLineOpacity}) 16%, rgba(15, 23, 42, ${sigLineOpacity}) 84%, rgba(15, 23, 42, 0) 100%)`,
                   }
                 : {
                     width: '92%',
-                    minWidth: '200px',
+                    minWidth: isPortrait && hasSecondSig ? '160px' : '200px',
+                    maxWidth: isPortrait ? '100%' : undefined,
                     height: '1px',
                     margin: '0 auto 6px auto',
                     background: `linear-gradient(90deg, rgba(15, 23, 42, 0) 0%, rgba(15, 23, 42, ${sigLineOpacity}) 16%, rgba(15, 23, 42, ${sigLineOpacity}) 84%, rgba(15, 23, 42, 0) 100%)`,
@@ -2192,13 +2260,15 @@ export function CertificateSheet({
               const secondaryLineStyle: React.CSSProperties = customLineWidthPx
                 ? {
                     width: `${customLineWidthPx}px`,
+                    maxWidth: isPortrait ? '100%' : undefined,
                     height: '1px',
                     margin: '0 auto 6px auto',
                     background: `linear-gradient(90deg, rgba(15, 23, 42, 0) 0%, rgba(15, 23, 42, ${sigLineOpacity}) 16%, rgba(15, 23, 42, ${sigLineOpacity}) 84%, rgba(15, 23, 42, 0) 100%)`,
                   }
                 : {
                     width: '92%',
-                    minWidth: '200px',
+                    minWidth: isPortrait && hasSecondSig ? '160px' : '200px',
+                    maxWidth: isPortrait ? '100%' : undefined,
                     height: '1px',
                     margin: '0 auto 6px auto',
                     background: `linear-gradient(90deg, rgba(15, 23, 42, 0) 0%, rgba(15, 23, 42, ${sigLineOpacity}) 16%, rgba(15, 23, 42, ${sigLineOpacity}) 84%, rgba(15, 23, 42, 0) 100%)`,
@@ -2217,11 +2287,16 @@ export function CertificateSheet({
                       maxFrontImageZ + 2
                     ),
                     textAlign: 'center',
-                    flex: '0 0 auto',
-                    width: 'max-content',
-                    minWidth: hasSecondSig ? '220px' : '240px',
-                    maxWidth: 'none',
-                    whiteSpace: 'nowrap',
+                    flex: isPortrait && hasSecondSig ? '1 1 0' : '0 0 auto',
+                    width: isPortrait && hasSecondSig ? undefined : 'max-content',
+                    minWidth:
+                      isPortrait && hasSecondSig
+                        ? '180px'
+                        : hasSecondSig
+                          ? '220px'
+                          : '240px',
+                    maxWidth: isPortrait ? (hasSecondSig ? '48%' : '100%') : 'none',
+                    whiteSpace: isPortrait ? 'normal' : 'nowrap',
                     marginLeft:
                       !hasSecondSig && sigAlign === 'left' && !hasFormalInnerMargin
                         ? '16px'
@@ -2247,7 +2322,7 @@ export function CertificateSheet({
                           fontSize: `${sigNameFontPx}px`,
                           fontWeight: sigBold ? 700 : 400,
                           letterSpacing: '0.03em',
-                          whiteSpace: 'nowrap',
+                          whiteSpace: isPortrait ? 'normal' : 'nowrap',
                         }}
                       >
                         {template.assinaturaNome}
@@ -2257,7 +2332,7 @@ export function CertificateSheet({
                           style={{
                             fontSize: `${sigPostoFontPx}px`,
                             fontWeight: sigCargoBold ? 700 : 400,
-                            whiteSpace: 'nowrap',
+                            whiteSpace: isPortrait ? 'normal' : 'nowrap',
                           }}
                         >
                           {template.assinaturaPosto}
@@ -2268,7 +2343,7 @@ export function CertificateSheet({
                           style={{
                             fontSize: `${sigCargoFontPx}px`,
                             fontWeight: sigCargoBold ? 700 : 400,
-                            whiteSpace: 'nowrap',
+                            whiteSpace: isPortrait ? 'normal' : 'nowrap',
                           }}
                         >
                           {template.assinaturaCargo}
@@ -2308,11 +2383,11 @@ export function CertificateSheet({
                       maxFrontImageZ + 2
                     ),
                     textAlign: 'center',
-                    flex: '0 0 auto',
-                    width: 'max-content',
-                    minWidth: '220px',
-                    maxWidth: 'none',
-                    whiteSpace: 'nowrap',
+                    flex: isPortrait ? '1 1 0' : '0 0 auto',
+                    width: isPortrait ? undefined : 'max-content',
+                    minWidth: isPortrait ? '180px' : '220px',
+                    maxWidth: isPortrait ? '48%' : 'none',
+                    whiteSpace: isPortrait ? 'normal' : 'nowrap',
                     fontFamily: hasSecondarySigContent
                       ? signatureFontCss
                       : '"Segoe UI", system-ui, sans-serif',
@@ -2330,7 +2405,7 @@ export function CertificateSheet({
                           fontSize: `${sigNameFontPx}px`,
                           fontWeight: sigBold ? 700 : 400,
                           letterSpacing: '0.03em',
-                          whiteSpace: 'nowrap',
+                          whiteSpace: isPortrait ? 'normal' : 'nowrap',
                         }}
                       >
                         {template.segundaAssinaturaNome || 'ASSINATURA'}
@@ -2340,7 +2415,7 @@ export function CertificateSheet({
                           style={{
                             fontSize: `${sigPostoFontPx}px`,
                             fontWeight: sigCargoBold ? 700 : 400,
-                            whiteSpace: 'nowrap',
+                            whiteSpace: isPortrait ? 'normal' : 'nowrap',
                           }}
                         >
                           {template.segundaAssinaturaPosto}
@@ -2351,7 +2426,7 @@ export function CertificateSheet({
                           style={{
                             fontSize: `${sigCargoFontPx}px`,
                             fontWeight: sigCargoBold ? 700 : 400,
-                            whiteSpace: 'nowrap',
+                            whiteSpace: isPortrait ? 'normal' : 'nowrap',
                           }}
                         >
                           {template.segundaAssinaturaCargo}
@@ -2393,7 +2468,7 @@ export function CertificateSheet({
                       : hasSecondSig
                         ? '0 14px 6px 14px'
                         : '0 20px 6px 20px',
-                    gap: '24px',
+                    gap: isPortrait && hasSecondSig ? '16px' : '24px',
                   }}
                 >
                   {hasSecondSig ? (
@@ -2436,7 +2511,7 @@ export function CertificateSheet({
                       ? '#f59e0b'
                       : '#0284c7';
                   const labelTop = g.y > 42 ? g.y - 22 : g.y + 6;
-                  const labelLeft = Math.min(890, Math.max(24, (g.x1 + g.x2) / 2 - 75));
+                  const labelLeft = Math.min(sheetWidth - 233, Math.max(24, (g.x1 + g.x2) / 2 - 75));
                   return (
                     <React.Fragment key={g.id}>
                       <div
@@ -2516,7 +2591,7 @@ export function CertificateSheet({
                         style={{
                           position: 'absolute',
                           top: `${Math.max(16, g.y1)}px`,
-                          left: `${Math.min(950, g.x + 6)}px`,
+                          left: `${Math.min(sheetWidth - 173, g.x + 6)}px`,
                           backgroundColor: '#2563eb',
                           color: '#ffffff',
                           fontSize: '9.5px',
@@ -2560,7 +2635,9 @@ export function CertificateSheet({
         ? 16
         : backFrameStyle === 'nenhuma'
           ? 28
-          : 44);
+          : isPortrait
+            ? 30
+            : 44);
   const backPadTop =
     backOuterMarginPx +
     backFrameThickness +
@@ -2660,9 +2737,9 @@ export function CertificateSheet({
           const relY = (e.clientY - rect.top) / (scale || 1);
           if (
             relX < backFrameHitThreshold ||
-            relX > 1123 - backFrameHitThreshold ||
+            relX > sheetWidth - backFrameHitThreshold ||
             relY < backFrameHitThreshold ||
-            relY > 794 - backFrameHitThreshold
+            relY > sheetHeight - backFrameHitThreshold
           ) {
             onSelectObject('versoMoldura');
           } else {
@@ -2723,8 +2800,8 @@ export function CertificateSheet({
               position: 'absolute',
               top: `${backOuterMarginPx}px`,
               left: `${backOuterMarginPx}px`,
-              width: `${1123 - backOuterMarginPx * 2}px`,
-              height: `${794 - backOuterMarginPx * 2}px`,
+              width: `${sheetWidth - backOuterMarginPx * 2}px`,
+              height: `${sheetHeight - backOuterMarginPx * 2}px`,
               objectFit: 'fill',
               pointerEvents: 'none',
               mixBlendMode: 'multiply',
@@ -2738,8 +2815,8 @@ export function CertificateSheet({
                 position: 'absolute',
                 top: `${backVetorialInsetPx}px`,
                 left: `${backVetorialInsetPx}px`,
-                width: `${1123 - backVetorialInsetPx * 2}px`,
-                height: `${794 - backVetorialInsetPx * 2}px`,
+                width: `${sheetWidth - backVetorialInsetPx * 2}px`,
+                height: `${sheetHeight - backVetorialInsetPx * 2}px`,
                 pointerEvents: 'none',
                 zIndex: getLayerZ('versoMoldura'),
               }}
@@ -2747,12 +2824,16 @@ export function CertificateSheet({
               <NauticalOrnateFrame
                 borderColor={navyBorder}
                 zIndex={getLayerZ('versoMoldura')}
+                sheetWidth={sheetWidth}
+                sheetHeight={sheetHeight}
               />
             </div>
           ) : (
             <NauticalOrnateFrame
               borderColor={navyBorder}
               zIndex={getLayerZ('versoMoldura')}
+              sheetWidth={sheetWidth}
+              sheetHeight={sheetHeight}
             />
           )
         ) : backFrameStyle === 'simples' ? (
