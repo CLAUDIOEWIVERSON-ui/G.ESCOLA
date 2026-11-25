@@ -47,6 +47,7 @@ import {
   applyFormalA4LayoutToTemplate,
   extractModuleNumberFromRow,
   getCertificateElementZIndex,
+  getCertificateSheetDimensions,
   groupCertificateRowsByModule,
   pxToPtNumber,
   updateCertificateLayerOrder,
@@ -336,6 +337,7 @@ export function CertificateInspectorPanel({
 
   const meta = getObjectMeta(selectedObject);
   const HeaderIcon = meta.icon;
+  const { isPortrait } = getCertificateSheetDimensions(template.orientacao);
 
   const normalizeFrontFont = (font?: CertificateFontKey) =>
     !font || font === 'serif-italic' ? 'garamond' : font;
@@ -1049,10 +1051,26 @@ export function CertificateInspectorPanel({
           ? 84
           : 74;
     const backDefaultSize = isLeft ? 68 : 54;
-    const minX = isLeft ? -90 : isCenter ? -420 : -760;
-    const maxX = isLeft ? 760 : isCenter ? 420 : 90;
-    const minY = isCenter ? -110 : -60;
-    const maxY = isCenter ? 640 : 520;
+    const minX = isLeft
+      ? -120
+      : isCenter
+        ? isPortrait
+          ? -380
+          : -540
+        : isPortrait
+          ? -680
+          : -980;
+    const maxX = isLeft
+      ? isPortrait
+        ? 680
+        : 980
+      : isCenter
+        ? isPortrait
+          ? 380
+          : 540
+        : 120;
+    const minY = isCenter ? -120 : -100;
+    const maxY = isPortrait ? 1020 : 680;
 
     const valX = template[xKey] ?? 0;
     const valY = template[yKey] ?? 0;
@@ -1871,8 +1889,8 @@ export function CertificateInspectorPanel({
                   </div>
                   <input
                     type="range"
-                    min={-350}
-                    max={350}
+                    min={isPortrait ? -380 : -520}
+                    max={isPortrait ? 380 : 520}
                     step={2}
                     value={template.tituloOffsetX ?? 0}
                     onChange={(e) =>
@@ -1893,8 +1911,8 @@ export function CertificateInspectorPanel({
                   </div>
                   <input
                     type="range"
-                    min={-200}
-                    max={260}
+                    min={isPortrait ? -480 : -300}
+                    max={isPortrait ? 880 : 560}
                     step={2}
                     value={template.tituloOffsetY ?? 0}
                     onChange={(e) =>
@@ -2562,8 +2580,8 @@ export function CertificateInspectorPanel({
                     </div>
                     <input
                       type="range"
-                      min={-150}
-                      max={150}
+                      min={isPortrait ? -360 : -480}
+                      max={isPortrait ? 360 : 480}
                       step={2}
                       value={template.textoOffsetX ?? 0}
                       onChange={(e) =>
@@ -2584,8 +2602,8 @@ export function CertificateInspectorPanel({
                     </div>
                     <input
                       type="range"
-                      min={-180}
-                      max={200}
+                      min={isPortrait ? -560 : -360}
+                      max={isPortrait ? 720 : 460}
                       step={2}
                       value={template.textoOffsetY ?? 0}
                       onChange={(e) =>
@@ -2810,8 +2828,8 @@ export function CertificateInspectorPanel({
                     </div>
                     <input
                       type="range"
-                      min={-380}
-                      max={380}
+                      min={isPortrait ? -380 : -520}
+                      max={isPortrait ? 380 : 520}
                       step={2}
                       value={template.dataOffsetX ?? 0}
                       onChange={(e) =>
@@ -2832,8 +2850,8 @@ export function CertificateInspectorPanel({
                     </div>
                     <input
                       type="range"
-                      min={-220}
-                      max={240}
+                      min={isPortrait ? -820 : -540}
+                      max={isPortrait ? 520 : 340}
                       step={2}
                       value={template.dataOffsetY ?? 0}
                       onChange={(e) =>
@@ -3129,7 +3147,7 @@ export function CertificateInspectorPanel({
                   <input
                     type="range"
                     min={0}
-                    max={4.0}
+                    max={isPortrait ? 8.0 : 4.5}
                     step={0.1}
                     value={template.espacamentoAssinaturasVerticalCm ?? 0}
                     onChange={(e) =>
@@ -3207,8 +3225,8 @@ export function CertificateInspectorPanel({
                   </div>
                   <input
                     type="range"
-                    min={-90}
-                    max={45}
+                    min={isPortrait ? -450 : -220}
+                    max={isPortrait ? 160 : 120}
                     step={2}
                     value={template.assinaturaAlturaOffset ?? 0}
                     onChange={(e) =>
@@ -3262,8 +3280,8 @@ export function CertificateInspectorPanel({
                       </div>
                       <input
                         type="range"
-                        min={-380}
-                        max={380}
+                        min={isPortrait ? -380 : -520}
+                        max={isPortrait ? 380 : 520}
                         step={2}
                         value={template.assinaturaPrincipalOffsetX ?? 0}
                         onChange={(e) =>
@@ -3284,8 +3302,8 @@ export function CertificateInspectorPanel({
                       </div>
                       <input
                         type="range"
-                        min={-220}
-                        max={60}
+                        min={isPortrait ? -960 : -640}
+                        max={isPortrait ? 220 : 180}
                         step={2}
                         value={template.assinaturaPrincipalOffsetY ?? 0}
                         onChange={(e) =>
@@ -3670,8 +3688,8 @@ export function CertificateInspectorPanel({
                         </div>
                         <input
                           type="range"
-                          min={-380}
-                          max={380}
+                          min={isPortrait ? -380 : -520}
+                          max={isPortrait ? 380 : 520}
                           step={2}
                           value={template.segundaAssinaturaOffsetX ?? 0}
                           onChange={(e) =>
@@ -3692,8 +3710,8 @@ export function CertificateInspectorPanel({
                         </div>
                         <input
                           type="range"
-                          min={-220}
-                          max={60}
+                          min={isPortrait ? -960 : -640}
+                          max={isPortrait ? 220 : 180}
                           step={2}
                           value={template.segundaAssinaturaOffsetY ?? 0}
                           onChange={(e) =>
@@ -3897,26 +3915,29 @@ export function CertificateInspectorPanel({
               </div>
 
               <div className="space-y-2 pt-1 border-t border-slate-200">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2">
                   <span className="text-[10px] font-bold text-slate-700">
                     Posição na Folha (Frente)
                   </span>
-                  {((template.marcaDaguaFrenteOffsetX ?? 0) !== 0 ||
-                    (template.marcaDaguaFrenteOffsetY ?? 0) !== 0) && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setTemplate((prev) => ({
-                          ...prev,
-                          marcaDaguaFrenteOffsetX: 0,
-                          marcaDaguaFrenteOffsetY: 0,
-                        }))
-                      }
-                      className="text-[10px] text-blue-700 hover:text-blue-900 underline cursor-pointer font-semibold"
-                    >
-                      Zerar
-                    </button>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {((template.marcaDaguaFrenteOffsetX ?? 0) !== 0 ||
+                      (template.marcaDaguaFrenteOffsetY ?? 0) !== 0) && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setTemplate((prev) => ({
+                            ...prev,
+                            marcaDaguaFrenteOffsetX: 0,
+                            marcaDaguaFrenteOffsetY: 0,
+                          }))
+                        }
+                        className="text-[10px] text-blue-700 hover:text-blue-900 underline cursor-pointer font-semibold"
+                      >
+                        Zerar
+                      </button>
+                    )}
+                    {renderMoveOnSheetButton()}
+                  </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div>
@@ -3931,8 +3952,8 @@ export function CertificateInspectorPanel({
                     </div>
                     <input
                       type="range"
-                      min={-480}
-                      max={480}
+                      min={isPortrait ? -420 : -580}
+                      max={isPortrait ? 420 : 580}
                       step={4}
                       value={template.marcaDaguaFrenteOffsetX ?? 0}
                       onChange={(e) =>
@@ -3956,8 +3977,8 @@ export function CertificateInspectorPanel({
                     </div>
                     <input
                       type="range"
-                      min={-380}
-                      max={380}
+                      min={isPortrait ? -580 : -420}
+                      max={isPortrait ? 580 : 420}
                       step={4}
                       value={template.marcaDaguaFrenteOffsetY ?? 0}
                       onChange={(e) =>
@@ -4429,8 +4450,8 @@ export function CertificateInspectorPanel({
                   </div>
                   <input
                     type="range"
-                    min={-350}
-                    max={350}
+                    min={isPortrait ? -380 : -520}
+                    max={isPortrait ? 380 : 520}
                     step={2}
                     value={template.versoTituloOffsetX ?? 0}
                     onChange={(e) =>
@@ -4451,8 +4472,8 @@ export function CertificateInspectorPanel({
                   </div>
                   <input
                     type="range"
-                    min={-150}
-                    max={260}
+                    min={isPortrait ? -240 : -200}
+                    max={isPortrait ? 900 : 560}
                     step={2}
                     value={template.versoTituloOffsetY ?? 0}
                     onChange={(e) =>
@@ -5365,26 +5386,29 @@ export function CertificateInspectorPanel({
               </div>
 
               <div className="space-y-2 pt-1 border-t border-slate-200">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2">
                   <span className="text-[10px] font-bold text-slate-700">
                     Posição na Folha (Verso)
                   </span>
-                  {((template.marcaDaguaVersoOffsetX ?? 0) !== 0 ||
-                    (template.marcaDaguaVersoOffsetY ?? 0) !== 0) && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setTemplate((prev) => ({
-                          ...prev,
-                          marcaDaguaVersoOffsetX: 0,
-                          marcaDaguaVersoOffsetY: 0,
-                        }))
-                      }
-                      className="text-[10px] text-blue-700 hover:text-blue-900 underline cursor-pointer font-semibold"
-                    >
-                      Zerar
-                    </button>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {((template.marcaDaguaVersoOffsetX ?? 0) !== 0 ||
+                      (template.marcaDaguaVersoOffsetY ?? 0) !== 0) && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setTemplate((prev) => ({
+                            ...prev,
+                            marcaDaguaVersoOffsetX: 0,
+                            marcaDaguaVersoOffsetY: 0,
+                          }))
+                        }
+                        className="text-[10px] text-blue-700 hover:text-blue-900 underline cursor-pointer font-semibold"
+                      >
+                        Zerar
+                      </button>
+                    )}
+                    {renderMoveOnSheetButton()}
+                  </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div>
@@ -5399,8 +5423,8 @@ export function CertificateInspectorPanel({
                     </div>
                     <input
                       type="range"
-                      min={-480}
-                      max={480}
+                      min={isPortrait ? -420 : -580}
+                      max={isPortrait ? 420 : 580}
                       step={4}
                       value={template.marcaDaguaVersoOffsetX ?? 0}
                       onChange={(e) =>
@@ -5424,8 +5448,8 @@ export function CertificateInspectorPanel({
                     </div>
                     <input
                       type="range"
-                      min={-380}
-                      max={380}
+                      min={isPortrait ? -580 : -420}
+                      max={isPortrait ? 580 : 420}
                       step={4}
                       value={template.marcaDaguaVersoOffsetY ?? 0}
                       onChange={(e) =>

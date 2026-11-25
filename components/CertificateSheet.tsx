@@ -33,7 +33,13 @@ export type DraggableCertificateElement =
   | 'texto'
   | 'data'
   | 'assinaturaPrincipal'
-  | 'segundaAssinatura';
+  | 'segundaAssinatura'
+  | 'marcaDaguaFrente'
+  | 'logoEsquerdaVerso'
+  | 'logoCentroVerso'
+  | 'logoDireitaVerso'
+  | 'versoTitulo'
+  | 'marcaDaguaVerso';
 
 interface SheetBox {
   element: DraggableCertificateElement;
@@ -469,6 +475,12 @@ export function CertificateSheet({
     data: 'data',
     assinaturaPrincipal: 'assinaturaPrincipal',
     segundaAssinatura: 'segundaAssinatura',
+    marcaDaguaFrente: 'marcaDaguaFrente',
+    logoEsquerdaVerso: 'brasaoEsquerdoVerso',
+    logoCentroVerso: 'brasaoCentroVerso',
+    logoDireitaVerso: 'brasaoDireitoVerso',
+    versoTitulo: 'versoTitulo',
+    marcaDaguaVerso: 'marcaDaguaVerso',
   };
 
   const selectToDragMap: Partial<Record<CertificateSelectableObject, DraggableCertificateElement>> = {
@@ -480,6 +492,12 @@ export function CertificateSheet({
     data: 'data',
     assinaturaPrincipal: 'assinaturaPrincipal',
     segundaAssinatura: 'segundaAssinatura',
+    marcaDaguaFrente: 'marcaDaguaFrente',
+    brasaoEsquerdoVerso: 'logoEsquerdaVerso',
+    brasaoCentroVerso: 'logoCentroVerso',
+    brasaoDireitoVerso: 'logoDireitaVerso',
+    versoTitulo: 'versoTitulo',
+    marcaDaguaVerso: 'marcaDaguaVerso',
   };
 
   const elementLabels: Record<DraggableCertificateElement, string> = {
@@ -491,6 +509,12 @@ export function CertificateSheet({
     data: 'Data',
     assinaturaPrincipal: 'Assinatura Principal',
     segundaAssinatura: '2ª Assinatura',
+    marcaDaguaFrente: "Marca d'Água Frente",
+    logoEsquerdaVerso: 'Brasão Esquerdo (Verso)',
+    logoCentroVerso: 'Brasão Central (Verso)',
+    logoDireitaVerso: 'Brasão Direito (Verso)',
+    versoTitulo: 'Título do Verso',
+    marcaDaguaVerso: "Marca d'Água Verso",
   };
 
   const elementBounds: Record<
@@ -498,52 +522,88 @@ export function CertificateSheet({
     { minX: number; maxX: number; minY: number; maxY: number }
   > = {
     logoEsquerda: {
-      minX: -90,
-      maxX: isPortrait ? 520 : 760,
-      minY: -60,
-      maxY: isPortrait ? 820 : 520,
+      minX: -120,
+      maxX: isPortrait ? 680 : 980,
+      minY: -100,
+      maxY: isPortrait ? 1020 : 680,
     },
     logoCentro: {
-      minX: isPortrait ? -280 : -420,
-      maxX: isPortrait ? 280 : 420,
-      minY: -110,
-      maxY: isPortrait ? 920 : 640,
+      minX: isPortrait ? -380 : -540,
+      maxX: isPortrait ? 380 : 540,
+      minY: -120,
+      maxY: isPortrait ? 1020 : 680,
     },
     logoDireita: {
-      minX: isPortrait ? -520 : -760,
-      maxX: 90,
-      minY: -60,
-      maxY: isPortrait ? 820 : 520,
+      minX: isPortrait ? -680 : -980,
+      maxX: 120,
+      minY: -100,
+      maxY: isPortrait ? 1020 : 680,
     },
     titulo: {
-      minX: isPortrait ? -240 : -350,
-      maxX: isPortrait ? 240 : 350,
-      minY: -200,
-      maxY: isPortrait ? 380 : 260,
+      minX: isPortrait ? -380 : -520,
+      maxX: isPortrait ? 380 : 520,
+      minY: isPortrait ? -480 : -300,
+      maxY: isPortrait ? 880 : 560,
     },
     texto: {
-      minX: isPortrait ? -120 : -150,
-      maxX: isPortrait ? 120 : 150,
-      minY: -220,
-      maxY: isPortrait ? 320 : 200,
+      minX: isPortrait ? -360 : -480,
+      maxX: isPortrait ? 360 : 480,
+      minY: isPortrait ? -560 : -360,
+      maxY: isPortrait ? 720 : 460,
     },
     data: {
-      minX: isPortrait ? -260 : -380,
-      maxX: isPortrait ? 260 : 380,
-      minY: -260,
-      maxY: isPortrait ? 320 : 240,
+      minX: isPortrait ? -380 : -520,
+      maxX: isPortrait ? 380 : 520,
+      minY: isPortrait ? -820 : -540,
+      maxY: isPortrait ? 520 : 340,
     },
     assinaturaPrincipal: {
-      minX: isPortrait ? -260 : -380,
-      maxX: isPortrait ? 260 : 380,
-      minY: -320,
-      maxY: 120,
+      minX: isPortrait ? -380 : -520,
+      maxX: isPortrait ? 380 : 520,
+      minY: isPortrait ? -960 : -640,
+      maxY: isPortrait ? 220 : 180,
     },
     segundaAssinatura: {
-      minX: isPortrait ? -260 : -380,
-      maxX: isPortrait ? 260 : 380,
-      minY: -320,
-      maxY: 120,
+      minX: isPortrait ? -380 : -520,
+      maxX: isPortrait ? 380 : 520,
+      minY: isPortrait ? -960 : -640,
+      maxY: isPortrait ? 220 : 180,
+    },
+    marcaDaguaFrente: {
+      minX: isPortrait ? -420 : -580,
+      maxX: isPortrait ? 420 : 580,
+      minY: isPortrait ? -580 : -420,
+      maxY: isPortrait ? 580 : 420,
+    },
+    logoEsquerdaVerso: {
+      minX: -120,
+      maxX: isPortrait ? 680 : 980,
+      minY: -100,
+      maxY: isPortrait ? 1020 : 680,
+    },
+    logoCentroVerso: {
+      minX: isPortrait ? -380 : -540,
+      maxX: isPortrait ? 380 : 540,
+      minY: -120,
+      maxY: isPortrait ? 1020 : 680,
+    },
+    logoDireitaVerso: {
+      minX: isPortrait ? -680 : -980,
+      maxX: 120,
+      minY: -100,
+      maxY: isPortrait ? 1020 : 680,
+    },
+    versoTitulo: {
+      minX: isPortrait ? -380 : -520,
+      maxX: isPortrait ? 380 : 520,
+      minY: isPortrait ? -240 : -200,
+      maxY: isPortrait ? 900 : 560,
+    },
+    marcaDaguaVerso: {
+      minX: isPortrait ? -420 : -580,
+      maxX: isPortrait ? 420 : 580,
+      minY: isPortrait ? -580 : -420,
+      maxY: isPortrait ? 580 : 420,
     },
   };
 
@@ -698,8 +758,8 @@ export function CertificateSheet({
     return { horizontal: dedupedHoriz, vertical };
   };
 
-  const offsetsOnlySig = `${template.logoEsquerdaOffsetX ?? 0},${template.logoEsquerdaOffsetY ?? 0}|${template.logoCentroOffsetX ?? 0},${template.logoCentroOffsetY ?? 0}|${template.logoDireitaOffsetX ?? 0},${template.logoDireitaOffsetY ?? 0}|${template.tituloOffsetX ?? 0},${template.tituloOffsetY ?? 0}|${template.textoOffsetX ?? 0},${template.textoOffsetY ?? 0}|${template.dataOffsetX ?? 0},${template.dataOffsetY ?? 0}|${template.assinaturaPrincipalOffsetX ?? 0},${template.assinaturaPrincipalOffsetY ?? 0}|${template.segundaAssinaturaOffsetX ?? 0},${template.segundaAssinaturaOffsetY ?? 0}|${template.assinaturaAlturaOffset ?? 0}`;
-  const isInteractiveSheet = side === 'front' && Boolean(onSelectObject);
+  const offsetsOnlySig = `${template.logoEsquerdaOffsetX ?? 0},${template.logoEsquerdaOffsetY ?? 0}|${template.logoCentroOffsetX ?? 0},${template.logoCentroOffsetY ?? 0}|${template.logoDireitaOffsetX ?? 0},${template.logoDireitaOffsetY ?? 0}|${template.tituloOffsetX ?? 0},${template.tituloOffsetY ?? 0}|${template.textoOffsetX ?? 0},${template.textoOffsetY ?? 0}|${template.dataOffsetX ?? 0},${template.dataOffsetY ?? 0}|${template.assinaturaPrincipalOffsetX ?? 0},${template.assinaturaPrincipalOffsetY ?? 0}|${template.segundaAssinaturaOffsetX ?? 0},${template.segundaAssinaturaOffsetY ?? 0}|${template.assinaturaAlturaOffset ?? 0}|${template.marcaDaguaFrenteOffsetX ?? 0},${template.marcaDaguaFrenteOffsetY ?? 0}|${template.logoEsquerdaVersoOffsetX ?? 0},${template.logoEsquerdaVersoOffsetY ?? 0}|${template.logoCentroVersoOffsetX ?? 0},${template.logoCentroVersoOffsetY ?? 0}|${template.logoDireitaVersoOffsetX ?? 0},${template.logoDireitaVersoOffsetY ?? 0}|${template.versoTituloOffsetX ?? 0},${template.versoTituloOffsetY ?? 0}|${template.marcaDaguaVersoOffsetX ?? 0},${template.marcaDaguaVersoOffsetY ?? 0}`;
+  const isInteractiveSheet = Boolean(onSelectObject);
 
   useEffect(() => {
     if (!isInteractiveSheet) {
@@ -749,7 +809,7 @@ export function CertificateSheet({
     e: React.PointerEvent<HTMLElement>
   ) => {
     onSelectObject?.(dragToSelectMap[element]);
-    if (!interactiveDrag || !onUpdateTemplate || side !== 'front') return;
+    if (!interactiveDrag || !onUpdateTemplate) return;
     e.preventDefault();
     e.stopPropagation();
     try {
@@ -784,6 +844,24 @@ export function CertificateSheet({
     } else if (element === 'segundaAssinatura') {
       origX = template.segundaAssinaturaOffsetX ?? 0;
       origY = template.segundaAssinaturaOffsetY ?? 0;
+    } else if (element === 'marcaDaguaFrente') {
+      origX = template.marcaDaguaFrenteOffsetX ?? 0;
+      origY = template.marcaDaguaFrenteOffsetY ?? 0;
+    } else if (element === 'logoEsquerdaVerso') {
+      origX = template.logoEsquerdaVersoOffsetX ?? 0;
+      origY = template.logoEsquerdaVersoOffsetY ?? 0;
+    } else if (element === 'logoCentroVerso') {
+      origX = template.logoCentroVersoOffsetX ?? 0;
+      origY = template.logoCentroVersoOffsetY ?? 0;
+    } else if (element === 'logoDireitaVerso') {
+      origX = template.logoDireitaVersoOffsetX ?? 0;
+      origY = template.logoDireitaVersoOffsetY ?? 0;
+    } else if (element === 'versoTitulo') {
+      origX = template.versoTituloOffsetX ?? 0;
+      origY = template.versoTituloOffsetY ?? 0;
+    } else if (element === 'marcaDaguaVerso') {
+      origX = template.marcaDaguaVersoOffsetX ?? 0;
+      origY = template.marcaDaguaVersoOffsetY ?? 0;
     }
 
     const boxes = measureSheetBoxes();
@@ -953,6 +1031,48 @@ export function CertificateSheet({
           segundaAssinaturaOffsetY: nextY,
         };
       }
+      if (element === 'marcaDaguaFrente') {
+        return {
+          ...prev,
+          marcaDaguaFrenteOffsetX: nextX,
+          marcaDaguaFrenteOffsetY: nextY,
+        };
+      }
+      if (element === 'logoEsquerdaVerso') {
+        return {
+          ...prev,
+          logoEsquerdaVersoOffsetX: nextX,
+          logoEsquerdaVersoOffsetY: nextY,
+        };
+      }
+      if (element === 'logoCentroVerso') {
+        return {
+          ...prev,
+          logoCentroVersoOffsetX: nextX,
+          logoCentroVersoOffsetY: nextY,
+        };
+      }
+      if (element === 'logoDireitaVerso') {
+        return {
+          ...prev,
+          logoDireitaVersoOffsetX: nextX,
+          logoDireitaVersoOffsetY: nextY,
+        };
+      }
+      if (element === 'versoTitulo') {
+        return {
+          ...prev,
+          versoTituloOffsetX: nextX,
+          versoTituloOffsetY: nextY,
+        };
+      }
+      if (element === 'marcaDaguaVerso') {
+        return {
+          ...prev,
+          marcaDaguaVersoOffsetX: nextX,
+          marcaDaguaVersoOffsetY: nextY,
+        };
+      }
       return prev;
     });
   };
@@ -977,16 +1097,15 @@ export function CertificateSheet({
     ref?: (el: HTMLElement | null) => void;
   } => {
     const selectKey = dragToSelectMap[element];
-    const canDrag = interactiveDrag && side === 'front';
+    const canDrag = interactiveDrag;
     const canSelect = Boolean(onSelectObject);
-    const refProp =
-      side === 'front' && canSelect
-        ? {
-            ref: (el: HTMLElement | null) => {
-              elementRefs.current[element] = el;
-            },
-          }
-        : {};
+    const refProp = canSelect
+      ? {
+          ref: (el: HTMLElement | null) => {
+            elementRefs.current[element] = el;
+          },
+        }
+      : {};
     if (!canDrag && !canSelect) return {};
     const isDragging = canDrag && activeDrag === element;
     const isSelected = canSelect && selectedObject === selectKey;
@@ -1474,9 +1593,9 @@ export function CertificateSheet({
           {/* Center Watermark (expandable up to full sheet, directly clickable & layer-orderable) */}
           {template.marcaDaguaFrenteUrl ? (
             (() => {
-              const frontWmSelect = getSelectProps(
+              const frontWmDrag = getDragProps(
                 'marcaDaguaFrente',
-                "Marca d'Água Central (Frente) — clique para trocar ou enviar p/ frente/trás"
+                "Marca d'Água Central (Frente) — clique para editar ou arraste na folha"
               );
               const frontWmZ = getLayerZ('marcaDaguaFrente');
               const frontMinImageZ = Math.min(
@@ -1488,7 +1607,7 @@ export function CertificateSheet({
               const isFrontWmAboveContent = frontWmZ > frontMinImageZ;
               const frontWmShapeRadius = isCircularDefaultFrontWm
                 ? '9999px'
-                : (frontWmSelect.style?.borderRadius ?? '6px');
+                : (frontWmDrag.style?.borderRadius ?? '6px');
 
               return (
                 <div
@@ -1508,7 +1627,7 @@ export function CertificateSheet({
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    {...frontWmSelect}
+                    {...frontWmDrag}
                     src={resolveAssetCacheSrc(template.marcaDaguaFrenteUrl)}
                     alt="Marca d'água"
                     crossOrigin="anonymous"
@@ -1525,7 +1644,7 @@ export function CertificateSheet({
                       opacity: template.opacidadeMarcaDaguaFrente ?? 0.24,
                       mixBlendMode: isFrontWmAboveContent ? 'normal' : 'multiply',
                       pointerEvents: isInteractiveEditor ? 'auto' : 'none',
-                      ...frontWmSelect.style,
+                      ...frontWmDrag.style,
                       borderRadius: frontWmShapeRadius,
                     }}
                   />
@@ -1534,7 +1653,7 @@ export function CertificateSheet({
             })()
           ) : isInteractiveEditor && selectedObject === 'marcaDaguaFrente' ? (
             (() => {
-              const frontWmSelect = getSelectProps(
+              const frontWmDrag = getDragProps(
                 'marcaDaguaFrente',
                 "Marca d'Água Central (Frente) — clique para escolher ou trocar"
               );
@@ -1551,7 +1670,7 @@ export function CertificateSheet({
                   }}
                 >
                   <div
-                    {...frontWmSelect}
+                    {...frontWmDrag}
                     style={{
                       padding: '18px 28px',
                       border: '2px dashed #2563eb',
@@ -1561,7 +1680,7 @@ export function CertificateSheet({
                       fontWeight: 700,
                       textAlign: 'center',
                       pointerEvents: 'auto',
-                      ...frontWmSelect.style,
+                      ...frontWmDrag.style,
                     }}
                   >
                     Marca d&apos;Água Central removida — escolha outra imagem no painel ao lado
@@ -2274,6 +2393,18 @@ export function CertificateSheet({
                     background: `linear-gradient(90deg, rgba(15, 23, 42, 0) 0%, rgba(15, 23, 42, ${sigLineOpacity}) 16%, rgba(15, 23, 42, ${sigLineOpacity}) 84%, rgba(15, 23, 42, 0) 100%)`,
                   };
 
+              const portraitSignaturesDecoupled =
+                isPortrait &&
+                hasSecondSig &&
+                (Math.abs(
+                  (template.assinaturaPrincipalOffsetY ?? 0) -
+                    (template.segundaAssinaturaOffsetY ?? 0)
+                ) > 28 ||
+                  Math.abs(
+                    (template.assinaturaPrincipalOffsetX ?? 0) -
+                      (template.segundaAssinaturaOffsetX ?? 0)
+                  ) > 40);
+
               const primaryBlock = (
                 <div
                   key="primary-signature"
@@ -2287,15 +2418,25 @@ export function CertificateSheet({
                       maxFrontImageZ + 2
                     ),
                     textAlign: 'center',
-                    flex: isPortrait && hasSecondSig ? '1 1 0' : '0 0 auto',
-                    width: isPortrait && hasSecondSig ? undefined : 'max-content',
+                    flex:
+                      isPortrait && hasSecondSig && !portraitSignaturesDecoupled
+                        ? '1 1 0'
+                        : '0 0 auto',
+                    width:
+                      isPortrait && hasSecondSig && !portraitSignaturesDecoupled
+                        ? undefined
+                        : 'max-content',
                     minWidth:
                       isPortrait && hasSecondSig
                         ? '180px'
                         : hasSecondSig
                           ? '220px'
                           : '240px',
-                    maxWidth: isPortrait ? (hasSecondSig ? '48%' : '100%') : 'none',
+                    maxWidth: isPortrait
+                      ? hasSecondSig && !portraitSignaturesDecoupled
+                        ? '48%'
+                        : '92%'
+                      : 'none',
                     whiteSpace: isPortrait ? 'normal' : 'nowrap',
                     marginLeft:
                       !hasSecondSig && sigAlign === 'left' && !hasFormalInnerMargin
@@ -2383,10 +2524,16 @@ export function CertificateSheet({
                       maxFrontImageZ + 2
                     ),
                     textAlign: 'center',
-                    flex: isPortrait ? '1 1 0' : '0 0 auto',
-                    width: isPortrait ? undefined : 'max-content',
+                    flex:
+                      isPortrait && !portraitSignaturesDecoupled ? '1 1 0' : '0 0 auto',
+                    width:
+                      isPortrait && !portraitSignaturesDecoupled ? undefined : 'max-content',
                     minWidth: isPortrait ? '180px' : '220px',
-                    maxWidth: isPortrait ? '48%' : 'none',
+                    maxWidth: isPortrait
+                      ? !portraitSignaturesDecoupled
+                        ? '48%'
+                        : '92%'
+                      : 'none',
                     whiteSpace: isPortrait ? 'normal' : 'nowrap',
                     fontFamily: hasSecondarySigContent
                       ? signatureFontCss
@@ -2728,6 +2875,7 @@ export function CertificateSheet({
   return (
     <div style={outerWrapperStyle}>
       <div
+        ref={frontSheetRef}
         id={elementId}
         data-certificate-side="back"
         onClick={(e) => {
@@ -2887,14 +3035,14 @@ export function CertificateSheet({
             >
               {showLeftLogoBack && (leftLogoBackUrl || isInteractiveEditor) ? (
                 (() => {
-                  const leftBackSelect = getSelectProps(
-                    'brasaoEsquerdoVerso',
+                  const leftBackDrag = getDragProps(
+                    'logoEsquerdaVerso',
                     'Brasão Esquerdo (Verso)'
                   );
                   const backLeftSize = template.tamanhoLogoEsquerdaVerso;
                   return (
                     <div
-                      {...leftBackSelect}
+                      {...leftBackDrag}
                       style={{
                         position: 'relative',
                         left: `${template.logoEsquerdaVersoOffsetX ?? 0}px`,
@@ -2915,7 +3063,7 @@ export function CertificateSheet({
                         justifyContent: 'center',
                         flexShrink: 0,
                         backgroundColor: 'transparent',
-                        ...leftBackSelect.style,
+                        ...leftBackDrag.style,
                       }}
                     >
                       {leftLogoBackUrl ? (
@@ -2968,8 +3116,8 @@ export function CertificateSheet({
                 {showCenterLogoBack &&
                   (centerLogoBackUrl || centerCaptionBackText || isInteractiveEditor) &&
                   (() => {
-                    const centerBackSelect = getSelectProps(
-                      'brasaoCentroVerso',
+                    const centerBackDrag = getDragProps(
+                      'logoCentroVerso',
                       'Brasão Central (Verso)'
                     );
                     const hasCenterBackContent = Boolean(
@@ -2977,7 +3125,7 @@ export function CertificateSheet({
                     );
                     return (
                       <div
-                        {...centerBackSelect}
+                        {...centerBackDrag}
                         style={{
                           position: 'relative',
                           left: `${template.logoCentroVersoOffsetX ?? 0}px`,
@@ -2989,7 +3137,7 @@ export function CertificateSheet({
                           justifyContent: 'center',
                           gap: '3px',
                           backgroundColor: 'transparent',
-                          ...centerBackSelect.style,
+                          ...centerBackDrag.style,
                         }}
                       >
                         {!hasCenterBackContent && isInteractiveEditor ? (
@@ -3052,11 +3200,11 @@ export function CertificateSheet({
                   })()}
 
                 {(() => {
-                  const backTitleSelect = getSelectProps('versoTitulo', 'Título do Verso');
+                  const backTitleDrag = getDragProps('versoTitulo', 'Título do Verso');
                   const hasBackTitle = Boolean(backTitleResolved.trim());
                   return (
                     <h2
-                      {...backTitleSelect}
+                      {...backTitleDrag}
                       style={{
                         margin: 0,
                         position: 'relative',
@@ -3087,7 +3235,7 @@ export function CertificateSheet({
                         textShadow: 'none',
                         boxShadow: 'none',
                         padding: hasBackTitle ? '2px 10px' : '12px 14px',
-                        ...backTitleSelect.style,
+                        ...backTitleDrag.style,
                       }}
                     >
                       {hasBackTitle
@@ -3103,8 +3251,8 @@ export function CertificateSheet({
               {showRightLogoBack &&
               (rightLogoBackUrl || allowDefaultMarinhaBack || isInteractiveEditor) ? (
                 (() => {
-                  const rightBackSelect = getSelectProps(
-                    'brasaoDireitoVerso',
+                  const rightBackDrag = getDragProps(
+                    'logoDireitaVerso',
                     'Brasão Direito (Verso)'
                   );
                   const showRightCrestBack = Boolean(
@@ -3113,7 +3261,7 @@ export function CertificateSheet({
                   const backRightSize = template.tamanhoLogoDireitaVerso;
                   return (
                     <div
-                      {...rightBackSelect}
+                      {...rightBackDrag}
                       style={{
                         position: 'relative',
                         left: `${template.logoDireitaVersoOffsetX ?? 0}px`,
@@ -3132,7 +3280,7 @@ export function CertificateSheet({
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        ...rightBackSelect.style,
+                        ...rightBackDrag.style,
                       }}
                     >
                       {showRightCrestBack ? (
@@ -3179,12 +3327,12 @@ export function CertificateSheet({
                 backgroundColor: 'transparent',
               }}
             >
-              {/* Watermark distributed across table area, directly clickable & layer-orderable */}
+              {/* Watermark distributed across table area, directly clickable, draggable & layer-orderable */}
               {template.marcaDaguaVersoUrl ? (
                 (() => {
-                  const backWmSelect = getSelectProps(
+                  const backWmDrag = getDragProps(
                     'marcaDaguaVerso',
-                    "Marca d'Água Central (Verso) — clique para trocar ou enviar p/ frente/trás"
+                    "Marca d'Água Central (Verso) — clique para editar ou arraste na folha"
                   );
                   const backWmZ = getLayerZ('marcaDaguaVerso');
                   const backMinImageZ = Math.min(
@@ -3213,7 +3361,7 @@ export function CertificateSheet({
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
-                        {...backWmSelect}
+                        {...backWmDrag}
                         src={resolveAssetCacheSrc(template.marcaDaguaVersoUrl)}
                         alt="Marca d'água Verso"
                         crossOrigin="anonymous"
@@ -3230,7 +3378,7 @@ export function CertificateSheet({
                           opacity: template.opacidadeMarcaDaguaVerso ?? 0.25,
                           mixBlendMode: isBackWmAboveContent ? 'normal' : 'multiply',
                           pointerEvents: isInteractiveEditor ? 'auto' : 'none',
-                          ...backWmSelect.style,
+                          ...backWmDrag.style,
                         }}
                       />
                     </div>
@@ -3238,7 +3386,7 @@ export function CertificateSheet({
                 })()
               ) : isInteractiveEditor && selectedObject === 'marcaDaguaVerso' ? (
                 (() => {
-                  const backWmSelect = getSelectProps(
+                  const backWmDrag = getDragProps(
                     'marcaDaguaVerso',
                     "Marca d'Água Central (Verso) — clique para escolher ou trocar"
                   );
@@ -3258,7 +3406,7 @@ export function CertificateSheet({
                       }}
                     >
                       <div
-                        {...backWmSelect}
+                        {...backWmDrag}
                         style={{
                           padding: '18px 28px',
                           border: '2px dashed #2563eb',
@@ -3268,7 +3416,7 @@ export function CertificateSheet({
                           fontWeight: 700,
                           textAlign: 'center',
                           pointerEvents: 'auto',
-                          ...backWmSelect.style,
+                          ...backWmDrag.style,
                         }}
                       >
                         Marca d&apos;Água do Verso removida — escolha outra imagem no painel ao lado
@@ -3569,6 +3717,99 @@ export function CertificateSheet({
               })()}
             </div>
         </div>
+
+        {/* Live Alignment Guide Overlay on Back Sheet */}
+        {isInteractiveEditor &&
+          (alignmentGuides.horizontal.length > 0 || alignmentGuides.vertical.length > 0) && (
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                pointerEvents: 'none',
+                zIndex: Math.max(40, maxBackImageZ + 20),
+              }}
+            >
+              {alignmentGuides.horizontal.map((g) => {
+                const isAligned = g.variant === 'aligned';
+                const isRef = g.variant === 'reference';
+                const lineColor = isAligned
+                  ? '#10b981'
+                  : isRef
+                    ? '#f59e0b'
+                    : '#0284c7';
+                const labelTop = g.y > 42 ? g.y - 22 : g.y + 6;
+                const labelLeft = Math.min(sheetWidth - 233, Math.max(24, (g.x1 + g.x2) / 2 - 75));
+                return (
+                  <React.Fragment key={g.id}>
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: `${g.y}px`,
+                        left: `${g.x1}px`,
+                        width: `${Math.max(20, g.x2 - g.x1)}px`,
+                        height: '0px',
+                        borderTop: isAligned
+                          ? `2px solid ${lineColor}`
+                          : `1.5px dashed ${lineColor}`,
+                      }}
+                    />
+                    {g.label && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: `${labelTop}px`,
+                          left: `${labelLeft}px`,
+                          backgroundColor: lineColor,
+                          color: '#ffffff',
+                          fontSize: '10px',
+                          fontWeight: 700,
+                          padding: '2px 7px',
+                          borderRadius: '9999px',
+                          whiteSpace: 'nowrap',
+                          fontFamily: '"Segoe UI", system-ui, sans-serif',
+                        }}
+                      >
+                        {g.label}
+                      </div>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+              {alignmentGuides.vertical.map((g) => (
+                <React.Fragment key={g.id}>
+                  <div
+                    style={{
+                      position: 'absolute',
+                      left: `${g.x}px`,
+                      top: `${g.y1}px`,
+                      width: '0px',
+                      height: `${Math.max(20, g.y2 - g.y1)}px`,
+                      borderLeft: '1.5px dashed #2563eb',
+                    }}
+                  />
+                  {g.label && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: `${Math.max(16, g.y1)}px`,
+                        left: `${Math.min(sheetWidth - 173, g.x + 6)}px`,
+                        backgroundColor: '#2563eb',
+                        color: '#ffffff',
+                        fontSize: '9.5px',
+                        fontWeight: 700,
+                        padding: '1px 6px',
+                        borderRadius: '9999px',
+                        whiteSpace: 'nowrap',
+                        fontFamily: '"Segoe UI", system-ui, sans-serif',
+                      }}
+                    >
+                      {g.label}
+                    </div>
+                  )}
+                </React.Fragment>
+              ))}
+            </div>
+          )}
       </div>
     </div>
   );

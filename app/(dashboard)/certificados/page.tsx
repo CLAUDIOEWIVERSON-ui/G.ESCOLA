@@ -3908,22 +3908,20 @@ export default function CertificadosPage() {
                 </span>
 
                 <div className="flex flex-wrap items-center gap-1.5">
-                  {previewMode !== 'back' && (
-                    <button
-                      type="button"
-                      onClick={() => setDragMoveEnabled((v) => !v)}
-                      className={cn(
-                        'px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border whitespace-nowrap',
-                        dragMoveEnabled
-                          ? 'bg-blue-700 text-white border-blue-800 shadow-xs'
-                          : 'bg-white text-blue-800 border-blue-200 hover:bg-blue-50'
-                      )}
-                      title="Permite clicar e arrastar os brasões, título, texto principal, data e cada assinatura (esquerda e direita) de forma independente diretamente na folha"
-                    >
-                      <Move size={13} />
-                      <span>{dragMoveEnabled ? 'Arrastar Ativo' : 'Mover na Folha'}</span>
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => setDragMoveEnabled((v) => !v)}
+                    className={cn(
+                      'px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border whitespace-nowrap',
+                      dragMoveEnabled
+                        ? 'bg-blue-700 text-white border-blue-800 shadow-xs'
+                        : 'bg-white text-blue-800 border-blue-200 hover:bg-blue-50'
+                    )}
+                    title="Permite clicar e arrastar os brasões, marca d'água, título, texto principal, data e cada assinatura livremente pela folha (frente e verso)"
+                  >
+                    <Move size={13} />
+                    <span>{dragMoveEnabled ? 'Arrastar Ativo' : 'Mover na Folha'}</span>
+                  </button>
 
                   <button
                     type="button"
@@ -4065,11 +4063,11 @@ export default function CertificadosPage() {
             </div>
           </div>
 
-          {dragMoveEnabled && previewMode !== 'back' && (
+          {dragMoveEnabled && (
             <div className="px-3 py-2 rounded-xl bg-blue-50 border border-blue-200 text-[11px] font-semibold text-blue-900 flex items-center justify-between gap-2">
               <span className="flex items-center gap-1.5">
                 <Move size={13} className="shrink-0" />
-                Modo Mover na Folha ativo: clique e arraste o Brasão Esquerdo, Brasão Central, Brasão Direito, Título, Texto Principal, Data ou cada Assinatura (Esquerda e Direita) de forma independente diretamente na folha.
+                Modo Mover na Folha ativo: clique e arraste livremente por toda a folha ({isPortraitSheet ? 'A4 Retrato' : 'A4 Paisagem'}) os Brasões, Marca d&apos;Água, Título, Texto Principal, Data e Assinaturas (Frente e Verso).
               </span>
               <button
                 type="button"
@@ -4228,8 +4226,10 @@ export default function CertificadosPage() {
                   student={activeStudentContext}
                   side="back"
                   scale={effectiveScale}
+                  interactiveDrag={dragMoveEnabled}
                   selectedObject={selectedObject}
                   onSelectObject={handleSelectObjectOnSheet}
+                  onUpdateTemplate={setTemplate}
                 />
               </div>
             )}
