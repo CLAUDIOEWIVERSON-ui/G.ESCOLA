@@ -1474,9 +1474,10 @@ export function CertificateSheet({
     const vetorialInsetPx = hasFormalOuterMargin
       ? Math.max(0, outerFrameMarginPx - 14)
       : 0;
+    const frontFrameZ = 1;
     const maxFrontImageZ = Math.max(
+      frontFrameZ,
       getLayerZ('marcaDaguaFrente'),
-      getLayerZ('molduraFrente'),
       getLayerZ('brasaoEsquerdo', 'logoEsquerda'),
       getLayerZ('brasaoCentro', 'logoCentro'),
       getLayerZ('brasaoDireito', 'logoDireita')
@@ -1536,7 +1537,7 @@ export function CertificateSheet({
                 objectFit: 'fill',
                 pointerEvents: 'none',
                 mixBlendMode: 'multiply',
-                zIndex: getLayerZ('molduraFrente'),
+                zIndex: frontFrameZ,
               }}
             />
           ) : frontFrameStyle === 'vetorial' ? (
@@ -1549,12 +1550,12 @@ export function CertificateSheet({
                   width: `${sheetWidth - vetorialInsetPx * 2}px`,
                   height: `${sheetHeight - vetorialInsetPx * 2}px`,
                   pointerEvents: 'none',
-                  zIndex: getLayerZ('molduraFrente'),
+                  zIndex: frontFrameZ,
                 }}
               >
                 <NauticalOrnateFrame
                   borderColor={template.corBordaFrente || '#52525b'}
-                  zIndex={getLayerZ('molduraFrente')}
+                  zIndex={frontFrameZ}
                   sheetWidth={sheetWidth}
                   sheetHeight={sheetHeight}
                 />
@@ -1562,7 +1563,7 @@ export function CertificateSheet({
             ) : (
               <NauticalOrnateFrame
                 borderColor={template.corBordaFrente || '#52525b'}
-                zIndex={getLayerZ('molduraFrente')}
+                zIndex={frontFrameZ}
                 sheetWidth={sheetWidth}
                 sheetHeight={sheetHeight}
               />
@@ -1575,7 +1576,7 @@ export function CertificateSheet({
                 border: `2px solid ${template.corBordaFrente || '#cbd5e1'}`,
                 padding: '4px',
                 pointerEvents: 'none',
-                zIndex: getLayerZ('molduraFrente'),
+                zIndex: frontFrameZ,
                 boxSizing: 'border-box',
               }}
             >
@@ -1597,14 +1598,16 @@ export function CertificateSheet({
                 'marcaDaguaFrente',
                 "Marca d'Água Central (Frente) — clique para editar ou arraste na folha"
               );
-              const frontWmZ = getLayerZ('marcaDaguaFrente');
-              const frontMinImageZ = Math.min(
-                getLayerZ('molduraFrente'),
+              const frontWmZ = Math.max(
+                getLayerZ('marcaDaguaFrente', 'marcaDaguaFrente'),
+                frontFrameZ + 1
+              );
+              const frontCrestMinZ = Math.min(
                 getLayerZ('brasaoEsquerdo', 'logoEsquerda'),
                 getLayerZ('brasaoCentro', 'logoCentro'),
                 getLayerZ('brasaoDireito', 'logoDireita')
               );
-              const isFrontWmAboveContent = frontWmZ > frontMinImageZ;
+              const isFrontWmAboveContent = frontWmZ > frontCrestMinZ;
               const frontWmShapeRadius = isCircularDefaultFrontWm
                 ? '9999px'
                 : (frontWmDrag.style?.borderRadius ?? '6px');
@@ -1613,14 +1616,11 @@ export function CertificateSheet({
                 <div
                   style={{
                     position: 'absolute',
-                    top: '20px',
-                    bottom: '20px',
-                    left: '20px',
-                    right: '20px',
+                    inset: 0,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    overflow: 'hidden',
+                    overflow: 'visible',
                     pointerEvents: 'none',
                     zIndex: frontWmZ,
                   }}
@@ -1666,7 +1666,10 @@ export function CertificateSheet({
                     alignItems: 'center',
                     justifyContent: 'center',
                     pointerEvents: 'none',
-                    zIndex: getLayerZ('marcaDaguaFrente'),
+                    zIndex: Math.max(
+                      getLayerZ('marcaDaguaFrente', 'marcaDaguaFrente'),
+                      frontFrameZ + 1
+                    ),
                   }}
                 >
                   <div
@@ -1741,7 +1744,10 @@ export function CertificateSheet({
                           position: 'relative',
                           left: `${template.logoEsquerdaOffsetX ?? 0}px`,
                           top: `${template.logoEsquerdaOffsetY ?? 0}px`,
-                          zIndex: getLayerZ('brasaoEsquerdo', 'logoEsquerda'),
+                          zIndex: Math.max(
+                            getLayerZ('brasaoEsquerdo', 'logoEsquerda'),
+                            frontFrameZ + 2
+                          ),
                           minWidth: '48px',
                           minHeight: '48px',
                           display: 'flex',
@@ -1816,7 +1822,10 @@ export function CertificateSheet({
                           position: 'relative',
                           left: `${template.logoCentroOffsetX ?? 0}px`,
                           top: `${template.logoCentroOffsetY ?? 0}px`,
-                          zIndex: getLayerZ('brasaoCentro', 'logoCentro'),
+                          zIndex: Math.max(
+                            getLayerZ('brasaoCentro', 'logoCentro'),
+                            frontFrameZ + 2
+                          ),
                           display: 'flex',
                           flexDirection: 'column',
                           alignItems: 'center',
@@ -1915,7 +1924,10 @@ export function CertificateSheet({
                           position: 'relative',
                           left: `${template.logoDireitaOffsetX ?? 0}px`,
                           top: `${template.logoDireitaOffsetY ?? 0}px`,
-                          zIndex: getLayerZ('brasaoDireito', 'logoDireita'),
+                          zIndex: Math.max(
+                            getLayerZ('brasaoDireito', 'logoDireita'),
+                            frontFrameZ + 2
+                          ),
                           ...drag.style,
                         }}
                       >
@@ -2869,9 +2881,10 @@ export function CertificateSheet({
   const backTitleBold = template.versoTituloNegrito ?? true;
   const backTitleItalic = template.versoTituloItalico ?? versoItalic;
   const backTitleTrackingEm = template.versoTituloEspacamentoLetras ?? 0.02;
+  const backFrameZ = 1;
   const maxBackImageZ = Math.max(
+    backFrameZ,
     getLayerZ('marcaDaguaVerso'),
-    getLayerZ('versoMoldura'),
     getLayerZ('brasaoEsquerdoVerso'),
     getLayerZ('brasaoCentroVerso'),
     getLayerZ('brasaoDireitoVerso')
@@ -2921,7 +2934,7 @@ export function CertificateSheet({
               padding: '4px',
               boxSizing: 'border-box',
               pointerEvents: 'none',
-              zIndex: getLayerZ('versoMoldura'),
+              zIndex: backFrameZ,
             }}
           >
             <div
@@ -2958,7 +2971,7 @@ export function CertificateSheet({
               objectFit: 'fill',
               pointerEvents: 'none',
               mixBlendMode: 'multiply',
-              zIndex: getLayerZ('versoMoldura'),
+              zIndex: backFrameZ,
             }}
           />
         ) : backFrameStyle === 'vetorial' ? (
@@ -2971,12 +2984,12 @@ export function CertificateSheet({
                 width: `${sheetWidth - backVetorialInsetPx * 2}px`,
                 height: `${sheetHeight - backVetorialInsetPx * 2}px`,
                 pointerEvents: 'none',
-                zIndex: getLayerZ('versoMoldura'),
+                zIndex: backFrameZ,
               }}
             >
               <NauticalOrnateFrame
                 borderColor={navyBorder}
-                zIndex={getLayerZ('versoMoldura')}
+                zIndex={backFrameZ}
                 sheetWidth={sheetWidth}
                 sheetHeight={sheetHeight}
               />
@@ -2984,7 +2997,7 @@ export function CertificateSheet({
           ) : (
             <NauticalOrnateFrame
               borderColor={navyBorder}
-              zIndex={getLayerZ('versoMoldura')}
+              zIndex={backFrameZ}
               sheetWidth={sheetWidth}
               sheetHeight={sheetHeight}
             />
@@ -2997,7 +3010,7 @@ export function CertificateSheet({
               border: `2px solid ${navyBorder}`,
               padding: '4px',
               pointerEvents: 'none',
-              zIndex: getLayerZ('versoMoldura'),
+              zIndex: backFrameZ,
               boxSizing: 'border-box',
             }}
           >
@@ -3052,7 +3065,10 @@ export function CertificateSheet({
                         position: 'relative',
                         left: `${template.logoEsquerdaVersoOffsetX ?? 0}px`,
                         top: `${template.logoEsquerdaVersoOffsetY ?? 0}px`,
-                        zIndex: getLayerZ('brasaoEsquerdoVerso'),
+                        zIndex: Math.max(
+                          getLayerZ('brasaoEsquerdoVerso', 'logoEsquerdaVerso'),
+                          backFrameZ + 2
+                        ),
                         width: backLeftSize === undefined ? '70px' : undefined,
                         height: backLeftSize === undefined ? '72px' : undefined,
                         minWidth:
@@ -3135,7 +3151,10 @@ export function CertificateSheet({
                           position: 'relative',
                           left: `${template.logoCentroVersoOffsetX ?? 0}px`,
                           top: `${template.logoCentroVersoOffsetY ?? 0}px`,
-                          zIndex: getLayerZ('brasaoCentroVerso'),
+                          zIndex: Math.max(
+                            getLayerZ('brasaoCentroVerso', 'logoCentroVerso'),
+                            backFrameZ + 2
+                          ),
                           display: 'flex',
                           flexDirection: 'column',
                           alignItems: 'center',
@@ -3272,7 +3291,10 @@ export function CertificateSheet({
                         position: 'relative',
                         left: `${template.logoDireitaVersoOffsetX ?? 0}px`,
                         top: `${template.logoDireitaVersoOffsetY ?? 0}px`,
-                        zIndex: getLayerZ('brasaoDireitoVerso'),
+                        zIndex: Math.max(
+                          getLayerZ('brasaoDireitoVerso', 'logoDireitaVerso'),
+                          backFrameZ + 2
+                        ),
                         backgroundColor: 'transparent',
                         flexShrink: 0,
                         minWidth:
@@ -3340,9 +3362,11 @@ export function CertificateSheet({
                     'marcaDaguaVerso',
                     "Marca d'Água Central (Verso) — clique para editar ou arraste na folha"
                   );
-                  const backWmZ = getLayerZ('marcaDaguaVerso');
+                  const backWmZ = Math.max(
+                    getLayerZ('marcaDaguaVerso', 'marcaDaguaVerso'),
+                    backFrameZ + 1
+                  );
                   const backMinImageZ = Math.min(
-                    getLayerZ('versoMoldura'),
                     getLayerZ('brasaoEsquerdoVerso'),
                     getLayerZ('brasaoCentroVerso'),
                     getLayerZ('brasaoDireitoVerso')
@@ -3408,7 +3432,10 @@ export function CertificateSheet({
                         alignItems: 'center',
                         justifyContent: 'center',
                         pointerEvents: 'none',
-                        zIndex: getLayerZ('marcaDaguaVerso'),
+                        zIndex: Math.max(
+                          getLayerZ('marcaDaguaVerso', 'marcaDaguaVerso'),
+                          backFrameZ + 1
+                        ),
                       }}
                     >
                       <div

@@ -4272,7 +4272,15 @@ export function CertificateInspectorPanel({
                       </div>
                     </div>
 
-                    {renderLayerOrderControls('molduraFrente', 'Moldura da Frente')}
+                    <div className="p-2.5 rounded-xl bg-white border border-slate-200 flex items-center justify-between gap-2">
+                      <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+                        <Layers size={12} className="text-blue-800 shrink-0" />
+                        <span>Plano de Fundo Fixo: todos os itens sobrepõem a moldura</span>
+                      </span>
+                      <span className="text-[10px] font-mono font-bold text-blue-900 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200 shrink-0">
+                        Camada 1
+                      </span>
+                    </div>
 
                     <div className="pt-2 border-t border-slate-200">
                       <button
@@ -5747,7 +5755,15 @@ export function CertificateInspectorPanel({
                       </div>
                     </div>
 
-                    {renderLayerOrderControls('versoMoldura', 'Moldura do Verso')}
+                    <div className="p-2.5 rounded-xl bg-white border border-slate-200 flex items-center justify-between gap-2">
+                      <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+                        <Layers size={12} className="text-blue-800 shrink-0" />
+                        <span>Plano de Fundo Fixo: todos os itens sobrepõem a moldura</span>
+                      </span>
+                      <span className="text-[10px] font-mono font-bold text-blue-900 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200 shrink-0">
+                        Camada 1
+                      </span>
+                    </div>
 
                     <div className="pt-2 border-t border-slate-200">
                       <button

@@ -606,8 +606,8 @@ export const BACK_LAYER_KEYS: CertificateLayerKey[] = [
 ];
 
 export const DEFAULT_CERTIFICATE_Z_INDEX: Record<CertificateLayerKey, number> = {
-  marcaDaguaFrente: 2,
-  molduraFrente: 5,
+  molduraFrente: 1,
+  marcaDaguaFrente: 4,
   brasaoEsquerdo: 8,
   brasaoCentro: 8,
   brasaoDireito: 8,
@@ -616,8 +616,8 @@ export const DEFAULT_CERTIFICATE_Z_INDEX: Record<CertificateLayerKey, number> = 
   data: 14,
   assinaturaPrincipal: 14,
   segundaAssinatura: 14,
-  marcaDaguaVerso: 2,
-  versoMoldura: 5,
+  versoMoldura: 1,
+  marcaDaguaVerso: 4,
   versoTabela: 12,
   brasaoEsquerdoVerso: 8,
   brasaoCentroVerso: 8,
@@ -629,9 +629,12 @@ export function getCertificateElementZIndex(
   template: Pick<CertificateTemplateConfig, 'camadasZIndex'>,
   key: CertificateLayerKey
 ): number {
+  if (key === 'molduraFrente' || key === 'versoMoldura') {
+    return 1;
+  }
   const custom = template.camadasZIndex?.[key];
   if (typeof custom === 'number' && Number.isFinite(custom)) {
-    return custom;
+    return Math.max(2, custom);
   }
   return DEFAULT_CERTIFICATE_Z_INDEX[key] ?? 10;
 }
@@ -642,16 +645,25 @@ export function updateCertificateLayerOrder(
   action: 'front' | 'back' | 'forward' | 'backward' | 'reset'
 ): Partial<Record<CertificateLayerKey, number>> {
   const next: Partial<Record<CertificateLayerKey, number>> = { ...(currentMap || {}) };
+  delete next.molduraFrente;
+  delete next.versoMoldura;
+
+  if (key === 'molduraFrente' || key === 'versoMoldura') {
+    return next;
+  }
+
   if (action === 'reset') {
     delete next[key];
     return next;
   }
 
-  const sideKeys = BACK_LAYER_KEYS.includes(key) ? BACK_LAYER_KEYS : FRONT_LAYER_KEYS;
+  const sideKeys = (BACK_LAYER_KEYS.includes(key) ? BACK_LAYER_KEYS : FRONT_LAYER_KEYS).filter(
+    (k) => k !== 'molduraFrente' && k !== 'versoMoldura'
+  );
 
   const valOf = (k: CertificateLayerKey): number =>
     typeof next[k] === 'number' && Number.isFinite(next[k])
-      ? (next[k] as number)
+      ? Math.max(2, next[k] as number)
       : DEFAULT_CERTIFICATE_Z_INDEX[k];
 
   const currentVal = valOf(key);
@@ -712,10 +724,10 @@ export function updateCertificateLayerOrder(
     }
   }
 
-  // Keep all z-index values >= 1 so nothing ever drops behind the white sheet background
+  // Keep all non-frame z-index values >= 2 so every item always overlaps the frame (layer 1)
   const updatedMin = Math.min(...sideKeys.map(valOf));
-  if (updatedMin < 1) {
-    const shift = 1 - updatedMin;
+  if (updatedMin < 2) {
+    const shift = 2 - updatedMin;
     for (const k of sideKeys) {
       next[k] = valOf(k) + shift;
     }
