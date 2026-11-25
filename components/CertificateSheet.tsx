@@ -1993,6 +1993,7 @@ export function CertificateSheet({
                       color: hasTitle ? '#0f172a' : '#64748b',
                       fontFamily: hasTitle ? titleFontCss : '"Segoe UI", system-ui, sans-serif',
                       textAlign: 'center',
+                      whiteSpace: 'pre-wrap',
                       textTransform: hasTitle ? 'uppercase' : 'none',
                       backgroundColor:
                         !hasTitle && isInteractiveEditor ? 'rgba(248,250,252,0.75)' : 'transparent',
@@ -2101,6 +2102,7 @@ export function CertificateSheet({
                           : '"Segoe UI", system-ui, sans-serif',
                         color: hasBodyText ? '#0f172a' : '#64748b',
                         textAlign: hasBodyText ? template.alinhamentoTexto || 'left' : 'center',
+                        whiteSpace: 'pre-wrap',
                         backgroundColor:
                           !hasBodyText && isInteractiveEditor
                             ? 'rgba(248, 250, 252, 0.75)'
@@ -2143,7 +2145,7 @@ export function CertificateSheet({
                             {participantSplit.found ? (
                               <>
                                 {beforeSegments.length > 0 && (
-                                  <p style={{ margin: 0 }}>
+                                  <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
                                     {beforeSegments.map((seg, i) => (
                                       <span
                                         key={i}
@@ -2165,6 +2167,7 @@ export function CertificateSheet({
                                     fontStyle: participantItalic ? 'italic' : 'normal',
                                     lineHeight: 1.2,
                                     textAlign: 'center',
+                                    whiteSpace: 'pre-wrap',
                                     color: '#0f172a',
                                     margin: '4px 0 6px 0',
                                   }}
@@ -2172,7 +2175,7 @@ export function CertificateSheet({
                                   {highlightedNameText}
                                 </div>
                                 {afterSegments.length > 0 && (
-                                  <p style={{ margin: 0 }}>
+                                  <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
                                     {afterSegments.map((seg, i) => (
                                       <span
                                         key={i}
@@ -2197,13 +2200,14 @@ export function CertificateSheet({
                                     fontStyle: participantItalic ? 'italic' : 'normal',
                                     lineHeight: 1.2,
                                     textAlign: 'center',
+                                    whiteSpace: 'pre-wrap',
                                     color: '#0f172a',
                                     margin: '2px 0 8px 0',
                                   }}
                                 >
                                   {highlightedNameText}
                                 </div>
-                                <p style={{ margin: 0 }}>
+                                <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
                                   {bodySegments.map((seg, i) => (
                                     <span
                                       key={i}
@@ -2257,7 +2261,7 @@ export function CertificateSheet({
                   const hasDateContent = Boolean(localTrim || dataTrim);
                   const dateSizePx =
                     template.tamanhoFonteData ??
-                    Math.max(16, (template.tamanhoFonteCorpo || 19) - 1);
+                    Math.max(8, (template.tamanhoFonteCorpo || 19) - 1);
                   const dateDisplay =
                     localTrim && dataTrim
                       ? `${localTrim}, ${dataTrim}.`
@@ -2296,6 +2300,7 @@ export function CertificateSheet({
                           fontStyle: hasDateContent && dateItalic ? 'italic' : 'normal',
                           color: hasDateContent ? '#0f172a' : '#64748b',
                           textAlign: dateAlign,
+                          whiteSpace: 'pre-wrap',
                           border:
                             !hasDateContent && isInteractiveEditor
                               ? '1.5px dashed #94a3b8'
@@ -2437,7 +2442,7 @@ export function CertificateSheet({
                         ? '48%'
                         : '92%'
                       : 'none',
-                    whiteSpace: isPortrait ? 'normal' : 'nowrap',
+                    whiteSpace: 'pre-wrap',
                     marginLeft:
                       !hasSecondSig && sigAlign === 'left' && !hasFormalInnerMargin
                         ? '16px'
@@ -2463,7 +2468,7 @@ export function CertificateSheet({
                           fontSize: `${sigNameFontPx}px`,
                           fontWeight: sigBold ? 700 : 400,
                           letterSpacing: '0.03em',
-                          whiteSpace: isPortrait ? 'normal' : 'nowrap',
+                          whiteSpace: 'pre-wrap',
                         }}
                       >
                         {template.assinaturaNome}
@@ -2473,7 +2478,7 @@ export function CertificateSheet({
                           style={{
                             fontSize: `${sigPostoFontPx}px`,
                             fontWeight: sigCargoBold ? 700 : 400,
-                            whiteSpace: isPortrait ? 'normal' : 'nowrap',
+                            whiteSpace: 'pre-wrap',
                           }}
                         >
                           {template.assinaturaPosto}
@@ -2484,7 +2489,7 @@ export function CertificateSheet({
                           style={{
                             fontSize: `${sigCargoFontPx}px`,
                             fontWeight: sigCargoBold ? 700 : 400,
-                            whiteSpace: isPortrait ? 'normal' : 'nowrap',
+                            whiteSpace: 'pre-wrap',
                           }}
                         >
                           {template.assinaturaCargo}
@@ -2534,7 +2539,7 @@ export function CertificateSheet({
                         ? '48%'
                         : '92%'
                       : 'none',
-                    whiteSpace: isPortrait ? 'normal' : 'nowrap',
+                    whiteSpace: 'pre-wrap',
                     fontFamily: hasSecondarySigContent
                       ? signatureFontCss
                       : '"Segoe UI", system-ui, sans-serif',
@@ -2552,7 +2557,7 @@ export function CertificateSheet({
                           fontSize: `${sigNameFontPx}px`,
                           fontWeight: sigBold ? 700 : 400,
                           letterSpacing: '0.03em',
-                          whiteSpace: isPortrait ? 'normal' : 'nowrap',
+                          whiteSpace: 'pre-wrap',
                         }}
                       >
                         {template.segundaAssinaturaNome || 'ASSINATURA'}
@@ -2562,7 +2567,7 @@ export function CertificateSheet({
                           style={{
                             fontSize: `${sigPostoFontPx}px`,
                             fontWeight: sigCargoBold ? 700 : 400,
-                            whiteSpace: isPortrait ? 'normal' : 'nowrap',
+                            whiteSpace: 'pre-wrap',
                           }}
                         >
                           {template.segundaAssinaturaPosto}
@@ -2573,7 +2578,7 @@ export function CertificateSheet({
                           style={{
                             fontSize: `${sigCargoFontPx}px`,
                             fontWeight: sigCargoBold ? 700 : 400,
-                            whiteSpace: isPortrait ? 'normal' : 'nowrap',
+                            whiteSpace: 'pre-wrap',
                           }}
                         >
                           {template.segundaAssinaturaCargo}
@@ -3225,6 +3230,7 @@ export function CertificateSheet({
                           : '"Segoe UI", system-ui, sans-serif',
                         letterSpacing: `${backTitleTrackingEm}em`,
                         textTransform: hasBackTitle ? 'uppercase' : 'none',
+                        whiteSpace: 'pre-wrap',
                         lineHeight: 1.15,
                         backgroundColor:
                           !hasBackTitle && isInteractiveEditor
@@ -3611,6 +3617,7 @@ export function CertificateSheet({
                             borderRight: gridLine,
                             verticalAlign: 'middle',
                             textTransform: 'uppercase',
+                            whiteSpace: 'pre-wrap',
                           }}
                         >
                           {disc.nome}

@@ -2725,7 +2725,18 @@ export default function CertificadosPage() {
   };
 
   const insertPlaceholder = (token: string) => {
-    updateActiveBodyText((prevText) => `${prevText}${prevText.endsWith(' ') ? '' : ' '}${token}`);
+    const ta = bodyTextareaRef.current;
+    if (!ta) {
+      updateActiveBodyText((prevText) => `${prevText}${!prevText || prevText.endsWith(' ') || prevText.endsWith('\n') ? '' : ' '}${token}`);
+      return;
+    }
+    const start = ta.selectionStart ?? ta.value.length;
+    const end = ta.selectionEnd ?? ta.value.length;
+    updateActiveBodyText((prevText) => {
+      const before = prevText.slice(0, start);
+      const needsLeadingSpace = before.length > 0 && !before.endsWith(' ') && !before.endsWith('\n');
+      return `${before}${needsLeadingSpace ? ' ' : ''}${token}${prevText.slice(end)}`;
+    });
   };
 
   const applyInlineBodyFormat = (marker: '**' | '*' | '***') => {

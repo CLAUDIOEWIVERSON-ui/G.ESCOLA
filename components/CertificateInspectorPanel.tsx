@@ -13,6 +13,7 @@ import {
   Check,
   ChevronsDown,
   ChevronsUp,
+  CornerDownLeft,
   Download,
   FileText,
   FolderOpen,
@@ -563,6 +564,21 @@ export function CertificateInspectorPanel({
         {renderGroup('Verso (Página 2)', 'bg-emerald-100 text-emerald-900', backItems)}
       </div>
     );
+  };
+
+  const handleInsertBodyLineBreak = () => {
+    const ta = bodyTextareaRef.current;
+    if (!ta) {
+      updateActiveBodyText((prev) => `${prev}\n`);
+      return;
+    }
+    const start = ta.selectionStart ?? ta.value.length;
+    const end = ta.selectionEnd ?? ta.value.length;
+    updateActiveBodyText((prev) => `${prev.slice(0, start)}\n${prev.slice(end)}`);
+    requestAnimationFrame(() => {
+      ta.focus();
+      ta.setSelectionRange(start + 1, start + 1);
+    });
   };
 
   const renderLibrarySwapStrip = (
@@ -1774,13 +1790,14 @@ export function CertificateInspectorPanel({
                 </div>
               </div>
 
-              <input
-                type="text"
+              <textarea
+                rows={2}
                 value={template.titulo}
                 onChange={(e) =>
                   setTemplate((prev) => ({ ...prev, titulo: e.target.value }))
                 }
-                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold uppercase"
+                placeholder="Ex: CERTIFICADO"
+                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold uppercase resize-y"
               />
 
               <div>
@@ -1815,7 +1832,7 @@ export function CertificateInspectorPanel({
                   </div>
                   <input
                     type="range"
-                    min={28}
+                    min={10}
                     max={60}
                     step={1}
                     value={template.tamanhoFonteTitulo ?? 42}
@@ -1968,6 +1985,15 @@ export function CertificateInspectorPanel({
                   >
                     N+I
                   </button>
+                  <button
+                    type="button"
+                    onClick={handleInsertBodyLineBreak}
+                    className="px-2 py-0.5 rounded bg-emerald-700 hover:bg-emerald-800 text-white text-[10px] font-bold flex items-center gap-1 cursor-pointer"
+                    title="Inserir quebra de linha no cursor (ou pressione Enter no texto)"
+                  >
+                    <CornerDownLeft size={11} />
+                    <span>Quebra de linha</span>
+                  </button>
                 </div>
               </div>
 
@@ -2058,8 +2084,8 @@ export function CertificateInspectorPanel({
 
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-[10px] text-slate-500">
-                  Selecione qualquer trecho e clique em <strong>Negritar</strong> ou{' '}
-                  <em>Itálico</em>.
+                  Selecione um trecho para <strong>Negritar</strong>/<em>Itálico</em> ou pressione{' '}
+                  <strong>Enter</strong> para quebrar para a linha de baixo.
                 </p>
                 <div className="flex items-center gap-2">
                   <label className="flex items-center gap-1 text-[10px] font-bold text-slate-700 cursor-pointer">
@@ -2203,7 +2229,7 @@ export function CertificateInspectorPanel({
                 </label>
                 <input
                   type="range"
-                  min={14}
+                  min={8}
                   max={26}
                   step={1}
                   value={template.tamanhoFonteCorpo}
@@ -2511,7 +2537,7 @@ export function CertificateInspectorPanel({
 
                     <div>
                       <div className="flex justify-between text-[10px] font-bold text-slate-600 mb-0.5">
-                        <span>Tamanho do Nome (aprox. 26pt–30pt)</span>
+                        <span>Tamanho do Nome em Destaque</span>
                         <span className="font-mono text-blue-900">
                           {template.tamanhoFonteParticipante ??
                             Math.round((template.tamanhoFonteCorpo || 17) * 2.15)}
@@ -2525,7 +2551,7 @@ export function CertificateInspectorPanel({
                       </div>
                       <input
                         type="range"
-                        min={24}
+                        min={10}
                         max={54}
                         step={1}
                         value={
@@ -2631,21 +2657,21 @@ export function CertificateInspectorPanel({
                 <label className="block text-xs font-bold text-slate-700 mb-1">
                   Local de Emissão
                 </label>
-                <input
-                  type="text"
+                <textarea
+                  rows={2}
                   value={template.localEmissao}
                   onChange={(e) =>
                     setTemplate((prev) => ({ ...prev, localEmissao: e.target.value }))
                   }
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs resize-y"
                 />
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
                   Data por Extenso
                 </label>
-                <input
-                  type="text"
+                <textarea
+                  rows={2}
                   value={template.dataEmissaoExtenso}
                   onChange={(e) =>
                     setTemplate((prev) => ({
@@ -2653,7 +2679,7 @@ export function CertificateInspectorPanel({
                       dataEmissaoExtenso: e.target.value,
                     }))
                   }
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs resize-y"
                 />
               </div>
             </div>
@@ -2704,26 +2730,26 @@ export function CertificateInspectorPanel({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-200">
                 <div>
                   <div className="flex justify-between text-[11px] font-bold text-slate-700 mb-0.5">
-                    <span>Tamanho (11pt–12pt)</span>
+                    <span>Tamanho da Fonte</span>
                     <span className="font-mono text-blue-900">
                       {template.tamanhoFonteData ??
-                        Math.max(16, (template.tamanhoFonteCorpo || 19) - 1)}
+                        Math.max(8, (template.tamanhoFonteCorpo || 19) - 1)}
                       px (
                       {pxToPtNumber(
                         template.tamanhoFonteData ??
-                          Math.max(16, (template.tamanhoFonteCorpo || 19) - 1)
+                          Math.max(8, (template.tamanhoFonteCorpo || 19) - 1)
                       )}
                       pt)
                     </span>
                   </div>
                   <input
                     type="range"
-                    min={12}
+                    min={8}
                     max={22}
                     step={1}
                     value={
                       template.tamanhoFonteData ??
-                      Math.max(16, (template.tamanhoFonteCorpo || 19) - 1)
+                      Math.max(8, (template.tamanhoFonteCorpo || 19) - 1)
                     }
                     onChange={(e) =>
                       setTemplate((prev) => ({
@@ -2917,34 +2943,34 @@ export function CertificateInspectorPanel({
                 </div>
               </div>
 
-              <input
-                type="text"
+              <textarea
+                rows={2}
                 value={template.assinaturaNome}
                 onChange={(e) =>
                   setTemplate((prev) => ({ ...prev, assinaturaNome: e.target.value }))
                 }
-                placeholder="Nome completo"
-                className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold"
+                placeholder="Nome completo (pressione Enter para quebrar linha)"
+                className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold resize-y"
               />
 
               <div className="grid grid-cols-2 gap-2">
-                <input
-                  type="text"
+                <textarea
+                  rows={2}
                   value={template.assinaturaPosto}
                   onChange={(e) =>
                     setTemplate((prev) => ({ ...prev, assinaturaPosto: e.target.value }))
                   }
                   placeholder="Posto / Graduação"
-                  className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs"
+                  className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs resize-y"
                 />
-                <input
-                  type="text"
+                <textarea
+                  rows={2}
                   value={template.assinaturaCargo}
                   onChange={(e) =>
                     setTemplate((prev) => ({ ...prev, assinaturaCargo: e.target.value }))
                   }
                   placeholder="Função / Cargo"
-                  className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs"
+                  className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs resize-y"
                 />
               </div>
 
@@ -3057,14 +3083,14 @@ export function CertificateInspectorPanel({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div>
                     <div className="flex justify-between text-[10px] font-bold text-slate-600 mb-0.5">
-                      <span>Fonte do Nome (10pt)</span>
+                      <span>Fonte do Nome</span>
                       <span className="font-mono text-blue-900">
                         {template.tamanhoFonteAssinaturaNome ?? 14.5}px ({pxToPtNumber(template.tamanhoFonteAssinaturaNome ?? 14.5)}pt)
                       </span>
                     </div>
                     <input
                       type="range"
-                      min={11}
+                      min={7}
                       max={20}
                       step={0.5}
                       value={template.tamanhoFonteAssinaturaNome ?? 14.5}
@@ -3079,14 +3105,14 @@ export function CertificateInspectorPanel({
                   </div>
                   <div>
                     <div className="flex justify-between text-[10px] font-bold text-slate-600 mb-0.5">
-                      <span>Fonte Posto/Cargo (9pt)</span>
+                      <span>Fonte Posto/Cargo</span>
                       <span className="font-mono text-blue-900">
                         {template.tamanhoFonteAssinaturaCargo ?? 13.5}px ({pxToPtNumber(template.tamanhoFonteAssinaturaCargo ?? 13.5)}pt)
                       </span>
                     </div>
                     <input
                       type="range"
-                      min={10}
+                      min={6}
                       max={18}
                       step={0.5}
                       value={template.tamanhoFonteAssinaturaCargo ?? 13.5}
@@ -3116,7 +3142,7 @@ export function CertificateInspectorPanel({
                     <span>Posto e Cargo em Negrito</span>
                   </label>
                   <span className="text-[10px] text-slate-500">
-                    Linhas ajustam ao texto sem quebra automática
+                    Use Enter nos campos acima para quebrar linha
                   </span>
                 </div>
                 <div>
@@ -3392,8 +3418,8 @@ export function CertificateInspectorPanel({
                     <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">
                       Nome Completo
                     </label>
-                    <input
-                      type="text"
+                    <textarea
+                      rows={2}
                       value={template.segundaAssinaturaNome}
                       onChange={(e) =>
                         setTemplate((prev) => ({
@@ -3402,7 +3428,7 @@ export function CertificateInspectorPanel({
                         }))
                       }
                       placeholder="Nome completo (2ª Assinatura)"
-                      className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold"
+                      className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold resize-y"
                     />
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -3410,8 +3436,8 @@ export function CertificateInspectorPanel({
                       <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">
                         Posto / Graduação
                       </label>
-                      <input
-                        type="text"
+                      <textarea
+                        rows={2}
                         value={template.segundaAssinaturaPosto}
                         onChange={(e) =>
                           setTemplate((prev) => ({
@@ -3420,15 +3446,15 @@ export function CertificateInspectorPanel({
                           }))
                         }
                         placeholder="Ex: Capitão-Tenente"
-                        className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs"
+                        className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs resize-y"
                       />
                     </div>
                     <div>
                       <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">
                         Função
                       </label>
-                      <input
-                        type="text"
+                      <textarea
+                        rows={2}
                         value={template.segundaAssinaturaCargo}
                         onChange={(e) =>
                           setTemplate((prev) => ({
@@ -3437,7 +3463,7 @@ export function CertificateInspectorPanel({
                           }))
                         }
                         placeholder="Ex: Comandante da Guarda Costeira"
-                        className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs"
+                        className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs resize-y"
                       />
                     </div>
                   </div>
@@ -3585,14 +3611,14 @@ export function CertificateInspectorPanel({
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <div>
                         <div className="flex justify-between text-[10px] font-bold text-slate-600 mb-0.5">
-                          <span>Fonte do Nome (10pt)</span>
+                          <span>Fonte do Nome</span>
                           <span className="font-mono text-blue-900">
                             {template.tamanhoFonteAssinaturaNome ?? 14.5}px ({pxToPtNumber(template.tamanhoFonteAssinaturaNome ?? 14.5)}pt)
                           </span>
                         </div>
                         <input
                           type="range"
-                          min={11}
+                          min={7}
                           max={20}
                           step={0.5}
                           value={template.tamanhoFonteAssinaturaNome ?? 14.5}
@@ -3607,14 +3633,14 @@ export function CertificateInspectorPanel({
                       </div>
                       <div>
                         <div className="flex justify-between text-[10px] font-bold text-slate-600 mb-0.5">
-                          <span>Fonte Posto/Cargo (9pt)</span>
+                          <span>Fonte Posto/Cargo</span>
                           <span className="font-mono text-blue-900">
                             {template.tamanhoFonteAssinaturaCargo ?? 13.5}px ({pxToPtNumber(template.tamanhoFonteAssinaturaCargo ?? 13.5)}pt)
                           </span>
                         </div>
                         <input
                           type="range"
-                          min={10}
+                          min={6}
                           max={18}
                           step={0.5}
                           value={template.tamanhoFonteAssinaturaCargo ?? 13.5}
@@ -3644,7 +3670,7 @@ export function CertificateInspectorPanel({
                         <span>Posto e Cargo em Negrito</span>
                       </label>
                       <span className="text-[10px] text-slate-500">
-                        Linhas ajustam ao texto sem quebra automática
+                        Use Enter nos campos acima para quebrar linha
                       </span>
                     </div>
                   </div>
@@ -4315,8 +4341,8 @@ export function CertificateInspectorPanel({
                 </div>
               </div>
 
-              <input
-                type="text"
+              <textarea
+                rows={2}
                 value={template.versoTituloCurso}
                 onChange={(e) =>
                   setTemplate((prev) => ({
@@ -4324,7 +4350,8 @@ export function CertificateInspectorPanel({
                     versoTituloCurso: e.target.value,
                   }))
                 }
-                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold uppercase"
+                placeholder="Título do verso (pressione Enter para quebrar linha)"
+                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold uppercase resize-y"
               />
 
               <div>
@@ -4376,7 +4403,7 @@ export function CertificateInspectorPanel({
                   </div>
                   <input
                     type="range"
-                    min={18}
+                    min={10}
                     max={44}
                     step={1}
                     value={template.versoTamanhoFonteTitulo ?? 30}
@@ -5021,7 +5048,7 @@ export function CertificateInspectorPanel({
                     </div>
                     <input
                       type="range"
-                      min={12}
+                      min={7}
                       max={28}
                       step={0.5}
                       value={template.versoTamanhoFonteCabecalho ?? 21}
@@ -5063,7 +5090,7 @@ export function CertificateInspectorPanel({
                       </div>
                       <input
                         type="range"
-                        min={10}
+                        min={6}
                         max={26}
                         step={0.5}
                         value={template.versoTamanhoFonteDisciplinas ?? 17}
@@ -5104,7 +5131,7 @@ export function CertificateInspectorPanel({
                       </div>
                       <input
                         type="range"
-                        min={12}
+                        min={6}
                         max={34}
                         step={0.5}
                         value={template.versoTamanhoFonteNumeros ?? 22}
@@ -5129,7 +5156,7 @@ export function CertificateInspectorPanel({
                       </div>
                       <input
                         type="range"
-                        min={13}
+                        min={7}
                         max={30}
                         step={0.5}
                         value={template.versoTamanhoFonteTotaisLabel ?? 22}
@@ -5152,7 +5179,7 @@ export function CertificateInspectorPanel({
                       </div>
                       <input
                         type="range"
-                        min={14}
+                        min={7}
                         max={38}
                         step={0.5}
                         value={template.versoTamanhoFonteTotaisNumeros ?? 28}
