@@ -32,6 +32,8 @@ import {
   Settings,
   FolderOpen,
   FilePlus,
+  Type,
+  Crosshair,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase/client';
@@ -43,6 +45,7 @@ import { getHtml2Canvas, savePDFWithDialog } from '@/lib/printDocumentUtils';
 import { makeFrameCenterTransparent } from '@/lib/certificateImageUtils';
 import {
   CertificateCourseScope,
+  CertificateCustomTextBox,
   CertificateDisciplineRow,
   CertificateSelectableObject,
   CertificateStudentContext,
@@ -153,6 +156,7 @@ export default function CertificadosPage() {
     {}
   );
   const [selectedObject, setSelectedObject] = useState<CertificateSelectableObject | null>(null);
+  const [placingTextBoxId, setPlacingTextBoxId] = useState<string | null>(null);
   const [previewMode, setPreviewMode] = useState<'both' | 'front' | 'back'>('both');
   const [manualZoom, setManualZoom] = useState<number>(100);
   const [dragMoveEnabled, setDragMoveEnabled] = useState<boolean>(false);
@@ -298,18 +302,30 @@ export default function CertificadosPage() {
 
   useEffect(() => {
     if (fullscreenPreview || showSaveAsNewModal) return;
-    if (!selectedObject && editorTab !== 'modelos' && editorTab !== 'biblioteca') return;
+    if (
+      !placingTextBoxId &&
+      !selectedObject &&
+      editorTab !== 'modelos' &&
+      editorTab !== 'biblioteca'
+    ) {
+      return;
+    }
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        if (placingTextBoxId) {
+          setPlacingTextBoxId(null);
+          return;
+        }
         setSelectedObject(null);
         setEditorTab('frente');
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [fullscreenPreview, showSaveAsNewModal, selectedObject, editorTab]);
+  }, [fullscreenPreview, showSaveAsNewModal, placingTextBoxId, selectedObject, editorTab]);
 
   const handleSelectObjectOnSheet = useCallback((obj: CertificateSelectableObject) => {
+    setPlacingTextBoxId((prev) => (obj === `caixaTexto:${prev}` ? prev : null));
     setEditorTab((prev) => (prev === 'modelos' || prev === 'biblioteca' ? 'frente' : prev));
     if (obj === 'versoTabela') {
       setTemplate((prev) =>
@@ -327,6 +343,84 @@ export default function CertificadosPage() {
     mmWidth: sheetMmW,
     mmHeight: sheetMmH,
   } = getCertificateSheetDimensions(template.orientacao);
+
+  const handleAddCustomTextBox = useCallback(
+    (lado: 'front' | 'back') => {
+      const boxId = `tb_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+      const defaultWidth = Math.min(320, Math.max(220, Math.round(sheetW * 0.36)));
+      setTemplate((prev) => {
+        const existing = prev.caixasTextoExtra || [];
+        const sideCount = existing.filter((b) => b.lado === lado).length;
+        const offsetStep = (sideCount % 5) * 26;
+        const newBox: CertificateCustomTextBox = {
+          id: boxId,
+          lado,
+          texto: 'Novo texto',
+          x: Math.max(
+            20,
+            Math.min(sheetW - defaultWidth - 20, Math.round((sheetW - defaultWidth) / 2) + offsetStep - 26)
+          ),
+          y: Math.max(
+            30,
+            Math.min(sheetH - 80, Math.round(sheetH * 0.42) + offsetStep)
+          ),
+          larguraPx: defaultWidth,
+          fonte: lado === 'back' ? prev.fonteVerso || 'sans' : prev.fonteCorpo || 'garamond',
+          tamanhoFontePx: 16,
+          entrelinha: 1.35,
+          cor: '#0f172a',
+          corFundo: 'transparent',
+          mostrarBorda: false,
+          corBorda: '#1e3a8a',
+          negrito: false,
+          italico: false,
+          maiusculo: false,
+          alinhamento: 'left',
+          camadaZIndex: 20 + existing.length,
+        };
+        return {
+          ...prev,
+          caixasTextoExtra: [...existing, newBox],
+        };
+      });
+      if (lado === 'front' && previewMode === 'back') {
+        setPreviewMode('both');
+      } else if (lado === 'back' && previewMode === 'front') {
+        setPreviewMode('both');
+      }
+      setEditorTab('frente');
+      setPlacingTextBoxId(null);
+      setSelectedObject(`caixaTexto:${boxId}`);
+      toast.success(
+        `Caixa de texto adicionada (${lado === 'front' ? 'Frente' : 'Verso'}). Arraste ou clique em "Clicar na folha" para posicionar!`
+      );
+    },
+    [previewMode, sheetH, sheetW]
+  );
+
+  const handlePlaceTextBoxAt = useCallback(
+    (boxId: string, side: 'front' | 'back', relX: number, relY: number) => {
+      setTemplate((prev) => ({
+        ...prev,
+        caixasTextoExtra: (prev.caixasTextoExtra || []).map((b) => {
+          if (b.id !== boxId) return b;
+          const w = b.larguraPx || 280;
+          const nextX = Math.max(-40, Math.min(sheetW - 40, Math.round(relX - w / 2)));
+          const nextY = Math.max(-20, Math.min(sheetH - 20, Math.round(relY - 12)));
+          return {
+            ...b,
+            lado: side,
+            x: nextX,
+            y: nextY,
+          };
+        }),
+      }));
+      setPlacingTextBoxId(null);
+      setSelectedObject(`caixaTexto:${boxId}`);
+      toast.success(`Caixa posicionada (${side === 'front' ? 'Frente' : 'Verso'})!`);
+    },
+    [sheetH, sheetW]
+  );
 
   const baseScale = Math.min(1, Math.max(0.28, autoFitWidth / sheetW));
   const effectiveScale = Math.min(1.15, Math.max(0.25, baseScale * (manualZoom / 100)));
@@ -2186,6 +2280,7 @@ export default function CertificadosPage() {
       ...template,
       disciplinas: (template.disciplinas || []).map((d) => ({ ...d })),
       textoCorpoPorAluno: { ...(template.textoCorpoPorAluno || {}) },
+      caixasTextoExtra: (template.caixasTextoExtra || []).map((b) => ({ ...b })),
       id: undefined,
       templateKey: `custom_${Date.now()}`,
       nomeModelo: resolvedName,
@@ -3756,6 +3851,9 @@ export default function CertificadosPage() {
                   setSelectedObject(null);
                   setEditorTab('biblioteca');
                 }}
+                onAddCustomTextBox={handleAddCustomTextBox}
+                placingTextBoxId={placingTextBoxId}
+                onTogglePlaceTextBox={(id) => setPlacingTextBoxId(id)}
               />
             ) : null}
           </div>
@@ -3936,6 +4034,25 @@ export default function CertificadosPage() {
 
                   <button
                     type="button"
+                    onClick={() =>
+                      handleAddCustomTextBox(previewMode === 'back' ? 'back' : 'front')
+                    }
+                    className={cn(
+                      'px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border whitespace-nowrap',
+                      selectedObject === 'caixasTexto' ||
+                        (typeof selectedObject === 'string' &&
+                          selectedObject.startsWith('caixaTexto:'))
+                        ? 'bg-indigo-700 text-white border-indigo-800 shadow-2xs'
+                        : 'bg-indigo-50 text-indigo-900 border-indigo-200 hover:bg-indigo-100'
+                    )}
+                    title="Inserir uma caixa de texto livre em qualquer posição da folha (Frente ou Verso)"
+                  >
+                    <Type size={13} />
+                    <span>+ Caixa de Texto</span>
+                  </button>
+
+                  <button
+                    type="button"
                     onClick={() => {
                       if (selectedObject === 'modeloGeral' && editorTab !== 'modelos') {
                         setSelectedObject(null);
@@ -4090,6 +4207,22 @@ export default function CertificadosPage() {
             </div>
           )}
 
+          {placingTextBoxId && (
+            <div className="px-3 py-2 rounded-xl bg-amber-50 border border-amber-300 text-[11px] font-semibold text-amber-950 flex items-center justify-between gap-2">
+              <span className="flex items-center gap-1.5">
+                <Crosshair size={14} className="shrink-0 text-amber-700" />
+                Modo Posicionar Caixa de Texto ativo: clique em qualquer lugar da Frente ou do Verso para posicionar a caixa selecionada.
+              </span>
+              <button
+                type="button"
+                onClick={() => setPlacingTextBoxId(null)}
+                className="px-2 py-0.5 rounded bg-white border border-amber-300 text-[10px] font-bold text-amber-900 hover:bg-amber-100 cursor-pointer shrink-0"
+              >
+                Cancelar
+              </button>
+            </div>
+          )}
+
           {/* Slim contextual helper & quick-insert bar when side panel is closed or editing a blank sheet */}
           {(!showSidePanel ||
             (!template.titulo?.trim() && !template.textoCorpo?.trim()) ||
@@ -4119,6 +4252,16 @@ export default function CertificadosPage() {
                 >
                   <Settings size={12} />
                   <span>Elementos Rápidos</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    handleAddCustomTextBox(previewMode === 'back' ? 'back' : 'front')
+                  }
+                  className="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-[11px] font-bold text-indigo-900 cursor-pointer flex items-center gap-1"
+                >
+                  <Plus size={12} />
+                  <span>Caixa de Texto</span>
                 </button>
                 {template.mostrarLogoEsquerda === false && (
                   <button
@@ -4223,6 +4366,8 @@ export default function CertificadosPage() {
                   selectedObject={selectedObject}
                   onSelectObject={handleSelectObjectOnSheet}
                   onUpdateTemplate={setTemplate}
+                  placingTextBoxId={placingTextBoxId}
+                  onPlaceTextBoxAt={handlePlaceTextBoxAt}
                 />
               </div>
             )}
@@ -4241,6 +4386,8 @@ export default function CertificadosPage() {
                   selectedObject={selectedObject}
                   onSelectObject={handleSelectObjectOnSheet}
                   onUpdateTemplate={setTemplate}
+                  placingTextBoxId={placingTextBoxId}
+                  onPlaceTextBoxAt={handlePlaceTextBoxAt}
                 />
               </div>
             )}

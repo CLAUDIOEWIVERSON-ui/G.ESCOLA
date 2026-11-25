@@ -81,6 +81,13 @@ interface CertificateSheetProps {
   onUpdateTemplate?: (
     updater: (prev: CertificateTemplateConfig) => CertificateTemplateConfig
   ) => void;
+  placingTextBoxId?: string | null;
+  onPlaceTextBoxAt?: (
+    boxId: string,
+    side: 'front' | 'back',
+    x: number,
+    y: number
+  ) => void;
 }
 
 function MarinhaBrasilCrest({
@@ -393,6 +400,8 @@ export function CertificateSheet({
   selectedObject = null,
   onSelectObject,
   onUpdateTemplate,
+  placingTextBoxId = null,
+  onPlaceTextBoxAt,
 }: CertificateSheetProps) {
   const frontSheetRef = useRef<HTMLDivElement | null>(null);
   const elementRefs = useRef<Partial<Record<DraggableCertificateElement, HTMLElement | null>>>({});
@@ -408,7 +417,16 @@ export function CertificateSheet({
     origBox: SheetBox | null;
     siblingBoxes: SheetBox[];
   } | null>(null);
+  const customBoxDragRef = useRef<{
+    id: string;
+    startClientX: number;
+    startClientY: number;
+    origX: number;
+    origY: number;
+    moved: boolean;
+  } | null>(null);
   const [activeDrag, setActiveDrag] = useState<DraggableCertificateElement | null>(null);
+  const [activeCustomBoxDragId, setActiveCustomBoxDragId] = useState<string | null>(null);
   const [hoveredObject, setHoveredObject] = useState<CertificateSelectableObject | null>(null);
   const [transparentFrameMap, setTransparentFrameMap] = useState<Record<string, string>>({});
   const [alignmentGuides, setAlignmentGuides] = useState<{
@@ -1421,6 +1439,217 @@ export function CertificateSheet({
     transformOrigin: 'top left',
   };
 
+  const renderCustomTextBoxesForSide = (sheetSide: 'front' | 'back') => {
+    const boxes = (template.caixasTextoExtra || []).filter((b) => b.lado === sheetSide);
+    if (boxes.length === 0) return null;
+
+    return boxes.map((box) => {
+      const hasText = Boolean(box.texto && box.texto.trim().length > 0);
+      if (!isInteractiveEditor && !hasText) return null;
+
+      const selectKey = `caixaTexto:${box.id}` as CertificateSelectableObject;
+      const isSelected = isInteractiveEditor && selectedObject === selectKey;
+      const isHovered = isInteractiveEditor && hoveredObject === selectKey;
+      const isDragging = isInteractiveEditor && activeCustomBoxDragId === box.id;
+      const canDragBox = isInteractiveEditor && Boolean(onUpdateTemplate) && !placingTextBoxId;
+      const boxZ = isDragging
+        ? Math.max(40, (box.camadaZIndex ?? 20) + 20)
+        : Math.max(2, box.camadaZIndex ?? 20);
+      const hasBg = Boolean(box.corFundo && box.corFundo !== 'transparent');
+      const hasBorder = Boolean(box.mostrarBorda);
+
+      const segments = hasText
+        ? resolveCertificateBodySegments(box.texto, replacements, {
+            defaultBold: box.negrito ?? false,
+            defaultItalic: box.italico ?? false,
+          })
+        : [];
+
+      return (
+        <div
+          key={box.id}
+          title={
+            placingTextBoxId
+              ? 'Clique na folha para posicionar a caixa de texto aqui'
+              : canDragBox
+                ? 'Clique para editar ou arraste livremente pela folha'
+                : 'Clique para editar esta caixa de texto'
+          }
+          onClick={(e) => {
+            e.stopPropagation();
+            if (placingTextBoxId && onPlaceTextBoxAt && frontSheetRef.current) {
+              const rect = frontSheetRef.current.getBoundingClientRect();
+              const relX = (e.clientX - rect.left) / (scale || 1);
+              const relY = (e.clientY - rect.top) / (scale || 1);
+              onPlaceTextBoxAt(placingTextBoxId, sheetSide, Math.round(relX), Math.round(relY));
+              return;
+            }
+            onSelectObject?.(selectKey);
+          }}
+          onMouseEnter={
+            isInteractiveEditor
+              ? (e) => {
+                  e.stopPropagation();
+                  setHoveredObject(selectKey);
+                }
+              : undefined
+          }
+          onMouseLeave={
+            isInteractiveEditor
+              ? () => {
+                  setHoveredObject((prev) => (prev === selectKey ? null : prev));
+                }
+              : undefined
+          }
+          onPointerDown={
+            canDragBox
+              ? (e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onSelectObject?.(selectKey);
+                  try {
+                    e.currentTarget.setPointerCapture(e.pointerId);
+                  } catch {
+                    // ignore
+                  }
+                  customBoxDragRef.current = {
+                    id: box.id,
+                    startClientX: e.clientX,
+                    startClientY: e.clientY,
+                    origX: box.x,
+                    origY: box.y,
+                    moved: false,
+                  };
+                  setActiveCustomBoxDragId(box.id);
+                }
+              : undefined
+          }
+          onPointerMove={
+            canDragBox
+              ? (e) => {
+                  if (!customBoxDragRef.current || customBoxDragRef.current.id !== box.id) return;
+                  if (!onUpdateTemplate) return;
+                  const effectiveScale = scale > 0 ? scale : 1;
+                  const dx = Math.round(
+                    (e.clientX - customBoxDragRef.current.startClientX) / effectiveScale
+                  );
+                  const dy = Math.round(
+                    (e.clientY - customBoxDragRef.current.startClientY) / effectiveScale
+                  );
+                  if (!customBoxDragRef.current.moved && (Math.abs(dx) > 3 || Math.abs(dy) > 3)) {
+                    customBoxDragRef.current.moved = true;
+                  }
+                  if (!customBoxDragRef.current.moved) return;
+                  const nextX = clamp(customBoxDragRef.current.origX + dx, -40, sheetWidth - 40);
+                  const nextY = clamp(customBoxDragRef.current.origY + dy, -20, sheetHeight - 20);
+                  onUpdateTemplate((prev) => ({
+                    ...prev,
+                    caixasTextoExtra: (prev.caixasTextoExtra || []).map((item) =>
+                      item.id === box.id ? { ...item, x: nextX, y: nextY } : item
+                    ),
+                  }));
+                }
+              : undefined
+          }
+          onPointerUp={
+            canDragBox
+              ? (e) => {
+                  if (!customBoxDragRef.current || customBoxDragRef.current.id !== box.id) return;
+                  try {
+                    e.currentTarget.releasePointerCapture(e.pointerId);
+                  } catch {
+                    // ignore
+                  }
+                  customBoxDragRef.current = null;
+                  setActiveCustomBoxDragId(null);
+                }
+              : undefined
+          }
+          onPointerCancel={
+            canDragBox
+              ? (e) => {
+                  if (!customBoxDragRef.current || customBoxDragRef.current.id !== box.id) return;
+                  try {
+                    e.currentTarget.releasePointerCapture(e.pointerId);
+                  } catch {
+                    // ignore
+                  }
+                  customBoxDragRef.current = null;
+                  setActiveCustomBoxDragId(null);
+                }
+              : undefined
+          }
+          style={{
+            position: 'absolute',
+            left: `${box.x}px`,
+            top: `${box.y}px`,
+            width: `${box.larguraPx || 280}px`,
+            zIndex: boxZ,
+            fontFamily: resolveCertificateFontCss(box.fonte || 'garamond'),
+            fontSize: `${Math.max(6, box.tamanhoFontePx || 16)}px`,
+            lineHeight: box.entrelinha ?? 1.35,
+            color: box.cor || '#0f172a',
+            textAlign: box.alinhamento || 'left',
+            textTransform: box.maiusculo ? 'uppercase' : 'none',
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word',
+            backgroundColor: hasBg ? box.corFundo : 'transparent',
+            border: hasBorder ? `1.5px solid ${box.corBorda || '#1e3a8a'}` : undefined,
+            padding: hasBg || hasBorder ? '6px 10px' : '2px 4px',
+            borderRadius: '4px',
+            boxSizing: 'border-box',
+            cursor: placingTextBoxId
+              ? 'crosshair'
+              : canDragBox
+                ? isDragging
+                  ? 'grabbing'
+                  : 'grab'
+                : isInteractiveEditor
+                  ? 'pointer'
+                  : undefined,
+            userSelect: canDragBox ? 'none' : undefined,
+            touchAction: canDragBox ? 'none' : undefined,
+            outline: isInteractiveEditor
+              ? isDragging
+                ? '2.5px solid #1d4ed8'
+                : isSelected
+                  ? '2.5px solid #2563eb'
+                  : isHovered
+                    ? '1.5px dashed rgba(37, 99, 235, 0.72)'
+                    : '1px dashed rgba(37, 99, 235, 0.28)'
+              : undefined,
+            outlineOffset: isInteractiveEditor ? '3px' : undefined,
+          }}
+        >
+          {hasText ? (
+            segments.map((seg, idx) => (
+              <span
+                key={idx}
+                style={{
+                  fontWeight: seg.bold ? 700 : 400,
+                  fontStyle: seg.italic ? 'italic' : 'normal',
+                }}
+              >
+                {seg.text}
+              </span>
+            ))
+          ) : (
+            <span
+              style={{
+                color: '#64748b',
+                fontStyle: 'italic',
+                fontWeight: 500,
+                fontSize: '12px',
+              }}
+            >
+              Caixa de texto — clique para editar ou arraste
+            </span>
+          )}
+        </div>
+      );
+    });
+  };
+
   if (side === 'front') {
     const isCircularDefaultFrontWm =
       template.marcaDaguaFrenteUrl.includes('WhatsApp_Image_2026-02-11') &&
@@ -1490,10 +1719,14 @@ export function CertificateSheet({
           id={elementId}
           data-certificate-side="front"
           onClick={(e) => {
-            if (!onSelectObject) return;
             const rect = e.currentTarget.getBoundingClientRect();
             const relX = (e.clientX - rect.left) / (scale || 1);
             const relY = (e.clientY - rect.top) / (scale || 1);
+            if (placingTextBoxId && onPlaceTextBoxAt) {
+              onPlaceTextBoxAt(placingTextBoxId, 'front', Math.round(relX), Math.round(relY));
+              return;
+            }
+            if (!onSelectObject) return;
             if (
               relX < frameHitThreshold ||
               relX > sheetWidth - frameHitThreshold ||
@@ -1507,6 +1740,7 @@ export function CertificateSheet({
           }}
           style={{
             ...sheetBaseStyle,
+            cursor: placingTextBoxId ? 'crosshair' : undefined,
             outline:
               onSelectObject &&
               (selectedObject === 'molduraFrente' ||
@@ -2655,6 +2889,9 @@ export function CertificateSheet({
             })()}
           </div>
 
+          {/* Free-positioned Custom Text Boxes (Front) */}
+          {renderCustomTextBoxesForSide('front')}
+
           {/* Live Horizontal / Vertical Alignment Guide Overlay */}
           {isInteractiveEditor &&
             (alignmentGuides.horizontal.length > 0 || alignmentGuides.vertical.length > 0) && (
@@ -2897,10 +3134,14 @@ export function CertificateSheet({
         id={elementId}
         data-certificate-side="back"
         onClick={(e) => {
-          if (!onSelectObject) return;
           const rect = e.currentTarget.getBoundingClientRect();
           const relX = (e.clientX - rect.left) / (scale || 1);
           const relY = (e.clientY - rect.top) / (scale || 1);
+          if (placingTextBoxId && onPlaceTextBoxAt) {
+            onPlaceTextBoxAt(placingTextBoxId, 'back', Math.round(relX), Math.round(relY));
+            return;
+          }
+          if (!onSelectObject) return;
           if (
             relX < backFrameHitThreshold ||
             relX > sheetWidth - backFrameHitThreshold ||
@@ -2914,6 +3155,7 @@ export function CertificateSheet({
         }}
         style={{
           ...sheetBaseStyle,
+          cursor: placingTextBoxId ? 'crosshair' : undefined,
           outline:
             onSelectObject &&
             (selectedObject === 'versoMoldura' ||
@@ -3751,6 +3993,9 @@ export function CertificateSheet({
               })()}
             </div>
         </div>
+
+        {/* Free-positioned Custom Text Boxes (Back) */}
+        {renderCustomTextBoxesForSide('back')}
 
         {/* Live Alignment Guide Overlay on Back Sheet */}
         {isInteractiveEditor &&

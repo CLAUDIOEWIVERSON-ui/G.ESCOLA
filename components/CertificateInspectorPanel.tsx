@@ -3,6 +3,7 @@
 import React from 'react';
 import {
   AlignCenter,
+  AlignJustify,
   AlignLeft,
   AlignRight,
   ArrowDown,
@@ -13,7 +14,9 @@ import {
   Check,
   ChevronsDown,
   ChevronsUp,
+  Copy,
   CornerDownLeft,
+  Crosshair,
   Download,
   FileText,
   FolderOpen,
@@ -38,6 +41,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
+  CertificateCustomTextBox,
   CertificateDisciplineRow,
   CertificateFontKey,
   CertificateLayerKey,
@@ -124,6 +128,9 @@ interface CertificateInspectorPanelProps {
     suggestedName: string
   ) => void;
   onOpenLibrary?: (category: CertificateAssetCategory) => void;
+  onAddCustomTextBox?: (lado: 'front' | 'back') => void;
+  placingTextBoxId?: string | null;
+  onTogglePlaceTextBox?: (boxId: string | null) => void;
 }
 
 const FONT_OPTIONS_FRONT: { value: CertificateFontKey; label: string }[] = [
@@ -154,6 +161,14 @@ function getObjectMeta(obj: CertificateSelectableObject): {
   sideLabel: string;
   icon: React.ComponentType<{ size?: number; className?: string }>;
 } {
+  if (obj === 'caixasTexto' || obj.startsWith('caixaTexto:')) {
+    return {
+      title: 'Caixas de Texto Livres',
+      subtitle: 'Inserir e posicionar texto livre em qualquer ponto da Frente ou Verso',
+      sideLabel: 'Livre',
+      icon: Type,
+    };
+  }
   switch (obj) {
     case 'brasaoEsquerdo':
       return {
@@ -329,16 +344,24 @@ export function CertificateInspectorPanel({
   onDeleteLibraryAsset,
   onSaveCurrentAssetToLibrary,
   onOpenLibrary,
+  onAddCustomTextBox,
+  placingTextBoxId = null,
+  onTogglePlaceTextBox,
 }: CertificateInspectorPanelProps) {
   const [showQuickElements, setShowQuickElements] = React.useState(false);
   const [renamingStripAsset, setRenamingStripAsset] = React.useState<{
     id: string;
     value: string;
   } | null>(null);
+  const customBoxTextareaRef = React.useRef<HTMLTextAreaElement | null>(null);
 
   const meta = getObjectMeta(selectedObject);
   const HeaderIcon = meta.icon;
-  const { isPortrait } = getCertificateSheetDimensions(template.orientacao);
+  const {
+    isPortrait,
+    width: sheetWidth,
+    height: sheetHeight,
+  } = getCertificateSheetDimensions(template.orientacao);
 
   const normalizeFrontFont = (font?: CertificateFontKey) =>
     !font || font === 'serif-italic' ? 'garamond' : font;
@@ -558,10 +581,82 @@ export function CertificateInspectorPanel({
       </div>
     );
 
+    const customBoxesList = template.caixasTextoExtra || [];
+
     return (
       <div className="space-y-2.5">
         {renderGroup('Frente (Página 1)', 'bg-blue-100 text-blue-900', frontItems)}
         {renderGroup('Verso (Página 2)', 'bg-emerald-100 text-emerald-900', backItems)}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between gap-1.5">
+            <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-indigo-100 text-indigo-900">
+              Caixas de Texto Livres ({customBoxesList.length})
+            </span>
+            {onAddCustomTextBox && (
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => onAddCustomTextBox('front')}
+                  className="px-2 py-0.5 rounded-md bg-blue-900 hover:bg-blue-950 text-white text-[10px] font-bold flex items-center gap-1 cursor-pointer"
+                >
+                  <Plus size={10} />
+                  <span>Frente</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onAddCustomTextBox('back')}
+                  className="px-2 py-0.5 rounded-md bg-emerald-700 hover:bg-emerald-800 text-white text-[10px] font-bold flex items-center gap-1 cursor-pointer"
+                >
+                  <Plus size={10} />
+                  <span>Verso</span>
+                </button>
+              </div>
+            )}
+          </div>
+          {customBoxesList.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {customBoxesList.map((box, idx) => {
+                const key = `caixaTexto:${box.id}` as CertificateSelectableObject;
+                const isSelected = selectedObject === key;
+                const snippet = (box.texto || '').replace(/\s+/g, ' ').trim();
+                const shortLabel = snippet
+                  ? `${idx + 1}. ${snippet.slice(0, 18)}${snippet.length > 18 ? '…' : ''}`
+                  : `Caixa ${idx + 1}`;
+                return (
+                  <button
+                    key={box.id}
+                    type="button"
+                    onClick={() => {
+                      onSelectObject(key);
+                      setShowQuickElements(true);
+                    }}
+                    className={cn(
+                      'rounded-lg border font-bold transition-all cursor-pointer flex items-center gap-1',
+                      compact ? 'px-2 py-1 text-[10px]' : 'px-2.5 py-1 text-[11px]',
+                      isSelected
+                        ? 'bg-blue-900 text-white border-blue-950 shadow-2xs'
+                        : 'bg-white hover:bg-blue-50 border-slate-200 hover:border-blue-300 text-slate-700 hover:text-blue-900'
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        'text-[8px] font-black uppercase px-1 rounded',
+                        isSelected
+                          ? 'bg-white/20 text-white'
+                          : box.lado === 'back'
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : 'bg-blue-100 text-blue-800'
+                      )}
+                    >
+                      {box.lado === 'back' ? 'Verso' : 'Frente'}
+                    </span>
+                    <span>{shortLabel}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
     );
   };
@@ -5781,6 +5876,729 @@ export function CertificateInspectorPanel({
             </div>
           </div>
         )}
+
+        {/* CAIXAS DE TEXTO LIVRES (FRENTE E VERSO) */}
+        {(selectedObject === 'caixasTexto' || selectedObject.startsWith('caixaTexto:')) &&
+          (() => {
+            const customBoxes = template.caixasTextoExtra || [];
+            const activeBoxId = selectedObject.startsWith('caixaTexto:')
+              ? selectedObject.slice('caixaTexto:'.length)
+              : customBoxes[0]?.id ?? null;
+            const activeBox = activeBoxId
+              ? customBoxes.find((b) => b.id === activeBoxId) ?? null
+              : null;
+
+            const updateBox = (
+              boxId: string,
+              updater: (box: CertificateCustomTextBox) => CertificateCustomTextBox
+            ) => {
+              setTemplate((prev) => ({
+                ...prev,
+                caixasTextoExtra: (prev.caixasTextoExtra || []).map((b) =>
+                  b.id === boxId ? updater(b) : b
+                ),
+              }));
+            };
+
+            const applyBoxInlineFormat = (marker: '**' | '*' | '***') => {
+              if (!activeBox) return;
+              const ta = customBoxTextareaRef.current;
+              const current = activeBox.texto || '';
+              if (!ta) {
+                updateBox(activeBox.id, (b) => ({
+                  ...b,
+                  texto: `${current}${marker}texto${marker}`,
+                }));
+                return;
+              }
+              const start = ta.selectionStart ?? current.length;
+              const end = ta.selectionEnd ?? current.length;
+              const selected = current.slice(start, end) || 'texto';
+              const nextVal =
+                current.slice(0, start) + marker + selected + marker + current.slice(end);
+              updateBox(activeBox.id, (b) => ({ ...b, texto: nextVal }));
+              setTimeout(() => {
+                ta.focus();
+                ta.setSelectionRange(
+                  start + marker.length,
+                  start + marker.length + selected.length
+                );
+              }, 0);
+            };
+
+            const insertBoxLineBreak = () => {
+              if (!activeBox) return;
+              const ta = customBoxTextareaRef.current;
+              const current = activeBox.texto || '';
+              if (!ta) {
+                updateBox(activeBox.id, (b) => ({ ...b, texto: `${current}\n` }));
+                return;
+              }
+              const start = ta.selectionStart ?? current.length;
+              const end = ta.selectionEnd ?? current.length;
+              const nextVal = `${current.slice(0, start)}\n${current.slice(end)}`;
+              updateBox(activeBox.id, (b) => ({ ...b, texto: nextVal }));
+              setTimeout(() => {
+                ta.focus();
+                ta.setSelectionRange(start + 1, start + 1);
+              }, 0);
+            };
+
+            const insertBoxPlaceholder = (token: string) => {
+              if (!activeBox) return;
+              const ta = customBoxTextareaRef.current;
+              const current = activeBox.texto || '';
+              if (!ta) {
+                updateBox(activeBox.id, (b) => ({ ...b, texto: `${current}${token}` }));
+                return;
+              }
+              const start = ta.selectionStart ?? current.length;
+              const end = ta.selectionEnd ?? current.length;
+              const nextVal = `${current.slice(0, start)}${token}${current.slice(end)}`;
+              updateBox(activeBox.id, (b) => ({ ...b, texto: nextVal }));
+              setTimeout(() => {
+                ta.focus();
+                const pos = start + token.length;
+                ta.setSelectionRange(pos, pos);
+              }, 0);
+            };
+
+            const handleDuplicateBox = (box: CertificateCustomTextBox) => {
+              const newId = `tb_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+              const copyBox: CertificateCustomTextBox = {
+                ...box,
+                id: newId,
+                x: Math.min(sheetWidth - 60, box.x + 24),
+                y: Math.min(sheetHeight - 40, box.y + 24),
+              };
+              setTemplate((prev) => ({
+                ...prev,
+                caixasTextoExtra: [...(prev.caixasTextoExtra || []), copyBox],
+              }));
+              onSelectObject(`caixaTexto:${newId}`);
+            };
+
+            const handleDeleteBox = (boxId: string) => {
+              if (placingTextBoxId === boxId) {
+                onTogglePlaceTextBox?.(null);
+              }
+              const remaining = customBoxes.filter((b) => b.id !== boxId);
+              setTemplate((prev) => ({
+                ...prev,
+                caixasTextoExtra: (prev.caixasTextoExtra || []).filter((b) => b.id !== boxId),
+              }));
+              if (remaining.length > 0) {
+                onSelectObject(`caixaTexto:${remaining[0].id}`);
+              } else {
+                onSelectObject('caixasTexto');
+              }
+            };
+
+            const boxZ = activeBox ? Math.max(2, activeBox.camadaZIndex ?? 20) : 20;
+
+            return (
+              <div className="space-y-4">
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-[11px] font-black uppercase tracking-wider text-slate-700">
+                      Caixas de Texto no Modelo ({customBoxes.length})
+                    </span>
+                    {onAddCustomTextBox && (
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => onAddCustomTextBox('front')}
+                          className="px-2.5 py-1 rounded-lg bg-blue-900 hover:bg-blue-950 text-white text-[10px] font-bold flex items-center gap-1 cursor-pointer"
+                        >
+                          <Plus size={11} />
+                          <span>Nova na Frente</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onAddCustomTextBox('back')}
+                          className="px-2.5 py-1 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-[10px] font-bold flex items-center gap-1 cursor-pointer"
+                        >
+                          <Plus size={11} />
+                          <span>Novo no Verso</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {customBoxes.length === 0 ? (
+                    <div className="p-3 rounded-lg bg-white border border-dashed border-slate-300 text-center space-y-1.5">
+                      <p className="text-xs font-semibold text-slate-600">
+                        Nenhuma caixa de texto inserida ainda.
+                      </p>
+                      <p className="text-[10px] text-slate-500">
+                        Adicione uma caixa na Frente ou no Verso para escrever e posicionar livremente em qualquer ponto da folha.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-1.5">
+                      {customBoxes.map((b, idx) => {
+                        const isCurrent = activeBox?.id === b.id;
+                        const snippet = (b.texto || '').replace(/\s+/g, ' ').trim();
+                        return (
+                          <button
+                            key={b.id}
+                            type="button"
+                            onClick={() => onSelectObject(`caixaTexto:${b.id}`)}
+                            className={cn(
+                              'px-2.5 py-1 rounded-lg border text-[11px] font-bold flex items-center gap-1.5 cursor-pointer transition-all',
+                              isCurrent
+                                ? 'bg-blue-900 text-white border-blue-950 shadow-2xs'
+                                : 'bg-white text-slate-700 border-slate-200 hover:bg-blue-50 hover:border-blue-300'
+                            )}
+                          >
+                            <span
+                              className={cn(
+                                'px-1 py-0.2 rounded text-[9px] font-black uppercase',
+                                isCurrent
+                                  ? 'bg-white/20 text-white'
+                                  : b.lado === 'back'
+                                    ? 'bg-emerald-100 text-emerald-800'
+                                    : 'bg-blue-100 text-blue-800'
+                              )}
+                            >
+                              {b.lado === 'back' ? 'Verso' : 'Frente'}
+                            </span>
+                            <span className="max-w-[140px] truncate">
+                              {snippet ? `${idx + 1}. ${snippet}` : `Caixa ${idx + 1}`}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {activeBox && (
+                  <>
+                    <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[11px] font-bold text-slate-700">Folha:</span>
+                          {(['front', 'back'] as const).map((sideOpt) => (
+                            <button
+                              key={sideOpt}
+                              type="button"
+                              onClick={() =>
+                                updateBox(activeBox.id, (b) => ({ ...b, lado: sideOpt }))
+                              }
+                              className={cn(
+                                'px-2.5 py-1 rounded-lg text-[11px] font-bold border cursor-pointer transition-all',
+                                activeBox.lado === sideOpt
+                                  ? 'bg-blue-900 text-white border-blue-950'
+                                  : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                              )}
+                            >
+                              {sideOpt === 'front' ? 'Frente' : 'Verso'}
+                            </button>
+                          ))}
+                        </div>
+
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleDuplicateBox(activeBox)}
+                            className="px-2 py-1 rounded-lg bg-white hover:bg-slate-100 border border-slate-200 text-[10px] font-bold text-slate-700 flex items-center gap-1 cursor-pointer"
+                            title="Duplicar caixa de texto"
+                          >
+                            <Copy size={11} />
+                            <span>Duplicar</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteBox(activeBox.id)}
+                            className="px-2 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 border border-rose-200 text-[10px] font-bold text-rose-700 flex items-center gap-1 cursor-pointer"
+                            title="Excluir esta caixa de texto"
+                          >
+                            <Trash2 size={11} />
+                            <span>Excluir</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => applyBoxInlineFormat('**')}
+                          className="px-2 py-1 rounded-md bg-white hover:bg-slate-100 border border-slate-200 text-[10px] font-bold text-slate-700 flex items-center gap-1 cursor-pointer"
+                        >
+                          <Bold size={11} />
+                          <span>Negrito trecho</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => applyBoxInlineFormat('*')}
+                          className="px-2 py-1 rounded-md bg-white hover:bg-slate-100 border border-slate-200 text-[10px] font-bold text-slate-700 flex items-center gap-1 cursor-pointer"
+                        >
+                          <Italic size={11} />
+                          <span>Itálico trecho</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={insertBoxLineBreak}
+                          className="px-2 py-1 rounded-md bg-white hover:bg-slate-100 border border-slate-200 text-[10px] font-bold text-slate-700 flex items-center gap-1 cursor-pointer"
+                          title="Inserir quebra de linha (Enter)"
+                        >
+                          <CornerDownLeft size={11} />
+                          <span>Quebra de linha</span>
+                        </button>
+                      </div>
+
+                      <textarea
+                        ref={customBoxTextareaRef}
+                        rows={4}
+                        value={activeBox.texto}
+                        onChange={(e) =>
+                          updateBox(activeBox.id, (b) => ({ ...b, texto: e.target.value }))
+                        }
+                        placeholder="Digite o texto desta caixa (Enter para quebrar linha)..."
+                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      />
+
+                      <div className="flex flex-wrap gap-1">
+                        {[
+                          { label: 'Aluno', token: '{{ALUNO}}' },
+                          { label: 'Curso', token: '{{CURSO}}' },
+                          { label: 'Carga H.', token: '{{CARGA_HORARIA}}' },
+                          { label: 'Média', token: '{{MEDIA_FINAL}}' },
+                          { label: 'Início', token: '{{DATA_INICIO}}' },
+                          { label: 'Término', token: '{{DATA_FIM}}' },
+                        ].map((p) => (
+                          <button
+                            key={p.token}
+                            type="button"
+                            onClick={() => insertBoxPlaceholder(p.token)}
+                            className="px-2 py-0.5 rounded bg-white hover:bg-blue-50 text-blue-900 text-[10px] font-bold border border-slate-200 hover:border-blue-300 cursor-pointer"
+                          >
+                            + {p.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+                      <span className="block text-[11px] font-black uppercase tracking-wider text-slate-700">
+                        Tipografia e Cor
+                      </span>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                            Fonte
+                          </label>
+                          <select
+                            value={normalizeFrontFont(activeBox.fonte)}
+                            onChange={(e) =>
+                              updateBox(activeBox.id, (b) => ({
+                                ...b,
+                                fonte: e.target.value as CertificateFontKey,
+                              }))
+                            }
+                            className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium"
+                          >
+                            {FONT_OPTIONS_FRONT.map((f) => (
+                              <option key={f.value} value={f.value}>
+                                {f.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                            Cor do Texto
+                          </label>
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              type="color"
+                              value={activeBox.cor || '#0f172a'}
+                              onChange={(e) =>
+                                updateBox(activeBox.id, (b) => ({ ...b, cor: e.target.value }))
+                              }
+                              className="w-8 h-8 rounded border border-slate-200 cursor-pointer bg-white p-0.5"
+                            />
+                            {['#0f172a', '#071b3b', '#475569', '#92400e', '#ffffff'].map(
+                              (swatch) => (
+                                <button
+                                  key={swatch}
+                                  type="button"
+                                  onClick={() =>
+                                    updateBox(activeBox.id, (b) => ({ ...b, cor: swatch }))
+                                  }
+                                  style={{ backgroundColor: swatch }}
+                                  className={cn(
+                                    'w-6 h-6 rounded-md border cursor-pointer',
+                                    (activeBox.cor || '#0f172a').toLowerCase() === swatch
+                                      ? 'border-blue-600 ring-2 ring-blue-500/30'
+                                      : 'border-slate-300'
+                                  )}
+                                  title={swatch}
+                                />
+                              )
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <div>
+                          <div className="flex justify-between text-[11px] font-bold text-slate-700 mb-1">
+                            <span>Tamanho</span>
+                            <span className="font-mono text-blue-900">
+                              {activeBox.tamanhoFontePx}px ({pxToPtNumber(activeBox.tamanhoFontePx)}pt)
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min={6}
+                            max={64}
+                            step={0.5}
+                            value={activeBox.tamanhoFontePx}
+                            onChange={(e) =>
+                              updateBox(activeBox.id, (b) => ({
+                                ...b,
+                                tamanhoFontePx: Number(e.target.value),
+                              }))
+                            }
+                            className="w-full accent-blue-800"
+                          />
+                        </div>
+
+                        <div>
+                          <div className="flex justify-between text-[11px] font-bold text-slate-700 mb-1">
+                            <span>Entrelinha</span>
+                            <span className="font-mono text-blue-900">
+                              {(activeBox.entrelinha ?? 1.35).toFixed(2)}
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min={1.0}
+                            max={2.2}
+                            step={0.05}
+                            value={activeBox.entrelinha ?? 1.35}
+                            onChange={(e) =>
+                              updateBox(activeBox.id, (b) => ({
+                                ...b,
+                                entrelinha: Number(e.target.value),
+                              }))
+                            }
+                            className="w-full accent-blue-800"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              updateBox(activeBox.id, (b) => ({ ...b, negrito: !b.negrito }))
+                            }
+                            className={cn(
+                              'px-2.5 py-1 rounded-lg border text-[11px] font-bold flex items-center gap-1 cursor-pointer',
+                              activeBox.negrito
+                                ? 'bg-blue-900 text-white border-blue-950'
+                                : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                            )}
+                          >
+                            <Bold size={11} />
+                            <span>Negrito</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              updateBox(activeBox.id, (b) => ({ ...b, italico: !b.italico }))
+                            }
+                            className={cn(
+                              'px-2.5 py-1 rounded-lg border text-[11px] font-bold flex items-center gap-1 cursor-pointer',
+                              activeBox.italico
+                                ? 'bg-blue-900 text-white border-blue-950'
+                                : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                            )}
+                          >
+                            <Italic size={11} />
+                            <span>Itálico</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              updateBox(activeBox.id, (b) => ({ ...b, maiusculo: !b.maiusculo }))
+                            }
+                            className={cn(
+                              'px-2.5 py-1 rounded-lg border text-[11px] font-bold cursor-pointer',
+                              activeBox.maiusculo
+                                ? 'bg-blue-900 text-white border-blue-950'
+                                : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                            )}
+                          >
+                            AA
+                          </button>
+                        </div>
+
+                        <div className="flex items-center gap-1">
+                          {(
+                            [
+                              { id: 'left', icon: AlignLeft, label: 'Esquerda' },
+                              { id: 'center', icon: AlignCenter, label: 'Centro' },
+                              { id: 'right', icon: AlignRight, label: 'Direita' },
+                              { id: 'justify', icon: AlignJustify, label: 'Justificado' },
+                            ] as const
+                          ).map((al) => {
+                            const Icon = al.icon;
+                            const active = (activeBox.alinhamento || 'left') === al.id;
+                            return (
+                              <button
+                                key={al.id}
+                                type="button"
+                                onClick={() =>
+                                  updateBox(activeBox.id, (b) => ({ ...b, alinhamento: al.id }))
+                                }
+                                title={al.label}
+                                className={cn(
+                                  'p-1.5 rounded-lg border cursor-pointer',
+                                  active
+                                    ? 'bg-blue-900 text-white border-blue-950'
+                                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
+                                )}
+                              >
+                                <Icon size={12} />
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="text-[11px] font-black uppercase tracking-wider text-slate-700">
+                          Posição Livre e Largura
+                        </span>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {onTogglePlaceTextBox && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                onTogglePlaceTextBox(
+                                  placingTextBoxId === activeBox.id ? null : activeBox.id
+                                )
+                              }
+                              className={cn(
+                                'px-2.5 py-1 rounded-lg border text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-all',
+                                placingTextBoxId === activeBox.id
+                                  ? 'bg-amber-600 text-white border-amber-700 shadow-xs'
+                                  : 'bg-white text-blue-900 border-blue-200 hover:bg-blue-50'
+                              )}
+                            >
+                              <Crosshair size={11} />
+                              <span>
+                                {placingTextBoxId === activeBox.id
+                                  ? 'Clique na folha...'
+                                  : 'Clicar na folha'}
+                              </span>
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              updateBox(activeBox.id, (b) => ({
+                                ...b,
+                                x: Math.round((sheetWidth - (b.larguraPx || 280)) / 2),
+                              }))
+                            }
+                            className="px-2 py-1 rounded-lg bg-white hover:bg-slate-100 border border-slate-200 text-[10px] font-bold text-slate-700 cursor-pointer"
+                          >
+                            Centralizar X
+                          </button>
+                        </div>
+                      </div>
+
+                      <p className="text-[10px] text-slate-500 leading-snug">
+                        Você também pode clicar e arrastar esta caixa diretamente sobre a folha (inclusive sobre a moldura).
+                      </p>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <div>
+                          <div className="flex justify-between text-[10px] font-semibold text-slate-600">
+                            <span>Horizontal (X)</span>
+                            <span className="font-mono text-slate-800">{activeBox.x}px</span>
+                          </div>
+                          <input
+                            type="range"
+                            min={-40}
+                            max={sheetWidth - 40}
+                            step={2}
+                            value={activeBox.x}
+                            onChange={(e) =>
+                              updateBox(activeBox.id, (b) => ({
+                                ...b,
+                                x: Number(e.target.value),
+                              }))
+                            }
+                            className="w-full accent-blue-800"
+                          />
+                        </div>
+                        <div>
+                          <div className="flex justify-between text-[10px] font-semibold text-slate-600">
+                            <span>Vertical (Y)</span>
+                            <span className="font-mono text-slate-800">{activeBox.y}px</span>
+                          </div>
+                          <input
+                            type="range"
+                            min={-20}
+                            max={sheetHeight - 20}
+                            step={2}
+                            value={activeBox.y}
+                            onChange={(e) =>
+                              updateBox(activeBox.id, (b) => ({
+                                ...b,
+                                y: Number(e.target.value),
+                              }))
+                            }
+                            className="w-full accent-blue-800"
+                          />
+                        </div>
+                        <div>
+                          <div className="flex justify-between text-[10px] font-semibold text-slate-600">
+                            <span>Largura</span>
+                            <span className="font-mono text-slate-800">
+                              {activeBox.larguraPx || 280}px
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min={80}
+                            max={sheetWidth}
+                            step={5}
+                            value={activeBox.larguraPx || 280}
+                            onChange={(e) =>
+                              updateBox(activeBox.id, (b) => ({
+                                ...b,
+                                larguraPx: Number(e.target.value),
+                              }))
+                            }
+                            className="w-full accent-blue-800"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-white border border-slate-200 space-y-2.5">
+                      <span className="block text-[11px] font-bold text-slate-700">
+                        Fundo, Borda e Camada
+                      </span>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <label className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-700 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={
+                              !activeBox.corFundo || activeBox.corFundo === 'transparent'
+                            }
+                            onChange={(e) =>
+                              updateBox(activeBox.id, (b) => ({
+                                ...b,
+                                corFundo: e.target.checked ? 'transparent' : '#ffffff',
+                              }))
+                            }
+                            className="accent-blue-800"
+                          />
+                          <span>Fundo transparente</span>
+                        </label>
+                        {activeBox.corFundo && activeBox.corFundo !== 'transparent' && (
+                          <input
+                            type="color"
+                            value={activeBox.corFundo}
+                            onChange={(e) =>
+                              updateBox(activeBox.id, (b) => ({ ...b, corFundo: e.target.value }))
+                            }
+                            className="w-7 h-7 rounded border border-slate-200 cursor-pointer bg-white p-0.5"
+                          />
+                        )}
+
+                        <label className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-700 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(activeBox.mostrarBorda)}
+                            onChange={(e) =>
+                              updateBox(activeBox.id, (b) => ({
+                                ...b,
+                                mostrarBorda: e.target.checked,
+                              }))
+                            }
+                            className="accent-blue-800"
+                          />
+                          <span>Exibir borda</span>
+                        </label>
+                        {activeBox.mostrarBorda && (
+                          <input
+                            type="color"
+                            value={activeBox.corBorda || '#1e3a8a'}
+                            onChange={(e) =>
+                              updateBox(activeBox.id, (b) => ({ ...b, corBorda: e.target.value }))
+                            }
+                            className="w-7 h-7 rounded border border-slate-200 cursor-pointer bg-white p-0.5"
+                          />
+                        )}
+                      </div>
+
+                      <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100">
+                        <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+                          <Layers size={12} className="text-blue-800" />
+                          <span>Camada: {boxZ}</span>
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              updateBox(activeBox.id, (b) => ({
+                                ...b,
+                                camadaZIndex: Math.max(2, (b.camadaZIndex ?? 20) - 1),
+                              }))
+                            }
+                            className="px-2 py-1 rounded bg-slate-50 hover:bg-slate-100 border border-slate-200 text-[10px] font-bold text-slate-700 cursor-pointer flex items-center gap-0.5"
+                          >
+                            <ArrowDown size={11} />
+                            <span>Recuar</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              updateBox(activeBox.id, (b) => ({
+                                ...b,
+                                camadaZIndex: Math.min(40, (b.camadaZIndex ?? 20) + 1),
+                              }))
+                            }
+                            className="px-2 py-1 rounded bg-slate-50 hover:bg-slate-100 border border-slate-200 text-[10px] font-bold text-slate-700 cursor-pointer flex items-center gap-0.5"
+                          >
+                            <ArrowUp size={11} />
+                            <span>Avançar</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              updateBox(activeBox.id, (b) => ({
+                                ...b,
+                                camadaZIndex: 35,
+                              }))
+                            }
+                            className="px-2 py-1 rounded bg-blue-50 hover:bg-blue-100 border border-blue-200 text-[10px] font-bold text-blue-900 cursor-pointer flex items-center gap-0.5"
+                          >
+                            <ChevronsUp size={11} />
+                            <span>Frente</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            );
+          })()}
 
         {/* CONFIGURAÇÕES GERAIS DO MODELO */}
         {selectedObject === 'modeloGeral' && (
