@@ -6,6 +6,8 @@ import { UserProvider } from '@/lib/auth/UserContext';
 import { ThemeProvider } from '@/lib/theme/ThemeContext';
 import { Toaster } from 'sonner';
 import { RouteHistoryTracker } from '@/components/BackButton';
+import { CalculatorProvider } from '@/lib/calculator/CalculatorContext';
+import { FloatingCalculator } from '@/components/FloatingCalculator';
 
 const ebGaramond = EB_Garamond({
   subsets: ['latin'],
@@ -77,9 +79,12 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
         <ThemeProvider>
           <LanguageProvider>
             <UserProvider>
-              <RouteHistoryTracker />
-              {children}
-              <Toaster position="top-right" richColors closeButton />
+              <CalculatorProvider>
+                <RouteHistoryTracker />
+                {children}
+                <FloatingCalculator />
+                <Toaster position="top-right" richColors closeButton />
+              </CalculatorProvider>
             </UserProvider>
           </LanguageProvider>
         </ThemeProvider>

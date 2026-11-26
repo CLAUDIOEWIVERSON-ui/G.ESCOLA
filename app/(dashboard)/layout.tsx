@@ -36,7 +36,8 @@ import {
   Moon,
   ShieldCheck,
   Quote,
-  Award
+  Award,
+  Calculator
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -44,6 +45,7 @@ import { cn } from '@/lib/utils';
 import { useTheme } from '@/lib/theme/ThemeContext';
 
 import { useUser } from '@/lib/auth/UserContext';
+import { useCalculator } from '@/lib/calculator/CalculatorContext';
 import { fetchWithAuth } from '@/lib/api';
 import { EventMarquee } from '@/components/EventMarquee';
 import { HeaderClock } from '@/components/HeaderClock';
@@ -228,6 +230,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { t, language, setLanguage } = useI18n();
   const { isDark, toggleTheme } = useTheme();
   const { profile, isAdmin, isAluno, isInstrutor, isConvidado, isAcompanhante, loading: authLoading, logout } = useUser();
+  const { isOpen: isCalculatorOpen, toggleCalculator } = useCalculator();
   const isReadOnly = !isAdmin;
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
@@ -476,6 +479,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             isStudentUser={true}
             showLabelAlways={true}
           />
+          <button
+            type="button"
+            onClick={toggleCalculator}
+            className={cn(
+              "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-bold transition-all cursor-pointer shadow-xs",
+              isCalculatorOpen
+                ? "bg-blue-700 text-white border-blue-800"
+                : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 hover:text-slate-900"
+            )}
+            title={language === 'pt' ? 'Abrir/Fechar Calculadora Flutuante' : 'Toggle Floating Calculator'}
+          >
+            <Calculator size={14} className="shrink-0" />
+            <span>{language === 'pt' ? 'Calculadora' : 'Calculator'}</span>
+          </button>
         </div>
         <Suspense fallback={null}>
           {children}
@@ -895,6 +912,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                </Suspense>
             </div>
             <HeaderClock />
+            {/* Calculadora flutuante global */}
+            <button
+              type="button"
+              onClick={toggleCalculator}
+              className={cn(
+                "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-bold transition-all cursor-pointer shadow-xs shrink-0",
+                isStudentUser
+                  ? isCalculatorOpen
+                    ? "bg-white text-black border-2 border-black"
+                    : "bg-white text-black border-slate-300 hover:bg-slate-100"
+                  : isCalculatorOpen
+                    ? "bg-blue-700 text-white border-blue-800 shadow-blue-500/20"
+                    : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 hover:text-slate-900"
+              )}
+              title={language === 'pt' ? 'Abrir Calculadora Flutuante (permanece aberta ao trocar de página ou janela)' : 'Open Floating Calculator'}
+            >
+              <Calculator size={14} className={cn("shrink-0", !isStudentUser && !isCalculatorOpen && "text-blue-600")} />
+              <span className="hidden sm:inline">{language === 'pt' ? 'Calculadora' : 'Calculator'}</span>
+            </button>
             {/* Assistente IA toggle on régua / header */}
             {!isStudentUser && (
               <button
