@@ -41,6 +41,8 @@ import {
 } from '@/lib/certificateTypes';
 import {
   CertificateAssetCategory,
+  CertificateAssetTarget,
+  CertificateLibraryAsset,
   prepareUploadedAssetDataUrl,
 } from '@/lib/certificateLibrary';
 import { CertificateSheetClickContext } from '@/components/CertificateSheet';
@@ -82,7 +84,11 @@ interface CertificateClickMenuProps {
   activeBodyTextValue: string;
   updateActiveBodyText: (updater: string | ((current: string) => string)) => void;
   isEditingIndividualBody: boolean;
-  onOpenLibrary?: (category: CertificateAssetCategory) => void;
+  libraryAssets?: CertificateLibraryAsset[];
+  onApplyLibraryAsset?: (
+    asset: CertificateLibraryAsset,
+    target: CertificateAssetTarget
+  ) => void;
 }
 
 function getTargetLabel(
@@ -144,7 +150,8 @@ export function CertificateClickMenu({
   activeBodyTextValue,
   updateActiveBodyText,
   isEditingIndividualBody,
-  onOpenLibrary,
+  libraryAssets = [],
+  onApplyLibraryAsset,
 }: CertificateClickMenuProps) {
   const menuRef = useRef<HTMLDivElement | null>(null);
   const bodyRef = useRef<HTMLTextAreaElement | null>(null);
@@ -156,6 +163,7 @@ export function CertificateClickMenu({
   const [menuTab, setMenuTab] = useState<'props' | 'items'>(
     clickContext.clickedEmptyArea ? 'items' : 'props'
   );
+  const [showInlineLibrary, setShowInlineLibrary] = useState(false);
   const [coords, setCoords] = useState<{ left: number; top: number }>({
     left: clickContext.clientX,
     top: clickContext.clientY,
@@ -172,7 +180,12 @@ export function CertificateClickMenu({
   useEffect(() => {
     setActiveTarget(clickContext.targetObject);
     setMenuTab(clickContext.clickedEmptyArea ? 'items' : 'props');
+    setShowInlineLibrary(false);
   }, [clickContext]);
+
+  useEffect(() => {
+    setShowInlineLibrary(false);
+  }, [activeTarget]);
 
   useLayoutEffect(() => {
     const el = menuRef.current;
@@ -202,7 +215,7 @@ export function CertificateClickMenu({
     left = Math.max(pad, Math.min(window.innerWidth - menuW - pad, left));
     top = Math.max(pad, Math.min(window.innerHeight - menuH - pad, top));
     setCoords({ left, top });
-  }, [clickContext, menuTab, activeTarget]);
+  }, [clickContext, menuTab, activeTarget, showInlineLibrary]);
 
   useEffect(() => {
     if (!isDraggingWindow) return;
@@ -2246,35 +2259,100 @@ export function CertificateClickMenu({
         )}
 
         {isLibraryAsset && (
-          <div className="grid grid-cols-2 gap-1.5">
-            {onOpenLibrary && (
-              <button
-                type="button"
-                onClick={() => {
-                  const cat: CertificateAssetCategory = activeTarget.startsWith('brasao')
-                    ? 'brasao'
-                    : activeTarget.startsWith('marcaDagua')
-                      ? 'marca_dagua'
-                      : 'moldura';
-                  onOpenLibrary(cat);
-                  onClose();
-                }}
-                className="py-1.5 px-2 rounded-lg bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-900 text-[10px] font-bold flex items-center justify-center gap-1 cursor-pointer"
+          <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-1.5">
+              {onApplyLibraryAsset && (
+                <button
+                  type="button"
+                  onClick={() => setShowInlineLibrary((v) => !v)}
+                  className={cn(
+                    'py-1.5 px-2 rounded-lg border text-[10px] font-bold flex items-center justify-center gap-1 cursor-pointer transition-colors',
+                    showInlineLibrary
+                      ? 'bg-blue-900 text-white border-blue-950'
+                      : 'bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-900'
+                  )}
+                >
+                  <FolderOpen size={11} />
+                  <span>{showInlineLibrary ? 'Fechar Biblioteca' : 'Biblioteca'}</span>
+                </button>
+              )}
+              <label
+                className={cn(
+                  'py-1.5 px-2 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 text-[10px] font-bold flex items-center justify-center gap-1 cursor-pointer',
+                  !onApplyLibraryAsset && 'col-span-2'
+                )}
               >
-                <FolderOpen size={11} />
-                <span>Biblioteca</span>
-              </button>
-            )}
-            <label className="py-1.5 px-2 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 text-[10px] font-bold flex items-center justify-center gap-1 cursor-pointer">
-              <Upload size={11} />
-              <span>Enviar Imagem</span>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleUploadImageForActiveTarget}
-                className="hidden"
-              />
-            </label>
+                <Upload size={11} />
+                <span>Enviar Imagem</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleUploadImageForActiveTarget}
+                  className="hidden"
+                />
+              </label>
+            </div>
+
+            {showInlineLibrary && onApplyLibraryAsset && (() => {
+              const cat: CertificateAssetCategory = activeTarget.startsWith('brasao')
+                ? 'brasao'
+                : activeTarget.startsWith('marcaDagua')
+                  ? 'marca_dagua'
+                  : 'moldura';
+              const matchingAssets = libraryAssets.filter((a) => a.category === cat);
+              const mappedTarget: CertificateAssetTarget =
+                activeTarget === 'versoMoldura'
+                  ? 'molduraVerso'
+                  : (activeTarget as CertificateAssetTarget);
+
+              return (
+                <div className="p-2 rounded-xl bg-white border border-blue-200 space-y-1.5">
+                  <div className="flex items-center justify-between text-[10px] font-bold text-blue-950">
+                    <span>Escolher da Biblioteca ({matchingAssets.length})</span>
+                    <button
+                      type="button"
+                      onClick={() => setShowInlineLibrary(false)}
+                      className="text-slate-500 hover:text-slate-800 cursor-pointer"
+                    >
+                      Ocultar
+                    </button>
+                  </div>
+                  {matchingAssets.length === 0 ? (
+                    <p className="text-[10px] text-slate-500 py-2 text-center">
+                      Nenhum item nesta categoria. Use &ldquo;Enviar Imagem&rdquo; acima.
+                    </p>
+                  ) : (
+                    <div className="grid grid-cols-3 gap-1.5 max-h-40 overflow-y-auto custom-scrollbar pr-0.5">
+                      {matchingAssets.map((asset) => (
+                        <button
+                          key={asset.id}
+                          type="button"
+                          onClick={() => onApplyLibraryAsset(asset, mappedTarget)}
+                          title={asset.name}
+                          className="p-1.5 rounded-lg border border-slate-200 hover:border-blue-500 hover:bg-blue-50/50 bg-slate-50 flex flex-col items-center gap-1 cursor-pointer transition-colors text-center"
+                        >
+                          {asset.url ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={asset.url}
+                              alt={asset.name}
+                              className="w-10 h-10 object-contain rounded"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded bg-white border border-slate-200 flex items-center justify-center text-[9px] font-bold text-slate-600 px-1">
+                              {asset.frameStyle === 'vetorial' ? 'Vetorial' : 'Simples'}
+                            </div>
+                          )}
+                          <span className="text-[9px] font-semibold text-slate-700 truncate w-full">
+                            {asset.name}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         )}
 

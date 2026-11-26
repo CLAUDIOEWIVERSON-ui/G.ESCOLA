@@ -440,7 +440,7 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
-                className="flex-1 md:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl text-xs font-bold border border-indigo-200/80 transition-all cursor-pointer shadow-2xs active:scale-95 disabled:opacity-50"
+                className="flex-1 md:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl text-xs font-bold border border-indigo-200/80 transition-all cursor-pointer shadow-2xs active:scale-95 disabled:opacity-50 mobile-only-neon-3d neon-tone-fuchsia"
                 title={isPt ? "Carregar ou alterar sua foto" : "Upload or change your photo"}
               >
                 <Camera size={14} />
@@ -451,7 +451,7 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
             {isAdmin && (
               <Link
                 href="/usuarios"
-                className="flex-1 md:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-xs font-bold border border-blue-200 transition-all cursor-pointer shadow-2xs active:scale-95"
+                className="flex-1 md:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-xs font-bold border border-blue-200 transition-all cursor-pointer shadow-2xs active:scale-95 mobile-only-neon-3d neon-tone-blue"
                 title={isPt ? "Gerenciar Usuários e Permissões" : "Manage Users and Permissions"}
               >
                 <ShieldCheck size={14} className="text-blue-600" />
@@ -462,7 +462,7 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
             {isAluno && pathname !== '/dashboard' && (
               <Link
                 href="/dashboard"
-                className="flex-1 md:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-100 text-black border-2 border-black rounded-xl text-xs font-black transition-all cursor-pointer shadow-2xs active:scale-95"
+                className="flex-1 md:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-100 text-black border-2 border-black rounded-xl text-xs font-black transition-all cursor-pointer shadow-2xs active:scale-95 mobile-only-neon-3d neon-tone-cyan"
                 title={isPt ? "Ir para a Área de Trabalho do Aluno" : "Go to Student Workspace"}
               >
                 <LayoutDashboard size={14} className="text-black" />
@@ -473,7 +473,7 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
             <Link
               href="/configuracoes"
               className={cn(
-                "flex-1 md:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-100 rounded-xl text-xs font-bold border transition-all cursor-pointer shadow-2xs active:scale-95",
+                "flex-1 md:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-100 rounded-xl text-xs font-bold border transition-all cursor-pointer shadow-2xs active:scale-95 mobile-only-neon-3d neon-tone-indigo",
                 isAluno ? "text-black border-slate-300" : "text-slate-700 border-slate-200"
               )}
               title={isPt ? "Gerenciar Minha Conta e Senha" : "Manage Account and Password"}

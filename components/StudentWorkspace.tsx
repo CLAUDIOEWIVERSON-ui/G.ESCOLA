@@ -705,6 +705,7 @@ export function StudentWorkspace() {
               ? 'Grade Atualizada'
               : 'Updated Schedule',
       cta: isPt ? 'Ver Horário Semanal' : 'View Weekly Schedule',
+      neonClass: 'mobile-only-neon-3d neon-tone-cyan',
     },
     {
       title: isPt ? 'Boletim Individual' : 'Individual Report Card',
@@ -715,6 +716,7 @@ export function StudentWorkspace() {
       icon: FileText,
       badgeText: isPt ? 'Notas e Frequência' : 'Grades & Attendance',
       cta: isPt ? 'Abrir Meu Boletim' : 'Open Report Card',
+      neonClass: 'mobile-only-neon-3d neon-tone-blue',
     },
     {
       title: isPt ? 'Questionário de Final de Curso' : 'End-of-Course Questionnaire',
@@ -731,6 +733,7 @@ export function StudentWorkspace() {
       cta: hasSubmittedSurvey
         ? (isPt ? 'Ver Comprovante' : 'View Receipt')
         : (isPt ? 'Preencher Questionário' : 'Fill Questionnaire'),
+      neonClass: 'mobile-only-neon-3d neon-tone-emerald',
     },
   ];
 
@@ -823,7 +826,7 @@ export function StudentWorkspace() {
                       type="button"
                       disabled={markingReadId === rec.id}
                       onClick={() => handleMarkRecadoAsRead(rec.id)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-slate-100 text-black border-2 border-black text-[11px] font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 disabled:opacity-50"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl lg:rounded-lg bg-white hover:bg-slate-100 text-black border-2 border-black text-[11px] font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 disabled:opacity-50 mobile-only-neon-3d neon-tone-lime"
                     >
                       <CheckCircle2 size={12} className="text-black" />
                       <span>{markingReadId === rec.id ? (isPt ? 'Salvando...' : 'Saving...') : (isPt ? 'Marcar como lido' : 'Mark as read')}</span>
@@ -1223,7 +1226,10 @@ export function StudentWorkspace() {
 
               <Link
                 href={mod.href}
-                className="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-slate-100 text-black border-2 border-black font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-[0.98] group"
+                className={cn(
+                  "w-full py-2.5 px-4 rounded-xl bg-white hover:bg-slate-100 text-black border-2 border-black font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-[0.98] group",
+                  mod.neonClass
+                )}
               >
                 <span>{mod.cta}</span>
                 <ArrowRight size={14} className="text-black transition-transform group-hover:translate-x-1" />
@@ -1295,7 +1301,7 @@ export function StudentWorkspace() {
           <div className="space-y-2">
             <Link
               href="/calendario"
-              className="flex items-center justify-between p-3 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 transition-colors group"
+              className="flex items-center justify-between p-3 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 transition-colors group mobile-only-neon-3d neon-tone-pink"
             >
               <span className="flex items-center gap-2.5 text-xs font-bold text-black">
                 <CalendarDays size={15} className="text-black" />

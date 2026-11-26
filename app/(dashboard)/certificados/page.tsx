@@ -622,9 +622,7 @@ export default function CertificadosPage() {
           if (
             parsed.editorTab === 'frente' ||
             parsed.editorTab === 'verso' ||
-            parsed.editorTab === 'visual' ||
-            parsed.editorTab === 'modelos' ||
-            parsed.editorTab === 'biblioteca'
+            parsed.editorTab === 'visual'
           ) {
             setEditorTab(parsed.editorTab);
           }
@@ -3479,19 +3477,28 @@ export default function CertificadosPage() {
         )}
       </div>
 
-      {/* Main Split: Contextual Panel (only Modelos Salvos, Biblioteca or Config. Modelo) + Live A4 Preview */}
+      {/* Workspace: Always Full-Width Large Certificate Presentation (Overlays for Modelos/Biblioteca/Config. Modelo never shrink preview) */}
       {(() => {
         const showSidePanel =
           editorTab === 'modelos' ||
           editorTab === 'biblioteca' ||
           selectedObject === 'modeloGeral';
         return (
-          <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
-            {/* LEFT COLUMN: Opens only for Modelos Salvos, Biblioteca, or Config. Modelo */}
+          <div className="space-y-4">
+            {/* Floating Overlay Modal when user explicitly opens Modelos Salvos, Biblioteca, or Config. Modelo */}
             {showSidePanel && (
-              <div className="xl:col-span-5 xl:sticky xl:top-4 bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+              <div
+                className="fixed inset-0 z-50 bg-slate-900/45 backdrop-blur-[2px] flex items-center justify-center p-4"
+                onMouseDown={(e) => {
+                  if (e.target === e.currentTarget) {
+                    setEditorTab('frente');
+                    setSelectedObject((prev) => (prev === 'modeloGeral' ? null : prev));
+                  }
+                }}
+              >
+                <div className="w-full max-w-2xl bg-white rounded-2xl border border-slate-200 shadow-2xl overflow-hidden">
                 {editorTab === 'modelos' ? (
-                  <div className="flex flex-col max-h-[calc(100vh-2rem)]">
+                  <div className="flex flex-col max-h-[86vh]">
                     <div className="px-4 py-3.5 border-b border-slate-200 bg-slate-50 flex items-center justify-between gap-2 shrink-0">
                       <div className="flex items-center gap-2">
                         <div className="w-8 h-8 rounded-xl bg-blue-900 text-white flex items-center justify-center shrink-0">
@@ -3924,16 +3931,14 @@ export default function CertificadosPage() {
                 onTogglePlaceTextBox={(id) => setPlacingTextBoxId(id)}
               />
             ) : null}
-          </div>
-        )}
+                </div>
+              </div>
+            )}
 
-        {/* RIGHT COLUMN: Live Scaled Preview (Frente e Verso) */}
+        {/* ALWAYS FULL-WIDTH LARGE PREVIEW (Frente e Verso) */}
         <div
           ref={previewContainerRef}
-          className={cn(
-            'bg-slate-100 rounded-2xl border border-slate-200 p-4 sm:p-5 space-y-4 transition-all',
-            showSidePanel ? 'xl:col-span-7' : 'xl:col-span-12'
-          )}
+          className="w-full bg-slate-100 rounded-2xl border border-slate-200 p-4 sm:p-5 space-y-4"
         >
           {/* Preview Controls Bar */}
           <div className="bg-white p-2.5 sm:p-3 rounded-xl border border-slate-200 shadow-2xs">
@@ -4675,12 +4680,8 @@ export default function CertificadosPage() {
           activeBodyTextValue={activeBodyTextValue}
           updateActiveBodyText={updateActiveBodyText}
           isEditingIndividualBody={isEditingIndividualBody}
-          onOpenLibrary={(category) => {
-            setClickMenuContext(null);
-            setLibraryCategory(category);
-            setSelectedObject(null);
-            setEditorTab('biblioteca');
-          }}
+          libraryAssets={allLibraryAssets}
+          onApplyLibraryAsset={handleApplyLibraryAssetToTarget}
         />
       )}
     </div>
