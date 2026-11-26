@@ -174,6 +174,9 @@ export default function FrequenciaPage() {
   const [courseAttendance, setCourseAttendance] = useState<any[]>([]);
   const [activeCell, setActiveCell] = useState<{ studentId: string; dayStr: string } | null>(null);
   const [activeBulkDay, setActiveBulkDay] = useState<{ dayStr: string; day: Date } | null>(null);
+  const [mobileViewMode, setMobileViewMode] = useState<'cards' | 'table'>('cards');
+  const [mobileSelectedDayStr, setMobileSelectedDayStr] = useState<string>('');
+  const [mobileStatusFilter, setMobileStatusFilter] = useState<'all' | 'pending' | 'absent'>('all');
 
   // Print attendance sheet states
   const [isPrintAttendanceOpen, setIsPrintAttendanceOpen] = useState(false);
@@ -942,8 +945,87 @@ export default function FrequenciaPage() {
     return `${startStr} a ${endStr}`;
   })();
 
+  const activeIntervalDays = useMemo(() => {
+    if (mapGranularity === 'year') return [];
+    const rawDays = eachDayOfInterval({
+      start: mapGranularity === 'week' ? startOfWeek(currentMapDate, { weekStartsOn: 1 }) : startOfMonth(currentMapDate),
+      end: mapGranularity === 'week' ? endOfWeek(currentMapDate, { weekStartsOn: 1 }) : endOfMonth(currentMapDate)
+    });
+    return getFilteredDays(rawDays);
+  }, [mapGranularity, currentMapDate, getFilteredDays]);
+
+  const effectiveMobileDay = useMemo(() => {
+    if (activeIntervalDays.length === 0) return null;
+    const match = activeIntervalDays.find(d => format(d, 'yyyy-MM-dd') === mobileSelectedDayStr);
+    if (match) return match;
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    return (
+      activeIntervalDays.find(d => format(d, 'yyyy-MM-dd') === todayStr) ||
+      activeIntervalDays.find(d => !isWeekend(d) && !isHoliday(d)) ||
+      activeIntervalDays[0]
+    );
+  }, [activeIntervalDays, mobileSelectedDayStr]);
+
+  const effectiveMobileDayStr = effectiveMobileDay ? format(effectiveMobileDay, 'yyyy-MM-dd') : '';
+
+  const mobileDayStats = useMemo(() => {
+    if (!effectiveMobileDayStr || students.length === 0) {
+      return { present: 0, absent: 0, justifiedOrOther: 0, pending: students.length };
+    }
+    let present = 0;
+    let absent = 0;
+    let justifiedOrOther = 0;
+    let marked = 0;
+
+    students.forEach(student => {
+      const rec = mapData.find(r => {
+        if (!r.data) return false;
+        const dbDateStr = typeof r.data === 'string' ? r.data.substring(0, 10) : format(new Date(r.data), 'yyyy-MM-dd');
+        return r.aluno_id === student.id && dbDateStr === effectiveMobileDayStr;
+      });
+      if (!rec) return;
+      marked++;
+      const status = (rec.observacao || (rec.presente ? 'P' : 'F')).toString().toUpperCase();
+      if (status === 'P') present++;
+      else if (status === 'F') absent++;
+      else justifiedOrOther++;
+    });
+
+    return {
+      present,
+      absent,
+      justifiedOrOther,
+      pending: Math.max(0, students.length - marked)
+    };
+  }, [effectiveMobileDayStr, students, mapData]);
+
+  const mobileFilteredStudents = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
+    return students.filter(student => {
+      const displayName = (student.posto_graduacao || student.nome_guerra)
+        ? `${student.posto_graduacao || ''} ${student.nome_guerra || student.nome}`.trim()
+        : student.nome;
+      if (q && !displayName.toLowerCase().includes(q) && !(student.nome || '').toLowerCase().includes(q)) {
+        return false;
+      }
+      if (mobileStatusFilter === 'all' || !effectiveMobileDayStr) return true;
+      const rec = mapData.find(r => {
+        if (!r.data) return false;
+        const dbDateStr = typeof r.data === 'string' ? r.data.substring(0, 10) : format(new Date(r.data), 'yyyy-MM-dd');
+        return r.aluno_id === student.id && dbDateStr === effectiveMobileDayStr;
+      });
+      if (mobileStatusFilter === 'pending') return !rec;
+      if (mobileStatusFilter === 'absent') {
+        if (!rec) return false;
+        const st = (rec.observacao || (rec.presente ? 'P' : 'F')).toString().toUpperCase();
+        return st === 'F' || st === 'FJ' || st === 'A' || st === 'LE';
+      }
+      return true;
+    });
+  }, [students, searchTerm, mobileStatusFilter, effectiveMobileDayStr, mapData]);
+
   return (
-    <div className="space-y-6 pb-20 max-w-[1400px] mx-auto">
+    <div className="space-y-4 sm:space-y-6 pb-28 lg:pb-20 max-w-[1400px] mx-auto">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 print:hidden">
         <div className="flex items-center gap-2 text-sm text-slate-500">
           <span className="hover:text-blue-600 cursor-pointer transition-colors">{t.nav.courses}</span>
@@ -963,13 +1045,13 @@ export default function FrequenciaPage() {
 
       {/* Selection Card */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4 print:hidden">
-        <div className="md:col-span-12 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm transition-all hover:shadow-md">
-          <div className="flex items-center justify-between mb-3">
+        <div className="md:col-span-12 bg-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-200 shadow-sm transition-all hover:shadow-md">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5 sm:mb-3">
             <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest">
               TURMA
             </label>
             {formattedTurmaPeriod && (
-              <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-700 rounded-xl text-xs font-bold border border-emerald-100">
+              <div className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 bg-emerald-50 text-emerald-700 rounded-xl text-[11px] sm:text-xs font-bold border border-emerald-100">
                 <Calendar className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                 <span>
                   {language === 'pt' ? 'Período: ' : 'Period: '}
@@ -984,7 +1066,7 @@ export default function FrequenciaPage() {
               onChange={(e) => setSelectedTurma(e.target.value)}
               disabled={isAcompanhanteUser}
               className={cn(
-                "w-full px-5 py-3.5 bg-slate-50/50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 outline-none text-base font-semibold appearance-none transition-all text-slate-700",
+                "w-full px-4 sm:px-5 py-3 sm:py-3.5 min-h-[48px] bg-slate-50/50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 outline-none text-sm sm:text-base font-semibold appearance-none transition-all text-slate-700 pr-10",
                 isAcompanhanteUser ? "cursor-not-allowed opacity-80 bg-slate-100" : "cursor-pointer group-hover:bg-slate-50"
               )}
             >
@@ -993,7 +1075,7 @@ export default function FrequenciaPage() {
                 <option key={`turma-opt-${turma.id || idx}`} value={turma.id}>{turma.nome}</option>
               ))}
             </select>
-            <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+            <div className="absolute right-4 sm:right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
             </div>
           </div>
@@ -1007,10 +1089,10 @@ export default function FrequenciaPage() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.2 }}
-          className="space-y-6"
+          className="space-y-4 sm:space-y-6"
         >
-          <div className="flex flex-col xl:flex-row items-center justify-between gap-6 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm transition-all print:hidden">
-              <div className="flex items-center gap-4 bg-slate-50 p-2 rounded-2xl border border-slate-100">
+          <div className="flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-3 sm:gap-5 bg-white p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-200 shadow-sm transition-all print:hidden">
+              <div className="flex items-center justify-between gap-2 sm:gap-4 bg-slate-50 p-1.5 sm:p-2 rounded-2xl border border-slate-100 w-full xl:w-auto">
                 <button
                   type="button"
                   onClick={() => {
@@ -1021,16 +1103,17 @@ export default function FrequenciaPage() {
                   }}
                   disabled={!canNavigateLeft()}
                   className={cn(
-                    "p-2.5 rounded-xl transition-all",
+                    "min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl transition-all shrink-0",
                     canNavigateLeft() 
-                      ? "hover:bg-white hover:text-blue-600 hover:shadow-sm text-slate-500 cursor-pointer" 
+                      ? "hover:bg-white hover:text-blue-600 hover:shadow-sm text-slate-600 cursor-pointer active:scale-95" 
                       : "text-slate-350 opacity-40 cursor-not-allowed"
                   )}
+                  aria-label={language === 'pt' ? 'Período anterior' : 'Previous period'}
                 >
                   <ChevronLeft size={20} strokeWidth={2.5} />
                 </button>
-                <div className="text-center min-w-[220px]">
-                  <h2 className="text-xl font-black text-slate-900 capitalize tracking-tight">
+                <div className="text-center flex-1 min-w-0 sm:min-w-[210px] px-1">
+                  <h2 className="text-base sm:text-xl font-black text-slate-900 capitalize tracking-tight truncate">
                     {mapGranularity === 'week' ? (
                       `Semana de ${format(startOfWeek(currentMapDate, { weekStartsOn: 1 }), 'dd/MM')}`
                     ) : mapGranularity === 'year' ? (
@@ -1050,34 +1133,37 @@ export default function FrequenciaPage() {
                   }}
                   disabled={!canNavigateRight()}
                   className={cn(
-                    "p-2.5 rounded-xl transition-all",
+                    "min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl transition-all shrink-0",
                     canNavigateRight() 
-                      ? "hover:bg-white hover:text-blue-600 hover:shadow-sm text-slate-500 cursor-pointer" 
+                      ? "hover:bg-white hover:text-blue-600 hover:shadow-sm text-slate-600 cursor-pointer active:scale-95" 
                       : "text-slate-350 opacity-40 cursor-not-allowed"
                   )}
+                  aria-label={language === 'pt' ? 'Próximo período' : 'Next period'}
                 >
                   <ChevronRight size={20} strokeWidth={2.5} />
                 </button>
               </div>
 
-              <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 flex-wrap">
                 <button
                   type="button"
                   onClick={handleOpenPrintAttendanceModal}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-xs font-black shadow-lg shadow-blue-900/10 transition-all cursor-pointer select-none active:scale-95 shrink-0"
+                  className="mobile-only-neon-3d neon-tone-blue flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 min-h-[44px] bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-xs font-black shadow-lg shadow-blue-900/10 transition-all cursor-pointer select-none active:scale-95 shrink-0"
                   title={language === 'pt' ? 'Gerar e baixar folha de frequência em PDF' : 'Generate and download attendance PDF sheet'}
                 >
                   <Download size={16} />
                   {language === 'pt' ? 'BAIXAR EM PDF' : 'DOWNLOAD PDF'}
                 </button>
 
-                <div className="flex bg-slate-100 p-1 rounded-2xl border border-slate-200">
+                <div className="grid grid-cols-2 sm:flex bg-slate-100 p-1 rounded-2xl border border-slate-200 gap-1 sm:gap-0">
                   <button
                     type="button"
                     onClick={() => setMapGranularity('week')}
                     className={cn(
-                      "flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all",
-                      mapGranularity === 'week' ? "bg-white text-blue-600 shadow-md" : "text-slate-500 hover:text-slate-700"
+                      "flex items-center justify-center gap-2 px-4 sm:px-5 py-2 min-h-[42px] rounded-xl text-xs font-bold transition-all cursor-pointer",
+                      mapGranularity === 'week'
+                        ? "mobile-only-neon-3d neon-tone-cyan bg-white text-blue-600 shadow-md"
+                        : "text-slate-500 hover:text-slate-700"
                     )}
                   >
                     <Calendar size={16} />
@@ -1087,8 +1173,10 @@ export default function FrequenciaPage() {
                     type="button"
                     onClick={() => setMapGranularity('month')}
                     className={cn(
-                      "flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all",
-                      mapGranularity === 'month' ? "bg-white text-blue-600 shadow-md" : "text-slate-500 hover:text-slate-700"
+                      "flex items-center justify-center gap-2 px-4 sm:px-5 py-2 min-h-[42px] rounded-xl text-xs font-bold transition-all cursor-pointer",
+                      mapGranularity === 'month'
+                        ? "mobile-only-neon-3d neon-tone-indigo bg-white text-blue-600 shadow-md"
+                        : "text-slate-500 hover:text-slate-700"
                     )}
                   >
                     <LayoutGrid size={16} />
@@ -1110,24 +1198,23 @@ export default function FrequenciaPage() {
             <div 
               id="frequency-print-area"
               data-document-sheet="true"
-              className="official-document-sheet bg-white rounded-[2rem] border border-slate-200 shadow-xl shadow-slate-200/50 p-6 md:p-8 relative overflow-hidden text-slate-900"
+              className="official-document-sheet bg-white rounded-2xl sm:rounded-[2rem] border border-slate-200 shadow-xl shadow-slate-200/50 p-3.5 sm:p-6 md:p-8 relative overflow-hidden text-slate-900"
             >
               {/* Elegant Header Block for Screen Display & Official Print Layouts */}
-              <div className="mb-6 border-b border-slate-200 pb-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="flex items-center gap-5">
-                  <div className="w-28 h-28 shrink-0 flex items-center justify-center overflow-hidden bg-white border border-slate-200 rounded-2xl p-1.5 shadow-sm">
+              <div className="mb-4 sm:mb-6 border-b border-slate-200 pb-4 sm:pb-5 flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
+                <div className="flex items-center gap-3 sm:gap-5">
+                  <div className="w-14 h-14 sm:w-20 sm:h-20 md:w-24 md:h-24 print:w-20 print:h-20 shrink-0 flex items-center justify-center overflow-hidden bg-white border border-slate-200 rounded-xl sm:rounded-2xl p-1 sm:p-1.5 shadow-sm">
                     <img
                       src={typeof navalMissionLogo === 'string' ? navalMissionLogo : (navalMissionLogo as any)?.src || navalMissionLogo}
                       alt="Logo Missão de Assessoria Naval"
-                      className="w-24 h-24 object-contain"
-                      style={{ width: '96px', height: '96px' }}
+                      className="w-full h-full object-contain"
                     />
                   </div>
-                  <div>
-                    <h3 className="text-[10px] font-black text-blue-700 uppercase tracking-widest font-mono">
+                  <div className="min-w-0">
+                    <h3 className="text-[9px] sm:text-[10px] font-black text-blue-700 uppercase tracking-widest font-mono">
                       {language === 'pt' ? 'Sistema de Gestão de Frequência' : 'Attendance Management System'}
                     </h3>
-                    <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight mt-0.5">
+                    <h1 className="text-base sm:text-lg font-black text-slate-900 uppercase tracking-tight mt-0.5 leading-tight">
                       {mapGranularity === 'week' 
                         ? (language === 'pt' ? 'Folha de Frequência Semanal' : 'Weekly Attendance Sheet')
                         : mapGranularity === 'year'
@@ -1135,7 +1222,7 @@ export default function FrequenciaPage() {
                           : (language === 'pt' ? 'Folha de Frequência Mensal' : 'Monthly Attendance Sheet')
                       }
                     </h1>
-                    <p className="text-xs font-semibold text-slate-500 mt-0.5">
+                    <p className="text-[11px] sm:text-xs font-semibold text-slate-500 mt-0.5">
                       {mapGranularity === 'week' ? (
                         `Semana de ${format(startOfWeek(currentMapDate, { weekStartsOn: 1 }), 'dd/MM/yyyy')} a ${format(endOfWeek(currentMapDate, { weekStartsOn: 1 }), 'dd/MM/yyyy')}`
                       ) : mapGranularity === 'year' ? (
@@ -1147,33 +1234,33 @@ export default function FrequenciaPage() {
                   </div>
                 </div>
 
-                <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl flex flex-wrap items-center gap-4 text-xs">
-                  <div>
+                <div className="bg-slate-50 border border-slate-200 p-2.5 sm:p-3 rounded-xl grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2.5 sm:gap-4 text-xs">
+                  <div className="min-w-0">
                     <span className="block opacity-65 font-bold uppercase text-[9px] tracking-wider text-slate-400">{language === 'pt' ? 'CURSO' : 'COURSE'}</span>
-                    <span className="font-bold text-slate-700">
+                    <span className="font-bold text-slate-700 block truncate">
                       {cursos.find(c => c.id === selectedCurso)?.nome || t.common.all || 'Todos'}
                     </span>
                   </div>
-                  <div className="border-l border-slate-200 h-6 shrink-0" />
-                  <div>
+                  <div className="hidden sm:block border-l border-slate-200 h-6 shrink-0" />
+                  <div className="min-w-0">
                     <span className="block opacity-65 font-bold uppercase text-[9px] tracking-wider text-slate-400">{language === 'pt' ? 'TURMA' : 'CLASS'}</span>
-                    <span className="font-bold text-slate-700 font-mono">
+                    <span className="font-bold text-slate-700 font-mono block truncate">
                       {activeTurma ? getCleanTurmaName(activeTurma, cursos.find(c => c.id === selectedCurso)?.nome, language === 'pt' ? 'Turma Única' : 'Single Class') : (language === 'pt' ? 'Todas' : 'All')}
                     </span>
                   </div>
-                  <div className="border-l border-slate-200 h-6 shrink-0" />
+                  <div className="hidden sm:block border-l border-slate-200 h-6 shrink-0" />
                   <div>
                     <span className="block opacity-65 font-bold uppercase text-[9px] tracking-wider text-slate-400">{language === 'pt' ? 'ALUNOS' : 'STUDENTS'}</span>
-                    <span className="font-bold text-slate-700 font-mono">
+                    <span className="font-bold text-slate-700 font-mono tabular-nums">
                       {students.length} {language === 'pt' ? 'Ativos' : 'Active'}
                     </span>
                   </div>
                   {(activeTurma?.documento_criacao || cursos.find(c => c.id === selectedCurso)?.documento_criacao) && (
                     <>
-                      <div className="border-l border-slate-200 h-6 shrink-0" />
-                      <div>
+                      <div className="hidden sm:block border-l border-slate-200 h-6 shrink-0" />
+                      <div className="min-w-0">
                         <span className="block opacity-65 font-bold uppercase text-[9px] tracking-wider text-slate-400">{language === 'pt' ? 'DOCUMENTO' : 'DOCUMENT'}</span>
-                        <span className="font-bold text-slate-800 font-mono">
+                        <span className="font-bold text-slate-800 font-mono block truncate">
                           {activeTurma?.documento_criacao || cursos.find(c => c.id === selectedCurso)?.documento_criacao}
                         </span>
                       </div>
@@ -1181,10 +1268,10 @@ export default function FrequenciaPage() {
                   )}
                   {formattedTurmaPeriod && (
                     <>
-                      <div className="border-l border-slate-200 h-6 shrink-0" />
-                      <div>
+                      <div className="hidden sm:block border-l border-slate-200 h-6 shrink-0" />
+                      <div className="col-span-2 sm:col-span-1">
                         <span className="block opacity-65 font-bold uppercase text-[9px] tracking-wider text-slate-400">{language === 'pt' ? 'PERÍODO LETIVO' : 'PERIOD'}</span>
-                        <span className="font-bold text-blue-700 font-mono">
+                        <span className="font-bold text-blue-700 font-mono tabular-nums">
                           {formattedTurmaPeriod}
                         </span>
                       </div>
@@ -1192,21 +1279,21 @@ export default function FrequenciaPage() {
                   )}
                   {courseOverallStats.totalDays > 0 && (
                     <>
-                      <div className="border-l border-slate-200 h-6 shrink-0" />
+                      <div className="hidden sm:block border-l border-slate-200 h-6 shrink-0" />
                       <div>
                         <span className="block opacity-65 font-bold uppercase text-[9px] tracking-wider text-slate-400">
                           {language === 'pt' ? 'AULAS NO PERÍODO' : 'COURSE SESSIONS'}
                         </span>
-                        <span className="font-bold text-emerald-700 font-mono">
+                        <span className="font-bold text-emerald-700 font-mono tabular-nums">
                           {courseOverallStats.totalDays} {language === 'pt' ? 'dias' : 'days'}
                         </span>
                       </div>
-                      <div className="border-l border-slate-200 h-6 shrink-0" />
+                      <div className="hidden sm:block border-l border-slate-200 h-6 shrink-0" />
                       <div>
                         <span className="block opacity-65 font-bold uppercase text-[9px] tracking-wider text-slate-400">
                           {language === 'pt' ? 'MÉDIA DA TURMA' : 'CLASS AVERAGE'}
                         </span>
-                        <span className="font-extrabold text-blue-800 font-mono">
+                        <span className="font-extrabold text-blue-800 font-mono tabular-nums">
                           {courseOverallStats.averagePct !== null ? `${courseOverallStats.averagePct}%` : '—'}
                         </span>
                       </div>
@@ -1244,7 +1331,6 @@ export default function FrequenciaPage() {
                 #frequency-print-area th.sticky, 
                 #frequency-print-area td.sticky {
                   position: sticky !important;
-                  left: 0 !important;
                   background-color: #ffffff !important;
                   border-right: 2px solid #94a3b8 !important;
                   z-index: 10 !important;
@@ -1400,16 +1486,393 @@ export default function FrequenciaPage() {
                 }
               `}} />
 
-              <div className="overflow-x-auto">
+              {/* Mobile View Switcher & Interactive Day-Call Cards (< md) */}
+              {mapGranularity !== 'year' && (
+                <div className="md:hidden print:hidden space-y-3.5 mb-4">
+                  <div className="flex items-center justify-between gap-2 bg-slate-50 p-2.5 rounded-2xl border border-slate-200">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-600 pl-1">
+                      {language === 'pt' ? 'Modo Mobile' : 'Mobile View'}
+                    </span>
+                    <div className="inline-flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setMobileViewMode('cards')}
+                        className={cn(
+                          "min-h-[38px] px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer",
+                          mobileViewMode === 'cards'
+                            ? "neon-3d-btn neon-tone-cyan"
+                            : "bg-white text-slate-700 border border-slate-200"
+                        )}
+                      >
+                        {language === 'pt' ? 'Chamada / Dia' : 'Day Cards'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setMobileViewMode('table')}
+                        className={cn(
+                          "min-h-[38px] px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer",
+                          mobileViewMode === 'table'
+                            ? "neon-3d-btn neon-tone-indigo"
+                            : "bg-white text-slate-700 border border-slate-200"
+                        )}
+                      >
+                        {language === 'pt' ? 'Grade Completa' : 'Full Grid'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {mobileViewMode === 'cards' && (
+                    <div className="space-y-3.5">
+                      {activeIntervalDays.length === 0 ? (
+                        <div className="py-10 px-4 text-center rounded-2xl border border-slate-200 bg-slate-50 text-xs font-bold text-slate-500">
+                          {language === 'pt'
+                            ? 'Nenhum dia dentro do período letivo selecionado.'
+                            : 'No days within the selected academic period.'}
+                        </div>
+                      ) : (
+                        <>
+                          {/* Horizontal Day Scroller */}
+                          <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5">
+                            {activeIntervalDays.map(day => {
+                              const dStr = format(day, 'yyyy-MM-dd');
+                              const isSelected = dStr === effectiveMobileDayStr;
+                              const holiday = isHoliday(day);
+                              const isWk = isWeekend(day);
+                              const isStartDay = effectiveStartDate && dStr === effectiveStartDate;
+                              const markedCount = students.length > 0
+                                ? mapData.filter(r => {
+                                    if (!r.data) return false;
+                                    const dbDateStr = typeof r.data === 'string' ? r.data.substring(0, 10) : format(new Date(r.data), 'yyyy-MM-dd');
+                                    return dbDateStr === dStr;
+                                  }).length
+                                : 0;
+
+                              return (
+                                <button
+                                  key={`mob-day-${dStr}`}
+                                  type="button"
+                                  onClick={() => setMobileSelectedDayStr(dStr)}
+                                  className={cn(
+                                    "min-w-[52px] min-h-[58px] px-2 py-1.5 rounded-2xl flex flex-col items-center justify-center shrink-0 transition-all cursor-pointer border",
+                                    isSelected
+                                      ? "neon-3d-btn neon-tone-blue"
+                                      : holiday
+                                        ? "bg-rose-50 text-rose-800 border-rose-200"
+                                        : isWk
+                                          ? "bg-slate-100 text-slate-500 border-slate-200"
+                                          : "bg-white text-slate-700 border-slate-200"
+                                  )}
+                                >
+                                  <span className={cn(
+                                    "text-[9px] font-black uppercase leading-none",
+                                    isSelected ? "text-white/90" : "opacity-75"
+                                  )}>
+                                    {format(day, 'EEE', { locale: dateLocale })}
+                                  </span>
+                                  <span className="text-sm font-black tabular-nums leading-tight mt-0.5">
+                                    {format(day, 'dd')}
+                                  </span>
+                                  <span className={cn(
+                                    "text-[8px] font-black leading-none mt-0.5",
+                                    isSelected ? "text-white" : holiday ? "text-rose-700" : markedCount > 0 ? "text-emerald-700" : "text-slate-400"
+                                  )}>
+                                    {holiday ? 'FE' : isStartDay ? 'Início' : markedCount > 0 ? `${markedCount}✓` : isWk ? (day.getDay() === 0 ? 'Dom' : 'Sáb') : '·'}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+
+                          {/* Selected Day Header + Mass Action */}
+                          {effectiveMobileDay && (
+                            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3 space-y-2.5">
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="min-w-0">
+                                  <div className="text-xs font-black text-slate-900 capitalize truncate">
+                                    {format(effectiveMobileDay, "EEEE, dd 'de' MMMM", { locale: dateLocale })}
+                                  </div>
+                                  <div className="text-[10px] font-bold text-slate-500 mt-0.5">
+                                    {(() => {
+                                      const hol = isHoliday(effectiveMobileDay);
+                                      if (hol) return `${language === 'pt' ? 'Feriado (STP):' : 'Holiday:'} ${hol.name}`;
+                                      if (isWeekend(effectiveMobileDay)) return language === 'pt' ? 'Fim de semana' : 'Weekend';
+                                      return language === 'pt' ? 'Toque nos botões abaixo para registrar' : 'Tap buttons below to record';
+                                    })()}
+                                  </div>
+                                </div>
+                                {!isReadOnly && selectedTurma && students.length > 0 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if ((effectiveStartDate && effectiveMobileDayStr < effectiveStartDate) || (effectiveEndDate && effectiveMobileDayStr > effectiveEndDate)) {
+                                        toast.error(language === 'pt' ? 'Data fora do período letivo do curso/turma.' : 'Date outside the course/class period.');
+                                        return;
+                                      }
+                                      setActiveBulkDay({ dayStr: effectiveMobileDayStr, day: effectiveMobileDay });
+                                    }}
+                                    className="neon-3d-btn neon-tone-emerald min-h-[40px] px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 shrink-0 cursor-pointer"
+                                  >
+                                    <ListChecks size={14} />
+                                    {language === 'pt' ? 'Turma Toda' : 'All Class'}
+                                  </button>
+                                )}
+                              </div>
+
+                              {/* Selected Day Live Summary */}
+                              {students.length > 0 && (
+                                <div className="grid grid-cols-4 gap-1.5 text-center">
+                                  <div className="bg-white border border-emerald-200 rounded-xl py-1.5 px-1">
+                                    <div className="text-[9px] font-black text-emerald-700 uppercase">Pres.</div>
+                                    <div className="text-sm font-black text-emerald-900 tabular-nums">{mobileDayStats.present}</div>
+                                  </div>
+                                  <div className="bg-white border border-rose-200 rounded-xl py-1.5 px-1">
+                                    <div className="text-[9px] font-black text-rose-700 uppercase">Faltas</div>
+                                    <div className="text-sm font-black text-rose-900 tabular-nums">{mobileDayStats.absent}</div>
+                                  </div>
+                                  <div className="bg-white border border-amber-200 rounded-xl py-1.5 px-1">
+                                    <div className="text-[9px] font-black text-amber-700 uppercase">Outras</div>
+                                    <div className="text-sm font-black text-amber-900 tabular-nums">{mobileDayStats.justifiedOrOther}</div>
+                                  </div>
+                                  <div className="bg-white border border-slate-200 rounded-xl py-1.5 px-1">
+                                    <div className="text-[9px] font-black text-slate-600 uppercase">Pend.</div>
+                                    <div className="text-sm font-black text-slate-900 tabular-nums">{mobileDayStats.pending}</div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Quick Search & Filter */}
+                          {students.length > 0 && (
+                            <div className="space-y-2">
+                              <div className="relative">
+                                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                <input
+                                  type="text"
+                                  value={searchTerm}
+                                  onChange={(e) => setSearchTerm(e.target.value)}
+                                  placeholder={language === 'pt' ? 'Buscar aluno na turma...' : 'Search student...'}
+                                  className="w-full min-h-[44px] pl-10 pr-9 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500"
+                                />
+                                {searchTerm && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setSearchTerm('')}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-slate-700"
+                                    aria-label={language === 'pt' ? 'Limpar busca' : 'Clear search'}
+                                  >
+                                    <X size={14} />
+                                  </button>
+                                )}
+                              </div>
+                              <div className="grid grid-cols-3 gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => setMobileStatusFilter('all')}
+                                  className={cn(
+                                    "min-h-[38px] px-2 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer border",
+                                    mobileStatusFilter === 'all'
+                                      ? "bg-slate-900 text-white border-slate-900"
+                                      : "bg-white text-slate-600 border-slate-200"
+                                  )}
+                                >
+                                  {language === 'pt' ? `Todos (${students.length})` : `All (${students.length})`}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setMobileStatusFilter('pending')}
+                                  className={cn(
+                                    "min-h-[38px] px-2 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer border",
+                                    mobileStatusFilter === 'pending'
+                                      ? "bg-blue-600 text-white border-blue-600"
+                                      : "bg-white text-slate-600 border-slate-200"
+                                  )}
+                                >
+                                  {language === 'pt' ? `Pendentes (${mobileDayStats.pending})` : `Pending (${mobileDayStats.pending})`}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setMobileStatusFilter('absent')}
+                                  className={cn(
+                                    "min-h-[38px] px-2 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer border",
+                                    mobileStatusFilter === 'absent'
+                                      ? "bg-rose-600 text-white border-rose-600"
+                                      : "bg-white text-slate-600 border-slate-200"
+                                  )}
+                                >
+                                  {language === 'pt' ? 'Faltas / Occ.' : 'Absences'}
+                                </button>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Student Cards */}
+                          {students.length === 0 ? (
+                            <div className="py-12 px-4 text-center text-slate-500 font-bold bg-slate-50 rounded-2xl border border-slate-200 text-sm">
+                              {selectedTurma
+                                ? (language === 'pt' ? 'Nenhum aluno cadastrado nesta turma.' : 'No students registered in this class.')
+                                : (language === 'pt' ? 'Selecione uma turma acima para carregar a frequência.' : 'Select a class above to load attendance.')}
+                            </div>
+                          ) : mobileFilteredStudents.length === 0 ? (
+                            <div className="py-10 px-4 text-center text-slate-500 font-bold bg-slate-50 rounded-2xl border border-slate-200 text-xs">
+                              {language === 'pt' ? 'Nenhum aluno encontrado com este filtro.' : 'No students match this filter.'}
+                            </div>
+                          ) : (
+                            <div className="space-y-2.5">
+                              {mobileFilteredStudents.map((student) => {
+                                const originalIndex = students.findIndex(s => s.id === student.id);
+                                const courseStats = calculateStudentCoursePercentage(
+                                  student.id,
+                                  courseAttendance,
+                                  effectiveStartDate,
+                                  effectiveEndDate
+                                );
+                                const pctFreq = courseStats.pct;
+                                const displayName = (student.posto_graduacao || student.nome_guerra)
+                                  ? `${student.posto_graduacao || ''} ${student.nome_guerra || student.nome}`.trim()
+                                  : student.nome;
+
+                                const rec = mapData.find(r => {
+                                  if (!r.data) return false;
+                                  const dbDateStr = typeof r.data === 'string' ? r.data.substring(0, 10) : format(new Date(r.data), 'yyyy-MM-dd');
+                                  return r.aluno_id === student.id && dbDateStr === effectiveMobileDayStr;
+                                });
+                                const status = rec ? (rec.observacao || (rec.presente ? 'P' : 'F')) : null;
+                                const statusLabelMap: Record<string, string> = {
+                                  P: language === 'pt' ? 'P · Presente' : 'P · Present',
+                                  F: language === 'pt' ? 'F · Falta' : 'F · Absent',
+                                  FJ: language === 'pt' ? 'FJ · Justificada' : 'FJ · Excused',
+                                  A: language === 'pt' ? 'A · Atraso' : 'A · Delay',
+                                  D: language === 'pt' ? 'D · Dispensado' : 'D · Exempt',
+                                  LE: language === 'pt' ? 'LE · Lic. Extraord.' : 'LE · Special Leave'
+                                };
+                                const holiday = effectiveMobileDay ? isHoliday(effectiveMobileDay) : null;
+                                const isOutOfPeriod = Boolean(
+                                  (effectiveStartDate && effectiveMobileDayStr < effectiveStartDate) ||
+                                  (effectiveEndDate && effectiveMobileDayStr > effectiveEndDate)
+                                );
+
+                                const quickOptions: { code: 'P' | 'F' | 'FJ' | 'A' | 'D' | 'LE'; short: string; activeCls: string; idleCls: string }[] = [
+                                  { code: 'P', short: language === 'pt' ? 'Pres.' : 'Pres.', activeCls: 'bg-emerald-600 text-white border-emerald-700 shadow-sm', idleCls: 'bg-emerald-50/70 text-emerald-800 border-emerald-200 hover:bg-emerald-100' },
+                                  { code: 'F', short: language === 'pt' ? 'Falta' : 'Abs.', activeCls: 'bg-rose-600 text-white border-rose-700 shadow-sm', idleCls: 'bg-rose-50/70 text-rose-800 border-rose-200 hover:bg-rose-100' },
+                                  { code: 'FJ', short: language === 'pt' ? 'Just.' : 'Exc.', activeCls: 'bg-amber-500 text-white border-amber-600 shadow-sm', idleCls: 'bg-amber-50/70 text-amber-800 border-amber-200 hover:bg-amber-100' },
+                                  { code: 'A', short: language === 'pt' ? 'Atras.' : 'Late', activeCls: 'bg-orange-500 text-white border-orange-600 shadow-sm', idleCls: 'bg-orange-50/70 text-orange-800 border-orange-200 hover:bg-orange-100' },
+                                  { code: 'D', short: language === 'pt' ? 'Disp.' : 'Exm.', activeCls: 'bg-sky-500 text-white border-sky-600 shadow-sm', idleCls: 'bg-sky-50/70 text-sky-800 border-sky-200 hover:bg-sky-100' },
+                                  { code: 'LE', short: language === 'pt' ? 'Lic.' : 'Lve.', activeCls: 'bg-purple-600 text-white border-purple-700 shadow-sm', idleCls: 'bg-purple-50/70 text-purple-800 border-purple-200 hover:bg-purple-100' }
+                                ];
+
+                                return (
+                                  <div
+                                    key={`mob-student-${student.id || originalIndex}`}
+                                    className="bg-white border border-slate-200 rounded-2xl p-3.5 shadow-xs space-y-2.5"
+                                  >
+                                    <div className="flex items-start justify-between gap-2.5">
+                                      <div className="min-w-0 flex-1">
+                                        <div className="flex items-baseline gap-1.5">
+                                          <span className="text-[11px] font-mono font-black text-slate-400 shrink-0 tabular-nums">
+                                            #{originalIndex + 1}
+                                          </span>
+                                          <h4 className="text-sm font-black text-slate-900 leading-snug break-words">
+                                            {displayName}
+                                          </h4>
+                                        </div>
+                                        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] font-semibold text-slate-500 tabular-nums">
+                                          <span>
+                                            {language === 'pt' ? 'Curso:' : 'Course:'}{' '}
+                                            <strong className="font-mono text-blue-900">
+                                              {pctFreq !== null ? `${pctFreq}%` : '—'}
+                                            </strong>
+                                          </span>
+                                          {courseStats.totalDays > 0 && (
+                                            <span>
+                                              ({courseStats.presences}/{courseStats.totalDays} {language === 'pt' ? 'dias' : 'days'})
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+
+                                      <div className="shrink-0 text-right">
+                                        {status ? (
+                                          <span className={cn(
+                                            "inline-block px-2 py-1 rounded-lg text-[10px] font-black border",
+                                            status === 'P' && "bg-emerald-50 text-emerald-800 border-emerald-200",
+                                            status === 'F' && "bg-rose-50 text-rose-800 border-rose-200",
+                                            status === 'FJ' && "bg-amber-50 text-amber-800 border-amber-200",
+                                            status === 'A' && "bg-orange-50 text-orange-800 border-orange-200",
+                                            status === 'D' && "bg-sky-50 text-sky-800 border-sky-200",
+                                            status === 'LE' && "bg-purple-50 text-purple-800 border-purple-200"
+                                          )}>
+                                            {statusLabelMap[status] || status}
+                                          </span>
+                                        ) : holiday ? (
+                                          <span className="inline-block px-2 py-1 rounded-lg text-[10px] font-black bg-rose-50 text-rose-700 border border-rose-200">
+                                            FE · Feriado
+                                          </span>
+                                        ) : (
+                                          <span className="inline-block px-2 py-1 rounded-lg text-[10px] font-bold bg-slate-100 text-slate-500 border border-slate-200">
+                                            {language === 'pt' ? 'Sem registro' : 'Unmarked'}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    {!isReadOnly && (
+                                      <div className="pt-1 border-t border-slate-100">
+                                        <div className="grid grid-cols-6 gap-1.5">
+                                          {quickOptions.map(opt => {
+                                            const isActive = status === opt.code;
+                                            return (
+                                              <button
+                                                key={opt.code}
+                                                type="button"
+                                                disabled={isOutOfPeriod}
+                                                onClick={() => {
+                                                  if (isOutOfPeriod) {
+                                                    toast.error(language === 'pt' ? 'Data fora do período letivo do curso/turma.' : 'Date outside the course/class period.');
+                                                    return;
+                                                  }
+                                                  handleToggleMapAttendance(student.id, effectiveMobileDayStr, isActive ? null : opt.code);
+                                                }}
+                                                className={cn(
+                                                  "min-h-[46px] rounded-xl border flex flex-col items-center justify-center transition-all cursor-pointer active:scale-95 disabled:opacity-40",
+                                                  isActive ? opt.activeCls : opt.idleCls
+                                                )}
+                                              >
+                                                <span className="text-xs font-black leading-none">{opt.code}</span>
+                                                <span className="text-[8.5px] font-bold leading-none mt-1 opacity-90">{opt.short}</span>
+                                              </button>
+                                            );
+                                          })}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className={cn(
+                "overflow-x-auto",
+                mobileViewMode === 'cards' && mapGranularity !== 'year' ? "hidden md:block print:block" : "block"
+              )}>
                 <table className="w-full border-collapse border border-slate-200">
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-200">
-                      <th className="sticky left-0 z-20 bg-slate-100 p-2.5 w-[36px] min-w-[36px] text-center text-[10px] font-black text-slate-600 border border-slate-200">
+                      <th className="sticky left-0 z-20 bg-slate-100 p-1.5 md:p-2.5 w-[28px] min-w-[28px] md:w-[36px] md:min-w-[36px] text-center text-[10px] font-black text-slate-600 border border-slate-200">
                         #
                       </th>
                       <th className={cn(
-                        "sticky left-[36px] z-20 bg-slate-50 p-3 text-[10.5px] font-black text-slate-700 uppercase tracking-wider text-left border border-slate-200",
-                        mapGranularity === 'week' ? "min-w-[260px]" : "min-w-[220px]"
+                        "sticky left-[28px] md:left-[36px] z-20 bg-slate-50 p-2 md:p-3 text-[9.5px] md:text-[10.5px] font-black text-slate-700 uppercase tracking-wider text-left border border-slate-200",
+                        mapGranularity === 'week'
+                          ? "min-w-[138px] max-w-[155px] md:max-w-none md:min-w-[260px]"
+                          : "min-w-[132px] max-w-[148px] md:max-w-none md:min-w-[220px]"
                       )}>
                         {language === 'pt' ? 'POSTO / GRADUAÇÃO / NOME DE GUERRA' : 'RANK / WAR NAME / STUDENT'}
                       </th>
@@ -1552,18 +2015,18 @@ export default function FrequenciaPage() {
                         return (
                           <tr key={`student-${student.id || idx}`} className="hover:bg-slate-50/50 transition-colors group">
                             {/* Sequential Index */}
-                            <td className="sticky left-0 z-10 bg-slate-50 p-2 text-center font-mono font-bold text-xs text-slate-500 border border-slate-200">
+                            <td className="sticky left-0 z-10 bg-slate-50 p-1.5 md:p-2 text-center font-mono font-bold text-[11px] md:text-xs text-slate-500 border border-slate-200 tabular-nums">
                               {idx + 1}
                             </td>
 
                             {/* Student Rank + War Name */}
-                            <td className="sticky left-[36px] z-10 bg-white p-3 font-bold text-slate-800 border border-slate-200 group-hover:bg-slate-50 transition-colors">
+                            <td className="sticky left-[28px] md:left-[36px] z-10 bg-white p-2 md:p-3 font-bold text-slate-800 border border-slate-200 group-hover:bg-slate-50 transition-colors max-w-[155px] md:max-w-none">
                               <div className="flex items-center gap-2.5">
-                                <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-[9px] font-bold text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-all shrink-0 print:hidden">
+                                <div className="hidden sm:flex w-7 h-7 rounded-lg bg-slate-100 items-center justify-center text-[9px] font-bold text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-all shrink-0 print:hidden">
                                   {displayName.substring(0, 2).toUpperCase()}
                                 </div>
                                 <div className="flex flex-col min-w-0">
-                                  <span className="truncate max-w-[200px] text-xs font-black text-slate-800">{displayName}</span>
+                                  <span className="line-clamp-2 md:line-clamp-none md:truncate md:max-w-[200px] text-[11px] md:text-xs font-black text-slate-800 leading-tight">{displayName}</span>
                                 </div>
                               </div>
                             </td>
@@ -1760,7 +2223,7 @@ export default function FrequenciaPage() {
                   exit={{ scale: 0.95, y: 15, opacity: 0 }}
                   transition={{ type: "spring", duration: 0.3 }}
                   onClick={(e) => e.stopPropagation()}
-                  className="relative bg-white rounded-2xl shadow-2xl p-6 w-full max-w-xl border border-slate-200 z-50 overflow-hidden"
+                  className="relative bg-white rounded-2xl shadow-2xl p-4 sm:p-6 w-full max-w-xl max-h-[90vh] overflow-y-auto border border-slate-200 z-50"
                 >
                   {/* Header */}
                   <div className="flex items-start justify-between mb-5">
@@ -1802,7 +2265,7 @@ export default function FrequenciaPage() {
                   </div>
 
                   {/* Horizontal Options Row */}
-                  <div className="grid grid-cols-4 sm:grid-cols-7 gap-2 sm:gap-2.5 py-2">
+                  <div className="grid grid-cols-3 sm:grid-cols-7 gap-2 sm:gap-2.5 py-2">
                     {/* Option P */}
                     <button
                       onClick={() => {
@@ -1913,7 +2376,7 @@ export default function FrequenciaPage() {
                   exit={{ scale: 0.95, y: 15, opacity: 0 }}
                   transition={{ type: "spring", duration: 0.3 }}
                   onClick={(e) => e.stopPropagation()}
-                  className="relative bg-white rounded-2xl shadow-2xl p-6 w-full max-w-xl border border-slate-200 z-50 overflow-hidden"
+                  className="relative bg-white rounded-2xl shadow-2xl p-4 sm:p-6 w-full max-w-xl max-h-[90vh] overflow-y-auto border border-slate-200 z-50"
                 >
                   {/* Header */}
                   <div className="flex items-start justify-between mb-5">
@@ -1938,7 +2401,7 @@ export default function FrequenciaPage() {
                   </div>
 
                   {/* Horizontal Options Row */}
-                  <div className="grid grid-cols-4 sm:grid-cols-7 gap-2 sm:gap-2.5 py-2">
+                  <div className="grid grid-cols-3 sm:grid-cols-7 gap-2 sm:gap-2.5 py-2">
                     {/* Option P */}
                     <button
                       onClick={() => {
@@ -2040,19 +2503,19 @@ export default function FrequenciaPage() {
               className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[9999] flex flex-col p-2 sm:p-6 overflow-hidden"
             >
               {/* Modal Control Toolbar */}
-              <div className="bg-slate-950/95 border border-white/10 p-3 sm:p-4 rounded-2xl mb-3 flex flex-col xl:flex-row items-center justify-between gap-3 shrink-0 shadow-2xl no-print">
+              <div className="bg-slate-950/95 border border-white/10 p-3 sm:p-4 rounded-2xl mb-3 flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-3 shrink-0 shadow-2xl no-print max-h-[42vh] xl:max-h-none overflow-y-auto xl:overflow-visible">
                 <div className="flex items-center gap-3 w-full xl:w-auto">
                   <button
                     onClick={() => setIsPrintAttendanceOpen(false)}
-                    className="p-2 hover:bg-white/10 text-slate-400 hover:text-white rounded-xl transition cursor-pointer"
+                    className="min-h-[40px] min-w-[40px] flex items-center justify-center hover:bg-white/10 text-slate-400 hover:text-white rounded-xl transition cursor-pointer shrink-0"
                     title={language === 'pt' ? 'Fechar' : 'Close'}
                   >
                     <X size={20} />
                   </button>
-                  <div>
-                    <h2 className="text-sm sm:text-base font-black text-white flex items-center gap-2 uppercase tracking-wide">
-                      <FileText className="text-blue-500" size={18} />
-                      <span>
+                  <div className="min-w-0">
+                    <h2 className="text-xs sm:text-base font-black text-white flex items-center gap-2 uppercase tracking-wide flex-wrap">
+                      <FileText className="text-blue-500 shrink-0" size={18} />
+                      <span className="truncate">
                         {printSheetType === 'semanal' 
                           ? (language === 'pt' ? 'Folha de Frequência Semanal' : 'Weekly Attendance Sheet')
                           : (language === 'pt' ? 'Folha de Frequência Mensal' : 'Monthly Attendance Sheet')
@@ -2076,9 +2539,9 @@ export default function FrequenciaPage() {
                 </div>
 
                 {/* Toolbar Filters & Edit Controls */}
-                <div className="flex flex-wrap items-center gap-2.5 w-full xl:w-auto justify-start xl:justify-end">
+                <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 sm:gap-2.5 w-full xl:w-auto justify-start xl:justify-end">
                   {/* Select Turma */}
-                  <div className="flex flex-col">
+                  <div className="flex flex-col min-w-0">
                     <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest pl-1 mb-0.5">
                       {language === 'pt' ? 'Turma' : 'Class'}
                     </span>
@@ -2106,7 +2569,7 @@ export default function FrequenciaPage() {
                           }
                         }
                       }}
-                      className="px-2.5 py-1 bg-slate-900 border border-white/20 rounded-lg text-xs font-bold text-white focus:outline-none focus:border-blue-500 min-w-[180px] max-w-[240px] cursor-pointer h-[32px]"
+                      className="px-2.5 py-1 bg-slate-900 border border-white/20 rounded-lg text-xs font-bold text-white focus:outline-none focus:border-blue-500 w-full sm:min-w-[180px] sm:max-w-[240px] cursor-pointer h-[36px] sm:h-[32px]"
                     >
                       {turmas.map((t: any, tIdx: number) => (
                         <option key={t.id || `print-turma-${tIdx}`} value={t.id}>
@@ -2117,15 +2580,15 @@ export default function FrequenciaPage() {
                   </div>
 
                   {/* Select Sheet Type */}
-                  <div className="flex flex-col">
+                  <div className="flex flex-col min-w-0">
                     <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest pl-1 mb-0.5">
                       {language === 'pt' ? 'Tipo' : 'Type'}
                     </span>
-                    <div className="flex bg-slate-900 border border-white/10 p-0.5 rounded-lg h-[32px]">
+                    <div className="flex bg-slate-900 border border-white/10 p-0.5 rounded-lg h-[36px] sm:h-[32px] w-full sm:w-auto">
                       <button
                         onClick={() => setPrintSheetType('mensal')}
                         className={cn(
-                          "px-2.5 py-1 rounded text-[11px] font-bold transition cursor-pointer",
+                          "flex-1 sm:flex-initial px-2.5 py-1 rounded text-[11px] font-bold transition cursor-pointer",
                           printSheetType === 'mensal' ? "bg-blue-600 text-white shadow-xs" : "text-slate-400 hover:text-white"
                         )}
                       >
@@ -2134,7 +2597,7 @@ export default function FrequenciaPage() {
                       <button
                         onClick={() => setPrintSheetType('semanal')}
                         className={cn(
-                          "px-2.5 py-1 rounded text-[11px] font-bold transition cursor-pointer",
+                          "flex-1 sm:flex-initial px-2.5 py-1 rounded text-[11px] font-bold transition cursor-pointer",
                           printSheetType === 'semanal' ? "bg-blue-600 text-white shadow-xs" : "text-slate-400 hover:text-white"
                         )}
                       >
@@ -2145,14 +2608,14 @@ export default function FrequenciaPage() {
 
                   {/* If Weekly: Week selector */}
                   {printSheetType === 'semanal' && activeWeeksList.length > 0 && (
-                    <div className="flex flex-col">
+                    <div className="flex flex-col min-w-0 col-span-2 sm:col-span-1">
                       <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest pl-1 mb-0.5">
                         {language === 'pt' ? 'Semana' : 'Week'}
                       </span>
                       <select
                         value={activeWeekIndex}
                         onChange={(e) => setActiveWeekIndex(parseInt(e.target.value, 10))}
-                        className="px-2.5 py-1 bg-slate-900 border border-white/20 rounded-lg text-xs font-bold text-white focus:outline-none focus:border-blue-500 min-w-[160px] cursor-pointer h-[32px]"
+                        className="px-2.5 py-1 bg-slate-900 border border-white/20 rounded-lg text-xs font-bold text-white focus:outline-none focus:border-blue-500 w-full sm:min-w-[160px] cursor-pointer h-[36px] sm:h-[32px]"
                       >
                         {activeWeeksList.map((week, idx) => (
                           <option key={idx} value={idx}>
@@ -2164,7 +2627,7 @@ export default function FrequenciaPage() {
                   )}
 
                   {/* Period MM/YYYY input */}
-                  <div className="flex flex-col">
+                  <div className="flex flex-col min-w-0">
                     <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest pl-1 mb-0.5">
                       {language === 'pt' ? 'Mês/Ano' : 'Month/Year'}
                     </span>
@@ -2173,12 +2636,12 @@ export default function FrequenciaPage() {
                       value={printPeriod}
                       onChange={(e) => setPrintPeriod(e.target.value)}
                       placeholder="MM/AAAA"
-                      className="px-2.5 py-1 bg-slate-900 border border-white/20 rounded-lg text-xs font-bold text-white focus:outline-none focus:border-blue-500 w-[90px] text-center h-[32px]"
+                      className="px-2.5 py-1 bg-slate-900 border border-white/20 rounded-lg text-xs font-bold text-white focus:outline-none focus:border-blue-500 w-full sm:w-[90px] text-center h-[36px] sm:h-[32px]"
                     />
                   </div>
 
                   {/* Professor Name Edit */}
-                  <div className="flex flex-col">
+                  <div className="flex flex-col min-w-0">
                     <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest pl-1 mb-0.5">
                       {language === 'pt' ? 'Professor(a)' : 'Instructor'}
                     </span>
@@ -2187,12 +2650,12 @@ export default function FrequenciaPage() {
                       value={printProfessorName}
                       onChange={(e) => setPrintProfessorName(e.target.value)}
                       placeholder="Nome do Instrutor"
-                      className="px-2.5 py-1 bg-slate-900 border border-white/20 rounded-lg text-xs font-bold text-white focus:outline-none focus:border-blue-500 w-[140px] h-[32px]"
+                      className="px-2.5 py-1 bg-slate-900 border border-white/20 rounded-lg text-xs font-bold text-white focus:outline-none focus:border-blue-500 w-full sm:w-[140px] h-[36px] sm:h-[32px]"
                     />
                   </div>
 
                   {/* Documento Edit */}
-                  <div className="flex flex-col">
+                  <div className="flex flex-col min-w-0 col-span-2 sm:col-span-1">
                     <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest pl-1 mb-0.5">
                       {language === 'pt' ? 'Documento' : 'Document'}
                     </span>
@@ -2201,12 +2664,12 @@ export default function FrequenciaPage() {
                       value={printDocumento}
                       onChange={(e) => setPrintDocumento(e.target.value)}
                       placeholder="Ordem Interna"
-                      className="px-2.5 py-1 bg-slate-900 border border-white/20 rounded-lg text-xs font-bold text-white focus:outline-none focus:border-blue-500 w-[140px] h-[32px]"
+                      className="px-2.5 py-1 bg-slate-900 border border-white/20 rounded-lg text-xs font-bold text-white focus:outline-none focus:border-blue-500 w-full sm:w-[140px] h-[36px] sm:h-[32px]"
                     />
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="flex flex-wrap items-center gap-2 pt-2 xl:pt-0">
+                  <div className="col-span-2 sm:col-span-1 flex flex-wrap items-center gap-2 pt-1 xl:pt-0">
                     <button
                       onClick={async () => {
                         setIsGeneratingPDF(true);
@@ -2221,7 +2684,7 @@ export default function FrequenciaPage() {
                         setIsGeneratingPDF(false);
                       }}
                       disabled={isGeneratingPDF}
-                      className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-lg shadow-blue-600/30 transition-all cursor-pointer active:scale-95 shrink-0 h-[34px]"
+                      className="mobile-only-neon-3d neon-tone-blue w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-lg shadow-blue-600/30 transition-all cursor-pointer active:scale-95 shrink-0 h-[40px] sm:h-[34px]"
                       title="Baixar folha em arquivo PDF"
                     >
                       {isGeneratingPDF ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
@@ -2232,12 +2695,12 @@ export default function FrequenciaPage() {
               </div>
 
               {/* Printable Canvas Container (Sheet A4 Landscape Optimized) */}
-              <div className="flex-1 overflow-auto bg-slate-900/50 p-2 sm:p-6 rounded-2xl flex justify-center items-start">
+              <div className="flex-1 overflow-auto bg-slate-900/50 p-2 sm:p-6 rounded-2xl flex justify-start lg:justify-center items-start">
                 <div 
                   id="print-attendance-sheet"
                   data-print-landscape="true"
                   data-document-sheet="true"
-                  className="bg-white text-black p-3 sm:p-5 shadow-2xl rounded-sm w-full max-w-[297mm] h-auto flex flex-col justify-between box-border"
+                  className="bg-white text-black p-3 sm:p-5 shadow-2xl rounded-sm min-w-[820px] sm:min-w-0 w-full max-w-[297mm] h-auto flex flex-col justify-between box-border"
                   style={{
                     fontFamily: "'Liberation Sans', Arial, Helvetica, sans-serif"
                   }}

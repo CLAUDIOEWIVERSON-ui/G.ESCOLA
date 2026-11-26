@@ -585,7 +585,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <div className={cn("w-1 h-1 rounded-full", isStudentUser ? "bg-black" : "bg-blue-500")} />
                   {language === 'pt' ? 'Módulos' : 'Modules'}
                 </div>
-                <div className="space-y-1.5">
+                <div className={cn(isStudentUser ? "space-y-2.5" : "space-y-1.5")}>
                   {navItems.map((item: any, idx: number) => {
                     const subItemPaths = item.subItems?.map((s: any) => s.path) || [];
                     const isAnySubActive = subItemPaths.some((p: string) => (pathname + (typeof window !== 'undefined' ? window.location.search : '')) === p);
@@ -595,14 +595,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     const isCalendar = item.path === '/calendario';
                     const isSettings = item.path === '/configuracoes';
                     const needsPasswordChange = isSettings && profile && !profile.has_changed_password;
+                    const studentNeonConfig = MOBILE_NAV_COLORS[item.path] || {
+                      text: 'text-cyan-700',
+                      activeText: 'text-cyan-900',
+                      bg: 'neon-3d-btn neon-tone-cyan',
+                      activeBg: 'neon-3d-btn neon-tone-cyan neon-3d-btn-active',
+                      border: 'border-cyan-400/60',
+                      indicator: 'bg-cyan-600',
+                    };
 
                     const Content = (
                       <div className={cn(
                         "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group relative overflow-hidden",
+                        isStudentUser && !sidebarOpen && "justify-center px-2",
                         isStudentUser
                           ? isActive
-                            ? "bg-white text-black border-2 border-black font-black shadow-xs"
-                            : "bg-white text-black hover:bg-slate-100 border border-transparent hover:border-slate-300"
+                            ? cn(studentNeonConfig.activeBg, "font-black ring-2 ring-black/25")
+                            : cn(studentNeonConfig.bg, "font-bold")
                           : isActive 
                             ? "bg-blue-600/10 text-white border border-blue-500/20 shadow-[0_0_15px_rgba(37,99,235,0.1)]" 
                             : isCalendar
@@ -616,20 +625,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             layoutId="active-indicator"
                             className={cn(
                               "absolute left-0 top-0 bottom-0 w-1 rounded-r-full z-10",
-                              isStudentUser ? "bg-black" : "bg-blue-500"
+                              isStudentUser ? "bg-white/95 shadow-[0_0_8px_rgba(255,255,255,0.9)]" : "bg-blue-500"
                             )}
                           />
                         )}
                         
                         {item.name === t.nav.classes ? (
                           <div className="shrink-0 w-[18px] flex justify-center text-xs font-bold" style={{ letterSpacing: '-2px' }}>
-                            <span className={cn(isStudentUser ? "text-black" : isActive ? "text-blue-400" : "text-slate-500 group-hover:text-slate-300")}>||\</span>
+                            <span className={cn(isStudentUser ? "text-white" : isActive ? "text-blue-400" : "text-slate-500 group-hover:text-slate-300")}>||\</span>
                           </div>
                         ) : (
                           <item.icon size={18} className={cn(
                             "shrink-0 transition-transform group-hover:scale-110", 
                             isStudentUser
-                              ? "text-black"
+                              ? "text-white"
                               : isActive 
                                 ? "text-blue-400" 
                                 : isCalendar 
@@ -642,8 +651,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         
                         <span className={cn(
                           "text-sm transition-opacity flex-1 whitespace-nowrap",
-                          isStudentUser ? (isActive ? "font-black text-black" : "font-medium text-black") : "font-medium",
-                          !sidebarOpen && "opacity-0 invisible w-0",
+                          isStudentUser ? (isActive ? "font-black text-white" : "font-bold text-white") : "font-medium",
+                          !sidebarOpen && (isStudentUser ? "hidden" : "opacity-0 invisible w-0"),
                           !isStudentUser && needsPasswordChange && "text-amber-500 font-bold"
                         )}>
                           {item.name}
@@ -657,7 +666,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                           <span className={cn(
                             "ml-auto text-[9px] font-black tracking-wider border px-1.5 py-0.5 rounded-full uppercase shrink-0 font-sans",
                             isStudentUser
-                              ? "text-black bg-white border-black"
+                              ? "text-white bg-white/20 border-white/50"
                               : "text-amber-500 bg-amber-500/10 border-amber-500/30 animate-pulse"
                           )}>
                             Atenção
@@ -665,7 +674,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         )}
 
                         {needsPasswordChange && !sidebarOpen && (
-                          <span className={cn("absolute right-2 top-2 flex h-2 w-2 rounded-full shrink-0", isStudentUser ? "bg-black" : "bg-amber-500 animate-pulse")} />
+                          <span className={cn("absolute right-2 top-2 flex h-2 w-2 rounded-full shrink-0", isStudentUser ? "bg-white" : "bg-amber-500 animate-pulse")} />
                         )}
                         
                         {hasSubItems && sidebarOpen && (
@@ -673,8 +682,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             size={14} 
                             className={cn(
                               "transition-transform ml-auto shrink-0",
-                              isStudentUser ? "text-black" : "text-slate-600 group-hover:text-slate-400",
-                              isItemExpanded && (isStudentUser ? "rotate-90 text-black" : "rotate-90 text-blue-400")
+                              isStudentUser ? "text-white" : "text-slate-600 group-hover:text-slate-400",
+                              isItemExpanded && (isStudentUser ? "rotate-90 text-white" : "rotate-90 text-blue-400")
                             )} 
                           />
                         )}
@@ -682,7 +691,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     );
 
                     return (
-                      <div key={`nav-item-${item.path}-${idx}`} className={cn("flex flex-col rounded-xl overflow-hidden transition-colors", !isStudentUser && isItemExpanded && hasSubItems && "bg-slate-900/50")}>
+                      <div key={`nav-item-${item.path}-${idx}`} className={cn("flex flex-col rounded-xl transition-colors", isStudentUser ? "overflow-visible" : "overflow-hidden", !isStudentUser && isItemExpanded && hasSubItems && "bg-slate-900/50")}>
                         {hasSubItems ? (
                           <button 
                             onClick={(e) => toggleSubmenu(item.path, e)}
@@ -691,7 +700,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             {Content}
                           </button>
                         ) : (
-                          <Link href={item.path} className="outline-none">
+                          <Link href={item.path} className="block rounded-xl outline-none">
                             {Content}
                           </Link>
                         )}
@@ -734,22 +743,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   })}
 
                   {/* Botão de Sair do Sistema na barra de módulos */}
-                  <div className={cn("pt-2 mt-2 border-t", isStudentUser ? "border-slate-200" : "border-white/5")}>
+                  <div className={cn("pt-2.5 mt-2 border-t", isStudentUser ? "border-slate-200" : "border-white/5")}>
                     <button
                       onClick={handleLogout}
                       title={language === 'pt' ? 'Sair do Sistema' : 'Sign Out'}
                       className={cn(
-                        "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group relative overflow-hidden text-left cursor-pointer border active:scale-[0.98] mobile-only-neon-3d neon-tone-red",
+                        "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group relative overflow-hidden text-left cursor-pointer border active:scale-[0.98]",
+                        isStudentUser && !sidebarOpen && "justify-center px-2",
                         isStudentUser
-                          ? "bg-white text-black border-slate-300 hover:bg-slate-100 hover:border-black"
-                          : "text-rose-400/90 hover:text-rose-200 hover:bg-rose-500/10 border-transparent hover:border-rose-500/20"
+                          ? "neon-3d-btn neon-tone-red font-bold"
+                          : "mobile-only-neon-3d neon-tone-red text-rose-400/90 hover:text-rose-200 hover:bg-rose-500/10 border-transparent hover:border-rose-500/20"
                       )}
                     >
-                      <LogOut size={18} className={cn("shrink-0 group-hover:scale-110 group-hover:-translate-x-0.5 transition-transform", isStudentUser ? "text-black" : "text-rose-400")} />
+                      <LogOut size={18} className={cn("shrink-0 group-hover:scale-110 group-hover:-translate-x-0.5 transition-transform", isStudentUser ? "text-white" : "text-rose-400")} />
                       <span className={cn(
                         "text-sm font-semibold tracking-wide transition-opacity whitespace-nowrap",
-                        isStudentUser && "text-black",
-                        !sidebarOpen && "opacity-0 invisible w-0"
+                        isStudentUser && "text-white font-bold",
+                        !sidebarOpen && (isStudentUser ? "hidden" : "opacity-0 invisible w-0")
                       )}>
                         {language === 'pt' ? 'Sair do Sistema' : 'Sign Out'}
                       </span>
@@ -799,15 +809,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <button
               onClick={handleLogout}
               className={cn(
-                "w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all group text-xs font-bold uppercase tracking-wider cursor-pointer mobile-only-neon-3d neon-tone-red",
+                "w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all group text-xs font-bold uppercase tracking-wider cursor-pointer",
                 isStudentUser
-                  ? "bg-white text-black border border-slate-300 hover:bg-slate-100"
-                  : "text-slate-500 hover:bg-red-500/10 hover:text-red-400",
+                  ? "neon-3d-btn neon-tone-red text-white"
+                  : "mobile-only-neon-3d neon-tone-red text-slate-500 hover:bg-red-500/10 hover:text-red-400",
                 !sidebarOpen && "justify-center"
               )}
             >
-              <LogOut size={16} className={cn("shrink-0 transition-transform group-hover:-translate-x-1", isStudentUser && "text-black")} />
-              <span className={cn("transition-opacity whitespace-nowrap", !sidebarOpen && "hidden")}>{t.common.logout}</span>
+              <LogOut size={16} className={cn("shrink-0 transition-transform group-hover:-translate-x-1", isStudentUser && "text-white")} />
+              <span className={cn("transition-opacity whitespace-nowrap", isStudentUser && "text-white", !sidebarOpen && "hidden")}>{t.common.logout}</span>
             </button>
             {sidebarOpen && (
               <div id="sidebar-footer-credit" className={cn(

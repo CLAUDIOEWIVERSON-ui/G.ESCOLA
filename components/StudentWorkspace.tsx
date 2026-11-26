@@ -705,7 +705,7 @@ export function StudentWorkspace() {
               ? 'Grade Atualizada'
               : 'Updated Schedule',
       cta: isPt ? 'Ver Horário Semanal' : 'View Weekly Schedule',
-      neonClass: 'mobile-only-neon-3d neon-tone-cyan',
+      neonClass: 'neon-3d-btn neon-tone-cyan',
     },
     {
       title: isPt ? 'Boletim Individual' : 'Individual Report Card',
@@ -716,7 +716,7 @@ export function StudentWorkspace() {
       icon: FileText,
       badgeText: isPt ? 'Notas e Frequência' : 'Grades & Attendance',
       cta: isPt ? 'Abrir Meu Boletim' : 'Open Report Card',
-      neonClass: 'mobile-only-neon-3d neon-tone-blue',
+      neonClass: 'neon-3d-btn neon-tone-blue',
     },
     {
       title: isPt ? 'Questionário de Final de Curso' : 'End-of-Course Questionnaire',
@@ -733,7 +733,7 @@ export function StudentWorkspace() {
       cta: hasSubmittedSurvey
         ? (isPt ? 'Ver Comprovante' : 'View Receipt')
         : (isPt ? 'Preencher Questionário' : 'Fill Questionnaire'),
-      neonClass: 'mobile-only-neon-3d neon-tone-emerald',
+      neonClass: 'neon-3d-btn neon-tone-emerald',
     },
   ];
 
@@ -1227,12 +1227,12 @@ export function StudentWorkspace() {
               <Link
                 href={mod.href}
                 className={cn(
-                  "w-full py-2.5 px-4 rounded-xl bg-white hover:bg-slate-100 text-black border-2 border-black font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-[0.98] group",
+                  "w-full py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-[0.98] group text-white",
                   mod.neonClass
                 )}
               >
                 <span>{mod.cta}</span>
-                <ArrowRight size={14} className="text-black transition-transform group-hover:translate-x-1" />
+                <ArrowRight size={14} className="text-white transition-transform group-hover:translate-x-1" />
               </Link>
             </motion.div>
           );
@@ -1301,13 +1301,13 @@ export function StudentWorkspace() {
           <div className="space-y-2">
             <Link
               href="/calendario"
-              className="flex items-center justify-between p-3 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 transition-colors group mobile-only-neon-3d neon-tone-pink"
+              className="flex items-center justify-between p-3 rounded-xl transition-all group neon-3d-btn neon-tone-pink text-white"
             >
-              <span className="flex items-center gap-2.5 text-xs font-bold text-black">
-                <CalendarDays size={15} className="text-black" />
+              <span className="flex items-center gap-2.5 text-xs font-bold text-white">
+                <CalendarDays size={15} className="text-white" />
                 {isPt ? 'Calendário de Eventos' : 'Events Calendar'}
               </span>
-              <ArrowRight size={13} className="text-black" />
+              <ArrowRight size={13} className="text-white transition-transform group-hover:translate-x-1" />
             </Link>
           </div>
         </div>
