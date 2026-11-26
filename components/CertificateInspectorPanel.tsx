@@ -6603,18 +6603,6 @@ export function CertificateInspectorPanel({
         {/* CONFIGURAÇÕES GERAIS DO MODELO */}
         {selectedObject === 'modeloGeral' && (
           <div className="space-y-4">
-            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5">
-              <div>
-                <span className="block text-[11px] font-black uppercase tracking-wider text-slate-800">
-                  Acessar Elementos Rápidos / Ocultos
-                </span>
-                <p className="text-[10px] text-slate-500">
-                  Clique em qualquer item da Frente ou do Verso para abrir seus controles concentrados ao lado da folha.
-                </p>
-              </div>
-              {renderQuickElementsGrid(false)}
-            </div>
-
             {renderStandaloneStudentBox()}
 
             <div>

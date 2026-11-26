@@ -32,7 +32,6 @@ import {
   Settings,
   FolderOpen,
   FilePlus,
-  Type,
   Crosshair,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -3480,13 +3479,15 @@ export default function CertificadosPage() {
         )}
       </div>
 
-      {/* Main Split: Contextual Inspector (only when clicking an object, Modelos or Biblioteca) + Live A4 Preview */}
+      {/* Main Split: Contextual Panel (only Modelos Salvos, Biblioteca or Config. Modelo) + Live A4 Preview */}
       {(() => {
         const showSidePanel =
-          editorTab === 'modelos' || editorTab === 'biblioteca' || selectedObject !== null;
+          editorTab === 'modelos' ||
+          editorTab === 'biblioteca' ||
+          selectedObject === 'modeloGeral';
         return (
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
-            {/* LEFT COLUMN: Appears ONLY when user clicks an object on the sheet or opens Modelos/Biblioteca */}
+            {/* LEFT COLUMN: Opens only for Modelos Salvos, Biblioteca, or Config. Modelo */}
             {showSidePanel && (
               <div className="xl:col-span-5 xl:sticky xl:top-4 bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
                 {editorTab === 'modelos' ? (
@@ -3869,7 +3870,7 @@ export default function CertificadosPage() {
                 onRestoreDefaultAssets={handleRestoreDefaultLibraryAssets}
                 canEdit={canEdit}
               />
-            ) : selectedObject ? (
+            ) : selectedObject === 'modeloGeral' ? (
               <CertificateInspectorPanel
                 selectedObject={selectedObject}
                 template={template}
@@ -4101,25 +4102,6 @@ export default function CertificadosPage() {
 
                   <button
                     type="button"
-                    onClick={() =>
-                      handleAddCustomTextBox(previewMode === 'back' ? 'back' : 'front')
-                    }
-                    className={cn(
-                      'px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border whitespace-nowrap',
-                      selectedObject === 'caixasTexto' ||
-                        (typeof selectedObject === 'string' &&
-                          selectedObject.startsWith('caixaTexto:'))
-                        ? 'bg-indigo-700 text-white border-indigo-800 shadow-2xs'
-                        : 'bg-indigo-50 text-indigo-900 border-indigo-200 hover:bg-indigo-100'
-                    )}
-                    title="Inserir uma caixa de texto livre em qualquer posição da folha (Frente ou Verso)"
-                  >
-                    <Type size={13} />
-                    <span>+ Caixa de Texto</span>
-                  </button>
-
-                  <button
-                    type="button"
                     onClick={() => {
                       if (selectedObject === 'modeloGeral' && editorTab !== 'modelos') {
                         setSelectedObject(null);
@@ -4290,131 +4272,14 @@ export default function CertificadosPage() {
             </div>
           )}
 
-          {/* Slim contextual helper & quick-insert bar when side panel is closed or editing a blank sheet */}
-          {(!showSidePanel ||
-            (!template.titulo?.trim() && !template.textoCorpo?.trim()) ||
-            Boolean(template.ocultarTabelaVerso)) && (
-            <div className="px-3.5 py-2.5 rounded-xl bg-white border border-blue-200/80 shadow-2xs flex flex-wrap items-center justify-between gap-2.5">
-              <div className="flex items-center gap-2 text-xs text-slate-700">
-                <MousePointerClick size={15} className="text-blue-700 shrink-0" />
-                <span>
-                  {!template.titulo?.trim() && !template.textoCorpo?.trim() ? (
-                    <>
-                      <strong>Folha em Branco:</strong> clique diretamente nos campos da folha ou
-                      use os atalhos ao lado para inserir brasões, moldura, marca d&apos;água e textos.
-                    </>
-                  ) : (
-                    <>
-                      <strong>Edição Contextual:</strong> clique com o <strong>botão esquerdo</strong>{' '}
-                      na folha para inserir/remover itens ou editar propriedades direto no cursor, e com o{' '}
-                      <strong>botão direito</strong> para apenas selecionar.
-                    </>
-                  )}
-                </span>
-              </div>
-              <div className="flex flex-wrap items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => handleSelectObjectOnSheet('modeloGeral')}
-                  className="px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 border border-blue-200 text-[11px] font-bold text-blue-900 cursor-pointer flex items-center gap-1"
-                >
-                  <Settings size={12} />
-                  <span>Elementos Rápidos</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    handleAddCustomTextBox(previewMode === 'back' ? 'back' : 'front')
-                  }
-                  className="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-[11px] font-bold text-indigo-900 cursor-pointer flex items-center gap-1"
-                >
-                  <Plus size={12} />
-                  <span>Caixa de Texto</span>
-                </button>
-                {template.mostrarLogoEsquerda === false && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setTemplate((prev) => ({ ...prev, mostrarLogoEsquerda: true }));
-                      handleSelectObjectOnSheet('brasaoEsquerdo');
-                    }}
-                    className="px-2.5 py-1 rounded-lg bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 text-[11px] font-bold text-slate-700 hover:text-blue-900 cursor-pointer flex items-center gap-1"
-                  >
-                    <Plus size={12} />
-                    <span>Brasão Esquerdo</span>
-                  </button>
-                )}
-                {!template.mostrarLogoCentro && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setTemplate((prev) => ({ ...prev, mostrarLogoCentro: true }));
-                      handleSelectObjectOnSheet('brasaoCentro');
-                    }}
-                    className="px-2.5 py-1 rounded-lg bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 text-[11px] font-bold text-slate-700 hover:text-blue-900 cursor-pointer flex items-center gap-1"
-                  >
-                    <Plus size={12} />
-                    <span>Brasão Central</span>
-                  </button>
-                )}
-                {template.mostrarLogoDireita === false && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setTemplate((prev) => ({ ...prev, mostrarLogoDireita: true }));
-                      handleSelectObjectOnSheet('brasaoDireito');
-                    }}
-                    className="px-2.5 py-1 rounded-lg bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 text-[11px] font-bold text-slate-700 hover:text-blue-900 cursor-pointer flex items-center gap-1"
-                  >
-                    <Plus size={12} />
-                    <span>Brasão Direito</span>
-                  </button>
-                )}
-                {(template.estiloMolduraFrente === 'nenhuma' ||
-                  (!template.estiloMolduraFrente && template.usarMolduraOriginal === false)) && (
-                  <button
-                    type="button"
-                    onClick={() => handleSelectObjectOnSheet('molduraFrente')}
-                    className="px-2.5 py-1 rounded-lg bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 text-[11px] font-bold text-slate-700 hover:text-blue-900 cursor-pointer flex items-center gap-1"
-                  >
-                    <Plus size={12} />
-                    <span>Moldura</span>
-                  </button>
-                )}
-                {!template.marcaDaguaFrenteUrl && (
-                  <button
-                    type="button"
-                    onClick={() => handleSelectObjectOnSheet('marcaDaguaFrente')}
-                    className="px-2.5 py-1 rounded-lg bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 text-[11px] font-bold text-slate-700 hover:text-blue-900 cursor-pointer flex items-center gap-1"
-                  >
-                    <Plus size={12} />
-                    <span>Marca d&apos;Água</span>
-                  </button>
-                )}
-                {!template.mostrarSegundaAssinatura && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setTemplate((prev) => ({ ...prev, mostrarSegundaAssinatura: true }));
-                      handleSelectObjectOnSheet('segundaAssinatura');
-                    }}
-                    className="px-2.5 py-1 rounded-lg bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 text-[11px] font-bold text-slate-700 hover:text-blue-900 cursor-pointer flex items-center gap-1"
-                  >
-                    <Plus size={12} />
-                    <span>2ª Assinatura</span>
-                  </button>
-                )}
-                {template.ocultarTabelaVerso && previewMode !== 'front' && (
-                  <button
-                    type="button"
-                    onClick={() => handleSelectObjectOnSheet('versoTabela')}
-                    className="px-2.5 py-1 rounded-lg bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 text-[11px] font-bold text-slate-700 hover:text-blue-900 cursor-pointer flex items-center gap-1"
-                  >
-                    <Plus size={12} />
-                    <span>Quadro de Disciplinas (Verso)</span>
-                  </button>
-                )}
-              </div>
+          {!template.titulo?.trim() && !template.textoCorpo?.trim() && (
+            <div className="px-3.5 py-2 rounded-xl bg-white border border-blue-200/80 shadow-2xs flex items-center gap-2 text-xs text-slate-700">
+              <MousePointerClick size={15} className="text-blue-700 shrink-0" />
+              <span>
+                <strong>Folha em Branco:</strong> clique com o <strong>botão esquerdo</strong>{' '}
+                em qualquer ponto da folha para inserir ou editar itens; com o{' '}
+                <strong>botão direito</strong> para selecionar.
+              </span>
             </div>
           )}
 

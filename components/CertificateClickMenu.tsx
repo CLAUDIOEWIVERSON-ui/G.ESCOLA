@@ -14,6 +14,7 @@ import {
   CornerDownLeft,
   EyeOff,
   FolderOpen,
+  GripHorizontal,
   Italic,
   Layers,
   Minus,
@@ -23,6 +24,7 @@ import {
   Sparkles,
   Trash2,
   Type,
+  Upload,
   X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -37,7 +39,10 @@ import {
   pxToPtNumber,
   updateCertificateLayerOrder,
 } from '@/lib/certificateTypes';
-import { CertificateAssetCategory } from '@/lib/certificateLibrary';
+import {
+  CertificateAssetCategory,
+  prepareUploadedAssetDataUrl,
+} from '@/lib/certificateLibrary';
 import { CertificateSheetClickContext } from '@/components/CertificateSheet';
 
 const FONT_OPTIONS_FRONT: { value: CertificateFontKey; label: string }[] = [
@@ -155,6 +160,14 @@ export function CertificateClickMenu({
     left: clickContext.clientX,
     top: clickContext.clientY,
   });
+  const [isDraggingWindow, setIsDraggingWindow] = useState(false);
+  const hasUserDraggedRef = useRef(false);
+  const windowDragRef = useRef<{
+    startClientX: number;
+    startClientY: number;
+    origLeft: number;
+    origTop: number;
+  } | null>(null);
 
   useEffect(() => {
     setActiveTarget(clickContext.targetObject);
@@ -168,6 +181,14 @@ export function CertificateClickMenu({
     const menuW = rect.width || 356;
     const menuH = rect.height || 420;
     const pad = 12;
+
+    if (hasUserDraggedRef.current) {
+      setCoords((prev) => ({
+        left: Math.max(8, Math.min(Math.max(8, window.innerWidth - menuW - 8), prev.left)),
+        top: Math.max(8, Math.min(Math.max(8, window.innerHeight - 60), prev.top)),
+      }));
+      return;
+    }
 
     let left = clickContext.clientX + 10;
     let top = clickContext.clientY + 10;
@@ -184,8 +205,53 @@ export function CertificateClickMenu({
   }, [clickContext, menuTab, activeTarget]);
 
   useEffect(() => {
+    if (!isDraggingWindow) return;
+
+    const handleWindowPointerMove = (e: PointerEvent) => {
+      if (!windowDragRef.current) return;
+      const el = menuRef.current;
+      const menuW = el?.getBoundingClientRect().width || 356;
+      const dx = e.clientX - windowDragRef.current.startClientX;
+      const dy = e.clientY - windowDragRef.current.startClientY;
+      const nextLeft = Math.max(
+        8,
+        Math.min(
+          Math.max(8, window.innerWidth - menuW - 8),
+          Math.round(windowDragRef.current.origLeft + dx)
+        )
+      );
+      const nextTop = Math.max(
+        8,
+        Math.min(
+          Math.max(8, window.innerHeight - 60),
+          Math.round(windowDragRef.current.origTop + dy)
+        )
+      );
+      setCoords({ left: nextLeft, top: nextTop });
+    };
+
+    const handleWindowPointerEnd = () => {
+      windowDragRef.current = null;
+      setIsDraggingWindow(false);
+    };
+
+    window.addEventListener('pointermove', handleWindowPointerMove);
+    window.addEventListener('pointerup', handleWindowPointerEnd);
+    window.addEventListener('pointercancel', handleWindowPointerEnd);
+    return () => {
+      window.removeEventListener('pointermove', handleWindowPointerMove);
+      window.removeEventListener('pointerup', handleWindowPointerEnd);
+      window.removeEventListener('pointercancel', handleWindowPointerEnd);
+    };
+  }, [isDraggingWindow]);
+
+  useEffect(() => {
     const handlePointerDown = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+      const targetEl = e.target as HTMLElement | null;
+      if (menuRef.current && !menuRef.current.contains(targetEl)) {
+        if (targetEl?.closest('[data-certificate-side]')) {
+          return;
+        }
         onClose();
       }
     };
@@ -1252,22 +1318,44 @@ export function CertificateClickMenu({
             (next) => setTemplate((prev) => ({ ...prev, tamanhoFonteCorpo: next }))
           )}
 
-          <div>
-            <div className="flex justify-between text-[10px] font-semibold text-slate-600">
-              <span>Entrelinha</span>
-              <span className="font-mono">{(template.entrelinhaCorpo ?? 1.82).toFixed(2)}</span>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <div className="flex justify-between text-[10px] font-semibold text-slate-600">
+                <span>Entrelinha</span>
+                <span className="font-mono">{(template.entrelinhaCorpo ?? 1.82).toFixed(2)}</span>
+              </div>
+              <input
+                type="range"
+                min={1.0}
+                max={2.4}
+                step={0.05}
+                value={template.entrelinhaCorpo ?? 1.82}
+                onChange={(e) =>
+                  setTemplate((prev) => ({ ...prev, entrelinhaCorpo: Number(e.target.value) }))
+                }
+                className="w-full accent-blue-800"
+              />
             </div>
-            <input
-              type="range"
-              min={1.0}
-              max={2.4}
-              step={0.05}
-              value={template.entrelinhaCorpo ?? 1.82}
-              onChange={(e) =>
-                setTemplate((prev) => ({ ...prev, entrelinhaCorpo: Number(e.target.value) }))
-              }
-              className="w-full accent-blue-800"
-            />
+            <div>
+              <div className="flex justify-between text-[10px] font-semibold text-slate-600">
+                <span>Largura do Bloco</span>
+                <span className="font-mono">{template.larguraBlocoTextoPct ?? 100}%</span>
+              </div>
+              <input
+                type="range"
+                min={45}
+                max={100}
+                step={1}
+                value={template.larguraBlocoTextoPct ?? 100}
+                onChange={(e) =>
+                  setTemplate((prev) => ({
+                    ...prev,
+                    larguraBlocoTextoPct: Number(e.target.value),
+                  }))
+                }
+                className="w-full accent-blue-800"
+              />
+            </div>
           </div>
 
           {renderLayerStepper('texto')}
@@ -1747,7 +1835,7 @@ export function CertificateClickMenu({
       );
     }
 
-    // 8. Crests / Watermarks / Frames quick remove & properties
+    // 8. Crests / Watermarks / Frames complete properties & remove
     const matchedToggle = sideToggleItems.find((i) => i.id === activeTarget);
     const isLibraryAsset =
       activeTarget.startsWith('brasao') ||
@@ -1755,14 +1843,300 @@ export function CertificateClickMenu({
       activeTarget === 'molduraFrente' ||
       activeTarget === 'versoMoldura';
 
+    const handleUploadImageForActiveTarget = async (
+      e: React.ChangeEvent<HTMLInputElement>
+    ) => {
+      const file = e.target.files?.[0];
+      e.target.value = '';
+      if (!file) return;
+      const category: CertificateAssetCategory = activeTarget.startsWith('brasao')
+        ? 'brasao'
+        : activeTarget.startsWith('marcaDagua')
+          ? 'marca_dagua'
+          : 'moldura';
+      const dataUrl = await prepareUploadedAssetDataUrl(file, category);
+      if (!dataUrl) return;
+      setTemplate((prev) => {
+        switch (activeTarget) {
+          case 'brasaoEsquerdo':
+            return { ...prev, mostrarLogoEsquerda: true, logoEsquerdaUrl: dataUrl };
+          case 'brasaoCentro':
+            return { ...prev, mostrarLogoCentro: true, logoCentroUrl: dataUrl };
+          case 'brasaoDireito':
+            return {
+              ...prev,
+              mostrarLogoDireita: true,
+              usarBrasaoPadraoDireita: false,
+              logoDireitaUrl: dataUrl,
+            };
+          case 'brasaoEsquerdoVerso':
+            return { ...prev, mostrarLogoEsquerdaVerso: true, logoEsquerdaVersoUrl: dataUrl };
+          case 'brasaoCentroVerso':
+            return { ...prev, mostrarLogoCentroVerso: true, logoCentroVersoUrl: dataUrl };
+          case 'brasaoDireitoVerso':
+            return {
+              ...prev,
+              mostrarLogoDireitaVerso: true,
+              usarBrasaoPadraoDireitaVerso: false,
+              logoDireitaVersoUrl: dataUrl,
+            };
+          case 'marcaDaguaFrente':
+            return { ...prev, marcaDaguaFrenteUrl: dataUrl };
+          case 'marcaDaguaVerso':
+            return { ...prev, marcaDaguaVersoUrl: dataUrl };
+          case 'molduraFrente':
+            return {
+              ...prev,
+              usarMolduraOriginal: true,
+              estiloMolduraFrente: 'original',
+              molduraFrenteUrl: dataUrl,
+            };
+          case 'versoMoldura':
+            return {
+              ...prev,
+              estiloMolduraVerso: 'original',
+              molduraVersoUrl: dataUrl,
+            };
+          default:
+            return prev;
+        }
+      });
+    };
+
+    const renderCrestControls = () => {
+      const crestConfig = (() => {
+        switch (activeTarget) {
+          case 'brasaoEsquerdo':
+            return {
+              size: template.tamanhoLogoEsquerda ?? 90,
+              opacity: template.opacidadeLogoEsquerda ?? 1,
+              layer: 'brasaoEsquerdo' as CertificateLayerKey,
+              hasLegend: false,
+              legendText: '',
+              showLegend: false,
+              setSize: (v: number) =>
+                setTemplate((prev) => ({ ...prev, tamanhoLogoEsquerda: v })),
+              setOpacity: (v: number) =>
+                setTemplate((prev) => ({ ...prev, opacidadeLogoEsquerda: v })),
+            };
+          case 'brasaoCentro':
+            return {
+              size: template.tamanhoLogoCentro ?? 84,
+              opacity: template.opacidadeLogoCentro ?? 1,
+              layer: 'brasaoCentro' as CertificateLayerKey,
+              hasLegend: true,
+              legendText: template.logoCentroTexto ?? '',
+              showLegend: template.mostrarLegendaLogoCentro === true,
+              setSize: (v: number) =>
+                setTemplate((prev) => ({ ...prev, tamanhoLogoCentro: v })),
+              setOpacity: (v: number) =>
+                setTemplate((prev) => ({ ...prev, opacidadeLogoCentro: v })),
+              setLegendText: (v: string) =>
+                setTemplate((prev) => ({ ...prev, logoCentroTexto: v })),
+              setShowLegend: (v: boolean) =>
+                setTemplate((prev) => ({ ...prev, mostrarLegendaLogoCentro: v })),
+            };
+          case 'brasaoDireito':
+            return {
+              size: template.tamanhoLogoDireita ?? 74,
+              opacity: template.opacidadeLogoDireita ?? 1,
+              layer: 'brasaoDireito' as CertificateLayerKey,
+              hasLegend: true,
+              legendText: template.logoDireitaTexto ?? 'MARINHA DO BRASIL',
+              showLegend: template.mostrarLegendaLogoDireita !== false,
+              setSize: (v: number) =>
+                setTemplate((prev) => ({ ...prev, tamanhoLogoDireita: v })),
+              setOpacity: (v: number) =>
+                setTemplate((prev) => ({ ...prev, opacidadeLogoDireita: v })),
+              setLegendText: (v: string) =>
+                setTemplate((prev) => ({ ...prev, logoDireitaTexto: v })),
+              setShowLegend: (v: boolean) =>
+                setTemplate((prev) => ({ ...prev, mostrarLegendaLogoDireita: v })),
+            };
+          case 'brasaoEsquerdoVerso':
+            return {
+              size: template.tamanhoLogoEsquerdaVerso ?? template.tamanhoLogoEsquerda ?? 90,
+              opacity: template.opacidadeLogoEsquerdaVerso ?? template.opacidadeLogoEsquerda ?? 1,
+              layer: 'brasaoEsquerdoVerso' as CertificateLayerKey,
+              hasLegend: false,
+              legendText: '',
+              showLegend: false,
+              setSize: (v: number) =>
+                setTemplate((prev) => ({ ...prev, tamanhoLogoEsquerdaVerso: v })),
+              setOpacity: (v: number) =>
+                setTemplate((prev) => ({ ...prev, opacidadeLogoEsquerdaVerso: v })),
+            };
+          case 'brasaoCentroVerso':
+            return {
+              size: template.tamanhoLogoCentroVerso ?? 54,
+              opacity: template.opacidadeLogoCentroVerso ?? template.opacidadeLogoCentro ?? 1,
+              layer: 'brasaoCentroVerso' as CertificateLayerKey,
+              hasLegend: true,
+              legendText: template.logoCentroVersoTexto ?? template.logoCentroTexto ?? '',
+              showLegend:
+                (template.mostrarLegendaLogoCentroVerso ?? template.mostrarLegendaLogoCentro) ===
+                true,
+              setSize: (v: number) =>
+                setTemplate((prev) => ({ ...prev, tamanhoLogoCentroVerso: v })),
+              setOpacity: (v: number) =>
+                setTemplate((prev) => ({ ...prev, opacidadeLogoCentroVerso: v })),
+              setLegendText: (v: string) =>
+                setTemplate((prev) => ({ ...prev, logoCentroVersoTexto: v })),
+              setShowLegend: (v: boolean) =>
+                setTemplate((prev) => ({ ...prev, mostrarLegendaLogoCentroVerso: v })),
+            };
+          case 'brasaoDireitoVerso':
+            return {
+              size: template.tamanhoLogoDireitaVerso ?? template.tamanhoLogoDireita ?? 74,
+              opacity: template.opacidadeLogoDireitaVerso ?? template.opacidadeLogoDireita ?? 1,
+              layer: 'brasaoDireitoVerso' as CertificateLayerKey,
+              hasLegend: true,
+              legendText:
+                template.logoDireitaVersoTexto ?? template.logoDireitaTexto ?? 'MARINHA DO BRASIL',
+              showLegend:
+                (template.mostrarLegendaLogoDireitaVerso ?? template.mostrarLegendaLogoDireita) !==
+                false,
+              setSize: (v: number) =>
+                setTemplate((prev) => ({ ...prev, tamanhoLogoDireitaVerso: v })),
+              setOpacity: (v: number) =>
+                setTemplate((prev) => ({ ...prev, opacidadeLogoDireitaVerso: v })),
+              setLegendText: (v: string) =>
+                setTemplate((prev) => ({ ...prev, logoDireitaVersoTexto: v })),
+              setShowLegend: (v: boolean) =>
+                setTemplate((prev) => ({ ...prev, mostrarLegendaLogoDireitaVerso: v })),
+            };
+          default:
+            return null;
+        }
+      })();
+
+      if (!crestConfig) return null;
+
+      return (
+        <div className="space-y-2.5">
+          {renderFontSizeStepper(
+            'Tamanho do Brasão',
+            crestConfig.size,
+            24,
+            180,
+            2,
+            crestConfig.setSize
+          )}
+
+          <div>
+            <div className="flex justify-between text-[10px] font-bold text-slate-700 mb-0.5">
+              <span>Opacidade</span>
+              <span className="font-mono">{Math.round(crestConfig.opacity * 100)}%</span>
+            </div>
+            <input
+              type="range"
+              min={0.1}
+              max={1}
+              step={0.05}
+              value={crestConfig.opacity}
+              onChange={(e) => crestConfig.setOpacity(Number(e.target.value))}
+              className="w-full accent-blue-800"
+            />
+          </div>
+
+          {crestConfig.hasLegend && crestConfig.setShowLegend && crestConfig.setLegendText && (
+            <div className="space-y-1.5 pt-1 border-t border-slate-100">
+              <label className="inline-flex items-center gap-1.5 text-[10px] font-bold text-slate-700 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={crestConfig.showLegend}
+                  onChange={(e) => crestConfig.setShowLegend?.(e.target.checked)}
+                  className="rounded border-slate-300"
+                />
+                <span>Exibir legenda abaixo do brasão</span>
+              </label>
+              {crestConfig.showLegend && (
+                <input
+                  type="text"
+                  value={crestConfig.legendText}
+                  onChange={(e) => crestConfig.setLegendText?.(e.target.value)}
+                  placeholder="Ex: MARINHA DO BRASIL"
+                  className="w-full px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-[11px]"
+                />
+              )}
+            </div>
+          )}
+
+          {renderLayerStepper(crestConfig.layer)}
+        </div>
+      );
+    };
+
     return (
       <div className="space-y-2.5">
+        {activeTarget.startsWith('brasao') && renderCrestControls()}
+
         {(activeTarget === 'molduraFrente' || activeTarget === 'versoMoldura') && (
-          <div className="space-y-2">
-            <label className="block text-[10px] font-bold text-slate-600">
-              Cor da Moldura / Borda
-            </label>
-            <div className="flex items-center gap-2">
+          <div className="space-y-2.5">
+            <div>
+              <label className="block text-[10px] font-bold text-slate-600 mb-1">
+                Estilo da Moldura
+              </label>
+              <div className="grid grid-cols-2 gap-1">
+                {(activeTarget === 'molduraFrente'
+                  ? ([
+                      { id: 'original', label: 'Original PNG' },
+                      { id: 'vetorial', label: 'Vetorial Náutica' },
+                      { id: 'simples', label: 'Linha Simples' },
+                      { id: 'nenhuma', label: 'Sem Moldura' },
+                    ] as const)
+                  : ([
+                      { id: 'classica', label: 'Clássica Tripla' },
+                      { id: 'original', label: 'Original PNG' },
+                      { id: 'vetorial', label: 'Vetorial Náutica' },
+                      { id: 'simples', label: 'Linha Simples' },
+                      { id: 'nenhuma', label: 'Sem Moldura' },
+                    ] as const)
+                ).map((opt) => {
+                  const isActive =
+                    activeTarget === 'molduraFrente'
+                      ? frontFrameStyle === opt.id
+                      : backFrameStyle === opt.id;
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() =>
+                        setTemplate((prev) =>
+                          activeTarget === 'molduraFrente'
+                            ? {
+                                ...prev,
+                                usarMolduraOriginal: opt.id === 'original',
+                                estiloMolduraFrente: opt.id,
+                                molduraFrenteUrl:
+                                  opt.id === 'original'
+                                    ? prev.molduraFrenteUrl || DEFAULT_FRAME_URL
+                                    : prev.molduraFrenteUrl,
+                              }
+                            : {
+                                ...prev,
+                                estiloMolduraVerso: opt.id,
+                              }
+                        )
+                      }
+                      className={cn(
+                        'px-2 py-1 rounded-lg border text-[10px] font-bold cursor-pointer text-left transition-colors',
+                        isActive
+                          ? 'bg-blue-900 text-white border-blue-950'
+                          : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                      )}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between gap-2">
+              <label className="text-[10px] font-bold text-slate-600">
+                Cor da Moldura / Borda
+              </label>
               <input
                 type="color"
                 value={
@@ -1777,17 +2151,62 @@ export function CertificateClickMenu({
                       : { ...prev, corBordaVerso: e.target.value }
                   )
                 }
-                className="w-8 h-8 rounded border border-slate-200 cursor-pointer bg-white p-0.5"
+                className="w-8 h-7 rounded border border-slate-200 cursor-pointer bg-white p-0.5"
               />
-              <span className="text-[11px] font-semibold text-slate-600">
-                Ajuste completo disponível no painel lateral.
-              </span>
+            </div>
+
+            <div>
+              <div className="flex justify-between text-[10px] font-semibold text-slate-600">
+                <span>Margem Externa (cm)</span>
+                <span className="font-mono">
+                  {(activeTarget === 'molduraFrente'
+                    ? template.margemExternaMolduraCm ?? 0.6
+                    : template.margemExternaMolduraVersoCm ?? 0.6
+                  ).toFixed(1)}
+                  cm
+                </span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={2.5}
+                step={0.1}
+                value={
+                  activeTarget === 'molduraFrente'
+                    ? template.margemExternaMolduraCm ?? 0.6
+                    : template.margemExternaMolduraVersoCm ?? 0.6
+                }
+                onChange={(e) => {
+                  const val = Number(e.target.value);
+                  setTemplate((prev) =>
+                    activeTarget === 'molduraFrente'
+                      ? { ...prev, margemExternaMolduraCm: val }
+                      : { ...prev, margemExternaMolduraVersoCm: val }
+                  );
+                }}
+                className="w-full accent-blue-800"
+              />
             </div>
           </div>
         )}
 
         {(activeTarget === 'marcaDaguaFrente' || activeTarget === 'marcaDaguaVerso') && (
           <div className="space-y-2">
+            {renderFontSizeStepper(
+              "Tamanho Marca d'Água",
+              activeTarget === 'marcaDaguaFrente'
+                ? template.tamanhoMarcaDaguaFrente ?? 545
+                : template.tamanhoMarcaDaguaVerso ?? 580,
+              180,
+              900,
+              10,
+              (next) =>
+                setTemplate((prev) =>
+                  activeTarget === 'marcaDaguaFrente'
+                    ? { ...prev, tamanhoMarcaDaguaFrente: next }
+                    : { ...prev, tamanhoMarcaDaguaVerso: next }
+                )
+            )}
             <div>
               <div className="flex justify-between text-[10px] font-bold text-slate-700 mb-0.5">
                 <span>Opacidade</span>
@@ -1826,23 +2245,37 @@ export function CertificateClickMenu({
           </div>
         )}
 
-        {isLibraryAsset && onOpenLibrary && (
-          <button
-            type="button"
-            onClick={() => {
-              const cat: CertificateAssetCategory = activeTarget.startsWith('brasao')
-                ? 'brasao'
-                : activeTarget.startsWith('marcaDagua')
-                  ? 'marca_dagua'
-                  : 'moldura';
-              onOpenLibrary(cat);
-              onClose();
-            }}
-            className="w-full py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-900 text-[11px] font-bold flex items-center justify-center gap-1.5 cursor-pointer"
-          >
-            <FolderOpen size={12} />
-            <span>Trocar Imagem na Biblioteca</span>
-          </button>
+        {isLibraryAsset && (
+          <div className="grid grid-cols-2 gap-1.5">
+            {onOpenLibrary && (
+              <button
+                type="button"
+                onClick={() => {
+                  const cat: CertificateAssetCategory = activeTarget.startsWith('brasao')
+                    ? 'brasao'
+                    : activeTarget.startsWith('marcaDagua')
+                      ? 'marca_dagua'
+                      : 'moldura';
+                  onOpenLibrary(cat);
+                  onClose();
+                }}
+                className="py-1.5 px-2 rounded-lg bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-900 text-[10px] font-bold flex items-center justify-center gap-1 cursor-pointer"
+              >
+                <FolderOpen size={11} />
+                <span>Biblioteca</span>
+              </button>
+            )}
+            <label className="py-1.5 px-2 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 text-[10px] font-bold flex items-center justify-center gap-1 cursor-pointer">
+              <Upload size={11} />
+              <span>Enviar Imagem</span>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleUploadImageForActiveTarget}
+                className="hidden"
+              />
+            </label>
+          </div>
         )}
 
         {matchedToggle && (
@@ -1883,28 +2316,56 @@ export function CertificateClickMenu({
         top: `${coords.top}px`,
         width: '356px',
         maxWidth: 'calc(100vw - 24px)',
-        maxHeight: 'min(540px, 84vh)',
+        maxHeight: 'min(560px, 86vh)',
         zIndex: 9999,
       }}
       className="print:hidden rounded-2xl bg-white border border-slate-300 shadow-[0_20px_50px_rgba(15,23,42,0.28)] flex flex-col overflow-hidden"
     >
-      {/* Header */}
-      <div className="px-3.5 py-2.5 bg-slate-900 text-white flex items-center justify-between gap-2 shrink-0">
-        <div className="min-w-0">
-          <div className="flex items-center gap-1.5">
-            <span className="px-1.5 py-0.2 rounded bg-blue-600 text-[9px] font-black uppercase tracking-wider shrink-0">
-              {side === 'front' ? 'Frente' : 'Verso'}
-            </span>
-            <h4 className="text-xs font-bold truncate">
-              {getTargetLabel(activeTarget, side, clickContext.clickedEmptyArea && activeTarget === clickContext.targetObject)}
-            </h4>
+      {/* Draggable Header */}
+      <div
+        onPointerDown={(e) => {
+          if (e.button !== 0) return;
+          if ((e.target as HTMLElement)?.closest('[data-no-drag]')) return;
+          e.preventDefault();
+          e.stopPropagation();
+          hasUserDraggedRef.current = true;
+          windowDragRef.current = {
+            startClientX: e.clientX,
+            startClientY: e.clientY,
+            origLeft: coords.left,
+            origTop: coords.top,
+          };
+          setIsDraggingWindow(true);
+        }}
+        title="Clique e arraste para posicionar esta janela onde quiser na tela"
+        className={cn(
+          'px-3.5 py-2.5 bg-slate-900 text-white flex items-center justify-between gap-2 shrink-0 select-none',
+          isDraggingWindow ? 'cursor-grabbing' : 'cursor-grab'
+        )}
+      >
+        <div className="min-w-0 flex items-center gap-2">
+          <GripHorizontal size={14} className="text-slate-400 shrink-0" />
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className="px-1.5 py-0.2 rounded bg-blue-600 text-[9px] font-black uppercase tracking-wider shrink-0">
+                {side === 'front' ? 'Frente' : 'Verso'}
+              </span>
+              <h4 className="text-xs font-bold truncate">
+                {getTargetLabel(
+                  activeTarget,
+                  side,
+                  clickContext.clickedEmptyArea && activeTarget === clickContext.targetObject
+                )}
+              </h4>
+            </div>
+            <p className="text-[9px] text-slate-400 truncate mt-0.5">
+              Arraste aqui para mover • Esq.: editar • Dir.: selecionar
+            </p>
           </div>
-          <p className="text-[9px] text-slate-400 truncate mt-0.5">
-            Clique esq.: inserir/editar • Clique dir.: selecionar
-          </p>
         </div>
         <button
           type="button"
+          data-no-drag="true"
           onClick={onClose}
           className="p-1 rounded-lg hover:bg-white/10 text-slate-300 hover:text-white cursor-pointer shrink-0"
           title="Fechar (ESC)"
