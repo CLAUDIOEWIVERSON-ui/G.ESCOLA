@@ -245,13 +245,19 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 flex-1 w-full">
             {/* 1. FOTO DO USUÁRIO (APENAS PARA NÃO-ADMINISTRADORES) + LOGO MARCA D'ÁGUA AO LADO PARA ALUNOS */}
             {!isAdmin && (
-              <div className="flex items-center justify-center sm:justify-start gap-4 sm:gap-5 w-full sm:w-auto shrink-0">
-                <div className="relative shrink-0 group">
-                  <div 
-                    className={cn(
-                      "w-24 h-32 sm:w-28 sm:h-36 rounded-2xl overflow-hidden border-2 border-slate-300/80 shadow-md relative bg-white flex items-center justify-center transition-transform hover:scale-[1.02]",
-                      currentPhotoUrl && !photoLoadFailed ? "cursor-pointer" : ""
-                    )}
+              <div className="flex flex-col items-center sm:items-start gap-2.5 w-full sm:w-auto shrink-0">
+                {isAluno && (
+                  <h2 className="text-xs sm:text-sm font-black uppercase tracking-wider text-black border-b-2 border-black pb-1 text-center sm:text-left">
+                    {isPt ? 'Carteira Digital do Aluno' : 'Digital Student ID Card'}
+                  </h2>
+                )}
+                <div className="flex items-center justify-center sm:justify-start gap-4 sm:gap-5 w-full sm:w-auto shrink-0">
+                  <div className="relative shrink-0 group">
+                    <div 
+                      className={cn(
+                        "w-24 h-32 sm:w-28 sm:h-36 rounded-2xl overflow-hidden border-2 border-slate-300/80 shadow-md relative bg-white flex items-center justify-center transition-transform hover:scale-[1.02]",
+                        currentPhotoUrl && !photoLoadFailed ? "cursor-pointer" : ""
+                      )}
                     onClick={() => {
                       if (currentPhotoUrl && !photoLoadFailed) {
                         setExpandedPhoto({ url: currentPhotoUrl, name: displayName });
@@ -353,6 +359,7 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
                     />
                   </div>
                 )}
+                </div>
               </div>
             )}
 
@@ -463,10 +470,10 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
               <Link
                 href="/dashboard"
                 className="flex-1 md:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-100 text-black border-2 border-black rounded-xl text-xs font-black transition-all cursor-pointer shadow-2xs active:scale-95 mobile-only-neon-3d neon-tone-cyan"
-                title={isPt ? "Ir para a Área de Trabalho do Aluno" : "Go to Student Workspace"}
+                title={isPt ? "Ir para a Carteira Digital do Aluno" : "Go to Digital Student ID Card"}
               >
                 <LayoutDashboard size={14} className="text-black" />
-                <span>{isPt ? 'Área do Aluno' : 'Student Hub'}</span>
+                <span>{isPt ? 'Carteira Digital' : 'Digital ID'}</span>
               </Link>
             )}
 

@@ -891,7 +891,7 @@ function AvaliacaoAlunoForm() {
               className="inline-flex items-center gap-2 px-5 py-2.5 bg-white hover:bg-slate-100 text-black border border-black rounded-xl text-xs font-bold transition-all"
             >
               <Home size={14} />
-              Voltar para Área do Aluno
+              Voltar para Carteira Digital do Aluno
             </Link>
           )}
         </div>
@@ -919,7 +919,7 @@ function AvaliacaoAlunoForm() {
               className="inline-flex items-center gap-2 px-5 py-2.5 bg-white hover:bg-slate-100 text-black border border-black rounded-xl text-xs font-bold transition-all"
             >
               <Home size={14} />
-              Voltar para Área do Aluno
+              Voltar para Carteira Digital do Aluno
             </Link>
           )}
         </div>

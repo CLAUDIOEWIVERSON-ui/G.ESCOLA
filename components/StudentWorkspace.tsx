@@ -1140,7 +1140,7 @@ export function StudentWorkspace() {
         </section>
       ) : null}
 
-      {/* Faixa da Área de Trabalho do Aluno */}
+      {/* Faixa da Carteira Digital do Aluno */}
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -1150,10 +1150,10 @@ export function StudentWorkspace() {
           <div className="space-y-1.5">
             <div className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-black bg-white border border-slate-300 px-2.5 py-1 rounded-full">
               <GraduationCap size={13} className="text-black" />
-              <span>{isPt ? 'Área de Trabalho do Aluno' : 'Student Workspace'}</span>
+              <span>{isPt ? 'Carteira Digital do Aluno' : 'Digital Student ID Card'}</span>
             </div>
             <h1 className="text-xl sm:text-2xl font-black tracking-tight text-black">
-              {isPt ? 'Bem-vindo ao seu Portal Acadêmico' : 'Welcome to your Academic Portal'}
+              {isPt ? 'Carteira Digital do Aluno' : 'Digital Student ID Card'}
             </h1>
             <p className="text-xs sm:text-sm text-black max-w-2xl">
               {profile.curso_nome || profile.turma_nome ? (

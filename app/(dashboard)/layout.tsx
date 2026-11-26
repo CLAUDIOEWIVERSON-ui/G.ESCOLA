@@ -445,7 +445,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // Definir navegação dinâmica (Voltar/Próximo) baseada na ordem dos módulos
   const transitionItems = isStudentUser
     ? [
-        { name: language === 'pt' ? 'Área do Aluno' : 'Student Area', path: '/dashboard' },
+        { name: language === 'pt' ? 'Carteira Digital do Aluno' : 'Digital Student ID Card', path: '/dashboard' },
         ...navItems,
       ]
     : navItems;
@@ -894,7 +894,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             
             <div className="flex flex-col min-w-0">
               <h1 className={cn("text-base sm:text-lg font-bold leading-none truncate", isStudentUser ? "text-black" : "text-slate-800")}>
-                {navItems.find(item => item.path === pathname)?.name || (isStudentUser && pathname === '/dashboard' ? (language === 'pt' ? 'Área do Aluno' : 'Student Area') : t.dashboard.title)}
+                {navItems.find(item => item.path === pathname)?.name || (isStudentUser && pathname === '/dashboard' ? (language === 'pt' ? 'Carteira Digital do Aluno' : 'Digital Student ID Card') : t.dashboard.title)}
               </h1>
             </div>
           </div>
