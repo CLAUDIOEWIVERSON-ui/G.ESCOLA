@@ -95,133 +95,133 @@ const MOBILE_NAV_COLORS: Record<string, {
   indicator: string;
 }> = {
   '/dashboard': {
-    text: 'text-cyan-300',
-    activeText: 'text-cyan-200 drop-shadow-[0_0_6px_rgba(34,211,238,0.85)]',
+    text: 'text-cyan-700',
+    activeText: 'text-cyan-900',
     bg: 'neon-3d-btn neon-tone-cyan',
     activeBg: 'neon-3d-btn neon-tone-cyan neon-3d-btn-active',
     border: 'border-cyan-400/60',
-    indicator: 'bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.9)]',
+    indicator: 'bg-cyan-600 shadow-[0_0_8px_rgba(8,145,178,0.75)]',
   },
   '/cursos': {
-    text: 'text-amber-300',
-    activeText: 'text-amber-200 drop-shadow-[0_0_6px_rgba(251,146,60,0.85)]',
+    text: 'text-orange-700',
+    activeText: 'text-orange-900',
     bg: 'neon-3d-btn neon-tone-orange',
     activeBg: 'neon-3d-btn neon-tone-orange neon-3d-btn-active',
     border: 'border-orange-400/60',
-    indicator: 'bg-orange-400 shadow-[0_0_10px_rgba(251,146,60,0.9)]',
+    indicator: 'bg-orange-600 shadow-[0_0_8px_rgba(234,88,12,0.75)]',
   },
   '/turmas': {
-    text: 'text-emerald-300',
-    activeText: 'text-emerald-200 drop-shadow-[0_0_6px_rgba(16,185,129,0.85)]',
+    text: 'text-emerald-700',
+    activeText: 'text-emerald-900',
     bg: 'neon-3d-btn neon-tone-emerald',
     activeBg: 'neon-3d-btn neon-tone-emerald neon-3d-btn-active',
     border: 'border-emerald-400/60',
-    indicator: 'bg-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.9)]',
+    indicator: 'bg-emerald-600 shadow-[0_0_8px_rgba(5,150,105,0.75)]',
   },
   '/frequencia': {
-    text: 'text-purple-300',
-    activeText: 'text-purple-200 drop-shadow-[0_0_6px_rgba(192,132,252,0.85)]',
+    text: 'text-purple-700',
+    activeText: 'text-purple-900',
     bg: 'neon-3d-btn neon-tone-purple',
     activeBg: 'neon-3d-btn neon-tone-purple neon-3d-btn-active',
     border: 'border-purple-400/60',
-    indicator: 'bg-purple-400 shadow-[0_0_10px_rgba(192,132,252,0.9)]',
+    indicator: 'bg-purple-600 shadow-[0_0_8px_rgba(147,51,234,0.75)]',
   },
   '/horario': {
-    text: 'text-sky-300',
-    activeText: 'text-sky-200 drop-shadow-[0_0_6px_rgba(56,189,248,0.85)]',
+    text: 'text-sky-700',
+    activeText: 'text-sky-900',
     bg: 'neon-3d-btn neon-tone-sky',
     activeBg: 'neon-3d-btn neon-tone-sky neon-3d-btn-active',
     border: 'border-sky-400/60',
-    indicator: 'bg-sky-400 shadow-[0_0_10px_rgba(56,189,248,0.9)]',
+    indicator: 'bg-sky-600 shadow-[0_0_8px_rgba(2,132,199,0.75)]',
   },
   '/calendario': {
-    text: 'text-pink-300',
-    activeText: 'text-pink-200 drop-shadow-[0_0_6px_rgba(244,114,182,0.85)]',
+    text: 'text-pink-700',
+    activeText: 'text-pink-900',
     bg: 'neon-3d-btn neon-tone-pink',
     activeBg: 'neon-3d-btn neon-tone-pink neon-3d-btn-active',
     border: 'border-pink-400/60',
-    indicator: 'bg-pink-400 shadow-[0_0_10px_rgba(244,114,182,0.9)]',
+    indicator: 'bg-pink-600 shadow-[0_0_8px_rgba(219,39,119,0.75)]',
   },
   '/boletim': {
-    text: 'text-blue-300',
-    activeText: 'text-blue-200 drop-shadow-[0_0_6px_rgba(59,130,246,0.85)]',
+    text: 'text-blue-700',
+    activeText: 'text-blue-900',
     bg: 'neon-3d-btn neon-tone-blue',
     activeBg: 'neon-3d-btn neon-tone-blue neon-3d-btn-active',
     border: 'border-blue-400/60',
-    indicator: 'bg-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.9)]',
+    indicator: 'bg-blue-600 shadow-[0_0_8px_rgba(37,99,235,0.75)]',
   },
   '/configuracoes': {
-    text: 'text-indigo-300',
-    activeText: 'text-indigo-200 drop-shadow-[0_0_6px_rgba(129,140,248,0.85)]',
+    text: 'text-indigo-700',
+    activeText: 'text-indigo-900',
     bg: 'neon-3d-btn neon-tone-indigo',
     activeBg: 'neon-3d-btn neon-tone-indigo neon-3d-btn-active',
     border: 'border-indigo-400/60',
-    indicator: 'bg-indigo-400 shadow-[0_0_10px_rgba(129,140,248,0.9)]',
+    indicator: 'bg-indigo-600 shadow-[0_0_8px_rgba(79,70,229,0.75)]',
   },
   '/usuarios': {
-    text: 'text-fuchsia-300',
-    activeText: 'text-fuchsia-200 drop-shadow-[0_0_6px_rgba(232,121,249,0.85)]',
+    text: 'text-fuchsia-700',
+    activeText: 'text-fuchsia-900',
     bg: 'neon-3d-btn neon-tone-fuchsia',
     activeBg: 'neon-3d-btn neon-tone-fuchsia neon-3d-btn-active',
     border: 'border-fuchsia-400/60',
-    indicator: 'bg-fuchsia-400 shadow-[0_0_10px_rgba(232,121,249,0.9)]',
+    indicator: 'bg-fuchsia-600 shadow-[0_0_8px_rgba(192,38,211,0.75)]',
   },
   '/relatorio-avaliacao': {
-    text: 'text-violet-300',
-    activeText: 'text-violet-200 drop-shadow-[0_0_6px_rgba(167,139,250,0.85)]',
+    text: 'text-violet-700',
+    activeText: 'text-violet-900',
     bg: 'neon-3d-btn neon-tone-violet',
     activeBg: 'neon-3d-btn neon-tone-violet neon-3d-btn-active',
     border: 'border-violet-400/60',
-    indicator: 'bg-violet-400 shadow-[0_0_10px_rgba(167,139,250,0.9)]',
+    indicator: 'bg-violet-600 shadow-[0_0_8px_rgba(124,58,237,0.75)]',
   },
   '/links': {
-    text: 'text-teal-300',
-    activeText: 'text-teal-200 drop-shadow-[0_0_6px_rgba(45,212,191,0.85)]',
+    text: 'text-teal-700',
+    activeText: 'text-teal-900',
     bg: 'neon-3d-btn neon-tone-teal',
     activeBg: 'neon-3d-btn neon-tone-teal neon-3d-btn-active',
     border: 'border-teal-400/60',
-    indicator: 'bg-teal-400 shadow-[0_0_10px_rgba(45,212,191,0.9)]',
+    indicator: 'bg-teal-600 shadow-[0_0_8px_rgba(13,148,136,0.75)]',
   },
   '/avaliacao': {
-    text: 'text-lime-300',
-    activeText: 'text-lime-200 drop-shadow-[0_0_6px_rgba(74,222,128,0.85)]',
+    text: 'text-green-700',
+    activeText: 'text-green-900',
     bg: 'neon-3d-btn neon-tone-lime',
     activeBg: 'neon-3d-btn neon-tone-lime neon-3d-btn-active',
     border: 'border-lime-400/60',
-    indicator: 'bg-lime-400 shadow-[0_0_10px_rgba(74,222,128,0.9)]',
+    indicator: 'bg-green-600 shadow-[0_0_8px_rgba(22,163,74,0.75)]',
   },
   '/manual': {
-    text: 'text-amber-300',
-    activeText: 'text-amber-200 drop-shadow-[0_0_6px_rgba(251,191,36,0.85)]',
+    text: 'text-amber-700',
+    activeText: 'text-amber-900',
     bg: 'neon-3d-btn neon-tone-amber',
     activeBg: 'neon-3d-btn neon-tone-amber neon-3d-btn-active',
     border: 'border-amber-400/60',
-    indicator: 'bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.9)]',
+    indicator: 'bg-amber-600 shadow-[0_0_8px_rgba(217,119,6,0.75)]',
   },
   '/pensamento-do-dia': {
-    text: 'text-amber-300',
-    activeText: 'text-amber-200 drop-shadow-[0_0_6px_rgba(251,146,60,0.85)]',
+    text: 'text-orange-700',
+    activeText: 'text-orange-900',
     bg: 'neon-3d-btn neon-tone-orange',
     activeBg: 'neon-3d-btn neon-tone-orange neon-3d-btn-active',
     border: 'border-orange-400/60',
-    indicator: 'bg-orange-400 shadow-[0_0_10px_rgba(251,146,60,0.9)]',
+    indicator: 'bg-orange-600 shadow-[0_0_8px_rgba(234,88,12,0.75)]',
   },
   '/certificados': {
-    text: 'text-indigo-300',
-    activeText: 'text-indigo-200 drop-shadow-[0_0_6px_rgba(167,139,250,0.85)]',
+    text: 'text-violet-700',
+    activeText: 'text-violet-900',
     bg: 'neon-3d-btn neon-tone-violet',
     activeBg: 'neon-3d-btn neon-tone-violet neon-3d-btn-active',
     border: 'border-violet-400/60',
-    indicator: 'bg-violet-400 shadow-[0_0_10px_rgba(167,139,250,0.9)]',
+    indicator: 'bg-violet-600 shadow-[0_0_8px_rgba(124,58,237,0.75)]',
   },
 };
 
 const MENU_BUTTON_COLOR = {
-  text: 'text-fuchsia-300',
-  activeText: 'text-fuchsia-200 drop-shadow-[0_0_6px_rgba(232,121,249,0.85)]',
+  text: 'text-fuchsia-700',
+  activeText: 'text-fuchsia-900',
   bg: 'neon-3d-btn neon-tone-fuchsia',
   activeBg: 'neon-3d-btn neon-tone-fuchsia neon-3d-btn-active',
-  indicator: 'bg-fuchsia-400 shadow-[0_0_10px_rgba(232,121,249,0.9)]',
+  indicator: 'bg-fuchsia-600 shadow-[0_0_8px_rgba(192,38,211,0.75)]',
 };
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -1113,13 +1113,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <SuggestionsModal isOpen={suggestionsOpen} onClose={() => setSuggestionsOpen(false)} />
       </div>
 
-      {/* Bottom Nav: Barra Inferior em 3D Neon e Colorida para o usuário móvel */}
+      {/* Bottom Nav: Barra Inferior com fundo branco e botões em 3D Neon e Coloridos para o usuário móvel */}
       <nav 
         className={cn(
-          "fixed bottom-0 z-50 h-[72px] print:hidden overflow-x-auto custom-scrollbar border-t px-1.5 py-1.5 flex items-center justify-around gap-1 transition-all duration-300",
+          "mobile-bottom-nav-bar fixed bottom-0 z-50 h-[72px] print:hidden overflow-x-auto custom-scrollbar border-t px-1.5 py-1.5 flex items-center justify-around gap-1 transition-all duration-300 bg-white text-slate-900 border-slate-300 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]",
           isStudentUser 
-            ? cn("bg-white text-black border-slate-300 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]", sidebarOpen ? "left-0 lg:left-64 right-0" : "left-0 lg:left-20 right-0") 
-            : "lg:hidden left-0 right-0 backdrop-blur-lg border-cyan-400/25 bg-slate-950/92 text-white shadow-[0_-6px_28px_rgba(0,0,0,0.4)]"
+            ? cn("text-black", sidebarOpen ? "left-0 lg:left-64 right-0" : "left-0 lg:left-20 right-0") 
+            : "lg:hidden left-0 right-0"
         )}
       >
         {navItems.filter(item => {
@@ -1135,11 +1135,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           const isSettings = item.path === '/configuracoes';
           const needsPasswordChange = isSettings && profile && !profile.has_changed_password;
           const colorConfig = MOBILE_NAV_COLORS[item.path] || {
-            text: 'text-cyan-300',
-            activeText: 'text-cyan-200',
+            text: 'text-cyan-700',
+            activeText: 'text-cyan-900',
             bg: 'neon-3d-btn neon-tone-cyan',
             activeBg: 'neon-3d-btn neon-tone-cyan neon-3d-btn-active',
-            indicator: 'bg-cyan-400',
+            indicator: 'bg-cyan-600',
             border: 'border-cyan-400/60',
           };
 

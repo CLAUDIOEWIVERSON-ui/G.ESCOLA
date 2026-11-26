@@ -204,6 +204,8 @@ export default function HorarioPage() {
   // Editable Schedule State
   const [scheduleData, setScheduleData] = useState<Record<string, any>>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [mobileViewMode, setMobileViewMode] = useState<"cards" | "table">("cards");
+  const [mobileSelectedDay, setMobileSelectedDay] = useState<string>("all");
 
   const selectedTurma = turmas.find((tu) => tu.id === selectedTurmaId);
   const selectedCurso = cursos.find((cu) => cu.id === selectedCursoId);
@@ -1145,19 +1147,19 @@ export default function HorarioPage() {
       )}
 
       {/* Header Panel */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 print:hidden">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6 print:hidden">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-            <Calendar className="text-blue-600" size={32} />
-            {t.schedule.weeklySchedule}
+          <h1 className="text-xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2.5 sm:gap-3">
+            <Calendar className="text-blue-600 shrink-0 w-6 h-6 sm:w-8 sm:h-8" />
+            <span>{t.schedule.weeklySchedule}</span>
           </h1>
-          <p className="text-slate-500 font-medium ml-11">
+          <p className="text-slate-500 font-medium text-xs sm:text-sm ml-8 sm:ml-11">
             {t.reportCard.subtitle}
           </p>
         </div>
 
         {profile?.role !== "aluno" && profile?.role !== "convidado" && (
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             {!isLockedSingleTurma && (
               <div className="flex items-center gap-2">
                 {isEditMode && (
@@ -1165,9 +1167,9 @@ export default function HorarioPage() {
                     onClick={handleCancelEdit}
                     disabled={isSaving}
                     type="button"
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-black uppercase tracking-widest transition-all bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 shadow-md cursor-pointer disabled:opacity-50"
+                    className="flex items-center gap-1.5 sm:gap-2 px-3.5 py-2 sm:px-5 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-black uppercase tracking-wider sm:tracking-widest transition-all bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 shadow-md cursor-pointer disabled:opacity-50 mobile-only-neon-3d neon-tone-red"
                   >
-                    <X size={18} />
+                    <X size={16} />
                     {language === "pt" ? "Cancelar" : "Cancel"}
                   </button>
                 )}
@@ -1175,18 +1177,18 @@ export default function HorarioPage() {
                   onClick={handleToggleEdit}
                   disabled={isSaving || !selectedTurmaId}
                   className={cn(
-                    "flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-black uppercase tracking-widest transition-all shadow-lg disabled:opacity-50 cursor-pointer",
+                    "flex items-center gap-1.5 sm:gap-2 px-3.5 py-2 sm:px-5 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-black uppercase tracking-wider sm:tracking-widest transition-all shadow-lg disabled:opacity-50 cursor-pointer mobile-only-neon-3d",
                     isEditMode
-                      ? "bg-emerald-600 text-white shadow-emerald-200 hover:bg-emerald-700"
-                      : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 shadow-slate-100",
+                      ? "bg-emerald-600 text-white shadow-emerald-200 hover:bg-emerald-700 neon-tone-emerald"
+                      : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 shadow-slate-100 neon-tone-blue",
                   )}
                 >
                   {isSaving ? (
-                    <Loader2 size={18} className="animate-spin" />
+                    <Loader2 size={16} className="animate-spin" />
                   ) : isEditMode ? (
-                    <Check size={18} />
+                    <Check size={16} />
                   ) : (
-                    <Edit3 size={18} />
+                    <Edit3 size={16} />
                   )}
                   {isEditMode
                     ? language === "pt"
@@ -1200,14 +1202,14 @@ export default function HorarioPage() {
             )}
 
             {selectedTurmaId && !isEditMode && (
-              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-2xl border border-slate-200 shadow-inner">
+              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl sm:rounded-2xl border border-slate-200 shadow-inner">
                 <button
                   type="button"
                   onClick={() => setPrintOrientation("portrait")}
                   className={cn(
-                    "px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer select-none",
+                    "px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer select-none",
                     printOrientation === "portrait"
-                      ? "bg-neutral-950 text-white shadow-sm"
+                      ? "bg-neutral-950 text-white shadow-sm mobile-only-neon-3d neon-tone-indigo"
                       : "text-slate-500 hover:text-slate-800",
                   )}
                 >
@@ -1217,9 +1219,9 @@ export default function HorarioPage() {
                   type="button"
                   onClick={() => setPrintOrientation("landscape")}
                   className={cn(
-                    "px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer select-none",
+                    "px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer select-none",
                     printOrientation === "landscape"
-                      ? "bg-neutral-950 text-white shadow-sm"
+                      ? "bg-neutral-950 text-white shadow-sm mobile-only-neon-3d neon-tone-cyan"
                       : "text-slate-500 hover:text-slate-800",
                   )}
                 >
@@ -1233,14 +1235,14 @@ export default function HorarioPage() {
                 type="button"
                 onClick={() => setShowSignatureSettings(!showSignatureSettings)}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all border shadow-sm cursor-pointer",
+                  "flex items-center gap-1.5 sm:gap-2 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs font-black uppercase tracking-wider transition-all border shadow-sm cursor-pointer mobile-only-neon-3d neon-tone-purple",
                   showSignatureSettings
                     ? "bg-blue-50 text-blue-700 border-blue-200"
                     : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50",
                 )}
                 title={language === "pt" ? "Configurar Assinatura do Coordenador" : "Configure Coordinator Signature"}
               >
-                <PenTool size={16} className="text-blue-600" />
+                <PenTool size={15} className="text-blue-600" />
                 <span>{language === "pt" ? "Assinatura" : "Signature"}</span>
               </button>
             )}
@@ -1248,38 +1250,40 @@ export default function HorarioPage() {
             <button
               onClick={handleDownloadPDF}
               disabled={isEditMode || !selectedTurmaId || isDownloadingPDF}
-              className="flex items-center gap-2 bg-[#0f172a] text-white px-5 py-2.5 rounded-2xl text-sm font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 disabled:opacity-50 disabled:grayscale cursor-pointer"
+              className="flex items-center gap-1.5 sm:gap-2 bg-[#0f172a] text-white px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-black uppercase tracking-wider sm:tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 disabled:opacity-50 disabled:grayscale cursor-pointer mobile-only-neon-3d neon-tone-orange"
               title={language === "pt" ? "Baixar quadro de horários em arquivo PDF" : "Download schedule grid as PDF"}
             >
-              {isDownloadingPDF ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
+              {isDownloadingPDF ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
               <span>{isDownloadingPDF ? (language === "pt" ? "Gerando PDF..." : "Generating...") : t.schedule.print}</span>
             </button>
           </div>
         )}
       </div>
 
-      {/* Mobile Portrait Orientation Hint (Visible to all users on mobile portrait, hidden in landscape & desktop & print) */}
-      <div
-        role="status"
-        className="flex lg:hidden landscape:hidden items-center gap-3.5 p-4 rounded-2xl bg-amber-50 border-2 border-amber-300 text-amber-950 shadow-sm print:hidden"
-      >
-        <div className="w-11 h-11 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-sm relative">
-          <Smartphone size={20} className="-rotate-12" />
-          <RotateCw size={13} className="absolute -bottom-1 -right-1 bg-amber-900 text-white rounded-full p-0.5" />
+      {/* Mobile Portrait Orientation Hint (Shown in mobile portrait only when viewing full grid/edit table) */}
+      {(isEditMode || mobileViewMode === "table") && (
+        <div
+          role="status"
+          className="flex md:hidden landscape:hidden items-center gap-3 p-3 rounded-2xl bg-amber-50 border-2 border-amber-300 text-amber-950 shadow-sm print:hidden"
+        >
+          <div className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-sm relative">
+            <Smartphone size={18} className="-rotate-12" />
+            <RotateCw size={11} className="absolute -bottom-1 -right-1 bg-amber-900 text-white rounded-full p-0.5" />
+          </div>
+          <div className="min-w-0 flex-1 space-y-0.5">
+            <p className="text-[11px] font-black uppercase tracking-wider text-amber-950">
+              {language === "pt"
+                ? "Deslize para o lado ou vire o celular"
+                : "Swipe sideways or rotate phone"}
+            </p>
+            <p className="text-[10px] font-semibold text-amber-900 leading-snug">
+              {language === "pt"
+                ? "Deslize a grade horizontalmente ou volte para o modo Lista para leitura direta."
+                : "Scroll the grid sideways or switch back to List view for direct reading."}
+            </p>
+          </div>
         </div>
-        <div className="min-w-0 flex-1 space-y-0.5">
-          <p className="text-xs font-black uppercase tracking-wider text-amber-950">
-            {language === "pt"
-              ? "Vire o celular na horizontal (paisagem)"
-              : "Rotate your phone horizontally (landscape)"}
-          </p>
-          <p className="text-[11px] font-semibold text-amber-900 leading-snug">
-            {language === "pt"
-              ? "Deite ou vire o seu aparelho celular para visualizar e ler melhor o Detalhe Semanal de Aulas na tela."
-              : "Turn your mobile device sideways to better view and read the Weekly Class Schedule on screen."}
-          </p>
-        </div>
-      </div>
+      )}
 
       {/* Coordinator Signature Configuration Panel (Screen only) */}
       {showSignatureSettings && profile?.role !== "aluno" && profile?.role !== "convidado" && profile?.role !== "acompanhante" && (
@@ -1355,7 +1359,7 @@ export default function HorarioPage() {
       )}
 
       {/* Selectors */}
-      <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 print:hidden">
+      <div className="bg-white p-4 sm:p-6 rounded-2xl sm:rounded-[2.5rem] border border-slate-100 shadow-sm grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 print:hidden">
         {isLockedSingleTurma ? (
           <div className="space-y-2 col-span-1 md:col-span-2 flex flex-col justify-center bg-white text-black">
             <span className="text-[10px] font-black text-black uppercase tracking-widest px-1">
@@ -1501,34 +1505,33 @@ export default function HorarioPage() {
               className="w-full max-w-[1200px] bg-white rounded-2xl md:rounded-3xl shadow-xl border border-slate-100 overflow-hidden flex flex-col font-sans mb-8 print-container"
             >
               {/* Specialized Header */}
-              <div className="bg-white px-6 py-5 md:px-8 md:py-5 text-slate-800 relative overflow-hidden print-header print-header-top border-b border-slate-200">
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="w-20 h-20 md:w-24 md:h-24 shrink-0 flex items-center justify-center overflow-hidden bg-white">
+              <div className="bg-white px-4 py-4 sm:px-6 sm:py-5 md:px-8 md:py-5 text-slate-800 relative overflow-hidden print-header print-header-top border-b border-slate-200">
+                <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
+                  <div className="w-12 h-12 sm:w-20 sm:h-20 md:w-24 md:h-24 shrink-0 flex items-center justify-center overflow-hidden bg-white">
                     <img
                       src={typeof navalMissionLogo === 'string' ? navalMissionLogo : (navalMissionLogo as any)?.src || navalMissionLogo}
                       alt="Logo Missão de Assessoria Naval"
-                      className="w-20 h-20 md:w-24 md:h-24 object-contain shrink-0"
-                      style={{ width: '88px', height: '88px' }}
+                      className="w-full h-full object-contain shrink-0"
                     />
                   </div>
-                  <div className="text-left flex flex-col justify-center">
-                    <h1 className="text-sm md:text-base font-black tracking-wider text-slate-900 uppercase leading-tight">
+                  <div className="text-left flex flex-col justify-center min-w-0">
+                    <h1 className="text-[11px] sm:text-sm md:text-base font-black tracking-wide sm:tracking-wider text-slate-900 uppercase leading-tight">
                       MISSÃO DE ASSESSORIA NAVAL DO BRASIL EM SÃO TOMÉ E PRÍNCIPE
                     </h1>
-                    <p className="text-[11px] font-black tracking-widest text-slate-500 uppercase mt-0.5 leading-tight">
+                    <p className="text-[10px] sm:text-[11px] font-black tracking-widest text-slate-500 uppercase mt-0.5 leading-tight">
                       Detalhe Semanal de Aulas
                     </p>
                   </div>
                 </div>
 
-                <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 print-header-grid">
-                  <div className="col-span-2 space-y-1 print-header-title-container">
+                <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-6 print-header-grid">
+                  <div className="md:col-span-2 space-y-1 print-header-title-container min-w-0">
                     <div className="flex items-center">
-                      <span className={cn("text-[11px] font-black uppercase tracking-widest leading-none", isNifStudent ? "text-black" : "text-blue-600")}>
+                      <span className={cn("text-[10px] sm:text-[11px] font-black uppercase tracking-widest leading-tight", isNifStudent ? "text-black" : "text-blue-600")}>
                         {selectedCurso?.nome}
                       </span>
                     </div>
-                    <h2 className="text-2xl md:text-3xl font-black tracking-tight leading-tight text-black animate-fade-in">
+                    <h2 className="text-lg sm:text-2xl md:text-3xl font-black tracking-tight leading-tight text-black animate-fade-in">
                       {getCleanTurmaName(selectedTurma, selectedCurso?.nome, language === 'pt' ? 'Turma Única' : 'Single Class')}
                     </h2>
                   </div>
@@ -1539,8 +1542,8 @@ export default function HorarioPage() {
                     </p>
 
                     {/* Beautiful, static/read-only period badge for both Screen and Print */}
-                    <div className={cn("border px-4 py-2 rounded-xl flex flex-col md:items-end shadow-sm print-period-badge", isNifStudent ? "bg-white border-black text-black" : "bg-slate-50 border-slate-200")}>
-                      <span className={cn("text-base md:text-lg font-black tracking-tight leading-tight", isNifStudent ? "text-black" : "text-slate-800")}>
+                    <div className={cn("border px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl flex flex-col md:items-end shadow-sm print-period-badge", isNifStudent ? "bg-white border-black text-black" : "bg-slate-50 border-slate-200")}>
+                      <span className={cn("text-sm sm:text-base md:text-lg font-black tracking-tight leading-tight", isNifStudent ? "text-black" : "text-slate-800")}>
                         {weekPeriodFormatted}
                       </span>
                       <span className={cn("text-[9px] font-bold uppercase tracking-widest mt-0.5 leading-none", isNifStudent ? "text-black" : "text-slate-400")}>
@@ -1551,8 +1554,8 @@ export default function HorarioPage() {
                 </div>
               </div>
 
-              {/* Grid Table */}
-              <div className={cn("p-3 md:p-5 flex-1 print-content", isNifStudent ? "bg-white text-black" : "bg-slate-50")}>
+              {/* Grid Table & Mobile Dimensioned Cards */}
+              <div className={cn("p-2.5 sm:p-4 md:p-5 flex-1 print-content space-y-3", isNifStudent ? "bg-white text-black" : "bg-slate-50")}>
                 {isEditMode && (
                   <div className="mb-3 p-2.5 bg-blue-50/80 border border-blue-200/80 rounded-xl flex items-center justify-between text-xs text-blue-900 no-print print:hidden">
                     <div className="flex items-center gap-2">
@@ -1565,11 +1568,397 @@ export default function HorarioPage() {
                     </div>
                   </div>
                 )}
-                <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-                  <table className="w-full border-collapse table-fixed">
+
+                {/* Mobile View Mode & Weekday Filter Controls */}
+                {!isEditMode && (
+                  <div className="md:hidden print:hidden space-y-2.5 bg-white p-3 rounded-2xl border border-slate-200 shadow-xs">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+                        {language === "pt" ? "Visualização Mobile" : "Mobile View"}
+                      </span>
+                      <div className="inline-flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setMobileViewMode("cards")}
+                          className={cn(
+                            "px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer",
+                            mobileViewMode === "cards"
+                              ? "neon-3d-btn neon-tone-cyan"
+                              : "bg-slate-100 text-slate-700 border border-slate-200"
+                          )}
+                        >
+                          {language === "pt" ? "Lista / Dia" : "Day Cards"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setMobileViewMode("table")}
+                          className={cn(
+                            "px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer",
+                            mobileViewMode === "table"
+                              ? "neon-3d-btn neon-tone-indigo"
+                              : "bg-slate-100 text-slate-700 border border-slate-200"
+                          )}
+                        >
+                          {language === "pt" ? "Grade" : "Grid"}
+                        </button>
+                      </div>
+                    </div>
+
+                    {mobileViewMode === "cards" && (
+                      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 custom-scrollbar">
+                        <button
+                          type="button"
+                          onClick={() => setMobileSelectedDay("all")}
+                          className={cn(
+                            "px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider shrink-0 transition-all cursor-pointer",
+                            mobileSelectedDay === "all"
+                              ? "neon-3d-btn neon-tone-blue"
+                              : "bg-slate-100 text-slate-700 border border-slate-200"
+                          )}
+                        >
+                          {language === "pt" ? "Todos" : "All"}
+                        </button>
+                        {weekDays.map((day, dIdx) => {
+                          const shortDay = day.label.slice(0, 3);
+                          const isSelected = mobileSelectedDay === day.key;
+                          const dayTones = [
+                            "neon-tone-cyan",
+                            "neon-tone-emerald",
+                            "neon-tone-orange",
+                            "neon-tone-purple",
+                            "neon-tone-pink",
+                          ];
+                          return (
+                            <button
+                              key={`mob-day-tab-${day.key}`}
+                              type="button"
+                              onClick={() => setMobileSelectedDay(day.key)}
+                              className={cn(
+                                "px-2.5 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider shrink-0 transition-all cursor-pointer",
+                                isSelected
+                                  ? cn("neon-3d-btn", dayTones[dIdx % dayTones.length])
+                                  : "bg-slate-100 text-slate-700 border border-slate-200"
+                              )}
+                            >
+                              {shortDay} {format(day.date, "dd/MM")}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Mobile Dimensioned Day-by-Day Cards View */}
+                {!isEditMode && mobileViewMode === "cards" && (
+                  <div className="md:hidden print:hidden space-y-3">
+                    {(() => {
+                      const daysToShow =
+                        mobileSelectedDay === "all"
+                          ? weekDays
+                          : weekDays.filter((d) => d.key === mobileSelectedDay);
+
+                      const hasDayAnyContent = (dayKey: string, dayDate: Date) => {
+                        if (isHoliday(dayDate)) return true;
+                        return slots.some((slot) => {
+                          if (slot.type !== "class") return false;
+                          const cell = getCellData(slot.id, dayKey);
+                          return !!(
+                            cell.subjectId ||
+                            cell.customSubject ||
+                            cell.instructorId ||
+                            cell.customInstructor ||
+                            cell.room ||
+                            cell.topicId ||
+                            cell.topic ||
+                            cell.modulo === "PROVAS" ||
+                            cell.modulo === "PROVA" ||
+                            cell.modulo === "FERIADO_EXTRAORDINARIO"
+                          );
+                        });
+                      };
+
+                      const anyWeekContent = daysToShow.some((d) => hasDayAnyContent(d.key, d.date));
+
+                      if (!anyWeekContent) {
+                        return (
+                          <div className="py-10 px-4 text-center bg-white rounded-2xl border border-slate-200 shadow-xs space-y-2">
+                            <Clock className="w-8 h-8 text-slate-300 mx-auto" />
+                            <p className="text-xs font-black text-slate-700 uppercase tracking-wider">
+                              {language === "pt"
+                                ? "Nenhum horário preenchido para este período"
+                                : "No scheduled classes for this period"}
+                            </p>
+                            {profile?.role !== "aluno" &&
+                              profile?.role !== "convidado" &&
+                              !isNifStudent && (
+                                <button
+                                  type="button"
+                                  onClick={handleToggleEdit}
+                                  className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold cursor-pointer neon-3d-btn neon-tone-blue"
+                                >
+                                  <Edit3 size={14} />
+                                  <span>{language === "pt" ? "Preencher Horários" : "Fill Schedule"}</span>
+                                </button>
+                              )}
+                          </div>
+                        );
+                      }
+
+                      return daysToShow.map((day) => {
+                        const holiday = isHoliday(day.date);
+                        const dayFilledSlots = slots.filter((slot) => {
+                          if (slot.type !== "class") return false;
+                          const cell = getCellData(slot.id, day.key);
+                          return !!(
+                            cell.subjectId ||
+                            cell.customSubject ||
+                            cell.instructorId ||
+                            cell.customInstructor ||
+                            cell.room ||
+                            cell.topicId ||
+                            cell.topic ||
+                            cell.modulo === "PROVAS" ||
+                            cell.modulo === "PROVA" ||
+                            cell.modulo === "FERIADO_EXTRAORDINARIO"
+                          );
+                        });
+
+                        if (mobileSelectedDay === "all" && !holiday && dayFilledSlots.length === 0) {
+                          return null;
+                        }
+
+                        return (
+                          <div
+                            key={`mobile-day-card-${day.key}`}
+                            className={cn(
+                              "rounded-2xl border overflow-hidden shadow-xs",
+                              isNifStudent ? "bg-white border-black" : "bg-white border-slate-200"
+                            )}
+                          >
+                            <div
+                              className={cn(
+                                "px-3.5 py-2.5 border-b flex items-center justify-between gap-2",
+                                isNifStudent ? "bg-white border-black" : "bg-slate-50 border-slate-200"
+                              )}
+                            >
+                              <div className="flex items-center gap-2 min-w-0">
+                                <Calendar size={14} className={isNifStudent ? "text-black shrink-0" : "text-blue-600 shrink-0"} />
+                                <span className="text-xs font-black uppercase tracking-wider text-slate-900 truncate">
+                                  {day.label}
+                                </span>
+                              </div>
+                              <span className={cn(
+                                "text-[11px] font-black font-mono px-2 py-0.5 rounded-lg border shrink-0",
+                                isNifStudent ? "border-black text-black bg-white" : "border-slate-200 text-slate-700 bg-white"
+                              )}>
+                                {format(day.date, "dd/MM")}
+                              </span>
+                            </div>
+
+                            <div className="p-3 space-y-2.5">
+                              {holiday ? (
+                                <div className="py-5 px-3 rounded-xl bg-slate-50 border border-slate-200 text-center flex flex-col items-center gap-1.5">
+                                  <AlertCircle size={18} className="text-slate-500" />
+                                  <span className="text-xs font-black uppercase tracking-wider text-slate-700">
+                                    {holiday.name}
+                                  </span>
+                                </div>
+                              ) : dayFilledSlots.length === 0 ? (
+                                <div className="py-5 text-center text-xs font-semibold text-slate-400">
+                                  {language === "pt"
+                                    ? "Nenhuma aula programada para este dia."
+                                    : "No classes scheduled for this day."}
+                                </div>
+                              ) : (
+                                dayFilledSlots.map((slot) => {
+                                  const cell = getCellData(slot.id, day.key);
+                                  const cellDiscObj = disciplinas.find((d) => d.id === cell.subjectId);
+                                  const cellTopicObj = materias.find((m) => m.id === cell.topicId);
+                                  const isExtraordinaryHolidayCell =
+                                    cell.subjectId === "__feriado_extraordinario__" ||
+                                    cell.modulo === "FERIADO_EXTRAORDINARIO";
+                                  const isExtraClassCell =
+                                    !isExtraordinaryHolidayCell &&
+                                    (cell.subjectId === "__extraclasse__" ||
+                                      /extra[\s-]*classe/i.test(cell.customSubject || "") ||
+                                      /extra[\s-]*classe/i.test(cell.modulo || ""));
+                                  const isExamCell =
+                                    !isExtraordinaryHolidayCell &&
+                                    !isExtraClassCell &&
+                                    (cell.modulo === "PROVAS" ||
+                                      cell.modulo === "PROVA" ||
+                                      (cell.customSubject && /prova|exame/i.test(cell.customSubject)) ||
+                                      (cell.topic && /prova|exame/i.test(cell.topic)));
+                                  const currentModulo =
+                                    cell.modulo ||
+                                    (cellDiscObj?.modulo_index
+                                      ? String(cellDiscObj.modulo_index)
+                                      : isExtraClassCell
+                                        ? ""
+                                        : "1");
+                                  const moduloLabel =
+                                    currentModulo === "PROVAS"
+                                      ? language === "pt"
+                                        ? "PROVAS"
+                                        : "EXAMS"
+                                      : !currentModulo && isExtraClassCell
+                                        ? language === "pt"
+                                          ? "ATIVIDADE"
+                                          : "ACTIVITY"
+                                        : isNaN(Number(currentModulo))
+                                          ? currentModulo
+                                          : language === "pt"
+                                            ? `Módulo ${currentModulo}`
+                                            : `Module ${currentModulo}`;
+
+                                  const instructorLabel = (() => {
+                                    const custom = (cell.customInstructor || "").trim();
+                                    if (custom) return custom;
+                                    const found = instrutores.find((i) => i.id === cell.instructorId)?.full_name;
+                                    if (found) return found;
+                                    const rawId = String(cell.instructorId || "").trim();
+                                    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawId);
+                                    return (!isUuid && rawId) || (selectedTurma?.instrutor || "").trim() || "Instrutor";
+                                  })();
+
+                                  if (isExtraordinaryHolidayCell) {
+                                    return (
+                                      <div
+                                        key={`mob-slot-${day.key}-${slot.id}`}
+                                        className="rounded-xl p-3 bg-violet-100/90 border-2 border-violet-500 text-violet-950 space-y-1.5"
+                                      >
+                                        <div className="flex items-center justify-between gap-2">
+                                          <span className="inline-flex items-center gap-1 text-[10px] font-black font-mono px-2 py-0.5 rounded bg-white border border-violet-300 text-violet-900">
+                                            <Clock size={11} />
+                                            {slot.time}
+                                          </span>
+                                          <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-violet-900">
+                                            <CalendarOff size={12} />
+                                            {language === "pt" ? "Feriado Extraordinário" : "Extraordinary Holiday"}
+                                          </span>
+                                        </div>
+                                        {cell.topic && (
+                                          <p className="text-xs font-bold uppercase text-violet-900">{cell.topic}</p>
+                                        )}
+                                      </div>
+                                    );
+                                  }
+
+                                  return (
+                                    <div
+                                      key={`mob-slot-${day.key}-${slot.id}`}
+                                      className={cn(
+                                        "rounded-xl p-3 border space-y-2",
+                                        isExamCell
+                                          ? isNifStudent
+                                            ? "bg-white border-2 border-black shadow-[2px_2px_0px_0px_#000000]"
+                                            : "bg-rose-50/80 border-2 border-rose-400"
+                                          : isExtraClassCell
+                                            ? isNifStudent
+                                              ? "bg-white border-2 border-black shadow-[2px_2px_0px_0px_#000000]"
+                                              : "bg-amber-50/80 border-2 border-amber-400"
+                                            : isNifStudent
+                                              ? "bg-white border border-black"
+                                              : "bg-slate-50 border-slate-200"
+                                      )}
+                                    >
+                                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                                        <span
+                                          className={cn(
+                                            "inline-flex items-center gap-1 text-[11px] font-black font-mono px-2 py-0.5 rounded-lg border",
+                                            isNifStudent
+                                              ? "bg-white border-black text-black"
+                                              : "bg-white border-slate-200 text-slate-800"
+                                          )}
+                                        >
+                                          <Clock size={11} className="shrink-0" />
+                                          {slot.time}
+                                        </span>
+                                        <span
+                                          className={cn(
+                                            "inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-lg",
+                                            isNifStudent
+                                              ? "border border-black bg-white text-black"
+                                              : isExamCell
+                                                ? "bg-rose-100 text-rose-800 border border-rose-300"
+                                                : isExtraClassCell
+                                                  ? "bg-amber-100 text-amber-900 border border-amber-300"
+                                                  : "bg-blue-50 text-blue-700 border border-blue-200"
+                                          )}
+                                        >
+                                          <Layers size={10} />
+                                          {moduloLabel}
+                                        </span>
+                                      </div>
+
+                                      <div className="space-y-1">
+                                        <div className="flex items-start gap-1.5 text-neutral-950">
+                                          <BookOpen size={13} className="shrink-0 mt-0.5" />
+                                          <span className="text-xs sm:text-sm font-black uppercase tracking-tight leading-snug">
+                                            {cell.customSubject ||
+                                              cellDiscObj?.nome ||
+                                              (cell.subjectId === "__extraclasse__"
+                                                ? language === "pt"
+                                                  ? "EXTRA CLASSE"
+                                                  : "EXTRA CLASS"
+                                                : cell.modulo === "PROVAS" || cell.modulo === "PROVA"
+                                                  ? language === "pt"
+                                                    ? "Avaliação / Prova"
+                                                    : "Exam / Assessment"
+                                                  : "Disciplina")}
+                                          </span>
+                                        </div>
+
+                                        {(cell.topic || cell.topicId) && (
+                                          <div className="flex items-start gap-1.5 text-slate-700 pl-0.5">
+                                            <Book size={12} className="shrink-0 mt-0.5 opacity-75" />
+                                            <span className="text-[11px] font-bold uppercase tracking-tight leading-snug">
+                                              {cell.topic || cellTopicObj?.nome || ""}
+                                            </span>
+                                          </div>
+                                        )}
+                                      </div>
+
+                                      <div className="pt-2 border-t border-slate-200/80 flex flex-wrap items-center justify-between gap-2 text-[11px] font-bold text-slate-700">
+                                        <span className="inline-flex items-center gap-1 min-w-0">
+                                          <User size={12} className="shrink-0" />
+                                          <span className="truncate">{instructorLabel}</span>
+                                        </span>
+                                        <span className="inline-flex items-center gap-1 uppercase text-[10px] font-black text-slate-600 shrink-0">
+                                          <MapPin size={11} className="shrink-0" />
+                                          {isExtraClassCell
+                                            ? language === "pt"
+                                              ? "Local: "
+                                              : "Location: "
+                                            : language === "pt"
+                                              ? "Sala: "
+                                              : "Room: "}
+                                          {cell.room || "N/A"}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  );
+                                })
+                              )}
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                )}
+
+                <div
+                  className={cn(
+                    "bg-white rounded-xl sm:rounded-2xl border border-slate-200 overflow-x-auto md:overflow-hidden print:overflow-visible shadow-sm",
+                    !isEditMode && mobileViewMode === "cards" ? "hidden md:block print:block" : "block"
+                  )}
+                >
+                  <table className="w-full min-w-[740px] md:min-w-0 print:min-w-0 border-collapse table-fixed">
                     <thead>
                       <tr className="bg-slate-50/50 border-b border-slate-200">
-                        <th className="w-28 md:w-32 px-3 py-3 md:py-3.5 border-r border-slate-200">
+                        <th className="w-24 md:w-32 px-2.5 md:px-3 py-3 md:py-3.5 border-r border-slate-200">
                           <span className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">
                             {t.schedule.time}
                           </span>
