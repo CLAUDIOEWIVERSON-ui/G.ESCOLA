@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
@@ -45,11 +46,18 @@ import {
 import { Toaster, toast } from 'sonner';
 
 export default function ConfiguracoesPage() {
+  const router = useRouter();
   const { t } = useI18n();
-  const { isAdmin, profile, refreshProfile } = useUser();
+  const { isAdmin, isAluno, profile, refreshProfile } = useUser();
   const isReadOnly = !isAdmin;
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (isAluno) {
+      router.replace('/dashboard');
+    }
+  }, [isAluno, router]);
 
   const [colorSettings, setColorSettings] = useState<CardColorSettings>(() => getCardColorSettings());
 
@@ -339,6 +347,10 @@ export default function ConfiguracoesPage() {
       setUpdatingPassword(false);
     }
   };
+
+  if (isAluno) {
+    return null;
+  }
 
   if (loading) {
     return (

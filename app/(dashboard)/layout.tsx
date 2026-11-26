@@ -37,7 +37,8 @@ import {
   ShieldCheck,
   Quote,
   Award,
-  Calculator
+  Calculator,
+  StickyNote
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -214,6 +215,14 @@ const MOBILE_NAV_COLORS: Record<string, {
     border: 'border-violet-400/60',
     indicator: 'bg-violet-600 shadow-[0_0_8px_rgba(124,58,237,0.75)]',
   },
+  '/bloco-de-notas': {
+    text: 'text-orange-700',
+    activeText: 'text-orange-900',
+    bg: 'neon-3d-btn neon-tone-orange',
+    activeBg: 'neon-3d-btn neon-tone-orange neon-3d-btn-active',
+    border: 'border-orange-400/60',
+    indicator: 'bg-orange-600 shadow-[0_0_8px_rgba(234,88,12,0.75)]',
+  },
 };
 
 const MENU_BUTTON_COLOR = {
@@ -346,7 +355,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           checkClassStatus();
         }
 
-        if (isStudentUser && !['/dashboard', '/boletim', '/horario', '/calendario', '/avaliacao', '/configuracoes', '/pensamento-do-dia'].includes(pathname || '')) {
+        if (isStudentUser && !['/dashboard', '/boletim', '/horario', '/calendario', '/avaliacao', '/bloco-de-notas', '/pensamento-do-dia'].includes(pathname || '')) {
           // Force students logged in to only access allowed sections
           router.push('/dashboard');
         }
@@ -375,6 +384,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: language === 'pt' ? 'Boletim Individual' : 'Individual Report', icon: FileText, path: '/boletim' },
     { name: language === 'pt' ? 'Questionário de Final de Curso' : 'End-of-Course Survey', icon: FileCheck, path: '/avaliacao' },
     { name: language === 'pt' ? 'Detalhe Semanal de Aulas' : 'Weekly Class Details', icon: Calendar, path: '/horario' },
+    { name: language === 'pt' ? 'Bloco de Notas' : 'Notepad', icon: StickyNote, path: '/bloco-de-notas' },
   ] : isAcompanhanteUser ? [
     { name: language === 'pt' ? 'Painel da Turma' : 'Class Hub', icon: LayoutDashboard, path: '/dashboard' },
     { name: t.nav.attendance, icon: CalendarDays, path: '/frequencia' },
@@ -1134,7 +1144,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       >
         {navItems.filter(item => {
           if (isStudentUser) {
-            return ['/boletim', '/avaliacao', '/horario'].includes(item.path);
+            return ['/boletim', '/avaliacao', '/horario', '/bloco-de-notas'].includes(item.path);
           }
           if (isAcompanhanteUser) {
             return ['/dashboard', '/frequencia', '/horario', '/calendario', '/configuracoes'].includes(item.path);
@@ -1165,11 +1175,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   ? (language === 'pt' ? 'BOLETIM' : 'GRADES')
                   : item.path === '/horario'
                     ? (language === 'pt' ? 'AULAS' : 'SCHEDULE')
-                    : item.path === '/configuracoes'
-                      ? (language === 'pt' ? 'CONTA' : 'ACCOUNT')
-                      : item.path === '/manual'
-                        ? (language === 'pt' ? 'MANUAL' : 'MANUAL')
-                        : item.name.split(' ')[0];
+                    : item.path === '/bloco-de-notas'
+                      ? (language === 'pt' ? 'NOTAS' : 'NOTES')
+                      : item.path === '/configuracoes'
+                        ? (language === 'pt' ? 'CONTA' : 'ACCOUNT')
+                        : item.path === '/manual'
+                          ? (language === 'pt' ? 'MANUAL' : 'MANUAL')
+                          : item.name.split(' ')[0];
           
           return (
             <Link 
@@ -1178,7 +1190,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               title={item.name}
               className={cn(
                 "flex flex-col items-center justify-center gap-1 p-0.5 transition-all min-w-[44px] min-h-[48px] flex-1 shrink-0 relative group",
-                isStudentUser ? "max-w-[96px]" : "max-w-[62px]",
+                isStudentUser ? "max-w-[74px]" : "max-w-[62px]",
                 isActive ? "scale-105" : "hover:opacity-100"
               )}
             >

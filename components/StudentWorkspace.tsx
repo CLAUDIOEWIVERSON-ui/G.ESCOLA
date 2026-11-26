@@ -22,6 +22,7 @@ import {
   Compass,
   User,
   MessageSquare,
+  StickyNote,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useUser } from '@/lib/auth/UserContext';
@@ -30,6 +31,7 @@ import { supabase } from '@/lib/supabase/client';
 import { fetchWithAuth } from '@/lib/api';
 import { UserWorkspaceHeader } from '@/components/UserWorkspaceHeader';
 import DashboardThoughtWidget from '@/components/DashboardThoughtWidget';
+import { getStudentNotepadStorageKey, readStudentNotesFromDevice } from '@/components/StudentNotepad';
 import { cn } from '@/lib/utils';
 
 interface ScheduledExamItem {
@@ -196,6 +198,14 @@ export function StudentWorkspace() {
   const [recados, setRecados] = useState<any[]>([]);
   const [markingReadId, setMarkingReadId] = useState<string | null>(null);
   const [loadingExtras, setLoadingExtras] = useState(true);
+  const [deviceNotesCount, setDeviceNotesCount] = useState<number>(0);
+
+  useEffect(() => {
+    if (!profile) return;
+    const key = getStudentNotepadStorageKey(profile);
+    const list = readStudentNotesFromDevice(key);
+    setDeviceNotesCount(list.length);
+  }, [profile]);
 
   useEffect(() => {
     let active = true;
@@ -735,6 +745,24 @@ export function StudentWorkspace() {
         : (isPt ? 'Preencher Questionário' : 'Fill Questionnaire'),
       neonClass: 'neon-3d-btn neon-tone-emerald',
     },
+    {
+      title: isPt ? 'Bloco de Notas Individual' : 'Personal Notepad',
+      description: isPt
+        ? 'Crie e organize suas anotações pessoais de estudo com armazenamento independente no seu dispositivo.'
+        : 'Create and organize your personal study notes with independent storage on your device.',
+      href: '/bloco-de-notas',
+      icon: StickyNote,
+      badgeText:
+        deviceNotesCount > 0
+          ? isPt
+            ? `${deviceNotesCount} ${deviceNotesCount === 1 ? 'Anotação Salva' : 'Anotações Salvas'}`
+            : `${deviceNotesCount} ${deviceNotesCount === 1 ? 'Saved Note' : 'Saved Notes'}`
+          : isPt
+            ? 'Salvo no Dispositivo'
+            : 'Saved on Device',
+      cta: isPt ? 'Abrir Bloco de Notas' : 'Open Notepad',
+      neonClass: 'neon-3d-btn neon-tone-orange',
+    },
   ];
 
   return (
@@ -1188,8 +1216,8 @@ export function StudentWorkspace() {
         </div>
       </motion.div>
 
-      {/* Os 3 Módulos Principais do Aluno */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+      {/* Os Módulos Principais do Aluno */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
         {primaryModules.map((mod, idx) => {
           const Icon = mod.icon;
           return (
