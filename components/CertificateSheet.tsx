@@ -69,6 +69,16 @@ interface VerticalAlignmentGuide {
   label?: string;
 }
 
+export interface CertificateSheetClickContext {
+  clientX: number;
+  clientY: number;
+  side: 'front' | 'back';
+  relX: number;
+  relY: number;
+  targetObject: CertificateSelectableObject;
+  clickedEmptyArea?: boolean;
+}
+
 interface CertificateSheetProps {
   template: CertificateTemplateConfig;
   student: CertificateStudentContext;
@@ -78,6 +88,8 @@ interface CertificateSheetProps {
   interactiveDrag?: boolean;
   selectedObject?: CertificateSelectableObject | null;
   onSelectObject?: (obj: CertificateSelectableObject) => void;
+  onOpenClickMenu?: (ctx: CertificateSheetClickContext) => void;
+  onRightClickSelectObject?: (obj: CertificateSelectableObject) => void;
   onUpdateTemplate?: (
     updater: (prev: CertificateTemplateConfig) => CertificateTemplateConfig
   ) => void;
@@ -399,6 +411,8 @@ export function CertificateSheet({
   interactiveDrag = false,
   selectedObject = null,
   onSelectObject,
+  onOpenClickMenu,
+  onRightClickSelectObject,
   onUpdateTemplate,
   placingTextBoxId = null,
   onPlaceTextBoxAt,
@@ -406,6 +420,8 @@ export function CertificateSheet({
   const frontSheetRef = useRef<HTMLDivElement | null>(null);
   const elementRefs = useRef<Partial<Record<DraggableCertificateElement, HTMLElement | null>>>({});
   const sliderGuideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const suppressNextClickRef = useRef(false);
+  const suppressClickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevOffsetsOnlySigRef = useRef<string | null>(null);
 
   const dragRef = useRef<{
@@ -416,6 +432,7 @@ export function CertificateSheet({
     origY: number;
     origBox: SheetBox | null;
     siblingBoxes: SheetBox[];
+    moved: boolean;
   } | null>(null);
   const customBoxDragRef = useRef<{
     id: string;
@@ -819,6 +836,9 @@ export function CertificateSheet({
       if (sliderGuideTimerRef.current) {
         clearTimeout(sliderGuideTimerRef.current);
       }
+      if (suppressClickTimerRef.current) {
+        clearTimeout(suppressClickTimerRef.current);
+      }
     };
   }, []);
 
@@ -826,6 +846,7 @@ export function CertificateSheet({
     element: DraggableCertificateElement,
     e: React.PointerEvent<HTMLElement>
   ) => {
+    if (e.button !== 0) return;
     onSelectObject?.(dragToSelectMap[element]);
     if (!interactiveDrag || !onUpdateTemplate) return;
     e.preventDefault();
@@ -901,6 +922,7 @@ export function CertificateSheet({
       origY,
       origBox,
       siblingBoxes,
+      moved: false,
     };
     setActiveDrag(element);
     if (origBox) {
@@ -915,9 +937,16 @@ export function CertificateSheet({
     if (!interactiveDrag || !onUpdateTemplate || !dragRef.current) return;
     if (dragRef.current.element !== element) return;
 
+    const rawDx = e.clientX - dragRef.current.startClientX;
+    const rawDy = e.clientY - dragRef.current.startClientY;
+    if (!dragRef.current.moved && (Math.abs(rawDx) > 3 || Math.abs(rawDy) > 3)) {
+      dragRef.current.moved = true;
+    }
+    if (!dragRef.current.moved) return;
+
     const effectiveScale = scale > 0 ? scale : 1;
-    const dx = Math.round((e.clientX - dragRef.current.startClientX) / effectiveScale);
-    const dy = Math.round((e.clientY - dragRef.current.startClientY) / effectiveScale);
+    const dx = Math.round(rawDx / effectiveScale);
+    const dy = Math.round(rawDy / effectiveScale);
     const b = elementBounds[element];
     let nextX = clamp(dragRef.current.origX + dx, b.minX, b.maxX);
     let nextY = clamp(dragRef.current.origY + dy, b.minY, b.maxY);
@@ -1095,8 +1124,20 @@ export function CertificateSheet({
     });
   };
 
+  const markDragJustFinished = () => {
+    suppressNextClickRef.current = true;
+    if (suppressClickTimerRef.current) {
+      clearTimeout(suppressClickTimerRef.current);
+    }
+    suppressClickTimerRef.current = setTimeout(() => {
+      suppressNextClickRef.current = false;
+      suppressClickTimerRef.current = null;
+    }, 120);
+  };
+
   const handleDragPointerEnd = (e: React.PointerEvent<HTMLElement>) => {
     if (!dragRef.current) return;
+    const didMove = dragRef.current.moved;
     try {
       e.currentTarget.releasePointerCapture(e.pointerId);
     } catch {
@@ -1105,6 +1146,66 @@ export function CertificateSheet({
     dragRef.current = null;
     setActiveDrag(null);
     setAlignmentGuides({ horizontal: [], vertical: [] });
+    if (didMove) {
+      markDragJustFinished();
+    }
+  };
+
+  const getSheetRelativeCoords = (clientX: number, clientY: number) => {
+    const rect = frontSheetRef.current?.getBoundingClientRect();
+    if (!rect) {
+      return { relX: Math.round(sheetWidth / 2), relY: Math.round(sheetHeight / 2) };
+    }
+    const effectiveScale = scale > 0 ? scale : 1;
+    return {
+      relX: Math.round((clientX - rect.left) / effectiveScale),
+      relY: Math.round((clientY - rect.top) / effectiveScale),
+    };
+  };
+
+  const fireLeftClick = (
+    e: React.MouseEvent<HTMLElement>,
+    targetObject: CertificateSelectableObject,
+    clickSide: 'front' | 'back',
+    clickedEmptyArea = false
+  ) => {
+    e.stopPropagation();
+    if (suppressNextClickRef.current) {
+      suppressNextClickRef.current = false;
+      if (suppressClickTimerRef.current) {
+        clearTimeout(suppressClickTimerRef.current);
+        suppressClickTimerRef.current = null;
+      }
+      return;
+    }
+    const { relX, relY } = getSheetRelativeCoords(e.clientX, e.clientY);
+    if (placingTextBoxId && onPlaceTextBoxAt) {
+      onPlaceTextBoxAt(placingTextBoxId, clickSide, relX, relY);
+      return;
+    }
+    onSelectObject?.(targetObject);
+    onOpenClickMenu?.({
+      clientX: e.clientX,
+      clientY: e.clientY,
+      side: clickSide,
+      relX,
+      relY,
+      targetObject,
+      clickedEmptyArea,
+    });
+  };
+
+  const fireRightClick = (
+    e: React.MouseEvent<HTMLElement>,
+    targetObject: CertificateSelectableObject
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (onRightClickSelectObject) {
+      onRightClickSelectObject(targetObject);
+    } else {
+      onSelectObject?.(targetObject);
+    }
   };
 
   const getDragProps = (
@@ -1116,7 +1217,7 @@ export function CertificateSheet({
   } => {
     const selectKey = dragToSelectMap[element];
     const canDrag = interactiveDrag;
-    const canSelect = Boolean(onSelectObject);
+    const canSelect = Boolean(onSelectObject || onOpenClickMenu);
     const refProp = canSelect
       ? {
           ref: (el: HTMLElement | null) => {
@@ -1131,14 +1232,20 @@ export function CertificateSheet({
     return {
       ...refProp,
       title: canDrag
-        ? `Clique para editar ou arraste: ${label}`
-        : `Clique para editar: ${label}`,
-      onClick: canSelect
-        ? (e) => {
-            e.stopPropagation();
-            onSelectObject?.(selectKey);
-          }
-        : undefined,
+        ? `Clique esquerdo: menu/editar ou arraste • Botão direito: selecionar (${label})`
+        : `Clique esquerdo: menu/editar • Botão direito: selecionar (${label})`,
+      onClick:
+        canSelect || (placingTextBoxId && onPlaceTextBoxAt)
+          ? (e) => {
+              fireLeftClick(e, selectKey, side, false);
+            }
+          : undefined,
+      onContextMenu:
+        canSelect || onRightClickSelectObject
+          ? (e) => {
+              fireRightClick(e, selectKey);
+            }
+          : undefined,
       onMouseEnter: canSelect
         ? (e) => {
             e.stopPropagation();
@@ -1182,14 +1289,16 @@ export function CertificateSheet({
     selectKey: CertificateSelectableObject,
     label: string
   ): React.HTMLAttributes<HTMLElement> & { style?: React.CSSProperties } => {
-    if (!onSelectObject) return {};
+    if (!onSelectObject && !onOpenClickMenu) return {};
     const isSelected = selectedObject === selectKey;
     const isHovered = hoveredObject === selectKey;
     return {
-      title: `Clique para editar: ${label}`,
+      title: `Clique esquerdo: menu/editar • Botão direito: selecionar (${label})`,
       onClick: (e) => {
-        e.stopPropagation();
-        onSelectObject(selectKey);
+        fireLeftClick(e, selectKey, side, false);
+      },
+      onContextMenu: (e) => {
+        fireRightClick(e, selectKey);
       },
       onMouseEnter: (e) => {
         e.stopPropagation();
@@ -1472,20 +1581,23 @@ export function CertificateSheet({
             placingTextBoxId
               ? 'Clique na folha para posicionar a caixa de texto aqui'
               : canDragBox
-                ? 'Clique para editar ou arraste livremente pela folha'
-                : 'Clique para editar esta caixa de texto'
+                ? 'Clique esquerdo: editar no cursor ou arraste • Botão direito: selecionar'
+                : 'Clique esquerdo: editar no cursor • Botão direito: selecionar'
           }
-          onClick={(e) => {
-            e.stopPropagation();
-            if (placingTextBoxId && onPlaceTextBoxAt && frontSheetRef.current) {
-              const rect = frontSheetRef.current.getBoundingClientRect();
-              const relX = (e.clientX - rect.left) / (scale || 1);
-              const relY = (e.clientY - rect.top) / (scale || 1);
-              onPlaceTextBoxAt(placingTextBoxId, sheetSide, Math.round(relX), Math.round(relY));
-              return;
-            }
-            onSelectObject?.(selectKey);
-          }}
+          onClick={
+            isInteractiveEditor || onOpenClickMenu || (placingTextBoxId && onPlaceTextBoxAt)
+              ? (e) => {
+                  fireLeftClick(e, selectKey, sheetSide, false);
+                }
+              : undefined
+          }
+          onContextMenu={
+            isInteractiveEditor || onRightClickSelectObject || onSelectObject
+              ? (e) => {
+                  fireRightClick(e, selectKey);
+                }
+              : undefined
+          }
           onMouseEnter={
             isInteractiveEditor
               ? (e) => {
@@ -1504,6 +1616,7 @@ export function CertificateSheet({
           onPointerDown={
             canDragBox
               ? (e) => {
+                  if (e.button !== 0) return;
                   e.preventDefault();
                   e.stopPropagation();
                   onSelectObject?.(selectKey);
@@ -1555,6 +1668,7 @@ export function CertificateSheet({
             canDragBox
               ? (e) => {
                   if (!customBoxDragRef.current || customBoxDragRef.current.id !== box.id) return;
+                  const didMove = customBoxDragRef.current.moved;
                   try {
                     e.currentTarget.releasePointerCapture(e.pointerId);
                   } catch {
@@ -1562,6 +1676,9 @@ export function CertificateSheet({
                   }
                   customBoxDragRef.current = null;
                   setActiveCustomBoxDragId(null);
+                  if (didMove) {
+                    markDragJustFinished();
+                  }
                 }
               : undefined
           }
@@ -1569,6 +1686,7 @@ export function CertificateSheet({
             canDragBox
               ? (e) => {
                   if (!customBoxDragRef.current || customBoxDragRef.current.id !== box.id) return;
+                  const didMove = customBoxDragRef.current.moved;
                   try {
                     e.currentTarget.releasePointerCapture(e.pointerId);
                   } catch {
@@ -1576,6 +1694,9 @@ export function CertificateSheet({
                   }
                   customBoxDragRef.current = null;
                   setActiveCustomBoxDragId(null);
+                  if (didMove) {
+                    markDragJustFinished();
+                  }
                 }
               : undefined
           }
@@ -1718,26 +1839,36 @@ export function CertificateSheet({
           ref={frontSheetRef}
           id={elementId}
           data-certificate-side="front"
-          onClick={(e) => {
-            const rect = e.currentTarget.getBoundingClientRect();
-            const relX = (e.clientX - rect.left) / (scale || 1);
-            const relY = (e.clientY - rect.top) / (scale || 1);
-            if (placingTextBoxId && onPlaceTextBoxAt) {
-              onPlaceTextBoxAt(placingTextBoxId, 'front', Math.round(relX), Math.round(relY));
-              return;
-            }
-            if (!onSelectObject) return;
-            if (
-              relX < frameHitThreshold ||
-              relX > sheetWidth - frameHitThreshold ||
-              relY < frameHitThreshold ||
-              relY > sheetHeight - frameHitThreshold
-            ) {
-              onSelectObject('molduraFrente');
-            } else {
-              onSelectObject('marcaDaguaFrente');
-            }
-          }}
+          onClick={
+            onSelectObject || onOpenClickMenu || (placingTextBoxId && onPlaceTextBoxAt)
+              ? (e) => {
+                  const { relX, relY } = getSheetRelativeCoords(e.clientX, e.clientY);
+                  const targetObj: CertificateSelectableObject =
+                    relX < frameHitThreshold ||
+                    relX > sheetWidth - frameHitThreshold ||
+                    relY < frameHitThreshold ||
+                    relY > sheetHeight - frameHitThreshold
+                      ? 'molduraFrente'
+                      : 'marcaDaguaFrente';
+                  fireLeftClick(e, targetObj, 'front', true);
+                }
+              : undefined
+          }
+          onContextMenu={
+            onRightClickSelectObject || onSelectObject
+              ? (e) => {
+                  const { relX, relY } = getSheetRelativeCoords(e.clientX, e.clientY);
+                  const targetObj: CertificateSelectableObject =
+                    relX < frameHitThreshold ||
+                    relX > sheetWidth - frameHitThreshold ||
+                    relY < frameHitThreshold ||
+                    relY > sheetHeight - frameHitThreshold
+                      ? 'molduraFrente'
+                      : 'marcaDaguaFrente';
+                  fireRightClick(e, targetObj);
+                }
+              : undefined
+          }
           style={{
             ...sheetBaseStyle,
             cursor: placingTextBoxId ? 'crosshair' : undefined,
@@ -3133,26 +3264,36 @@ export function CertificateSheet({
         ref={frontSheetRef}
         id={elementId}
         data-certificate-side="back"
-        onClick={(e) => {
-          const rect = e.currentTarget.getBoundingClientRect();
-          const relX = (e.clientX - rect.left) / (scale || 1);
-          const relY = (e.clientY - rect.top) / (scale || 1);
-          if (placingTextBoxId && onPlaceTextBoxAt) {
-            onPlaceTextBoxAt(placingTextBoxId, 'back', Math.round(relX), Math.round(relY));
-            return;
-          }
-          if (!onSelectObject) return;
-          if (
-            relX < backFrameHitThreshold ||
-            relX > sheetWidth - backFrameHitThreshold ||
-            relY < backFrameHitThreshold ||
-            relY > sheetHeight - backFrameHitThreshold
-          ) {
-            onSelectObject('versoMoldura');
-          } else {
-            onSelectObject('marcaDaguaVerso');
-          }
-        }}
+        onClick={
+          onSelectObject || onOpenClickMenu || (placingTextBoxId && onPlaceTextBoxAt)
+            ? (e) => {
+                const { relX, relY } = getSheetRelativeCoords(e.clientX, e.clientY);
+                const targetObj: CertificateSelectableObject =
+                  relX < backFrameHitThreshold ||
+                  relX > sheetWidth - backFrameHitThreshold ||
+                  relY < backFrameHitThreshold ||
+                  relY > sheetHeight - backFrameHitThreshold
+                    ? 'versoMoldura'
+                    : 'marcaDaguaVerso';
+                fireLeftClick(e, targetObj, 'back', true);
+              }
+            : undefined
+        }
+        onContextMenu={
+          onRightClickSelectObject || onSelectObject
+            ? (e) => {
+                const { relX, relY } = getSheetRelativeCoords(e.clientX, e.clientY);
+                const targetObj: CertificateSelectableObject =
+                  relX < backFrameHitThreshold ||
+                  relX > sheetWidth - backFrameHitThreshold ||
+                  relY < backFrameHitThreshold ||
+                  relY > sheetHeight - backFrameHitThreshold
+                    ? 'versoMoldura'
+                    : 'marcaDaguaVerso';
+                fireRightClick(e, targetObj);
+              }
+            : undefined
+        }
         style={{
           ...sheetBaseStyle,
           cursor: placingTextBoxId ? 'crosshair' : undefined,

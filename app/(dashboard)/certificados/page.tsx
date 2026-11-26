@@ -74,7 +74,11 @@ import {
   extractTemplateAssetsForLibrary,
   prepareUploadedAssetDataUrl,
 } from '@/lib/certificateLibrary';
-import { CertificateSheet } from '@/components/CertificateSheet';
+import {
+  CertificateSheet,
+  CertificateSheetClickContext,
+} from '@/components/CertificateSheet';
+import { CertificateClickMenu } from '@/components/CertificateClickMenu';
 import { CertificateInspectorPanel } from '@/components/CertificateInspectorPanel';
 import { CertificateLibraryPanel } from '@/components/CertificateLibraryPanel';
 
@@ -156,6 +160,9 @@ export default function CertificadosPage() {
     {}
   );
   const [selectedObject, setSelectedObject] = useState<CertificateSelectableObject | null>(null);
+  const [clickMenuContext, setClickMenuContext] = useState<CertificateSheetClickContext | null>(
+    null
+  );
   const [placingTextBoxId, setPlacingTextBoxId] = useState<string | null>(null);
   const [previewMode, setPreviewMode] = useState<'both' | 'front' | 'back'>('both');
   const [manualZoom, setManualZoom] = useState<number>(100);
@@ -312,6 +319,10 @@ export default function CertificadosPage() {
     }
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        if (clickMenuContext) {
+          setClickMenuContext(null);
+          return;
+        }
         if (placingTextBoxId) {
           setPlacingTextBoxId(null);
           return;
@@ -322,7 +333,14 @@ export default function CertificadosPage() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [fullscreenPreview, showSaveAsNewModal, placingTextBoxId, selectedObject, editorTab]);
+  }, [
+    fullscreenPreview,
+    showSaveAsNewModal,
+    clickMenuContext,
+    placingTextBoxId,
+    selectedObject,
+    editorTab,
+  ]);
 
   const handleSelectObjectOnSheet = useCallback((obj: CertificateSelectableObject) => {
     setPlacingTextBoxId((prev) => (obj === `caixaTexto:${prev}` ? prev : null));
@@ -334,6 +352,14 @@ export default function CertificadosPage() {
     }
     setSelectedObject(obj);
   }, []);
+
+  const handleRightClickSelectObject = useCallback(
+    (obj: CertificateSelectableObject) => {
+      setClickMenuContext(null);
+      handleSelectObjectOnSheet(obj);
+    },
+    [handleSelectObjectOnSheet]
+  );
 
   const {
     orientacao: sheetOrientation,
@@ -418,6 +444,46 @@ export default function CertificadosPage() {
       setPlacingTextBoxId(null);
       setSelectedObject(`caixaTexto:${boxId}`);
       toast.success(`Caixa posicionada (${side === 'front' ? 'Frente' : 'Verso'})!`);
+    },
+    [sheetH, sheetW]
+  );
+
+  const handleInsertCustomTextBoxAt = useCallback(
+    (side: 'front' | 'back', relX: number, relY: number): string => {
+      const boxId = `tb_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+      const defaultWidth = Math.min(320, Math.max(220, Math.round(sheetW * 0.36)));
+      const nextX = Math.max(-40, Math.min(sheetW - 40, Math.round(relX - defaultWidth / 2)));
+      const nextY = Math.max(-20, Math.min(sheetH - 20, Math.round(relY - 12)));
+      setTemplate((prev) => {
+        const existing = prev.caixasTextoExtra || [];
+        const newBox: CertificateCustomTextBox = {
+          id: boxId,
+          lado: side,
+          texto: 'Novo texto',
+          x: nextX,
+          y: nextY,
+          larguraPx: defaultWidth,
+          fonte: side === 'back' ? prev.fonteVerso || 'sans' : prev.fonteCorpo || 'garamond',
+          tamanhoFontePx: 16,
+          entrelinha: 1.35,
+          cor: '#0f172a',
+          corFundo: 'transparent',
+          mostrarBorda: false,
+          corBorda: '#1e3a8a',
+          negrito: false,
+          italico: false,
+          maiusculo: false,
+          alinhamento: 'left',
+          camadaZIndex: 20 + existing.length,
+        };
+        return {
+          ...prev,
+          caixasTextoExtra: [...existing, newBox],
+        };
+      });
+      setPlacingTextBoxId(null);
+      setSelectedObject(`caixaTexto:${boxId}`);
+      return boxId;
     },
     [sheetH, sheetW]
   );
@@ -2260,6 +2326,7 @@ export default function CertificadosPage() {
     setTemplate(blankTemplate);
     setEditorTab('frente');
     setSelectedObject(null);
+    setClickMenuContext(null);
     toast.success(
       'Folha em branco pronta! Clique nos espaços da folha ou nos atalhos acima para montar sua nova edição.'
     );
@@ -4238,8 +4305,9 @@ export default function CertificadosPage() {
                     </>
                   ) : (
                     <>
-                      <strong>Edição Contextual:</strong> clique diretamente em qualquer objeto na{' '}
-                      <strong>Frente</strong> ou no <strong>Verso</strong> para editar ao lado.
+                      <strong>Edição Contextual:</strong> clique com o <strong>botão esquerdo</strong>{' '}
+                      na folha para inserir/remover itens ou editar propriedades direto no cursor, e com o{' '}
+                      <strong>botão direito</strong> para apenas selecionar.
                     </>
                   )}
                 </span>
@@ -4365,6 +4433,8 @@ export default function CertificadosPage() {
                   interactiveDrag={dragMoveEnabled}
                   selectedObject={selectedObject}
                   onSelectObject={handleSelectObjectOnSheet}
+                  onOpenClickMenu={setClickMenuContext}
+                  onRightClickSelectObject={handleRightClickSelectObject}
                   onUpdateTemplate={setTemplate}
                   placingTextBoxId={placingTextBoxId}
                   onPlaceTextBoxAt={handlePlaceTextBoxAt}
@@ -4385,6 +4455,8 @@ export default function CertificadosPage() {
                   interactiveDrag={dragMoveEnabled}
                   selectedObject={selectedObject}
                   onSelectObject={handleSelectObjectOnSheet}
+                  onOpenClickMenu={setClickMenuContext}
+                  onRightClickSelectObject={handleRightClickSelectObject}
                   onUpdateTemplate={setTemplate}
                   placingTextBoxId={placingTextBoxId}
                   onPlaceTextBoxAt={handlePlaceTextBoxAt}
@@ -4726,6 +4798,26 @@ export default function CertificadosPage() {
           </>
         )}
       </div>
+
+      {clickMenuContext && !fullscreenPreview && (
+        <CertificateClickMenu
+          clickContext={clickMenuContext}
+          template={template}
+          setTemplate={setTemplate}
+          onClose={() => setClickMenuContext(null)}
+          onSelectObject={handleSelectObjectOnSheet}
+          onInsertCustomTextBoxAt={handleInsertCustomTextBoxAt}
+          activeBodyTextValue={activeBodyTextValue}
+          updateActiveBodyText={updateActiveBodyText}
+          isEditingIndividualBody={isEditingIndividualBody}
+          onOpenLibrary={(category) => {
+            setClickMenuContext(null);
+            setLibraryCategory(category);
+            setSelectedObject(null);
+            setEditorTab('biblioteca');
+          }}
+        />
+      )}
     </div>
   );
 }
