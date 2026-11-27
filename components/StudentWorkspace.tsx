@@ -715,7 +715,7 @@ export function StudentWorkspace() {
               ? 'Grade Atualizada'
               : 'Updated Schedule',
       cta: isPt ? 'Ver Horário Semanal' : 'View Weekly Schedule',
-      ctaClass: 'student-solid-btn bg-black hover:bg-slate-800 text-white border-2 border-black',
+      ctaClass: 'student-solid-btn mobile-only-neon-3d neon-tone-cyan bg-black hover:bg-slate-800 text-white border-2 border-black',
     },
     {
       title: isPt ? 'Boletim Individual' : 'Individual Report Card',
@@ -726,7 +726,7 @@ export function StudentWorkspace() {
       icon: FileText,
       badgeText: isPt ? 'Notas e Frequência' : 'Grades & Attendance',
       cta: isPt ? 'Abrir Meu Boletim' : 'Open Report Card',
-      ctaClass: 'student-solid-btn bg-black hover:bg-slate-800 text-white border-2 border-black',
+      ctaClass: 'student-solid-btn mobile-only-neon-3d neon-tone-emerald bg-black hover:bg-slate-800 text-white border-2 border-black',
     },
     {
       title: isPt ? 'Questionário de Final de Curso' : 'End-of-Course Questionnaire',
@@ -743,7 +743,7 @@ export function StudentWorkspace() {
       cta: hasSubmittedSurvey
         ? (isPt ? 'Ver Comprovante' : 'View Receipt')
         : (isPt ? 'Preencher Questionário' : 'Fill Questionnaire'),
-      ctaClass: 'student-solid-btn bg-black hover:bg-slate-800 text-white border-2 border-black',
+      ctaClass: 'student-solid-btn mobile-only-neon-3d neon-tone-purple bg-black hover:bg-slate-800 text-white border-2 border-black',
     },
     {
       title: isPt ? 'Bloco de Notas Individual' : 'Personal Notepad',
@@ -761,7 +761,7 @@ export function StudentWorkspace() {
             ? 'Salvo no Dispositivo'
             : 'Saved on Device',
       cta: isPt ? 'Abrir Bloco de Notas' : 'Open Notepad',
-      ctaClass: 'student-solid-btn bg-black hover:bg-slate-800 text-white border-2 border-black',
+      ctaClass: 'student-solid-btn mobile-only-neon-3d neon-tone-amber bg-black hover:bg-slate-800 text-white border-2 border-black',
     },
   ];
 
@@ -854,7 +854,7 @@ export function StudentWorkspace() {
                       type="button"
                       disabled={markingReadId === rec.id}
                       onClick={() => handleMarkRecadoAsRead(rec.id)}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white hover:bg-slate-100 text-black border-2 border-black text-[11px] font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 disabled:opacity-50"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white hover:bg-slate-100 text-black border-2 border-black text-[11px] font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 disabled:opacity-50 mobile-only-neon-3d neon-tone-lime"
                     >
                       <CheckCircle2 size={12} className="text-black" />
                       <span>{markingReadId === rec.id ? (isPt ? 'Salvando...' : 'Saving...') : (isPt ? 'Marcar como lido' : 'Mark as read')}</span>
@@ -1329,7 +1329,7 @@ export function StudentWorkspace() {
           <div className="space-y-2">
             <Link
               href="/calendario"
-              className="flex items-center justify-between p-3 rounded-xl transition-all group bg-white hover:bg-slate-100 border-2 border-black text-black"
+              className="flex items-center justify-between p-3 rounded-xl transition-all group bg-white hover:bg-slate-100 border-2 border-black text-black mobile-only-neon-3d neon-tone-pink"
             >
               <span className="flex items-center gap-2.5 text-xs font-bold text-black">
                 <CalendarDays size={15} className="text-black" />

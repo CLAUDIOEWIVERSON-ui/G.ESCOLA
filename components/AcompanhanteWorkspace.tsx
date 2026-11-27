@@ -912,7 +912,7 @@ export function AcompanhanteWorkspace() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5 pt-5 border-t border-slate-100">
           <Link
             href="/frequencia"
-            className="flex items-center justify-between p-3.5 rounded-xl bg-purple-50/70 hover:bg-purple-100/80 border border-purple-200 text-purple-950 transition-all group"
+            className="flex items-center justify-between p-3.5 rounded-xl bg-purple-50/70 hover:bg-purple-100/80 border border-purple-200 text-purple-950 transition-all group mobile-only-neon-3d neon-tone-purple"
           >
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-purple-600 text-white flex items-center justify-center shrink-0">
@@ -920,7 +920,7 @@ export function AcompanhanteWorkspace() {
               </div>
               <div>
                 <p className="text-xs font-black uppercase tracking-wide">{isPt ? 'Frequência da Turma' : 'Class Attendance'}</p>
-                <p className="text-[11px] text-purple-700 font-medium">{isPt ? 'Visualizar mapa completo' : 'View full attendance grid'}</p>
+                <p className="text-[11px] text-purple-700 max-lg:text-white/90 font-medium">{isPt ? 'Visualizar mapa completo' : 'View full attendance grid'}</p>
               </div>
             </div>
             <ArrowRight size={16} className="text-purple-600 transition-transform group-hover:translate-x-1" />
@@ -928,7 +928,7 @@ export function AcompanhanteWorkspace() {
 
           <Link
             href="/horario"
-            className="flex items-center justify-between p-3.5 rounded-xl bg-cyan-50/70 hover:bg-cyan-100/80 border border-cyan-200 text-cyan-950 transition-all group"
+            className="flex items-center justify-between p-3.5 rounded-xl bg-cyan-50/70 hover:bg-cyan-100/80 border border-cyan-200 text-cyan-950 transition-all group mobile-only-neon-3d neon-tone-cyan"
           >
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-cyan-600 text-white flex items-center justify-center shrink-0">
@@ -936,7 +936,7 @@ export function AcompanhanteWorkspace() {
               </div>
               <div>
                 <p className="text-xs font-black uppercase tracking-wide">{isPt ? 'Detalhe Semanal' : 'Weekly Schedule'}</p>
-                <p className="text-[11px] text-cyan-700 font-medium">{isPt ? 'Aulas, horários e instrutores' : 'Classes, hours & instructors'}</p>
+                <p className="text-[11px] text-cyan-700 max-lg:text-white/90 font-medium">{isPt ? 'Aulas, horários e instrutores' : 'Classes, hours & instructors'}</p>
               </div>
             </div>
             <ArrowRight size={16} className="text-cyan-600 transition-transform group-hover:translate-x-1" />
@@ -944,7 +944,7 @@ export function AcompanhanteWorkspace() {
 
           <Link
             href="/calendario"
-            className="flex items-center justify-between p-3.5 rounded-xl bg-rose-50/70 hover:bg-rose-100/80 border border-rose-200 text-rose-950 transition-all group"
+            className="flex items-center justify-between p-3.5 rounded-xl bg-rose-50/70 hover:bg-rose-100/80 border border-rose-200 text-rose-950 transition-all group mobile-only-neon-3d neon-tone-rose"
           >
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-rose-600 text-white flex items-center justify-center shrink-0">
@@ -952,7 +952,7 @@ export function AcompanhanteWorkspace() {
               </div>
               <div>
                 <p className="text-xs font-black uppercase tracking-wide">{isPt ? 'Calendário e Formatura' : 'Calendar & Graduation'}</p>
-                <p className="text-[11px] text-rose-700 font-medium">{isPt ? 'Eventos e cerimônias' : 'Events and ceremonies'}</p>
+                <p className="text-[11px] text-rose-700 max-lg:text-white/90 font-medium">{isPt ? 'Eventos e cerimônias' : 'Events and ceremonies'}</p>
               </div>
             </div>
             <ArrowRight size={16} className="text-rose-600 transition-transform group-hover:translate-x-1" />
@@ -1377,7 +1377,7 @@ export function AcompanhanteWorkspace() {
                 <button
                   type="submit"
                   disabled={sendingRecado || !selectedAlunoId || !recadoMensagem.trim()}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-xs font-black uppercase tracking-wider bg-teal-600 hover:bg-teal-700 text-white shadow-xs transition-colors disabled:opacity-50 cursor-pointer"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-xs font-black uppercase tracking-wider bg-teal-600 hover:bg-teal-700 text-white shadow-xs transition-colors disabled:opacity-50 cursor-pointer mobile-only-neon-3d neon-tone-teal"
                 >
                   {sendingRecado ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                   <span>{isPt ? 'Enviar Recado Individual' : 'Send Individual Message'}</span>

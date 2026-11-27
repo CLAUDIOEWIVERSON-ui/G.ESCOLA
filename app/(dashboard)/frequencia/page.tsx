@@ -1148,7 +1148,7 @@ export default function FrequenciaPage() {
                 <button
                   type="button"
                   onClick={handleOpenPrintAttendanceModal}
-                  className="flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 min-h-[44px] bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-xs font-black shadow-lg shadow-blue-900/10 transition-all cursor-pointer select-none active:scale-95 shrink-0"
+                  className="flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 min-h-[44px] bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-xs font-black shadow-lg shadow-blue-900/10 transition-all cursor-pointer select-none active:scale-95 shrink-0 mobile-only-neon-3d neon-tone-blue"
                   title={language === 'pt' ? 'Gerar e baixar folha de frequência em PDF' : 'Generate and download attendance PDF sheet'}
                 >
                   <Download size={16} />
@@ -1162,7 +1162,7 @@ export default function FrequenciaPage() {
                     className={cn(
                       "flex items-center justify-center gap-2 px-4 sm:px-5 py-2 min-h-[42px] rounded-xl text-xs font-bold transition-all cursor-pointer",
                       mapGranularity === 'week'
-                        ? "bg-white text-blue-600 shadow-md"
+                        ? "bg-white text-blue-600 shadow-md mobile-only-neon-3d neon-tone-cyan neon-3d-btn-active"
                         : "text-slate-500 hover:text-slate-700"
                     )}
                   >
@@ -1175,7 +1175,7 @@ export default function FrequenciaPage() {
                     className={cn(
                       "flex items-center justify-center gap-2 px-4 sm:px-5 py-2 min-h-[42px] rounded-xl text-xs font-bold transition-all cursor-pointer",
                       mapGranularity === 'month'
-                        ? "bg-white text-blue-600 shadow-md"
+                        ? "bg-white text-blue-600 shadow-md mobile-only-neon-3d neon-tone-purple neon-3d-btn-active"
                         : "text-slate-500 hover:text-slate-700"
                     )}
                   >
@@ -1500,7 +1500,7 @@ export default function FrequenciaPage() {
                         className={cn(
                           "min-h-[38px] px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer",
                           mobileViewMode === 'cards'
-                            ? "bg-blue-600 text-white border border-blue-700 shadow-xs"
+                            ? "bg-blue-600 text-white border border-blue-700 shadow-xs mobile-only-neon-3d neon-tone-blue neon-3d-btn-active"
                             : "bg-white text-slate-700 border border-slate-200"
                         )}
                       >
@@ -1512,7 +1512,7 @@ export default function FrequenciaPage() {
                         className={cn(
                           "min-h-[38px] px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer",
                           mobileViewMode === 'table'
-                            ? "bg-blue-600 text-white border border-blue-700 shadow-xs"
+                            ? "bg-blue-600 text-white border border-blue-700 shadow-xs mobile-only-neon-3d neon-tone-indigo neon-3d-btn-active"
                             : "bg-white text-slate-700 border border-slate-200"
                         )}
                       >
@@ -1555,7 +1555,7 @@ export default function FrequenciaPage() {
                                   className={cn(
                                     "min-w-[52px] min-h-[58px] px-2 py-1.5 rounded-2xl flex flex-col items-center justify-center shrink-0 transition-all cursor-pointer border",
                                     isSelected
-                                      ? "bg-blue-600 text-white border-blue-700 shadow-xs"
+                                      ? "bg-blue-600 text-white border-blue-700 shadow-xs mobile-only-neon-3d neon-tone-blue neon-3d-btn-active"
                                       : holiday
                                         ? "bg-rose-50 text-rose-800 border-rose-200"
                                         : isWk
@@ -1610,7 +1610,7 @@ export default function FrequenciaPage() {
                                       }
                                       setActiveBulkDay({ dayStr: effectiveMobileDayStr, day: effectiveMobileDay });
                                     }}
-                                    className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs min-h-[40px] px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 shrink-0 cursor-pointer"
+                                    className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs min-h-[40px] px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 shrink-0 cursor-pointer mobile-only-neon-3d neon-tone-emerald"
                                   >
                                     <ListChecks size={14} />
                                     {language === 'pt' ? 'Turma Toda' : 'All Class'}

@@ -1179,8 +1179,8 @@ export default function HorarioPage() {
                   className={cn(
                     "flex items-center gap-1.5 sm:gap-2 px-3.5 py-2 sm:px-5 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-black uppercase tracking-wider sm:tracking-widest transition-all shadow-lg disabled:opacity-50 cursor-pointer",
                     isEditMode
-                      ? "bg-emerald-600 text-white shadow-emerald-200 hover:bg-emerald-700"
-                      : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 shadow-slate-100",
+                      ? "bg-emerald-600 text-white shadow-emerald-200 hover:bg-emerald-700 mobile-only-neon-3d neon-tone-emerald"
+                      : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 shadow-slate-100 mobile-only-neon-3d neon-tone-blue",
                   )}
                 >
                   {isSaving ? (
@@ -1583,7 +1583,7 @@ export default function HorarioPage() {
                           className={cn(
                             "px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer",
                             mobileViewMode === "cards"
-                              ? "bg-blue-600 text-white border border-blue-700 shadow-xs"
+                              ? "bg-blue-600 text-white border border-blue-700 shadow-xs mobile-only-neon-3d neon-tone-blue neon-3d-btn-active"
                               : "bg-slate-100 text-slate-700 border border-slate-200"
                           )}
                         >
@@ -1595,7 +1595,7 @@ export default function HorarioPage() {
                           className={cn(
                             "px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer",
                             mobileViewMode === "table"
-                              ? "bg-blue-600 text-white border border-blue-700 shadow-xs"
+                              ? "bg-blue-600 text-white border border-blue-700 shadow-xs mobile-only-neon-3d neon-tone-indigo neon-3d-btn-active"
                               : "bg-slate-100 text-slate-700 border border-slate-200"
                           )}
                         >
@@ -1612,25 +1612,28 @@ export default function HorarioPage() {
                           className={cn(
                             "px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider shrink-0 transition-all cursor-pointer",
                             mobileSelectedDay === "all"
-                              ? "bg-blue-600 text-white border border-blue-700 shadow-xs"
+                              ? "bg-blue-600 text-white border border-blue-700 shadow-xs mobile-only-neon-3d neon-tone-blue neon-3d-btn-active"
                               : "bg-slate-100 text-slate-700 border border-slate-200"
                           )}
                         >
                           {language === "pt" ? "Todos" : "All"}
                         </button>
-                        {weekDays.map((day) => {
+                        {weekDays.map((day, dayIdx) => {
                           const shortDay = day.label.slice(0, 3);
                           const isSelected = mobileSelectedDay === day.key;
+                          const dayTones = ['neon-tone-cyan', 'neon-tone-emerald', 'neon-tone-purple', 'neon-tone-amber', 'neon-tone-rose', 'neon-tone-indigo', 'neon-tone-teal'];
+                          const dayTone = dayTones[dayIdx % dayTones.length];
                           return (
                             <button
                               key={`mob-day-tab-${day.key}`}
                               type="button"
                               onClick={() => setMobileSelectedDay(day.key)}
                               className={cn(
-                                "px-2.5 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider shrink-0 transition-all cursor-pointer",
+                                "px-2.5 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider shrink-0 transition-all cursor-pointer mobile-only-neon-3d",
+                                dayTone,
                                 isSelected
-                                  ? "bg-blue-600 text-white border border-blue-700 shadow-xs"
-                                  : "bg-slate-100 text-slate-700 border border-slate-200"
+                                  ? "bg-blue-600 text-white border border-blue-700 shadow-xs neon-3d-btn-active"
+                                  : "bg-slate-100 text-slate-700 border border-slate-200 opacity-85"
                               )}
                             >
                               {shortDay} {format(day.date, "dd/MM")}

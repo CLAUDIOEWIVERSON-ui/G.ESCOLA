@@ -85,6 +85,22 @@ function HeaderSearchBar() {
 
 
 
+const MOBILE_NAV_COLORS: Record<string, string> = {
+  '/dashboard': 'neon-tone-blue',
+  '/cursos': 'neon-tone-indigo',
+  '/turmas': 'neon-tone-teal',
+  '/boletim': 'neon-tone-emerald',
+  '/avaliacao': 'neon-tone-purple',
+  '/horario': 'neon-tone-cyan',
+  '/bloco-de-notas': 'neon-tone-amber',
+  '/frequencia': 'neon-tone-violet',
+  '/calendario': 'neon-tone-pink',
+  '/configuracoes': 'neon-tone-orange',
+  '/manual': 'neon-tone-sky',
+};
+
+const MENU_BUTTON_COLOR = 'neon-tone-indigo';
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -462,8 +478,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         isStudentUser && !sidebarOpen && "justify-center px-2",
                         isStudentUser
                           ? isActive
-                            ? "student-solid-btn font-black border border-black"
-                            : "bg-white text-black border border-slate-300 hover:bg-slate-100 font-bold"
+                            ? "student-solid-btn mobile-only-neon-3d font-black border border-black " + (MOBILE_NAV_COLORS[item.path] || 'neon-tone-blue')
+                            : "bg-white text-black border border-slate-300 hover:bg-slate-100 font-bold mobile-only-neon-3d " + (MOBILE_NAV_COLORS[item.path] || 'neon-tone-blue')
                           : isActive 
                             ? "bg-blue-600/10 text-white border border-blue-500/20 shadow-[0_0_15px_rgba(37,99,235,0.1)]" 
                             : isCalendar
@@ -603,7 +619,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group relative overflow-hidden text-left cursor-pointer border active:scale-[0.98]",
                         isStudentUser && !sidebarOpen && "justify-center px-2",
                         isStudentUser
-                          ? "bg-white hover:bg-slate-100 text-black border-black font-bold"
+                          ? "bg-white hover:bg-slate-100 text-black border-black font-bold mobile-only-neon-3d neon-tone-rose"
                           : "text-rose-400/90 hover:text-rose-200 hover:bg-rose-500/10 border-transparent hover:border-rose-500/20"
                       )}
                     >
@@ -988,7 +1004,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               className="flex flex-col items-center justify-center gap-1 p-0.5 transition-all min-w-0 min-h-[48px] flex-1 relative group"
             >
               <div className={cn(
-                "mobile-bottom-nav-icon w-8 h-8 sm:w-10 sm:h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors",
+                "mobile-bottom-nav-icon w-8 h-8 sm:w-10 sm:h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors mobile-only-neon-3d",
+                MOBILE_NAV_COLORS[item.path] || 'neon-tone-blue',
+                isActive && "neon-3d-btn-active",
                 isStudentUser
                   ? isActive
                     ? "student-solid-btn border-2 border-black"
@@ -1033,7 +1051,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             title={language === 'pt' ? 'Sair do Sistema' : 'Sign Out'}
             className="flex flex-col items-center justify-center gap-1 p-0.5 transition-all min-w-0 min-h-[48px] flex-1 relative group cursor-pointer text-black"
           >
-            <div className="mobile-bottom-nav-icon w-8 h-8 sm:w-10 sm:h-9 rounded-xl flex items-center justify-center shrink-0 bg-white text-black border border-slate-300">
+            <div className="mobile-bottom-nav-icon w-8 h-8 sm:w-10 sm:h-9 rounded-xl flex items-center justify-center shrink-0 bg-white text-black border border-slate-300 mobile-only-neon-3d neon-tone-rose">
               <LogOut size={16} className="text-black" />
             </div>
             <span className="text-[7px] sm:text-[8px] uppercase tracking-tight sm:tracking-wider truncate w-full text-center font-bold text-black leading-none">
@@ -1047,7 +1065,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           className="flex flex-col items-center justify-center gap-1 p-0.5 transition-all min-w-0 min-h-[48px] flex-1 relative group cursor-pointer"
         >
           <div className={cn(
-            "mobile-bottom-nav-icon w-8 h-8 sm:w-10 sm:h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors",
+            "mobile-bottom-nav-icon w-8 h-8 sm:w-10 sm:h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors mobile-only-neon-3d",
+            MENU_BUTTON_COLOR,
+            sidebarOpen && "neon-3d-btn-active",
             isStudentUser
               ? sidebarOpen
                 ? "student-solid-btn border-2 border-black"

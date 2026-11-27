@@ -450,7 +450,7 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
             <div className="flex flex-row flex-wrap lg:flex-col items-center lg:items-end gap-2 w-full lg:w-auto pt-3 lg:pt-0 border-t lg:border-t-0 border-slate-200 shrink-0">
               <Link
                 href="/dashboard"
-                className="flex-1 md:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-100 text-black border-2 border-black rounded-xl text-xs font-black transition-all cursor-pointer shadow-2xs active:scale-95"
+                className="flex-1 md:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-100 text-black border-2 border-black rounded-xl text-xs font-black transition-all cursor-pointer shadow-2xs active:scale-95 mobile-only-neon-3d neon-tone-blue student-solid-btn"
                 title={isPt ? "Ir para a Carteira Digital do Aluno" : "Go to Digital Student ID Card"}
               >
                 <LayoutDashboard size={14} className="text-black" />

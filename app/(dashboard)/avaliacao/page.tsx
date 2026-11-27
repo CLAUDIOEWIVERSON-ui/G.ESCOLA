@@ -1399,7 +1399,7 @@ function AvaliacaoAlunoForm() {
         <button
           type="button"
           onClick={() => setCurrentStep(2)}
-          className="inline-flex items-center justify-center gap-3 px-8 py-4 min-h-[56px] rounded-2xl text-base sm:text-lg font-black uppercase tracking-wide text-white cursor-pointer transition-all active:scale-[0.98] student-solid-btn bg-black hover:bg-slate-800 border-2 border-black shadow-sm"
+          className="inline-flex items-center justify-center gap-3 px-8 py-4 min-h-[56px] rounded-2xl text-base sm:text-lg font-black uppercase tracking-wide text-white cursor-pointer transition-all active:scale-[0.98] student-solid-btn mobile-only-neon-3d neon-tone-emerald bg-black hover:bg-slate-800 border-2 border-black shadow-sm"
         >
           <FileCheck className="h-6 w-6 text-white shrink-0" />
           <span>Acessar Questionário</span>

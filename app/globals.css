@@ -14,6 +14,154 @@ body {
 }
 
 /* =========================================================================
+   3D NEON COLORFUL BUTTONS (Mobile Users - max-width: 1023px)
+   ========================================================================= */
+.neon-tone-blue {
+  --neon-top: #3b82f6;
+  --neon-bottom: #1d4ed8;
+  --neon-border: #1e40af;
+  --neon-glow: rgba(59, 130, 246, 0.55);
+}
+.neon-tone-emerald {
+  --neon-top: #10b981;
+  --neon-bottom: #047857;
+  --neon-border: #065f46;
+  --neon-glow: rgba(16, 185, 129, 0.55);
+}
+.neon-tone-purple {
+  --neon-top: #a855f7;
+  --neon-bottom: #7e22ce;
+  --neon-border: #6b21a8;
+  --neon-glow: rgba(168, 85, 247, 0.55);
+}
+.neon-tone-pink {
+  --neon-top: #ec4899;
+  --neon-bottom: #be185d;
+  --neon-border: #9d174d;
+  --neon-glow: rgba(236, 72, 153, 0.55);
+}
+.neon-tone-amber {
+  --neon-top: #f59e0b;
+  --neon-bottom: #b45309;
+  --neon-border: #92400e;
+  --neon-glow: rgba(245, 158, 11, 0.55);
+}
+.neon-tone-cyan {
+  --neon-top: #06b6d4;
+  --neon-bottom: #0e7490;
+  --neon-border: #155e75;
+  --neon-glow: rgba(6, 182, 212, 0.55);
+}
+.neon-tone-rose {
+  --neon-top: #f43f5e;
+  --neon-bottom: #be123c;
+  --neon-border: #9f1239;
+  --neon-glow: rgba(244, 63, 94, 0.55);
+}
+.neon-tone-teal {
+  --neon-top: #14b8a6;
+  --neon-bottom: #0f766e;
+  --neon-border: #115e59;
+  --neon-glow: rgba(20, 184, 166, 0.55);
+}
+.neon-tone-indigo {
+  --neon-top: #6366f1;
+  --neon-bottom: #4338ca;
+  --neon-border: #3730a3;
+  --neon-glow: rgba(99, 102, 241, 0.55);
+}
+.neon-tone-lime {
+  --neon-top: #84cc16;
+  --neon-bottom: #4d7c0f;
+  --neon-border: #3f6212;
+  --neon-glow: rgba(132, 204, 22, 0.55);
+}
+.neon-tone-orange {
+  --neon-top: #f97316;
+  --neon-bottom: #c2410c;
+  --neon-border: #9a3412;
+  --neon-glow: rgba(249, 115, 22, 0.55);
+}
+.neon-tone-violet {
+  --neon-top: #8b5cf6;
+  --neon-bottom: #5b21b6;
+  --neon-border: #4c1d95;
+  --neon-glow: rgba(139, 92, 246, 0.55);
+}
+.neon-tone-sky {
+  --neon-top: #0ea5e9;
+  --neon-bottom: #0369a1;
+  --neon-border: #075985;
+  --neon-glow: rgba(14, 165, 233, 0.55);
+}
+
+.neon-3d-btn {
+  background-image: linear-gradient(180deg, var(--neon-top, #3b82f6) 0%, var(--neon-bottom, #1d4ed8) 100%) !important;
+  background-color: var(--neon-bottom, #1d4ed8) !important;
+  color: #ffffff !important;
+  border-color: var(--neon-border, #1e40af) !important;
+  border-bottom-width: 3px !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    0 3px 0 var(--neon-border, #1e40af),
+    0 6px 14px -2px var(--neon-glow, rgba(59, 130, 246, 0.5)) !important;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease !important;
+}
+
+.neon-3d-btn:active {
+  transform: translateY(2px) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 1px 0 var(--neon-border, #1e40af),
+    0 2px 8px var(--neon-glow, rgba(59, 130, 246, 0.45)) !important;
+}
+
+.neon-3d-btn-active {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    0 3px 0 var(--neon-border, #1e40af),
+    0 0 16px 2px var(--neon-glow, rgba(59, 130, 246, 0.75)) !important;
+  filter: brightness(1.06);
+}
+
+.neon-3d-btn,
+.neon-3d-btn *,
+.neon-3d-btn svg {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+@media (max-width: 1023px) {
+  .mobile-only-neon-3d {
+    background-image: linear-gradient(180deg, var(--neon-top, #3b82f6) 0%, var(--neon-bottom, #1d4ed8) 100%) !important;
+    background-color: var(--neon-bottom, #1d4ed8) !important;
+    color: #ffffff !important;
+    border-color: var(--neon-border, #1e40af) !important;
+    border-bottom-width: 3px !important;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.45),
+      0 3px 0 var(--neon-border, #1e40af),
+      0 6px 14px -2px var(--neon-glow, rgba(59, 130, 246, 0.5)) !important;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease !important;
+  }
+
+  .mobile-only-neon-3d:active {
+    transform: translateY(2px) !important;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.3),
+      0 1px 0 var(--neon-border, #1e40af),
+      0 2px 8px var(--neon-glow, rgba(59, 130, 246, 0.45)) !important;
+  }
+
+  .mobile-only-neon-3d,
+  .mobile-only-neon-3d *,
+  .mobile-only-neon-3d svg {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+  }
+}
+
+/* =========================================================================
    STUDENT WORKSPACE THEME: Pure White Background + Pure Black Text
    ========================================================================= */
 .student-white-theme {
@@ -36,28 +184,28 @@ body {
 .student-white-theme th,
 .student-white-theme td,
 .student-white-theme :is(aside, header, main, nav, section, article, table, thead, tbody, tfoot, tr, th, td, input, select, textarea),
-.student-white-theme :is(button, a):not(.student-solid-btn) {
+.student-white-theme :is(button, a):not(.student-solid-btn):not(.neon-3d-btn):not(.mobile-only-neon-3d) {
   background-color: #ffffff !important;
   background-image: none !important;
   color: #000000 !important;
 }
 
-.student-white-theme :not(.student-photo-overlay):not(.student-photo-overlay *):not(.student-solid-btn):not(.student-solid-btn *):not(img):not(svg):not(path):not(circle):not(rect):not(line):not(polygon):not(polyline) {
+.student-white-theme :not(.student-photo-overlay):not(.student-photo-overlay *):not(.student-solid-btn):not(.student-solid-btn *):not(.neon-3d-btn):not(.neon-3d-btn *):not(.mobile-only-neon-3d):not(.mobile-only-neon-3d *):not(img):not(svg):not(path):not(circle):not(rect):not(line):not(polygon):not(polyline) {
   color: #000000 !important;
   -webkit-text-fill-color: #000000 !important;
 }
 
-.student-white-theme :is([class*="bg-blue"], [class*="bg-slate-9"], [class*="bg-slate-8"], [class*="bg-slate-50"], [class*="bg-slate-100"], [class*="bg-indigo"], [class*="bg-cyan"], [class*="bg-emerald"], [class*="bg-amber"], [class*="bg-rose"], [class*="bg-purple"], [class*="bg-sky"], [class*="bg-violet"], [class*="bg-teal"], [class*="bg-gradient"]):not(.student-photo-overlay):not(.student-solid-btn) {
+.student-white-theme :is([class*="bg-blue"], [class*="bg-slate-9"], [class*="bg-slate-8"], [class*="bg-slate-50"], [class*="bg-slate-100"], [class*="bg-indigo"], [class*="bg-cyan"], [class*="bg-emerald"], [class*="bg-amber"], [class*="bg-rose"], [class*="bg-purple"], [class*="bg-sky"], [class*="bg-violet"], [class*="bg-teal"], [class*="bg-gradient"]):not(.student-photo-overlay):not(.student-solid-btn):not(.neon-3d-btn):not(.mobile-only-neon-3d) {
   background-color: #ffffff !important;
   background-image: none !important;
   color: #000000 !important;
 }
 
-.student-white-theme svg:not(.student-solid-btn svg) {
+.student-white-theme svg:not(.student-solid-btn svg):not(.neon-3d-btn svg):not(.mobile-only-neon-3d svg) {
   color: #000000 !important;
 }
 
-.student-white-theme :is([class*="border-slate"], [class*="border-blue"], [class*="border-white"], [class*="border-indigo"], [class*="border-cyan"], [class*="border-emerald"], [class*="border-amber"], [class*="border-rose"]):not(.border-black):not(.border-2):not(.student-solid-btn) {
+.student-white-theme :is([class*="border-slate"], [class*="border-blue"], [class*="border-white"], [class*="border-indigo"], [class*="border-cyan"], [class*="border-emerald"], [class*="border-amber"], [class*="border-rose"]):not(.border-black):not(.border-2):not(.student-solid-btn):not(.neon-3d-btn):not(.mobile-only-neon-3d) {
   border-color: #d4d4d8 !important;
 }
 
@@ -67,7 +215,29 @@ body {
   -webkit-text-fill-color: #ffffff !important;
 }
 
-.student-white-theme .student-solid-btn {
+@media (min-width: 1024px) {
+  .student-white-theme .student-solid-btn:not(.neon-3d-btn) {
+    background-color: #000000 !important;
+    background-image: none !important;
+    color: #ffffff !important;
+    border-color: #000000 !important;
+  }
+
+  .student-white-theme .mobile-only-neon-3d:not(.student-solid-btn):not(.neon-3d-btn) {
+    background-color: #ffffff !important;
+    background-image: none !important;
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
+  }
+
+  .student-white-theme .mobile-only-neon-3d:not(.student-solid-btn):not(.neon-3d-btn) *,
+  .student-white-theme .mobile-only-neon-3d:not(.student-solid-btn):not(.neon-3d-btn) svg {
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
+  }
+}
+
+.student-white-theme .student-solid-btn:not(.neon-3d-btn):not(.mobile-only-neon-3d) {
   background-color: #000000 !important;
   background-image: none !important;
   color: #ffffff !important;
