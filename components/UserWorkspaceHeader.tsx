@@ -401,18 +401,22 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
                   <span>{isPt ? 'NOME DO USUÁRIO' : 'USER NAME'}:</span>
                 </div>
                 <h2 className={cn(
-                  "text-base sm:text-xl font-black tracking-tight flex items-center gap-2 flex-wrap",
-                  isAluno ? "text-black" : "text-slate-900"
+                  "font-black tracking-tight flex items-center gap-2 flex-wrap",
+                  isAluno
+                    ? "text-2xl sm:text-3xl leading-tight text-black mt-0.5"
+                    : "text-base sm:text-xl text-slate-900"
                 )}>
                   <span>{displayName}</span>
                   {profile.has_changed_password && (
                     <span className={cn("inline-flex items-center", isAluno ? "text-black" : "text-emerald-600")} title={isPt ? "Conta verificada com senha alterada" : "Verified account"}>
-                      <BadgeCheck size={18} />
+                      <BadgeCheck size={isAluno ? 22 : 18} />
                     </span>
                   )}
                 </h2>
                 {profile.nome_guerra && profile.full_name && profile.full_name !== profile.nome_guerra && (
-                  <p className={cn("text-xs font-medium", isAluno ? "text-black" : "text-slate-500")}>
+                  <p className={cn(
+                    isAluno ? "text-xs sm:text-sm font-semibold text-black mt-0.5" : "text-xs font-medium text-slate-500"
+                  )}>
                     {isPt ? 'Nome Completo:' : 'Full Name:'} {profile.full_name}
                   </p>
                 )}

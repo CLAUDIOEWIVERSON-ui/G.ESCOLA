@@ -442,8 +442,17 @@ export function CertificateSheet({
     origY: number;
     moved: boolean;
   } | null>(null);
+  const customImageDragRef = useRef<{
+    id: string;
+    startClientX: number;
+    startClientY: number;
+    origX: number;
+    origY: number;
+    moved: boolean;
+  } | null>(null);
   const [activeDrag, setActiveDrag] = useState<DraggableCertificateElement | null>(null);
   const [activeCustomBoxDragId, setActiveCustomBoxDragId] = useState<string | null>(null);
+  const [activeCustomImageDragId, setActiveCustomImageDragId] = useState<string | null>(null);
   const [hoveredObject, setHoveredObject] = useState<CertificateSelectableObject | null>(null);
   const [transparentFrameMap, setTransparentFrameMap] = useState<Record<string, string>>({});
   const [alignmentGuides, setAlignmentGuides] = useState<{
@@ -1771,6 +1780,257 @@ export function CertificateSheet({
     });
   };
 
+  const renderCustomImagesForSide = (sheetSide: 'front' | 'back') => {
+    const imgs = (template.imagensExtra || []).filter((item) => item.lado === sheetSide);
+    if (imgs.length === 0) return null;
+
+    return imgs.map((imgBox) => {
+      const hasUrl = Boolean(imgBox.url && imgBox.url.trim().length > 0);
+      if (!isInteractiveEditor && !hasUrl) return null;
+
+      const selectKey = `imagemExtra:${imgBox.id}` as CertificateSelectableObject;
+      const isSelected = isInteractiveEditor && selectedObject === selectKey;
+      const isHovered = isInteractiveEditor && hoveredObject === selectKey;
+      const isDragging = isInteractiveEditor && activeCustomImageDragId === imgBox.id;
+      const canDragImg = isInteractiveEditor && Boolean(onUpdateTemplate) && !placingTextBoxId;
+      const imgZ = isDragging
+        ? Math.max(40, (imgBox.camadaZIndex ?? 18) + 20)
+        : Math.max(2, imgBox.camadaZIndex ?? 18);
+      const baseSize = Math.max(24, imgBox.tamanhoPx || 90);
+      const widthPx = Math.round(baseSize * ((imgBox.larguraPct ?? 100) / 100));
+      const heightPx = Math.round(baseSize * ((imgBox.alturaPct ?? 100) / 100));
+      const imgOpacity = Math.max(0.05, Math.min(1, imgBox.opacidade ?? 1));
+      const isMarinhaDefault = imgBox.url === '__DEFAULT_MARINHA_CREST__';
+
+      return (
+        <div
+          key={imgBox.id}
+          title={
+            canDragImg
+              ? 'Clique esquerdo: editar no cursor ou arraste • Botão direito: selecionar'
+              : 'Clique esquerdo: editar no cursor • Botão direito: selecionar'
+          }
+          onClick={
+            isInteractiveEditor || onOpenClickMenu || (placingTextBoxId && onPlaceTextBoxAt)
+              ? (e) => {
+                  fireLeftClick(e, selectKey, sheetSide, false);
+                }
+              : undefined
+          }
+          onContextMenu={
+            isInteractiveEditor || onRightClickSelectObject || onSelectObject
+              ? (e) => {
+                  fireRightClick(e, selectKey);
+                }
+              : undefined
+          }
+          onMouseEnter={
+            isInteractiveEditor
+              ? (e) => {
+                  e.stopPropagation();
+                  setHoveredObject(selectKey);
+                }
+              : undefined
+          }
+          onMouseLeave={
+            isInteractiveEditor
+              ? () => {
+                  setHoveredObject((prev) => (prev === selectKey ? null : prev));
+                }
+              : undefined
+          }
+          onPointerDown={
+            canDragImg
+              ? (e) => {
+                  if (e.button !== 0) return;
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onSelectObject?.(selectKey);
+                  try {
+                    e.currentTarget.setPointerCapture(e.pointerId);
+                  } catch {
+                    // ignore
+                  }
+                  customImageDragRef.current = {
+                    id: imgBox.id,
+                    startClientX: e.clientX,
+                    startClientY: e.clientY,
+                    origX: imgBox.x,
+                    origY: imgBox.y,
+                    moved: false,
+                  };
+                  setActiveCustomImageDragId(imgBox.id);
+                }
+              : undefined
+          }
+          onPointerMove={
+            canDragImg
+              ? (e) => {
+                  if (!customImageDragRef.current || customImageDragRef.current.id !== imgBox.id) {
+                    return;
+                  }
+                  if (!onUpdateTemplate) return;
+                  const effectiveScale = scale > 0 ? scale : 1;
+                  const dx = Math.round(
+                    (e.clientX - customImageDragRef.current.startClientX) / effectiveScale
+                  );
+                  const dy = Math.round(
+                    (e.clientY - customImageDragRef.current.startClientY) / effectiveScale
+                  );
+                  if (
+                    !customImageDragRef.current.moved &&
+                    (Math.abs(dx) > 3 || Math.abs(dy) > 3)
+                  ) {
+                    customImageDragRef.current.moved = true;
+                  }
+                  if (!customImageDragRef.current.moved) return;
+                  const nextX = clamp(customImageDragRef.current.origX + dx, -60, sheetWidth - 30);
+                  const nextY = clamp(customImageDragRef.current.origY + dy, -60, sheetHeight - 30);
+                  onUpdateTemplate((prev) => ({
+                    ...prev,
+                    imagensExtra: (prev.imagensExtra || []).map((item) =>
+                      item.id === imgBox.id ? { ...item, x: nextX, y: nextY } : item
+                    ),
+                  }));
+                }
+              : undefined
+          }
+          onPointerUp={
+            canDragImg
+              ? (e) => {
+                  if (!customImageDragRef.current || customImageDragRef.current.id !== imgBox.id) {
+                    return;
+                  }
+                  const didMove = customImageDragRef.current.moved;
+                  try {
+                    e.currentTarget.releasePointerCapture(e.pointerId);
+                  } catch {
+                    // ignore
+                  }
+                  customImageDragRef.current = null;
+                  setActiveCustomImageDragId(null);
+                  if (didMove) {
+                    markDragJustFinished();
+                  }
+                }
+              : undefined
+          }
+          onPointerCancel={
+            canDragImg
+              ? (e) => {
+                  if (!customImageDragRef.current || customImageDragRef.current.id !== imgBox.id) {
+                    return;
+                  }
+                  const didMove = customImageDragRef.current.moved;
+                  try {
+                    e.currentTarget.releasePointerCapture(e.pointerId);
+                  } catch {
+                    // ignore
+                  }
+                  customImageDragRef.current = null;
+                  setActiveCustomImageDragId(null);
+                  if (didMove) {
+                    markDragJustFinished();
+                  }
+                }
+              : undefined
+          }
+          style={{
+            position: 'absolute',
+            left: `${imgBox.x}px`,
+            top: `${imgBox.y}px`,
+            zIndex: imgZ,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '4px',
+            cursor: canDragImg
+              ? isDragging
+                ? 'grabbing'
+                : 'grab'
+              : isInteractiveEditor
+                ? 'pointer'
+                : undefined,
+            userSelect: canDragImg ? 'none' : undefined,
+            touchAction: canDragImg ? 'none' : undefined,
+            borderRadius: '6px',
+            outline: isInteractiveEditor
+              ? isDragging
+                ? '2.5px solid #1d4ed8'
+                : isSelected
+                  ? '2.5px solid #2563eb'
+                  : isHovered
+                    ? '1.5px dashed rgba(37, 99, 235, 0.72)'
+                    : '1px dashed rgba(37, 99, 235, 0.28)'
+              : undefined,
+            outlineOffset: isInteractiveEditor ? '3px' : undefined,
+          }}
+        >
+          {isMarinhaDefault ? (
+            <MarinhaBrasilCrest
+              size={baseSize}
+              opacity={imgOpacity}
+              label={imgBox.mostrarLegenda ? imgBox.legenda || 'MARINHA DO BRASIL' : ''}
+            />
+          ) : hasUrl ? (
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={resolveAssetCacheSrc(imgBox.url)}
+                alt={imgBox.titulo || 'Imagem do Certificado'}
+                crossOrigin="anonymous"
+                draggable={false}
+                style={{
+                  width: `${widthPx}px`,
+                  height: `${heightPx}px`,
+                  objectFit: 'contain',
+                  opacity: imgOpacity,
+                  pointerEvents: 'none',
+                }}
+              />
+              {imgBox.mostrarLegenda && imgBox.legenda?.trim() && (
+                <span
+                  style={{
+                    fontFamily: resolveCertificateFontCss(template.fonteCorpo || 'garamond'),
+                    fontSize: `${Math.max(8, Math.min(16, Math.round(baseSize * 0.145)))}px`,
+                    fontWeight: 700,
+                    letterSpacing: '0.06em',
+                    color: '#071b3b',
+                    textAlign: 'center',
+                    opacity: imgOpacity,
+                  }}
+                >
+                  {imgBox.legenda}
+                </span>
+              )}
+            </>
+          ) : (
+            <div
+              style={{
+                width: `${widthPx}px`,
+                height: `${heightPx}px`,
+                border: '1.5px dashed #94a3b8',
+                backgroundColor: 'rgba(248, 250, 252, 0.85)',
+                borderRadius: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '8px',
+                fontSize: '11px',
+                fontWeight: 600,
+                color: '#475569',
+                textAlign: 'center',
+              }}
+            >
+              Imagem extra — clique para escolher
+            </div>
+          )}
+        </div>
+      );
+    });
+  };
+
   if (side === 'front') {
     const isCircularDefaultFrontWm =
       template.marcaDaguaFrenteUrl.includes('WhatsApp_Image_2026-02-11') &&
@@ -3020,6 +3280,9 @@ export function CertificateSheet({
             })()}
           </div>
 
+          {/* Free-positioned Extra Images (Front) */}
+          {renderCustomImagesForSide('front')}
+
           {/* Free-positioned Custom Text Boxes (Front) */}
           {renderCustomTextBoxesForSide('front')}
 
@@ -4134,6 +4397,9 @@ export function CertificateSheet({
               })()}
             </div>
         </div>
+
+        {/* Free-positioned Extra Images (Back) */}
+        {renderCustomImagesForSide('back')}
 
         {/* Free-positioned Custom Text Boxes (Back) */}
         {renderCustomTextBoxesForSide('back')}

@@ -44,6 +44,7 @@ import { getHtml2Canvas, savePDFWithDialog } from '@/lib/printDocumentUtils';
 import { makeFrameCenterTransparent } from '@/lib/certificateImageUtils';
 import {
   CertificateCourseScope,
+  CertificateCustomImageBox,
   CertificateCustomTextBox,
   CertificateDisciplineRow,
   CertificateSelectableObject,
@@ -448,9 +449,15 @@ export default function CertificadosPage() {
   );
 
   const handleInsertCustomTextBoxAt = useCallback(
-    (side: 'front' | 'back', relX: number, relY: number): string => {
+    (
+      side: 'front' | 'back',
+      relX: number,
+      relY: number,
+      preset?: Partial<CertificateCustomTextBox>
+    ): string => {
       const boxId = `tb_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-      const defaultWidth = Math.min(320, Math.max(220, Math.round(sheetW * 0.36)));
+      const defaultWidth =
+        preset?.larguraPx ?? Math.min(340, Math.max(220, Math.round(sheetW * 0.36)));
       const nextX = Math.max(-40, Math.min(sheetW - 40, Math.round(relX - defaultWidth / 2)));
       const nextY = Math.max(-20, Math.min(sheetH - 20, Math.round(relY - 12)));
       setTemplate((prev) => {
@@ -474,6 +481,7 @@ export default function CertificadosPage() {
           maiusculo: false,
           alinhamento: 'left',
           camadaZIndex: 20 + existing.length,
+          ...preset,
         };
         return {
           ...prev,
@@ -483,6 +491,47 @@ export default function CertificadosPage() {
       setPlacingTextBoxId(null);
       setSelectedObject(`caixaTexto:${boxId}`);
       return boxId;
+    },
+    [sheetH, sheetW]
+  );
+
+  const handleInsertCustomImageBoxAt = useCallback(
+    (
+      side: 'front' | 'back',
+      relX: number,
+      relY: number,
+      preset?: Partial<CertificateCustomImageBox>
+    ): string => {
+      const imgId = `img_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+      const tamanhoPx = preset?.tamanhoPx ?? 90;
+      const nextX = Math.max(-40, Math.min(sheetW - 40, Math.round(relX - tamanhoPx / 2)));
+      const nextY = Math.max(-40, Math.min(sheetH - 40, Math.round(relY - tamanhoPx / 2)));
+      setTemplate((prev) => {
+        const existing = prev.imagensExtra || [];
+        const newImg: CertificateCustomImageBox = {
+          id: imgId,
+          lado: side,
+          titulo: 'Imagem Extra',
+          url: '/assets/aistudio/imagem_01_2da3aec8.png',
+          x: nextX,
+          y: nextY,
+          tamanhoPx,
+          larguraPct: 100,
+          alturaPct: 100,
+          opacidade: 1,
+          camadaZIndex: 18 + existing.length,
+          legenda: '',
+          mostrarLegenda: false,
+          ...preset,
+        };
+        return {
+          ...prev,
+          imagensExtra: [...existing, newImg],
+        };
+      });
+      setPlacingTextBoxId(null);
+      setSelectedObject(`imagemExtra:${imgId}`);
+      return imgId;
     },
     [sheetH, sheetW]
   );
@@ -2345,6 +2394,7 @@ export default function CertificadosPage() {
       disciplinas: (template.disciplinas || []).map((d) => ({ ...d })),
       textoCorpoPorAluno: { ...(template.textoCorpoPorAluno || {}) },
       caixasTextoExtra: (template.caixasTextoExtra || []).map((b) => ({ ...b })),
+      imagensExtra: (template.imagensExtra || []).map((img) => ({ ...img })),
       id: undefined,
       templateKey: `custom_${Date.now()}`,
       nomeModelo: resolvedName,
@@ -4677,6 +4727,7 @@ export default function CertificadosPage() {
           onClose={() => setClickMenuContext(null)}
           onSelectObject={handleSelectObjectOnSheet}
           onInsertCustomTextBoxAt={handleInsertCustomTextBoxAt}
+          onInsertCustomImageBoxAt={handleInsertCustomImageBoxAt}
           activeBodyTextValue={activeBodyTextValue}
           updateActiveBodyText={updateActiveBodyText}
           isEditingIndividualBody={isEditingIndividualBody}

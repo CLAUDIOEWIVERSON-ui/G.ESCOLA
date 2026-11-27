@@ -59,6 +59,7 @@ export type CertificateSelectableObject =
   | 'versoMoldura'
   | 'caixasTexto'
   | `caixaTexto:${string}`
+  | `imagemExtra:${string}`
   | 'modeloGeral';
 
 export interface CertificateCustomTextBox {
@@ -80,6 +81,22 @@ export interface CertificateCustomTextBox {
   maiusculo?: boolean;
   alinhamento?: 'left' | 'center' | 'right' | 'justify';
   camadaZIndex?: number;
+}
+
+export interface CertificateCustomImageBox {
+  id: string;
+  lado: 'front' | 'back';
+  titulo?: string;
+  url: string;
+  x: number;
+  y: number;
+  tamanhoPx: number;
+  larguraPct?: number;
+  alturaPct?: number;
+  opacidade?: number;
+  camadaZIndex?: number;
+  legenda?: string;
+  mostrarLegenda?: boolean;
 }
 
 export type CertificateLayerKey =
@@ -292,8 +309,9 @@ export interface CertificateTemplateConfig {
   versoTamanhoFonteTotaisLabel?: number;
   versoTamanhoFonteTotaisNumeros?: number;
 
-  // Free-positioned custom text boxes (Frente e Verso)
+  // Free-positioned custom text boxes and extra images (Frente e Verso)
   caixasTextoExtra?: CertificateCustomTextBox[];
+  imagensExtra?: CertificateCustomImageBox[];
 }
 
 export interface CertificateStudentContext {
@@ -596,6 +614,7 @@ export function createBlankTemplate(
     corBordaFrente: '#cbd5e1',
     corBordaVerso: '#cbd5e1',
     caixasTextoExtra: [],
+    imagensExtra: [],
   };
 }
 

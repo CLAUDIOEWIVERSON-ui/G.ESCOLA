@@ -169,6 +169,14 @@ function getObjectMeta(obj: CertificateSelectableObject): {
       icon: Type,
     };
   }
+  if (obj.startsWith('imagemExtra:')) {
+    return {
+      title: 'Imagem / Brasão Extra',
+      subtitle: 'Arraste na folha ou clique na imagem para ajustar tamanho, opacidade e arquivo',
+      sideLabel: 'Livre',
+      icon: ImageIcon,
+    };
+  }
   switch (obj) {
     case 'brasaoEsquerdo':
       return {
@@ -5876,6 +5884,41 @@ export function CertificateInspectorPanel({
             </div>
           </div>
         )}
+
+        {/* IMAGENS / BRASÕES EXTRAS */}
+        {selectedObject.startsWith('imagemExtra:') &&
+          (() => {
+            const imgs = template.imagensExtra || [];
+            const activeImgId = selectedObject.slice('imagemExtra:'.length);
+            const activeImg = imgs.find((i) => i.id === activeImgId) ?? null;
+            if (!activeImg) return null;
+            return (
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] font-black uppercase tracking-wider text-slate-700">
+                    {activeImg.titulo || 'Imagem / Brasão Extra'} ({activeImg.lado === 'front' ? 'Frente' : 'Verso'})
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTemplate((prev) => ({
+                        ...prev,
+                        imagensExtra: (prev.imagensExtra || []).filter((i) => i.id !== activeImg.id),
+                      }));
+                      onSelectObject('modeloGeral');
+                    }}
+                    className="px-2 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-[10px] font-bold flex items-center gap-1 cursor-pointer"
+                  >
+                    <Trash2 size={11} />
+                    <span>Apagar</span>
+                  </button>
+                </div>
+                <p className="text-[11px] text-slate-600">
+                  Arraste a imagem diretamente na folha ou clique esquerdo sobre ela para trocar o arquivo, ajustar tamanho, opacidade, legenda e camada.
+                </p>
+              </div>
+            );
+          })()}
 
         {/* CAIXAS DE TEXTO LIVRES (FRENTE E VERSO) */}
         {(selectedObject === 'caixasTexto' || selectedObject.startsWith('caixaTexto:')) &&
