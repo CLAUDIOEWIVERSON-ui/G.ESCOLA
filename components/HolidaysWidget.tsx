@@ -123,7 +123,7 @@ export default function HolidaysWidget() {
   };
 
   return (
-    <div id="holidays-daily-widget" className="bg-white border border-slate-200/90 rounded-2xl shadow-xs overflow-hidden transition-all duration-200">
+    <div id="holidays-daily-widget" className="w-full max-w-full min-w-0 bg-white border border-slate-200/90 rounded-2xl shadow-xs overflow-hidden transition-all duration-200">
       {/* Top Banner / Today's Status */}
       <div className="p-4 sm:p-5 bg-white border-b border-slate-200/90 text-slate-800 relative">
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 relative z-10">
@@ -149,13 +149,13 @@ export default function HolidaysWidget() {
           </div>
 
           {/* Action: Expand/Collapse Details */}
-          <div className="flex items-center gap-2 w-full lg:w-auto justify-between lg:justify-end border-t lg:border-t-0 pt-3 lg:pt-0 border-slate-100">
-            <div className="flex items-center gap-2 text-xs font-semibold text-slate-600">
-              <span className="flex items-center gap-1 bg-slate-100 text-slate-700 px-2.5 py-1 rounded-lg border border-slate-200">
+          <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto justify-between lg:justify-end border-t lg:border-t-0 pt-3 lg:pt-0 border-slate-100">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs font-semibold text-slate-600">
+              <span className="flex items-center gap-1 bg-slate-100 text-slate-700 px-2 sm:px-2.5 py-1 rounded-lg border border-slate-200">
                 🇸🇹 STP
               </span>
               <span className="text-slate-300">•</span>
-              <span className="flex items-center gap-1 bg-slate-100 text-slate-700 px-2.5 py-1 rounded-lg border border-slate-200">
+              <span className="flex items-center gap-1 bg-slate-100 text-slate-700 px-2 sm:px-2.5 py-1 rounded-lg border border-slate-200">
                 🇧🇷 Brasil
               </span>
             </div>
@@ -183,7 +183,7 @@ export default function HolidaysWidget() {
                 <PartyPopper size={20} />
               </div>
               <div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <span className="text-[10px] font-black uppercase tracking-wider bg-amber-400 text-slate-950 px-2 py-0.5 rounded-full">
                     🎉 {isPt ? 'HOJE É FERIADO!' : 'TODAY IS A HOLIDAY!'}
                   </span>
@@ -209,7 +209,7 @@ export default function HolidaysWidget() {
       {/* QUICK SUMMARY CARDS: NEXT IN STP & NEXT IN BRAZIL */}
       <div className="p-4 sm:p-5 grid grid-cols-1 md:grid-cols-2 gap-3.5 bg-slate-50/60 border-b border-slate-100">
         {/* Next STP Holiday */}
-        <div className="p-3.5 bg-white border border-slate-200/80 rounded-xl shadow-2xs hover:border-emerald-300 transition-colors flex items-center justify-between gap-3">
+        <div className="p-3.5 bg-white border border-slate-200/80 rounded-xl shadow-2xs hover:border-emerald-300 transition-colors flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 min-w-0">
           <div className="flex items-center gap-3 min-w-0">
             <span className="text-2xl select-none shrink-0" role="img" aria-label="São Tomé e Príncipe">🇸🇹</span>
             <div className="min-w-0">
@@ -253,7 +253,7 @@ export default function HolidaysWidget() {
         </div>
 
         {/* Next Brazil Holiday */}
-        <div className="p-3.5 bg-white border border-slate-200/80 rounded-xl shadow-2xs hover:border-blue-300 transition-colors flex items-center justify-between gap-3">
+        <div className="p-3.5 bg-white border border-slate-200/80 rounded-xl shadow-2xs hover:border-blue-300 transition-colors flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 min-w-0">
           <div className="flex items-center gap-3 min-w-0">
             <span className="text-2xl select-none shrink-0" role="img" aria-label="Brasil">🇧🇷</span>
             <div className="min-w-0">
@@ -310,7 +310,7 @@ export default function HolidaysWidget() {
             {/* Filters Toolbar */}
             <div className="p-4 bg-slate-50 border-b border-slate-200/80 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
               {/* Country Tabs */}
-              <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200 shrink-0">
+              <div className="flex flex-wrap items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200 max-w-full">
                 <button
                   type="button"
                   onClick={() => setSelectedCountry('ALL')}

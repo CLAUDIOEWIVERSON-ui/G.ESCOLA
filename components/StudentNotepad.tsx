@@ -310,7 +310,7 @@ export function StudentNotepad() {
         <button
           type="button"
           onClick={handleCreateNote}
-          className="inline-flex items-center justify-center gap-2 px-5 py-3 min-h-[44px] rounded-xl text-xs sm:text-sm font-black uppercase tracking-wide text-white cursor-pointer transition-all active:scale-[0.98] shrink-0 neon-3d-btn neon-tone-orange"
+          className="inline-flex items-center justify-center gap-2 px-5 py-3 min-h-[44px] rounded-xl text-xs sm:text-sm font-black uppercase tracking-wide text-white cursor-pointer transition-all active:scale-[0.98] shrink-0 student-solid-btn bg-black hover:bg-slate-800 border-2 border-black"
         >
           <Plus size={18} className="text-white shrink-0" />
           <span>{isPt ? 'Nova Anotação' : 'New Note'}</span>
@@ -367,7 +367,7 @@ export function StudentNotepad() {
                   <button
                     type="button"
                     onClick={handleCreateNote}
-                    className="inline-flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] rounded-xl text-xs font-black uppercase text-white cursor-pointer neon-3d-btn neon-tone-orange"
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] rounded-xl text-xs font-black uppercase text-white cursor-pointer student-solid-btn bg-black hover:bg-slate-800 border-2 border-black"
                   >
                     <Plus size={15} className="text-white" />
                     <span>{isPt ? 'Criar Primeira Anotação' : 'Create First Note'}</span>
@@ -535,7 +535,7 @@ export function StudentNotepad() {
                       <button
                         type="button"
                         onClick={() => handleDeleteNote(activeNote.id)}
-                        className="px-3 py-2 min-h-[44px] rounded-xl text-xs font-black uppercase text-white cursor-pointer neon-3d-btn neon-tone-red"
+                        className="px-3 py-2 min-h-[44px] rounded-xl text-xs font-black uppercase text-white cursor-pointer student-solid-btn bg-black hover:bg-slate-800 border-2 border-black"
                       >
                         {isPt ? 'Confirmar' : 'Confirm'}
                       </button>
@@ -642,7 +642,7 @@ export function StudentNotepad() {
               <button
                 type="button"
                 onClick={handleCreateNote}
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 min-h-[48px] rounded-xl text-xs sm:text-sm font-black uppercase tracking-wide text-white cursor-pointer neon-3d-btn neon-tone-orange"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 min-h-[48px] rounded-xl text-xs sm:text-sm font-black uppercase tracking-wide text-white cursor-pointer student-solid-btn bg-black hover:bg-slate-800 border-2 border-black"
               >
                 <Plus size={18} className="text-white" />
                 <span>{isPt ? 'Criar Nova Anotação' : 'Create New Note'}</span>

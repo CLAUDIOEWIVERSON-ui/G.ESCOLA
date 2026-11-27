@@ -30,27 +30,27 @@ export function HeaderClock() {
   const dateStr = time.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
 
   return (
-    <div id="header-clock" className="flex items-center gap-3 px-3 py-1.5 bg-slate-50 border border-slate-200/80 rounded-xl transition-all duration-300 hover:bg-slate-100 hover:border-slate-300 shadow-sm shrink-0">
+    <div id="header-clock" className="flex items-center gap-1.5 sm:gap-2.5 px-2 sm:px-3 py-1 sm:py-1.5 bg-slate-50 border border-slate-200/80 rounded-xl transition-all duration-300 hover:bg-slate-100 hover:border-slate-300 shadow-sm shrink-0">
       {/* Visual Clock with blinking colon and real-time seconds */}
-      <div className="flex items-center gap-2">
-        <ClockIcon size={14} className="text-blue-500 animate-pulse shrink-0" />
+      <div className="flex items-center gap-1.5 sm:gap-2">
+        <ClockIcon size={13} className="text-blue-500 animate-pulse shrink-0" />
         <div className="flex items-center font-mono text-xs sm:text-sm font-bold text-slate-700 tracking-tight">
           <span>{hours}</span>
           <span className="animate-[pulse_1s_infinite] mx-0.5 text-blue-500 font-bold">:</span>
           <span>{minutes}</span>
-          <span className="text-[9px] text-slate-400 font-medium ml-1 w-4 tabular-nums">
+          <span className="hidden sm:inline-block text-[9px] text-slate-400 font-medium ml-1 w-4 tabular-nums">
             {seconds}
           </span>
         </div>
       </div>
       
       {/* Minimal Divider */}
-      <div className="h-4 w-[1px] bg-slate-200" />
+      <div className="hidden md:block h-4 w-[1px] bg-slate-200" />
       
       {/* Elegant Date */}
-      <div className="flex items-center gap-1.5 text-[9px] sm:text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+      <div className="hidden md:flex items-center gap-1.5 text-[9px] sm:text-[10px] font-bold text-slate-500 uppercase tracking-wider">
         <CalendarIcon size={12} className="text-slate-400 shrink-0" />
-        <span className="hidden sm:inline-block capitalize">{weekday},</span>
+        <span className="hidden lg:inline-block capitalize">{weekday},</span>
         <span>{dateStr}</span>
       </div>
     </div>

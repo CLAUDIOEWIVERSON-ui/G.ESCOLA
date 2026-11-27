@@ -115,7 +115,6 @@ function RelatorioAvaliacaoAdminContent() {
 
   // Interactive View states
   const [activeTab, setActiveTab] = useState<'geral' | 'curso' | 'instrutor' | 'aluno'>('geral');
-  const [chartTheme, setChartTheme] = useState<'azul' | 'branco'>('branco');
   const [focusedInstructor, setFocusedInstructor] = useState<string>('');
   const [focusedStudent, setFocusedStudent] = useState<string>('');
   const [migratingMessage, setMigratingMessage] = useState(false);
@@ -1613,38 +1612,7 @@ function RelatorioAvaliacaoAdminContent() {
                             </div>
                             
                             <div className="flex flex-wrap items-center gap-3">
-                              {/* Option Selector for Chart Background/Theme with 3D Neon look! */}
-                              <div className="flex items-center gap-2 bg-slate-100 print:hidden border border-slate-200 p-1 rounded-xl shadow-inner text-[10px] font-bold font-mono">
-                                <span className="text-[9px] uppercase font-black text-slate-400 font-mono px-2">Fundo:</span>
-                                
-                                <button
-                                  type="button"
-                                  onClick={() => setChartTheme('azul')}
-                                  className={`px-3 py-1.5 rounded-lg transition-all duration-150 flex items-center gap-1.5 font-black uppercase text-[9px] tracking-wider active:translate-y-[2px] active:border-b-[1px] ${
-                                    chartTheme === 'azul'
-                                      ? 'bg-slate-950 print:bg-white text-cyan-400 border border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.45)] border-b-[4px] border-r-[2px] border-cyan-405'
-                                      : 'text-slate-500 border border-transparent border-b-[3px] hover:text-slate-700 hover:bg-slate-200/50'
-                                  }`}
-                                >
-                                  <span className={`w-1.5 h-1.5 rounded-full bg-cyan-400 ${chartTheme === 'azul' ? 'animate-pulse shadow-[0_0_8px_#22d3ee]' : 'opacity-40'}`} />
-                                  Azul
-                                </button>
-
-                                <button
-                                  type="button"
-                                  onClick={() => setChartTheme('branco')}
-                                  className={`px-3 py-1.5 rounded-lg transition-all duration-150 flex items-center gap-1.5 font-black uppercase text-[9px] tracking-wider active:translate-y-[2px] active:border-b-[1px] ${
-                                    chartTheme === 'branco'
-                                      ? 'bg-white text-slate-900 border border-slate-300 shadow-[0_2px_8px_rgba(0,0,0,0.08)] border-b-[4px] border-r-[2px] border-slate-400'
-                                      : 'text-slate-500 border border-transparent border-b-[3px] hover:text-slate-700 hover:bg-slate-200/50'
-                                  }`}
-                                >
-                                  <span className={`w-1.5 h-1.5 rounded-full bg-slate-400 ${chartTheme === 'branco' ? 'opacity-100' : 'opacity-40'}`} />
-                                  Branco
-                                </button>
-                              </div>
-
-                              <div className="text-[10px] bg-slate-50 print:bg-white border border-slate-200 text-slate-805 font-bold px-3 py-2 rounded-lg font-mono shadow-sm">
+                              <div className="text-[10px] bg-slate-50 print:bg-white border border-slate-200 text-slate-800 font-bold px-3 py-2 rounded-lg font-mono shadow-sm">
                                 Média Geral da Turma: {overallAverage.toFixed(2)} / 5.0
                               </div>
                             </div>
@@ -1654,18 +1622,14 @@ function RelatorioAvaliacaoAdminContent() {
                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 print:grid-cols-1 print:gap-6">
                             
                              {/* Chart 1: Média Detalhada por Categoria */}
-                             <div className={`border rounded-xl p-5 relative overflow-hidden transition-all duration-300 border-b-[4px] border-r-[2px] break-inside-avoid print-avoid-break relatorio-card ${
-                               chartTheme === 'azul'
-                                 ? 'bg-slate-950 print:bg-white border-slate-800 shadow-[0_0_25px_rgba(6,182,212,0.15)] hover:shadow-[0_0_35px_rgba(6,182,212,0.25)] border-cyan-500/20 text-white'
-                                 : 'bg-white border-slate-250 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border-cyan-500/30 text-slate-800'
-                             }`} id="chart-neon-metrics-card" style={{ pageBreakInside: 'avoid' }}>
-                               <div className={`flex items-center justify-between border-b pb-2.5 ${chartTheme === 'azul' ? 'border-slate-800/80' : 'border-slate-100'}`}>
-                                 <h4 className={`text-xs font-black uppercase tracking-widest font-mono flex items-center gap-1.5 shadow-sm ${chartTheme === 'azul' ? 'text-cyan-400' : 'text-cyan-600'}`}>
-                                   <span className={`w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee] ${chartTheme === 'azul' ? 'animate-pulse' : ''}`}></span>
+                             <div className="border rounded-xl p-5 relative overflow-hidden transition-all duration-300 border-b-[4px] border-r-[2px] break-inside-avoid print-avoid-break relatorio-card bg-white border-slate-200 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border-cyan-500/30 text-slate-800" id="chart-neon-metrics-card" style={{ pageBreakInside: 'avoid' }}>
+                               <div className="flex items-center justify-between border-b pb-2.5 border-slate-100">
+                                 <h4 className="text-xs font-black uppercase tracking-widest font-mono flex items-center gap-1.5 shadow-sm text-cyan-600">
+                                   <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee]"></span>
                                    1. Média por Categoria
                                  </h4>
-                                 <span className={`text-[9px] font-black uppercase font-mono tracking-wider ${chartTheme === 'azul' ? 'text-cyan-500/80' : 'text-cyan-600'}`}>
-                                   {chartTheme === 'azul' ? 'TECNOLOGIA NEON 3D' : 'MÉTRICAS CLARAS'}
+                                 <span className="text-[9px] font-black uppercase font-mono tracking-wider text-cyan-600">
+                                   MÉTRICAS CLARAS
                                  </span>
                                </div>
                               
@@ -1673,28 +1637,20 @@ function RelatorioAvaliacaoAdminContent() {
                                  {/* Category 1: Curso */}
                                  <div className="space-y-1.5">
                                    <div className="flex justify-between items-center text-xs">
-                                     <span className={`font-extrabold flex items-center gap-1.5 ${chartTheme === 'azul' ? 'text-slate-300' : 'text-slate-600'}`}>
+                                     <span className="font-extrabold flex items-center gap-1.5 text-slate-600">
                                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#10b981]"></span>
                                        Expectativas sobre o Curso
                                      </span>
-                                     <span className={`font-black font-mono text-[10.5px] ${chartTheme === 'azul' ? 'text-emerald-400' : 'text-emerald-600'}`}>{courseSatisfactionIndex.toFixed(2)} / 5.00</span>
+                                     <span className="font-black font-mono text-[10.5px] text-emerald-600">{courseSatisfactionIndex.toFixed(2)} / 5.00</span>
                                    </div>
-                                   <div className={`h-4 rounded-lg relative overflow-visible border ${
-                                     chartTheme === 'azul' 
-                                       ? 'bg-slate-900 border-slate-800/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.8)]' 
-                                       : 'bg-slate-100 print:bg-white border-slate-200 shadow-[inset_0_1px_3px_rgba(0,0,0,0.1)]'
-                                   }`}>
+                                   <div className="h-4 rounded-lg relative overflow-visible border bg-slate-100 print:bg-white border-slate-200 shadow-[inset_0_1px_3px_rgba(0,0,0,0.1)]">
                                      <div 
                                        className="h-full bg-gradient-to-r from-emerald-600 via-emerald-400 to-emerald-300 rounded-l-lg transition-all duration-500 border-t border-white/30 border-b border-b-emerald-800 shadow-[0_0_12px_rgba(16,185,129,0.7)]" 
                                        style={{ width: `${(courseSatisfactionIndex / 5) * 100}%` }}
                                      />
                                      {/* Overall Class Average Reference Line */}
                                      <div 
-                                       className={`absolute top-0 bottom-0 w-1 border-x z-10 ${
-                                         chartTheme === 'azul'
-                                           ? 'bg-amber-400 shadow-[0_0_8px_#f59e0b] border-amber-200'
-                                           : 'bg-amber-500 border-amber-300 shadow-sm'
-                                       }`}
+                                       className="absolute top-0 bottom-0 w-1 border-x z-10 bg-amber-500 border-amber-300 shadow-sm"
                                        style={{ left: `${(overallAverage / 5) * 100}%` }}
                                        title={`Média Geral da Turma: ${overallAverage.toFixed(2)}`}
                                      />
@@ -1704,27 +1660,19 @@ function RelatorioAvaliacaoAdminContent() {
                                  {/* Category 2: Instrutor */}
                                  <div className="space-y-1.5">
                                    <div className="flex justify-between items-center text-xs">
-                                     <span className={`font-extrabold flex items-center gap-1.5 ${chartTheme === 'azul' ? 'text-slate-300' : 'text-slate-600'}`}>
+                                     <span className="font-extrabold flex items-center gap-1.5 text-slate-600">
                                        <span className="w-2.5 h-2.5 rounded-full bg-violet-400 shadow-[0_0_6px_#8b5cf6]"></span>
                                        Desempenho do Instrutor
                                      </span>
-                                     <span className={`font-black font-mono text-[10.5px] ${chartTheme === 'azul' ? 'text-violet-400' : 'text-violet-600'}`}>{instructorIndex.toFixed(2)} / 5.00</span>
+                                     <span className="font-black font-mono text-[10.5px] text-violet-600">{instructorIndex.toFixed(2)} / 5.00</span>
                                    </div>
-                                   <div className={`h-4 rounded-lg relative overflow-visible border ${
-                                     chartTheme === 'azul' 
-                                       ? 'bg-slate-900 border-slate-800/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.8)]' 
-                                       : 'bg-slate-100 print:bg-white border-slate-200 shadow-[inset_0_1px_3px_rgba(0,0,0,0.1)]'
-                                   }`}>
+                                   <div className="h-4 rounded-lg relative overflow-visible border bg-slate-100 print:bg-white border-slate-200 shadow-[inset_0_1px_3px_rgba(0,0,0,0.1)]">
                                      <div 
-                                       className="h-full bg-gradient-to-r from-violet-600 via-fuchsia-400 to-purple-300 rounded-l-lg transition-all duration-500 border-t border-white/30 border-b border-b-violet-850 shadow-[0_0_12px_rgba(168,85,247,0.7)]" 
+                                       className="h-full bg-gradient-to-r from-violet-600 via-fuchsia-400 to-purple-300 rounded-l-lg transition-all duration-500 border-t border-white/30 border-b border-b-violet-800 shadow-[0_0_12px_rgba(168,85,247,0.7)]" 
                                        style={{ width: `${(instructorIndex / 5) * 100}%` }}
                                      />
                                      <div 
-                                       className={`absolute top-0 bottom-0 w-1 border-x z-10 ${
-                                         chartTheme === 'azul'
-                                           ? 'bg-amber-400 shadow-[0_0_8px_#f59e0b] border-amber-200'
-                                           : 'bg-amber-500 border-amber-300 shadow-sm'
-                                       }`}
+                                       className="absolute top-0 bottom-0 w-1 border-x z-10 bg-amber-500 border-amber-300 shadow-sm"
                                        style={{ left: `${(overallAverage / 5) * 100}%` }}
                                      />
                                    </div>
@@ -1733,27 +1681,19 @@ function RelatorioAvaliacaoAdminContent() {
                                  {/* Category 3: Autoavaliação */}
                                  <div className="space-y-1.5">
                                    <div className="flex justify-between items-center text-xs">
-                                     <span className={`font-extrabold flex items-center gap-1.5 ${chartTheme === 'azul' ? 'text-slate-300' : 'text-slate-605'}`}>
+                                     <span className="font-extrabold flex items-center gap-1.5 text-slate-600">
                                        <span className="w-2.5 h-2.5 rounded-full bg-sky-400 shadow-[0_0_6px_#0ea5e9]"></span>
                                        Autoavaliação dos Alunos
                                      </span>
-                                     <span className={`font-black font-mono text-[10.5px] ${chartTheme === 'azul' ? 'text-sky-400' : 'text-sky-600'}`}>{studentSelfIndex.toFixed(2)} / 5.00</span>
+                                     <span className="font-black font-mono text-[10.5px] text-sky-600">{studentSelfIndex.toFixed(2)} / 5.00</span>
                                    </div>
-                                   <div className={`h-4 rounded-lg relative overflow-visible border ${
-                                     chartTheme === 'azul' 
-                                       ? 'bg-slate-900 border-slate-800/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.8)]' 
-                                       : 'bg-slate-100 print:bg-white border-slate-200 shadow-[inset_0_1px_3px_rgba(0,0,0,0.1)]'
-                                   }`}>
+                                   <div className="h-4 rounded-lg relative overflow-visible border bg-slate-100 print:bg-white border-slate-200 shadow-[inset_0_1px_3px_rgba(0,0,0,0.1)]">
                                      <div 
-                                       className="h-full bg-gradient-to-r from-sky-600 via-cyan-400 to-cyan-300 rounded-l-lg transition-all duration-500 border-t border-white/30 border-b border-b-sky-850 shadow-[0_0_12px_rgba(6,182,212,0.7)]" 
+                                       className="h-full bg-gradient-to-r from-sky-600 via-cyan-400 to-cyan-300 rounded-l-lg transition-all duration-500 border-t border-white/30 border-b border-b-sky-800 shadow-[0_0_12px_rgba(6,182,212,0.7)]" 
                                        style={{ width: `${(studentSelfIndex / 5) * 100}%` }}
                                      />
                                      <div 
-                                       className={`absolute top-0 bottom-0 w-1 border-x z-10 ${
-                                         chartTheme === 'azul'
-                                           ? 'bg-amber-400 shadow-[0_0_8px_#f59e0b] border-amber-200'
-                                           : 'bg-amber-500 border-amber-300 shadow-sm'
-                                       }`}
+                                       className="absolute top-0 bottom-0 w-1 border-x z-10 bg-amber-500 border-amber-300 shadow-sm"
                                        style={{ left: `${(overallAverage / 5) * 100}%` }}
                                      />
                                    </div>
@@ -1762,55 +1702,41 @@ function RelatorioAvaliacaoAdminContent() {
                                  {/* Category 4: Infraestrutura */}
                                  <div className="space-y-1.5">
                                    <div className="flex justify-between items-center text-xs">
-                                     <span className={`font-extrabold flex items-center gap-1.5 ${chartTheme === 'azul' ? 'text-slate-300' : 'text-slate-600'}`}>
+                                     <span className="font-extrabold flex items-center gap-1.5 text-slate-600">
                                        <span className="w-2.5 h-2.5 rounded-full bg-pink-400 shadow-[0_0_6px_#ec4899]"></span>
                                        Infraestrutura e Recursos
                                      </span>
-                                     <span className={`font-black font-mono text-[10.5px] ${chartTheme === 'azul' ? 'text-pink-400' : 'text-pink-600'}`}>{infraIndex.toFixed(2)} / 5.00</span>
+                                     <span className="font-black font-mono text-[10.5px] text-pink-600">{infraIndex.toFixed(2)} / 5.00</span>
                                    </div>
-                                   <div className={`h-4 rounded-lg relative overflow-visible border ${
-                                     chartTheme === 'azul' 
-                                       ? 'bg-slate-900 border-slate-800/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.8)]' 
-                                       : 'bg-slate-100 print:bg-white border-slate-200 shadow-[inset_0_1px_3px_rgba(0,0,0,0.1)]'
-                                   }`}>
+                                   <div className="h-4 rounded-lg relative overflow-visible border bg-slate-100 print:bg-white border-slate-200 shadow-[inset_0_1px_3px_rgba(0,0,0,0.1)]">
                                      <div 
-                                       className="h-full bg-gradient-to-r from-rose-600 via-pink-400 to-rose-300 rounded-l-lg transition-all duration-500 border-t border-white/30 border-b border-b-rose-850 shadow-[0_0_12px_rgba(244,63,94,0.7)]" 
+                                       className="h-full bg-gradient-to-r from-rose-600 via-pink-400 to-rose-300 rounded-l-lg transition-all duration-500 border-t border-white/30 border-b border-b-rose-800 shadow-[0_0_12px_rgba(244,63,94,0.7)]" 
                                        style={{ width: `${(infraIndex / 5) * 100}%` }}
                                      />
                                      <div 
-                                       className={`absolute top-0 bottom-0 w-1 border-x z-10 ${
-                                         chartTheme === 'azul'
-                                           ? 'bg-amber-400 shadow-[0_0_8px_#f59e0b] border-amber-200'
-                                           : 'bg-amber-500 border-amber-300 shadow-sm'
-                                       }`}
+                                       className="absolute top-0 bottom-0 w-1 border-x z-10 bg-amber-500 border-amber-300 shadow-sm"
                                        style={{ left: `${(overallAverage / 5) * 100}%` }}
                                      />
                                    </div>
                                  </div>
                                </div>
  
-                               <div className={`flex items-center gap-4 text-[9px] justify-end pt-3 border-t font-mono mt-4 ${
-                                 chartTheme === 'azul' ? 'border-slate-800/80 text-slate-400' : 'border-slate-100 text-slate-500'
-                               }`}>
+                               <div className="flex items-center gap-4 text-[9px] justify-end pt-3 border-t font-mono mt-4 border-slate-100 text-slate-500">
                                  <div className="flex items-center gap-1.5">
-                                   <span className={`w-3.5 h-1.5 rounded-sm inline-block ${chartTheme === 'azul' ? 'bg-amber-400 shadow-[0_0_6px_#f59e0b]' : 'bg-amber-500'}`}></span>
-                                   <span className={`font-black ${chartTheme === 'azul' ? 'text-amber-400' : 'text-amber-600'}`}>Média Geral ({overallAverage.toFixed(2)})</span>
+                                   <span className="w-3.5 h-1.5 rounded-sm inline-block bg-amber-500"></span>
+                                   <span className="font-black text-amber-600">Média Geral ({overallAverage.toFixed(2)})</span>
                                  </div>
                                </div>
                              </div>
  
                              {/* Chart 2: Perfil de Distribuição de Notas */}
-                             <div className={`border rounded-xl p-5 relative overflow-hidden transition-all duration-300 border-b-[4px] border-r-[2px] break-inside-avoid print-avoid-break relatorio-card ${
-                               chartTheme === 'azul'
-                                 ? 'bg-slate-950 print:bg-white border-slate-800 shadow-[0_0_25px_rgba(168,85,247,0.15)] hover:shadow-[0_0_35px_rgba(168,85,247,0.25)] border-purple-500/20 text-white'
-                                 : 'bg-white border-slate-250 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border-purple-500/30 text-slate-800'
-                             }`} id="chart-neon-distribution-card" style={{ pageBreakInside: 'avoid' }}>
-                               <div className={`flex items-center justify-between border-b pb-2.5 ${chartTheme === 'azul' ? 'border-slate-800/80' : 'border-slate-100'}`}>
-                                 <h4 className={`text-xs font-black uppercase tracking-widest font-mono flex items-center gap-1.5 ${chartTheme === 'azul' ? 'text-purple-400' : 'text-purple-600'}`}>
-                                   <span className={`w-2.5 h-2.5 rounded-full bg-purple-400 shadow-[0_0_8px_#a855f7] ${chartTheme === 'azul' ? 'animate-pulse' : ''}`}></span>
+                             <div className="border rounded-xl p-5 relative overflow-hidden transition-all duration-300 border-b-[4px] border-r-[2px] break-inside-avoid print-avoid-break relatorio-card bg-white border-slate-200 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border-purple-500/30 text-slate-800" id="chart-neon-distribution-card" style={{ pageBreakInside: 'avoid' }}>
+                               <div className="flex items-center justify-between border-b pb-2.5 border-slate-100">
+                                 <h4 className="text-xs font-black uppercase tracking-widest font-mono flex items-center gap-1.5 text-purple-600">
+                                   <span className="w-2.5 h-2.5 rounded-full bg-purple-400 shadow-[0_0_8px_#a855f7]"></span>
                                    2. Distribuição Geral
                                  </h4>
-                                 <span className={`text-[9px] font-black uppercase font-mono tracking-wider ${chartTheme === 'azul' ? 'text-purple-500/80' : 'text-purple-605'}`}>
+                                 <span className="text-[9px] font-black uppercase font-mono tracking-wider text-purple-600">
                                    {totalResponses} respostas
                                  </span>
                                </div>
@@ -1821,37 +1747,28 @@ function RelatorioAvaliacaoAdminContent() {
                                    const count = distribution[score];
                                    const pct = totalResponses > 0 ? (count / totalResponses) * 100 : 0;
                                    
-                                   // Determine elegant neon gradients and shadows for 3D pillar tubes
                                    const barStyles = score === 5 
-                                     ? "bg-gradient-to-t from-emerald-600 via-emerald-400 to-emerald-300 border-l border-white/20 border-r border-emerald-850 hover:shadow-[0_0_18px_rgba(16,185,129,0.95)] shadow-[0_0_8px_rgba(16,185,129,0.5)]" 
+                                     ? "bg-gradient-to-t from-emerald-600 via-emerald-400 to-emerald-300 border-l border-white/20 border-r border-emerald-800 shadow-[0_0_8px_rgba(16,185,129,0.5)]" 
                                      : score === 4 
-                                       ? "bg-gradient-to-t from-cyan-600 via-cyan-400 to-cyan-300 border-l border-white/20 border-r border-cyan-850 hover:shadow-[0_0_18px_rgba(6,182,212,0.95)] shadow-[0_0_8px_rgba(6,182,212,0.5)]" 
+                                       ? "bg-gradient-to-t from-cyan-600 via-cyan-400 to-cyan-300 border-l border-white/20 border-r border-cyan-800 shadow-[0_0_8px_rgba(6,182,212,0.5)]" 
                                        : score === 3 
-                                         ? "bg-gradient-to-t from-amber-600 via-amber-400 to-amber-300 border-l border-white/20 border-r border-amber-850 hover:shadow-[0_0_18px_rgba(245,158,11,0.95)] shadow-[0_0_8px_rgba(245,158,11,0.5)]" 
+                                         ? "bg-gradient-to-t from-amber-600 via-amber-400 to-amber-300 border-l border-white/20 border-r border-amber-800 shadow-[0_0_8px_rgba(245,158,11,0.5)]" 
                                          : score === 2 
-                                           ? "bg-gradient-to-t from-orange-600 via-orange-400 to-orange-300 border-l border-white/20 border-r border-orange-850 hover:shadow-[0_0_18px_rgba(249,115,22,0.95)] shadow-[0_0_8px_rgba(249,115,22,0.5)]" 
-                                             : "bg-gradient-to-t from-rose-600 via-rose-400 to-rose-300 border-l border-white/20 border-r border-rose-850 hover:shadow-[0_0_18px_rgba(244,63,94,0.95)] shadow-[0_0_8px_rgba(244,63,94,0.5)]";
+                                           ? "bg-gradient-to-t from-orange-600 via-orange-400 to-orange-300 border-l border-white/20 border-r border-orange-800 shadow-[0_0_8px_rgba(249,115,22,0.5)]" 
+                                             : "bg-gradient-to-t from-rose-600 via-rose-400 to-rose-300 border-l border-white/20 border-r border-rose-800 shadow-[0_0_8px_rgba(244,63,94,0.5)]";
  
                                    return (
                                      <div key={score} className="flex flex-col items-center flex-1 group">
-                                       <span className={`text-[9.5px] font-black opacity-0 group-hover:opacity-100 transition-opacity duration-200 mb-1.5 font-mono border px-1.5 py-0.5 rounded shadow-lg ${
-                                         chartTheme === 'azul' ? 'text-slate-100 bg-slate-900 border-slate-700' : 'text-slate-800 bg-white border-slate-200'
-                                       }`}>
+                                       <span className="text-[9.5px] font-black opacity-0 group-hover:opacity-100 transition-opacity duration-200 mb-1.5 font-mono border px-1.5 py-0.5 rounded shadow-lg text-slate-800 bg-white border-slate-200">
                                          {count} ({pct.toFixed(0)}%)
                                        </span>
-                                       <div className={`w-full max-w-[28px] border rounded-t-lg h-24 flex flex-col justify-end overflow-visible relative ${
-                                         chartTheme === 'azul'
-                                           ? 'bg-slate-900/90 border-slate-800/50 shadow-[inset_0_2px_5px_rgba(0,0,0,0.8)]'
-                                           : 'bg-slate-50 print:bg-white border-slate-200 shadow-[inset_0_1px_3px_rgba(0,0,0,0.15)]'
-                                       }`}>
+                                       <div className="w-full max-w-[28px] border rounded-t-lg h-24 flex flex-col justify-end overflow-visible relative bg-slate-50 print:bg-white border-slate-200 shadow-[inset_0_1px_3px_rgba(0,0,0,0.15)]">
                                          <div 
                                            className={`w-full ${barStyles} transition-all duration-500 rounded-t-md border-t border-white/30`} 
                                            style={{ height: `${Math.max(4, pct)}%` }}
                                          />
                                        </div>
-                                       <span className={`text-[10px] font-black mt-2 font-mono flex items-center justify-center gap-0.5 text-center ${
-                                         chartTheme === 'azul' ? 'text-slate-300' : 'text-slate-605'
-                                       }`}>
+                                       <span className="text-[10px] font-black mt-2 font-mono flex items-center justify-center gap-0.5 text-center text-slate-600">
                                          ★{score}
                                        </span>
                                      </div>
@@ -1859,26 +1776,24 @@ function RelatorioAvaliacaoAdminContent() {
                                  })}
                                </div>
  
-                               <div className={`grid grid-cols-5 gap-1 text-center pt-4 border-t mt-4 leading-tight ${
-                                 chartTheme === 'azul' ? 'border-slate-800/80' : 'border-slate-100'
-                               }`}>
-                                 <div className={`flex flex-col items-center ${chartTheme === 'azul' ? 'text-emerald-400' : 'text-emerald-600'}`}>
+                               <div className="grid grid-cols-5 gap-1 text-center pt-4 border-t mt-4 leading-tight border-slate-100">
+                                 <div className="flex flex-col items-center text-emerald-600">
                                    <span className="text-[7.5px] font-black uppercase tracking-widest opacity-60 font-mono mb-1">Nota 5</span>
                                    <span className="text-[8.5px] sm:text-[9.5px] font-bold font-sans uppercase">Concordo<br/>Plenamente</span>
                                  </div>
-                                 <div className={`flex flex-col items-center ${chartTheme === 'azul' ? 'text-cyan-400' : 'text-cyan-600'}`}>
+                                 <div className="flex flex-col items-center text-cyan-600">
                                    <span className="text-[7.5px] font-black uppercase tracking-widest opacity-60 font-mono mb-1">Nota 4</span>
                                    <span className="text-[8.5px] sm:text-[9.5px] font-bold font-sans uppercase">Concordo<br/>Parcialmente</span>
                                  </div>
-                                 <div className={`flex flex-col items-center ${chartTheme === 'azul' ? 'text-amber-400' : 'text-amber-600'}`}>
+                                 <div className="flex flex-col items-center text-amber-600">
                                    <span className="text-[7.5px] font-black uppercase tracking-widest opacity-60 font-mono mb-1">Nota 3</span>
                                    <span className="text-[8.5px] sm:text-[9.5px] font-bold font-sans uppercase">Neutro<br/>(Regular)</span>
                                  </div>
-                                 <div className={`flex flex-col items-center ${chartTheme === 'azul' ? 'text-orange-400' : 'text-orange-600'}`}>
+                                 <div className="flex flex-col items-center text-orange-600">
                                    <span className="text-[7.5px] font-black uppercase tracking-widest opacity-60 font-mono mb-1">Nota 2</span>
                                    <span className="text-[8.5px] sm:text-[9.5px] font-bold font-sans uppercase">Discordo<br/>Parcialmente</span>
                                  </div>
-                                 <div className={`flex flex-col items-center ${chartTheme === 'azul' ? 'text-rose-400' : 'text-rose-600'}`}>
+                                 <div className="flex flex-col items-center text-rose-600">
                                    <span className="text-[7.5px] font-black uppercase tracking-widest opacity-60 font-mono mb-1">Nota 1</span>
                                    <span className="text-[8.5px] sm:text-[9.5px] font-bold font-sans uppercase">Discordo<br/>Plenamente</span>
                                  </div>
@@ -1895,18 +1810,14 @@ function RelatorioAvaliacaoAdminContent() {
 ].filter(item => item.value > 0);
  
                                return (
-                                 <div className={`border rounded-xl p-5 relative overflow-hidden transition-all duration-305 border-b-[4px] border-r-[2px] flex flex-col justify-between break-inside-avoid print-avoid-break relatorio-card ${
-                                   chartTheme === 'azul'
-                                     ? 'bg-slate-950 print:bg-white border-slate-800 shadow-[0_0_25px_rgba(16,185,129,0.15)] hover:shadow-[0_0_35px_rgba(16,185,129,0.25)] border-emerald-500/20 text-white'
-                                     : 'bg-white border-slate-205 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border-emerald-500/30 text-slate-800'
-                                 }`} id="chart-pie-satisfaction-card" style={{ pageBreakInside: 'avoid' }}>
-                                   <div className={`flex items-center justify-between border-b pb-2.5 ${chartTheme === 'azul' ? 'border-slate-800/80' : 'border-slate-100'}`}>
-                                     <h4 className={`text-xs font-black uppercase tracking-widest font-mono flex items-center gap-1.5 ${chartTheme === 'azul' ? 'text-emerald-400' : 'text-emerald-600'}`}>
-                                       <span className={`w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#10b981] ${chartTheme === 'azul' ? 'animate-pulse' : ''}`}></span>
+                                 <div className="border rounded-xl p-5 relative overflow-hidden transition-all duration-300 border-b-[4px] border-r-[2px] flex flex-col justify-between break-inside-avoid print-avoid-break relatorio-card bg-white border-slate-200 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border-emerald-500/30 text-slate-800" id="chart-pie-satisfaction-card" style={{ pageBreakInside: 'avoid' }}>
+                                   <div className="flex items-center justify-between border-b pb-2.5 border-slate-100">
+                                     <h4 className="text-xs font-black uppercase tracking-widest font-mono flex items-center gap-1.5 text-emerald-600">
+                                       <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#10b981]"></span>
                                        3. Níveis de Satisfação
                                      </h4>
-                                     <span className={`text-[9px] font-black uppercase font-mono tracking-wider ${chartTheme === 'azul' ? 'text-emerald-500/80' : 'text-emerald-600'}`}>
-                                       PIZZA GLOW
+                                     <span className="text-[9px] font-black uppercase font-mono tracking-wider text-emerald-600">
+                                       RESUMO
                                      </span>
                                    </div>
  
@@ -1928,24 +1839,19 @@ function RelatorioAvaliacaoAdminContent() {
                                                  <Cell 
                                                    key={`cell-${index}`} 
                                                    fill={entry.color} 
-                                                   style={chartTheme === 'azul' ? { filter: `drop-shadow(0px 0px 6px ${entry.color}ee)` } : undefined}
                                                  />
                                                ))}
                                              </Pie>
                                              <Tooltip
-                                               contentStyle={
-                                                 chartTheme === 'azul'
-                                                   ? { backgroundColor: '#090d16', borderRadius: '10px', border: '1px solid #1e293b', fontSize: '10px', fontWeight: 'bold', color: '#f1f5f9' }
-                                                   : { backgroundColor: '#ffffff', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '10px', fontWeight: 'bold', color: '#0f172a' }
-                                               }
-                                               itemStyle={chartTheme === 'azul' ? { color: '#ffffff' } : { color: '#0f172a' }}
+                                               contentStyle={{ backgroundColor: '#ffffff', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '10px', fontWeight: 'bold', color: '#0f172a' }}
+                                               itemStyle={{ color: '#0f172a' }}
                                                formatter={(value: any) => [`${value} respostas`, 'Quantidade']}
                                              />
                                            </PieChart>
                                          </ResponsiveContainer>
                                          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                           <span className={`text-[8px] font-black uppercase tracking-widest ${chartTheme === 'azul' ? 'text-slate-400' : 'text-slate-500'}`}>Total</span>
-                                           <span className={`text-sm font-black font-mono ${chartTheme === 'azul' ? 'text-white' : 'text-slate-900'}`}>{totalResponses}</span>
+                                           <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Total</span>
+                                           <span className="text-sm font-black font-mono text-slate-900">{totalResponses}</span>
                                          </div>
                                        </>
                                      ) : (
@@ -1953,16 +1859,14 @@ function RelatorioAvaliacaoAdminContent() {
                                      )}
                                    </div>
  
-                                   <div className={`grid grid-cols-2 gap-x-2 gap-y-1.5 text-[9px] font-mono pt-3 border-t mt-2 ${
-                                     chartTheme === 'azul' ? 'border-slate-800/85' : 'border-slate-100'
-                                   }`}>
+                                   <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 text-[9px] font-mono pt-3 border-t mt-2 border-slate-100">
                                      {pieData.map((item) => {
                                        const pct = totalResponses > 0 ? (item.value / totalResponses) * 100 : 0;
                                        return (
                                          <div key={item.name} className="flex items-center gap-1.5">
                                            <span className="w-2 h-2 rounded-full shrink-0 shadow-[0_0_5px_currentColor]" style={{ backgroundColor: item.color, color: item.color }} />
-                                           <span className={`truncate font-bold ${chartTheme === 'azul' ? 'text-slate-300' : 'text-slate-650'}`}>{item.name}:</span>
-                                           <span className={`font-black ml-auto ${chartTheme === 'azul' ? 'text-white' : 'text-slate-900'}`}>{item.value} ({pct.toFixed(0)}%)</span>
+                                           <span className="truncate font-bold text-slate-600">{item.name}:</span>
+                                           <span className="font-black ml-auto text-slate-900">{item.value} ({pct.toFixed(0)}%)</span>
                                          </div>
                                        );
                                      })}

@@ -395,7 +395,7 @@ function StaffDashboardContent() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="w-full max-w-full min-w-0 space-y-5 sm:space-y-6">
       {/* IDENTIFICAÇÃO INDIVIDUAL DO USUÁRIO NA SUA ÁREA DE TRABALHO */}
       <UserWorkspaceHeader />
 
@@ -446,7 +446,7 @@ function StaffDashboardContent() {
       )}
 
       {statCards.filter((c: any) => c.shouldShow).length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-5">
           {statCards.filter((c: any) => c.shouldShow).map((card: any, i: number) => {
             const isSelected = selectedCard === card.id;
             return (
@@ -456,7 +456,7 @@ function StaffDashboardContent() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
                 onClick={() => handleCardClick(card.id)}
-                className={`p-6 rounded-xl border transition-all cursor-pointer relative overflow-hidden active:scale-[0.96] hover:shadow-md hover:-translate-y-0.5 duration-200 ${
+                className={`min-w-0 p-4 sm:p-5 rounded-xl border transition-all cursor-pointer relative overflow-hidden active:scale-[0.96] hover:shadow-md hover:-translate-y-0.5 duration-200 ${
                   isSelected 
                     ? 'bg-indigo-50/10 border-indigo-600 shadow-md ring-2 ring-indigo-600/10' 
                     : 'bg-white border-slate-200 hover:border-indigo-400 hover:bg-slate-50/30 shadow-sm'
@@ -467,33 +467,33 @@ function StaffDashboardContent() {
                   <div className={`absolute top-0 left-0 right-0 h-1.5 ${card.color}`} />
                 )}
                 
-                <div className="flex items-center justify-between mb-4">
-                  <div className={`p-2 rounded-lg ${card.color} text-white shadow-sm`}>
+                <div className="flex items-center justify-between gap-2 mb-3 sm:mb-4">
+                  <div className={`p-2 rounded-lg ${card.color} text-white shadow-sm shrink-0`}>
                     <card.icon size={20} />
                   </div>
                   {isSelected && (
-                    <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full flex items-center gap-1 shrink-0">
                       <Check size={10} strokeWidth={3} />
                       {isPt ? 'Ativo' : 'Active'}
                     </span>
                   )}
                 </div>
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">{card.name}</p>
-                <div className="flex items-baseline gap-2 mb-2">
-                  <span className="text-3xl font-black text-slate-800 tracking-tight">{card.value}</span>
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1 break-words">{card.name}</p>
+                <div className="flex flex-wrap items-baseline gap-2 mb-2">
+                  <span className="text-2xl sm:text-3xl font-black text-slate-800 tracking-tight">{card.value}</span>
                   <span className="text-xs font-bold text-slate-400 uppercase">{card.unit}</span>
                   {card.id !== 'exterior' && card.studentsCount !== undefined && (
-                    <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md ml-auto border border-indigo-100/60 flex items-center gap-1">
+                    <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md ml-auto border border-indigo-100/60 flex items-center gap-1 shrink-0">
                       <Users size={11} className="text-indigo-500" />
                       {card.studentsCount} {language === 'pt' ? 'alunos' : 'students'}
                     </span>
                   )}
                 </div>
-                <div className="flex items-center justify-between pt-1 border-t border-slate-100">
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-1.5 border-t border-slate-100">
                   <span className="text-[10px] text-slate-400 font-medium">
                     {isSelected ? (isPt ? 'Visualizando turmas' : 'Viewing classes') : (isPt ? 'Clique para filtrar' : 'Click to filter')}
                   </span>
-                  <span className={`text-[10px] font-bold flex items-center gap-1.5 group px-2 py-0.5 rounded transition-colors ${
+                  <span className={`text-[10px] font-bold flex items-center gap-1.5 group px-2 py-0.5 rounded transition-colors shrink-0 ${
                     isSelected ? 'text-indigo-700 bg-indigo-50 border border-indigo-100 font-extrabold' : 'text-slate-500 hover:text-indigo-600 bg-slate-50'
                   }`}>
                     <MousePointerClick size={10} className="text-indigo-500" />
@@ -538,7 +538,7 @@ function StaffDashboardContent() {
                   {availableDocumentosExterior.length} {availableDocumentosExterior.length === 1 ? (language === 'pt' ? 'Portaria' : 'Document') : (language === 'pt' ? 'Portarias' : 'Documents')}
                 </span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
                   onClick={() => printElementIsolated('print-exterior-sheet', { title: 'relacao_alunos_missao_exterior', orientation: 'landscape' })}
@@ -562,19 +562,19 @@ function StaffDashboardContent() {
             </div>
 
             {/* BARRA DE FILTRO ÚNICO: AGRUPAR / FILTRAR POR DOCUMENTO */}
-            <div className="p-3.5 bg-slate-50/90 border-b border-slate-200/90 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 text-xs print:hidden">
-              <div className="flex items-center gap-2.5 flex-1">
+            <div className="p-3.5 bg-slate-50/90 border-b border-slate-200/90 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 text-xs print:hidden min-w-0">
+              <div className="flex items-start sm:items-center gap-2.5 flex-1 min-w-0">
                 <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg border border-indigo-100 shadow-2xs shrink-0">
                   <FileText size={15} />
                 </div>
-                <div className="flex-1 flex flex-col sm:flex-row sm:items-center gap-2">
+                <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center gap-2">
                   <span className="font-bold text-slate-700 text-xs shrink-0">
                     {language === 'pt' ? 'Filtrar / Agrupar por Documento:' : 'Filter / Group by Document:'}
                   </span>
                   <select
                     value={selectedDocumentoFilter}
                     onChange={(e) => setSelectedDocumentoFilter(e.target.value)}
-                    className="bg-white border border-slate-200 text-slate-800 font-semibold text-xs rounded-lg px-3 py-1.5 shadow-2xs outline-none cursor-pointer focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition max-w-full sm:max-w-[420px]"
+                    className="w-full min-w-0 max-w-full sm:max-w-[420px] truncate bg-white border border-slate-200 text-slate-800 font-semibold text-xs rounded-lg px-3 py-1.5 shadow-2xs outline-none cursor-pointer focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition"
                   >
                     <option value="all">
                       {language === 'pt'
@@ -594,7 +594,7 @@ function StaffDashboardContent() {
                 <button
                   type="button"
                   onClick={() => setSelectedDocumentoFilter('all')}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-slate-600 hover:text-slate-900 bg-slate-200/70 hover:bg-slate-200 rounded-lg text-xs font-bold transition cursor-pointer self-start sm:self-auto"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-slate-600 hover:text-slate-900 bg-slate-200/70 hover:bg-slate-200 rounded-lg text-xs font-bold transition cursor-pointer self-start sm:self-auto shrink-0"
                   title={language === 'pt' ? 'Mostrar todos os documentos' : 'Show all documents'}
                 >
                   <RotateCcw size={12} />
@@ -605,7 +605,7 @@ function StaffDashboardContent() {
 
             {/* Chips Rápidos de Documentos / Portarias */}
             {availableDocumentosExterior.length > 1 && (
-              <div className="px-4 py-2 bg-slate-50/40 border-b border-slate-100 flex items-center gap-1.5 overflow-x-auto text-[11px] scrollbar-none print:hidden">
+              <div className="px-4 py-2 bg-slate-50/40 border-b border-slate-100 flex flex-wrap items-center gap-1.5 text-[11px] print:hidden">
                 <span className="text-slate-400 font-bold uppercase text-[9px] mr-1 shrink-0">
                   {language === 'pt' ? 'Portarias:' : 'Documents:'}
                 </span>
@@ -613,7 +613,7 @@ function StaffDashboardContent() {
                   type="button"
                   onClick={() => setSelectedDocumentoFilter('all')}
                   className={cn(
-                    "px-2.5 py-0.5 rounded-full font-bold whitespace-nowrap transition cursor-pointer shrink-0 border text-[11px]",
+                    "px-2.5 py-0.5 rounded-full font-bold transition cursor-pointer border text-[11px]",
                     selectedDocumentoFilter === 'all'
                       ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
                       : "bg-white text-slate-600 border-slate-200 hover:bg-slate-100"
@@ -627,7 +627,7 @@ function StaffDashboardContent() {
                     type="button"
                     onClick={() => setSelectedDocumentoFilter(d.documento === selectedDocumentoFilter ? 'all' : d.documento)}
                     className={cn(
-                      "px-2.5 py-0.5 rounded-full font-bold whitespace-nowrap transition cursor-pointer shrink-0 border text-[11px]",
+                      "px-2.5 py-0.5 rounded-full font-bold transition cursor-pointer border text-[11px] break-words text-left max-w-full",
                       selectedDocumentoFilter === d.documento
                         ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
                         : "bg-white text-slate-600 border-slate-200 hover:bg-slate-100"
@@ -676,16 +676,104 @@ function StaffDashboardContent() {
                       </span>
                     </div>
 
-                    {/* Tabela de Alunos do Documento */}
-                    <div className="overflow-x-auto">
+                    {/* Lista Responsiva em Cards para Mobile/Tablet (sem arrastar para o lado) */}
+                    <div className="md:hidden divide-y divide-slate-100">
+                      {group.alunos.map((aluno: any, alIdx: number) => {
+                        const turmaData = Array.isArray(aluno.turma) ? aluno.turma[0] : aluno.turma;
+                        const curso = Array.isArray(turmaData?.curso) ? turmaData.curso[0] : turmaData?.curso;
+                        const isPreInscrito = turmaData?.status?.toLowerCase() === 'pré-inscrito';
+                        const startDate = turmaData?.internacional
+                          ? (aluno.data_inicio_curso?.trim() ? aluno.data_inicio_curso.split('-').reverse().join('/') : (turmaData?.data_inicio?.trim() ? turmaData.data_inicio.split('-').reverse().join('/') : '—'))
+                          : (turmaData?.data_inicio ? turmaData.data_inicio.split('-').reverse().join('/') : '—');
+                        const endDate = turmaData?.internacional
+                          ? (aluno.data_fim_curso?.trim() ? aluno.data_fim_curso.split('-').reverse().join('/') : (turmaData?.data_fim?.trim() ? turmaData.data_fim.split('-').reverse().join('/') : '—'))
+                          : (turmaData?.data_fim ? turmaData.data_fim.split('-').reverse().join('/') : '—');
+
+                        return (
+                          <div
+                            key={`mob-ext-${aluno.id}`}
+                            className="p-3.5 space-y-2.5 cursor-pointer hover:bg-slate-50 transition-colors"
+                            onClick={() => setSelectedAlunoForEdit(aluno)}
+                          >
+                            <div className="flex items-start gap-3">
+                              <span className="inline-flex items-center justify-center min-w-[26px] h-6 px-1.5 bg-indigo-50 border border-indigo-200/70 rounded-md font-mono text-[11px] font-bold text-indigo-700 shrink-0">
+                                {alIdx + 1}
+                              </span>
+                              {aluno.foto_url ? (
+                                <div
+                                  className="w-10 h-13 rounded-lg overflow-hidden border border-slate-200 shrink-0 shadow-xs relative bg-slate-100"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setExpandedPhoto({ url: aluno.foto_url, name: aluno.nome });
+                                  }}
+                                >
+                                  <Image
+                                    src={aluno.foto_url}
+                                    alt={aluno.nome}
+                                    fill
+                                    className="object-cover"
+                                    referrerPolicy="no-referrer"
+                                    sizes="40px"
+                                  />
+                                </div>
+                              ) : (
+                                <div className="w-10 h-13 rounded-lg overflow-hidden border border-slate-200 shrink-0 shadow-xs relative bg-slate-100">
+                                  <Image
+                                    src={
+                                      aluno.tipo_aluno === 'civil'
+                                        ? (aluno.genero === 'feminino' ? femaleAvatar : maleAvatar)
+                                        : (aluno.genero === 'feminino' ? militaryFemaleAvatar : militaryMaleAvatar)
+                                    }
+                                    alt={aluno.nome}
+                                    fill
+                                    className="object-cover opacity-60"
+                                    referrerPolicy="no-referrer"
+                                    sizes="40px"
+                                  />
+                                </div>
+                              )}
+                              <div className="min-w-0 flex-1">
+                                <div className={cn("font-bold text-xs sm:text-sm break-words", isPreInscrito ? "text-red-600" : "text-slate-800")}>
+                                  {aluno.posto_graduacao || aluno.nome_guerra ? `${aluno.posto_graduacao || ''} ${aluno.nome_guerra || aluno.nome}`.trim() : aluno.nome}
+                                </div>
+                                <div className="text-[10px] text-slate-400 font-mono uppercase">
+                                  {aluno.om || '-'}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-1 gap-1.5 text-xs pl-9">
+                              <div>
+                                <span className={cn("font-semibold break-words", isPreInscrito ? "text-red-500" : "text-slate-700")}>
+                                  {curso?.nome || aluno.curso_nome || '-'}
+                                </span>
+                                {turmaData?.localizacao && (
+                                  <span className="block text-[10px] text-slate-400 uppercase font-bold">{turmaData.localizacao}</span>
+                                )}
+                              </div>
+                              <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono">
+                                <span className="text-slate-600 font-semibold break-all">
+                                  {language === 'pt' ? 'Doc:' : 'Doc:'} {turmaData?.documento_criacao || curso?.documento_criacao || aluno.documento_criacao || '-'}
+                                </span>
+                                <span className={cn("font-bold", isPreInscrito ? "text-red-600" : "text-slate-800")}>
+                                  {startDate} a {endDate}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Tabela de Alunos do Documento para Desktop */}
+                    <div className="hidden md:block">
                       <table className="w-full text-left border-collapse">
                         <thead>
                           <tr className="text-[10px] font-bold text-slate-400 border-b border-slate-100 uppercase tracking-wider bg-slate-50/50">
-                            <th className="px-4 py-3 w-14 text-center">Nº</th>
-                            <th className="px-6 py-3">{t.students?.name || (language === 'pt' ? 'Nome Completo' : 'Full Name')}</th>
-                            <th className="px-6 py-3">{t.dashboard.courseLocation}</th>
-                            <th className="px-6 py-3">{language === 'pt' ? 'Documento' : 'Document'}</th>
-                            <th className="px-6 py-3 text-center">{t.dashboard.startEnd}</th>
+                            <th className="px-3 py-3 w-12 text-center">Nº</th>
+                            <th className="px-4 py-3">{t.students?.name || (language === 'pt' ? 'Nome Completo' : 'Full Name')}</th>
+                            <th className="px-4 py-3">{t.dashboard.courseLocation}</th>
+                            <th className="px-4 py-3">{language === 'pt' ? 'Documento' : 'Document'}</th>
+                            <th className="px-4 py-3 text-center">{t.dashboard.startEnd}</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50 text-sm">
@@ -699,16 +787,16 @@ function StaffDashboardContent() {
                                 className="transition-colors cursor-pointer hover:bg-slate-50"
                                 onClick={() => setSelectedAlunoForEdit(aluno)}
                               >
-                                <td className="px-4 py-3.5 text-center font-mono text-xs font-bold text-indigo-700">
+                                <td className="px-3 py-3 text-center font-mono text-xs font-bold text-indigo-700">
                                   <span className="inline-flex items-center justify-center min-w-[28px] h-7 px-1.5 bg-indigo-50 border border-indigo-200/70 rounded-lg">
                                     {alIdx + 1}
                                   </span>
                                 </td>
-                                <td className="px-6 py-3.5">
+                                <td className="px-4 py-3">
                                   <div className="flex items-center gap-3">
                                     {aluno.foto_url ? (
                                       <div 
-                                        className="w-11 h-14 rounded-lg overflow-hidden border border-slate-200 shrink-0 shadow-xs hover:scale-105 transition-transform cursor-pointer relative bg-slate-100 group"
+                                        className="w-10 h-13 rounded-lg overflow-hidden border border-slate-200 shrink-0 shadow-xs hover:scale-105 transition-transform cursor-pointer relative bg-slate-100 group"
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           setExpandedPhoto({ url: aluno.foto_url, name: aluno.nome });
@@ -717,17 +805,17 @@ function StaffDashboardContent() {
                                         <Image 
                                           src={aluno.foto_url} 
                                           alt={aluno.nome} 
-                                          fill
+                                          fill 
                                           className="object-cover" 
                                           referrerPolicy="no-referrer" 
-                                          sizes="44px"
+                                          sizes="40px"
                                         />
                                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
                                           <LayersIcon size={13} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                                         </div>
                                       </div>
                                     ) : (
-                                      <div className="w-11 h-14 rounded-lg overflow-hidden border border-slate-200 shrink-0 shadow-xs relative bg-slate-100">
+                                      <div className="w-10 h-13 rounded-lg overflow-hidden border border-slate-200 shrink-0 shadow-xs relative bg-slate-100">
                                         <Image 
                                           src={
                                             aluno.tipo_aluno === 'civil'
@@ -735,15 +823,15 @@ function StaffDashboardContent() {
                                               : (aluno.genero === 'feminino' ? militaryFemaleAvatar : militaryMaleAvatar)
                                           } 
                                           alt={aluno.nome} 
-                                          fill
+                                          fill 
                                           className="object-cover opacity-60" 
                                           referrerPolicy="no-referrer" 
-                                          sizes="44px"
+                                          sizes="40px"
                                         />
                                       </div>
                                     )}
-                                    <div>
-                                      <div className={cn("font-bold text-xs sm:text-sm", isPreInscrito ? "text-red-600" : "text-slate-800")}>
+                                    <div className="min-w-0">
+                                      <div className={cn("font-bold text-xs sm:text-sm break-words", isPreInscrito ? "text-red-600" : "text-slate-800")}>
                                         {aluno.posto_graduacao || aluno.nome_guerra ? `${aluno.posto_graduacao || ''} ${aluno.nome_guerra || aluno.nome}`.trim() : aluno.nome}
                                       </div>
                                       <div className="text-[10px] text-slate-400 font-mono uppercase">
@@ -752,14 +840,14 @@ function StaffDashboardContent() {
                                     </div>
                                   </div>
                                 </td>
-                                <td className="px-6 py-3.5">
-                                  <div className={cn("font-medium text-xs", isPreInscrito ? "text-red-500" : "text-slate-700")}>{curso?.nome || aluno.curso_nome || '-'}</div>
+                                <td className="px-4 py-3">
+                                  <div className={cn("font-medium text-xs break-words", isPreInscrito ? "text-red-500" : "text-slate-700")}>{curso?.nome || aluno.curso_nome || '-'}</div>
                                   <div className="text-[10px] text-slate-400 uppercase font-bold">{turmaData?.localizacao || '-'}</div>
                                 </td>
-                                <td className="px-6 py-3.5 text-slate-600 font-mono text-xs font-semibold">
+                                <td className="px-4 py-3 text-slate-600 font-mono text-xs font-semibold break-words">
                                   {turmaData?.documento_criacao || curso?.documento_criacao || aluno.documento_criacao || '-'}
                                 </td>
-                                <td className="px-6 py-3.5 text-center text-slate-600 font-mono text-xs">
+                                <td className="px-4 py-3 text-center text-slate-600 font-mono text-xs">
                                   {turmaData?.internacional ? (
                                     <div className="flex flex-col items-center justify-center leading-tight">
                                       <span className={cn("font-bold whitespace-nowrap", isPreInscrito ? "text-red-600" : "text-slate-800")}>
@@ -1602,9 +1690,9 @@ function TurmasListTable({
   const paginatedTurmas = filteredTurmas.slice(startIndex, endIndex);
 
   return (
-    <div className="bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col overflow-hidden">
+    <div className="w-full max-w-full min-w-0 bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col overflow-hidden">
       {/* Header com Título, Contadores e Busca */}
-      <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+      <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3">
         <div className="flex items-center gap-2 flex-wrap">
           <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
             {selectedCard === 'arquivadas' ? (
@@ -1941,18 +2029,267 @@ function TurmasListTable({
         </div>
       )}
 
-      {/* TABELA DE TURMAS E LISTA NOMINAL DE ALUNOS */}
-      <div className="overflow-x-auto">
+      {/* VISUALIZAÇÃO RESPONSIVA EM CARDS PARA MOBILE / TABLET / TELAS MENORES QUE XL (SEM ARRASTAR PARA O LADO) */}
+      <div className="xl:hidden divide-y divide-slate-100">
+        {filteredTurmas.length === 0 ? (
+          <div className="px-6 py-10 text-center text-slate-400 italic font-medium text-sm">
+            {searchTerm || hasActiveMultiFilters
+              ? (isPt ? 'Nenhuma turma encontrada para a combinação de filtros selecionada.' : 'No classes found for the selected filter combination.')
+              : (isPt ? 'Nenhuma turma ativa encontrada para esta categoria.' : 'No active classes found for this category.')}
+          </div>
+        ) : (
+          paginatedTurmas.map((turma, turmaIdx) => {
+            const statusLower = (turma.status || 'ativa').toString().toLowerCase().trim();
+            const isArquivada = Boolean(turma.arquivada) === true || statusLower === 'arquivada' || statusLower === 'arquivado';
+            const isPreInscrito = !isArquivada && (statusLower.includes('pré-inscrit') || statusLower.includes('pre-inscrit'));
+            const isHighlighted = turma.id === activeHighlight;
+            const cursoNome = getCursoNome(turma);
+            const cleanName = getCleanTurmaName(turma, cursoNome, turma.nome || 'Turma');
+            const rawAlunos = (turma.alunos && turma.alunos.length > 0)
+              ? turma.alunos
+              : (loadedStudentsByTurma[String(turma.id)] || []);
+            const isLoadingThisTurma = Boolean(loadingTurmaStudents[String(turma.id)]);
+            const alunoCount = rawAlunos.length > 0 ? rawAlunos.length : Number(turma.alunos?.length ?? turma.alunos_count ?? turma.total_alunos ?? 0);
+            const capacidadeMax = Number(turma.capacidade_max || 40);
+            const isExpanded = expandedTurmaIds.has(String(turma.id));
+            const turmaRowNumber = startIndex + turmaIdx + 1;
+
+            const sortedAlunos = [...rawAlunos].sort((a: any, b: any) => {
+              const nomeA = (a.nome || a.nome_guerra || '').trim().toLowerCase();
+              const nomeB = (b.nome || b.nome_guerra || '').trim().toLowerCase();
+              return nomeA.localeCompare(nomeB, 'pt-BR');
+            });
+
+            return (
+              <div
+                key={`card-${turma.id}`}
+                id={`turma-card-${turma.id}`}
+                onClick={() => toggleTurmaExpansion(turma.id)}
+                className={cn(
+                  "p-4 space-y-3 transition-colors cursor-pointer",
+                  isHighlighted
+                    ? "bg-amber-50/90 ring-2 ring-amber-500"
+                    : isExpanded
+                    ? "bg-indigo-50/30"
+                    : "hover:bg-slate-50/80"
+                )}
+              >
+                <div className="flex items-start justify-between gap-2.5">
+                  <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                    <span className="inline-flex items-center justify-center min-w-[28px] h-7 px-1.5 rounded-lg bg-slate-100 text-slate-700 font-mono text-xs font-bold border border-slate-200/70 shrink-0">
+                      {turmaRowNumber}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {isHighlighted && (
+                          <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider bg-amber-500 text-white px-2 py-0.5 rounded-full">
+                            👉 Turma Escolhida
+                          </span>
+                        )}
+                        <div className={cn("font-bold text-sm break-words", isArquivada ? "text-slate-600" : isPreInscrito ? "text-red-600" : "text-slate-800")}>
+                          {cleanName}
+                        </div>
+                      </div>
+                      <div className="text-[11px] font-semibold text-slate-700 break-words mt-0.5">
+                        {cursoNome || '-'} {(turma.curso?.categoria || turma.categoria) ? `• ${turma.curso?.categoria || turma.categoria}` : ''}
+                      </div>
+                      <div className="text-[10px] text-slate-400 font-mono uppercase mt-0.5">
+                        ANO: {turma.ano || '-'} {turma.grupo_responsavel ? `• GRUPO: ${turma.grupo_responsavel}` : ''}
+                      </div>
+                      {turma.documento_criacao && (
+                        <div className="text-[10px] text-slate-500 font-mono mt-0.5 break-all">
+                          Doc: {turma.documento_criacao}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        router.push(`/turmas?action=view-students&turmaId=${turma.id}&returnTo=dashboard&card=${selectedCard || 'expedito'}`);
+                      }}
+                      className="px-2.5 py-1.5 bg-slate-100 hover:bg-indigo-600 hover:text-white text-slate-700 rounded-lg text-xs font-bold transition cursor-pointer border border-slate-200/60"
+                    >
+                      {isPt ? 'Gerenciar' : 'Manage'}
+                    </button>
+                    {isAdmin && onDelete && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDelete(turma.id);
+                        }}
+                        className="p-1.5 bg-slate-100 hover:bg-red-600 hover:text-white border border-slate-200/50 rounded-lg transition-colors text-slate-500 cursor-pointer"
+                        title={isPt ? "Apagar Turma" : "Delete Class"}
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs pl-9">
+                  <div className="space-y-0.5">
+                    <div className="text-slate-700 font-medium break-words">
+                      {turma.localizacao || '-'} {turma.periodo ? `• ${turma.periodo}` : ''}
+                    </div>
+                    {(turma.data_inicio || turma.data_fim) && (
+                      <div className="text-[10px] text-blue-600 font-bold tracking-wider font-mono">
+                        {turma.data_inicio ? turma.data_inicio.split('-').reverse().join('/') : '—'} a {turma.data_fim ? turma.data_fim.split('-').reverse().join('/') : '—'}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-0.5">
+                    <div className={cn("font-medium break-words", isArquivada ? "text-slate-600" : isPreInscrito ? "text-red-600" : "text-slate-700")}>
+                      {isPt ? 'Instrutor:' : 'Instructor:'} {turma.instrutor || '-'}
+                    </div>
+                    {(monitorsByTurma[String(turma.id)] || turma.acompanhante_nome) && (
+                      <div className="inline-flex items-center gap-1 text-[10px] font-bold text-teal-700">
+                        <ShieldCheck size={11} className="shrink-0 text-teal-600" />
+                        <span>{isPt ? 'Monitor:' : 'Monitor:'} {monitorsByTurma[String(turma.id)] || turma.acompanhante_nome}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-2 pl-9">
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleTurmaExpansion(turma.id);
+                      }}
+                      className={cn(
+                        "inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-lg transition cursor-pointer border shadow-2xs",
+                        isExpanded
+                          ? "bg-indigo-600 text-white border-indigo-700"
+                          : "text-indigo-700 bg-indigo-50 border-indigo-100 hover:bg-indigo-100"
+                      )}
+                    >
+                      <Users size={12} className={isExpanded ? "text-white" : "text-indigo-600"} />
+                      <span>{alunoCount}</span>
+                      <span className="font-medium">{alunoCount === 1 ? (isPt ? 'aluno' : 'student') : (isPt ? 'alunos' : 'students')}</span>
+                      <ChevronDown size={11} className={cn("transition-transform duration-200", isExpanded ? "rotate-180" : "")} />
+                    </button>
+                    <span className="text-[10px] text-slate-400 font-semibold">
+                      {capacidadeMax} {isPt ? 'vagas' : 'seats'}
+                    </span>
+                  </div>
+
+                  <div className={cn(
+                    "text-[10px] font-bold uppercase flex items-center gap-1", 
+                    isArquivada ? "text-slate-500" : isPreInscrito ? "text-red-600" : "text-green-600"
+                  )}>
+                    <span className={cn(
+                      "w-1.5 h-1.5 rounded-full", 
+                      isArquivada ? "bg-slate-400" : isPreInscrito ? "bg-red-500 animate-pulse" : "bg-green-500 animate-pulse"
+                    )} />
+                    {isArquivada ? (isPt ? 'Turma Arquivada' : 'Archived Class') : isPreInscrito ? (isPt ? 'Pré-inscrita' : 'Pre-registered') : (isPt ? 'Turma Ativa' : 'Active Class')}
+                  </div>
+                </div>
+
+                {isExpanded && (
+                  <div className="mt-2 bg-white rounded-xl border border-indigo-100 shadow-sm overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                    <div className="px-4 py-3 bg-slate-100/70 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
+                      <span className="font-bold text-slate-800 text-xs">
+                        {isPt ? `Relação Nominal — ${cleanName}` : `Nominal Roster — ${cleanName}`} ({sortedAlunos.length})
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => router.push(`/turmas?action=view-students&turmaId=${turma.id}&returnTo=dashboard&card=${selectedCard || 'expedito'}`)}
+                        className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 px-2.5 py-1 bg-indigo-50 rounded-lg border border-indigo-100 cursor-pointer"
+                      >
+                        <span>{isPt ? 'Gerenciar Alunos' : 'Manage Students'}</span>
+                        <ArrowRight size={12} />
+                      </button>
+                    </div>
+                    {isLoadingThisTurma ? (
+                      <div className="py-8 flex flex-col items-center justify-center gap-2 text-slate-400">
+                        <Loader2 size={22} className="animate-spin text-indigo-600" />
+                        <span className="text-xs font-semibold">{isPt ? 'Carregando alunos...' : 'Loading students...'}</span>
+                      </div>
+                    ) : sortedAlunos.length === 0 ? (
+                      <div className="p-6 text-center text-slate-400 italic text-xs">
+                        {isPt ? 'Nenhum aluno matriculado nesta turma até o momento.' : 'No students enrolled in this class yet.'}
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-slate-100">
+                        {sortedAlunos.map((aluno: any, alIdx: number) => {
+                          const displayName = aluno.posto_graduacao || aluno.nome_guerra
+                            ? `${aluno.posto_graduacao || ''} ${aluno.nome_guerra || aluno.nome}`.trim()
+                            : aluno.nome;
+                          const photoSrc = aluno.foto_url ||
+                            (aluno.tipo_aluno === 'civil'
+                              ? (aluno.genero === 'feminino' ? femaleAvatar : maleAvatar)
+                              : (aluno.genero === 'feminino' ? militaryFemaleAvatar : militaryMaleAvatar));
+                          return (
+                            <div
+                              key={`card-al-${aluno.id || alIdx}`}
+                              onClick={() => onSelectStudent && onSelectStudent(aluno)}
+                              className="p-3 flex items-start gap-3 hover:bg-slate-50 cursor-pointer"
+                            >
+                              <span className="bg-indigo-50 border border-indigo-200/70 px-1.5 py-0.5 rounded-md font-mono text-[11px] font-bold text-indigo-700 shrink-0">
+                                {alIdx + 1}
+                              </span>
+                              <div
+                                className="w-10 h-13 rounded-lg overflow-hidden border border-slate-200 shrink-0 relative bg-slate-100"
+                                onClick={(e) => {
+                                  if (aluno.foto_url && onExpandPhoto) {
+                                    e.stopPropagation();
+                                    onExpandPhoto({ url: aluno.foto_url, name: displayName });
+                                  }
+                                }}
+                              >
+                                <Image
+                                  src={photoSrc}
+                                  alt={displayName}
+                                  fill
+                                  className={cn("object-cover", !aluno.foto_url && "opacity-60")}
+                                  referrerPolicy="no-referrer"
+                                  sizes="40px"
+                                />
+                              </div>
+                              <div className="min-w-0 flex-1 space-y-0.5">
+                                <div className={cn("font-bold text-xs break-words", isPreInscrito ? "text-red-600" : "text-slate-800")}>
+                                  {displayName}
+                                </div>
+                                <div className="text-[10px] text-slate-400 font-mono uppercase">
+                                  {aluno.om || '-'} {aluno.nip ? `• NIP: ${aluno.nip}` : ''}
+                                </div>
+                                <div className="text-[10px] text-slate-600 font-mono">
+                                  {turma.documento_criacao || aluno.documento_criacao || '-'} • {turma.data_inicio ? turma.data_inicio.split('-').reverse().join('/') : '—'} até {turma.data_fim ? turma.data_fim.split('-').reverse().join('/') : '—'}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* TABELA DE TURMAS E LISTA NOMINAL DE ALUNOS (TELAS XL+) */}
+      <div className="hidden xl:block">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="text-[10px] font-bold text-slate-400 border-b border-slate-100 uppercase tracking-wider bg-slate-50/40">
-              <th className="px-4 py-4 w-14 text-center">Nº</th>
-              <th className="px-6 py-4">{isPt ? 'Identificador da Turma' : 'Class Identifier'}</th>
-              <th className="px-6 py-4">{isPt ? 'Curso / Categoria' : 'Course Name / Category'}</th>
-              <th className="px-6 py-4">{isPt ? 'Localização / Período' : 'Location / Period'}</th>
-              <th className="px-6 py-4 text-center">{isPt ? 'Alunos / Capacidade' : 'Students / Capacity'}</th>
-              <th className="px-6 py-4">{isPt ? 'Instrutor Responsável' : 'Responsible Instructor'}</th>
-              <th className="px-6 py-4 text-right">{isPt ? 'Ações' : 'Actions'}</th>
+              <th className="px-3 py-3.5 w-12 text-center">Nº</th>
+              <th className="px-3 2xl:px-5 py-3.5">{isPt ? 'Identificador da Turma' : 'Class Identifier'}</th>
+              <th className="px-3 2xl:px-5 py-3.5">{isPt ? 'Curso / Categoria' : 'Course Name / Category'}</th>
+              <th className="px-3 2xl:px-5 py-3.5">{isPt ? 'Localização / Período' : 'Location / Period'}</th>
+              <th className="px-3 2xl:px-5 py-3.5 text-center">{isPt ? 'Alunos / Capacidade' : 'Students / Capacity'}</th>
+              <th className="px-3 2xl:px-5 py-3.5">{isPt ? 'Instrutor Responsável' : 'Responsible Instructor'}</th>
+              <th className="px-3 2xl:px-5 py-3.5 text-right">{isPt ? 'Ações' : 'Actions'}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50 text-sm">
@@ -2003,19 +2340,19 @@ function TurmasListTable({
                           : "hover:bg-slate-50 focus:bg-slate-50 focus:ring-1 focus:ring-blue-400"
                       )}
                     >
-                      <td className="px-4 py-4 text-center">
+                      <td className="px-3 py-3.5 text-center">
                         <span className="inline-flex items-center justify-center min-w-[28px] h-7 px-1.5 rounded-lg bg-slate-100 text-slate-700 font-mono text-xs font-bold border border-slate-200/70">
                           {turmaRowNumber}
                         </span>
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
+                      <td className="px-3 2xl:px-5 py-3.5">
+                        <div className="flex flex-wrap items-center gap-1.5">
                           {isHighlighted && (
                             <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider bg-amber-500 text-white px-2 py-0.5 rounded-full shadow-xs animate-bounce">
                               👉 Turma Escolhida
                             </span>
                           )}
-                          <div className={cn("font-bold text-sm", isArquivada ? "text-slate-600" : isPreInscrito ? "text-red-600" : "text-slate-800")}>
+                          <div className={cn("font-bold text-sm break-words", isArquivada ? "text-slate-600" : isPreInscrito ? "text-red-600" : "text-slate-800")}>
                             {cleanName}
                           </div>
                         </div>
@@ -2023,21 +2360,21 @@ function TurmasListTable({
                           ANO: {turma.ano || '-'} {turma.grupo_responsavel ? `• GRUPO: ${turma.grupo_responsavel}` : ''}
                         </div>
                         {turma.documento_criacao && (
-                          <div className="text-[9px] text-slate-500 font-mono mt-0.5">
+                          <div className="text-[9px] text-slate-500 font-mono mt-0.5 break-words">
                             Doc: {turma.documento_criacao}
                           </div>
                         )}
                       </td>
-                      <td className="px-6 py-4">
-                        <div className={cn("font-semibold", isArquivada ? "text-slate-600" : isPreInscrito ? "text-red-600" : "text-slate-700")}>
+                      <td className="px-3 2xl:px-5 py-3.5">
+                        <div className={cn("font-semibold break-words", isArquivada ? "text-slate-600" : isPreInscrito ? "text-red-600" : "text-slate-700")}>
                           {cursoNome || '-'}
                         </div>
                         <div className="text-[10px] text-slate-400 uppercase font-black tracking-wider">
                           {turma.curso?.categoria || turma.categoria || '-'}
                         </div>
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="text-slate-650 font-medium">{turma.localizacao || '-'}</div>
+                      <td className="px-3 2xl:px-5 py-3.5">
+                        <div className="text-slate-650 font-medium break-words">{turma.localizacao || '-'}</div>
                         <div className="text-[10px] text-slate-400 uppercase font-bold">
                            {turma.periodo || '-'}
                         </div>
@@ -2047,7 +2384,7 @@ function TurmasListTable({
                           </div>
                         )}
                       </td>
-                      <td className="px-6 py-4 text-center">
+                      <td className="px-3 2xl:px-5 py-3.5 text-center">
                         <div className="flex flex-col items-center justify-center gap-1">
                           <button
                             type="button"
@@ -2073,8 +2410,8 @@ function TurmasListTable({
                           </span>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
-                        <div className={cn("font-medium", isArquivada ? "text-slate-600" : isPreInscrito ? "text-red-600" : "text-slate-650")}>{turma.instrutor || '-'}</div>
+                      <td className="px-3 2xl:px-5 py-3.5">
+                        <div className={cn("font-medium break-words", isArquivada ? "text-slate-600" : isPreInscrito ? "text-red-600" : "text-slate-650")}>{turma.instrutor || '-'}</div>
                         {(monitorsByTurma[String(turma.id)] || turma.acompanhante_nome) && (
                           <div className="inline-flex items-center gap-1 text-[10px] font-bold text-teal-700 mt-0.5">
                             <ShieldCheck size={11} className="shrink-0 text-teal-600" />
@@ -2092,7 +2429,7 @@ function TurmasListTable({
                           {isArquivada ? (isPt ? 'Turma Arquivada' : 'Archived Class') : isPreInscrito ? (isPt ? 'Pré-inscrita' : 'Pre-registered') : (isPt ? 'Turma Ativa' : 'Active Class')}
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                      <td className="px-3 2xl:px-5 py-3.5 text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             type="button"
@@ -2178,15 +2515,15 @@ function TurmasListTable({
                                 {isPt ? 'Nenhum aluno matriculado nesta turma até o momento.' : 'No students enrolled in this class yet.'}
                               </div>
                             ) : (
-                              <div className="overflow-x-auto">
+                              <div>
                                 <table className="w-full text-left border-collapse">
                                   <thead>
                                     <tr className="text-[10px] font-bold text-slate-400 border-b border-slate-100 uppercase tracking-wider bg-slate-50/50">
-                                      <th className="px-5 py-3 w-14 text-center">Nº</th>
-                                      <th className="px-6 py-3">{t.students?.name || (isPt ? 'Nome Completo' : 'Full Name')}</th>
-                                      <th className="px-6 py-3">{t.dashboard.courseLocation}</th>
-                                      <th className="px-6 py-3">{isPt ? 'Documento' : 'Document'}</th>
-                                      <th className="px-6 py-3 text-center">{t.dashboard.startEnd}</th>
+                                      <th className="px-3 py-3 w-12 text-center">Nº</th>
+                                      <th className="px-4 py-3">{t.students?.name || (isPt ? 'Nome Completo' : 'Full Name')}</th>
+                                      <th className="px-4 py-3">{t.dashboard.courseLocation}</th>
+                                      <th className="px-4 py-3">{isPt ? 'Documento' : 'Document'}</th>
+                                      <th className="px-4 py-3 text-center">{t.dashboard.startEnd}</th>
                                     </tr>
                                   </thead>
                                   <tbody className="divide-y divide-slate-50 text-sm">
@@ -2205,16 +2542,16 @@ function TurmasListTable({
                                           onClick={() => onSelectStudent && onSelectStudent(aluno)}
                                           className="transition-colors cursor-pointer hover:bg-slate-50"
                                         >
-                                          <td className="px-5 py-3.5 text-center font-mono text-xs font-bold text-indigo-700">
+                                          <td className="px-3 py-3 text-center font-mono text-xs font-bold text-indigo-700">
                                             <span className="bg-indigo-50 border border-indigo-200/70 px-2 py-0.5 rounded-md">
                                               {alIdx + 1}
                                             </span>
                                           </td>
-                                          <td className="px-6 py-3.5">
+                                          <td className="px-4 py-3">
                                             <div className="flex items-center gap-3">
                                               {aluno.foto_url ? (
                                                 <div
-                                                  className="w-11 h-14 rounded-lg overflow-hidden border border-slate-200 shrink-0 shadow-xs hover:scale-105 transition-transform cursor-pointer relative bg-slate-100 group"
+                                                  className="w-10 h-13 rounded-lg overflow-hidden border border-slate-200 shrink-0 shadow-xs hover:scale-105 transition-transform cursor-pointer relative bg-slate-100 group"
                                                   onClick={(e) => {
                                                     if (onExpandPhoto) {
                                                       e.stopPropagation();
@@ -2229,26 +2566,26 @@ function TurmasListTable({
                                                     fill
                                                     className="object-cover"
                                                     referrerPolicy="no-referrer"
-                                                    sizes="44px"
+                                                    sizes="40px"
                                                   />
                                                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
                                                     <LayersIcon size={13} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                                                   </div>
                                                 </div>
                                               ) : (
-                                                <div className="w-11 h-14 rounded-lg overflow-hidden border border-slate-200 shrink-0 shadow-xs relative bg-slate-100">
+                                                <div className="w-10 h-13 rounded-lg overflow-hidden border border-slate-200 shrink-0 shadow-xs relative bg-slate-100">
                                                   <Image
                                                     src={photoSrc}
                                                     alt={displayName}
                                                     fill
                                                     className="object-cover opacity-60"
                                                     referrerPolicy="no-referrer"
-                                                    sizes="44px"
+                                                    sizes="40px"
                                                   />
                                                 </div>
                                               )}
-                                              <div>
-                                                <div className={cn("font-bold text-xs sm:text-sm", isPreInscrito ? "text-red-600" : "text-slate-800")}>
+                                              <div className="min-w-0">
+                                                <div className={cn("font-bold text-xs sm:text-sm break-words", isPreInscrito ? "text-red-600" : "text-slate-800")}>
                                                   {displayName}
                                                 </div>
                                                 <div className="text-[10px] text-slate-400 font-mono uppercase">
@@ -2262,15 +2599,15 @@ function TurmasListTable({
                                               </div>
                                             </div>
                                           </td>
-                                          <td className="px-6 py-3.5">
-                                            <div className={cn("font-medium text-xs", isPreInscrito ? "text-red-500" : "text-slate-700")}>
+                                          <td className="px-4 py-3">
+                                            <div className={cn("font-medium text-xs break-words", isPreInscrito ? "text-red-500" : "text-slate-700")}>
                                               {cursoNome || aluno.curso_nome || '-'}
                                             </div>
                                             <div className="text-[10px] text-slate-400 uppercase font-bold">
                                               {turma.localizacao || '-'}
                                             </div>
                                           </td>
-                                          <td className="px-6 py-3.5 text-slate-600 font-mono text-xs font-semibold">
+                                          <td className="px-4 py-3 text-slate-600 font-mono text-xs font-semibold break-words">
                                             <div>
                                               {turma.documento_criacao || aluno.documento_criacao || '-'}
                                             </div>
@@ -2280,7 +2617,7 @@ function TurmasListTable({
                                               </div>
                                             )}
                                           </td>
-                                          <td className="px-6 py-3.5 text-center text-slate-600 font-mono text-xs">
+                                          <td className="px-4 py-3 text-center text-slate-600 font-mono text-xs">
                                             <div className="font-semibold text-slate-700">
                                               {turma.data_inicio ? turma.data_inicio.split('-').reverse().join('/') : (aluno.data_inicio_curso ? aluno.data_inicio_curso.split('-').reverse().join('/') : '—')}
                                             </div>
@@ -2309,8 +2646,8 @@ function TurmasListTable({
 
       {/* Painel de Paginação de Turmas */}
       {totalItems > 0 && (
-        <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-sans text-slate-500 font-semibold shrink-0">
-          <div className="flex items-center gap-2">
+        <div className="px-4 sm:px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-sans text-slate-500 font-semibold shrink-0">
+          <div className="flex flex-wrap items-center justify-center gap-2">
             <span>{isPt ? 'Exibir:' : 'Show:'}</span>
             <select
               value={itemsPerPage}
@@ -2332,13 +2669,13 @@ function TurmasListTable({
             <span>{isPt ? 'registros por página' : 'records per page'}</span>
           </div>
 
-          <div className="font-medium text-slate-400 font-mono">
+          <div className="font-medium text-slate-400 font-mono text-center">
             {isPt 
               ? `Exibindo ${totalItems > 0 ? startIndex + 1 : 0}-${endIndex} de ${totalItems} registros`
               : `Showing ${totalItems > 0 ? startIndex + 1 : 0}-${endIndex} of ${totalItems} records`}
           </div>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center justify-center gap-1.5">
             <button
               type="button"
               disabled={currentPage === 1}

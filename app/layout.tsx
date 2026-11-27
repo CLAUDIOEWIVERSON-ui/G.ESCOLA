@@ -1,4 +1,4 @@
-import type {Metadata} from 'next';
+import type { Metadata, Viewport } from 'next';
 import { EB_Garamond, Cinzel, Lora, Great_Vibes } from 'next/font/google';
 import './globals.css';
 import { LanguageProvider } from '@/lib/i18n/LanguageContext';
@@ -43,6 +43,11 @@ export const metadata: Metadata = {
   description: 'Sistema completo de gerenciamento escolar',
 };
 
+export const viewport: Viewport = {
+  colorScheme: 'light',
+  themeColor: '#ffffff',
+};
+
 export default function RootLayout({children}: {children: React.ReactNode}) {
   return (
     <html
@@ -51,6 +56,8 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
       className={`${ebGaramond.variable} ${cinzel.variable} ${lora.variable} ${greatVibes.variable}`}
     >
       <head>
+        <meta name="color-scheme" content="light only" />
+        <meta name="supported-color-schemes" content="light" />
         <script
           dangerouslySetInnerHTML={{
             __html: `

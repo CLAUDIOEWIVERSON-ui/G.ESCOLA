@@ -232,26 +232,26 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
       <div 
         id="user-workspace-identity-card"
         className={cn(
-          "bg-white rounded-2xl shadow-sm overflow-hidden transition-all",
+          "w-full max-w-full min-w-0 bg-white rounded-2xl shadow-sm overflow-hidden transition-all",
           isAluno ? "border border-slate-300 text-black" : "border border-slate-200/90",
           className
         )}
       >
         {/* Corpo principal do Cartão de Identificação */}
         <div className={cn(
-          "p-4 sm:p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-5",
+          "p-4 sm:p-6 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 sm:gap-5 min-w-0",
           isAluno ? "bg-white text-black" : "bg-gradient-to-b from-white to-slate-50/50"
         )}>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 flex-1 w-full">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-5 flex-1 w-full min-w-0">
             {/* 1. FOTO DO USUÁRIO (APENAS PARA NÃO-ADMINISTRADORES) + LOGO MARCA D'ÁGUA AO LADO PARA ALUNOS */}
             {!isAdmin && (
-              <div className="flex flex-col items-center sm:items-start gap-2.5 w-full sm:w-auto shrink-0">
+              <div className="flex flex-col items-center sm:items-start gap-2.5 w-full sm:w-auto max-w-full shrink-0">
                 {isAluno && (
                   <h2 className="text-xs sm:text-sm font-black uppercase tracking-wider text-black border-b-2 border-black pb-1 text-center sm:text-left">
                     {isPt ? 'Carteira Digital do Aluno' : 'Digital Student ID Card'}
                   </h2>
                 )}
-                <div className="flex items-center justify-center sm:justify-start gap-4 sm:gap-5 w-full sm:w-auto shrink-0">
+                <div className="flex flex-wrap sm:flex-nowrap items-center justify-center sm:justify-start gap-3 sm:gap-5 w-full sm:w-auto max-w-full">
                   <div className="relative shrink-0 group">
                     <div 
                       className={cn(
@@ -347,13 +347,13 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
                 {isAluno && (
                   <div
                     aria-hidden="true"
-                    className="relative w-40 h-40 sm:w-44 sm:h-44 shrink-0 flex items-center justify-center pointer-events-none select-none opacity-20 mix-blend-multiply"
+                    className="relative w-28 h-28 sm:w-36 sm:h-36 xl:w-44 xl:h-44 shrink-0 flex items-center justify-center pointer-events-none select-none opacity-20 mix-blend-multiply"
                   >
                     <Image
                       src="/assets/aistudio/imagem_01_2da3aec8.png"
                       alt="Guarda Costeira de São Tomé e Príncipe"
                       fill
-                      sizes="(max-width: 640px) 160px, 176px"
+                      sizes="(max-width: 640px) 112px, 176px"
                       className="object-contain object-center"
                       referrerPolicy="no-referrer"
                     />
@@ -364,17 +364,17 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
             )}
 
             {/* 2. DADOS DO USUÁRIO E DO NOME */}
-            <div className="space-y-3 flex-1 min-w-0">
+            <div className="space-y-3 flex-1 w-full min-w-0">
               {/* BLOCO USUÁRIO */}
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 min-w-0">
                 <span className={cn(
-                  "text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded border",
+                  "text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded border shrink-0",
                   isAluno ? "text-black bg-white border-slate-300" : "text-slate-400 bg-slate-100 border-slate-200"
                 )}>
                   {isPt ? 'USUÁRIO' : 'USER'}:
                 </span>
                 <span className={cn(
-                  "text-xs sm:text-sm font-bold font-mono truncate max-w-[260px] sm:max-w-none",
+                  "text-xs sm:text-sm font-bold font-mono break-all sm:break-normal max-w-full",
                   isAluno ? "text-black" : "text-slate-700"
                 )}>
                   {userIdentifier}
@@ -393,7 +393,7 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
               </div>
 
               {/* BLOCO NOME */}
-              <div>
+              <div className="min-w-0">
                 <div className={cn(
                   "flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider",
                   isAluno ? "text-black" : "text-slate-400"
@@ -401,20 +401,21 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
                   <span>{isPt ? 'NOME DO USUÁRIO' : 'USER NAME'}:</span>
                 </div>
                 <h2 className={cn(
-                  "font-black tracking-tight flex items-center gap-2 flex-wrap",
+                  "font-black tracking-tight flex items-center gap-2 flex-wrap break-words",
                   isAluno
-                    ? "text-2xl sm:text-3xl leading-tight text-black mt-0.5"
+                    ? "text-xl sm:text-2xl xl:text-3xl leading-tight text-black mt-0.5"
                     : "text-base sm:text-xl text-slate-900"
                 )}>
-                  <span>{displayName}</span>
+                  <span className="break-words">{displayName}</span>
                   {profile.has_changed_password && (
-                    <span className={cn("inline-flex items-center", isAluno ? "text-black" : "text-emerald-600")} title={isPt ? "Conta verificada com senha alterada" : "Verified account"}>
+                    <span className={cn("inline-flex items-center shrink-0", isAluno ? "text-black" : "text-emerald-600")} title={isPt ? "Conta verificada com senha alterada" : "Verified account"}>
                       <BadgeCheck size={isAluno ? 22 : 18} />
                     </span>
                   )}
                 </h2>
                 {profile.nome_guerra && profile.full_name && profile.full_name !== profile.nome_guerra && (
                   <p className={cn(
+                    "break-words",
                     isAluno ? "text-xs sm:text-sm font-semibold text-black mt-0.5" : "text-xs font-medium text-slate-500"
                   )}>
                     {isPt ? 'Nome Completo:' : 'Full Name:'} {profile.full_name}
@@ -424,7 +425,7 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
                   <div className="flex flex-wrap items-center gap-2 mt-2">
                     {profile.curso_nome && (
                       <span className={cn(
-                        "text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-md border",
+                        "text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-md border break-words",
                         isAluno ? "bg-white text-black border-slate-300" : "bg-teal-50 text-teal-800 border-teal-200"
                       )}>
                         {profile.curso_nome}
@@ -432,7 +433,7 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
                     )}
                     {profile.turma_nome && (
                       <span className={cn(
-                        "text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-md border",
+                        "text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-md border break-words",
                         isAluno ? "bg-white text-black border-slate-300" : "bg-slate-100 text-slate-800 border-slate-200"
                       )}>
                         {isPt ? 'Turma:' : 'Class:'} {profile.turma_nome}
@@ -445,13 +446,13 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
           </div>
 
           {/* 3. AÇÕES RÁPIDAS DA ÁREA DE TRABALHO */}
-          <div className="flex flex-row md:flex-col items-center md:items-end gap-2 w-full md:w-auto pt-3 md:pt-0 border-t md:border-t-0 border-slate-200 shrink-0">
+          <div className="flex flex-row flex-wrap lg:flex-col items-center lg:items-end gap-2 w-full lg:w-auto pt-3 lg:pt-0 border-t lg:border-t-0 border-slate-200 shrink-0">
             {canUploadPhoto && (
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
-                className="flex-1 md:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl text-xs font-bold border border-indigo-200/80 transition-all cursor-pointer shadow-2xs active:scale-95 disabled:opacity-50 mobile-only-neon-3d neon-tone-fuchsia"
+                className="flex-1 md:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl text-xs font-bold border border-indigo-200/80 transition-all cursor-pointer shadow-2xs active:scale-95 disabled:opacity-50"
                 title={isPt ? "Carregar ou alterar sua foto" : "Upload or change your photo"}
               >
                 <Camera size={14} />
@@ -462,7 +463,7 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
             {isAdmin && (
               <Link
                 href="/usuarios"
-                className="flex-1 md:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-xs font-bold border border-blue-200 transition-all cursor-pointer shadow-2xs active:scale-95 mobile-only-neon-3d neon-tone-blue"
+                className="flex-1 md:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-xs font-bold border border-blue-200 transition-all cursor-pointer shadow-2xs active:scale-95"
                 title={isPt ? "Gerenciar Usuários e Permissões" : "Manage Users and Permissions"}
               >
                 <ShieldCheck size={14} className="text-blue-600" />
@@ -473,7 +474,7 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
             {isAluno && pathname !== '/dashboard' && (
               <Link
                 href="/dashboard"
-                className="flex-1 md:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-100 text-black border-2 border-black rounded-xl text-xs font-black transition-all cursor-pointer shadow-2xs active:scale-95 mobile-only-neon-3d neon-tone-cyan"
+                className="flex-1 md:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-100 text-black border-2 border-black rounded-xl text-xs font-black transition-all cursor-pointer shadow-2xs active:scale-95"
                 title={isPt ? "Ir para a Carteira Digital do Aluno" : "Go to Digital Student ID Card"}
               >
                 <LayoutDashboard size={14} className="text-black" />
@@ -484,7 +485,7 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
             {!isAluno && (
               <Link
                 href="/configuracoes"
-                className="flex-1 md:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-100 text-slate-700 border-slate-200 rounded-xl text-xs font-bold border transition-all cursor-pointer shadow-2xs active:scale-95 mobile-only-neon-3d neon-tone-indigo"
+                className="flex-1 md:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-100 text-slate-700 border-slate-200 rounded-xl text-xs font-bold border transition-all cursor-pointer shadow-2xs active:scale-95"
                 title={isPt ? "Gerenciar Minha Conta e Senha" : "Manage Account and Password"}
               >
                 <Settings size={14} className="text-slate-400" />

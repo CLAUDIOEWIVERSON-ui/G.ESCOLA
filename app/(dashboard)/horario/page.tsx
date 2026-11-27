@@ -1167,7 +1167,7 @@ export default function HorarioPage() {
                     onClick={handleCancelEdit}
                     disabled={isSaving}
                     type="button"
-                    className="flex items-center gap-1.5 sm:gap-2 px-3.5 py-2 sm:px-5 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-black uppercase tracking-wider sm:tracking-widest transition-all bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 shadow-md cursor-pointer disabled:opacity-50 mobile-only-neon-3d neon-tone-red"
+                    className="flex items-center gap-1.5 sm:gap-2 px-3.5 py-2 sm:px-5 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-black uppercase tracking-wider sm:tracking-widest transition-all bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 shadow-md cursor-pointer disabled:opacity-50"
                   >
                     <X size={16} />
                     {language === "pt" ? "Cancelar" : "Cancel"}
@@ -1177,10 +1177,10 @@ export default function HorarioPage() {
                   onClick={handleToggleEdit}
                   disabled={isSaving || !selectedTurmaId}
                   className={cn(
-                    "flex items-center gap-1.5 sm:gap-2 px-3.5 py-2 sm:px-5 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-black uppercase tracking-wider sm:tracking-widest transition-all shadow-lg disabled:opacity-50 cursor-pointer mobile-only-neon-3d",
+                    "flex items-center gap-1.5 sm:gap-2 px-3.5 py-2 sm:px-5 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-black uppercase tracking-wider sm:tracking-widest transition-all shadow-lg disabled:opacity-50 cursor-pointer",
                     isEditMode
-                      ? "bg-emerald-600 text-white shadow-emerald-200 hover:bg-emerald-700 neon-tone-emerald"
-                      : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 shadow-slate-100 neon-tone-blue",
+                      ? "bg-emerald-600 text-white shadow-emerald-200 hover:bg-emerald-700"
+                      : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 shadow-slate-100",
                   )}
                 >
                   {isSaving ? (
@@ -1209,7 +1209,7 @@ export default function HorarioPage() {
                   className={cn(
                     "px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer select-none",
                     printOrientation === "portrait"
-                      ? "bg-neutral-950 text-white shadow-sm mobile-only-neon-3d neon-tone-indigo"
+                      ? "bg-neutral-950 text-white shadow-sm"
                       : "text-slate-500 hover:text-slate-800",
                   )}
                 >
@@ -1221,7 +1221,7 @@ export default function HorarioPage() {
                   className={cn(
                     "px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer select-none",
                     printOrientation === "landscape"
-                      ? "bg-neutral-950 text-white shadow-sm mobile-only-neon-3d neon-tone-cyan"
+                      ? "bg-neutral-950 text-white shadow-sm"
                       : "text-slate-500 hover:text-slate-800",
                   )}
                 >
@@ -1235,7 +1235,7 @@ export default function HorarioPage() {
                 type="button"
                 onClick={() => setShowSignatureSettings(!showSignatureSettings)}
                 className={cn(
-                  "flex items-center gap-1.5 sm:gap-2 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs font-black uppercase tracking-wider transition-all border shadow-sm cursor-pointer mobile-only-neon-3d neon-tone-purple",
+                  "flex items-center gap-1.5 sm:gap-2 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs font-black uppercase tracking-wider transition-all border shadow-sm cursor-pointer",
                   showSignatureSettings
                     ? "bg-blue-50 text-blue-700 border-blue-200"
                     : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50",
@@ -1250,7 +1250,7 @@ export default function HorarioPage() {
             <button
               onClick={handleDownloadPDF}
               disabled={isEditMode || !selectedTurmaId || isDownloadingPDF}
-              className="flex items-center gap-1.5 sm:gap-2 bg-[#0f172a] text-white px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-black uppercase tracking-wider sm:tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 disabled:opacity-50 disabled:grayscale cursor-pointer mobile-only-neon-3d neon-tone-orange"
+              className="flex items-center gap-1.5 sm:gap-2 bg-[#0f172a] text-white px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-black uppercase tracking-wider sm:tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 disabled:opacity-50 disabled:grayscale cursor-pointer"
               title={language === "pt" ? "Baixar quadro de horários em arquivo PDF" : "Download schedule grid as PDF"}
             >
               {isDownloadingPDF ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
@@ -1583,7 +1583,7 @@ export default function HorarioPage() {
                           className={cn(
                             "px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer",
                             mobileViewMode === "cards"
-                              ? "neon-3d-btn neon-tone-cyan"
+                              ? "bg-blue-600 text-white border border-blue-700 shadow-xs"
                               : "bg-slate-100 text-slate-700 border border-slate-200"
                           )}
                         >
@@ -1595,7 +1595,7 @@ export default function HorarioPage() {
                           className={cn(
                             "px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer",
                             mobileViewMode === "table"
-                              ? "neon-3d-btn neon-tone-indigo"
+                              ? "bg-blue-600 text-white border border-blue-700 shadow-xs"
                               : "bg-slate-100 text-slate-700 border border-slate-200"
                           )}
                         >
@@ -1612,22 +1612,15 @@ export default function HorarioPage() {
                           className={cn(
                             "px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider shrink-0 transition-all cursor-pointer",
                             mobileSelectedDay === "all"
-                              ? "neon-3d-btn neon-tone-blue"
+                              ? "bg-blue-600 text-white border border-blue-700 shadow-xs"
                               : "bg-slate-100 text-slate-700 border border-slate-200"
                           )}
                         >
                           {language === "pt" ? "Todos" : "All"}
                         </button>
-                        {weekDays.map((day, dIdx) => {
+                        {weekDays.map((day) => {
                           const shortDay = day.label.slice(0, 3);
                           const isSelected = mobileSelectedDay === day.key;
-                          const dayTones = [
-                            "neon-tone-cyan",
-                            "neon-tone-emerald",
-                            "neon-tone-orange",
-                            "neon-tone-purple",
-                            "neon-tone-pink",
-                          ];
                           return (
                             <button
                               key={`mob-day-tab-${day.key}`}
@@ -1636,7 +1629,7 @@ export default function HorarioPage() {
                               className={cn(
                                 "px-2.5 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider shrink-0 transition-all cursor-pointer",
                                 isSelected
-                                  ? cn("neon-3d-btn", dayTones[dIdx % dayTones.length])
+                                  ? "bg-blue-600 text-white border border-blue-700 shadow-xs"
                                   : "bg-slate-100 text-slate-700 border border-slate-200"
                               )}
                             >
@@ -1695,7 +1688,7 @@ export default function HorarioPage() {
                                 <button
                                   type="button"
                                   onClick={handleToggleEdit}
-                                  className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold cursor-pointer neon-3d-btn neon-tone-blue"
+                                  className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold cursor-pointer bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
                                 >
                                   <Edit3 size={14} />
                                   <span>{language === "pt" ? "Preencher Horários" : "Fill Schedule"}</span>

@@ -476,20 +476,18 @@ export default function ManualGuiaPage() {
       badge: isPt ? 'Parâmetros & Identidade' : 'Parameters & Identity',
       targetRoles: ['admin', 'convidado'],
       description: isPt 
-        ? 'Personalização da identidade institucional (nome da escola, brasão oficial), parâmetros de notas de corte, pesos de avaliação, temas e idioma de exibição.'
-        : 'Customization of institutional branding (school name, official crest), passing score parameters, grading formula weights, themes, and system language.',
+        ? 'Personalização da identidade institucional (nome da escola, brasão oficial), parâmetros de notas de corte, pesos de avaliação e idioma de exibição.'
+        : 'Customization of institutional branding (school name, official crest), passing score parameters, grading formula weights, and system language.',
       features: isPt ? [
         'Upload do brasão ou logotipo oficial exibido nos relatórios e cabeçalhos.',
         'Definição do nome oficial da Organização Militar ou Instituição de Ensino.',
         'Configuração de nota mínima para aprovação e regras de recuperação.',
-        'Alternância entre Português e Inglês com persistência de preferência.',
-        'Opções de tema visual (Claro / Escuro) para conforto visual do operador.'
+        'Alternância entre Português e Inglês com persistência de preferência.'
       ] : [
         'Upload of official crest or logo rendered in reports and document headers.',
         'Customization of official institution or Military Organization name.',
         'Configuring minimum passing grade thresholds and recovery exam formulas.',
-        'Language switching between Portuguese and English with persistent preference.',
-        'Visual theme options (Light / Dark) for optimal operator comfort.'
+        'Language switching between Portuguese and English with persistent preference.'
       ],
       possibilities: isPt ? [
         'Adequação total da plataforma à identidade visual e às diretrizes pedagógicas de qualquer unidade de ensino.'
@@ -1324,18 +1322,18 @@ export default function ManualGuiaPage() {
                 </div>
               </div>
 
-              {/* Feature 6: Bilingual & Theme Switching */}
+              {/* Feature 6: Bilingual Support */}
               <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
                 <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold">
                   <Settings size={20} />
                 </div>
                 <h3 className="font-bold text-slate-900 text-sm">
-                  {isPt ? 'Bilinguismo & Acessibilidade' : 'Bilingual Support & Themes'}
+                  {isPt ? 'Bilinguismo & Acessibilidade' : 'Bilingual Support'}
                 </h3>
                 <p className="text-xs text-slate-600 leading-relaxed">
                   {isPt 
-                    ? 'Totalmente adaptado para Português e Inglês com persistência de preferências de idioma e alternância instantânea de tema claro e escuro.'
-                    : 'Fully localized in Portuguese and English with persistent language cookies and instant light/dark theme switching.'}
+                    ? 'Totalmente adaptado para Português e Inglês com persistência de preferências de idioma em toda a plataforma.'
+                    : 'Fully localized in Portuguese and English with persistent language preferences across the platform.'}
                 </p>
                 <div className="pt-2 text-[11px] font-bold text-indigo-700">
                   {isPt ? 'Disponível em: Cabeçalho e Configurações' : 'Available in: Navbar and Settings'}

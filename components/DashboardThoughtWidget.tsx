@@ -88,7 +88,7 @@ export default function DashboardThoughtWidget({ studentTheme = false }: { stude
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-2xl p-4 sm:p-5 shadow-xs transition-all border",
+        "relative w-full max-w-full min-w-0 overflow-hidden rounded-2xl p-4 sm:p-5 shadow-xs transition-all border",
         studentTheme
           ? "bg-white border-slate-300 text-black"
           : "border-amber-200/80 bg-gradient-to-r from-amber-50/80 via-white to-amber-50/40"

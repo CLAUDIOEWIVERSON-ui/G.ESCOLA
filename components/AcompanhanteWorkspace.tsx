@@ -842,17 +842,17 @@ export function AcompanhanteWorkspace() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="w-full max-w-full min-w-0 space-y-6">
       <UserWorkspaceHeader />
       <DashboardThoughtWidget />
 
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-sm"
+        className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-6 shadow-sm"
       >
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
-          <div className="space-y-2">
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-5 min-w-0">
+          <div className="space-y-2 min-w-0 flex-1">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-50 border border-teal-200 text-teal-800 text-[10px] font-black uppercase tracking-widest">
               <Users size={13} className="text-teal-600" />
               <span>{isPt ? 'Painel do Monitor de Turma' : 'Class Monitor Workspace'}</span>
@@ -915,7 +915,7 @@ export function AcompanhanteWorkspace() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5 pt-5 border-t border-slate-100">
           <Link
             href="/frequencia"
-            className="flex items-center justify-between p-3.5 rounded-xl bg-purple-50/70 hover:bg-purple-100/80 border border-purple-200 text-purple-950 transition-all group mobile-only-neon-3d neon-tone-purple"
+            className="flex items-center justify-between p-3.5 rounded-xl bg-purple-50/70 hover:bg-purple-100/80 border border-purple-200 text-purple-950 transition-all group"
           >
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-purple-600 text-white flex items-center justify-center shrink-0">
@@ -923,7 +923,7 @@ export function AcompanhanteWorkspace() {
               </div>
               <div>
                 <p className="text-xs font-black uppercase tracking-wide">{isPt ? 'Frequência da Turma' : 'Class Attendance'}</p>
-                <p className="text-[11px] text-purple-700 max-lg:text-white/90 font-medium">{isPt ? 'Visualizar mapa completo' : 'View full attendance grid'}</p>
+                <p className="text-[11px] text-purple-700 font-medium">{isPt ? 'Visualizar mapa completo' : 'View full attendance grid'}</p>
               </div>
             </div>
             <ArrowRight size={16} className="text-purple-600 transition-transform group-hover:translate-x-1" />
@@ -931,7 +931,7 @@ export function AcompanhanteWorkspace() {
 
           <Link
             href="/horario"
-            className="flex items-center justify-between p-3.5 rounded-xl bg-cyan-50/70 hover:bg-cyan-100/80 border border-cyan-200 text-cyan-950 transition-all group mobile-only-neon-3d neon-tone-cyan"
+            className="flex items-center justify-between p-3.5 rounded-xl bg-cyan-50/70 hover:bg-cyan-100/80 border border-cyan-200 text-cyan-950 transition-all group"
           >
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-cyan-600 text-white flex items-center justify-center shrink-0">
@@ -939,7 +939,7 @@ export function AcompanhanteWorkspace() {
               </div>
               <div>
                 <p className="text-xs font-black uppercase tracking-wide">{isPt ? 'Detalhe Semanal' : 'Weekly Schedule'}</p>
-                <p className="text-[11px] text-cyan-700 max-lg:text-white/90 font-medium">{isPt ? 'Aulas, horários e instrutores' : 'Classes, hours & instructors'}</p>
+                <p className="text-[11px] text-cyan-700 font-medium">{isPt ? 'Aulas, horários e instrutores' : 'Classes, hours & instructors'}</p>
               </div>
             </div>
             <ArrowRight size={16} className="text-cyan-600 transition-transform group-hover:translate-x-1" />
@@ -947,7 +947,7 @@ export function AcompanhanteWorkspace() {
 
           <Link
             href="/calendario"
-            className="flex items-center justify-between p-3.5 rounded-xl bg-rose-50/70 hover:bg-rose-100/80 border border-rose-200 text-rose-950 transition-all group mobile-only-neon-3d neon-tone-pink"
+            className="flex items-center justify-between p-3.5 rounded-xl bg-rose-50/70 hover:bg-rose-100/80 border border-rose-200 text-rose-950 transition-all group"
           >
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-rose-600 text-white flex items-center justify-center shrink-0">
@@ -955,7 +955,7 @@ export function AcompanhanteWorkspace() {
               </div>
               <div>
                 <p className="text-xs font-black uppercase tracking-wide">{isPt ? 'Calendário e Formatura' : 'Calendar & Graduation'}</p>
-                <p className="text-[11px] text-rose-700 max-lg:text-white/90 font-medium">{isPt ? 'Eventos e cerimônias' : 'Events and ceremonies'}</p>
+                <p className="text-[11px] text-rose-700 font-medium">{isPt ? 'Eventos e cerimônias' : 'Events and ceremonies'}</p>
               </div>
             </div>
             <ArrowRight size={16} className="text-rose-600 transition-transform group-hover:translate-x-1" />
@@ -1157,23 +1157,82 @@ export function AcompanhanteWorkspace() {
           </div>
           <Link
             href="/frequencia"
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-colors shrink-0 mobile-only-neon-3d neon-tone-violet"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-colors shrink-0"
           >
             <span>{isPt ? 'Abrir Mapa Diário Completo' : 'Open Full Attendance Grid'}</span>
             <ArrowRight size={14} />
           </Link>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Mobile/Tablet card view without horizontal scrolling */}
+        <div className="md:hidden divide-y divide-slate-100">
+          {loadingData ? (
+            <div className="px-6 py-10 text-center">
+              <Loader2 className="animate-spin text-purple-600 mx-auto" size={24} />
+            </div>
+          ) : studentAttendanceList.length === 0 ? (
+            <div className="px-6 py-10 text-center text-xs text-slate-400 italic">
+              {isPt ? 'Nenhum aluno matriculado nesta turma.' : 'No students enrolled in this class.'}
+            </div>
+          ) : (
+            studentAttendanceList.map((aluno, idx) => {
+              const pct = aluno.attendanceStats?.pct;
+              const pctColor =
+                pct === null
+                  ? 'bg-slate-100 text-slate-600 border-slate-200'
+                  : pct >= 75
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                    : 'bg-rose-50 text-rose-700 border-rose-200';
+              return (
+                <div key={`mob-att-${aluno.id}`} className="p-4 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-start gap-2.5 min-w-0">
+                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-md bg-slate-100 text-slate-700 font-mono text-xs font-bold shrink-0">
+                        {idx + 1}
+                      </span>
+                      <div className="min-w-0">
+                        <div className="font-bold text-slate-800 text-xs sm:text-sm break-words">
+                          {aluno.posto_graduacao || aluno.nome_guerra
+                            ? `${aluno.posto_graduacao || ''} ${aluno.nome_guerra || aluno.nome}`.trim()
+                            : aluno.nome}
+                        </div>
+                        {aluno.nome_guerra && aluno.nome !== aluno.nome_guerra && (
+                          <div className="text-[10px] text-slate-400 break-words">{aluno.nome}</div>
+                        )}
+                        <div className="text-[10px] font-mono text-slate-500 mt-0.5">
+                          {isPt ? 'Matrícula/NIF:' : 'Reg:'} {aluno.matricula || '—'}
+                        </div>
+                      </div>
+                    </div>
+                    <span className={cn('inline-flex items-center px-2.5 py-1 rounded-full text-xs font-black font-mono border shrink-0', pctColor)}>
+                      {pct !== null ? `${pct}%` : '—'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 text-[11px] font-mono pl-8">
+                    <span className="text-emerald-700 font-bold">
+                      {isPt ? 'Presenças:' : 'Present:'} {aluno.attendanceStats?.presencas ?? 0}
+                    </span>
+                    <span className="text-rose-600 font-bold">
+                      {isPt ? 'Faltas:' : 'Absent:'} {aluno.attendanceStats?.faltas ?? 0}
+                    </span>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Desktop table */}
+        <div className="hidden md:block">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50/70 border-b border-slate-100 text-[10px] font-black uppercase tracking-wider text-slate-500">
-                <th className="px-4 py-3 w-12 text-center">Nº</th>
-                <th className="px-5 py-3">{isPt ? 'Aluno' : 'Student'}</th>
-                <th className="px-4 py-3 text-center">{isPt ? 'Matrícula / NIF' : 'Registration'}</th>
-                <th className="px-4 py-3 text-center">{isPt ? 'Presenças' : 'Present'}</th>
-                <th className="px-4 py-3 text-center">{isPt ? 'Faltas' : 'Absent'}</th>
-                <th className="px-5 py-3 text-right">{isPt ? '% Frequência' : 'Attendance %'}</th>
+                <th className="px-3 py-3 w-12 text-center">Nº</th>
+                <th className="px-4 py-3">{isPt ? 'Aluno' : 'Student'}</th>
+                <th className="px-3 py-3 text-center">{isPt ? 'Matrícula / NIF' : 'Registration'}</th>
+                <th className="px-3 py-3 text-center">{isPt ? 'Presenças' : 'Present'}</th>
+                <th className="px-3 py-3 text-center">{isPt ? 'Faltas' : 'Absent'}</th>
+                <th className="px-4 py-3 text-right">{isPt ? '% Frequência' : 'Attendance %'}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-sm">
@@ -1200,10 +1259,10 @@ export function AcompanhanteWorkspace() {
                         : 'bg-rose-50 text-rose-700 border-rose-200';
                   return (
                     <tr key={aluno.id} className="hover:bg-slate-50/60 transition-colors">
-                      <td className="px-4 py-3 text-center font-mono text-xs font-bold text-slate-500">
+                      <td className="px-3 py-3 text-center font-mono text-xs font-bold text-slate-500">
                         {idx + 1}
                       </td>
-                      <td className="px-5 py-3">
+                      <td className="px-4 py-3">
                         <div className="font-bold text-slate-800 text-xs sm:text-sm">
                           {aluno.posto_graduacao || aluno.nome_guerra
                             ? `${aluno.posto_graduacao || ''} ${aluno.nome_guerra || aluno.nome}`.trim()
@@ -1213,16 +1272,16 @@ export function AcompanhanteWorkspace() {
                           <div className="text-[10px] text-slate-400">{aluno.nome}</div>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-center font-mono text-xs text-slate-600">
+                      <td className="px-3 py-3 text-center font-mono text-xs text-slate-600">
                         {aluno.matricula || '—'}
                       </td>
-                      <td className="px-4 py-3 text-center font-mono text-xs font-bold text-emerald-700">
+                      <td className="px-3 py-3 text-center font-mono text-xs font-bold text-emerald-700">
                         {aluno.attendanceStats?.presencas ?? 0}
                       </td>
-                      <td className="px-4 py-3 text-center font-mono text-xs font-bold text-rose-600">
+                      <td className="px-3 py-3 text-center font-mono text-xs font-bold text-rose-600">
                         {aluno.attendanceStats?.faltas ?? 0}
                       </td>
-                      <td className="px-5 py-3 text-right">
+                      <td className="px-4 py-3 text-right">
                         <span className={cn('inline-flex items-center px-2.5 py-1 rounded-full text-xs font-black font-mono border', pctColor)}>
                           {pct !== null ? `${pct}%` : '—'}
                         </span>
@@ -1321,7 +1380,7 @@ export function AcompanhanteWorkspace() {
                 <button
                   type="submit"
                   disabled={sendingRecado || !selectedAlunoId || !recadoMensagem.trim()}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-xs font-black uppercase tracking-wider disabled:opacity-50 cursor-pointer neon-3d-btn neon-tone-teal"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-xs font-black uppercase tracking-wider bg-teal-600 hover:bg-teal-700 text-white shadow-xs transition-colors disabled:opacity-50 cursor-pointer"
                 >
                   {sendingRecado ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                   <span>{isPt ? 'Enviar Recado Individual' : 'Send Individual Message'}</span>

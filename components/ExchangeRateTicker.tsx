@@ -46,7 +46,7 @@ export default function ExchangeRateTicker() {
   }
 
   return (
-    <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100 rounded-xl p-3 mb-6 shadow-sm">
+    <div className="w-full max-w-full min-w-0 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 sm:gap-4 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100 rounded-xl p-3 mb-4 sm:mb-6 shadow-sm">
       <div className="flex items-center gap-2">
         <div className="p-1.5 bg-emerald-500 text-white rounded-lg shadow-sm">
           <DollarSign size={16} strokeWidth={2.5} />

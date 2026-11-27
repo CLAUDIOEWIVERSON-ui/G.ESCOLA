@@ -715,7 +715,7 @@ export function StudentWorkspace() {
               ? 'Grade Atualizada'
               : 'Updated Schedule',
       cta: isPt ? 'Ver Horário Semanal' : 'View Weekly Schedule',
-      neonClass: 'neon-3d-btn neon-tone-cyan',
+      ctaClass: 'student-solid-btn bg-black hover:bg-slate-800 text-white border-2 border-black',
     },
     {
       title: isPt ? 'Boletim Individual' : 'Individual Report Card',
@@ -726,7 +726,7 @@ export function StudentWorkspace() {
       icon: FileText,
       badgeText: isPt ? 'Notas e Frequência' : 'Grades & Attendance',
       cta: isPt ? 'Abrir Meu Boletim' : 'Open Report Card',
-      neonClass: 'neon-3d-btn neon-tone-blue',
+      ctaClass: 'student-solid-btn bg-black hover:bg-slate-800 text-white border-2 border-black',
     },
     {
       title: isPt ? 'Questionário de Final de Curso' : 'End-of-Course Questionnaire',
@@ -743,7 +743,7 @@ export function StudentWorkspace() {
       cta: hasSubmittedSurvey
         ? (isPt ? 'Ver Comprovante' : 'View Receipt')
         : (isPt ? 'Preencher Questionário' : 'Fill Questionnaire'),
-      neonClass: 'neon-3d-btn neon-tone-emerald',
+      ctaClass: 'student-solid-btn bg-black hover:bg-slate-800 text-white border-2 border-black',
     },
     {
       title: isPt ? 'Bloco de Notas Individual' : 'Personal Notepad',
@@ -761,12 +761,12 @@ export function StudentWorkspace() {
             ? 'Salvo no Dispositivo'
             : 'Saved on Device',
       cta: isPt ? 'Abrir Bloco de Notas' : 'Open Notepad',
-      neonClass: 'neon-3d-btn neon-tone-orange',
+      ctaClass: 'student-solid-btn bg-black hover:bg-slate-800 text-white border-2 border-black',
     },
   ];
 
   return (
-    <div className="space-y-6 bg-white text-black">
+    <div className="w-full max-w-full min-w-0 space-y-5 sm:space-y-6 bg-white text-black overflow-x-clip">
       {/* Cartão de Identificação do Aluno */}
       <UserWorkspaceHeader />
 
@@ -854,7 +854,7 @@ export function StudentWorkspace() {
                       type="button"
                       disabled={markingReadId === rec.id}
                       onClick={() => handleMarkRecadoAsRead(rec.id)}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl lg:rounded-lg bg-white hover:bg-slate-100 text-black border-2 border-black text-[11px] font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 disabled:opacity-50 mobile-only-neon-3d neon-tone-lime"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white hover:bg-slate-100 text-black border-2 border-black text-[11px] font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 disabled:opacity-50"
                     >
                       <CheckCircle2 size={12} className="text-black" />
                       <span>{markingReadId === rec.id ? (isPt ? 'Salvando...' : 'Saving...') : (isPt ? 'Marcar como lido' : 'Mark as read')}</span>
@@ -1217,7 +1217,7 @@ export function StudentWorkspace() {
       </motion.div>
 
       {/* Os Módulos Principais do Aluno */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-5">
         {primaryModules.map((mod, idx) => {
           const Icon = mod.icon;
           return (
@@ -1226,18 +1226,18 @@ export function StudentWorkspace() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.06 }}
-              className="bg-white border border-slate-300 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between gap-5 text-black"
+              className="min-w-0 bg-white border border-slate-300 rounded-2xl p-4 sm:p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between gap-4 sm:gap-5 text-black"
             >
-              <div className="space-y-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-white border-2 border-black text-black flex items-center justify-center shadow-sm shrink-0">
+              <div className="space-y-4 min-w-0">
+                <div className="flex items-start justify-between gap-2 flex-wrap">
+                  <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-white border-2 border-black text-black flex items-center justify-center shadow-sm shrink-0">
                     <Icon size={22} className="text-black" />
                   </div>
-                  <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full border border-slate-300 bg-white text-black inline-flex items-center gap-1">
-                    {mod.href === '/avaliacao' && hasSubmittedSurvey && <CheckCircle2 size={11} className="text-black" />}
-                    {mod.href === '/avaliacao' && !hasSubmittedSurvey && !canFillSurvey && <Lock size={11} className="text-black" />}
-                    {mod.href === '/avaliacao' && !hasSubmittedSurvey && canFillSurvey && <Sparkles size={11} className="text-black" />}
-                    {mod.href === '/horario' && scheduledExams.length > 0 && <AlertTriangle size={11} className="text-black" />}
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full border border-slate-300 bg-white text-black inline-flex items-center gap-1 max-w-full break-words">
+                    {mod.href === '/avaliacao' && hasSubmittedSurvey && <CheckCircle2 size={11} className="text-black shrink-0" />}
+                    {mod.href === '/avaliacao' && !hasSubmittedSurvey && !canFillSurvey && <Lock size={11} className="text-black shrink-0" />}
+                    {mod.href === '/avaliacao' && !hasSubmittedSurvey && canFillSurvey && <Sparkles size={11} className="text-black shrink-0" />}
+                    {mod.href === '/horario' && scheduledExams.length > 0 && <AlertTriangle size={11} className="text-black shrink-0" />}
                     {mod.badgeText}
                   </span>
                 </div>
@@ -1256,7 +1256,7 @@ export function StudentWorkspace() {
                 href={mod.href}
                 className={cn(
                   "w-full py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-[0.98] group text-white",
-                  mod.neonClass
+                  mod.ctaClass
                 )}
               >
                 <span>{mod.cta}</span>
@@ -1293,10 +1293,10 @@ export function StudentWorkspace() {
           ) : (
             <div className="divide-y divide-slate-200">
               {announcements.map((evt) => (
-                <div key={evt.id} className="py-3 flex items-start justify-between gap-3">
-                  <div className="space-y-0.5">
-                    <p className="text-xs font-bold text-black">{evt.titulo}</p>
-                    {evt.descricao && <p className="text-[11px] text-black line-clamp-2">{evt.descricao}</p>}
+                <div key={evt.id} className="py-3 flex flex-wrap sm:flex-nowrap items-start justify-between gap-2 sm:gap-3">
+                  <div className="space-y-0.5 min-w-0 flex-1">
+                    <p className="text-xs font-bold text-black break-words">{evt.titulo}</p>
+                    {evt.descricao && <p className="text-[11px] text-black line-clamp-2 break-words">{evt.descricao}</p>}
                     <div className="flex flex-wrap items-center gap-1.5 mt-1">
                       {evt.instructorName && (
                         <span className="inline-flex items-center gap-1 text-[10px] font-bold text-black bg-white px-2 py-0.5 rounded border border-slate-300">
@@ -1329,13 +1329,13 @@ export function StudentWorkspace() {
           <div className="space-y-2">
             <Link
               href="/calendario"
-              className="flex items-center justify-between p-3 rounded-xl transition-all group neon-3d-btn neon-tone-pink text-white"
+              className="flex items-center justify-between p-3 rounded-xl transition-all group bg-white hover:bg-slate-100 border-2 border-black text-black"
             >
-              <span className="flex items-center gap-2.5 text-xs font-bold text-white">
-                <CalendarDays size={15} className="text-white" />
+              <span className="flex items-center gap-2.5 text-xs font-bold text-black">
+                <CalendarDays size={15} className="text-black" />
                 {isPt ? 'Calendário de Eventos' : 'Events Calendar'}
               </span>
-              <ArrowRight size={13} className="text-white transition-transform group-hover:translate-x-1" />
+              <ArrowRight size={13} className="text-black transition-transform group-hover:translate-x-1" />
             </Link>
           </div>
         </div>

@@ -76,158 +76,13 @@ function HeaderSearchBar() {
         placeholder={t.common.search}
         value={searchParams ? (searchParams.get('q') || '') : ''}
         onChange={(e) => handleSearchChange(e.target.value)}
-        className="pl-9 pr-4 py-1.5 border border-slate-200 rounded-lg text-xs bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500/10 w-48"
+        className="pl-9 pr-3 py-1.5 border border-slate-200 rounded-lg text-xs bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500/10 w-36 xl:w-44 2xl:w-48"
       />
     </div>
   );
 }
 
-// Cores exclusivas, vibrantes em 3D Neon para cada atalho do usuário móvel
-const MOBILE_NAV_COLORS: Record<string, {
-  text: string;
-  activeText: string;
-  bg: string;
-  activeBg: string;
-  border: string;
-  indicator: string;
-}> = {
-  '/dashboard': {
-    text: 'text-cyan-700',
-    activeText: 'text-cyan-900',
-    bg: 'neon-3d-btn neon-tone-cyan',
-    activeBg: 'neon-3d-btn neon-tone-cyan neon-3d-btn-active',
-    border: 'border-cyan-400/60',
-    indicator: 'bg-cyan-600 shadow-[0_0_8px_rgba(8,145,178,0.75)]',
-  },
-  '/cursos': {
-    text: 'text-orange-700',
-    activeText: 'text-orange-900',
-    bg: 'neon-3d-btn neon-tone-orange',
-    activeBg: 'neon-3d-btn neon-tone-orange neon-3d-btn-active',
-    border: 'border-orange-400/60',
-    indicator: 'bg-orange-600 shadow-[0_0_8px_rgba(234,88,12,0.75)]',
-  },
-  '/turmas': {
-    text: 'text-emerald-700',
-    activeText: 'text-emerald-900',
-    bg: 'neon-3d-btn neon-tone-emerald',
-    activeBg: 'neon-3d-btn neon-tone-emerald neon-3d-btn-active',
-    border: 'border-emerald-400/60',
-    indicator: 'bg-emerald-600 shadow-[0_0_8px_rgba(5,150,105,0.75)]',
-  },
-  '/frequencia': {
-    text: 'text-purple-700',
-    activeText: 'text-purple-900',
-    bg: 'neon-3d-btn neon-tone-purple',
-    activeBg: 'neon-3d-btn neon-tone-purple neon-3d-btn-active',
-    border: 'border-purple-400/60',
-    indicator: 'bg-purple-600 shadow-[0_0_8px_rgba(147,51,234,0.75)]',
-  },
-  '/horario': {
-    text: 'text-sky-700',
-    activeText: 'text-sky-900',
-    bg: 'neon-3d-btn neon-tone-sky',
-    activeBg: 'neon-3d-btn neon-tone-sky neon-3d-btn-active',
-    border: 'border-sky-400/60',
-    indicator: 'bg-sky-600 shadow-[0_0_8px_rgba(2,132,199,0.75)]',
-  },
-  '/calendario': {
-    text: 'text-pink-700',
-    activeText: 'text-pink-900',
-    bg: 'neon-3d-btn neon-tone-pink',
-    activeBg: 'neon-3d-btn neon-tone-pink neon-3d-btn-active',
-    border: 'border-pink-400/60',
-    indicator: 'bg-pink-600 shadow-[0_0_8px_rgba(219,39,119,0.75)]',
-  },
-  '/boletim': {
-    text: 'text-blue-700',
-    activeText: 'text-blue-900',
-    bg: 'neon-3d-btn neon-tone-blue',
-    activeBg: 'neon-3d-btn neon-tone-blue neon-3d-btn-active',
-    border: 'border-blue-400/60',
-    indicator: 'bg-blue-600 shadow-[0_0_8px_rgba(37,99,235,0.75)]',
-  },
-  '/configuracoes': {
-    text: 'text-indigo-700',
-    activeText: 'text-indigo-900',
-    bg: 'neon-3d-btn neon-tone-indigo',
-    activeBg: 'neon-3d-btn neon-tone-indigo neon-3d-btn-active',
-    border: 'border-indigo-400/60',
-    indicator: 'bg-indigo-600 shadow-[0_0_8px_rgba(79,70,229,0.75)]',
-  },
-  '/usuarios': {
-    text: 'text-fuchsia-700',
-    activeText: 'text-fuchsia-900',
-    bg: 'neon-3d-btn neon-tone-fuchsia',
-    activeBg: 'neon-3d-btn neon-tone-fuchsia neon-3d-btn-active',
-    border: 'border-fuchsia-400/60',
-    indicator: 'bg-fuchsia-600 shadow-[0_0_8px_rgba(192,38,211,0.75)]',
-  },
-  '/relatorio-avaliacao': {
-    text: 'text-violet-700',
-    activeText: 'text-violet-900',
-    bg: 'neon-3d-btn neon-tone-violet',
-    activeBg: 'neon-3d-btn neon-tone-violet neon-3d-btn-active',
-    border: 'border-violet-400/60',
-    indicator: 'bg-violet-600 shadow-[0_0_8px_rgba(124,58,237,0.75)]',
-  },
-  '/links': {
-    text: 'text-teal-700',
-    activeText: 'text-teal-900',
-    bg: 'neon-3d-btn neon-tone-teal',
-    activeBg: 'neon-3d-btn neon-tone-teal neon-3d-btn-active',
-    border: 'border-teal-400/60',
-    indicator: 'bg-teal-600 shadow-[0_0_8px_rgba(13,148,136,0.75)]',
-  },
-  '/avaliacao': {
-    text: 'text-green-700',
-    activeText: 'text-green-900',
-    bg: 'neon-3d-btn neon-tone-lime',
-    activeBg: 'neon-3d-btn neon-tone-lime neon-3d-btn-active',
-    border: 'border-lime-400/60',
-    indicator: 'bg-green-600 shadow-[0_0_8px_rgba(22,163,74,0.75)]',
-  },
-  '/manual': {
-    text: 'text-amber-700',
-    activeText: 'text-amber-900',
-    bg: 'neon-3d-btn neon-tone-amber',
-    activeBg: 'neon-3d-btn neon-tone-amber neon-3d-btn-active',
-    border: 'border-amber-400/60',
-    indicator: 'bg-amber-600 shadow-[0_0_8px_rgba(217,119,6,0.75)]',
-  },
-  '/pensamento-do-dia': {
-    text: 'text-orange-700',
-    activeText: 'text-orange-900',
-    bg: 'neon-3d-btn neon-tone-orange',
-    activeBg: 'neon-3d-btn neon-tone-orange neon-3d-btn-active',
-    border: 'border-orange-400/60',
-    indicator: 'bg-orange-600 shadow-[0_0_8px_rgba(234,88,12,0.75)]',
-  },
-  '/certificados': {
-    text: 'text-violet-700',
-    activeText: 'text-violet-900',
-    bg: 'neon-3d-btn neon-tone-violet',
-    activeBg: 'neon-3d-btn neon-tone-violet neon-3d-btn-active',
-    border: 'border-violet-400/60',
-    indicator: 'bg-violet-600 shadow-[0_0_8px_rgba(124,58,237,0.75)]',
-  },
-  '/bloco-de-notas': {
-    text: 'text-orange-700',
-    activeText: 'text-orange-900',
-    bg: 'neon-3d-btn neon-tone-orange',
-    activeBg: 'neon-3d-btn neon-tone-orange neon-3d-btn-active',
-    border: 'border-orange-400/60',
-    indicator: 'bg-orange-600 shadow-[0_0_8px_rgba(234,88,12,0.75)]',
-  },
-};
 
-const MENU_BUTTON_COLOR = {
-  text: 'text-fuchsia-700',
-  activeText: 'text-fuchsia-900',
-  bg: 'neon-3d-btn neon-tone-fuchsia',
-  activeBg: 'neon-3d-btn neon-tone-fuchsia neon-3d-btn-active',
-  indicator: 'bg-fuchsia-600 shadow-[0_0_8px_rgba(192,38,211,0.75)]',
-};
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -542,7 +397,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className={cn(
-      "flex min-h-screen font-sans print:block print:bg-white print:text-black print:min-h-0",
+      "flex min-h-screen w-full max-w-full overflow-x-clip font-sans print:block print:bg-white print:text-black print:min-h-0",
       isStudentUser
         ? "student-white-theme bg-white text-black"
         : "bg-slate-50 text-slate-900"
@@ -600,23 +455,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     const isCalendar = item.path === '/calendario';
                     const isSettings = item.path === '/configuracoes';
                     const needsPasswordChange = isSettings && profile && !profile.has_changed_password;
-                    const studentNeonConfig = MOBILE_NAV_COLORS[item.path] || {
-                      text: 'text-cyan-700',
-                      activeText: 'text-cyan-900',
-                      bg: 'neon-3d-btn neon-tone-cyan',
-                      activeBg: 'neon-3d-btn neon-tone-cyan neon-3d-btn-active',
-                      border: 'border-cyan-400/60',
-                      indicator: 'bg-cyan-600',
-                    };
-
                     const Content = (
                       <div className={cn(
                         "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group relative overflow-hidden",
                         isStudentUser && !sidebarOpen && "justify-center px-2",
                         isStudentUser
                           ? isActive
-                            ? cn(studentNeonConfig.activeBg, "font-black ring-2 ring-black/25")
-                            : cn(studentNeonConfig.bg, "font-bold")
+                            ? "student-solid-btn font-black border border-black"
+                            : "bg-white text-black border border-slate-300 hover:bg-slate-100 font-bold"
                           : isActive 
                             ? "bg-blue-600/10 text-white border border-blue-500/20 shadow-[0_0_15px_rgba(37,99,235,0.1)]" 
                             : isCalendar
@@ -630,20 +476,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             layoutId="active-indicator"
                             className={cn(
                               "absolute left-0 top-0 bottom-0 w-1 rounded-r-full z-10",
-                              isStudentUser ? "bg-white/95 shadow-[0_0_8px_rgba(255,255,255,0.9)]" : "bg-blue-500"
+                              isStudentUser ? "bg-white/95" : "bg-blue-500"
                             )}
                           />
                         )}
                         
                         {item.name === t.nav.classes ? (
                           <div className="shrink-0 w-[18px] flex justify-center text-xs font-bold" style={{ letterSpacing: '-2px' }}>
-                            <span className={cn(isStudentUser ? "text-white" : isActive ? "text-blue-400" : "text-slate-500 group-hover:text-slate-300")}>||\</span>
+                            <span className={cn(isStudentUser ? (isActive ? "text-white" : "text-black") : isActive ? "text-blue-400" : "text-slate-500 group-hover:text-slate-300")}>||\</span>
                           </div>
                         ) : (
                           <item.icon size={18} className={cn(
                             "shrink-0 transition-transform group-hover:scale-110", 
                             isStudentUser
-                              ? "text-white"
+                              ? (isActive ? "text-white" : "text-black")
                               : isActive 
                                 ? "text-blue-400" 
                                 : isCalendar 
@@ -656,7 +502,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         
                         <span className={cn(
                           "text-sm transition-opacity flex-1 whitespace-nowrap",
-                          isStudentUser ? (isActive ? "font-black text-white" : "font-bold text-white") : "font-medium",
+                          isStudentUser ? (isActive ? "font-black text-white" : "font-bold text-black") : "font-medium",
                           !sidebarOpen && (isStudentUser ? "hidden" : "opacity-0 invisible w-0"),
                           !isStudentUser && needsPasswordChange && "text-amber-500 font-bold"
                         )}>
@@ -671,7 +517,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                           <span className={cn(
                             "ml-auto text-[9px] font-black tracking-wider border px-1.5 py-0.5 rounded-full uppercase shrink-0 font-sans",
                             isStudentUser
-                              ? "text-white bg-white/20 border-white/50"
+                              ? (isActive ? "text-white bg-white/20 border-white/50" : "text-black bg-slate-100 border-black")
                               : "text-amber-500 bg-amber-500/10 border-amber-500/30 animate-pulse"
                           )}>
                             Atenção
@@ -679,7 +525,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         )}
 
                         {needsPasswordChange && !sidebarOpen && (
-                          <span className={cn("absolute right-2 top-2 flex h-2 w-2 rounded-full shrink-0", isStudentUser ? "bg-white" : "bg-amber-500 animate-pulse")} />
+                          <span className={cn("absolute right-2 top-2 flex h-2 w-2 rounded-full shrink-0", isStudentUser ? (isActive ? "bg-white" : "bg-black") : "bg-amber-500 animate-pulse")} />
                         )}
                         
                         {hasSubItems && sidebarOpen && (
@@ -756,14 +602,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group relative overflow-hidden text-left cursor-pointer border active:scale-[0.98]",
                         isStudentUser && !sidebarOpen && "justify-center px-2",
                         isStudentUser
-                          ? "neon-3d-btn neon-tone-red font-bold"
-                          : "mobile-only-neon-3d neon-tone-red text-rose-400/90 hover:text-rose-200 hover:bg-rose-500/10 border-transparent hover:border-rose-500/20"
+                          ? "bg-white hover:bg-slate-100 text-black border-black font-bold"
+                          : "text-rose-400/90 hover:text-rose-200 hover:bg-rose-500/10 border-transparent hover:border-rose-500/20"
                       )}
                     >
-                      <LogOut size={18} className={cn("shrink-0 group-hover:scale-110 group-hover:-translate-x-0.5 transition-transform", isStudentUser ? "text-white" : "text-rose-400")} />
+                      <LogOut size={18} className={cn("shrink-0 group-hover:scale-110 group-hover:-translate-x-0.5 transition-transform", isStudentUser ? "text-black" : "text-rose-400")} />
                       <span className={cn(
                         "text-sm font-semibold tracking-wide transition-opacity whitespace-nowrap",
-                        isStudentUser && "text-white font-bold",
+                        isStudentUser && "text-black font-bold",
                         !sidebarOpen && (isStudentUser ? "hidden" : "opacity-0 invisible w-0")
                       )}>
                         {language === 'pt' ? 'Sair do Sistema' : 'Sign Out'}
@@ -816,13 +662,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               className={cn(
                 "w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all group text-xs font-bold uppercase tracking-wider cursor-pointer",
                 isStudentUser
-                  ? "neon-3d-btn neon-tone-red text-white"
-                  : "mobile-only-neon-3d neon-tone-red text-slate-500 hover:bg-red-500/10 hover:text-red-400",
+                  ? "bg-white hover:bg-slate-100 text-black border border-black"
+                  : "text-slate-500 hover:bg-red-500/10 hover:text-red-400",
                 !sidebarOpen && "justify-center"
               )}
             >
-              <LogOut size={16} className={cn("shrink-0 transition-transform group-hover:-translate-x-1", isStudentUser && "text-white")} />
-              <span className={cn("transition-opacity whitespace-nowrap", isStudentUser && "text-white", !sidebarOpen && "hidden")}>{t.common.logout}</span>
+              <LogOut size={16} className={cn("shrink-0 transition-transform group-hover:-translate-x-1", isStudentUser && "text-black")} />
+              <span className={cn("transition-opacity whitespace-nowrap", isStudentUser && "text-black", !sidebarOpen && "hidden")}>{t.common.logout}</span>
             </button>
             {sidebarOpen && (
               <div id="sidebar-footer-credit" className={cn(
@@ -837,19 +683,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </aside>
 
       {/* Main Content */}
-      <div className={cn("flex-1 flex flex-col min-w-0 print:block print:w-full print:min-h-0 print:bg-white", isStudentUser && "bg-white text-black")}>
-        <div className="print:hidden">
+      <div className={cn("flex-1 flex flex-col min-w-0 w-full max-w-full print:block print:w-full print:min-h-0 print:bg-white", isStudentUser && "bg-white text-black")}>
+        <div className="print:hidden w-full max-w-full overflow-hidden">
           <EventMarquee />
         </div>
         <header className={cn(
-          "h-16 bg-white flex items-center justify-between px-4 lg:px-8 sticky top-0 z-40 print:hidden border-b",
+          "min-h-14 lg:h-16 bg-white flex flex-wrap md:flex-nowrap items-center justify-between gap-y-1.5 gap-x-2 px-2.5 sm:px-4 lg:px-6 xl:px-8 py-1.5 md:py-0 sticky top-0 z-40 print:hidden border-b w-full max-w-full",
           isStudentUser ? "border-slate-300 text-black" : "border-slate-200"
         )}>
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0 flex-1">
             <button 
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className={cn(
-                "p-2 lg:p-1 hover:bg-slate-100 rounded-xl lg:rounded transition-colors cursor-pointer shrink-0 mobile-only-neon-3d neon-tone-fuchsia",
+                "p-1.5 sm:p-2 lg:p-1 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer shrink-0",
                 isStudentUser ? "text-black" : "text-slate-500"
               )}
             >
@@ -860,21 +706,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               fallbackPath={prevPagePath}
               isStudentUser={isStudentUser}
               excludeLogin={true}
-              className="mobile-only-neon-3d neon-tone-cyan rounded-xl lg:rounded-lg"
+              className="rounded-lg px-2 sm:px-2.5 py-1 sm:py-1.5"
             />
 
             <div className={cn(
-              "inline-flex items-center rounded-xl lg:rounded-lg border overflow-visible lg:overflow-hidden shrink-0 print:hidden gap-1.5 lg:gap-0",
+              "inline-flex items-center rounded-lg border overflow-hidden shrink-0 print:hidden divide-x",
               isStudentUser
-                ? "lg:bg-white lg:border-slate-300 lg:divide-x lg:divide-slate-300 border-transparent bg-transparent"
-                : "lg:bg-slate-50 lg:border-slate-200 lg:divide-x lg:divide-slate-200 border-transparent bg-transparent"
+                ? "bg-white border-slate-300 divide-slate-300"
+                : "bg-slate-50 border-slate-200 divide-slate-200"
             )}>
               <Link
                 href={prevPagePath}
                 title={`${language === 'pt' ? 'Módulo anterior' : 'Previous module'}: ${prevModule.name}`}
                 aria-label={`${language === 'pt' ? 'Módulo anterior' : 'Previous module'}: ${prevModule.name}`}
                 className={cn(
-                  "px-2.5 lg:px-2 py-1.5 inline-flex items-center justify-center transition-colors rounded-xl lg:rounded-none mobile-only-neon-3d neon-tone-blue",
+                  "px-2 py-1 sm:py-1.5 inline-flex items-center justify-center transition-colors",
                   isStudentUser
                     ? "text-black hover:bg-slate-100"
                     : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
@@ -887,7 +733,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 title={`${language === 'pt' ? 'Próximo módulo' : 'Next module'}: ${nextModule.name}`}
                 aria-label={`${language === 'pt' ? 'Próximo módulo' : 'Next module'}: ${nextModule.name}`}
                 className={cn(
-                  "px-2.5 lg:px-2 py-1.5 inline-flex items-center justify-center transition-colors rounded-xl lg:rounded-none mobile-only-neon-3d neon-tone-purple",
+                  "px-2 py-1 sm:py-1.5 inline-flex items-center justify-center transition-colors",
                   isStudentUser
                     ? "text-black hover:bg-slate-100"
                     : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
@@ -898,35 +744,35 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
             
             <div className="flex flex-col min-w-0">
-              <h1 className={cn("text-base sm:text-lg font-bold leading-none truncate", isStudentUser ? "text-black" : "text-slate-800")}>
+              <h1 className={cn("text-sm sm:text-base xl:text-lg font-bold leading-none truncate", isStudentUser ? "text-black" : "text-slate-800")}>
                 {navItems.find(item => item.path === pathname)?.name || (isStudentUser && pathname === '/dashboard' ? (language === 'pt' ? 'Carteira Digital do Aluno' : 'Digital Student ID Card') : t.dashboard.title)}
               </h1>
             </div>
           </div>
-          <div className="flex items-center gap-4 md:gap-6">
+          <div className="flex items-center gap-1.5 sm:gap-2 xl:gap-3 shrink-0 max-w-full justify-end">
             {isAdmin && (
               <button 
                 type="button"
                 onClick={() => setShowSimultaneousModal(true)}
-                className="flex items-center gap-2 px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-xl border border-emerald-200/90 shadow-2xs transition-all cursor-pointer group active:scale-95 mobile-only-neon-3d neon-tone-lime"
+                className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-xl border border-emerald-200/90 shadow-2xs transition-all cursor-pointer group active:scale-95 shrink-0"
                 title={language === 'pt' ? 'Acessos Simultâneos Ativos (Clique para abrir o monitor em tempo real)' : 'Simultaneous Active Accesses (Click to open real-time monitor)'}
               >
                 <div className="relative flex items-center justify-center">
                   <span className="animate-ping absolute inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600"></span>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[11px] font-bold text-emerald-700 hidden sm:inline uppercase tracking-wider">
+                <div className="flex items-center gap-1">
+                  <span className="text-[11px] font-bold text-emerald-700 hidden xl:inline uppercase tracking-wider">
                     {language === 'pt' ? 'Simultâneos:' : 'Concurrent:'}
                   </span>
-                  <span className="text-xs font-black font-mono bg-white px-1.5 py-0.2 rounded-md text-emerald-800 border border-emerald-200 shadow-2xs max-lg:text-slate-900">
+                  <span className="text-xs font-black font-mono bg-white px-1.5 py-0.2 rounded-md text-emerald-800 border border-emerald-200 shadow-2xs">
                     {onlineCount}
                   </span>
                 </div>
               </button>
             )}
-            <div className="hidden md:flex items-center gap-2">
-               <Suspense fallback={<div className="w-48 h-8 bg-slate-50 border border-slate-200 rounded-lg animate-pulse" />}>
+            <div className="hidden xl:flex items-center gap-2">
+               <Suspense fallback={<div className="w-36 h-8 bg-slate-50 border border-slate-200 rounded-lg animate-pulse" />}>
                  <HeaderSearchBar />
                </Suspense>
             </div>
@@ -936,7 +782,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               type="button"
               onClick={toggleCalculator}
               className={cn(
-                "flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl lg:rounded-lg border text-xs font-bold transition-all cursor-pointer shadow-xs shrink-0 mobile-only-neon-3d neon-tone-emerald",
+                "flex items-center gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg border text-xs font-bold transition-all cursor-pointer shadow-xs shrink-0",
                 isStudentUser
                   ? isCalculatorOpen
                     ? "bg-white text-black border-2 border-black"
@@ -948,14 +794,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               title={language === 'pt' ? 'Abrir Calculadora Flutuante (permanece aberta ao trocar de página ou janela)' : 'Open Floating Calculator'}
             >
               <Calculator size={14} className={cn("shrink-0", !isStudentUser && !isCalculatorOpen && "text-blue-600")} />
-              <span className="hidden sm:inline">{language === 'pt' ? 'Calculadora' : 'Calculator'}</span>
+              <span className="hidden xl:inline">{language === 'pt' ? 'Calculadora' : 'Calculator'}</span>
             </button>
             {/* Assistente IA toggle on régua / header */}
             {!isStudentUser && (
               <button
                 onClick={() => setShowAssistant(!showAssistant)}
                 className={cn(
-                  "flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl lg:rounded-lg border text-xs font-bold transition-all cursor-pointer shadow-xs mobile-only-neon-3d neon-tone-pink",
+                  "flex items-center gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg border text-xs font-bold transition-all cursor-pointer shadow-xs shrink-0",
                   showAssistant 
                     ? "bg-indigo-600 text-white border-indigo-600 shadow-indigo-500/20" 
                     : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 hover:text-slate-900"
@@ -963,19 +809,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 title={language === 'pt' ? 'Solicitar Assistente IA' : 'Request AI Assistant'}
               >
                 <Sparkles size={14} className={cn("shrink-0", showAssistant ? "text-amber-300 animate-spin" : "text-indigo-500")} />
-                <span className="hidden sm:inline">{language === 'pt' ? 'Assistente' : 'Assistant'}</span>
+                <span className="hidden xl:inline">{language === 'pt' ? 'Assistente' : 'Assistant'}</span>
               </button>
             )}
             {/* Language toggle */}
             <div className={cn(
-              "flex items-center gap-1 border p-0.5 rounded-xl lg:rounded-lg",
+              "flex items-center gap-0.5 sm:gap-1 border p-0.5 rounded-lg shrink-0",
               isStudentUser ? "bg-white border-slate-300" : "bg-slate-50 border-slate-200 shadow-inner"
             )}>
               <button
                 onClick={() => setLanguage('pt')}
                 className={cn(
-                  "px-2 py-1 text-[9px] font-black rounded-lg lg:rounded-md transition-all cursor-pointer",
-                  language === 'pt' && "mobile-only-neon-3d neon-tone-sky",
+                  "px-1.5 sm:px-2 py-1 text-[9px] font-black rounded-md transition-all cursor-pointer",
                   isStudentUser
                     ? language === 'pt' ? "bg-white text-black border border-black" : "bg-white text-black"
                     : language === 'pt' ? "bg-white text-blue-600 shadow-xs" : "text-slate-400 hover:text-slate-600"
@@ -986,8 +831,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <button
                 onClick={() => setLanguage('en')}
                 className={cn(
-                  "px-2 py-1 text-[9px] font-black rounded-lg lg:rounded-md transition-all cursor-pointer",
-                  language === 'en' && "mobile-only-neon-3d neon-tone-orange",
+                  "px-1.5 sm:px-2 py-1 text-[9px] font-black rounded-md transition-all cursor-pointer",
                   isStudentUser
                     ? language === 'en' ? "bg-white text-black border border-black" : "bg-white text-black"
                     : language === 'en' ? "bg-white text-blue-600 shadow-xs" : "text-slate-400 hover:text-slate-600"
@@ -998,7 +842,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
 
             {/* Crachá / Visão de Identidade do Usuário no Cabeçalho */}
-            <div className="hidden sm:flex items-center gap-2 pl-2.5 border-l border-slate-200">
+            <div className="hidden lg:flex items-center gap-2 pl-2 border-l border-slate-200 shrink-0">
               {profile?.foto_url && profile?.role !== 'admin' ? (
                 <div className="w-8 h-8 rounded-lg overflow-hidden border border-slate-300 shrink-0 relative shadow-2xs">
                   <Image 
@@ -1016,15 +860,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   "w-8 h-8 rounded-lg border flex items-center justify-center text-xs font-bold shrink-0 shadow-2xs",
                   isStudentUser
                     ? "bg-white border-black text-black"
-                    : profile?.role === 'admin'
-                      ? "bg-blue-50 border-blue-200 text-blue-700"
+                    : profile?.role === 'admin' 
+                      ? "bg-blue-50 border-blue-200 text-blue-700" 
                       : "bg-indigo-50 border-indigo-200/80 text-indigo-700"
                 )}>
                   {profile?.role === 'admin' ? <ShieldCheck size={15} /> : userInitials}
                 </div>
               )}
-              <div className="hidden md:flex flex-col text-left leading-tight">
-                <span className={cn("text-xs font-bold truncate max-w-[130px]", isStudentUser ? "text-black" : "text-slate-800")}>
+              <div className="hidden xl:flex flex-col text-left leading-tight">
+                <span className={cn("text-xs font-bold truncate max-w-[120px]", isStudentUser ? "text-black" : "text-slate-800")}>
                   {profile?.posto_graduacao || profile?.nome_guerra ? `${profile.posto_graduacao || ''} ${profile.nome_guerra || profile.full_name}`.trim() : (profile?.full_name || profile?.email?.split('@')[0])}
                 </span>
                 <span className={cn("text-[9px] font-bold uppercase tracking-wider", isStudentUser ? "text-black" : "text-indigo-600")}>
@@ -1036,7 +880,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </header>
 
         <main className={cn(
-          "flex-1 p-4 lg:p-8 overflow-y-auto overflow-x-hidden pb-24 lg:pb-8 print:p-0 print:m-0 print:overflow-visible print:block print:h-auto print:min-h-0",
+          "flex-1 w-full max-w-full min-w-0 p-3 sm:p-4 lg:p-6 xl:p-8 overflow-y-auto overflow-x-clip pb-24 lg:pb-8 print:p-0 print:m-0 print:overflow-visible print:block print:h-auto print:min-h-0",
           isStudentUser && "bg-white text-black"
         )}>
           <AnimatePresence mode="wait" initial={false}>
@@ -1046,6 +890,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -5 }}
               transition={{ duration: 0.12, ease: [0.23, 1, 0.32, 1] }}
+              className="w-full max-w-full min-w-0"
             >
               {children}
             </motion.div>
@@ -1063,13 +908,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 excludeLogin={true}
                 showLabelAlways={true}
                 label={language === 'pt' ? 'Última página' : 'Last page'}
-                className="mobile-only-neon-3d neon-tone-amber rounded-xl lg:rounded-lg px-3.5 lg:px-2.5 py-2 lg:py-1.5"
+                className="rounded-lg px-3 py-1.5"
               />
               <Link
                 href={prevPagePath}
                 title={`${language === 'pt' ? 'Módulo anterior' : 'Previous module'}: ${prevModule.name}`}
                 className={cn(
-                  "inline-flex items-center gap-1.5 rounded-xl lg:rounded-lg border px-3.5 lg:px-3 py-2 lg:py-1.5 text-xs font-bold transition-all active:scale-95 mobile-only-neon-3d neon-tone-cyan",
+                  "inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-bold transition-all active:scale-95",
                   isStudentUser
                     ? "bg-white text-black border-slate-300 hover:border-black hover:bg-slate-100"
                     : "bg-white text-slate-700 border-slate-200 hover:bg-slate-100 hover:text-slate-900 shadow-2xs"
@@ -1086,7 +931,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               href={nextPagePath}
               title={`${language === 'pt' ? 'Próximo módulo' : 'Next module'}: ${nextModule.name}`}
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-xl lg:rounded-lg border px-3.5 lg:px-3 py-2 lg:py-1.5 text-xs font-bold transition-all active:scale-95 ml-auto mobile-only-neon-3d neon-tone-pink",
+                "inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-bold transition-all active:scale-95 ml-auto",
                 isStudentUser
                   ? "bg-white text-black border-slate-300 hover:border-black hover:bg-slate-100"
                   : "bg-white text-slate-700 border-slate-200 hover:bg-slate-100 hover:text-slate-900 shadow-2xs"
@@ -1103,10 +948,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <SuggestionsModal isOpen={suggestionsOpen} onClose={() => setSuggestionsOpen(false)} />
       </div>
 
-      {/* Bottom Nav: Barra Inferior com fundo branco e botões em 3D Neon e Coloridos para o usuário móvel */}
+      {/* Bottom Nav: Barra Inferior limpa para dispositivos móveis */}
       <nav 
         className={cn(
-          "mobile-bottom-nav-bar fixed bottom-0 z-50 h-[72px] print:hidden overflow-x-auto custom-scrollbar border-t px-1.5 py-1.5 flex items-center justify-around gap-1 transition-all duration-300 bg-white text-slate-900 border-slate-300 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]",
+          "mobile-bottom-nav-bar fixed bottom-0 z-50 h-[72px] print:hidden overflow-x-hidden border-t px-1 py-1.5 flex items-center justify-between gap-0.5 transition-all duration-300 bg-white text-slate-900 border-slate-300 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]",
           isStudentUser 
             ? cn("text-black", sidebarOpen ? "left-0 lg:left-64 right-0" : "left-0 lg:left-20 right-0") 
             : "lg:hidden left-0 right-0"
@@ -1124,14 +969,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           const isActive = pathname === item.path;
           const isSettings = item.path === '/configuracoes';
           const needsPasswordChange = isSettings && profile && !profile.has_changed_password;
-          const colorConfig = MOBILE_NAV_COLORS[item.path] || {
-            text: 'text-cyan-700',
-            activeText: 'text-cyan-900',
-            bg: 'neon-3d-btn neon-tone-cyan',
-            activeBg: 'neon-3d-btn neon-tone-cyan neon-3d-btn-active',
-            indicator: 'bg-cyan-600',
-            border: 'border-cyan-400/60',
-          };
 
           const label = item.path === '/dashboard'
             ? (language === 'pt' ? 'INÍCIO' : 'HOME')
@@ -1158,40 +995,42 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               key={`mobile-nav-${item.path}-${idx}`} 
               href={item.path}
               title={item.name}
-              className={cn(
-                "flex flex-col items-center justify-center gap-1 p-0.5 transition-all min-w-[44px] min-h-[48px] flex-1 shrink-0 relative group",
-                isStudentUser ? "max-w-[74px]" : "max-w-[62px]",
-                isActive ? "scale-105" : "hover:opacity-100"
-              )}
+              className="flex flex-col items-center justify-center gap-1 p-0.5 transition-all min-w-0 min-h-[48px] flex-1 relative group"
             >
               <div className={cn(
-                "mobile-bottom-nav-icon w-10 h-9 rounded-xl flex items-center justify-center shrink-0",
-                isActive ? colorConfig.activeBg : colorConfig.bg,
-                isStudentUser && isActive && "ring-2 ring-black ring-offset-1",
-                !isStudentUser && needsPasswordChange && "ring-2 ring-amber-400 animate-pulse"
+                "mobile-bottom-nav-icon w-8 h-8 sm:w-10 sm:h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors",
+                isStudentUser
+                  ? isActive
+                    ? "student-solid-btn border-2 border-black"
+                    : "bg-white text-black border border-slate-300"
+                  : isActive
+                    ? "bg-blue-600 text-white border border-blue-700 shadow-xs"
+                    : "bg-slate-100 text-slate-700 border border-slate-200",
+                !isStudentUser && needsPasswordChange && "ring-2 ring-amber-400"
               )}>
-                <item.icon size={18} className={cn(
-                  "mobile-bottom-nav-svg text-white",
-                  !isStudentUser && needsPasswordChange && "animate-pulse"
+                <item.icon size={16} className={cn(
+                  isStudentUser
+                    ? isActive ? "text-white" : "text-black"
+                    : isActive ? "text-white" : "text-slate-700"
                 )} />
               </div>
               <span className={cn(
-                "text-[8px] uppercase tracking-wider text-center truncate w-full transition-colors leading-none",
+                "text-[7px] sm:text-[8px] uppercase tracking-tight sm:tracking-wider text-center truncate w-full transition-colors leading-none",
                 isStudentUser
                   ? isActive ? "text-black font-black" : "text-black font-bold"
-                  : isActive ? `${colorConfig.activeText} font-black` : `${colorConfig.text} font-bold`,
-                !isStudentUser && needsPasswordChange && "text-amber-400 font-bold"
+                  : isActive ? "text-blue-700 font-black" : "text-slate-600 font-bold",
+                !isStudentUser && needsPasswordChange && "text-amber-600 font-bold"
               )}>
                 {label}
               </span>
               {isActive && (
                 <motion.div 
                   layoutId="bottom-nav-indicator"
-                  className={cn("absolute -bottom-1 w-7 h-1 rounded-t-full", isStudentUser ? "bg-black" : colorConfig.indicator)}
+                  className={cn("absolute -bottom-1 w-6 sm:w-7 h-1 rounded-t-full", isStudentUser ? "bg-black" : "bg-blue-600")}
                 />
               )}
               {needsPasswordChange && (
-                <span className={cn("absolute top-0.5 right-2 flex h-2 w-2 rounded-full", isStudentUser ? "bg-black" : "bg-amber-400 animate-ping")} />
+                <span className={cn("absolute top-0.5 right-1 sm:right-2 flex h-2 w-2 rounded-full", isStudentUser ? "bg-black" : "bg-amber-500 animate-ping")} />
               )}
             </Link>
           );
@@ -1202,12 +1041,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <button
             onClick={handleLogout}
             title={language === 'pt' ? 'Sair do Sistema' : 'Sign Out'}
-            className="flex flex-col items-center justify-center gap-1 p-0.5 transition-all min-w-[44px] min-h-[48px] flex-1 max-w-[64px] shrink-0 relative group cursor-pointer text-black"
+            className="flex flex-col items-center justify-center gap-1 p-0.5 transition-all min-w-0 min-h-[48px] flex-1 relative group cursor-pointer text-black"
           >
-            <div className="mobile-bottom-nav-icon w-10 h-9 rounded-xl flex items-center justify-center shrink-0 neon-3d-btn neon-tone-red">
-              <LogOut size={17} className="mobile-bottom-nav-svg text-white" />
+            <div className="mobile-bottom-nav-icon w-8 h-8 sm:w-10 sm:h-9 rounded-xl flex items-center justify-center shrink-0 bg-white text-black border border-slate-300">
+              <LogOut size={16} className="text-black" />
             </div>
-            <span className="text-[8px] uppercase tracking-wider truncate w-full text-center font-bold text-black leading-none">
+            <span className="text-[7px] sm:text-[8px] uppercase tracking-tight sm:tracking-wider truncate w-full text-center font-bold text-black leading-none">
               {language === 'pt' ? 'SAIR' : 'EXIT'}
             </span>
           </button>
@@ -1215,30 +1054,36 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         <button
           onClick={() => setSidebarOpen(prev => !prev)}
-          className={cn(
-            "flex flex-col items-center justify-center gap-1 p-0.5 transition-all min-w-[44px] min-h-[48px] flex-1 max-w-[62px] shrink-0 relative group cursor-pointer",
-            sidebarOpen ? "scale-105" : "hover:opacity-100"
-          )}
+          className="flex flex-col items-center justify-center gap-1 p-0.5 transition-all min-w-0 min-h-[48px] flex-1 relative group cursor-pointer"
         >
           <div className={cn(
-            "mobile-bottom-nav-icon w-10 h-9 rounded-xl flex items-center justify-center shrink-0",
-            sidebarOpen ? MENU_BUTTON_COLOR.activeBg : MENU_BUTTON_COLOR.bg,
-            isStudentUser && sidebarOpen && "ring-2 ring-black ring-offset-1"
+            "mobile-bottom-nav-icon w-8 h-8 sm:w-10 sm:h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors",
+            isStudentUser
+              ? sidebarOpen
+                ? "student-solid-btn border-2 border-black"
+                : "bg-white text-black border border-slate-300"
+              : sidebarOpen
+                ? "bg-blue-600 text-white border border-blue-700 shadow-xs"
+                : "bg-slate-100 text-slate-700 border border-slate-200"
           )}>
-            {sidebarOpen ? <X size={18} className="mobile-bottom-nav-svg text-white" /> : <Menu size={18} className="mobile-bottom-nav-svg text-white" />}
+            {sidebarOpen ? (
+              <X size={16} className={cn(isStudentUser ? (sidebarOpen ? "text-white" : "text-black") : (sidebarOpen ? "text-white" : "text-slate-700"))} />
+            ) : (
+              <Menu size={16} className={cn(isStudentUser ? "text-black" : "text-slate-700")} />
+            )}
           </div>
           <span className={cn(
-            "text-[8px] uppercase tracking-wider truncate w-full text-center transition-colors leading-none",
+            "text-[7px] sm:text-[8px] uppercase tracking-tight sm:tracking-wider truncate w-full text-center transition-colors leading-none",
             isStudentUser
               ? sidebarOpen ? "text-black font-black" : "text-black font-bold"
-              : sidebarOpen ? `${MENU_BUTTON_COLOR.activeText} font-black` : `${MENU_BUTTON_COLOR.text} font-bold`
+              : sidebarOpen ? "text-blue-700 font-black" : "text-slate-600 font-bold"
           )}>
             {t.common.menu || 'Menu'}
           </span>
           {sidebarOpen && (
             <motion.div 
               layoutId="bottom-nav-indicator"
-              className={cn("absolute -bottom-1 w-7 h-1 rounded-t-full", isStudentUser ? "bg-black" : MENU_BUTTON_COLOR.indicator)}
+              className={cn("absolute -bottom-1 w-6 sm:w-7 h-1 rounded-t-full", isStudentUser ? "bg-black" : "bg-blue-600")}
             />
           )}
         </button>
