@@ -1,7 +1,5 @@
 @import "tailwindcss";
 
-@custom-variant dark (&:where(.dark, .dark *));
-
 html,
 body {
   width: 100%;
@@ -10,65 +8,9 @@ body {
 }
 
 /* =========================================================================
-   DARK MODE STYLES (Screen Only)
-   ========================================================================= */
-@media screen {
-  html.dark {
-    color-scheme: dark;
-  }
-
-  .dark body {
-    background-color: #0b0f19;
-    color: #f1f5f9;
-  }
-
-  .dark .bg-slate-50 {
-    background-color: #0b0f19 !important;
-  }
-
-  .dark .bg-white {
-    background-color: #131b2e !important;
-    color: #f1f5f9;
-  }
-
-  .dark .bg-slate-100 {
-    background-color: #1e293b !important;
-  }
-
-  .dark .bg-slate-200 {
-    background-color: #334155 !important;
-  }
-
-  .dark .text-slate-900,
-  .dark .text-slate-800 {
-    color: #f8fafc !important;
-  }
-
-  .dark .text-slate-700,
-  .dark .text-slate-600 {
-    color: #cbd5e1 !important;
-  }
-
-  .dark .text-slate-500 {
-    color: #94a3b8 !important;
-  }
-
-  .dark .border-slate-200,
-  .dark .border-slate-100 {
-    border-color: rgba(255, 255, 255, 0.08) !important;
-  }
-
-  .dark .divide-slate-200,
-  .dark .divide-slate-100 {
-    border-color: rgba(255, 255, 255, 0.08) !important;
-  }
-}
-
-/* =========================================================================
    STUDENT WORKSPACE THEME: Pure White Background + Pure Black Text
    ========================================================================= */
-.student-white-theme,
-.dark .student-white-theme {
+.student-white-theme {
   background-color: #ffffff !important;
   color: #000000 !important;
   color-scheme: light;
@@ -88,15 +30,7 @@ body {
 .student-white-theme th,
 .student-white-theme td,
 .student-white-theme :is(aside, header, main, nav, section, article, table, thead, tbody, tfoot, tr, th, td, input, select, textarea),
-.student-white-theme :is(button, a):not(.neon-3d-btn):not(.mobile-bottom-nav-icon):not(.mobile-only-neon-3d),
-.dark .student-white-theme aside,
-.dark .student-white-theme header,
-.dark .student-white-theme main,
-.dark .student-white-theme nav,
-.dark .student-white-theme .bg-white,
-.dark .student-white-theme .bg-slate-50,
-.dark .student-white-theme .bg-slate-100,
-.dark .student-white-theme .bg-slate-200 {
+.student-white-theme :is(button, a):not(.neon-3d-btn):not(.mobile-bottom-nav-icon):not(.mobile-only-neon-3d) {
   background-color: #ffffff !important;
   background-image: none !important;
   color: #000000 !important;
@@ -311,8 +245,7 @@ body {
     0 0 18px var(--n-glow, rgba(34, 211, 238, 0.8));
 }
 
-.mobile-bottom-nav-bar,
-.dark .mobile-bottom-nav-bar {
+.mobile-bottom-nav-bar {
   background-color: #ffffff !important;
   background-image: none !important;
   border-top-color: #cbd5e1 !important;
@@ -372,54 +305,10 @@ body {
 /* =========================================================================
    AUTH / LOGIN AREA: Pure White Background on Mobile & Desktop (All Users)
    ========================================================================= */
-html.dark:has(.auth-white-theme),
-.dark body:has(.auth-white-theme),
-.auth-white-theme,
-.dark .auth-white-theme {
+.auth-white-theme {
   background-color: #ffffff !important;
   color: #0f172a !important;
   color-scheme: light;
-}
-
-.dark .auth-white-theme .bg-white,
-.dark .auth-white-theme .bg-slate-50 {
-  background-color: #ffffff !important;
-  color: #0f172a !important;
-}
-
-.dark .auth-white-theme .bg-slate-100 {
-  background-color: #f1f5f9 !important;
-}
-
-.dark .auth-white-theme .text-black {
-  color: #000000 !important;
-}
-
-.dark .auth-white-theme .text-slate-900,
-.dark .auth-white-theme .text-slate-800,
-.dark .auth-white-theme .text-slate-700 {
-  color: #0f172a !important;
-}
-
-.dark .auth-white-theme .text-slate-600,
-.dark .auth-white-theme .text-slate-500 {
-  color: #334155 !important;
-}
-
-.dark .auth-white-theme .text-slate-400 {
-  color: #64748b !important;
-}
-
-.dark .auth-white-theme .border-slate-200,
-.dark .auth-white-theme .border-slate-100,
-.dark .auth-white-theme .border-slate-300 {
-  border-color: #cbd5e1 !important;
-}
-
-.dark .auth-white-theme input {
-  background-color: #ffffff !important;
-  color: #0f172a !important;
-  border-color: #cbd5e1 !important;
 }
 
 /* Focus-mode (Staff/Admin): Toda escrita ser na cor branca para melhor visualização do objeto aqui postado */

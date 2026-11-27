@@ -91,7 +91,7 @@ export default function DashboardThoughtWidget({ studentTheme = false }: { stude
         "relative overflow-hidden rounded-2xl p-4 sm:p-5 shadow-xs transition-all border",
         studentTheme
           ? "bg-white border-slate-300 text-black"
-          : "border-amber-200/80 dark:border-amber-900/40 bg-gradient-to-r from-amber-50/80 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-900/90 dark:to-slate-950"
+          : "border-amber-200/80 bg-gradient-to-r from-amber-50/80 via-white to-amber-50/40"
       )}
     >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative z-10">
@@ -101,7 +101,7 @@ export default function DashboardThoughtWidget({ studentTheme = false }: { stude
               "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border mt-0.5",
               studentTheme
                 ? "bg-white text-black border-slate-300"
-                : "bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-300/60 dark:border-amber-700/50"
+                : "bg-amber-500/10 text-amber-600 border-amber-300/60"
             )}
           >
             <Quote size={18} className="rotate-180" />
@@ -113,7 +113,7 @@ export default function DashboardThoughtWidget({ studentTheme = false }: { stude
                   "text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border",
                   studentTheme
                     ? "text-black bg-white border-slate-300"
-                    : "text-amber-700 dark:text-amber-400 bg-amber-100/80 dark:bg-amber-950/80 border-amber-300/50 dark:border-amber-800"
+                    : "text-amber-700 bg-amber-100/80 border-amber-300/50"
                 )}
               >
                 {isPt ? 'Pensamento do Dia' : 'Thought of the Day'}
@@ -122,7 +122,7 @@ export default function DashboardThoughtWidget({ studentTheme = false }: { stude
             <p
               className={cn(
                 "text-xs sm:text-sm font-serif italic line-clamp-2 leading-relaxed",
-                studentTheme ? "text-black" : "text-slate-800 dark:text-slate-200"
+                studentTheme ? "text-black" : "text-slate-800"
               )}
             >
               &ldquo;{thought.texto}&rdquo;
@@ -130,7 +130,7 @@ export default function DashboardThoughtWidget({ studentTheme = false }: { stude
             <p
               className={cn(
                 "text-[11px] font-bold mt-1 truncate",
-                studentTheme ? "text-black" : "text-slate-500 dark:text-slate-400"
+                studentTheme ? "text-black" : "text-slate-500"
               )}
             >
               — {thought.autor}
@@ -149,7 +149,7 @@ export default function DashboardThoughtWidget({ studentTheme = false }: { stude
                   : "bg-white text-black border-slate-300 hover:border-black"
                 : isPlaying 
                   ? "bg-amber-500 text-white border-amber-600 animate-pulse" 
-                  : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:text-amber-600"
+                  : "bg-white text-slate-600 border-slate-200 hover:text-amber-600"
             )}
             title={isPlaying ? (isPt ? 'Pausar áudio' : 'Pause audio') : (isPt ? 'Ouvir reflexão' : 'Listen')}
           >
@@ -162,7 +162,7 @@ export default function DashboardThoughtWidget({ studentTheme = false }: { stude
               "p-2 rounded-xl border cursor-pointer shadow-2xs",
               studentTheme
                 ? "bg-white text-black border-slate-300 hover:border-black"
-                : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50"
+                : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
             )}
             title={isPt ? 'Copiar citação' : 'Copy quote'}
           >

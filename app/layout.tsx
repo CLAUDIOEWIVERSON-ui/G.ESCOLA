@@ -3,7 +3,6 @@ import { EB_Garamond, Cinzel, Lora, Great_Vibes } from 'next/font/google';
 import './globals.css';
 import { LanguageProvider } from '@/lib/i18n/LanguageContext';
 import { UserProvider } from '@/lib/auth/UserContext';
-import { ThemeProvider } from '@/lib/theme/ThemeContext';
 import { Toaster } from 'sonner';
 import { RouteHistoryTracker } from '@/components/BackButton';
 import { CalculatorProvider } from '@/lib/calculator/CalculatorContext';
@@ -56,38 +55,27 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
           dangerouslySetInnerHTML={{
             __html: `
               try {
-                var theme = localStorage.getItem('school_theme_mode');
-                var isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-                if (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                  isDark = true;
-                }
-                if (isDark) {
-                  document.documentElement.classList.add('dark');
-                  document.documentElement.setAttribute('data-theme', 'dark');
-                  document.documentElement.style.colorScheme = 'dark';
-                } else {
-                  document.documentElement.classList.remove('dark');
-                  document.documentElement.setAttribute('data-theme', 'light');
-                  document.documentElement.style.colorScheme = 'light';
-                }
+                localStorage.removeItem('school_theme_mode');
+                localStorage.removeItem('school_card_color_settings');
+                document.documentElement.classList.remove('dark');
+                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.style.colorScheme = 'light';
               } catch (e) {}
             `,
           }}
         />
       </head>
       <body suppressHydrationWarning className="antialiased min-h-screen bg-slate-50 text-slate-900 print:bg-white print:text-black">
-        <ThemeProvider>
-          <LanguageProvider>
-            <UserProvider>
-              <CalculatorProvider>
-                <RouteHistoryTracker />
-                {children}
-                <FloatingCalculator />
-                <Toaster position="top-right" richColors closeButton />
-              </CalculatorProvider>
-            </UserProvider>
-          </LanguageProvider>
-        </ThemeProvider>
+        <LanguageProvider>
+          <UserProvider>
+            <CalculatorProvider>
+              <RouteHistoryTracker />
+              {children}
+              <FloatingCalculator />
+              <Toaster position="top-right" richColors closeButton />
+            </CalculatorProvider>
+          </UserProvider>
+        </LanguageProvider>
       </body>
     </html>
   );

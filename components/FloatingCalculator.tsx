@@ -335,7 +335,7 @@ export function FloatingCalculator() {
         zIndex: 99999,
       }}
       className={cn(
-        'print:hidden rounded-2xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-[0_24px_60px_rgba(2,6,23,0.45)] overflow-hidden outline-none focus:ring-2 focus:ring-blue-500/50 select-none',
+        'print:hidden rounded-2xl bg-white border border-slate-300 shadow-[0_24px_60px_rgba(2,6,23,0.45)] overflow-hidden outline-none focus:ring-2 focus:ring-blue-500/50 select-none',
         isDragging && 'shadow-[0_28px_70px_rgba(2,6,23,0.58)]'
       )}
     >
@@ -394,9 +394,9 @@ export function FloatingCalculator() {
 
       {/* Collapsible History View OR Standard Display + Keypad */}
       {showHistory ? (
-        <div className="p-3 bg-slate-50 dark:bg-slate-900 space-y-2.5">
+        <div className="p-3 bg-slate-50 space-y-2.5">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-300">
+            <span className="text-[11px] font-black uppercase tracking-wider text-slate-600">
               {isPT ? 'Histórico' : 'History'} ({history.length})
             </span>
             {history.length > 0 && (
@@ -428,13 +428,13 @@ export function FloatingCalculator() {
                     applyHistoryValue(item.result);
                     setShowHistory(false);
                   }}
-                  className="w-full text-right p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-blue-400 transition-colors cursor-pointer"
+                  className="w-full text-right p-2.5 rounded-xl bg-white border border-slate-200 hover:border-blue-400 transition-colors cursor-pointer"
                   title={isPT ? 'Clique para usar este resultado' : 'Click to use this result'}
                 >
-                  <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono truncate">
+                  <div className="text-[11px] text-slate-500 font-mono truncate">
                     {item.expression}
                   </div>
-                  <div className="text-sm font-bold text-slate-900 dark:text-white font-mono">
+                  <div className="text-sm font-bold text-slate-900 font-mono">
                     {isPT ? formatDisplayPT(item.result) : item.result}
                   </div>
                 </button>
@@ -451,13 +451,13 @@ export function FloatingCalculator() {
           </button>
         </div>
       ) : (
-        <div className="p-3 space-y-2.5 bg-slate-50 dark:bg-slate-950/60">
+        <div className="p-3 space-y-2.5 bg-slate-50">
           {/* Display Screen */}
-          <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-inner space-y-1">
+          <div className="p-3 rounded-xl bg-white border border-slate-200 shadow-inner space-y-1">
             <div className="flex items-center justify-between gap-2 min-h-[18px]">
               <div className="flex items-center gap-1.5">
                 {memory !== 0 && (
-                  <span className="px-1.5 py-0.2 rounded bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300 text-[9px] font-black">
+                  <span className="px-1.5 py-0.2 rounded bg-blue-100 text-blue-800 text-[9px] font-black">
                     M {isPT ? formatDisplayPT(String(memory)) : memory}
                   </span>
                 )}
@@ -475,7 +475,7 @@ export function FloatingCalculator() {
                   'p-1.5 rounded-lg border transition-all cursor-pointer shrink-0',
                   copied
                     ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
-                    : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-white'
+                    : 'bg-slate-50 border-slate-200 text-slate-500 hover:text-slate-800'
                 )}
                 title={isPT ? 'Copiar resultado' : 'Copy result'}
               >
@@ -484,7 +484,7 @@ export function FloatingCalculator() {
 
               <div
                 className={cn(
-                  'font-mono font-black tracking-tight text-slate-900 dark:text-white text-right truncate flex-1 tabular-nums leading-none py-0.5',
+                  'font-mono font-black tracking-tight text-slate-900 text-right truncate flex-1 tabular-nums leading-none py-0.5',
                   isLongDisplay ? 'text-xl' : 'text-[26px]'
                 )}
               >
@@ -508,7 +508,7 @@ export function FloatingCalculator() {
                 disabled={m.disabled}
                 onClick={m.onClick}
                 title={m.title}
-                className="py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[11px] font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                className="py-1.5 rounded-lg bg-white border border-slate-200 text-[11px] font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
               >
                 {m.label}
               </button>
@@ -521,7 +521,7 @@ export function FloatingCalculator() {
             <button
               type="button"
               onClick={clearAll}
-              className="h-11 rounded-xl bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800/60 text-rose-700 dark:text-rose-300 font-bold text-sm transition-colors cursor-pointer active:scale-95"
+              className="h-11 rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 font-bold text-sm transition-colors cursor-pointer active:scale-95"
               title={isPT ? 'Limpar tudo (C / Del)' : 'Clear all'}
             >
               C
@@ -529,7 +529,7 @@ export function FloatingCalculator() {
             <button
               type="button"
               onClick={backspace}
-              className="h-11 rounded-xl bg-slate-200/80 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-300/70 dark:border-slate-700 text-slate-800 dark:text-slate-100 font-bold flex items-center justify-center transition-colors cursor-pointer active:scale-95"
+              className="h-11 rounded-xl bg-slate-200/80 hover:bg-slate-200 border border-slate-300/70 text-slate-800 font-bold flex items-center justify-center transition-colors cursor-pointer active:scale-95"
               title={isPT ? 'Apagar último dígito' : 'Backspace'}
             >
               <Delete size={16} />
@@ -537,7 +537,7 @@ export function FloatingCalculator() {
             <button
               type="button"
               onClick={inputPercent}
-              className="h-11 rounded-xl bg-slate-200/80 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-300/70 dark:border-slate-700 text-slate-800 dark:text-slate-100 font-bold text-sm transition-colors cursor-pointer active:scale-95"
+              className="h-11 rounded-xl bg-slate-200/80 hover:bg-slate-200 border border-slate-300/70 text-slate-800 font-bold text-sm transition-colors cursor-pointer active:scale-95"
               title={isPT ? 'Porcentagem' : 'Percent'}
             >
               %
@@ -549,7 +549,7 @@ export function FloatingCalculator() {
                 'h-11 rounded-xl font-bold text-base border transition-colors cursor-pointer active:scale-95',
                 operator === '/'
                   ? 'bg-blue-700 text-white border-blue-800'
-                  : 'bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 border-blue-200 dark:border-blue-800/60 text-blue-800 dark:text-blue-300'
+                  : 'bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-800'
               )}
             >
               ÷
@@ -561,7 +561,7 @@ export function FloatingCalculator() {
                 key={d}
                 type="button"
                 onClick={() => inputDigit(d)}
-                className="h-11 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-bold text-base shadow-2xs transition-colors cursor-pointer active:scale-95"
+                className="h-11 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-slate-900 font-bold text-base shadow-2xs transition-colors cursor-pointer active:scale-95"
               >
                 {d}
               </button>
@@ -573,7 +573,7 @@ export function FloatingCalculator() {
                 'h-11 rounded-xl font-bold text-base border transition-colors cursor-pointer active:scale-95',
                 operator === '*'
                   ? 'bg-blue-700 text-white border-blue-800'
-                  : 'bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 border-blue-200 dark:border-blue-800/60 text-blue-800 dark:text-blue-300'
+                  : 'bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-800'
               )}
             >
               ×
@@ -585,7 +585,7 @@ export function FloatingCalculator() {
                 key={d}
                 type="button"
                 onClick={() => inputDigit(d)}
-                className="h-11 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-bold text-base shadow-2xs transition-colors cursor-pointer active:scale-95"
+                className="h-11 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-slate-900 font-bold text-base shadow-2xs transition-colors cursor-pointer active:scale-95"
               >
                 {d}
               </button>
@@ -597,7 +597,7 @@ export function FloatingCalculator() {
                 'h-11 rounded-xl font-bold text-base border transition-colors cursor-pointer active:scale-95',
                 operator === '-'
                   ? 'bg-blue-700 text-white border-blue-800'
-                  : 'bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 border-blue-200 dark:border-blue-800/60 text-blue-800 dark:text-blue-300'
+                  : 'bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-800'
               )}
             >
               −
@@ -609,7 +609,7 @@ export function FloatingCalculator() {
                 key={d}
                 type="button"
                 onClick={() => inputDigit(d)}
-                className="h-11 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-bold text-base shadow-2xs transition-colors cursor-pointer active:scale-95"
+                className="h-11 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-slate-900 font-bold text-base shadow-2xs transition-colors cursor-pointer active:scale-95"
               >
                 {d}
               </button>
@@ -621,7 +621,7 @@ export function FloatingCalculator() {
                 'h-11 rounded-xl font-bold text-base border transition-colors cursor-pointer active:scale-95',
                 operator === '+'
                   ? 'bg-blue-700 text-white border-blue-800'
-                  : 'bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 border-blue-200 dark:border-blue-800/60 text-blue-800 dark:text-blue-300'
+                  : 'bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-800'
               )}
             >
               +
@@ -631,7 +631,7 @@ export function FloatingCalculator() {
             <button
               type="button"
               onClick={toggleSign}
-              className="h-11 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold text-sm shadow-2xs transition-colors cursor-pointer active:scale-95"
+              className="h-11 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 font-bold text-sm shadow-2xs transition-colors cursor-pointer active:scale-95"
               title={isPT ? 'Inverter sinal (±)' : 'Toggle sign (±)'}
             >
               ±
@@ -639,14 +639,14 @@ export function FloatingCalculator() {
             <button
               type="button"
               onClick={() => inputDigit('0')}
-              className="h-11 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-bold text-base shadow-2xs transition-colors cursor-pointer active:scale-95"
+              className="h-11 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-slate-900 font-bold text-base shadow-2xs transition-colors cursor-pointer active:scale-95"
             >
               0
             </button>
             <button
               type="button"
               onClick={inputDecimal}
-              className="h-11 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-bold text-base shadow-2xs transition-colors cursor-pointer active:scale-95"
+              className="h-11 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-slate-900 font-bold text-base shadow-2xs transition-colors cursor-pointer active:scale-95"
             >
               {isPT ? ',' : '.'}
             </button>

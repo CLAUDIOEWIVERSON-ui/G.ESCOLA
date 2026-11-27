@@ -1127,9 +1127,9 @@ function RelatorioAvaliacaoAdminContent() {
 `}</style>
 
       {/* Page Title & Utility buttons */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-200 dark:border-slate-800 pb-4 mt-2 print:hidden">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-200 pb-4 mt-2 print:hidden">
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 md:w-20 md:h-20 shrink-0 flex items-center justify-center overflow-hidden bg-white border border-slate-200 dark:border-slate-700 rounded-2xl p-1.5 shadow-sm">
+          <div className="w-16 h-16 md:w-20 md:h-20 shrink-0 flex items-center justify-center overflow-hidden bg-white border border-slate-200 rounded-2xl p-1.5 shadow-sm">
             <img
               src={typeof navalMissionLogo === "string" ? navalMissionLogo : (navalMissionLogo as any)?.src || navalMissionLogo}
               alt="Logo Missão de Assessoria Naval"
@@ -1138,12 +1138,12 @@ function RelatorioAvaliacaoAdminContent() {
             />
           </div>
           <div>
-            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider font-mono">COORDENAÇÃO E GESTÃO ACADÊMICA</span>
-            <h1 className="text-xl md:text-2xl font-black tracking-tight flex items-center gap-2 text-slate-900 dark:text-white">
-              <BarChart3 className="h-6 w-6 text-slate-800 dark:text-slate-200" />
+            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider font-mono">COORDENAÇÃO E GESTÃO ACADÊMICA</span>
+            <h1 className="text-xl md:text-2xl font-black tracking-tight flex items-center gap-2 text-slate-900">
+              <BarChart3 className="h-6 w-6 text-slate-800" />
               Análise e Relatórios de Questionários
             </h1>
-            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">Estatísticas, índices de qualidade acadêmica, rankings de instrutores e autoavaliação.</p>
+            <p className="text-xs text-slate-600 mt-1">Estatísticas, índices de qualidade acadêmica, rankings de instrutores e autoavaliação.</p>
           </div>
         </div>
 
@@ -1175,16 +1175,16 @@ function RelatorioAvaliacaoAdminContent() {
       </div>
 
       {/* FILTER BOX */}
-      <div className="bg-white dark:bg-slate-900 print:bg-white text-slate-900 dark:text-white print:text-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm p-6 print:hidden">
-        <div className="flex items-center gap-2 mb-4 border-b border-slate-200 dark:border-slate-800 pb-2.5">
-          <SlidersHorizontal className="h-4 w-4 text-slate-700 dark:text-slate-300" />
-          <h2 className="text-xs font-black uppercase tracking-wider font-mono text-slate-900 dark:text-white">Filtros de Pesquisa e Segmentação</h2>
+      <div className="bg-white print:bg-white text-slate-900 print:text-slate-900 border border-slate-200 rounded-xl shadow-sm p-6 print:hidden">
+        <div className="flex items-center gap-2 mb-4 border-b border-slate-200 pb-2.5">
+          <SlidersHorizontal className="h-4 w-4 text-slate-700" />
+          <h2 className="text-xs font-black uppercase tracking-wider font-mono text-slate-900">Filtros de Pesquisa e Segmentação</h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Turma Selection */}
           <div>
-            <label className="block text-xs text-slate-700 dark:text-slate-200 font-bold uppercase tracking-wider mb-1.5 font-mono">Turma</label>
+            <label className="block text-xs text-slate-700 font-bold uppercase tracking-wider mb-1.5 font-mono">Turma</label>
             <select
               value={selectedTurma}
               onChange={(e) => {
@@ -1204,39 +1204,39 @@ function RelatorioAvaliacaoAdminContent() {
                 // Reset student filter on class change
                 setSelectedStudent('ALL');
               }}
-              className="w-full bg-white dark:bg-slate-950 print:bg-white border border-slate-300 dark:border-slate-700 text-xs rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-sky-400 text-slate-900 dark:text-white font-medium cursor-pointer shadow-sm"
+              className="w-full bg-white print:bg-white border border-slate-300 text-xs rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-slate-900 text-slate-900 font-medium cursor-pointer shadow-sm"
             >
-              <option value="ALL" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Todas as Turmas</option>
+              <option value="ALL" className="bg-white text-slate-900">Todas as Turmas</option>
               {turmas.map(t => (
-                <option key={t.id} value={t.id} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">{t.nome}</option>
+                <option key={t.id} value={t.id} className="bg-white text-slate-900">{t.nome}</option>
               ))}
             </select>
           </div>
 
           {/* Instrutor Selection */}
           <div>
-            <label className="block text-xs text-slate-700 dark:text-slate-200 font-bold uppercase tracking-wider mb-1.5 font-mono">Instrutor</label>
+            <label className="block text-xs text-slate-700 font-bold uppercase tracking-wider mb-1.5 font-mono">Instrutor</label>
             <select
               value={selectedInstructor}
               onChange={(e) => setSelectedInstructor(e.target.value)}
-              className="w-full bg-white dark:bg-slate-950 print:bg-white border border-slate-300 dark:border-slate-700 text-xs rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-sky-400 text-slate-900 dark:text-white font-medium cursor-pointer shadow-sm"
+              className="w-full bg-white print:bg-white border border-slate-300 text-xs rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-slate-900 text-slate-900 font-medium cursor-pointer shadow-sm"
             >
-              <option value="ALL" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Todos os Instrutores</option>
+              <option value="ALL" className="bg-white text-slate-900">Todos os Instrutores</option>
               {instructorsList.map(inst => (
-                <option key={inst} value={inst} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">{inst}</option>
+                <option key={inst} value={inst} className="bg-white text-slate-900">{inst}</option>
               ))}
             </select>
           </div>
         </div>
 
         {/* Filters Clear Row */}
-        <div className="flex justify-between items-center mt-4 border-t border-slate-200 dark:border-slate-800 pt-3 text-xs">
-          <span className="text-slate-600 dark:text-slate-300 font-mono">
-            Registros encontrados para o filtro selecionado: <strong className="text-slate-900 dark:text-white font-bold">{filteredSubmissions.length} avaliações</strong>
+        <div className="flex justify-between items-center mt-4 border-t border-slate-200 pt-3 text-xs">
+          <span className="text-slate-600 font-mono">
+            Registros encontrados para o filtro selecionado: <strong className="text-slate-900 font-bold">{filteredSubmissions.length} avaliações</strong>
           </span>
           <button
             onClick={clearAllFilters}
-            className="flex items-center gap-1.5 text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 transition font-bold cursor-pointer"
+            className="flex items-center gap-1.5 text-rose-600 hover:text-rose-700 transition font-bold cursor-pointer"
           >
             <FilterX className="h-4 w-4" />
             Limpar Filtros

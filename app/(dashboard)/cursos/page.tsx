@@ -923,7 +923,7 @@ function CursosContent() {
                     {/* Badge Section */}
                     <div className="flex flex-wrap gap-1.5 mb-4">
                       {curso.codigo && (
-                        <span className="px-2 py-0.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[9px] font-black uppercase rounded-md border border-amber-500/20">
+                        <span className="px-2 py-0.5 bg-amber-500/10 text-amber-600 text-[9px] font-black uppercase rounded-md border border-amber-500/20">
                           {curso.codigo}
                         </span>
                       )}

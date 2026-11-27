@@ -32,8 +32,6 @@ import {
   MousePointer2,
   AlertCircle,
   Sparkles,
-  Sun,
-  Moon,
   ShieldCheck,
   Quote,
   Award,
@@ -42,8 +40,6 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-
-import { useTheme } from '@/lib/theme/ThemeContext';
 
 import { useUser } from '@/lib/auth/UserContext';
 import { useCalculator } from '@/lib/calculator/CalculatorContext';
@@ -237,7 +233,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const pathname = usePathname();
   const { t, language, setLanguage } = useI18n();
-  const { isDark, toggleTheme } = useTheme();
   const { profile, isAdmin, isAluno, isInstrutor, isConvidado, isAcompanhante, loading: authLoading, logout } = useUser();
   const { isOpen: isCalculatorOpen, toggleCalculator } = useCalculator();
   const isReadOnly = !isAdmin;
@@ -1001,31 +996,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 EN
               </button>
             </div>
-
-            {/* Dark Mode Toggle (oculta para alunos para manter fundo branco e letras pretas) */}
-            {!isStudentUser && (
-              <button
-                onClick={toggleTheme}
-                className={cn(
-                  "p-1.5 rounded-xl lg:rounded-lg border text-xs font-bold transition-all cursor-pointer shadow-xs flex items-center justify-center mobile-only-neon-3d neon-tone-amber",
-                  isDark
-                    ? "bg-slate-800 text-amber-400 border-slate-700 hover:bg-slate-700 hover:text-amber-300"
-                    : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 hover:text-slate-900"
-                )}
-                title={
-                  isDark 
-                    ? (language === 'pt' ? 'Mudar para Modo Claro' : 'Switch to Light Mode')
-                    : (language === 'pt' ? 'Mudar para Modo Escuro' : 'Switch to Dark Mode')
-                }
-                aria-label="Alternar modo escuro / claro"
-              >
-                {isDark ? (
-                  <Sun size={15} className="text-amber-400 transition-transform hover:rotate-45" />
-                ) : (
-                  <Moon size={15} className="text-slate-600 transition-transform hover:-rotate-12" />
-                )}
-              </button>
-            )}
 
             {/* Crachá / Visão de Identidade do Usuário no Cabeçalho */}
             <div className="hidden sm:flex items-center gap-2 pl-2.5 border-l border-slate-200">

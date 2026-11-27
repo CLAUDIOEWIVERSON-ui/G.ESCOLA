@@ -181,23 +181,7 @@ export const DEFAULT_COLOR_SETTINGS: CardColorSettings = {
 };
 
 export function getCardColorSettings(): CardColorSettings {
-  if (typeof window === 'undefined') return DEFAULT_COLOR_SETTINGS;
-  try {
-    const saved = localStorage.getItem('school_card_color_settings');
-    if (!saved) return DEFAULT_COLOR_SETTINGS;
-    const parsed = JSON.parse(saved);
-    return {
-      categories: { ...DEFAULT_COLOR_SETTINGS.categories, ...parsed.categories },
-      groups: { ...DEFAULT_COLOR_SETTINGS.groups, ...parsed.groups }
-    };
-  } catch {
-    return DEFAULT_COLOR_SETTINGS;
-  }
-}
-
-export function saveCardColorSettings(settings: CardColorSettings) {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem('school_card_color_settings', JSON.stringify(settings));
+  return DEFAULT_COLOR_SETTINGS;
 }
 
 export function getCardStyleForItem(
