@@ -444,9 +444,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       >
         <div className="flex flex-col h-full">
           <div className={cn(
-            "px-4 py-6 flex flex-col items-center justify-center border-b overflow-hidden transition-all duration-300",
+            "px-4 py-5 flex flex-col items-center justify-center border-b overflow-hidden transition-all duration-300",
             isStudentUser ? "border-slate-200 bg-white" : "border-white/5 bg-white/[0.02]",
-            sidebarOpen ? "h-[250px]" : "h-20"
+            sidebarOpen ? "h-[268px]" : "h-20"
           )}>
             <Logo collapsed={!sidebarOpen} dark={isStudentUser} size="md" orientation="vertical" userRole={roleName} isInternal={true} />
           </div>

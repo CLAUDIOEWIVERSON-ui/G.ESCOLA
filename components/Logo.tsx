@@ -4,7 +4,7 @@ import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import schoolLogo from '@/src/assets/images/school_logo_1778971528475.png';
-import internalLogo from '@/src/assets/images/brazil_shield_logo_1780469604695.png';
+const INTERNAL_SEAL_LOGO = '/assets/aistudio/CARIMBO_DA_MAN__89493689.png';
 
 interface LogoProps {
   className?: string;
@@ -27,9 +27,9 @@ export function Logo({
 }: LogoProps) {
   
   const iconSizes = {
-    sm: isInternal ? 'w-24 h-24' : 'w-16 h-16',
-    md: isInternal ? 'w-28 h-28' : 'w-20 h-20',
-    lg: isInternal ? 'w-36 h-36' : 'w-44 h-44'
+    sm: isInternal ? 'w-28 h-28' : 'w-16 h-16',
+    md: isInternal ? 'w-[136px] h-[136px]' : 'w-20 h-20',
+    lg: isInternal ? 'w-44 h-44' : 'w-44 h-44'
   };
 
   // If collapsed, always horizontal (just the icon) and smaller if it's in a sidebar
@@ -38,7 +38,7 @@ export function Logo({
   
   const isVertical = finalOrientation === 'vertical';
   const finalSizeClass = collapsed 
-    ? (isInternal ? 'w-[52px] h-[52px]' : 'w-[42px] h-[42px]') 
+    ? (isInternal ? 'w-[54px] h-[54px]' : 'w-[42px] h-[42px]') 
     : iconSizes[finalSize];
 
   return (
@@ -47,28 +47,45 @@ export function Logo({
       isVertical ? "flex-col justify-center gap-3" : "flex-row gap-2 w-full",
       className
     )}>
-      <div className={cn("relative shrink-0 group", finalSizeClass)}>
-        {/* Emblem Container with high-contrast background (circular badge when external, transparent when internal) */}
+      <div className={cn("relative shrink-0 group [perspective:800px]", finalSizeClass)}>
+        {/* Emblem Container (3D Black & White without borders when internal, circular white badge when external) */}
         <motion.div 
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           className={cn(
             "relative w-full h-full flex items-center justify-center overflow-hidden transition-all duration-300",
             isInternal 
-              ? "bg-transparent rounded-2xl shadow-md" 
+              ? cn(
+                  "rounded-full border-0 bg-white transform-gpu group-hover:scale-[1.03]",
+                  dark
+                    ? "shadow-[0_12px_24px_-4px_rgba(0,0,0,0.38),0_6px_12px_-2px_rgba(0,0,0,0.22)]"
+                    : "shadow-[0_16px_32px_-4px_rgba(0,0,0,0.8),0_6px_14px_-2px_rgba(0,0,0,0.55),0_0_24px_rgba(255,255,255,0.14)]"
+                )
               : "bg-white rounded-full p-[2px] border border-slate-200/40 shadow-sm"
           )}
         >
           <div className="relative w-full h-full">
             <Image
-              src={isInternal ? internalLogo : schoolLogo}
-              alt="School Logo"
+              src={isInternal ? INTERNAL_SEAL_LOGO : schoolLogo}
+              alt={isInternal ? "Logo MANBrSTP" : "School Logo"}
               fill
-              className="object-contain"
+              priority={isInternal}
+              quality={100}
+              className={cn(
+                isInternal
+                  ? "object-cover grayscale contrast-[1.2] brightness-[1.03] scale-[1.06] translate-y-[2.2%]"
+                  : "object-contain"
+              )}
               referrerPolicy="no-referrer"
-              sizes="(max-width: 640px) 42px, (max-width: 768px) 80px, 176px"
+              sizes={isInternal ? "(max-width: 640px) 54px, 176px" : "(max-width: 640px) 42px, (max-width: 768px) 80px, 176px"}
             />
           </div>
+          {isInternal && (
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 rounded-full bg-[radial-gradient(circle_at_30%_22%,rgba(255,255,255,0.42)_0%,rgba(255,255,255,0)_52%,rgba(0,0,0,0.2)_100%)] shadow-[inset_0_3px_8px_rgba(255,255,255,0.72),inset_0_-6px_14px_rgba(0,0,0,0.25)]"
+            />
+          )}
         </motion.div>
       </div>
 
