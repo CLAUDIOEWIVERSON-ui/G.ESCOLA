@@ -7,6 +7,8 @@ import {
   AlignLeft,
   AlignRight,
   ArrowDown,
+  ArrowLeft,
+  ArrowRight,
   ArrowUp,
   Bold,
   Check,
@@ -15,11 +17,14 @@ import {
   EyeOff,
   FolderOpen,
   GripHorizontal,
+  Image as ImageIcon,
   Italic,
   Layers,
   Minus,
+  Move,
   Pencil,
   Plus,
+  RotateCcw,
   SlidersHorizontal,
   Sparkles,
   Trash2,
@@ -29,6 +34,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
+  CertificateCustomImageBox,
   CertificateCustomTextBox,
   CertificateFontKey,
   CertificateLayerKey,
@@ -80,7 +86,18 @@ interface CertificateClickMenuProps {
   setTemplate: React.Dispatch<React.SetStateAction<CertificateTemplateConfig>>;
   onClose: () => void;
   onSelectObject: (obj: CertificateSelectableObject) => void;
-  onInsertCustomTextBoxAt: (side: 'front' | 'back', relX: number, relY: number) => string;
+  onInsertCustomTextBoxAt: (
+    side: 'front' | 'back',
+    relX: number,
+    relY: number,
+    preset?: Partial<CertificateCustomTextBox>
+  ) => string;
+  onInsertCustomImageBoxAt?: (
+    side: 'front' | 'back',
+    relX: number,
+    relY: number,
+    preset?: Partial<CertificateCustomImageBox>
+  ) => string;
   activeBodyTextValue: string;
   updateActiveBodyText: (updater: string | ((current: string) => string)) => void;
   isEditingIndividualBody: boolean;
@@ -91,6 +108,8 @@ interface CertificateClickMenuProps {
   ) => void;
 }
 
+const FONT_PT_PRESETS = [12, 14, 16, 18, 20, 22, 24, 26, 28, 32, 36, 40, 44, 48, 56, 64, 72];
+
 function getTargetLabel(
   obj: CertificateSelectableObject,
   side: 'front' | 'back',
@@ -100,6 +119,7 @@ function getTargetLabel(
     return side === 'front' ? 'Folha da Frente' : 'Folha do Verso';
   }
   if (obj.startsWith('caixaTexto:')) return 'Caixa de Texto Livre';
+  if (obj.startsWith('imagemExtra:')) return 'Imagem / Brasão Extra';
   switch (obj) {
     case 'brasaoEsquerdo':
       return 'Brasão Esquerdo (Frente)';
@@ -147,6 +167,7 @@ export function CertificateClickMenu({
   onClose,
   onSelectObject,
   onInsertCustomTextBoxAt,
+  onInsertCustomImageBoxAt,
   activeBodyTextValue,
   updateActiveBodyText,
   isEditingIndividualBody,
@@ -306,6 +327,54 @@ export function CertificateClickMenu({
     }));
   };
 
+  const customImages = template.imagensExtra || [];
+  const activeCustomImage = activeTarget.startsWith('imagemExtra:')
+    ? customImages.find((img) => img.id === activeTarget.slice('imagemExtra:'.length)) ?? null
+    : null;
+
+  const updateCustomImage = (
+    imgId: string,
+    updater: (img: CertificateCustomImageBox) => CertificateCustomImageBox
+  ) => {
+    setTemplate((prev) => ({
+      ...prev,
+      imagensExtra: (prev.imagensExtra || []).map((img) =>
+        img.id === imgId ? updater(img) : img
+      ),
+    }));
+  };
+
+  const insertImageAtClick = (preset?: Partial<CertificateCustomImageBox>): string => {
+    if (onInsertCustomImageBoxAt) {
+      return onInsertCustomImageBoxAt(side, clickContext.relX, clickContext.relY, preset);
+    }
+    const imgId = `img_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+    const tamanhoPx = preset?.tamanhoPx ?? 90;
+    const nextX = Math.max(-40, Math.min(sheetWidth - 40, Math.round(clickContext.relX - tamanhoPx / 2)));
+    const nextY = Math.max(-40, Math.min(sheetHeight - 40, Math.round(clickContext.relY - tamanhoPx / 2)));
+    setTemplate((prev) => {
+      const existing = prev.imagensExtra || [];
+      const newImg: CertificateCustomImageBox = {
+        id: imgId,
+        lado: side,
+        titulo: 'Imagem Extra',
+        url: '/assets/aistudio/imagem_01_2da3aec8.png',
+        x: nextX,
+        y: nextY,
+        tamanhoPx,
+        larguraPct: 100,
+        alturaPct: 100,
+        opacidade: 1,
+        camadaZIndex: 18 + existing.length,
+        legenda: '',
+        mostrarLegenda: false,
+        ...preset,
+      };
+      return { ...prev, imagensExtra: [...existing, newImg] };
+    });
+    return imgId;
+  };
+
   const insertAtTextareaCursor = (
     ta: HTMLTextAreaElement | null,
     currentVal: string,
@@ -408,6 +477,7 @@ export function CertificateClickMenu({
     label: string;
     isVisible: boolean;
     onInsert: () => void;
+    onInsertNew?: () => void;
     onRemove: () => void;
   }[] =
     side === 'front'
@@ -418,6 +488,18 @@ export function CertificateClickMenu({
             isVisible: template.mostrarLogoEsquerda !== false,
             onInsert: () =>
               setTemplate((prev) => ({ ...prev, mostrarLogoEsquerda: true })),
+            onInsertNew: () => {
+              const newId = insertImageAtClick({
+                titulo: 'Brasão Extra',
+                url: template.logoEsquerdaUrl || '/assets/aistudio/imagem_01_2da3aec8.png',
+                tamanhoPx: template.tamanhoLogoEsquerda ?? 90,
+                opacidade: template.opacidadeLogoEsquerda ?? 1,
+              });
+              const newKey = `imagemExtra:${newId}` as CertificateSelectableObject;
+              setActiveTarget(newKey);
+              onSelectObject(newKey);
+              setMenuTab('props');
+            },
             onRemove: () =>
               setTemplate((prev) => ({ ...prev, mostrarLogoEsquerda: false })),
           },
@@ -427,6 +509,20 @@ export function CertificateClickMenu({
             isVisible: template.mostrarLogoCentro === true,
             onInsert: () =>
               setTemplate((prev) => ({ ...prev, mostrarLogoCentro: true })),
+            onInsertNew: () => {
+              const newId = insertImageAtClick({
+                titulo: 'Brasão Central Extra',
+                url: template.logoCentroUrl || '/assets/aistudio/imagem_01_2da3aec8.png',
+                tamanhoPx: template.tamanhoLogoCentro ?? 84,
+                opacidade: template.opacidadeLogoCentro ?? 1,
+                legenda: template.logoCentroTexto || '',
+                mostrarLegenda: Boolean(template.mostrarLegendaLogoCentro),
+              });
+              const newKey = `imagemExtra:${newId}` as CertificateSelectableObject;
+              setActiveTarget(newKey);
+              onSelectObject(newKey);
+              setMenuTab('props');
+            },
             onRemove: () =>
               setTemplate((prev) => ({ ...prev, mostrarLogoCentro: false })),
           },
@@ -441,6 +537,22 @@ export function CertificateClickMenu({
                 usarBrasaoPadraoDireita:
                   prev.logoDireitaUrl?.trim() ? prev.usarBrasaoPadraoDireita : true,
               })),
+            onInsertNew: () => {
+              const newId = insertImageAtClick({
+                titulo: 'Brasão Direito Extra',
+                url: template.logoDireitaUrl?.trim()
+                  ? template.logoDireitaUrl
+                  : '__DEFAULT_MARINHA_CREST__',
+                tamanhoPx: template.tamanhoLogoDireita ?? 74,
+                opacidade: template.opacidadeLogoDireita ?? 1,
+                legenda: template.logoDireitaTexto || 'MARINHA DO BRASIL',
+                mostrarLegenda: template.mostrarLegendaLogoDireita !== false,
+              });
+              const newKey = `imagemExtra:${newId}` as CertificateSelectableObject;
+              setActiveTarget(newKey);
+              onSelectObject(newKey);
+              setMenuTab('props');
+            },
             onRemove: () =>
               setTemplate((prev) => ({ ...prev, mostrarLogoDireita: false })),
           },
@@ -453,6 +565,20 @@ export function CertificateClickMenu({
                 ...prev,
                 titulo: prev.titulo?.trim() ? prev.titulo : 'CERTIFICADO',
               })),
+            onInsertNew: () => {
+              const newId = onInsertCustomTextBoxAt('front', clickContext.relX, clickContext.relY, {
+                texto: 'NOVO TÍTULO',
+                larguraPx: Math.min(540, Math.round(sheetWidth * 0.56)),
+                fonte: normalizeFrontFont(template.fonteTitulo || template.fonteCorpo),
+                tamanhoFontePx: Math.min(96, Math.max(16, template.tamanhoFonteTitulo ?? 36)),
+                negrito: true,
+                alinhamento: 'center',
+              });
+              const newKey = `caixaTexto:${newId}` as CertificateSelectableObject;
+              setActiveTarget(newKey);
+              onSelectObject(newKey);
+              setMenuTab('props');
+            },
             onRemove: () => setTemplate((prev) => ({ ...prev, titulo: '' })),
           },
           {
@@ -466,6 +592,20 @@ export function CertificateClickMenu({
                 );
               }
             },
+            onInsertNew: () => {
+              const newId = onInsertCustomTextBoxAt('front', clickContext.relX, clickContext.relY, {
+                texto: 'Novo texto do certificado',
+                larguraPx: Math.min(460, Math.round(sheetWidth * 0.45)),
+                fonte: normalizeFrontFont(template.fonteCorpo),
+                tamanhoFontePx: Math.min(96, Math.max(12, template.tamanhoFonteCorpo || 19)),
+                italico: template.textoCorpoItalico ?? false,
+                alinhamento: 'left',
+              });
+              const newKey = `caixaTexto:${newId}` as CertificateSelectableObject;
+              setActiveTarget(newKey);
+              onSelectObject(newKey);
+              setMenuTab('props');
+            },
             onRemove: () => updateActiveBodyText(''),
           },
           {
@@ -477,10 +617,24 @@ export function CertificateClickMenu({
             onInsert: () =>
               setTemplate((prev) => ({
                 ...prev,
-                localEmissao: prev.localEmissao?.trim() || 'Rio de Janeiro - RJ',
+                localEmissao: prev.localEmissao?.trim() || 'São Tomé e Príncipe',
                 dataEmissaoExtenso:
                   prev.dataEmissaoExtenso?.trim() || 'Em 26 de novembro de 2026',
               })),
+            onInsertNew: () => {
+              const newId = onInsertCustomTextBoxAt('front', clickContext.relX, clickContext.relY, {
+                texto: `${template.localEmissao || 'São Tomé e Príncipe'}, ${template.dataEmissaoExtenso || '26 de novembro de 2026'}`,
+                larguraPx: 320,
+                fonte: normalizeFrontFont(template.fonteCorpo),
+                tamanhoFontePx: Math.min(96, Math.max(12, template.tamanhoFonteData ?? 16)),
+                italico: true,
+                alinhamento: 'center',
+              });
+              const newKey = `caixaTexto:${newId}` as CertificateSelectableObject;
+              setActiveTarget(newKey);
+              onSelectObject(newKey);
+              setMenuTab('props');
+            },
             onRemove: () =>
               setTemplate((prev) => ({
                 ...prev,
@@ -502,6 +656,19 @@ export function CertificateClickMenu({
                 assinaturaNome: prev.assinaturaNome?.trim() || 'Nome do Responsável',
                 assinaturaCargo: prev.assinaturaCargo?.trim() || 'Diretor / Comandante',
               })),
+            onInsertNew: () => {
+              const newId = onInsertCustomTextBoxAt('front', clickContext.relX, clickContext.relY, {
+                texto: '______________________________\n**Nome do Responsável**\nCargo / Função',
+                larguraPx: 300,
+                fonte: normalizeFrontFont(template.fonteAssinatura || template.fonteCorpo),
+                tamanhoFontePx: Math.min(96, Math.max(12, template.tamanhoFonteAssinaturaNome ?? 14)),
+                alinhamento: 'center',
+              });
+              const newKey = `caixaTexto:${newId}` as CertificateSelectableObject;
+              setActiveTarget(newKey);
+              onSelectObject(newKey);
+              setMenuTab('props');
+            },
             onRemove: () =>
               setTemplate((prev) => ({
                 ...prev,
@@ -521,6 +688,19 @@ export function CertificateClickMenu({
                 segundaAssinaturaNome:
                   prev.segundaAssinaturaNome?.trim() || 'Nome do 2º Assinante',
               })),
+            onInsertNew: () => {
+              const newId = onInsertCustomTextBoxAt('front', clickContext.relX, clickContext.relY, {
+                texto: '______________________________\n**Nome do Assinante**\nCargo / Função',
+                larguraPx: 300,
+                fonte: normalizeFrontFont(template.fonteAssinatura || template.fonteCorpo),
+                tamanhoFontePx: Math.min(96, Math.max(12, template.tamanhoFonteAssinaturaNome ?? 14)),
+                alinhamento: 'center',
+              });
+              const newKey = `caixaTexto:${newId}` as CertificateSelectableObject;
+              setActiveTarget(newKey);
+              onSelectObject(newKey);
+              setMenuTab('props');
+            },
             onRemove: () =>
               setTemplate((prev) => ({ ...prev, mostrarSegundaAssinatura: false })),
           },
@@ -533,6 +713,19 @@ export function CertificateClickMenu({
                 ...prev,
                 marcaDaguaFrenteUrl: prev.marcaDaguaFrenteUrl || DEFAULT_FRONT_WM,
               })),
+            onInsertNew: () => {
+              const newId = insertImageAtClick({
+                titulo: "Marca d'Água Extra",
+                url: template.marcaDaguaFrenteUrl || DEFAULT_FRONT_WM,
+                tamanhoPx: 220,
+                opacidade: template.opacidadeMarcaDaguaFrente ?? 0.24,
+                camadaZIndex: 5,
+              });
+              const newKey = `imagemExtra:${newId}` as CertificateSelectableObject;
+              setActiveTarget(newKey);
+              onSelectObject(newKey);
+              setMenuTab('props');
+            },
             onRemove: () =>
               setTemplate((prev) => ({ ...prev, marcaDaguaFrenteUrl: '' })),
           },
@@ -563,6 +756,21 @@ export function CertificateClickMenu({
               (template.mostrarLogoEsquerdaVerso ?? template.mostrarLogoEsquerda) !== false,
             onInsert: () =>
               setTemplate((prev) => ({ ...prev, mostrarLogoEsquerdaVerso: true })),
+            onInsertNew: () => {
+              const newId = insertImageAtClick({
+                titulo: 'Brasão Extra (Verso)',
+                url:
+                  template.logoEsquerdaVersoUrl ||
+                  template.logoEsquerdaUrl ||
+                  '/assets/aistudio/imagem_01_2da3aec8.png',
+                tamanhoPx: template.tamanhoLogoEsquerdaVerso ?? template.tamanhoLogoEsquerda ?? 90,
+                opacidade: template.opacidadeLogoEsquerdaVerso ?? template.opacidadeLogoEsquerda ?? 1,
+              });
+              const newKey = `imagemExtra:${newId}` as CertificateSelectableObject;
+              setActiveTarget(newKey);
+              onSelectObject(newKey);
+              setMenuTab('props');
+            },
             onRemove: () =>
               setTemplate((prev) => ({ ...prev, mostrarLogoEsquerdaVerso: false })),
           },
@@ -572,6 +780,21 @@ export function CertificateClickMenu({
             isVisible: template.mostrarLogoCentroVerso === true,
             onInsert: () =>
               setTemplate((prev) => ({ ...prev, mostrarLogoCentroVerso: true })),
+            onInsertNew: () => {
+              const newId = insertImageAtClick({
+                titulo: 'Brasão Centro Extra (Verso)',
+                url:
+                  template.logoCentroVersoUrl ||
+                  template.logoCentroUrl ||
+                  '/assets/aistudio/imagem_01_2da3aec8.png',
+                tamanhoPx: template.tamanhoLogoCentroVerso ?? 54,
+                opacidade: template.opacidadeLogoCentroVerso ?? template.opacidadeLogoCentro ?? 1,
+              });
+              const newKey = `imagemExtra:${newId}` as CertificateSelectableObject;
+              setActiveTarget(newKey);
+              onSelectObject(newKey);
+              setMenuTab('props');
+            },
             onRemove: () =>
               setTemplate((prev) => ({ ...prev, mostrarLogoCentroVerso: false })),
           },
@@ -582,6 +805,22 @@ export function CertificateClickMenu({
               (template.mostrarLogoDireitaVerso ?? template.mostrarLogoDireita) !== false,
             onInsert: () =>
               setTemplate((prev) => ({ ...prev, mostrarLogoDireitaVerso: true })),
+            onInsertNew: () => {
+              const customRightUrl =
+                template.logoDireitaVersoUrl?.trim() || template.logoDireitaUrl?.trim();
+              const newId = insertImageAtClick({
+                titulo: 'Brasão Dir. Extra (Verso)',
+                url: customRightUrl || '__DEFAULT_MARINHA_CREST__',
+                tamanhoPx: template.tamanhoLogoDireitaVerso ?? template.tamanhoLogoDireita ?? 74,
+                opacidade: template.opacidadeLogoDireitaVerso ?? template.opacidadeLogoDireita ?? 1,
+                legenda: template.logoDireitaVersoTexto ?? template.logoDireitaTexto ?? 'MARINHA DO BRASIL',
+                mostrarLegenda: true,
+              });
+              const newKey = `imagemExtra:${newId}` as CertificateSelectableObject;
+              setActiveTarget(newKey);
+              onSelectObject(newKey);
+              setMenuTab('props');
+            },
             onRemove: () =>
               setTemplate((prev) => ({ ...prev, mostrarLogoDireitaVerso: false })),
           },
@@ -594,6 +833,21 @@ export function CertificateClickMenu({
                 ...prev,
                 versoTituloCurso: prev.versoTituloCurso?.trim() || '{{CURSO}}',
               })),
+            onInsertNew: () => {
+              const newId = onInsertCustomTextBoxAt('back', clickContext.relX, clickContext.relY, {
+                texto: 'NOVO TÍTULO (VERSO)',
+                larguraPx: Math.min(520, Math.round(sheetWidth * 0.52)),
+                fonte: template.fonteVersoTitulo || template.fonteVerso || 'sans',
+                tamanhoFontePx: Math.min(96, Math.max(16, template.versoTamanhoFonteTitulo ?? 24)),
+                negrito: true,
+                maiusculo: true,
+                alinhamento: 'center',
+              });
+              const newKey = `caixaTexto:${newId}` as CertificateSelectableObject;
+              setActiveTarget(newKey);
+              onSelectObject(newKey);
+              setMenuTab('props');
+            },
             onRemove: () =>
               setTemplate((prev) => ({ ...prev, versoTituloCurso: '' })),
           },
@@ -615,6 +869,19 @@ export function CertificateClickMenu({
                 ...prev,
                 marcaDaguaVersoUrl: prev.marcaDaguaVersoUrl || DEFAULT_BACK_WM,
               })),
+            onInsertNew: () => {
+              const newId = insertImageAtClick({
+                titulo: "Marca d'Água Extra (Verso)",
+                url: template.marcaDaguaVersoUrl || DEFAULT_BACK_WM,
+                tamanhoPx: 220,
+                opacidade: template.opacidadeMarcaDaguaVerso ?? 0.25,
+                camadaZIndex: 5,
+              });
+              const newKey = `imagemExtra:${newId}` as CertificateSelectableObject;
+              setActiveTarget(newKey);
+              onSelectObject(newKey);
+              setMenuTab('props');
+            },
             onRemove: () =>
               setTemplate((prev) => ({ ...prev, marcaDaguaVersoUrl: '' })),
           },
@@ -636,6 +903,7 @@ export function CertificateClickMenu({
         ];
 
   const sideCustomBoxes = customBoxes.filter((b) => b.lado === side);
+  const sideCustomImages = customImages.filter((img) => img.lado === side);
 
   const handleDeleteCustomBox = (boxId: string) => {
     setTemplate((prev) => ({
@@ -648,52 +916,433 @@ export function CertificateClickMenu({
     }
   };
 
+  const handleDeleteCustomImage = (imgId: string) => {
+    setTemplate((prev) => ({
+      ...prev,
+      imagensExtra: (prev.imagensExtra || []).filter((img) => img.id !== imgId),
+    }));
+    if (activeTarget === `imagemExtra:${imgId}`) {
+      setMenuTab('items');
+      setActiveTarget(side === 'front' ? 'molduraFrente' : 'versoMoldura');
+    }
+  };
+
+  const renderMoveControls = (opts: {
+    x: number;
+    y: number;
+    minX: number;
+    maxX: number;
+    minY: number;
+    maxY: number;
+    onChange: (nx: number, ny: number) => void;
+    onReset: () => void;
+    resetLabel?: string;
+  }) => {
+    const clampX = (v: number) => Math.max(opts.minX, Math.min(opts.maxX, Math.round(v)));
+    const clampY = (v: number) => Math.max(opts.minY, Math.min(opts.maxY, Math.round(v)));
+    const step = 8;
+
+    return (
+      <div className="p-2 rounded-xl bg-white border border-slate-200 space-y-1.5">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[10px] font-black uppercase tracking-wider text-slate-700 flex items-center gap-1">
+            <Move size={11} className="text-blue-800" />
+            <span>Mover Posição</span>
+          </span>
+          <button
+            type="button"
+            onClick={opts.onReset}
+            className="px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-[9px] font-bold text-slate-700 flex items-center gap-1 cursor-pointer"
+            title={opts.resetLabel || 'Centralizar / Zerar posição'}
+          >
+            <RotateCcw size={9} />
+            <span>{opts.resetLabel || 'Zerar'}</span>
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {/* Compact directional pad */}
+          <div className="grid grid-cols-3 gap-0.5 shrink-0">
+            <div />
+            <button
+              type="button"
+              onClick={() => opts.onChange(opts.x, clampY(opts.y - step))}
+              className="w-6 h-6 rounded bg-slate-100 hover:bg-blue-100 text-slate-700 hover:text-blue-900 flex items-center justify-center cursor-pointer"
+              title="Mover para cima"
+            >
+              <ArrowUp size={11} />
+            </button>
+            <div />
+            <button
+              type="button"
+              onClick={() => opts.onChange(clampX(opts.x - step), opts.y)}
+              className="w-6 h-6 rounded bg-slate-100 hover:bg-blue-100 text-slate-700 hover:text-blue-900 flex items-center justify-center cursor-pointer"
+              title="Mover para esquerda"
+            >
+              <ArrowLeft size={11} />
+            </button>
+            <div className="w-6 h-6 rounded bg-slate-50 border border-slate-200 flex items-center justify-center text-[8px] font-bold text-slate-400">
+              XY
+            </div>
+            <button
+              type="button"
+              onClick={() => opts.onChange(clampX(opts.x + step), opts.y)}
+              className="w-6 h-6 rounded bg-slate-100 hover:bg-blue-100 text-slate-700 hover:text-blue-900 flex items-center justify-center cursor-pointer"
+              title="Mover para direita"
+            >
+              <ArrowRight size={11} />
+            </button>
+            <div />
+            <button
+              type="button"
+              onClick={() => opts.onChange(opts.x, clampY(opts.y + step))}
+              className="w-6 h-6 rounded bg-slate-100 hover:bg-blue-100 text-slate-700 hover:text-blue-900 flex items-center justify-center cursor-pointer"
+              title="Mover para baixo"
+            >
+              <ArrowDown size={11} />
+            </button>
+            <div />
+          </div>
+
+          {/* Sliders for X & Y */}
+          <div className="flex-1 space-y-1 min-w-0">
+            <div>
+              <div className="flex justify-between text-[9px] font-bold text-slate-600">
+                <span>Horizontal (X)</span>
+                <span className="font-mono text-blue-900">{opts.x}px</span>
+              </div>
+              <input
+                type="range"
+                min={opts.minX}
+                max={opts.maxX}
+                step={1}
+                value={opts.x}
+                onChange={(e) => opts.onChange(Number(e.target.value), opts.y)}
+                className="w-full accent-blue-800 h-1.5"
+              />
+            </div>
+            <div>
+              <div className="flex justify-between text-[9px] font-bold text-slate-600">
+                <span>Vertical (Y)</span>
+                <span className="font-mono text-blue-900">{opts.y}px</span>
+              </div>
+              <input
+                type="range"
+                min={opts.minY}
+                max={opts.maxY}
+                step={1}
+                value={opts.y}
+                onChange={(e) => opts.onChange(opts.x, Number(e.target.value))}
+                className="w-full accent-blue-800 h-1.5"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderFontSizeStepper = (
     label: string,
     value: number,
     min: number,
     max: number,
     step: number,
-    onChange: (next: number) => void
-  ) => (
-    <div className="space-y-1">
-      <div className="flex items-center justify-between text-[10px] font-bold text-slate-700">
-        <span>{label}</span>
-        <span className="font-mono text-blue-900">
-          {value}px ({pxToPtNumber(value)}pt)
-        </span>
+    onChange: (next: number) => void,
+    isFontSize = false
+  ) => {
+    const currentPt = pxToPtNumber(value);
+    const closestPreset = FONT_PT_PRESETS.reduce((best, p) =>
+      Math.abs(p - currentPt) < Math.abs(best - currentPt) ? p : best
+    );
+
+    return (
+      <div className="space-y-1">
+        <div className="flex items-center justify-between gap-2 text-[10px] font-bold text-slate-700">
+          <span>{label}</span>
+          <div className="flex items-center gap-1.5">
+            {isFontSize && (
+              <select
+                value={FONT_PT_PRESETS.includes(Math.round(currentPt)) ? Math.round(currentPt) : closestPreset}
+                onChange={(e) => {
+                  const pt = Number(e.target.value);
+                  const pxVal = Math.max(min, Math.min(max, Math.round(pt * 1.3333333 * 2) / 2));
+                  onChange(pxVal);
+                }}
+                title="Selecionar tamanho da fonte (12 a 72 pt)"
+                className="px-1.5 py-0.5 rounded border border-slate-300 bg-white text-[10px] font-bold text-blue-900 cursor-pointer"
+              >
+                {FONT_PT_PRESETS.map((pt) => (
+                  <option key={pt} value={pt}>
+                    {pt} pt
+                  </option>
+                ))}
+              </select>
+            )}
+            <span className="font-mono text-blue-900">
+              {value}px ({currentPt}pt)
+            </span>
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => onChange(Math.max(min, Math.round((value - step) * 10) / 10))}
+            className="w-6 h-6 rounded bg-white hover:bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 cursor-pointer shrink-0"
+            title="Diminuir"
+          >
+            <Minus size={11} />
+          </button>
+          <input
+            type="range"
+            min={min}
+            max={max}
+            step={step}
+            value={Math.max(min, Math.min(max, value))}
+            onChange={(e) => onChange(Number(e.target.value))}
+            className="flex-1 accent-blue-800"
+          />
+          <button
+            type="button"
+            onClick={() => onChange(Math.min(max, Math.round((value + step) * 10) / 10))}
+            className="w-6 h-6 rounded bg-white hover:bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 cursor-pointer shrink-0"
+            title="Aumentar"
+          >
+            <Plus size={11} />
+          </button>
+        </div>
       </div>
-      <div className="flex items-center gap-1.5">
-        <button
-          type="button"
-          onClick={() => onChange(Math.max(min, Math.round((value - step) * 10) / 10))}
-          className="w-6 h-6 rounded bg-white hover:bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 cursor-pointer shrink-0"
-          title="Diminuir"
-        >
-          <Minus size={11} />
-        </button>
-        <input
-          type="range"
-          min={min}
-          max={max}
-          step={step}
-          value={value}
-          onChange={(e) => onChange(Number(e.target.value))}
-          className="flex-1 accent-blue-800"
-        />
-        <button
-          type="button"
-          onClick={() => onChange(Math.min(max, Math.round((value + step) * 10) / 10))}
-          className="w-6 h-6 rounded bg-white hover:bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 cursor-pointer shrink-0"
-          title="Aumentar"
-        >
-          <Plus size={11} />
-        </button>
-      </div>
-    </div>
-  );
+    );
+  };
 
   const renderPropertiesBody = () => {
+    // 0. Custom Extra Image Box
+    if (activeCustomImage) {
+      const handleUploadExtraImageFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        e.target.value = '';
+        if (!file) return;
+        const dataUrl = await prepareUploadedAssetDataUrl(file, 'brasao');
+        if (!dataUrl) return;
+        updateCustomImage(activeCustomImage.id, (img) => ({ ...img, url: dataUrl }));
+      };
+
+      const matchingBrasaoAssets = libraryAssets.filter(
+        (a) => a.category === 'brasao' || a.category === 'marca_dagua'
+      );
+
+      return (
+        <div className="space-y-2.5">
+          <div className="grid grid-cols-2 gap-1.5">
+            {onApplyLibraryAsset && (
+              <button
+                type="button"
+                onClick={() => setShowInlineLibrary((v) => !v)}
+                className={cn(
+                  'py-1.5 px-2 rounded-lg border text-[10px] font-bold flex items-center justify-center gap-1 cursor-pointer transition-colors',
+                  showInlineLibrary
+                    ? 'bg-blue-900 text-white border-blue-950'
+                    : 'bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-900'
+                )}
+              >
+                <FolderOpen size={11} />
+                <span>{showInlineLibrary ? 'Fechar Biblioteca' : 'Biblioteca'}</span>
+              </button>
+            )}
+            <label
+              className={cn(
+                'py-1.5 px-2 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 text-[10px] font-bold flex items-center justify-center gap-1 cursor-pointer',
+                !onApplyLibraryAsset && 'col-span-2'
+              )}
+            >
+              <Upload size={11} />
+              <span>Enviar Imagem</span>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleUploadExtraImageFile}
+                className="hidden"
+              />
+            </label>
+          </div>
+
+          {showInlineLibrary && (
+            <div className="p-2 rounded-xl bg-white border border-blue-200 space-y-1.5">
+              <div className="flex items-center justify-between text-[10px] font-bold text-blue-950">
+                <span>Escolher Imagem ({matchingBrasaoAssets.length})</span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    updateCustomImage(activeCustomImage.id, (img) => ({
+                      ...img,
+                      url: '__DEFAULT_MARINHA_CREST__',
+                    }))
+                  }
+                  className="text-blue-700 hover:text-blue-900 underline cursor-pointer"
+                >
+                  Brasão Marinha
+                </button>
+              </div>
+              {matchingBrasaoAssets.length > 0 && (
+                <div className="grid grid-cols-3 gap-1.5 max-h-36 overflow-y-auto custom-scrollbar pr-0.5">
+                  {matchingBrasaoAssets.map((asset) => (
+                    <button
+                      key={asset.id}
+                      type="button"
+                      onClick={() => {
+                        if (asset.url) {
+                          updateCustomImage(activeCustomImage.id, (img) => ({
+                            ...img,
+                            url: asset.url,
+                            titulo: asset.name || img.titulo,
+                          }));
+                        }
+                      }}
+                      className="p-1.5 rounded-lg border border-slate-200 hover:border-blue-500 hover:bg-blue-50/50 bg-slate-50 flex flex-col items-center gap-1 cursor-pointer"
+                    >
+                      {asset.url && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={asset.url}
+                          alt={asset.name}
+                          className="w-9 h-9 object-contain rounded"
+                        />
+                      )}
+                      <span className="text-[9px] font-semibold text-slate-700 truncate w-full">
+                        {asset.name}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {renderFontSizeStepper(
+            'Tamanho da Imagem',
+            activeCustomImage.tamanhoPx || 90,
+            24,
+            640,
+            4,
+            (next) => updateCustomImage(activeCustomImage.id, (img) => ({ ...img, tamanhoPx: next }))
+          )}
+
+          <div>
+            <div className="flex justify-between text-[10px] font-bold text-slate-700 mb-0.5">
+              <span>Opacidade</span>
+              <span className="font-mono">
+                {Math.round((activeCustomImage.opacidade ?? 1) * 100)}%
+              </span>
+            </div>
+            <input
+              type="range"
+              min={0.05}
+              max={1}
+              step={0.05}
+              value={activeCustomImage.opacidade ?? 1}
+              onChange={(e) =>
+                updateCustomImage(activeCustomImage.id, (img) => ({
+                  ...img,
+                  opacidade: Number(e.target.value),
+                }))
+              }
+              className="w-full accent-blue-800"
+            />
+          </div>
+
+          <div className="space-y-1.5 pt-1 border-t border-slate-100">
+            <label className="inline-flex items-center gap-1.5 text-[10px] font-bold text-slate-700 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={Boolean(activeCustomImage.mostrarLegenda)}
+                onChange={(e) =>
+                  updateCustomImage(activeCustomImage.id, (img) => ({
+                    ...img,
+                    mostrarLegenda: e.target.checked,
+                  }))
+                }
+                className="rounded border-slate-300"
+              />
+              <span>Exibir legenda abaixo</span>
+            </label>
+            {activeCustomImage.mostrarLegenda && (
+              <input
+                type="text"
+                value={activeCustomImage.legenda || ''}
+                onChange={(e) =>
+                  updateCustomImage(activeCustomImage.id, (img) => ({
+                    ...img,
+                    legenda: e.target.value,
+                  }))
+                }
+                placeholder="Legenda opcional"
+                className="w-full px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-[11px]"
+              />
+            )}
+          </div>
+
+          {renderMoveControls({
+            x: activeCustomImage.x,
+            y: activeCustomImage.y,
+            minX: -60,
+            maxX: sheetWidth - 30,
+            minY: -60,
+            maxY: sheetHeight - 30,
+            onChange: (nx, ny) =>
+              updateCustomImage(activeCustomImage.id, (img) => ({ ...img, x: nx, y: ny })),
+            resetLabel: 'Centralizar',
+            onReset: () =>
+              updateCustomImage(activeCustomImage.id, (img) => ({
+                ...img,
+                x: Math.round((sheetWidth - (img.tamanhoPx || 90)) / 2),
+                y: Math.round((sheetHeight - (img.tamanhoPx || 90)) / 2),
+              })),
+          })}
+
+          <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100">
+            <span className="text-[10px] font-bold text-slate-600">
+              Camada: {Math.max(2, activeCustomImage.camadaZIndex ?? 18)}
+            </span>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() =>
+                  updateCustomImage(activeCustomImage.id, (img) => ({
+                    ...img,
+                    camadaZIndex: Math.max(2, (img.camadaZIndex ?? 18) - 1),
+                  }))
+                }
+                className="px-2 py-0.5 rounded bg-slate-50 hover:bg-slate-100 border border-slate-200 text-[10px] font-bold text-slate-700 cursor-pointer"
+              >
+                Recuar
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  updateCustomImage(activeCustomImage.id, (img) => ({
+                    ...img,
+                    camadaZIndex: Math.min(40, (img.camadaZIndex ?? 18) + 1),
+                  }))
+                }
+                className="px-2 py-0.5 rounded bg-slate-50 hover:bg-slate-100 border border-slate-200 text-[10px] font-bold text-slate-700 cursor-pointer"
+              >
+                Avançar
+              </button>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => handleDeleteCustomImage(activeCustomImage.id)}
+            className="w-full py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-[11px] font-bold flex items-center justify-center gap-1.5 cursor-pointer"
+          >
+            <Trash2 size={12} />
+            <span>Apagar esta Imagem</span>
+          </button>
+        </div>
+      );
+    }
+
     // 1. Custom Free Text Box
     if (activeCustomBox) {
       return (
@@ -865,11 +1514,12 @@ export function CertificateClickMenu({
           {renderFontSizeStepper(
             'Tamanho da Fonte',
             activeCustomBox.tamanhoFontePx,
-            6,
-            64,
+            12,
+            96,
             0.5,
             (next) =>
-              updateCustomBox(activeCustomBox.id, (b) => ({ ...b, tamanhoFontePx: next }))
+              updateCustomBox(activeCustomBox.id, (b) => ({ ...b, tamanhoFontePx: next })),
+            true
           )}
 
           <div className="flex flex-wrap items-center justify-between gap-1.5">
@@ -990,6 +1640,24 @@ export function CertificateClickMenu({
               />
             </div>
           </div>
+
+          {renderMoveControls({
+            x: activeCustomBox.x,
+            y: activeCustomBox.y,
+            minX: -40,
+            maxX: sheetWidth - 40,
+            minY: -20,
+            maxY: sheetHeight - 20,
+            onChange: (nx, ny) =>
+              updateCustomBox(activeCustomBox.id, (b) => ({ ...b, x: nx, y: ny })),
+            resetLabel: 'Centralizar',
+            onReset: () =>
+              updateCustomBox(activeCustomBox.id, (b) => ({
+                ...b,
+                x: Math.round((sheetWidth - (b.larguraPx || 280)) / 2),
+                y: Math.round(sheetHeight * 0.42),
+              })),
+          })}
 
           <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100">
             <span className="text-[10px] font-bold text-slate-600">
@@ -1112,10 +1780,11 @@ export function CertificateClickMenu({
           {renderFontSizeStepper(
             'Tamanho do Título',
             template.tamanhoFonteTitulo ?? 42,
-            10,
-            60,
+            12,
+            96,
             1,
-            (next) => setTemplate((prev) => ({ ...prev, tamanhoFonteTitulo: next }))
+            (next) => setTemplate((prev) => ({ ...prev, tamanhoFonteTitulo: next })),
+            true
           )}
 
           <div>
@@ -1140,6 +1809,19 @@ export function CertificateClickMenu({
               className="w-full accent-blue-800"
             />
           </div>
+
+          {renderMoveControls({
+            x: template.tituloOffsetX ?? 0,
+            y: template.tituloOffsetY ?? 0,
+            minX: -420,
+            maxX: 420,
+            minY: -260,
+            maxY: 420,
+            onChange: (nx, ny) =>
+              setTemplate((prev) => ({ ...prev, tituloOffsetX: nx, tituloOffsetY: ny })),
+            onReset: () =>
+              setTemplate((prev) => ({ ...prev, tituloOffsetX: 0, tituloOffsetY: 0 })),
+          })}
 
           {renderLayerStepper('titulo')}
 
@@ -1325,11 +2007,24 @@ export function CertificateClickMenu({
           {renderFontSizeStepper(
             'Tamanho do Texto',
             template.tamanhoFonteCorpo || 19,
-            8,
-            32,
+            12,
+            96,
             0.5,
-            (next) => setTemplate((prev) => ({ ...prev, tamanhoFonteCorpo: next }))
+            (next) => setTemplate((prev) => ({ ...prev, tamanhoFonteCorpo: next })),
+            true
           )}
+
+          {template.destacarNomeParticipante &&
+            renderFontSizeStepper(
+              'Tamanho Nome do Aluno',
+              template.tamanhoFonteParticipante ??
+                Math.round((template.tamanhoFonteCorpo || 19) * 2.15),
+              12,
+              96,
+              1,
+              (next) => setTemplate((prev) => ({ ...prev, tamanhoFonteParticipante: next })),
+              true
+            )}
 
           <div className="grid grid-cols-2 gap-2">
             <div>
@@ -1370,6 +2065,19 @@ export function CertificateClickMenu({
               />
             </div>
           </div>
+
+          {renderMoveControls({
+            x: template.textoOffsetX ?? 0,
+            y: template.textoOffsetY ?? 0,
+            minX: -420,
+            maxX: 420,
+            minY: -260,
+            maxY: 360,
+            onChange: (nx, ny) =>
+              setTemplate((prev) => ({ ...prev, textoOffsetX: nx, textoOffsetY: ny })),
+            onReset: () =>
+              setTemplate((prev) => ({ ...prev, textoOffsetX: 0, textoOffsetY: 0 })),
+          })}
 
           {renderLayerStepper('texto')}
 
@@ -1477,12 +2185,26 @@ export function CertificateClickMenu({
 
           {renderFontSizeStepper(
             'Tamanho da Data',
-            template.tamanhoFonteData ?? Math.max(8, (template.tamanhoFonteCorpo || 19) - 2),
-            8,
-            28,
+            template.tamanhoFonteData ?? Math.max(12, (template.tamanhoFonteCorpo || 19) - 2),
+            12,
+            96,
             0.5,
-            (next) => setTemplate((prev) => ({ ...prev, tamanhoFonteData: next }))
+            (next) => setTemplate((prev) => ({ ...prev, tamanhoFonteData: next })),
+            true
           )}
+
+          {renderMoveControls({
+            x: template.dataOffsetX ?? 0,
+            y: template.dataOffsetY ?? 0,
+            minX: -420,
+            maxX: 420,
+            minY: -360,
+            maxY: 260,
+            onChange: (nx, ny) =>
+              setTemplate((prev) => ({ ...prev, dataOffsetX: nx, dataOffsetY: ny })),
+            onReset: () =>
+              setTemplate((prev) => ({ ...prev, dataOffsetX: 0, dataOffsetY: 0 })),
+          })}
 
           {renderLayerStepper('data')}
 
@@ -1628,19 +2350,46 @@ export function CertificateClickMenu({
           {renderFontSizeStepper(
             'Tamanho Nome/Posto',
             template.tamanhoFonteAssinaturaNome ?? 13.5,
-            7,
-            24,
+            12,
+            96,
             0.5,
-            (next) => setTemplate((prev) => ({ ...prev, tamanhoFonteAssinaturaNome: next }))
+            (next) => setTemplate((prev) => ({ ...prev, tamanhoFonteAssinaturaNome: next })),
+            true
           )}
           {renderFontSizeStepper(
             'Tamanho Cargo/Função',
             template.tamanhoFonteAssinaturaCargo ?? 12.5,
-            6,
-            20,
+            12,
+            96,
             0.5,
-            (next) => setTemplate((prev) => ({ ...prev, tamanhoFonteAssinaturaCargo: next }))
+            (next) => setTemplate((prev) => ({ ...prev, tamanhoFonteAssinaturaCargo: next })),
+            true
           )}
+
+          {renderMoveControls({
+            x: isSecond
+              ? template.segundaAssinaturaOffsetX ?? 0
+              : template.assinaturaPrincipalOffsetX ?? 0,
+            y: isSecond
+              ? template.segundaAssinaturaOffsetY ?? 0
+              : template.assinaturaPrincipalOffsetY ?? 0,
+            minX: -520,
+            maxX: 520,
+            minY: -640,
+            maxY: 220,
+            onChange: (nx, ny) =>
+              setTemplate((prev) =>
+                isSecond
+                  ? { ...prev, segundaAssinaturaOffsetX: nx, segundaAssinaturaOffsetY: ny }
+                  : { ...prev, assinaturaPrincipalOffsetX: nx, assinaturaPrincipalOffsetY: ny }
+              ),
+            onReset: () =>
+              setTemplate((prev) =>
+                isSecond
+                  ? { ...prev, segundaAssinaturaOffsetX: 0, segundaAssinaturaOffsetY: 0 }
+                  : { ...prev, assinaturaPrincipalOffsetX: 0, assinaturaPrincipalOffsetY: 0 }
+              ),
+          })}
 
           {renderLayerStepper(isSecond ? 'segundaAssinatura' : 'assinaturaPrincipal')}
 
@@ -1746,12 +2495,30 @@ export function CertificateClickMenu({
 
           {renderFontSizeStepper(
             'Tamanho do Título',
-            template.versoTamanhoFonteTitulo ?? 18,
-            10,
-            36,
+            template.versoTamanhoFonteTitulo ?? 30,
+            12,
+            96,
             0.5,
-            (next) => setTemplate((prev) => ({ ...prev, versoTamanhoFonteTitulo: next }))
+            (next) => setTemplate((prev) => ({ ...prev, versoTamanhoFonteTitulo: next })),
+            true
           )}
+
+          {renderMoveControls({
+            x: template.versoTituloOffsetX ?? 0,
+            y: template.versoTituloOffsetY ?? 0,
+            minX: -480,
+            maxX: 480,
+            minY: -220,
+            maxY: 640,
+            onChange: (nx, ny) =>
+              setTemplate((prev) => ({
+                ...prev,
+                versoTituloOffsetX: nx,
+                versoTituloOffsetY: ny,
+              })),
+            onReset: () =>
+              setTemplate((prev) => ({ ...prev, versoTituloOffsetX: 0, versoTituloOffsetY: 0 })),
+          })}
 
           {renderLayerStepper('versoTitulo')}
 
@@ -1817,21 +2584,71 @@ export function CertificateClickMenu({
           </div>
 
           {renderFontSizeStepper(
-            'Tamanho Disciplinas',
-            template.versoTamanhoFonteDisciplinas ?? 11.5,
-            7,
-            18,
+            'Tamanho Cabeçalho',
+            template.versoTamanhoFonteCabecalho ?? 21,
+            12,
+            96,
             0.5,
-            (next) => setTemplate((prev) => ({ ...prev, versoTamanhoFonteDisciplinas: next }))
+            (next) => setTemplate((prev) => ({ ...prev, versoTamanhoFonteCabecalho: next })),
+            true
+          )}
+          {renderFontSizeStepper(
+            'Tamanho Disciplinas',
+            template.versoTamanhoFonteDisciplinas ?? 17,
+            12,
+            96,
+            0.5,
+            (next) => setTemplate((prev) => ({ ...prev, versoTamanhoFonteDisciplinas: next })),
+            true
           )}
           {renderFontSizeStepper(
             'Tamanho Notas / Horas',
-            template.versoTamanhoFonteNumeros ?? 11.5,
-            7,
-            18,
+            template.versoTamanhoFonteNumeros ?? 22,
+            12,
+            96,
             0.5,
-            (next) => setTemplate((prev) => ({ ...prev, versoTamanhoFonteNumeros: next }))
+            (next) => setTemplate((prev) => ({ ...prev, versoTamanhoFonteNumeros: next })),
+            true
           )}
+          {renderFontSizeStepper(
+            'Tamanho Rótulo Totais',
+            template.versoTamanhoFonteTotaisLabel ?? 22,
+            12,
+            96,
+            0.5,
+            (next) => setTemplate((prev) => ({ ...prev, versoTamanhoFonteTotaisLabel: next })),
+            true
+          )}
+          {renderFontSizeStepper(
+            'Tamanho Números Totais',
+            template.versoTamanhoFonteTotaisNumeros ?? 28,
+            12,
+            96,
+            0.5,
+            (next) => setTemplate((prev) => ({ ...prev, versoTamanhoFonteTotaisNumeros: next })),
+            true
+          )}
+
+          {renderMoveControls({
+            x: template.versoTabelaOffsetX ?? 0,
+            y: template.versoTabelaOffsetY ?? 0,
+            minX: sheetWidth < sheetHeight ? -240 : -340,
+            maxX: sheetWidth < sheetHeight ? 240 : 340,
+            minY: sheetWidth < sheetHeight ? -240 : -180,
+            maxY: sheetWidth < sheetHeight ? 320 : 240,
+            onChange: (nx, ny) =>
+              setTemplate((prev) => ({
+                ...prev,
+                versoTabelaOffsetX: nx,
+                versoTabelaOffsetY: ny,
+              })),
+            onReset: () =>
+              setTemplate((prev) => ({
+                ...prev,
+                versoTabelaOffsetX: 0,
+                versoTabelaOffsetY: 0,
+              })),
+          })}
 
           <button
             type="button"
@@ -1923,6 +2740,14 @@ export function CertificateClickMenu({
             return {
               size: template.tamanhoLogoEsquerda ?? 90,
               opacity: template.opacidadeLogoEsquerda ?? 1,
+              offsetX: template.logoEsquerdaOffsetX ?? 0,
+              offsetY: template.logoEsquerdaOffsetY ?? 0,
+              setOffset: (nx: number, ny: number) =>
+                setTemplate((prev) => ({
+                  ...prev,
+                  logoEsquerdaOffsetX: nx,
+                  logoEsquerdaOffsetY: ny,
+                })),
               layer: 'brasaoEsquerdo' as CertificateLayerKey,
               hasLegend: false,
               legendText: '',
@@ -1936,6 +2761,14 @@ export function CertificateClickMenu({
             return {
               size: template.tamanhoLogoCentro ?? 84,
               opacity: template.opacidadeLogoCentro ?? 1,
+              offsetX: template.logoCentroOffsetX ?? 0,
+              offsetY: template.logoCentroOffsetY ?? 0,
+              setOffset: (nx: number, ny: number) =>
+                setTemplate((prev) => ({
+                  ...prev,
+                  logoCentroOffsetX: nx,
+                  logoCentroOffsetY: ny,
+                })),
               layer: 'brasaoCentro' as CertificateLayerKey,
               hasLegend: true,
               legendText: template.logoCentroTexto ?? '',
@@ -1953,6 +2786,14 @@ export function CertificateClickMenu({
             return {
               size: template.tamanhoLogoDireita ?? 74,
               opacity: template.opacidadeLogoDireita ?? 1,
+              offsetX: template.logoDireitaOffsetX ?? 0,
+              offsetY: template.logoDireitaOffsetY ?? 0,
+              setOffset: (nx: number, ny: number) =>
+                setTemplate((prev) => ({
+                  ...prev,
+                  logoDireitaOffsetX: nx,
+                  logoDireitaOffsetY: ny,
+                })),
               layer: 'brasaoDireito' as CertificateLayerKey,
               hasLegend: true,
               legendText: template.logoDireitaTexto ?? 'MARINHA DO BRASIL',
@@ -1970,6 +2811,14 @@ export function CertificateClickMenu({
             return {
               size: template.tamanhoLogoEsquerdaVerso ?? template.tamanhoLogoEsquerda ?? 90,
               opacity: template.opacidadeLogoEsquerdaVerso ?? template.opacidadeLogoEsquerda ?? 1,
+              offsetX: template.logoEsquerdaVersoOffsetX ?? 0,
+              offsetY: template.logoEsquerdaVersoOffsetY ?? 0,
+              setOffset: (nx: number, ny: number) =>
+                setTemplate((prev) => ({
+                  ...prev,
+                  logoEsquerdaVersoOffsetX: nx,
+                  logoEsquerdaVersoOffsetY: ny,
+                })),
               layer: 'brasaoEsquerdoVerso' as CertificateLayerKey,
               hasLegend: false,
               legendText: '',
@@ -1983,6 +2832,14 @@ export function CertificateClickMenu({
             return {
               size: template.tamanhoLogoCentroVerso ?? 54,
               opacity: template.opacidadeLogoCentroVerso ?? template.opacidadeLogoCentro ?? 1,
+              offsetX: template.logoCentroVersoOffsetX ?? 0,
+              offsetY: template.logoCentroVersoOffsetY ?? 0,
+              setOffset: (nx: number, ny: number) =>
+                setTemplate((prev) => ({
+                  ...prev,
+                  logoCentroVersoOffsetX: nx,
+                  logoCentroVersoOffsetY: ny,
+                })),
               layer: 'brasaoCentroVerso' as CertificateLayerKey,
               hasLegend: true,
               legendText: template.logoCentroVersoTexto ?? template.logoCentroTexto ?? '',
@@ -2002,6 +2859,14 @@ export function CertificateClickMenu({
             return {
               size: template.tamanhoLogoDireitaVerso ?? template.tamanhoLogoDireita ?? 74,
               opacity: template.opacidadeLogoDireitaVerso ?? template.opacidadeLogoDireita ?? 1,
+              offsetX: template.logoDireitaVersoOffsetX ?? 0,
+              offsetY: template.logoDireitaVersoOffsetY ?? 0,
+              setOffset: (nx: number, ny: number) =>
+                setTemplate((prev) => ({
+                  ...prev,
+                  logoDireitaVersoOffsetX: nx,
+                  logoDireitaVersoOffsetY: ny,
+                })),
               layer: 'brasaoDireitoVerso' as CertificateLayerKey,
               hasLegend: true,
               legendText:
@@ -2031,7 +2896,7 @@ export function CertificateClickMenu({
             'Tamanho do Brasão',
             crestConfig.size,
             24,
-            180,
+            240,
             2,
             crestConfig.setSize
           )}
@@ -2074,6 +2939,17 @@ export function CertificateClickMenu({
               )}
             </div>
           )}
+
+          {renderMoveControls({
+            x: crestConfig.offsetX,
+            y: crestConfig.offsetY,
+            minX: -520,
+            maxX: 520,
+            minY: -220,
+            maxY: 640,
+            onChange: (nx, ny) => crestConfig.setOffset(nx, ny),
+            onReset: () => crestConfig.setOffset(0, 0),
+          })}
 
           {renderLayerStepper(crestConfig.layer)}
         </div>
@@ -2252,6 +3128,33 @@ export function CertificateClickMenu({
                 className="w-full accent-blue-800"
               />
             </div>
+            {renderMoveControls({
+              x:
+                (activeTarget === 'marcaDaguaFrente'
+                  ? template.marcaDaguaFrenteOffsetX
+                  : template.marcaDaguaVersoOffsetX) ?? 0,
+              y:
+                (activeTarget === 'marcaDaguaFrente'
+                  ? template.marcaDaguaFrenteOffsetY
+                  : template.marcaDaguaVersoOffsetY) ?? 0,
+              minX: -580,
+              maxX: 580,
+              minY: -580,
+              maxY: 580,
+              onChange: (nx, ny) =>
+                setTemplate((prev) =>
+                  activeTarget === 'marcaDaguaFrente'
+                    ? { ...prev, marcaDaguaFrenteOffsetX: nx, marcaDaguaFrenteOffsetY: ny }
+                    : { ...prev, marcaDaguaVersoOffsetX: nx, marcaDaguaVersoOffsetY: ny }
+                ),
+              onReset: () =>
+                setTemplate((prev) =>
+                  activeTarget === 'marcaDaguaFrente'
+                    ? { ...prev, marcaDaguaFrenteOffsetX: 0, marcaDaguaFrenteOffsetY: 0 }
+                    : { ...prev, marcaDaguaVersoOffsetX: 0, marcaDaguaVersoOffsetY: 0 }
+                ),
+            })}
+
             {renderLayerStepper(
               activeTarget === 'marcaDaguaFrente' ? 'marcaDaguaFrente' : 'marcaDaguaVerso'
             )}
@@ -2488,30 +3391,46 @@ export function CertificateClickMenu({
           renderPropertiesBody()
         ) : (
           <div className="space-y-3">
-            {/* Primary Action: Insert Free Text Box Right Here */}
-            <button
-              type="button"
-              onClick={() => {
-                const newId = onInsertCustomTextBoxAt(
-                  side,
-                  clickContext.relX,
-                  clickContext.relY
-                );
-                const newKey = `caixaTexto:${newId}` as CertificateSelectableObject;
-                setActiveTarget(newKey);
-                onSelectObject(newKey);
-                setMenuTab('props');
-              }}
-              className="w-full py-2 px-3 rounded-xl bg-blue-900 hover:bg-blue-950 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs cursor-pointer transition-colors"
-            >
-              <Type size={13} />
-              <span>+ Inserir Caixa de Texto aqui</span>
-            </button>
+            {/* Primary Actions: Insert Free Text Box OR Extra Image Right Here */}
+            <div className="grid grid-cols-2 gap-1.5">
+              <button
+                type="button"
+                onClick={() => {
+                  const newId = onInsertCustomTextBoxAt(
+                    side,
+                    clickContext.relX,
+                    clickContext.relY
+                  );
+                  const newKey = `caixaTexto:${newId}` as CertificateSelectableObject;
+                  setActiveTarget(newKey);
+                  onSelectObject(newKey);
+                  setMenuTab('props');
+                }}
+                className="py-2 px-2 rounded-xl bg-blue-900 hover:bg-blue-950 text-white text-[11px] font-bold flex items-center justify-center gap-1 shadow-xs cursor-pointer transition-colors"
+              >
+                <Type size={12} />
+                <span>+ Texto Livre</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const newId = insertImageAtClick();
+                  const newKey = `imagemExtra:${newId}` as CertificateSelectableObject;
+                  setActiveTarget(newKey);
+                  onSelectObject(newKey);
+                  setMenuTab('props');
+                }}
+                className="py-2 px-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-[11px] font-bold flex items-center justify-center gap-1 shadow-xs cursor-pointer transition-colors"
+              >
+                <ImageIcon size={12} />
+                <span>+ Imagem / Brasão</span>
+              </button>
+            </div>
 
             {/* Standard Elements Insert / Remove */}
             <div className="space-y-1.5">
               <span className="block text-[10px] font-black uppercase tracking-wider text-slate-500">
-                Itens da {side === 'front' ? 'Frente' : 'Verso'}
+                Inserir Itens na {side === 'front' ? 'Frente' : 'Verso'}
               </span>
               <div className="space-y-1">
                 {sideToggleItems.map((item) => (
@@ -2527,11 +3446,22 @@ export function CertificateClickMenu({
                       onClick={() => {
                         if (!item.isVisible) {
                           item.onInsert();
+                          setActiveTarget(item.id);
+                          onSelectObject(item.id);
+                          setMenuTab('props');
+                        } else if (item.onInsertNew) {
+                          item.onInsertNew();
+                        } else {
+                          setActiveTarget(item.id);
+                          onSelectObject(item.id);
+                          setMenuTab('props');
                         }
-                        setActiveTarget(item.id);
-                        onSelectObject(item.id);
-                        setMenuTab('props');
                       }}
+                      title={
+                        item.isVisible && item.onInsertNew
+                          ? `Inserir um novo ${item.label} neste ponto sem alterar o existente`
+                          : `Inserir ${item.label}`
+                      }
                       className="flex-1 text-left text-[11px] font-bold text-slate-800 hover:text-blue-900 flex items-center gap-1.5 cursor-pointer min-w-0"
                     >
                       <span
@@ -2546,6 +3476,17 @@ export function CertificateClickMenu({
                     <div className="flex items-center gap-1 shrink-0">
                       {item.isVisible ? (
                         <>
+                          {item.onInsertNew && (
+                            <button
+                              type="button"
+                              onClick={item.onInsertNew}
+                              className="px-2 py-0.5 rounded bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 text-[10px] font-bold flex items-center gap-0.5 cursor-pointer"
+                              title={`Inserir novo ${item.label} sem alterar o existente`}
+                            >
+                              <Plus size={10} />
+                              <span>Novo</span>
+                            </button>
+                          )}
                           <button
                             type="button"
                             onClick={() => {
@@ -2554,18 +3495,17 @@ export function CertificateClickMenu({
                               setMenuTab('props');
                             }}
                             className="p-1 rounded bg-slate-100 hover:bg-blue-100 text-slate-700 hover:text-blue-900 cursor-pointer"
-                            title="Editar propriedades"
+                            title={`Editar ${item.label} existente`}
                           >
                             <Pencil size={10} />
                           </button>
                           <button
                             type="button"
                             onClick={item.onRemove}
-                            className="px-2 py-0.5 rounded bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-[10px] font-bold flex items-center gap-0.5 cursor-pointer"
-                            title={`Remover ${item.label}`}
+                            className="p-1 rounded bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 cursor-pointer"
+                            title={`Remover ${item.label} existente`}
                           >
                             <Trash2 size={10} />
-                            <span>Apagar</span>
                           </button>
                         </>
                       ) : (
@@ -2575,6 +3515,7 @@ export function CertificateClickMenu({
                             item.onInsert();
                             setActiveTarget(item.id);
                             onSelectObject(item.id);
+                            setMenuTab('props');
                           }}
                           className="px-2 py-0.5 rounded bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 text-[10px] font-bold flex items-center gap-0.5 cursor-pointer"
                         >
@@ -2587,6 +3528,60 @@ export function CertificateClickMenu({
                 ))}
               </div>
             </div>
+
+            {/* Existing Extra Images on this side */}
+            {sideCustomImages.length > 0 && (
+              <div className="space-y-1.5 pt-1 border-t border-slate-200">
+                <span className="block text-[10px] font-black uppercase tracking-wider text-slate-500">
+                  Imagens / Brasões Extras ({sideCustomImages.length})
+                </span>
+                <div className="space-y-1">
+                  {sideCustomImages.map((img, idx) => {
+                    const key = `imagemExtra:${img.id}` as CertificateSelectableObject;
+                    return (
+                      <div
+                        key={img.id}
+                        className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveTarget(key);
+                            onSelectObject(key);
+                            setMenuTab('props');
+                          }}
+                          className="flex-1 text-left text-[11px] font-bold text-slate-800 hover:text-blue-900 truncate cursor-pointer"
+                        >
+                          {img.titulo ? `${idx + 1}. ${img.titulo}` : `Imagem Extra ${idx + 1}`}
+                        </button>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveTarget(key);
+                              onSelectObject(key);
+                              setMenuTab('props');
+                            }}
+                            className="p-1 rounded bg-slate-100 hover:bg-blue-100 text-slate-700 cursor-pointer"
+                            title="Editar imagem"
+                          >
+                            <Pencil size={10} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteCustomImage(img.id)}
+                            className="p-1 rounded bg-rose-50 hover:bg-rose-100 text-rose-700 cursor-pointer"
+                            title="Apagar imagem"
+                          >
+                            <Trash2 size={10} />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Existing Free Text Boxes on this side */}
             {sideCustomBoxes.length > 0 && (

@@ -4149,10 +4149,10 @@ export default function CertificadosPage() {
                         ? 'bg-blue-700 text-white border-blue-800 shadow-xs'
                         : 'bg-white text-blue-800 border-blue-200 hover:bg-blue-50'
                     )}
-                    title="Permite clicar e arrastar os brasões, marca d'água, título, texto principal, data e cada assinatura livremente pela folha (frente e verso)"
+                    title="Exibe guias pontilhadas em todos os itens móveis; você também pode clicar e arrastar qualquer item diretamente na folha"
                   >
                     <Move size={13} />
-                    <span>{dragMoveEnabled ? 'Arrastar Ativo' : 'Mover na Folha'}</span>
+                    <span>{dragMoveEnabled ? 'Guias Visíveis' : 'Mover na Folha'}</span>
                   </button>
 
                   <button
@@ -4299,7 +4299,7 @@ export default function CertificadosPage() {
             <div className="px-3 py-2 rounded-xl bg-blue-50 border border-blue-200 text-[11px] font-semibold text-blue-900 flex items-center justify-between gap-2">
               <span className="flex items-center gap-1.5">
                 <Move size={13} className="shrink-0" />
-                Modo Mover na Folha ativo: clique e arraste livremente por toda a folha ({isPortraitSheet ? 'A4 Retrato' : 'A4 Paisagem'}) os Brasões, Marca d&apos;Água, Título, Texto Principal, Data e Assinaturas (Frente e Verso).
+                Guias de movimentação visíveis: clique e arraste livremente por toda a folha ({isPortraitSheet ? 'A4 Retrato' : 'A4 Paisagem'}) os Brasões, Marca d&apos;Água, Título, Texto Principal, Data, Assinaturas e Quadro do Verso.
               </span>
               <button
                 type="button"

@@ -155,6 +155,38 @@ const FONT_OPTIONS_BACK: { value: CertificateFontKey; label: string }[] = [
   { value: 'script', label: 'Caligráfica Formal' },
 ];
 
+const FONT_PT_PRESETS = [12, 14, 16, 18, 20, 22, 24, 26, 28, 32, 36, 40, 44, 48, 56, 64, 72];
+
+function renderFontPtPresetSelect(
+  valuePx: number,
+  onChangePx: (nextPx: number) => void,
+  min = 12,
+  max = 96
+) {
+  const currentPt = pxToPtNumber(valuePx);
+  const closestPreset = FONT_PT_PRESETS.reduce((best, p) =>
+    Math.abs(p - currentPt) < Math.abs(best - currentPt) ? p : best
+  );
+  return (
+    <select
+      value={FONT_PT_PRESETS.includes(Math.round(currentPt)) ? Math.round(currentPt) : closestPreset}
+      onChange={(e) => {
+        const pt = Number(e.target.value);
+        const pxVal = Math.max(min, Math.min(max, Math.round(pt * 1.3333333 * 2) / 2));
+        onChangePx(pxVal);
+      }}
+      title="Selecionar tamanho da fonte (12 a 72 pt)"
+      className="px-1.5 py-0.5 rounded border border-slate-300 bg-white text-[10px] font-bold text-blue-900 cursor-pointer"
+    >
+      {FONT_PT_PRESETS.map((pt) => (
+        <option key={pt} value={pt}>
+          {pt} pt
+        </option>
+      ))}
+    </select>
+  );
+}
+
 function getObjectMeta(obj: CertificateSelectableObject): {
   title: string;
   subtitle: string;
@@ -1927,18 +1959,23 @@ export function CertificateInspectorPanel({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-200">
                 <div>
-                  <div className="flex items-center justify-between text-[11px] font-bold text-slate-700 mb-1">
+                  <div className="flex items-center justify-between gap-2 text-[11px] font-bold text-slate-700 mb-1">
                     <span>Tamanho do Título</span>
-                    <span className="font-mono text-blue-900">
-                      {template.tamanhoFonteTitulo ?? 42}px ({pxToPtNumber(template.tamanhoFonteTitulo ?? 42)}pt)
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      {renderFontPtPresetSelect(template.tamanhoFonteTitulo ?? 42, (px) =>
+                        setTemplate((prev) => ({ ...prev, tamanhoFonteTitulo: px }))
+                      )}
+                      <span className="font-mono text-blue-900">
+                        {template.tamanhoFonteTitulo ?? 42}px ({pxToPtNumber(template.tamanhoFonteTitulo ?? 42)}pt)
+                      </span>
+                    </div>
                   </div>
                   <input
                     type="range"
-                    min={10}
-                    max={60}
+                    min={12}
+                    max={96}
                     step={1}
-                    value={template.tamanhoFonteTitulo ?? 42}
+                    value={Math.max(12, Math.min(96, template.tamanhoFonteTitulo ?? 42))}
                     onChange={(e) =>
                       setTemplate((prev) => ({
                         ...prev,
@@ -2324,18 +2361,23 @@ export function CertificateInspectorPanel({
               </div>
 
               <div>
-                <label className="flex items-center justify-between text-xs font-bold text-slate-700 mb-1">
+                <div className="flex items-center justify-between gap-2 text-xs font-bold text-slate-700 mb-1">
                   <span>Tamanho da Fonte do Texto</span>
-                  <span className="font-mono text-blue-800">
-                    {template.tamanhoFonteCorpo}px ({pxToPtNumber(template.tamanhoFonteCorpo)}pt)
-                  </span>
-                </label>
+                  <div className="flex items-center gap-1.5">
+                    {renderFontPtPresetSelect(template.tamanhoFonteCorpo, (px) =>
+                      setTemplate((prev) => ({ ...prev, tamanhoFonteCorpo: px }))
+                    )}
+                    <span className="font-mono text-blue-800">
+                      {template.tamanhoFonteCorpo}px ({pxToPtNumber(template.tamanhoFonteCorpo)}pt)
+                    </span>
+                  </div>
+                </div>
                 <input
                   type="range"
-                  min={8}
-                  max={26}
+                  min={12}
+                  max={96}
                   step={1}
-                  value={template.tamanhoFonteCorpo}
+                  value={Math.max(12, Math.min(96, template.tamanhoFonteCorpo))}
                   onChange={(e) =>
                     setTemplate((prev) => ({
                       ...prev,
@@ -2639,28 +2681,43 @@ export function CertificateInspectorPanel({
                     </div>
 
                     <div>
-                      <div className="flex justify-between text-[10px] font-bold text-slate-600 mb-0.5">
+                      <div className="flex justify-between items-center gap-2 text-[10px] font-bold text-slate-600 mb-0.5">
                         <span>Tamanho do Nome em Destaque</span>
-                        <span className="font-mono text-blue-900">
-                          {template.tamanhoFonteParticipante ??
-                            Math.round((template.tamanhoFonteCorpo || 17) * 2.15)}
-                          px (
-                          {pxToPtNumber(
+                        <div className="flex items-center gap-1.5">
+                          {renderFontPtPresetSelect(
                             template.tamanhoFonteParticipante ??
-                              Math.round((template.tamanhoFonteCorpo || 17) * 2.15)
+                              Math.round((template.tamanhoFonteCorpo || 17) * 2.15),
+                            (px) =>
+                              setTemplate((prev) => ({
+                                ...prev,
+                                tamanhoFonteParticipante: px,
+                              }))
                           )}
-                          pt)
-                        </span>
+                          <span className="font-mono text-blue-900">
+                            {template.tamanhoFonteParticipante ??
+                              Math.round((template.tamanhoFonteCorpo || 17) * 2.15)}
+                            px (
+                            {pxToPtNumber(
+                              template.tamanhoFonteParticipante ??
+                                Math.round((template.tamanhoFonteCorpo || 17) * 2.15)
+                            )}
+                            pt)
+                          </span>
+                        </div>
                       </div>
                       <input
                         type="range"
-                        min={10}
-                        max={54}
+                        min={12}
+                        max={96}
                         step={1}
-                        value={
-                          template.tamanhoFonteParticipante ??
-                          Math.round((template.tamanhoFonteCorpo || 17) * 2.15)
-                        }
+                        value={Math.max(
+                          12,
+                          Math.min(
+                            96,
+                            template.tamanhoFonteParticipante ??
+                              Math.round((template.tamanhoFonteCorpo || 17) * 2.15)
+                          )
+                        )}
                         onChange={(e) =>
                           setTemplate((prev) => ({
                             ...prev,
@@ -2832,28 +2889,43 @@ export function CertificateInspectorPanel({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-200">
                 <div>
-                  <div className="flex justify-between text-[11px] font-bold text-slate-700 mb-0.5">
+                  <div className="flex justify-between items-center gap-2 text-[11px] font-bold text-slate-700 mb-0.5">
                     <span>Tamanho da Fonte</span>
-                    <span className="font-mono text-blue-900">
-                      {template.tamanhoFonteData ??
-                        Math.max(8, (template.tamanhoFonteCorpo || 19) - 1)}
-                      px (
-                      {pxToPtNumber(
+                    <div className="flex items-center gap-1.5">
+                      {renderFontPtPresetSelect(
                         template.tamanhoFonteData ??
-                          Math.max(8, (template.tamanhoFonteCorpo || 19) - 1)
+                          Math.max(12, (template.tamanhoFonteCorpo || 19) - 1),
+                        (px) =>
+                          setTemplate((prev) => ({
+                            ...prev,
+                            tamanhoFonteData: px,
+                          }))
                       )}
-                      pt)
-                    </span>
+                      <span className="font-mono text-blue-900">
+                        {template.tamanhoFonteData ??
+                          Math.max(12, (template.tamanhoFonteCorpo || 19) - 1)}
+                        px (
+                        {pxToPtNumber(
+                          template.tamanhoFonteData ??
+                            Math.max(12, (template.tamanhoFonteCorpo || 19) - 1)
+                        )}
+                        pt)
+                      </span>
+                    </div>
                   </div>
                   <input
                     type="range"
-                    min={8}
-                    max={22}
+                    min={12}
+                    max={96}
                     step={1}
-                    value={
-                      template.tamanhoFonteData ??
-                      Math.max(8, (template.tamanhoFonteCorpo || 19) - 1)
-                    }
+                    value={Math.max(
+                      12,
+                      Math.min(
+                        96,
+                        template.tamanhoFonteData ??
+                          Math.max(12, (template.tamanhoFonteCorpo || 19) - 1)
+                      )
+                    )}
                     onChange={(e) =>
                       setTemplate((prev) => ({
                         ...prev,
@@ -3185,18 +3257,23 @@ export function CertificateInspectorPanel({
               <div className="pt-2 border-t border-slate-200 space-y-2">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div>
-                    <div className="flex justify-between text-[10px] font-bold text-slate-600 mb-0.5">
+                    <div className="flex justify-between items-center gap-1 text-[10px] font-bold text-slate-600 mb-0.5">
                       <span>Fonte do Nome</span>
-                      <span className="font-mono text-blue-900">
-                        {template.tamanhoFonteAssinaturaNome ?? 14.5}px ({pxToPtNumber(template.tamanhoFonteAssinaturaNome ?? 14.5)}pt)
-                      </span>
+                      <div className="flex items-center gap-1">
+                        {renderFontPtPresetSelect(template.tamanhoFonteAssinaturaNome ?? 14.5, (px) =>
+                          setTemplate((prev) => ({ ...prev, tamanhoFonteAssinaturaNome: px }))
+                        )}
+                        <span className="font-mono text-blue-900">
+                          {template.tamanhoFonteAssinaturaNome ?? 14.5}px ({pxToPtNumber(template.tamanhoFonteAssinaturaNome ?? 14.5)}pt)
+                        </span>
+                      </div>
                     </div>
                     <input
                       type="range"
-                      min={7}
-                      max={20}
+                      min={12}
+                      max={96}
                       step={0.5}
-                      value={template.tamanhoFonteAssinaturaNome ?? 14.5}
+                      value={Math.max(12, Math.min(96, template.tamanhoFonteAssinaturaNome ?? 14.5))}
                       onChange={(e) =>
                         setTemplate((prev) => ({
                           ...prev,
@@ -3207,18 +3284,23 @@ export function CertificateInspectorPanel({
                     />
                   </div>
                   <div>
-                    <div className="flex justify-between text-[10px] font-bold text-slate-600 mb-0.5">
+                    <div className="flex justify-between items-center gap-1 text-[10px] font-bold text-slate-600 mb-0.5">
                       <span>Fonte Posto/Cargo</span>
-                      <span className="font-mono text-blue-900">
-                        {template.tamanhoFonteAssinaturaCargo ?? 13.5}px ({pxToPtNumber(template.tamanhoFonteAssinaturaCargo ?? 13.5)}pt)
-                      </span>
+                      <div className="flex items-center gap-1">
+                        {renderFontPtPresetSelect(template.tamanhoFonteAssinaturaCargo ?? 13.5, (px) =>
+                          setTemplate((prev) => ({ ...prev, tamanhoFonteAssinaturaCargo: px }))
+                        )}
+                        <span className="font-mono text-blue-900">
+                          {template.tamanhoFonteAssinaturaCargo ?? 13.5}px ({pxToPtNumber(template.tamanhoFonteAssinaturaCargo ?? 13.5)}pt)
+                        </span>
+                      </div>
                     </div>
                     <input
                       type="range"
-                      min={6}
-                      max={18}
+                      min={12}
+                      max={96}
                       step={0.5}
-                      value={template.tamanhoFonteAssinaturaCargo ?? 13.5}
+                      value={Math.max(12, Math.min(96, template.tamanhoFonteAssinaturaCargo ?? 13.5))}
                       onChange={(e) =>
                         setTemplate((prev) => ({
                           ...prev,
@@ -3713,18 +3795,23 @@ export function CertificateInspectorPanel({
                   <div className="pt-2 border-t border-slate-200 space-y-2">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <div>
-                        <div className="flex justify-between text-[10px] font-bold text-slate-600 mb-0.5">
+                        <div className="flex justify-between items-center gap-1 text-[10px] font-bold text-slate-600 mb-0.5">
                           <span>Fonte do Nome</span>
-                          <span className="font-mono text-blue-900">
-                            {template.tamanhoFonteAssinaturaNome ?? 14.5}px ({pxToPtNumber(template.tamanhoFonteAssinaturaNome ?? 14.5)}pt)
-                          </span>
+                          <div className="flex items-center gap-1">
+                            {renderFontPtPresetSelect(template.tamanhoFonteAssinaturaNome ?? 14.5, (px) =>
+                              setTemplate((prev) => ({ ...prev, tamanhoFonteAssinaturaNome: px }))
+                            )}
+                            <span className="font-mono text-blue-900">
+                              {template.tamanhoFonteAssinaturaNome ?? 14.5}px ({pxToPtNumber(template.tamanhoFonteAssinaturaNome ?? 14.5)}pt)
+                            </span>
+                          </div>
                         </div>
                         <input
                           type="range"
-                          min={7}
-                          max={20}
+                          min={12}
+                          max={96}
                           step={0.5}
-                          value={template.tamanhoFonteAssinaturaNome ?? 14.5}
+                          value={Math.max(12, Math.min(96, template.tamanhoFonteAssinaturaNome ?? 14.5))}
                           onChange={(e) =>
                             setTemplate((prev) => ({
                               ...prev,
@@ -3735,18 +3822,23 @@ export function CertificateInspectorPanel({
                         />
                       </div>
                       <div>
-                        <div className="flex justify-between text-[10px] font-bold text-slate-600 mb-0.5">
+                        <div className="flex justify-between items-center gap-1 text-[10px] font-bold text-slate-600 mb-0.5">
                           <span>Fonte Posto/Cargo</span>
-                          <span className="font-mono text-blue-900">
-                            {template.tamanhoFonteAssinaturaCargo ?? 13.5}px ({pxToPtNumber(template.tamanhoFonteAssinaturaCargo ?? 13.5)}pt)
-                          </span>
+                          <div className="flex items-center gap-1">
+                            {renderFontPtPresetSelect(template.tamanhoFonteAssinaturaCargo ?? 13.5, (px) =>
+                              setTemplate((prev) => ({ ...prev, tamanhoFonteAssinaturaCargo: px }))
+                            )}
+                            <span className="font-mono text-blue-900">
+                              {template.tamanhoFonteAssinaturaCargo ?? 13.5}px ({pxToPtNumber(template.tamanhoFonteAssinaturaCargo ?? 13.5)}pt)
+                            </span>
+                          </div>
                         </div>
                         <input
                           type="range"
-                          min={6}
-                          max={18}
+                          min={12}
+                          max={96}
                           step={0.5}
-                          value={template.tamanhoFonteAssinaturaCargo ?? 13.5}
+                          value={Math.max(12, Math.min(96, template.tamanhoFonteAssinaturaCargo ?? 13.5))}
                           onChange={(e) =>
                             setTemplate((prev) => ({
                               ...prev,
@@ -4489,9 +4581,12 @@ export function CertificateInspectorPanel({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-200">
                 <div>
-                  <div className="flex items-center justify-between text-[11px] font-bold text-slate-700 mb-1">
+                  <div className="flex items-center justify-between gap-2 text-[11px] font-bold text-slate-700 mb-1">
                     <span>Tamanho do Título</span>
                     <div className="flex items-center gap-1.5">
+                      {renderFontPtPresetSelect(template.versoTamanhoFonteTitulo ?? 30, (px) =>
+                        setTemplate((prev) => ({ ...prev, versoTamanhoFonteTitulo: px }))
+                      )}
                       <span className="font-mono text-blue-900">
                         {template.versoTamanhoFonteTitulo ?? 30}px (
                         {pxToPtNumber(template.versoTamanhoFonteTitulo ?? 30)}pt)
@@ -4514,10 +4609,10 @@ export function CertificateInspectorPanel({
                   </div>
                   <input
                     type="range"
-                    min={10}
-                    max={44}
+                    min={12}
+                    max={96}
                     step={1}
-                    value={template.versoTamanhoFonteTitulo ?? 30}
+                    value={Math.max(12, Math.min(96, template.versoTamanhoFonteTitulo ?? 30))}
                     onChange={(e) =>
                       setTemplate((prev) => ({
                         ...prev,
@@ -5135,9 +5230,12 @@ export function CertificateInspectorPanel({
                 {/* Tamanhos de Fonte (Cabeçalho, Disciplinas, Números, Totais) */}
                 <div className="space-y-2.5 pt-2 border-t border-slate-100">
                   <div>
-                    <div className="flex items-center justify-between text-[10px] font-bold text-slate-600 mb-0.5">
+                    <div className="flex items-center justify-between gap-2 text-[10px] font-bold text-slate-600 mb-0.5">
                       <span>Tamanho do Cabeçalho (Colunas)</span>
                       <div className="flex items-center gap-1.5">
+                        {renderFontPtPresetSelect(template.versoTamanhoFonteCabecalho ?? 21, (px) =>
+                          setTemplate((prev) => ({ ...prev, versoTamanhoFonteCabecalho: px }))
+                        )}
                         <span className="font-mono text-blue-900">
                           {template.versoTamanhoFonteCabecalho ?? 21}px ({pxToPtNumber(template.versoTamanhoFonteCabecalho ?? 21)}pt)
                         </span>
@@ -5159,10 +5257,10 @@ export function CertificateInspectorPanel({
                     </div>
                     <input
                       type="range"
-                      min={7}
-                      max={28}
+                      min={12}
+                      max={96}
                       step={0.5}
-                      value={template.versoTamanhoFonteCabecalho ?? 21}
+                      value={Math.max(12, Math.min(96, template.versoTamanhoFonteCabecalho ?? 21))}
                       onChange={(e) =>
                         setTemplate((prev) => ({
                           ...prev,
@@ -5175,9 +5273,12 @@ export function CertificateInspectorPanel({
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <div className="flex items-center justify-between text-[10px] font-bold text-slate-600 mb-0.5">
+                      <div className="flex items-center justify-between gap-1 text-[10px] font-bold text-slate-600 mb-0.5">
                         <span>Texto (Disciplinas)</span>
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1">
+                          {renderFontPtPresetSelect(template.versoTamanhoFonteDisciplinas ?? 17, (px) =>
+                            setTemplate((prev) => ({ ...prev, versoTamanhoFonteDisciplinas: px }))
+                          )}
                           <span className="font-mono text-blue-900">
                             {template.versoTamanhoFonteDisciplinas !== undefined
                               ? `${template.versoTamanhoFonteDisciplinas}px`
@@ -5201,10 +5302,10 @@ export function CertificateInspectorPanel({
                       </div>
                       <input
                         type="range"
-                        min={6}
-                        max={26}
+                        min={12}
+                        max={96}
                         step={0.5}
-                        value={template.versoTamanhoFonteDisciplinas ?? 17}
+                        value={Math.max(12, Math.min(96, template.versoTamanhoFonteDisciplinas ?? 17))}
                         onChange={(e) =>
                           setTemplate((prev) => ({
                             ...prev,
@@ -5216,9 +5317,12 @@ export function CertificateInspectorPanel({
                     </div>
 
                     <div>
-                      <div className="flex items-center justify-between text-[10px] font-bold text-slate-600 mb-0.5">
+                      <div className="flex items-center justify-between gap-1 text-[10px] font-bold text-slate-600 mb-0.5">
                         <span>Números (Notas / Horas)</span>
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1">
+                          {renderFontPtPresetSelect(template.versoTamanhoFonteNumeros ?? 22, (px) =>
+                            setTemplate((prev) => ({ ...prev, versoTamanhoFonteNumeros: px }))
+                          )}
                           <span className="font-mono text-blue-900">
                             {template.versoTamanhoFonteNumeros !== undefined
                               ? `${template.versoTamanhoFonteNumeros}px`
@@ -5242,10 +5346,10 @@ export function CertificateInspectorPanel({
                       </div>
                       <input
                         type="range"
-                        min={6}
-                        max={34}
+                        min={12}
+                        max={96}
                         step={0.5}
-                        value={template.versoTamanhoFonteNumeros ?? 22}
+                        value={Math.max(12, Math.min(96, template.versoTamanhoFonteNumeros ?? 22))}
                         onChange={(e) =>
                           setTemplate((prev) => ({
                             ...prev,
@@ -5259,18 +5363,23 @@ export function CertificateInspectorPanel({
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <div className="flex items-center justify-between text-[10px] font-bold text-slate-600 mb-0.5">
+                      <div className="flex items-center justify-between gap-1 text-[10px] font-bold text-slate-600 mb-0.5">
                         <span>Texto Totais (Total / Média)</span>
-                        <span className="font-mono text-blue-900">
-                          {template.versoTamanhoFonteTotaisLabel ?? 22}px
-                        </span>
+                        <div className="flex items-center gap-1">
+                          {renderFontPtPresetSelect(template.versoTamanhoFonteTotaisLabel ?? 22, (px) =>
+                            setTemplate((prev) => ({ ...prev, versoTamanhoFonteTotaisLabel: px }))
+                          )}
+                          <span className="font-mono text-blue-900">
+                            {template.versoTamanhoFonteTotaisLabel ?? 22}px
+                          </span>
+                        </div>
                       </div>
                       <input
                         type="range"
-                        min={7}
-                        max={30}
+                        min={12}
+                        max={96}
                         step={0.5}
-                        value={template.versoTamanhoFonteTotaisLabel ?? 22}
+                        value={Math.max(12, Math.min(96, template.versoTamanhoFonteTotaisLabel ?? 22))}
                         onChange={(e) =>
                           setTemplate((prev) => ({
                             ...prev,
@@ -5282,18 +5391,23 @@ export function CertificateInspectorPanel({
                     </div>
 
                     <div>
-                      <div className="flex items-center justify-between text-[10px] font-bold text-slate-600 mb-0.5">
+                      <div className="flex items-center justify-between gap-1 text-[10px] font-bold text-slate-600 mb-0.5">
                         <span>Números Totais (Horas / Média)</span>
-                        <span className="font-mono text-blue-900">
-                          {template.versoTamanhoFonteTotaisNumeros ?? 28}px
-                        </span>
+                        <div className="flex items-center gap-1">
+                          {renderFontPtPresetSelect(template.versoTamanhoFonteTotaisNumeros ?? 28, (px) =>
+                            setTemplate((prev) => ({ ...prev, versoTamanhoFonteTotaisNumeros: px }))
+                          )}
+                          <span className="font-mono text-blue-900">
+                            {template.versoTamanhoFonteTotaisNumeros ?? 28}px
+                          </span>
+                        </div>
                       </div>
                       <input
                         type="range"
-                        min={7}
-                        max={38}
+                        min={12}
+                        max={96}
                         step={0.5}
-                        value={template.versoTamanhoFonteTotaisNumeros ?? 28}
+                        value={Math.max(12, Math.min(96, template.versoTamanhoFonteTotaisNumeros ?? 28))}
                         onChange={(e) =>
                           setTemplate((prev) => ({
                             ...prev,
@@ -6289,18 +6403,23 @@ export function CertificateInspectorPanel({
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                         <div>
-                          <div className="flex justify-between text-[11px] font-bold text-slate-700 mb-1">
+                          <div className="flex justify-between items-center gap-2 text-[11px] font-bold text-slate-700 mb-1">
                             <span>Tamanho</span>
-                            <span className="font-mono text-blue-900">
-                              {activeBox.tamanhoFontePx}px ({pxToPtNumber(activeBox.tamanhoFontePx)}pt)
-                            </span>
+                            <div className="flex items-center gap-1.5">
+                              {renderFontPtPresetSelect(activeBox.tamanhoFontePx, (px) =>
+                                updateBox(activeBox.id, (b) => ({ ...b, tamanhoFontePx: px }))
+                              )}
+                              <span className="font-mono text-blue-900">
+                                {activeBox.tamanhoFontePx}px ({pxToPtNumber(activeBox.tamanhoFontePx)}pt)
+                              </span>
+                            </div>
                           </div>
                           <input
                             type="range"
-                            min={6}
-                            max={64}
+                            min={12}
+                            max={96}
                             step={0.5}
-                            value={activeBox.tamanhoFontePx}
+                            value={Math.max(12, Math.min(96, activeBox.tamanhoFontePx))}
                             onChange={(e) =>
                               updateBox(activeBox.id, (b) => ({
                                 ...b,

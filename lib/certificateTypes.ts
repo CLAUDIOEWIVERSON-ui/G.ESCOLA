@@ -249,6 +249,8 @@ export interface CertificateTemplateConfig {
   escalaAlturaMarcaDaguaVerso?: number;
   marcaDaguaVersoOffsetX?: number;
   marcaDaguaVersoOffsetY?: number;
+  versoTabelaOffsetX?: number;
+  versoTabelaOffsetY?: number;
   corBordaFrente: string;
   corBordaVerso: string;
 

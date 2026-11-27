@@ -39,6 +39,7 @@ export type DraggableCertificateElement =
   | 'logoCentroVerso'
   | 'logoDireitaVerso'
   | 'versoTitulo'
+  | 'versoTabela'
   | 'marcaDaguaVerso';
 
 interface SheetBox {
@@ -524,6 +525,7 @@ export function CertificateSheet({
     logoCentroVerso: 'brasaoCentroVerso',
     logoDireitaVerso: 'brasaoDireitoVerso',
     versoTitulo: 'versoTitulo',
+    versoTabela: 'versoTabela',
     marcaDaguaVerso: 'marcaDaguaVerso',
   };
 
@@ -541,6 +543,7 @@ export function CertificateSheet({
     brasaoCentroVerso: 'logoCentroVerso',
     brasaoDireitoVerso: 'logoDireitaVerso',
     versoTitulo: 'versoTitulo',
+    versoTabela: 'versoTabela',
     marcaDaguaVerso: 'marcaDaguaVerso',
   };
 
@@ -558,6 +561,7 @@ export function CertificateSheet({
     logoCentroVerso: 'Brasão Central (Verso)',
     logoDireitaVerso: 'Brasão Direito (Verso)',
     versoTitulo: 'Título do Verso',
+    versoTabela: 'Quadro de Disciplinas',
     marcaDaguaVerso: "Marca d'Água Verso",
   };
 
@@ -642,6 +646,12 @@ export function CertificateSheet({
       maxX: isPortrait ? 380 : 520,
       minY: isPortrait ? -240 : -200,
       maxY: isPortrait ? 900 : 560,
+    },
+    versoTabela: {
+      minX: isPortrait ? -240 : -340,
+      maxX: isPortrait ? 240 : 340,
+      minY: isPortrait ? -240 : -180,
+      maxY: isPortrait ? 320 : 240,
     },
     marcaDaguaVerso: {
       minX: isPortrait ? -420 : -580,
@@ -802,7 +812,7 @@ export function CertificateSheet({
     return { horizontal: dedupedHoriz, vertical };
   };
 
-  const offsetsOnlySig = `${template.logoEsquerdaOffsetX ?? 0},${template.logoEsquerdaOffsetY ?? 0}|${template.logoCentroOffsetX ?? 0},${template.logoCentroOffsetY ?? 0}|${template.logoDireitaOffsetX ?? 0},${template.logoDireitaOffsetY ?? 0}|${template.tituloOffsetX ?? 0},${template.tituloOffsetY ?? 0}|${template.textoOffsetX ?? 0},${template.textoOffsetY ?? 0}|${template.dataOffsetX ?? 0},${template.dataOffsetY ?? 0}|${template.assinaturaPrincipalOffsetX ?? 0},${template.assinaturaPrincipalOffsetY ?? 0}|${template.segundaAssinaturaOffsetX ?? 0},${template.segundaAssinaturaOffsetY ?? 0}|${template.assinaturaAlturaOffset ?? 0}|${template.marcaDaguaFrenteOffsetX ?? 0},${template.marcaDaguaFrenteOffsetY ?? 0}|${template.logoEsquerdaVersoOffsetX ?? 0},${template.logoEsquerdaVersoOffsetY ?? 0}|${template.logoCentroVersoOffsetX ?? 0},${template.logoCentroVersoOffsetY ?? 0}|${template.logoDireitaVersoOffsetX ?? 0},${template.logoDireitaVersoOffsetY ?? 0}|${template.versoTituloOffsetX ?? 0},${template.versoTituloOffsetY ?? 0}|${template.marcaDaguaVersoOffsetX ?? 0},${template.marcaDaguaVersoOffsetY ?? 0}`;
+  const offsetsOnlySig = `${template.logoEsquerdaOffsetX ?? 0},${template.logoEsquerdaOffsetY ?? 0}|${template.logoCentroOffsetX ?? 0},${template.logoCentroOffsetY ?? 0}|${template.logoDireitaOffsetX ?? 0},${template.logoDireitaOffsetY ?? 0}|${template.tituloOffsetX ?? 0},${template.tituloOffsetY ?? 0}|${template.textoOffsetX ?? 0},${template.textoOffsetY ?? 0}|${template.dataOffsetX ?? 0},${template.dataOffsetY ?? 0}|${template.assinaturaPrincipalOffsetX ?? 0},${template.assinaturaPrincipalOffsetY ?? 0}|${template.segundaAssinaturaOffsetX ?? 0},${template.segundaAssinaturaOffsetY ?? 0}|${template.assinaturaAlturaOffset ?? 0}|${template.marcaDaguaFrenteOffsetX ?? 0},${template.marcaDaguaFrenteOffsetY ?? 0}|${template.logoEsquerdaVersoOffsetX ?? 0},${template.logoEsquerdaVersoOffsetY ?? 0}|${template.logoCentroVersoOffsetX ?? 0},${template.logoCentroVersoOffsetY ?? 0}|${template.logoDireitaVersoOffsetX ?? 0},${template.logoDireitaVersoOffsetY ?? 0}|${template.versoTituloOffsetX ?? 0},${template.versoTituloOffsetY ?? 0}|${template.versoTabelaOffsetX ?? 0},${template.versoTabelaOffsetY ?? 0}|${template.marcaDaguaVersoOffsetX ?? 0},${template.marcaDaguaVersoOffsetY ?? 0}`;
   const isInteractiveSheet = Boolean(onSelectObject);
 
   useEffect(() => {
@@ -857,7 +867,7 @@ export function CertificateSheet({
   ) => {
     if (e.button !== 0) return;
     onSelectObject?.(dragToSelectMap[element]);
-    if (!interactiveDrag || !onUpdateTemplate) return;
+    if (!isInteractiveSheet || placingTextBoxId || !onUpdateTemplate) return;
     e.preventDefault();
     e.stopPropagation();
     try {
@@ -907,6 +917,9 @@ export function CertificateSheet({
     } else if (element === 'versoTitulo') {
       origX = template.versoTituloOffsetX ?? 0;
       origY = template.versoTituloOffsetY ?? 0;
+    } else if (element === 'versoTabela') {
+      origX = template.versoTabelaOffsetX ?? 0;
+      origY = template.versoTabelaOffsetY ?? 0;
     } else if (element === 'marcaDaguaVerso') {
       origX = template.marcaDaguaVersoOffsetX ?? 0;
       origY = template.marcaDaguaVersoOffsetY ?? 0;
@@ -943,7 +956,7 @@ export function CertificateSheet({
     element: DraggableCertificateElement,
     e: React.PointerEvent<HTMLElement>
   ) => {
-    if (!interactiveDrag || !onUpdateTemplate || !dragRef.current) return;
+    if (!isInteractiveSheet || placingTextBoxId || !onUpdateTemplate || !dragRef.current) return;
     if (dragRef.current.element !== element) return;
 
     const rawDx = e.clientX - dragRef.current.startClientX;
@@ -1122,6 +1135,13 @@ export function CertificateSheet({
           versoTituloOffsetY: nextY,
         };
       }
+      if (element === 'versoTabela') {
+        return {
+          ...prev,
+          versoTabelaOffsetX: nextX,
+          versoTabelaOffsetY: nextY,
+        };
+      }
       if (element === 'marcaDaguaVerso') {
         return {
           ...prev,
@@ -1225,8 +1245,9 @@ export function CertificateSheet({
     ref?: (el: HTMLElement | null) => void;
   } => {
     const selectKey = dragToSelectMap[element];
-    const canDrag = interactiveDrag;
     const canSelect = Boolean(onSelectObject || onOpenClickMenu);
+    const canDrag = isInteractiveSheet && Boolean(onUpdateTemplate) && !placingTextBoxId;
+    const showAllDragOutlines = interactiveDrag && canDrag;
     const refProp = canSelect
       ? {
           ref: (el: HTMLElement | null) => {
@@ -1241,7 +1262,7 @@ export function CertificateSheet({
     return {
       ...refProp,
       title: canDrag
-        ? `Clique esquerdo: menu/editar ou arraste • Botão direito: selecionar (${label})`
+        ? `Clique para editar ou arraste com o mouse para mover • Botão direito: selecionar (${label})`
         : `Clique esquerdo: menu/editar • Botão direito: selecionar (${label})`,
       onClick:
         canSelect || (placingTextBoxId && onPlaceTextBoxAt)
@@ -1285,45 +1306,10 @@ export function CertificateSheet({
             ? '2.5px solid #2563eb'
             : isHovered
               ? '1.5px dashed rgba(37, 99, 235, 0.72)'
-              : canDrag
+              : showAllDragOutlines
                 ? '1.5px dashed rgba(37, 99, 235, 0.42)'
                 : undefined,
         outlineOffset: '5px',
-        borderRadius: '6px',
-      },
-    };
-  };
-
-  const getSelectProps = (
-    selectKey: CertificateSelectableObject,
-    label: string
-  ): React.HTMLAttributes<HTMLElement> & { style?: React.CSSProperties } => {
-    if (!onSelectObject && !onOpenClickMenu) return {};
-    const isSelected = selectedObject === selectKey;
-    const isHovered = hoveredObject === selectKey;
-    return {
-      title: `Clique esquerdo: menu/editar • Botão direito: selecionar (${label})`,
-      onClick: (e) => {
-        fireLeftClick(e, selectKey, side, false);
-      },
-      onContextMenu: (e) => {
-        fireRightClick(e, selectKey);
-      },
-      onMouseEnter: (e) => {
-        e.stopPropagation();
-        setHoveredObject(selectKey);
-      },
-      onMouseLeave: () => {
-        setHoveredObject((prev) => (prev === selectKey ? null : prev));
-      },
-      style: {
-        cursor: 'pointer',
-        outline: isSelected
-          ? '2.5px solid #2563eb'
-          : isHovered
-            ? '1.5px dashed rgba(37, 99, 235, 0.72)'
-            : undefined,
-        outlineOffset: '4px',
         borderRadius: '6px',
       },
     };
@@ -3739,6 +3725,7 @@ export function CertificateSheet({
                           src={resolveAssetCacheSrc(leftLogoBackUrl)}
                           alt="Brasão Guarda Costeira"
                           crossOrigin="anonymous"
+                          draggable={false}
                           style={{
                             width: backLeftSize !== undefined ? `${backLeftSize}px` : '66px',
                             height: backLeftSize !== undefined ? `${backLeftSize}px` : '70px',
@@ -3836,6 +3823,7 @@ export function CertificateSheet({
                             src={resolveAssetCacheSrc(centerLogoBackUrl)}
                             alt={centerCaptionBackText || 'Brasão Central (Verso)'}
                             crossOrigin="anonymous"
+                            draggable={false}
                             style={{
                               width: `${centerLogoBackSize}px`,
                               height: `${centerLogoBackSize}px`,
@@ -4106,7 +4094,7 @@ export function CertificateSheet({
               ) : null}
 
               {(() => {
-                const backTableSelect = getSelectProps(
+                const backTableDrag = getDragProps(
                   'versoTabela',
                   'Quadro de Disciplinas e Notas (Verso)'
                 );
@@ -4164,11 +4152,13 @@ export function CertificateSheet({
                   }
                   return (
                     <div
-                      {...backTableSelect}
+                      {...backTableDrag}
                       style={{
                         position: 'relative',
+                        left: `${template.versoTabelaOffsetX ?? 0}px`,
+                        top: `${template.versoTabelaOffsetY ?? 0}px`,
                         zIndex: Math.max(
-                          getLayerZ('versoTabela'),
+                          getLayerZ('versoTabela', 'versoTabela'),
                           maxBackImageZ + 2
                         ),
                         flex: 1,
@@ -4184,7 +4174,7 @@ export function CertificateSheet({
                         textAlign: 'center',
                         color: '#64748b',
                         fontFamily: '"Segoe UI", system-ui, sans-serif',
-                        ...backTableSelect.style,
+                        ...backTableDrag.style,
                       }}
                     >
                       <span style={{ fontSize: '13px', fontWeight: 700, color: '#334155' }}>
@@ -4199,11 +4189,13 @@ export function CertificateSheet({
 
                 return (
                   <table
-                    {...backTableSelect}
+                    {...backTableDrag}
                     style={{
                       position: 'relative',
+                      left: `${template.versoTabelaOffsetX ?? 0}px`,
+                      top: `${template.versoTabelaOffsetY ?? 0}px`,
                       zIndex: Math.max(
-                        getLayerZ('versoTabela'),
+                        getLayerZ('versoTabela', 'versoTabela'),
                         maxBackImageZ + 2
                       ),
                       width: '100%',
@@ -4213,7 +4205,7 @@ export function CertificateSheet({
                       fontStyle: versoItalic ? 'italic' : 'normal',
                       color: '#0f172a',
                       textShadow: 'none',
-                      ...backTableSelect.style,
+                      ...backTableDrag.style,
                     }}
                   >
                 <thead>
