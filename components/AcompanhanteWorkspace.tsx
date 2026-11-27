@@ -29,7 +29,6 @@ import { useUser } from '@/lib/auth/UserContext';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { supabase } from '@/lib/supabase/client';
 import { fetchWithAuth } from '@/lib/api';
-import { UserWorkspaceHeader } from '@/components/UserWorkspaceHeader';
 import DashboardThoughtWidget from '@/components/DashboardThoughtWidget';
 import { cn, getCleanTurmaName, calculateStudentCoursePercentage } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -823,7 +822,6 @@ export function AcompanhanteWorkspace() {
   if (!profile.turma_id) {
     return (
       <div className="space-y-6">
-        <UserWorkspaceHeader />
         <div className="bg-white border border-amber-200 rounded-2xl p-8 text-center space-y-3 shadow-sm">
           <div className="w-14 h-14 mx-auto rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600">
             <AlertTriangle size={26} />
@@ -843,7 +841,6 @@ export function AcompanhanteWorkspace() {
 
   return (
     <div className="w-full max-w-full min-w-0 space-y-6">
-      <UserWorkspaceHeader />
       <DashboardThoughtWidget />
 
       <motion.div

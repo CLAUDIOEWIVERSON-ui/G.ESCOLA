@@ -54,7 +54,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ExchangeRateTicker from '@/components/ExchangeRateTicker';
 import HolidaysWidget from '@/components/HolidaysWidget';
 import DashboardThoughtWidget from '@/components/DashboardThoughtWidget';
-import { UserWorkspaceHeader } from '@/components/UserWorkspaceHeader';
 import { StudentWorkspace } from '@/components/StudentWorkspace';
 import { AcompanhanteWorkspace } from '@/components/AcompanhanteWorkspace';
 import StudentDetailEditModal from '@/components/StudentDetailEditModal';
@@ -396,9 +395,6 @@ function StaffDashboardContent() {
 
   return (
     <div className="w-full max-w-full min-w-0 space-y-5 sm:space-y-6">
-      {/* IDENTIFICAÇÃO INDIVIDUAL DO USUÁRIO NA SUA ÁREA DE TRABALHO */}
-      <UserWorkspaceHeader />
-
       <ExchangeRateTicker />
       <HolidaysWidget />
       <DashboardThoughtWidget />

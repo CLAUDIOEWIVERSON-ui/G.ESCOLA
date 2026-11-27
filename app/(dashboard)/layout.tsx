@@ -11,6 +11,7 @@ import {
   LayoutDashboard, 
   BookOpen, 
   Users, 
+  User,
   Library, 
   FileCheck, 
   FileText,
@@ -841,41 +842,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </button>
             </div>
 
-            {/* Crachá / Visão de Identidade do Usuário no Cabeçalho */}
-            <div className="hidden lg:flex items-center gap-2 pl-2 border-l border-slate-200 shrink-0">
-              {profile?.foto_url && profile?.role !== 'admin' ? (
-                <div className="w-8 h-8 rounded-lg overflow-hidden border border-slate-300 shrink-0 relative shadow-2xs">
-                  <Image 
-                    src={profile.foto_url} 
-                    alt={profile.full_name || 'Usuário'} 
-                    fill 
-                    unoptimized
-                    className="object-cover" 
-                    sizes="32px"
-                    referrerPolicy="no-referrer"
-                  />
-                </div>
-              ) : (
-                <div className={cn(
-                  "w-8 h-8 rounded-lg border flex items-center justify-center text-xs font-bold shrink-0 shadow-2xs",
-                  isStudentUser
-                    ? "bg-white border-black text-black"
-                    : profile?.role === 'admin' 
-                      ? "bg-blue-50 border-blue-200 text-blue-700" 
-                      : "bg-indigo-50 border-indigo-200/80 text-indigo-700"
-                )}>
-                  {profile?.role === 'admin' ? <ShieldCheck size={15} /> : userInitials}
-                </div>
-              )}
-              <div className="hidden xl:flex flex-col text-left leading-tight">
-                <span className={cn("text-xs font-bold truncate max-w-[120px]", isStudentUser ? "text-black" : "text-slate-800")}>
-                  {profile?.posto_graduacao || profile?.nome_guerra ? `${profile.posto_graduacao || ''} ${profile.nome_guerra || profile.full_name}`.trim() : (profile?.full_name || profile?.email?.split('@')[0])}
-                </span>
-                <span className={cn("text-[9px] font-bold uppercase tracking-wider", isStudentUser ? "text-black" : "text-indigo-600")}>
+            {/* Indicação exclusiva do tipo de usuário na barra superior */}
+            {roleName && (
+              <div className={cn(
+                "inline-flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-lg border shrink-0 shadow-2xs",
+                isStudentUser
+                  ? "bg-white border-black text-black"
+                  : profile?.role === 'admin'
+                    ? "bg-blue-50 border-blue-200 text-blue-700"
+                    : profile?.role === 'instrutor'
+                      ? "bg-purple-50 border-purple-200 text-purple-700"
+                      : profile?.role === 'acompanhante'
+                        ? "bg-teal-50 border-teal-200 text-teal-800"
+                        : "bg-indigo-50 border-indigo-200 text-indigo-700"
+              )}>
+                {profile?.role === 'admin' ? (
+                  <ShieldCheck size={14} className="shrink-0" />
+                ) : (
+                  <User size={14} className="shrink-0" />
+                )}
+                <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider whitespace-nowrap">
                   {roleName}
                 </span>
               </div>
-            </div>
+            )}
           </div>
         </header>
 
