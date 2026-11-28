@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, useRef, Suspense } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -52,6 +52,7 @@ import SimultaneousAccessModal, { SimultaneousAccessData } from '@/components/Si
 import { SuggestionsModal } from '@/components/SuggestionsModal';
 import { BackButton } from '@/components/BackButton';
 import { EnergyLoadingBar } from '@/components/EnergyLoadingBar';
+import { PageReloadPrompt } from '@/components/PageReloadPrompt';
 
 // Isolated search bar component to avoid CSR bailout in layout.tsx
 function HeaderSearchBar() {
@@ -117,6 +118,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [showSimultaneousModal, setShowSimultaneousModal] = useState(false);
   const [loadingSimultaneous, setLoadingSimultaneous] = useState(false);
   const [showAssistant, setShowAssistant] = useState(false);
+  const [pageLoadFailed, setPageLoadFailed] = useState(false);
+  const contentWrapperRef = useRef<HTMLDivElement | null>(null);
 
   const fetchOnlineUsers = async () => {
     if (!isAdmin) return;
@@ -178,6 +181,87 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       setSidebarOpen(false);
     }
   }, [pathname]);
+
+  const profileId = profile?.id;
+
+  useEffect(() => {
+    setPageLoadFailed(false);
+
+    if (authLoading || !profileId) return;
+
+    const inspectContent = (): 'empty' | 'loading-only' | 'ready' => {
+      const el = contentWrapperRef.current;
+      if (!el) return 'empty';
+      const style = window.getComputedStyle(el);
+      const rect = el.getBoundingClientRect();
+      if (
+        style.display === 'none' ||
+        style.visibility === 'hidden' ||
+        parseFloat(style.opacity || '1') < 0.05 ||
+        rect.height < 40
+      ) {
+        return 'empty';
+      }
+
+      const rawText = (el.innerText || '').trim();
+      const nonLoadingText = rawText
+        .replace(/Aguarde\.*/gi, '')
+        .replace(/Carregando\.*/gi, '')
+        .trim();
+      const hasInteractiveOrMedia =
+        el.querySelectorAll('button, a, input, select, textarea, table, img, canvas, form').length > 0;
+
+      if (el.querySelector('[role="status"]') && nonLoadingText.length === 0 && !hasInteractiveOrMedia) {
+        return 'loading-only';
+      }
+
+      if (rawText.length === 0 && el.querySelectorAll('svg, img, canvas, table, form, input, button').length === 0) {
+        return 'empty';
+      }
+
+      return 'ready';
+    };
+
+    const blankTimer = window.setTimeout(() => {
+      if (inspectContent() === 'empty') {
+        setPageLoadFailed(true);
+      }
+    }, 2800);
+
+    const stuckLoadingTimer = window.setTimeout(() => {
+      if (inspectContent() !== 'ready') {
+        setPageLoadFailed(true);
+      }
+    }, 12000);
+
+    const handleChunkError = (event: ErrorEvent) => {
+      const msg = event?.message || '';
+      if (
+        /ChunkLoadError|Loading chunk|dynamically imported module|Failed to fetch/i.test(msg)
+      ) {
+        setPageLoadFailed(true);
+      }
+    };
+
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      const msg = String(event?.reason?.message || event?.reason || '');
+      if (
+        /ChunkLoadError|Loading chunk|dynamically imported module/i.test(msg)
+      ) {
+        setPageLoadFailed(true);
+      }
+    };
+
+    window.addEventListener('error', handleChunkError);
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+
+    return () => {
+      window.clearTimeout(blankTimer);
+      window.clearTimeout(stuckLoadingTimer);
+      window.removeEventListener('error', handleChunkError);
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+    };
+  }, [pathname, authLoading, profileId]);
 
   const isStudentUser = isAluno || profile?.role === 'aluno' || !!(profile as any)?.isNifStudent;
   const isAcompanhanteUser = isAcompanhante || profile?.role === 'acompanhante';
@@ -888,18 +972,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           "flex-1 w-full max-w-full min-w-0 p-3 sm:p-4 lg:p-6 xl:p-8 overflow-y-auto overflow-x-clip pb-24 lg:pb-8 print:p-0 print:m-0 print:overflow-visible print:block print:h-auto print:min-h-0",
           isStudentUser && "bg-white text-black"
         )}>
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
+          {pageLoadFailed ? (
+            <PageReloadPrompt
+              isStudentUser={isStudentUser}
+              onRetry={() => {
+                setPageLoadFailed(false);
+                router.refresh();
+              }}
+            />
+          ) : (
+            <div
               key={pathname}
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -5 }}
-              transition={{ duration: 0.12, ease: [0.23, 1, 0.32, 1] }}
+              ref={contentWrapperRef}
               className="w-full max-w-full min-w-0"
             >
               {children}
-            </motion.div>
-          </AnimatePresence>
+            </div>
+          )}
 
           {/* Barra de Transição entre Módulos no rodapé de todas as páginas */}
           <div className={cn(
