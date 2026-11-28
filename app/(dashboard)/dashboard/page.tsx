@@ -56,6 +56,7 @@ import HolidaysWidget from '@/components/HolidaysWidget';
 import DashboardThoughtWidget from '@/components/DashboardThoughtWidget';
 import { StudentWorkspace } from '@/components/StudentWorkspace';
 import { AcompanhanteWorkspace } from '@/components/AcompanhanteWorkspace';
+import { EnergyLoadingBar } from '@/components/EnergyLoadingBar';
 import StudentDetailEditModal from '@/components/StudentDetailEditModal';
 import Image from 'next/image';
 import navalMissionLogo from '@/src/assets/images/regenerated_image_1782409801823.png';
@@ -72,11 +73,7 @@ export default function DashboardPage() {
   const isAcompanhanteUser = isAcompanhante || profile?.role === 'acompanhante';
 
   if (authLoading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="animate-spin text-blue-600" size={32} />
-      </div>
-    );
+    return <EnergyLoadingBar />;
   }
 
   if (isStudentUser) {

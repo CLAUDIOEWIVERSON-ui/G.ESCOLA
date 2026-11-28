@@ -6,6 +6,7 @@ import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { useUser } from '@/lib/auth/UserContext';
 import { Logo } from '@/components/Logo';
+import { EnergyLoadingBar } from '@/components/EnergyLoadingBar';
 import { LogIn, Mail, Lock, AlertCircle, QrCode, RefreshCw, Upload, KeyRound } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
@@ -812,8 +813,8 @@ export default function LoginPage() {
   return (
     <div className="auth-white-theme flex min-h-[100dvh] w-full max-w-full overflow-x-hidden items-center justify-center bg-white p-3 sm:p-4 font-sans text-slate-900">
       <Suspense fallback={
-        <div className="w-full max-w-sm bg-white rounded-xl shadow-xl shadow-slate-200/50 p-8 border border-slate-200 flex flex-col items-center justify-center min-h-[400px]">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
+        <div className="w-full max-w-sm bg-white rounded-xl shadow-xl shadow-slate-200/50 p-6 border border-slate-200 flex flex-col items-center justify-center min-h-[400px]">
+          <EnergyLoadingBar className="min-h-0 py-6" />
         </div>
       }>
         <LoginContent />

@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import { useUser } from '@/lib/auth/UserContext';
 import { useI18n } from '@/lib/i18n/LanguageContext';
 import { cn } from '@/lib/utils';
+import { EnergyLoadingBar } from '@/components/EnergyLoadingBar';
 
 export interface StudentNote {
   id: string;
@@ -260,13 +261,8 @@ export function StudentNotepad() {
 
   if (authLoading || loadedKey !== storageKey) {
     return (
-      <div className="max-w-6xl mx-auto py-16 flex items-center justify-center bg-white text-black">
-        <div className="flex flex-col items-center gap-3">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black" />
-          <span className="text-xs font-mono font-bold text-black">
-            {isPt ? 'Carregando bloco de notas do dispositivo...' : 'Loading device notepad...'}
-          </span>
-        </div>
+      <div className="max-w-6xl mx-auto">
+        <EnergyLoadingBar className="min-h-[45vh]" />
       </div>
     );
   }

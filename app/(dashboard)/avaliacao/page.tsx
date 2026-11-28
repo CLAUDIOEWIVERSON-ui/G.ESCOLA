@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase/client';
 import { fetchWithAuth } from '@/lib/api';
 import { useUser } from '@/lib/auth/UserContext';
 import { UserWorkspaceHeader } from '@/components/UserWorkspaceHeader';
+import { EnergyLoadingBar } from '@/components/EnergyLoadingBar';
 
 import { format, startOfWeek, addDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -810,14 +811,7 @@ function AvaliacaoAlunoForm() {
   };
 
   if (userLoading || loading) {
-    return (
-      <div className="flex h-[70vh] items-center justify-center bg-slate-50">
-        <div className="flex flex-col items-center gap-3">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
-          <span className="text-sm text-slate-500 font-mono">Carregando formulário de avaliação...</span>
-        </div>
-      </div>
-    );
+    return <EnergyLoadingBar />;
   }
 
   if (limitReached) {
@@ -1920,14 +1914,7 @@ function AvaliacaoAlunoForm() {
 
 export default function AvaliacaoAlunoPage() {
   return (
-    <Suspense fallback={
-      <div className="flex h-[70vh] items-center justify-center bg-white text-black">
-        <div className="flex flex-col items-center gap-3">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
-          <span className="text-sm text-black font-mono">Carregando formulário de avaliação...</span>
-        </div>
-      </div>
-    }>
+    <Suspense fallback={<EnergyLoadingBar />}>
       <AvaliacaoAlunoForm />
     </Suspense>
   );

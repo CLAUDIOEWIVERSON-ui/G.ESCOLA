@@ -41,6 +41,7 @@ import { fetchWithAuth } from '@/lib/api';
 import navalMissionLogo from '@/src/assets/images/regenerated_image_1782409801823.png';
 import { getHtml2Canvas, savePDFWithDialog } from '@/lib/printDocumentUtils';
 import { UserWorkspaceHeader } from '@/components/UserWorkspaceHeader';
+import { EnergyLoadingBar } from '@/components/EnergyLoadingBar';
 
 const formatGradePT = (val: number | string | null | undefined, fallback = '-'): string => {
   if (val === null || val === undefined || val === '') return fallback;
@@ -2038,11 +2039,8 @@ function BoletimContent() {
         </div>
 
         {loadingReport || !reportData ? (
-          <div className="flex flex-col items-center justify-center py-20 text-black gap-3 bg-white border border-slate-300 rounded-2xl p-6 shadow-sm">
-            <Loader2 className="animate-spin text-black" size={36} />
-            <span className="text-xs font-bold tracking-widest uppercase text-black">
-              {language === 'pt' ? 'Carregando boletim do aluno...' : 'Loading student report...'}
-            </span>
+          <div className="bg-white border border-slate-300 rounded-2xl shadow-sm overflow-hidden">
+            <EnergyLoadingBar className="min-h-[300px] py-12" />
           </div>
         ) : (
           <div className="max-w-4xl mx-auto w-full">
@@ -4875,12 +4873,7 @@ function BoletimContent() {
 
 export default function BoletimPage() {
   return (
-    <Suspense fallback={
-      <div className="py-24 flex flex-col items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-600"></div>
-        <p className="mt-4 text-slate-500 font-bold text-xs uppercase tracking-wider animate-pulse">Carregando...</p>
-      </div>
-    }>
+    <Suspense fallback={<EnergyLoadingBar />}>
       <BoletimContent />
     </Suspense>
   );

@@ -6,6 +6,7 @@ import { useUser } from '@/lib/auth/UserContext';
 import { fetchWithAuth } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { formatThoughtForCopy, copyTextToClipboard } from '@/lib/thoughtFormat';
+import { EnergyLoadingBar } from '@/components/EnergyLoadingBar';
 import { 
   Quote, 
   Sparkles, 
@@ -532,11 +533,8 @@ export default function PensamentoDoDiaPage() {
       {(activeTab === 'today' || isMessageOnlyView) && (
         <div className="space-y-6">
           {loadingToday ? (
-            <div className="p-16 rounded-3xl border border-slate-200 bg-white flex flex-col items-center justify-center gap-4 text-center">
-              <Loader2 size={36} className="animate-spin text-amber-500" />
-              <p className="text-sm font-semibold text-slate-600">
-                {isPt ? 'Carregando a reflexão do dia...' : 'Loading today\'s reflection...'}
-              </p>
+            <div className="rounded-3xl border border-slate-200 bg-white overflow-hidden">
+              <EnergyLoadingBar className="min-h-[320px] py-10" />
             </div>
           ) : todayThought ? (
             <div className="space-y-6">

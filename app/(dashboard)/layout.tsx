@@ -51,6 +51,7 @@ import { FormGuidanceAssistant } from '@/components/FormGuidanceAssistant';
 import SimultaneousAccessModal, { SimultaneousAccessData } from '@/components/SimultaneousAccessModal';
 import { SuggestionsModal } from '@/components/SuggestionsModal';
 import { BackButton } from '@/components/BackButton';
+import { EnergyLoadingBar } from '@/components/EnergyLoadingBar';
 
 // Isolated search bar component to avoid CSR bailout in layout.tsx
 function HeaderSearchBar() {
@@ -240,11 +241,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   if (authLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-white">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
-      </div>
-    );
+    return <EnergyLoadingBar fullScreen />;
   }
 
   const rawNavItems = isStudentUser ? [

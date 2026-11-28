@@ -190,22 +190,22 @@ body {
   color: #000000 !important;
 }
 
-.student-white-theme :not(.student-photo-overlay):not(.student-photo-overlay *):not(.student-solid-btn):not(.student-solid-btn *):not(.neon-3d-btn):not(.neon-3d-btn *):not(.mobile-only-neon-3d):not(.mobile-only-neon-3d *):not(img):not(svg):not(path):not(circle):not(rect):not(line):not(polygon):not(polyline) {
+.student-white-theme :not(.student-photo-overlay):not(.student-photo-overlay *):not(.student-solid-btn):not(.student-solid-btn *):not(.neon-3d-btn):not(.neon-3d-btn *):not(.mobile-only-neon-3d):not(.mobile-only-neon-3d *):not(.energy-loading-label):not(.energy-loading-label *):not(.energy-loading-fill):not(.energy-loading-fill *):not(img):not(svg):not(path):not(circle):not(rect):not(line):not(polygon):not(polyline) {
   color: #000000 !important;
   -webkit-text-fill-color: #000000 !important;
 }
 
-.student-white-theme :is([class*="bg-blue"], [class*="bg-slate-9"], [class*="bg-slate-8"], [class*="bg-slate-50"], [class*="bg-slate-100"], [class*="bg-indigo"], [class*="bg-cyan"], [class*="bg-emerald"], [class*="bg-amber"], [class*="bg-rose"], [class*="bg-purple"], [class*="bg-sky"], [class*="bg-violet"], [class*="bg-teal"], [class*="bg-gradient"]):not(.student-photo-overlay):not(.student-solid-btn):not(.neon-3d-btn):not(.mobile-only-neon-3d) {
+.student-white-theme :is([class*="bg-blue"], [class*="bg-slate-9"], [class*="bg-slate-8"], [class*="bg-slate-50"], [class*="bg-slate-100"], [class*="bg-indigo"], [class*="bg-cyan"], [class*="bg-emerald"], [class*="bg-amber"], [class*="bg-rose"], [class*="bg-purple"], [class*="bg-sky"], [class*="bg-violet"], [class*="bg-teal"], [class*="bg-gradient"]):not(.student-photo-overlay):not(.student-solid-btn):not(.neon-3d-btn):not(.mobile-only-neon-3d):not(.energy-loading-track):not(.energy-loading-fill):not(.energy-loading-cap) {
   background-color: #ffffff !important;
   background-image: none !important;
   color: #000000 !important;
 }
 
-.student-white-theme svg:not(.student-solid-btn svg):not(.neon-3d-btn svg):not(.mobile-only-neon-3d svg) {
+.student-white-theme svg:not(.student-solid-btn svg):not(.neon-3d-btn svg):not(.mobile-only-neon-3d svg):not(.energy-loading-bolt) {
   color: #000000 !important;
 }
 
-.student-white-theme :is([class*="border-slate"], [class*="border-blue"], [class*="border-white"], [class*="border-indigo"], [class*="border-cyan"], [class*="border-emerald"], [class*="border-amber"], [class*="border-rose"]):not(.border-black):not(.border-2):not(.student-solid-btn):not(.neon-3d-btn):not(.mobile-only-neon-3d) {
+.student-white-theme :is([class*="border-slate"], [class*="border-blue"], [class*="border-white"], [class*="border-indigo"], [class*="border-cyan"], [class*="border-emerald"], [class*="border-amber"], [class*="border-rose"]):not(.border-black):not(.border-2):not(.student-solid-btn):not(.neon-3d-btn):not(.mobile-only-neon-3d):not(.energy-loading-track) {
   border-color: #d4d4d8 !important;
 }
 
@@ -255,6 +255,74 @@ body {
   background-color: #ffffff !important;
   background-image: none !important;
   border-top-color: #cbd5e1 !important;
+}
+
+/* =========================================================================
+   ENERGY LOADING BAR (Aguarde......)
+   ========================================================================= */
+@keyframes energyCharge {
+  0% {
+    width: 10%;
+  }
+  30% {
+    width: 48%;
+  }
+  65% {
+    width: 78%;
+  }
+  100% {
+    width: 95%;
+  }
+}
+
+@keyframes energyGlowPulse {
+  0%, 100% {
+    filter: brightness(1);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.55),
+      0 0 10px rgba(16, 185, 129, 0.55);
+  }
+  50% {
+    filter: brightness(1.12);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.75),
+      0 0 18px rgba(132, 204, 22, 0.8);
+  }
+}
+
+@keyframes energySweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(200%);
+  }
+}
+
+.energy-loading-track {
+  background-color: #f1f5f9 !important;
+}
+
+.energy-loading-cap {
+  background-color: #000000 !important;
+}
+
+.energy-loading-fill {
+  background-image: linear-gradient(90deg, #059669 0%, #10b981 45%, #84cc16 82%, #22c55e 100%) !important;
+  background-color: #10b981 !important;
+  animation:
+    energyCharge 2.8s cubic-bezier(0.22, 1, 0.36, 1) forwards,
+    energyGlowPulse 1.3s ease-in-out infinite;
+}
+
+.energy-loading-shine {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.55) 50%,
+    rgba(255, 255, 255, 0) 100%
+  ) !important;
+  animation: energySweep 1.15s linear infinite;
 }
 
 /* =========================================================================
