@@ -518,9 +518,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         )}
                         
                         <span className={cn(
-                          "text-sm transition-opacity flex-1 whitespace-nowrap",
-                          isStudentUser ? (isActive ? "font-black text-white" : "font-bold text-black") : "font-medium",
-                          !sidebarOpen && (isStudentUser ? "hidden" : "opacity-0 invisible w-0"),
+                          "transition-opacity flex-1 leading-tight",
+                          isStudentUser
+                            ? cn("text-[13px] whitespace-normal break-words", isActive ? "font-black text-white" : "font-bold text-black")
+                            : "text-sm font-medium whitespace-normal break-words",
+                          !sidebarOpen && (isStudentUser ? "hidden" : "opacity-0 invisible w-0 whitespace-nowrap"),
                           !isStudentUser && needsPasswordChange && "text-amber-500 font-bold"
                         )}>
                           {item.name}
@@ -1023,7 +1025,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 )} />
               </div>
               <span className={cn(
-                "text-[7px] sm:text-[8px] uppercase tracking-tight sm:tracking-wider text-center truncate w-full transition-colors leading-none",
+                "uppercase text-center w-full transition-colors leading-none",
+                item.path === '/avaliacao'
+                  ? "text-[6px] sm:text-[7.5px] tracking-[-0.04em] sm:tracking-normal whitespace-nowrap"
+                  : "text-[7px] sm:text-[8px] tracking-tight sm:tracking-wider truncate",
                 isStudentUser
                   ? isActive ? "text-black font-black" : "text-black font-bold"
                   : isActive ? "text-blue-700 font-black" : "text-slate-600 font-bold",

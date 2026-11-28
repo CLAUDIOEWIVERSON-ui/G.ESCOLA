@@ -251,7 +251,7 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
                     {isPt ? 'Carteira Digital do Aluno' : 'Digital Student ID Card'}
                   </h2>
                 )}
-                <div className="flex flex-wrap sm:flex-nowrap items-center justify-center sm:justify-start gap-3 sm:gap-5 w-full sm:w-auto max-w-full">
+                <div className="flex flex-nowrap items-center justify-center sm:justify-start gap-2 sm:gap-5 w-full sm:w-auto max-w-full">
                   <div className="relative shrink-0 group">
                     <div 
                       className={cn(
@@ -347,13 +347,35 @@ export function UserWorkspaceHeader({ className }: UserWorkspaceHeaderProps) {
                 {isAluno && (
                   <div
                     aria-hidden="true"
-                    className="relative w-28 h-28 sm:w-36 sm:h-36 xl:w-44 xl:h-44 shrink-0 flex items-center justify-center pointer-events-none select-none opacity-20 mix-blend-multiply"
+                    className="lg:hidden relative w-[76px] h-[76px] sm:w-28 sm:h-28 shrink-0 flex items-center justify-center rounded-full border-0 bg-white overflow-hidden pointer-events-none select-none shadow-[0_8px_18px_-3px_rgba(0,0,0,0.32),0_3px_8px_-2px_rgba(0,0,0,0.2)]"
+                  >
+                    <div className="relative w-full h-full">
+                      <Image
+                        src="/assets/aistudio/CARIMBO_DA_MAN__89493689.png"
+                        alt="Logo MANBrSTP"
+                        fill
+                        quality={100}
+                        sizes="(max-width: 640px) 76px, 112px"
+                        className="object-cover grayscale contrast-[1.2] brightness-[1.03] scale-[1.06] translate-y-[2.2%]"
+                        referrerPolicy="no-referrer"
+                      />
+                    </div>
+                    <div
+                      className="pointer-events-none absolute inset-0 rounded-full bg-[radial-gradient(circle_at_30%_22%,rgba(255,255,255,0.42)_0%,rgba(255,255,255,0)_52%,rgba(0,0,0,0.2)_100%)] shadow-[inset_0_3px_8px_rgba(255,255,255,0.72),inset_0_-6px_14px_rgba(0,0,0,0.25)]"
+                    />
+                  </div>
+                )}
+
+                {isAluno && (
+                  <div
+                    aria-hidden="true"
+                    className="relative w-[76px] h-[76px] sm:w-32 sm:h-32 xl:w-44 xl:h-44 shrink-0 flex items-center justify-center pointer-events-none select-none opacity-20 mix-blend-multiply"
                   >
                     <Image
                       src="/assets/aistudio/imagem_01_2da3aec8.png"
                       alt="Guarda Costeira de São Tomé e Príncipe"
                       fill
-                      sizes="(max-width: 640px) 112px, 176px"
+                      sizes="(max-width: 640px) 76px, 176px"
                       className="object-contain object-center"
                       referrerPolicy="no-referrer"
                     />
