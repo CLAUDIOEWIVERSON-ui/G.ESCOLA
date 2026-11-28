@@ -4,7 +4,7 @@ import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import schoolLogo from '@/src/assets/images/school_logo_1778971528475.png';
-const INTERNAL_SEAL_LOGO = '/assets/aistudio/CARIMBO_DA_MAN__89493689.png';
+const INTERNAL_SEAL_LOGO = '/assets/aistudio/Gemini_Generated_Image_ja9nk9ja9nk9ja9n_eb0b9a97.jpeg';
 
 interface LogoProps {
   className?: string;
@@ -47,8 +47,8 @@ export function Logo({
       isVertical ? "flex-col justify-center gap-3" : "flex-row gap-2 w-full",
       className
     )}>
-      <div className={cn("relative shrink-0 group [perspective:800px]", finalSizeClass)}>
-        {/* Emblem Container (3D Black & White without borders when internal, circular white badge when external) */}
+      <div className={cn("relative shrink-0 group [perspective:900px]", finalSizeClass)}>
+        {/* Emblem Container (3D Challenge Coin without white background when internal, circular white badge when external) */}
         <motion.div 
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -56,24 +56,24 @@ export function Logo({
             "relative w-full h-full flex items-center justify-center overflow-hidden transition-all duration-300",
             isInternal 
               ? cn(
-                  "rounded-full border-0 bg-white transform-gpu group-hover:scale-[1.03]",
+                  "rounded-full border-0 bg-transparent transform-gpu group-hover:scale-[1.04] group-hover:-translate-y-0.5",
                   dark
-                    ? "shadow-[0_12px_24px_-4px_rgba(0,0,0,0.38),0_6px_12px_-2px_rgba(0,0,0,0.22)]"
-                    : "shadow-[0_16px_32px_-4px_rgba(0,0,0,0.8),0_6px_14px_-2px_rgba(0,0,0,0.55),0_0_24px_rgba(255,255,255,0.14)]"
+                    ? "shadow-[0_14px_26px_-4px_rgba(0,0,0,0.45),0_6px_12px_-2px_rgba(0,0,0,0.28),0_2px_6px_rgba(161,98,7,0.28)]"
+                    : "shadow-[0_18px_34px_-4px_rgba(0,0,0,0.9),0_8px_16px_-2px_rgba(0,0,0,0.65),0_0_24px_rgba(234,179,8,0.18)]"
                 )
               : "bg-white rounded-full p-[2px] border border-slate-200/40 shadow-sm"
           )}
         >
-          <div className="relative w-full h-full">
+          <div className="relative w-full h-full rounded-full overflow-hidden">
             <Image
               src={isInternal ? INTERNAL_SEAL_LOGO : schoolLogo}
-              alt={isInternal ? "Logo MANBrSTP" : "School Logo"}
+              alt={isInternal ? "Moeda MANBrSTP" : "School Logo"}
               fill
               priority={isInternal}
               quality={100}
               className={cn(
                 isInternal
-                  ? "object-cover grayscale contrast-[1.2] brightness-[1.03] scale-[1.06] translate-y-[2.2%]"
+                  ? "object-cover object-center contrast-[1.06] saturate-[1.06] scale-[1.105] -translate-x-[3.3%]"
                   : "object-contain"
               )}
               referrerPolicy="no-referrer"
@@ -83,7 +83,7 @@ export function Logo({
           {isInternal && (
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute inset-0 rounded-full bg-[radial-gradient(circle_at_30%_22%,rgba(255,255,255,0.42)_0%,rgba(255,255,255,0)_52%,rgba(0,0,0,0.2)_100%)] shadow-[inset_0_3px_8px_rgba(255,255,255,0.72),inset_0_-6px_14px_rgba(0,0,0,0.25)]"
+              className="pointer-events-none absolute inset-0 rounded-full bg-[radial-gradient(circle_at_30%_22%,rgba(255,255,255,0.32)_0%,rgba(255,255,255,0)_48%,rgba(0,0,0,0.22)_100%)] shadow-[inset_0_2px_6px_rgba(255,250,210,0.55),inset_0_-6px_12px_rgba(0,0,0,0.35)]"
             />
           )}
         </motion.div>
